@@ -33,9 +33,13 @@ public record BytesArray(byte[] data) {
         return forArray(Arrays.copyOfRange(data, start, end));
     }
 
-    public @NotNull BytesArray join(@NotNull BytesArray array){ return forArray(ArrayUtils.addAll(data(), array.data())); }
+    public @NotNull BytesArray join(@NotNull BytesArray array){
+        return forArray(ArrayUtils.addAll(data(), array.data()));
+    }
 
-    public @NotNull BytesArray add(byte data){ return forArray(ArrayUtils.add(data(), data)); }
+    public @NotNull BytesArray add(byte data){
+        return forArray(ArrayUtils.add(data(), data));
+    }
 
     public int size(){
         return data().length;
