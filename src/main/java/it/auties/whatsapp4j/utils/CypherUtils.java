@@ -37,26 +37,26 @@ public class CypherUtils {
     }
 
     public @NotNull BytesArray hkdfExpand(@NotNull BytesArray input, int size) throws GeneralSecurityException {
-        final var key = hmacSha256(input);
-
-        var keyBlock = BytesArray.allocate(0);
-        var keyStream = BytesArray.allocate(0);
-        byte blockIndex = 1;
-        while (keyStream.size() < size){
-            keyBlock = hmacSha256(keyBlock.add(blockIndex), key);
-            blockIndex += 1;
-            keyStream.join(keyBlock);
+        var key = hmacSha256(input);
+        var block = BytesArray.allocate(0);
+        for(byte index = 1; block.size() < size; index++){
+            block = block.merged(hmacSha256(block.merged(index), key));
         }
 
-        return keyStream.cut(size);
+        return block.cut(size);
     }
 
     public @NotNull BytesArray aesDecrypt(@NotNull BytesArray encrypted, @NotNull BytesArray secretKey) throws GeneralSecurityException {
         final var iv = encrypted.slice(0, BLOCK_SIZE);
         final var cipher = Cipher.getInstance(AES_NO_PADDING);
         cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(secretKey.data(), AES), new IvParameterSpec(iv.data()));
-
         var encryptedWithoutIv = encrypted.slice(BLOCK_SIZE);
-        return BytesArray.forArray(cipher.doFinal(encryptedWithoutIv.data()));
+        return unpad(cipher.doFinal(encryptedWithoutIv.data()));
+    }
+
+    public @NotNull BytesArray unpad(@NotNull byte[] data){
+        var wrap = BytesArray.forArray(data);
+        var size = wrap.size() - wrap.lastByte();
+        return size <= 0 ? BytesArray.allocate(0) : wrap.cut(size);
     }
 }

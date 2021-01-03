@@ -24,7 +24,6 @@ public record Response(Map<String, String> data) {
     }
 
     public Optional<String> getValue(@Nullable String key){
-        if(key == null) return Optional.empty();
-        return Optional.ofNullable(data().get(key));
+        return key == null ? Optional.empty() : Optional.ofNullable(data().get(key));
     }
 }

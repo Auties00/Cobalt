@@ -1,12 +1,17 @@
 package it.auties.whatsapp4j.utils;
 
 import jakarta.xml.bind.DatatypeConverter;
-import org.apache.commons.lang3.ArrayUtils;
+import org.glassfish.grizzly.utils.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Optional;
+import java.util.stream.IntStream;
 
 public record BytesArray(byte[] data) {
     public static @NotNull BytesArray allocate(int size){
@@ -21,6 +26,12 @@ public record BytesArray(byte[] data) {
         return new BytesArray(Base64.getDecoder().decode(input));
     }
 
+    public static @NotNull BytesArray random(int length){
+        final var result = new byte[length];
+        new SecureRandom().nextBytes(result);
+        return forArray(result);
+    }
+
     public @NotNull BytesArray cut(int end){
         return slice(0, end);
     }
@@ -29,27 +40,59 @@ public record BytesArray(byte[] data) {
         return slice(start, data.length);
     }
 
+    public @NotNull Pair<BytesArray, BytesArray> split(int split){
+        return new Pair<>(cut(split), slice(split + 1));
+    }
+
     public @NotNull BytesArray slice(int start, int end){
         return forArray(Arrays.copyOfRange(data, start, end));
     }
 
-    public @NotNull BytesArray join(@NotNull BytesArray array){
-        return forArray(ArrayUtils.addAll(data(), array.data()));
+    public @NotNull BytesArray merged(@NotNull BytesArray array){
+        var result = Arrays.copyOf(data, size() + array.size());
+        System.arraycopy(array.data, 0, result, size(), array.size());
+        return forArray(result);
     }
 
-    public @NotNull BytesArray add(byte data){
-        return forArray(ArrayUtils.add(data(), data));
+    public Optional<Integer> indexOf(byte character){
+        return IntStream.range(0, size()).filter(index -> data[index] == character).boxed().findAny();
+    }
+
+    public @NotNull BytesArray merged(byte data){
+        return merged(forArray(new byte[]{data}));
+    }
+
+    public byte at(int index){
+        return data[index];
+    }
+
+    public byte lastByte(){
+        return at(size() - 1);
     }
 
     public int size(){
-        return data().length;
+        return data.length;
+    }
+
+    public boolean isEmpty() {
+        return size() == 0;
+    }
+
+    public boolean isNotEmpty() {
+        return !isEmpty();
+    }
+
+    public String toASCIIString(){
+        return new String(data, StandardCharsets.US_ASCII);
     }
 
     @Override
-    public boolean equals(@Nullable Object o) { return o instanceof BytesArray that && Arrays.equals(data, that.data); }
+    public boolean equals(@Nullable Object o) {
+        return o instanceof BytesArray that && Arrays.equals(data, that.data);
+    }
 
     @Override
     public String toString() {
-        return DatatypeConverter.printHexBinary(data());
+        return DatatypeConverter.printHexBinary(data);
     }
 }

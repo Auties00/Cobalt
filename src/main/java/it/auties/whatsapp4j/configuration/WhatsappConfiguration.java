@@ -1,11 +1,11 @@
 package it.auties.whatsapp4j.configuration;
 
+import it.auties.whatsapp4j.utils.BytesArray;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Data;
 
 import lombok.experimental.Accessors;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Base64;
@@ -20,7 +20,7 @@ public class WhatsappConfiguration {
 
   @NotNull
   @Default
-  private final String clientId = Base64.getEncoder().encodeToString(RandomStringUtils.randomAlphabetic(16).getBytes());
+  private final String clientId = Base64.getEncoder().encodeToString(BytesArray.random(16).data());
 
   @NotNull
   @Default
