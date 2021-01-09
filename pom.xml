@@ -52,6 +52,11 @@
             <version>0.5.0</version>
         </dependency>
         <dependency>
+            <groupId>at.favre.lib</groupId>
+            <artifactId>hkdf</artifactId>
+            <version>1.0.2</version>
+        </dependency>
+        <dependency>
             <groupId>com.github.kenglxn.qrgen</groupId>
             <artifactId>javase</artifactId>
             <version>2.6.0</version>
@@ -61,5 +66,17 @@
             <artifactId>annotations</artifactId>
             <version>RELEASE</version>
         </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>4.0.0-rc-2</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.8.6</version>
+        </dependency>
+
     </dependencies>
 </project>

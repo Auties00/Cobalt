@@ -5,7 +5,6 @@ import org.glassfish.grizzly.utils.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -14,10 +13,6 @@ import java.util.Optional;
 import java.util.stream.IntStream;
 
 public record BytesArray(byte[] data) {
-    public static @NotNull BytesArray allocate(int size){
-        return new BytesArray(new byte[size]);
-    }
-
     public static @NotNull BytesArray forArray(byte[] in){
         return new BytesArray(in);
     }
@@ -58,28 +53,12 @@ public record BytesArray(byte[] data) {
         return IntStream.range(0, size()).filter(index -> data[index] == character).boxed().findAny();
     }
 
-    public @NotNull BytesArray merged(byte data){
-        return merged(forArray(new byte[]{data}));
-    }
-
     public byte at(int index){
         return data[index];
     }
 
-    public byte lastByte(){
-        return at(size() - 1);
-    }
-
     public int size(){
         return data.length;
-    }
-
-    public boolean isEmpty() {
-        return size() == 0;
-    }
-
-    public boolean isNotEmpty() {
-        return !isEmpty();
     }
 
     public String toASCIIString(){

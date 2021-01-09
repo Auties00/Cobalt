@@ -1,10 +1,9 @@
 package it.auties.whatsapp4j.constant;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -29,17 +28,9 @@ public enum Tag {
     SINGLE_BYTE_MAX (256),
     PACKED_MAX(254);
 
-
-
     @Getter
     private final int data;
-
-    public static Tag forName(@NotNull String tag){
-        return Arrays.stream(values()).filter(entry -> entry.name().equals(tag)).findAny().orElseThrow();
-    }
-
-    public static Tag forData(int data){
-        System.out.println(data);
-        return Arrays.stream(values()).filter(entry -> entry.data() == data).findAny().orElseThrow();
+    public static @NonNull Tag forData(int data){
+        return Arrays.stream(values()).filter(entry -> entry.data() == data).findAny().orElseThrow(() -> new IllegalArgumentException("Tag#forData: cannot convert %s to any tag".formatted(data)));
     }
 }
