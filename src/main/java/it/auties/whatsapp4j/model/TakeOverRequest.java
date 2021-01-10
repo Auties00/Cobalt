@@ -1,18 +1,17 @@
 package it.auties.whatsapp4j.model;
 
+
 import it.auties.whatsapp4j.api.WhatsappKeys;
 import it.auties.whatsapp4j.configuration.WhatsappConfiguration;
-
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Objects;
 
-public record InitialRequest(@NotNull WhatsappKeys keys, @NotNull WhatsappConfiguration options) implements Request {
+public record TakeOverRequest(@NotNull WhatsappKeys keys, @NotNull WhatsappConfiguration options) implements Request {
     @Override
     public @NotNull List<Object> buildBody() {
-        final var version = List.of(2, 2049, 10);
-        final var description = List.of(options.description(), options.shortDescription());
-        return List.of("admin", "init", version, description, keys.clientId(), true);
+        return List.of("admin", "login", Objects.requireNonNull(keys.clientToken()), Objects.requireNonNull(keys.serverToken()), keys.clientId(), "takeover");
     }
 
     @Override

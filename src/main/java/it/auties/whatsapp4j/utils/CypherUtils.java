@@ -10,6 +10,7 @@ import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.GeneralSecurityException;
+import java.security.Signature;
 
 @UtilityClass
 public class CypherUtils {
@@ -33,15 +34,14 @@ public class CypherUtils {
         return BytesArray.forArray(localMac.doFinal(plain.data()));
     }
 
-    public @NotNull BytesArray hkdfExpand(@NotNull BytesArray input, int size) throws GeneralSecurityException {
+    public @NotNull BytesArray hkdfExpand(@NotNull BytesArray input, int size) {
         return BytesArray.forArray(HKDF.fromHmacSha256().expand(HKDF.fromHmacSha256().extract(null, input.data()), null, size));
     }
 
-    public @NotNull BytesArray aesDecrypt(BytesArray encrypted, BytesArray secretKey) throws GeneralSecurityException{
+    public @NotNull BytesArray aesDecrypt(@NotNull BytesArray encrypted, @NotNull BytesArray secretKey) throws GeneralSecurityException{
         final var cipher = Cipher.getInstance(AES_ALGORITHM);
         final var keySpec = new SecretKeySpec(secretKey.data(), AES);
         cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(encrypted.cut(BLOCK_SIZE).data()));
-
         return BytesArray.forArray(cipher.doFinal(encrypted.slice(BLOCK_SIZE).data()));
     }
 }

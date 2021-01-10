@@ -7,7 +7,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public interface AbstractRequest {
+public interface Request {
     @NotNull String tag();
     @NotNull List<Object> buildBody();
 

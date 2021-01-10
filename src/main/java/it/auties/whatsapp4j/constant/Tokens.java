@@ -1,9 +1,12 @@
 package it.auties.whatsapp4j.constant;
 
-public class Tokens {
-    public static final String[] DOUBLE_BYTE_TOKENS = {};
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-    public static final String[] SINGLE_BYTE_TOKENS = {
+public class Tokens {
+    public static final @NotNull String[] DOUBLE_BYTE_TOKENS = {};
+
+    public static final @Nullable String[] SINGLE_BYTE_TOKENS = {
             null,
             null,
             null,

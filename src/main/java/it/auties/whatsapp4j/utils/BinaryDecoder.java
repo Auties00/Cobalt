@@ -1,3 +1,9 @@
+/*
+    Getting this class to work was not very easy, but I surely couldn't have done it without the help of:
+    https://github.com/JicuNull/WhatsJava/blob/master/src/main/java/icu/jnet/whatsjava/encryption/BinaryDecoder.java - Java implementation, helped me to correctly cast a byte to an unsigned int, before I was using a method that just didn't work
+    https://github.com/adiwajshing/Baileys/blob/master/src/Binary/Decoder.ts - Typescript implementation, the logic was far less error prone than the one used by the python implementation on https://github.com/sigalor/whatsapp-web-reveng and the one I came up with.
+    Why are we using Gson instead of Jackson? Well, Google's Protobuf has some reference chain issue with Jackson
+ */
 package it.auties.whatsapp4j.utils;
 
 import java.util.*;
@@ -7,23 +13,19 @@ import java.util.stream.IntStream;
 import com.google.gson.Gson;
 import it.auties.whatsapp4j.constant.Tag;
 import it.auties.whatsapp4j.constant.Tokens;
-import it.auties.whatsapp4j.utils.ProtoBuf.WebMessageInfo;
+import it.auties.whatsapp4j.model.WhatsappNode;
+import it.auties.whatsapp4j.constant.ProtoBuf.WebMessageInfo;
 import lombok.SneakyThrows;
+import org.jetbrains.annotations.NotNull;
 
-/*
-    Getting this class to work was not very easy, but I surely couldn't have done it without the help of:
-    https://github.com/JicuNull/WhatsJava/blob/master/src/main/java/icu/jnet/whatsjava/encryption/BinaryDecoder.java - Java implementation, helped me to correctly cast a byte to an unsigned int, before I was using a method that just didn't work
-    https://github.com/adiwajshing/Baileys/blob/master/src/Binary/Decoder.ts - Typescript implementation, the logic was far less error prone than the one used by the python implementation on https://github.com/sigalor/whatsapp-web-reveng and the one I came up with.
- */
 public class BinaryDecoder {
-    private final Gson gson;
+    private static final Gson GSON = new Gson();
+    private String messageTag;
     private BytesArray buffer;
     private int index;
-    public BinaryDecoder(){
-        this.gson = new Gson();
-    }
 
-    public String decodeDecryptedMessage(BytesArray buffer) {
+    public @NotNull WhatsappNode decodeDecryptedMessage(@NotNull String messageTag, @NotNull BytesArray buffer) {
+        this.messageTag = messageTag;
         this.buffer = buffer;
         this.index = 0;
         return readNode();
@@ -55,7 +57,7 @@ public class BinaryDecoder {
         var val = 0;
         for(var i = 0; i < n; i++) {
             var shift = n - 1 - i;
-            val |= next() << (shift * 8);
+            val |= readByte() << (shift * 8);
         }
 
         return val;
@@ -63,13 +65,13 @@ public class BinaryDecoder {
 
     private int readInt20() {
         checkEOS(3);
-        var a = next() & 0xff;
-        var b = next() & 0xff;
-        var c = next() & 0xff;
+        var a = readByte() & 0xff;
+        var b = readByte() & 0xff;
+        var c = readByte() & 0xff;
         return ((a & 15) << 16) + (b << 8) + c;
     }
 
-    private String readPacked8(int tag) {
+    private @NotNull String readPacked8(int tag) {
         var startByte = readByte();
 
         final var value = new StringBuilder();
@@ -82,7 +84,7 @@ public class BinaryDecoder {
         return startByte >> 7 != 0 ? value.substring(0, value.length() - 1) : value.toString();
     }
 
-    private BytesArray readBytes(int n) {
+    private @NotNull BytesArray readBytes(int n) {
         checkEOS(n);
         var byteArray = buffer.slice(index, index + n);
         index += n;
@@ -91,7 +93,7 @@ public class BinaryDecoder {
 
     private byte readByte() {
         checkEOS(1);
-        return next();
+        return buffer.at(index++);
     }
 
     private boolean isListTag(int tag) {
@@ -102,12 +104,12 @@ public class BinaryDecoder {
         return switch (Tag.forData(data)){
             case LIST_EMPTY -> 0;
             case LIST_8 -> readByte();
-            case LIST_16 -> readInt(2) & 0xff;
+            case LIST_16 -> readInt(2);
             default -> throw new IllegalStateException("BinaryReader#readListSize: unexpected tag: " + data);
         };
     }
 
-    private String readStringFromCharacters(int length) {
+    private @NotNull String readStringFromCharacters(int length) {
         checkEOS(length);
         var value = buffer.slice(index, index + length);
         index += length;
@@ -125,7 +127,7 @@ public class BinaryDecoder {
         return Tokens.DOUBLE_BYTE_TOKENS[n];
     }
 
-    private String readString(int data) {
+    private @NotNull String readString(int data) {
         if(data >= 3 && data <= 235) {
             var token = getToken(data);
             return token.equals("s.whatsapp.net") ? "c.us" : token;
@@ -136,35 +138,29 @@ public class BinaryDecoder {
             case BINARY_8 -> readStringFromCharacters(readByte());
             case BINARY_20 -> readStringFromCharacters(readInt20());
             case BINARY_32 -> readStringFromCharacters(readInt(4));
-            case JID_PAIR -> {
-                var left = readString(readByte() & 0xff);
-                var right = readString(readByte() & 0xff);
-                yield left != null && right != null ? "%s@%s".formatted(left, right) : readPacked8(data);
-            }
+            case JID_PAIR -> "%s@%s".formatted(readString(readByte() & 0xff), readString(readByte() & 0xff));
             case NIBBLE_8, HEX_8 -> readPacked8(data);
             default -> throw new IllegalStateException("BinaryReader#readString: unexpected tag: " + data);
         };
     }
 
-    private String readAttributes(int n) {
-        if(n == 0){
-            return null;
-        }
-
+    @SneakyThrows
+    private String readAttributesAsJson(int n) {
         var result = IntStream.range(0, n).boxed().collect(Collectors.toMap(x -> readString(readByte() & 0xff), x -> readString(readByte() & 0xff), (a, b) -> b, HashMap::new));
-        return gson.toJson(result);
+        return GSON.toJson(result);
     }
-
-
-    private String readNode() {
+    
+    private @NotNull WhatsappNode readNode() {
         var listSize = readListSize(readByte() & 0xff);
+        Validate.isTrue(listSize != 0, "List size is empty");
+
         var descriptionTag = readByte() & 0xff;
         Validate.isTrue(descriptionTag != Tag.STREAM_END.data(), "Unexpected stream end");
 
         var description = readString(descriptionTag);
-        var attrs = readAttributes((listSize - 1) >> 1);
+        var attrs = readAttributesAsJson((listSize - 1) >> 1);
         if (listSize % 2 != 0) {
-            return "[\"%s\", %s]".formatted(description, attrs);
+            return new WhatsappNode(messageTag, description, attrs, null);
         }
 
         var tag = readByte() & 0xff;
@@ -175,25 +171,20 @@ public class BinaryDecoder {
             default -> readString(tag);
         };
 
-        return "[\"%s\", %s, %s]".formatted(description, attrs, content);
+        return new WhatsappNode(messageTag, description, attrs, content);
     }
 
     @SneakyThrows
-    private String parseMessage(BytesArray data, String description){
-        return description.equalsIgnoreCase("message") ? gson.toJson(WebMessageInfo.parseFrom(data.data())) : new String(data.data());
+    private @NotNull String parseMessage(@NotNull BytesArray data, @NotNull String description){
+        return description.equals("message") ? GSON.toJson(WebMessageInfo.parseFrom(data.data())) : new String(data.data());
     }
 
-    private String readList(int tag) {
-        var arr = new String[readListSize(tag)];
-        for(var i = 0; i < arr.length; i++) arr[i] = readNode();
+    private @NotNull String readList(int tag) {
+        var arr = IntStream.range(0, readListSize(tag) & 0xff).mapToObj(e -> readNode()).toArray(WhatsappNode[]::new);
         return Arrays.toString(arr);
     }
 
     private void checkEOS(int length) {
         Validate.isTrue(index + length <= buffer.size(), "End of stream!");
-    }
-
-    private byte next() {
-        return buffer.at(index++);
     }
 }

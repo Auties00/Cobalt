@@ -49,7 +49,7 @@ public record BytesArray(byte[] data) {
         return forArray(result);
     }
 
-    public Optional<Integer> indexOf(byte character){
+    public @NotNull Optional<Integer> indexOf(byte character){
         return IntStream.range(0, size()).filter(index -> data[index] == character).boxed().findAny();
     }
 
@@ -61,7 +61,7 @@ public record BytesArray(byte[] data) {
         return data.length;
     }
 
-    public String toASCIIString(){
+    public @NotNull String toASCIIString(){
         return new String(data, StandardCharsets.US_ASCII);
     }
 
