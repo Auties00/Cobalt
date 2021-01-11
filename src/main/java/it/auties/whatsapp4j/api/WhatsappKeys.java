@@ -18,7 +18,7 @@ import java.util.prefs.Preferences;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Accessors(fluent = true)
+@Accessors(fluent = true, chain = true)
 public class WhatsappKeys {
     @JsonProperty
     private static final @NotNull ObjectWriter JACKSON_WRITER = new ObjectMapper().writer();
@@ -50,10 +50,7 @@ public class WhatsappKeys {
 
     @SneakyThrows
     public void initializeKeys(@NotNull String serverToken, @NotNull String clientToken, @NotNull BytesArray encKey, @NotNull BytesArray macKey){
-        this.encKey = encKey;
-        this.macKey = macKey;
-        this.serverToken = serverToken;
-        this.clientToken = clientToken;
+        encKey(encKey).macKey(macKey).serverToken(serverToken).clientToken(clientToken);
         Preferences.userRoot().put("whatsapp", JACKSON_WRITER.writeValueAsString(this));
     }
 }

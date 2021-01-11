@@ -8,27 +8,26 @@ import jakarta.websocket.*;
 import lombok.SneakyThrows;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.util.Objects;
-import java.util.Scanner;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static it.auties.whatsapp4j.utils.CypherUtils.*;
 
 @ClientEndpoint(configurator = WebSocketConfiguration.class)
 public class WhatsappAPI {
-  private final @NotNull Session session;
+  private @NotNull Session session;
+  private @NotNull WhatsappState state;
+  private final @NotNull ScheduledExecutorService pingService;
   private final @NotNull WhatsappConfiguration options;
   private final @NotNull WhatsappQRCode qrCode;
   private final @NotNull WhatsappKeys whatsappKeys;
   private final @NotNull BinaryDecoder binaryDecoder;
-  private @NotNull WhatsappState state;
 
   public WhatsappAPI() {
     this(WhatsappConfiguration.defaultOptions());
@@ -42,27 +41,15 @@ public class WhatsappAPI {
     this.state = WhatsappState.NOTHING;
     this.session = startWebSocket();
     this.binaryDecoder = new BinaryDecoder();
-    Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this::sendPing, 0, 1, TimeUnit.MINUTES);
-  }
-
-  @SneakyThrows
-  private void sendPing(){
-    session.getAsyncRemote().sendPing(ByteBuffer.allocate(0));
+    this.pingService = Executors.newSingleThreadScheduledExecutor();
+    pingService.scheduleAtFixedRate(this::sendPing, 0, 1, TimeUnit.MINUTES);
   }
 
   @SneakyThrows
   private Session startWebSocket(){
     var container = ContainerProvider.getWebSocketContainer();
     container.setDefaultMaxSessionIdleTimeout(Duration.ofDays(30).toMillis());
-
-    var session = container.connectToServer(this, URI.create(options.whatsappUrl()));
-    Runtime.getRuntime().addShutdownHook(new Thread(this::logout));
-    return session;
-  }
-
-  public void logout(){
-    final var logout = new LogOutRequest();
-    session.getAsyncRemote().sendObject(logout.toJson(), __ -> this.state = WhatsappState.LOGGED_OFF);
+    return container.connectToServer(this, URI.create(options.whatsappUrl()));
   }
 
   @SneakyThrows
@@ -88,6 +75,24 @@ public class WhatsappAPI {
       case LOGGED_IN -> handleMessage(message);
       case LOGGED_OFF -> System.exit(0);
     }
+  }
+
+  @OnMessage
+  public void onBinaryMessage(@NotNull byte[] msg) throws GeneralSecurityException {
+    Validate.isTrue(state == WhatsappState.LOGGED_IN, "Not logged in, did whatsapp send us a binary message to early?");
+
+    var binaryMessage = BytesArray.forArray(msg);
+    var tagAndMessagePair = binaryMessage.indexOf(',').map(binaryMessage::split).orElseThrow();
+
+    var messageTag  = tagAndMessagePair.getFirst().toString();
+    var messageContent  = tagAndMessagePair.getSecond();
+
+    var message = messageContent.slice(32);
+    var hmacValidation = hmacSha256(message, Objects.requireNonNull(whatsappKeys.macKey()));
+    Validate.isTrue(hmacValidation.equals(messageContent.cut(32)), "Cannot login: Hmac validation failed!");
+
+    var decryptedMessage = aesDecrypt(message, Objects.requireNonNull(whatsappKeys.encKey()));
+    var whatsappMessage = binaryDecoder.decodeDecryptedMessage(messageTag, decryptedMessage);
   }
 
   @SneakyThrows
@@ -119,7 +124,12 @@ public class WhatsappAPI {
       return;
     }
 
-    var challenge = BytesArray.forBase64(res.getString("challenge"));
+    var challengeBase64 = res.getNullableString("challenge");
+    if(challengeBase64 == null){
+      return;
+    }
+
+    var challenge = BytesArray.forBase64(res.getNullableString("challenge"));
     var signedChallenge = hmacSha256(challenge, Objects.requireNonNull(whatsappKeys.macKey()));
     var solveChallengeRequest = new SolveChallengeRequest(signedChallenge, whatsappKeys, options);
     session.getAsyncRemote().sendObject(solveChallengeRequest.toJson(), __ -> this.state = WhatsappState.SENT_CHALLENGE);
@@ -128,10 +138,7 @@ public class WhatsappAPI {
   @SneakyThrows
   private void handleChallengeResponse(@NotNull String message){
     var status = Response.fromJson(message).getNullableInteger("status");
-    if (status == null || status != 200) {
-      throw new RuntimeException("Could not solve whatsapp challenge for server and client token renewal: %s".formatted(message));
-    }
-
+    Validate.isTrue(status != null && status == 200, "Could not solve whatsapp challenge for server and client token renewal: %s".formatted(message));
     this.state = WhatsappState.LOGGED_IN;
   }
 
@@ -156,33 +163,41 @@ public class WhatsappAPI {
     this.state = WhatsappState.LOGGED_IN;
   }
 
+  public void logout(){
+    logout(null, false, false);
+  }
+
+  @SneakyThrows
+  private void logout(@Nullable String reason, boolean forced, boolean reconnect){
+    if(!forced) {
+      final var logout = new LogOutRequest();
+      session.getAsyncRemote().sendObject(logout.toJson(), __ -> this.state = WhatsappState.LOGGED_OFF);
+    }
+
+    if(!reconnect){
+      pingService.shutdownNow();
+    }
+
+    session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, reason));
+    if(reconnect){
+      this.session = startWebSocket();
+    }
+  }
+
+  @SneakyThrows
+  private void sendPing(){
+    session.getAsyncRemote().sendPing(ByteBuffer.allocate(0));
+  }
+
   @SneakyThrows
   private void handleMessage(@NotNull String message){
     var res = Response.fromJson(message);
     var type = res.getNullableString("type");
     var kind = res.getNullableString("kind");
-    if(type != null && kind != null){
-      System.out.printf("Disconnected from whatsapp web, reason: %s%n", kind);
-      System.exit(0);
+    if (type == null || kind == null) {
+      return;
     }
-  }
 
-  @OnMessage
-  public void onBinaryMessage(@NotNull byte[] msg) throws GeneralSecurityException {
-    Validate.isTrue(state == WhatsappState.LOGGED_IN, "Not logged in, did whatsapp send us a binary message to early?");
-
-    var binaryMessage = BytesArray.forArray(msg);
-    var tagAndMessagePair = binaryMessage.indexOf((byte) ',').map(binaryMessage::split).orElseThrow();
-
-    var messageTag  = tagAndMessagePair.getFirst().toASCIIString();
-    var messageContent  = tagAndMessagePair.getSecond();
-
-    var message = messageContent.slice(32);
-    var hmacValidation = hmacSha256(message, Objects.requireNonNull(whatsappKeys.macKey()));
-    Validate.isTrue(hmacValidation.equals(messageContent.cut(32)), "Cannot login: Hmac validation failed!");
-
-    var decryptedMessage = aesDecrypt(message, Objects.requireNonNull(whatsappKeys.encKey()));
-    System.out.println(binaryDecoder.decodeDecryptedMessage(messageTag, decryptedMessage));
-    System.out.println();
+    logout(kind, true, options.reconnectWhenDisconnected().apply(kind));
   }
 }

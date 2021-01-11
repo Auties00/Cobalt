@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.Function;
+
 @Builder
 @Data
 @Accessors(fluent = true)
@@ -22,6 +24,9 @@ public class WhatsappConfiguration {
 
   @Default
   private final @NotNull String shortDescription = "W4J";
+
+  @Default
+  private final Function<String, Boolean> reconnectWhenDisconnected = (reason) -> true;
 
   public static @NotNull WhatsappConfiguration defaultOptions(){
     return WhatsappConfiguration.builder().build();

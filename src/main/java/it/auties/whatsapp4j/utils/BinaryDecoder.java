@@ -113,7 +113,7 @@ public class BinaryDecoder {
         checkEOS(length);
         var value = buffer.slice(index, index + length);
         index += length;
-        return new String(value.data());
+        return value.toString();
     }
 
     private String getToken(int index) {
@@ -176,7 +176,7 @@ public class BinaryDecoder {
 
     @SneakyThrows
     private @NotNull String parseMessage(@NotNull BytesArray data, @NotNull String description){
-        return description.equals("message") ? GSON.toJson(WebMessageInfo.parseFrom(data.data())) : new String(data.data());
+        return description.equals("message") ? GSON.toJson(WebMessageInfo.parseFrom(data.data())) : data.toString();
     }
 
     private @NotNull String readList(int tag) {

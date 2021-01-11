@@ -5,7 +5,6 @@ import org.glassfish.grizzly.utils.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
@@ -49,7 +48,7 @@ public record BytesArray(byte[] data) {
         return forArray(result);
     }
 
-    public @NotNull Optional<Integer> indexOf(byte character){
+    public @NotNull Optional<Integer> indexOf(char character){
         return IntStream.range(0, size()).filter(index -> data[index] == character).boxed().findAny();
     }
 
@@ -61,10 +60,6 @@ public record BytesArray(byte[] data) {
         return data.length;
     }
 
-    public @NotNull String toASCIIString(){
-        return new String(data, StandardCharsets.US_ASCII);
-    }
-
     @Override
     public boolean equals(@Nullable Object o) {
         return o instanceof BytesArray that && Arrays.equals(data, that.data);
@@ -72,6 +67,6 @@ public record BytesArray(byte[] data) {
 
     @Override
     public String toString() {
-        return DatatypeConverter.printHexBinary(data);
+        return new String(data());
     }
 }
