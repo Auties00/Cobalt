@@ -1,4 +1,4 @@
-package it.auties.whatsapp4j.model;
+package it.auties.whatsapp4j.response;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -34,7 +34,7 @@ public record Response(Map<String, Object> data) {
         return getObject(key, Integer.class).orElse(null);
     }
 
-    public int getNumber(@NotNull String key){
+    public int getInteger(@NotNull String key){
         return getObject(key, Integer.class).orElseThrow();
     }
 

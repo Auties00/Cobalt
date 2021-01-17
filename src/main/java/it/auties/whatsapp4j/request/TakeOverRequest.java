@@ -1,8 +1,8 @@
-package it.auties.whatsapp4j.model;
+package it.auties.whatsapp4j.request;
 
 
-import it.auties.whatsapp4j.api.WhatsappKeys;
-import it.auties.whatsapp4j.configuration.WhatsappConfiguration;
+import it.auties.whatsapp4j.model.WhatsappKeys;
+import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;

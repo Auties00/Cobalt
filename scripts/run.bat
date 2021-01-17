@@ -1,0 +1,1 @@
+java -jar --enable-preview C:\Users\alaut\NativeWhatsapp4j\target\NativeWhatsapp4j-1.0-SNAPSHOT-jar-with-dependencies.jar

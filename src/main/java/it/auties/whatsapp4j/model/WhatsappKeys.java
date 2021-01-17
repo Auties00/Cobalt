@@ -1,4 +1,4 @@
-package it.auties.whatsapp4j.api;
+package it.auties.whatsapp4j.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,7 +29,7 @@ public class WhatsappKeys {
     @JsonProperty
     private @Nullable String serverToken, clientToken;
     @JsonProperty
-    private @NotNull byte[] publicKey, privateKey;
+    private byte[] publicKey, privateKey;
     @JsonProperty
     private @Nullable BytesArray encKey, macKey;
 
@@ -52,5 +52,10 @@ public class WhatsappKeys {
     public void initializeKeys(@NotNull String serverToken, @NotNull String clientToken, @NotNull BytesArray encKey, @NotNull BytesArray macKey){
         encKey(encKey).macKey(macKey).serverToken(serverToken).clientToken(clientToken);
         Preferences.userRoot().put("whatsapp", JACKSON_WRITER.writeValueAsString(this));
+    }
+
+    @SneakyThrows
+    public void resetKeys(){
+        Preferences.userRoot().clear();
     }
 }

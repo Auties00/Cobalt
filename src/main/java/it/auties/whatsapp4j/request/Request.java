@@ -1,4 +1,4 @@
-package it.auties.whatsapp4j.model;
+package it.auties.whatsapp4j.request;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 

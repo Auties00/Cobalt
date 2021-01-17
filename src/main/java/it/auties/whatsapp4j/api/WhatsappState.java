@@ -6,6 +6,5 @@ public enum WhatsappState {
     WAITING_FOR_LOGIN,
     SOLVE_CHALLENGE,
     SENT_CHALLENGE,
-    LOGGED_IN,
-    LOGGED_OFF
+    LOGGED_IN
 }

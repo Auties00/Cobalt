@@ -1,4 +1,4 @@
-package it.auties.whatsapp4j.configuration;
+package it.auties.whatsapp4j.socket;
 
 import jakarta.websocket.ClientEndpointConfig;
 import org.jetbrains.annotations.NotNull;

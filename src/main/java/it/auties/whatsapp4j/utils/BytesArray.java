@@ -17,7 +17,7 @@ public record BytesArray(byte[] data) {
     }
 
     public static @NotNull BytesArray forBase64(String input){
-        return new BytesArray(Base64.getDecoder().decode(input));
+        return forArray(Base64.getDecoder().decode(input));
     }
 
     public static @NotNull BytesArray random(int length){

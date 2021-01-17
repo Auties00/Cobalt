@@ -1,4 +1,4 @@
-package it.auties.whatsapp4j.configuration;
+package it.auties.whatsapp4j.api;
 
 import lombok.Builder;
 import lombok.Builder.Default;

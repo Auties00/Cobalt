@@ -1,6 +1,7 @@
-package it.auties.whatsapp4j.model;
+package it.auties.whatsapp4j.request;
 
 
+import it.auties.whatsapp4j.request.Request;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
