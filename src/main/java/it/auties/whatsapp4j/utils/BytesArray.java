@@ -1,10 +1,11 @@
 package it.auties.whatsapp4j.utils;
 
-import jakarta.xml.bind.DatatypeConverter;
 import org.glassfish.grizzly.utils.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
@@ -14,6 +15,10 @@ import java.util.stream.IntStream;
 public record BytesArray(byte[] data) {
     public static @NotNull BytesArray forArray(byte[] in){
         return new BytesArray(in);
+    }
+
+    public static @NotNull BytesArray forString(@NotNull String in){
+        return forArray(in.getBytes());
     }
 
     public static @NotNull BytesArray forBase64(String input){
@@ -60,6 +65,10 @@ public record BytesArray(byte[] data) {
         return data.length;
     }
 
+    public ByteBuffer toBuffer() {
+        return ByteBuffer.wrap(data);
+    }
+
     @Override
     public boolean equals(@Nullable Object o) {
         return o instanceof BytesArray that && Arrays.equals(data, that.data);
@@ -67,6 +76,6 @@ public record BytesArray(byte[] data) {
 
     @Override
     public String toString() {
-        return new String(data());
+        return new String(data(), StandardCharsets.UTF_8);
     }
 }

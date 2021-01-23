@@ -1,115 +1,113 @@
 package it.auties.whatsapp4j.api;
 
-import it.auties.whatsapp4j.event.WhatsappListener;
-import it.auties.whatsapp4j.model.WhatsappChat;
-import it.auties.whatsapp4j.model.WhatsappKeys;
-import it.auties.whatsapp4j.model.WhatsappManager;
+import it.auties.whatsapp4j.constant.Flag;
+import it.auties.whatsapp4j.constant.Metric;
+import it.auties.whatsapp4j.constant.UserPresence;
+import it.auties.whatsapp4j.model.WhatsappListener;
+import it.auties.whatsapp4j.manager.WhatsappDataManager;
+import it.auties.whatsapp4j.manager.WhatsappKeysManager;
+import it.auties.whatsapp4j.model.WhatsappNode;
+import it.auties.whatsapp4j.model.WhatsappNodeBuilder;
+import it.auties.whatsapp4j.request.UserPresenceUpdateRequest;
 import it.auties.whatsapp4j.socket.WhatsappWebSocket;
-import it.auties.whatsapp4j.utils.Validate;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Accessors(fluent = true)
 public class WhatsappAPI extends WhatsappListener {
-    private final @Getter @NotNull WhatsappManager manager;
-    private final @Getter @NotNull WhatsappKeys keys;
+    private final @NotNull WhatsappConfiguration configuration;
+    private final @Getter @NotNull WhatsappDataManager manager;
+    private final @Getter @NotNull WhatsappKeysManager keys;
     private final @NotNull WhatsappWebSocket socket;
     private final @NotNull List<WhatsappListener> listeners;
+    private int numberOfMessagesSent;
     public WhatsappAPI(){
         this(WhatsappConfiguration.defaultOptions());
     }
 
     public WhatsappAPI(@NotNull WhatsappConfiguration configuration){
+        this.configuration = configuration;
         this.listeners = new ArrayList<>();
-        this.manager = WhatsappManager.buildInstance();
-        this.keys = WhatsappKeys.buildInstance();
-        this.socket = new WhatsappWebSocket(this, configuration, manager, keys);
+        this.manager = WhatsappDataManager.singletonInstance();
+        this.keys = WhatsappKeysManager.fromPreferences();
+        this.socket = new WhatsappWebSocket(listeners, configuration, keys);
+        this.numberOfMessagesSent = 0;
     }
 
-    public void connect(){
-        Validate.isTrue(socket.state() == WhatsappState.NOTHING, "WhatsappAPI: Cannot establish a connection with whatsapp as one already exists");
+    public WhatsappAPI connect(){
         socket.connect();
+        return this;
     }
 
-    public void disconnect(){
-        Validate.isTrue(socket.state() != WhatsappState.NOTHING, "WhatsappAPI: Cannot terminate the connection with whatsapp as it doesn't exist");
+    public WhatsappAPI disconnect(){
         socket.disconnect(null, false, false);
+        return this;
     }
 
-    public void disconnectAndLogout(){
-        Validate.isTrue(socket.state() != WhatsappState.NOTHING, "WhatsappAPI: Cannot terminate the connection with whatsapp as it doesn't exist");
+    public WhatsappAPI logout(){
         socket.disconnect(null, true, false);
+        return this;
     }
 
-    public void reconnect(){
-        Validate.isTrue(socket.state() != WhatsappState.NOTHING, "WhatsappAPI: Cannot terminate the connection with whatsapp as it doesn't exist");
+    public WhatsappAPI reconnect(){
         socket.disconnect(null, false, true);
+        return this;
     }
 
-    public void registerListener(WhatsappListener listener){
+    public void loadConversation(@NotNull String remoteJid, int messageCount) {
+        var node = WhatsappNodeBuilder.builder()
+                .description("query")
+                .attrs(Map.of("type", "message", "epoch", String.valueOf(numberOfMessagesSent++), "jid", remoteJid, "kind", "before", "count", String.valueOf(messageCount)))
+                .build();
+
+        socket.sendBinaryMessage(node, Metric.QUERY_MESSAGES, Flag.IGNORE);
+    }
+
+    public void loadConversation(@NotNull String remoteJid, int messageCount, @NotNull String lastMessageId, boolean lastOwner) {
+        var node = WhatsappNodeBuilder.builder()
+                .description("query")
+                .attrs(Map.of("type", "message", "epoch", String.valueOf(numberOfMessagesSent++), "jid", remoteJid, "kind", "before", "count", String.valueOf(messageCount), "index", lastMessageId, "owner", Boolean.toString(lastOwner)))
+                .build();
+
+        socket.sendBinaryMessage(node, Metric.QUERY_MESSAGES, Flag.IGNORE);
+    }
+
+    public void changePresence(@NotNull UserPresence presence){
+        var node = WhatsappNodeBuilder.builder()
+                .description("action")
+                .attrs(Map.of("type", "set", "epoch", String.valueOf(1)))
+                .content(List.of(List.of(new WhatsappNode("presence", Map.of("type", presence.content()), null))))
+                .build();
+
+        socket.sendBinaryMessage(node, Metric.PRESENCE, presence.data());
+    }
+
+    public void changePresence(@NotNull UserPresence presence, @NotNull String targetJid){
+        var node = WhatsappNodeBuilder.builder()
+                .description("action")
+                .attrs(Map.of("type", "set", "epoch", String.valueOf(1)))
+                .content(List.of(List.of(new WhatsappNode("presence", Map.of("type", presence.content(), "to", targetJid), null))))
+                .build();
+
+        socket.sendBinaryMessage(node, Metric.PRESENCE, presence.data());
+    }
+
+    public void updatePresence(@NotNull String jid){
+        socket.sendJsonMessage(new UserPresenceUpdateRequest(keys, configuration, jid));
+    }
+
+    public WhatsappAPI registerListener(WhatsappListener listener){
         listeners.add(listener);
+        return this;
     }
 
-    public void removeListener(WhatsappListener listener){
+    public WhatsappAPI removeListener(WhatsappListener listener){
         listeners.remove(listener);
-    }
-
-    @Override
-    public void onConnecting() {
-        listeners.forEach(WhatsappListener::onConnecting);
-    }
-
-    @Override
-    public void onOpen() {
-        listeners.forEach(WhatsappListener::onOpen);
-    }
-
-    @Override
-    public void onClose() {
-        listeners.forEach(WhatsappListener::onClose);
-    }
-
-    @Override
-    public void onPhoneStatusUpdateReceived() {
-        listeners.forEach(WhatsappListener::onPhoneStatusUpdateReceived);
-    }
-
-    @Override
-    public void onContactsReceived() {
-        listeners.forEach(WhatsappListener::onContactsReceived);
-    }
-
-    @Override
-    public void onContactUpdate() {
-        listeners.forEach(WhatsappListener::onContactUpdate);
-    }
-
-    @Override
-    public void onChatReceived(WhatsappChat chat) {
-       listeners.forEach(listener -> listener.onChatReceived(chat));
-    }
-
-    @Override
-    public void onChatsReceived() {
-        listeners.forEach(WhatsappListener::onChatsReceived);
-    }
-
-    @Override
-    public void onChatUpdate() {
-        listeners.forEach(WhatsappListener::onChatUpdate);
-    }
-
-    @Override
-    public void onBlacklistReceived() {
-        listeners.forEach(WhatsappListener::onBlacklistReceived);
-    }
-
-    @Override
-    public void onBlacklistUpdate() {
-        listeners.forEach(WhatsappListener::onBlacklistUpdate);
+        return this;
     }
 }

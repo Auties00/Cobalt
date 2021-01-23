@@ -1,40 +1,18 @@
 package it.auties.whatsapp4j.model;
 
-import it.auties.whatsapp4j.constant.ProtoBuf;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Comparator;
+import java.util.TreeSet;
 
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class WhatsappMessages {
-    private final List<ProtoBuf.WebMessageInfo> befores;
-    private final List<ProtoBuf.WebMessageInfo> lasts;
+public class WhatsappMessages extends TreeSet<WhatsappMessage> {
+    private static final Comparator<? super WhatsappMessage> ENTRY_COMPARATOR = (first, second) -> Long.compareUnsigned(first.info().getMessageTimestamp(), second.info().getMessageTimestamp());
     public WhatsappMessages(){
-        this(new ArrayList<>(), new ArrayList<>());
+        super(ENTRY_COMPARATOR);
     }
 
-    public void addBefore(@NotNull ProtoBuf.WebMessageInfo before){
-        befores.add(before);
-    }
-
-    public void addLast(@NotNull ProtoBuf.WebMessageInfo last){
-        lasts.add(last);
-    }
-
-    public int size(){
-        return befores.size() + lasts.size();
-    }
-
-    public List<ProtoBuf.WebMessageInfo> toList(){
-        return List.of(befores, lasts).stream().flatMap(List::stream).collect(Collectors.toUnmodifiableList());
-    }
-
-    public Stream<ProtoBuf.WebMessageInfo> stream(){
-        return toList().stream();
+    public WhatsappMessages(@NotNull WhatsappMessage message){
+        super(ENTRY_COMPARATOR);
+        add(message);
     }
 }

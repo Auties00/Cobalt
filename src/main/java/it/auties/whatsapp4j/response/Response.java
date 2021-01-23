@@ -5,7 +5,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
@@ -20,6 +19,10 @@ public record Response(Map<String, Object> data) {
     public static @NotNull Response fromJson(@NotNull String json) throws JsonProcessingException {
         var index = json.indexOf("{");
         return index == -1 ? new Response(new HashMap<>()) : new Response(JACKSON.forType(new TypeReference<>() {}).readValue(json.substring(index)));
+    }
+
+    public boolean hasKey(@NotNull String key){
+        return data.containsKey(key);
     }
 
     public String getString(@NotNull String key){

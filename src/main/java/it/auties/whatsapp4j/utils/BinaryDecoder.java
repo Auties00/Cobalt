@@ -2,21 +2,22 @@
     Getting this class to work was not very easy, but I surely couldn't have done it without the help of:
     https://github.com/JicuNull/WhatsJava/blob/master/src/main/java/icu/jnet/whatsjava/encryption/BinaryDecoder.java - Java implementation, helped me to correctly cast a byte to an unsigned int, before I was using a method that just didn't work
     https://github.com/adiwajshing/Baileys/blob/master/src/Binary/Decoder.ts - Typescript implementation, the logic was far less error prone than the one used by the python implementation on https://github.com/sigalor/whatsapp-web-reveng and the one I came up with.
-    Why are we using Gson instead of Jackson? Well, Google's Protobuf has some reference chain issue with Jackson
  */
 package it.auties.whatsapp4j.utils;
 
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
+import it.auties.whatsapp4j.constant.ProtoBuf.WebMessageInfo;
 import it.auties.whatsapp4j.constant.Tag;
 import it.auties.whatsapp4j.constant.Tokens;
 import it.auties.whatsapp4j.model.WhatsappNode;
-import it.auties.whatsapp4j.constant.ProtoBuf.WebMessageInfo;
 import it.auties.whatsapp4j.model.WhatsappNodeBuilder;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class BinaryDecoder {
     private BytesArray buffer;
@@ -122,23 +123,18 @@ public class BinaryDecoder {
     }
 
     private String getToken(int index) {
-        Validate.isTrue(index >= 3 && index < Tokens.SINGLE_BYTE_TOKENS.length, "Unexpected value: %s", index);
-        return Tokens.SINGLE_BYTE_TOKENS[index];
+        Validate.isTrue(index >= 3 && index < Tokens.SINGLE_BYTE_TOKENS.size(), "Unexpected value: %s", index);
+        return Tokens.SINGLE_BYTE_TOKENS.get(index);
     }
-    
+
     private String getDoubleToken(int index1, int index2) {
         var n = 256 * index1 + index2;
-        Validate.isTrue(n >= 0 && n <= Tokens.DOUBLE_BYTE_TOKENS.length, "Unexpected value: " + n);
-        return Tokens.DOUBLE_BYTE_TOKENS[n];
+        Validate.isTrue(n >= 0 && n <= Tokens.DOUBLE_BYTE_TOKENS.size(), "Unexpected value: " + n);
+        return Tokens.DOUBLE_BYTE_TOKENS.get(n);
     }
 
     private @NotNull String readString(int data) {
-        if(data >= 3 && data <= 235) {
-            var token = getToken(data);
-            return token.equals("s.whatsapp.net") ? "c.us" : token;
-        }
-
-        return switch(Tag.forData(data)) {
+        return data >= 3 && data <= 235 ? getToken(data) : switch (Tag.forData(data)) {
             case DICTIONARY_0, DICTIONARY_1, DICTIONARY_2, DICTIONARY_3 -> getDoubleToken(data - Tag.DICTIONARY_0.data(), readByte());
             case BINARY_8 -> readStringFromCharacters(readByte());
             case BINARY_20 -> readStringFromCharacters(readInt20());
@@ -150,7 +146,7 @@ public class BinaryDecoder {
     }
 
     @SneakyThrows
-    private Map<String, String> readAttributesAsJson(int n) {
+    private Map<String, String> readAttributes(int n) {
         return IntStream.range(0, n).boxed().collect(Collectors.toMap(x -> readString(readUnsignedInt()), x -> readString(readUnsignedInt()), (a, b) -> b, HashMap::new));
     }
 
@@ -163,7 +159,7 @@ public class BinaryDecoder {
         Validate.isTrue(descriptionTag != Tag.STREAM_END.data(), "Unexpected stream end");
 
         var description = readString(descriptionTag);
-        var attrs = readAttributesAsJson((listSize - 1) >> 1);
+        var attrs = readAttributes((listSize - 1) >> 1);
         if (listSize % 2 != 0) {
             return new WhatsappNode(description, attrs, null);
         }

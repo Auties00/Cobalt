@@ -15,8 +15,11 @@ public class WhatsappQRCode {
     private @Nullable String ref;
 
     @SneakyThrows
-    public @NotNull WhatsappQRCode generateQRCodeImage(@Nullable String ref, byte[] publicKey, @NotNull String clientId) {
-        Validate.ifTrue(ref != null, () -> this.ref = ref);
+    public @NotNull WhatsappQRCode generateQRCodeImage(@Nullable String ref, byte @NotNull [] publicKey, @NotNull String clientId) {
+        if(ref != null){
+            this.ref = ref;
+        }
+
         this.qr = QRCode
                 .from("%s,%s,%s".formatted(this.ref, Base64.getEncoder().encodeToString(publicKey), clientId))
                 .withSize(SIZE, SIZE)
@@ -26,7 +29,11 @@ public class WhatsappQRCode {
     }
 
     public void open() {
-        Validate.ifTrue(qr != null, this::openImageWithDesktop);
+        if(qr == null){
+            return;
+        }
+
+        openImageWithDesktop();
     }
 
     @SneakyThrows

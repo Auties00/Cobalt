@@ -3,7 +3,6 @@ package it.auties.whatsapp4j.api;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Data;
-
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
@@ -27,6 +26,9 @@ public class WhatsappConfiguration {
 
   @Default
   private final Function<String, Boolean> reconnectWhenDisconnected = (reason) -> true;
+
+  @Default
+  private final boolean async = true;
 
   public static @NotNull WhatsappConfiguration defaultOptions(){
     return WhatsappConfiguration.builder().build();

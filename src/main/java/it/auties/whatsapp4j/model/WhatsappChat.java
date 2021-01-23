@@ -3,6 +3,7 @@ package it.auties.whatsapp4j.model;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -11,10 +12,11 @@ import org.jetbrains.annotations.Nullable;
 @Builder
 @Data
 @Accessors(fluent = true)
+@ToString(exclude = "messages")
 public class WhatsappChat {
     private @NotNull String jid;
     private @NotNull WhatsappMessages messages;
-    private @Nullable String name;
+    private @NotNull String name;
     private @Nullable String modifyTag;
     private @Nullable String chatPicture;
     private @Nullable WhatsappGroupMetadata metadata;
@@ -31,27 +33,5 @@ public class WhatsappChat {
 
     public boolean isGroup(){
         return jid.contains("-");
-    }
-
-    @Override
-    public String toString() {
-        return "WhatsappChat{" +
-                "jid='" + jid + '\'' +
-                ", messages=" + messages.size() +
-                ", name='" + name + '\'' +
-                ", modifyTag='" + modifyTag + '\'' +
-                ", chatPicture='" + chatPicture + '\'' +
-                ", metadata=" + metadata +
-                ", mute='" + mute + '\'' +
-                ", pin='" + pin + '\'' +
-                ", ephemeralMessagesToggleTime='" + ephemeralMessagesToggleTime + '\'' +
-                ", ephemeralMessageTime='" + ephemeralMessageTime + '\'' +
-                ", timestamp=" + timestamp +
-                ", unreadMessages=" + unreadMessages +
-                ", archived=" + archived +
-                ", cleared=" + cleared +
-                ", readOnly=" + readOnly +
-                ", spam=" + spam +
-                '}';
     }
 }

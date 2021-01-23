@@ -8,8 +8,4 @@ public class Validate {
     public void isTrue(boolean value, @NotNull String message, Object... args) {
         if(!value) throw new SecurityException(message.formatted(args));
     }
-
-    public void ifTrue(boolean value, Runnable action) {
-        if(value) action.run();
-    }
 }

@@ -300,8 +300,7 @@ public final class ProtoBuf {
                 if (!getId()
                         .equals(other.getId())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -1088,8 +1087,7 @@ public final class ProtoBuf {
                 if (!getUrl()
                         .equals(other.getUrl())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -1876,8 +1874,7 @@ public final class ProtoBuf {
                 if (!getPhoneNumber()
                         .equals(other.getPhoneNumber())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -2437,7 +2434,7 @@ public final class ProtoBuf {
          */
         it.auties.whatsapp4j.constant.ProtoBuf.HydratedCallButtonOrBuilder getCallButtonOrBuilder();
 
-        public it.auties.whatsapp4j.constant.ProtoBuf.HydratedTemplateButton.HydratedButtonCase getHydratedButtonCase();
+        it.auties.whatsapp4j.constant.ProtoBuf.HydratedTemplateButton.HydratedButtonCase getHydratedButtonCase();
     }
     /**
      * Protobuf type {@code it.auties.whatsapp4j.constant.HydratedTemplateButton}
@@ -2575,7 +2572,7 @@ public final class ProtoBuf {
             CALLBUTTON(3),
             HYDRATEDBUTTON_NOT_SET(0);
             private final int value;
-            private HydratedButtonCase(int value) {
+            HydratedButtonCase(int value) {
                 this.value = value;
             }
             /**
@@ -2600,7 +2597,7 @@ public final class ProtoBuf {
             public int getNumber() {
                 return this.value;
             }
-        };
+        }
 
         public HydratedButtonCase
         getHydratedButtonCase() {
@@ -2808,8 +2805,7 @@ public final class ProtoBuf {
                 case 0:
                 default:
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -3320,7 +3316,7 @@ public final class ProtoBuf {
                     hydratedButton_ = null;
                 }
                 hydratedButtonCase_ = 1;
-                onChanged();;
+                onChanged();
                 return quickReplyButtonBuilder_;
             }
 
@@ -3461,7 +3457,7 @@ public final class ProtoBuf {
                     hydratedButton_ = null;
                 }
                 hydratedButtonCase_ = 2;
-                onChanged();;
+                onChanged();
                 return urlButtonBuilder_;
             }
 
@@ -3602,7 +3598,7 @@ public final class ProtoBuf {
                     hydratedButton_ = null;
                 }
                 hydratedButtonCase_ = 3;
-                onChanged();;
+                onChanged();
                 return callButtonBuilder_;
             }
             @java.lang.Override
@@ -3928,8 +3924,7 @@ public final class ProtoBuf {
                 if (!getId()
                         .equals(other.getId())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -4725,8 +4720,7 @@ public final class ProtoBuf {
                 if (!getUrl()
                         .equals(other.getUrl())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -5565,8 +5559,7 @@ public final class ProtoBuf {
                 if (!getPhoneNumber()
                         .equals(other.getPhoneNumber())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -6212,7 +6205,7 @@ public final class ProtoBuf {
          */
         it.auties.whatsapp4j.constant.ProtoBuf.CallButtonOrBuilder getCallButtonOrBuilder();
 
-        public it.auties.whatsapp4j.constant.ProtoBuf.TemplateButton.ButtonCase getButtonCase();
+        it.auties.whatsapp4j.constant.ProtoBuf.TemplateButton.ButtonCase getButtonCase();
     }
     /**
      * Protobuf type {@code it.auties.whatsapp4j.constant.TemplateButton}
@@ -6350,7 +6343,7 @@ public final class ProtoBuf {
             CALLBUTTON(3),
             BUTTON_NOT_SET(0);
             private final int value;
-            private ButtonCase(int value) {
+            ButtonCase(int value) {
                 this.value = value;
             }
             /**
@@ -6375,7 +6368,7 @@ public final class ProtoBuf {
             public int getNumber() {
                 return this.value;
             }
-        };
+        }
 
         public ButtonCase
         getButtonCase() {
@@ -6583,8 +6576,7 @@ public final class ProtoBuf {
                 case 0:
                 default:
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -7095,7 +7087,7 @@ public final class ProtoBuf {
                     button_ = null;
                 }
                 buttonCase_ = 1;
-                onChanged();;
+                onChanged();
                 return quickReplyButtonBuilder_;
             }
 
@@ -7236,7 +7228,7 @@ public final class ProtoBuf {
                     button_ = null;
                 }
                 buttonCase_ = 2;
-                onChanged();;
+                onChanged();
                 return urlButtonBuilder_;
             }
 
@@ -7377,7 +7369,7 @@ public final class ProtoBuf {
                     button_ = null;
                 }
                 buttonCase_ = 3;
-                onChanged();;
+                onChanged();
                 return callButtonBuilder_;
             }
             @java.lang.Override
@@ -7733,8 +7725,7 @@ public final class ProtoBuf {
                 if (!getName()
                         .equals(other.getName())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -8552,8 +8543,7 @@ public final class ProtoBuf {
                         != java.lang.Double.doubleToLongBits(
                         other.getY())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -9108,7 +9098,7 @@ public final class ProtoBuf {
          */
         it.auties.whatsapp4j.constant.ProtoBuf.LocationOrBuilder getLocationOrBuilder();
 
-        public it.auties.whatsapp4j.constant.ProtoBuf.InteractiveAnnotation.ActionCase getActionCase();
+        it.auties.whatsapp4j.constant.ProtoBuf.InteractiveAnnotation.ActionCase getActionCase();
     }
     /**
      * Protobuf type {@code it.auties.whatsapp4j.constant.InteractiveAnnotation}
@@ -9224,7 +9214,7 @@ public final class ProtoBuf {
             LOCATION(2),
             ACTION_NOT_SET(0);
             private final int value;
-            private ActionCase(int value) {
+            ActionCase(int value) {
                 this.value = value;
             }
             /**
@@ -9247,7 +9237,7 @@ public final class ProtoBuf {
             public int getNumber() {
                 return this.value;
             }
-        };
+        }
 
         public ActionCase
         getActionCase() {
@@ -9389,8 +9379,7 @@ public final class ProtoBuf {
                 case 0:
                 default:
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -10105,7 +10094,7 @@ public final class ProtoBuf {
                     action_ = null;
                 }
                 actionCase_ = 2;
-                onChanged();;
+                onChanged();
                 return locationBuilder_;
             }
             @java.lang.Override
@@ -10430,7 +10419,7 @@ public final class ProtoBuf {
 
             private final int value;
 
-            private AD_REPLY_INFO_MEDIATYPE(int value) {
+            AD_REPLY_INFO_MEDIATYPE(int value) {
                 this.value = value;
             }
 
@@ -10655,8 +10644,7 @@ public final class ProtoBuf {
                 if (!getCaption()
                         .equals(other.getCaption())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -12287,8 +12275,7 @@ public final class ProtoBuf {
                 if (getEphemeralSettingTimestamp()
                         != other.getEphemeralSettingTimestamp()) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -14111,8 +14098,7 @@ public final class ProtoBuf {
                 if (!getAxolotlSenderKeyDistributionMessage()
                         .equals(other.getAxolotlSenderKeyDistributionMessage())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -15922,8 +15908,7 @@ public final class ProtoBuf {
                 if (!getMidQualityFileEncSha256()
                         .equals(other.getMidQualityFileEncSha256())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -18256,8 +18241,7 @@ public final class ProtoBuf {
                 if (!getContextInfo()
                         .equals(other.getContextInfo())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -19751,8 +19735,7 @@ public final class ProtoBuf {
                 if (!getContextInfo()
                         .equals(other.getContextInfo())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -21431,7 +21414,7 @@ public final class ProtoBuf {
 
             private final int value;
 
-            private EXTENDED_TEXT_MESSAGE_FONTTYPE(int value) {
+            EXTENDED_TEXT_MESSAGE_FONTTYPE(int value) {
                 this.value = value;
             }
 
@@ -21527,7 +21510,7 @@ public final class ProtoBuf {
 
             private final int value;
 
-            private EXTENDED_TEXT_MESSAGE_PREVIEWTYPE(int value) {
+            EXTENDED_TEXT_MESSAGE_PREVIEWTYPE(int value) {
                 this.value = value;
             }
 
@@ -22090,8 +22073,7 @@ public final class ProtoBuf {
                 if (getDoNotPlayInline()
                         != other.getDoNotPlayInline()) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -24289,8 +24271,7 @@ public final class ProtoBuf {
                 if (!getContextInfo()
                         .equals(other.getContextInfo())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -26423,8 +26404,7 @@ public final class ProtoBuf {
                 if (!getStreamingSidecar()
                         .equals(other.getStreamingSidecar())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -28142,7 +28122,7 @@ public final class ProtoBuf {
 
             private final int value;
 
-            private VIDEO_MESSAGE_ATTRIBUTION(int value) {
+            VIDEO_MESSAGE_ATTRIBUTION(int value) {
                 this.value = value;
             }
 
@@ -28882,8 +28862,7 @@ public final class ProtoBuf {
             if (hasGifAttribution()) {
                 if (gifAttribution_ != other.gifAttribution_) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -30824,8 +30803,7 @@ public final class ProtoBuf {
                 if (!getCallKey()
                         .equals(other.getCallKey())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -31469,8 +31447,7 @@ public final class ProtoBuf {
                 if (!getId()
                         .equals(other.getId())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -32271,7 +32248,7 @@ public final class ProtoBuf {
 
             private final int value;
 
-            private PROTOCOL_MESSAGE_TYPE(int value) {
+            PROTOCOL_MESSAGE_TYPE(int value) {
                 this.value = value;
             }
 
@@ -32485,8 +32462,7 @@ public final class ProtoBuf {
                 if (!getHistorySyncNotification()
                         .equals(other.getHistorySyncNotification())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -33553,7 +33529,7 @@ public final class ProtoBuf {
 
             private final int value;
 
-            private HISTORY_SYNC_NOTIFICATION_HISTORYSYNCTYPE(int value) {
+            HISTORY_SYNC_NOTIFICATION_HISTORYSYNCTYPE(int value) {
                 this.value = value;
             }
 
@@ -33843,8 +33819,7 @@ public final class ProtoBuf {
                 if (getChunkOrder()
                         != other.getChunkOrder()) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -34927,8 +34902,7 @@ public final class ProtoBuf {
                 if (!getContextInfo()
                         .equals(other.getContextInfo())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -36008,8 +35982,7 @@ public final class ProtoBuf {
                 if (getAmount1000()
                         != other.getAmount1000()) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -36807,7 +36780,7 @@ public final class ProtoBuf {
 
             private final int value;
 
-            private HSM_DATE_TIME_COMPONENT_DAYOFWEEKTYPE(int value) {
+            HSM_DATE_TIME_COMPONENT_DAYOFWEEKTYPE(int value) {
                 this.value = value;
             }
 
@@ -36903,7 +36876,7 @@ public final class ProtoBuf {
 
             private final int value;
 
-            private HSM_DATE_TIME_COMPONENT_CALENDARTYPE(int value) {
+            HSM_DATE_TIME_COMPONENT_CALENDARTYPE(int value) {
                 this.value = value;
             }
 
@@ -37164,8 +37137,7 @@ public final class ProtoBuf {
             if (hasCalendar()) {
                 if (calendar_ != other.calendar_) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -38007,8 +37979,7 @@ public final class ProtoBuf {
                 if (getTimestamp()
                         != other.getTimestamp()) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -38397,7 +38368,7 @@ public final class ProtoBuf {
          */
         it.auties.whatsapp4j.constant.ProtoBuf.HSMDateTimeUnixEpochOrBuilder getUnixEpochOrBuilder();
 
-        public it.auties.whatsapp4j.constant.ProtoBuf.HSMDateTime.DatetimeOneofCase getDatetimeOneofCase();
+        it.auties.whatsapp4j.constant.ProtoBuf.HSMDateTime.DatetimeOneofCase getDatetimeOneofCase();
     }
     /**
      * Protobuf type {@code it.auties.whatsapp4j.constant.HSMDateTime}
@@ -38515,7 +38486,7 @@ public final class ProtoBuf {
             UNIXEPOCH(2),
             DATETIMEONEOF_NOT_SET(0);
             private final int value;
-            private DatetimeOneofCase(int value) {
+            DatetimeOneofCase(int value) {
                 this.value = value;
             }
             /**
@@ -38539,7 +38510,7 @@ public final class ProtoBuf {
             public int getNumber() {
                 return this.value;
             }
-        };
+        }
 
         public DatetimeOneofCase
         getDatetimeOneofCase() {
@@ -38674,8 +38645,7 @@ public final class ProtoBuf {
                 case 0:
                 default:
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -39119,7 +39089,7 @@ public final class ProtoBuf {
                     datetimeOneof_ = null;
                 }
                 datetimeOneofCase_ = 1;
-                onChanged();;
+                onChanged();
                 return componentBuilder_;
             }
 
@@ -39260,7 +39230,7 @@ public final class ProtoBuf {
                     datetimeOneof_ = null;
                 }
                 datetimeOneofCase_ = 2;
-                onChanged();;
+                onChanged();
                 return unixEpochBuilder_;
             }
             @java.lang.Override
@@ -39367,7 +39337,7 @@ public final class ProtoBuf {
          */
         it.auties.whatsapp4j.constant.ProtoBuf.HSMDateTimeOrBuilder getDateTimeOrBuilder();
 
-        public it.auties.whatsapp4j.constant.ProtoBuf.HSMLocalizableParameter.ParamOneofCase getParamOneofCase();
+        it.auties.whatsapp4j.constant.ProtoBuf.HSMLocalizableParameter.ParamOneofCase getParamOneofCase();
     }
     /**
      * Protobuf type {@code it.auties.whatsapp4j.constant.HSMLocalizableParameter}
@@ -39492,7 +39462,7 @@ public final class ProtoBuf {
             DATETIME(3),
             PARAMONEOF_NOT_SET(0);
             private final int value;
-            private ParamOneofCase(int value) {
+            ParamOneofCase(int value) {
                 this.value = value;
             }
             /**
@@ -39516,7 +39486,7 @@ public final class ProtoBuf {
             public int getNumber() {
                 return this.value;
             }
-        };
+        }
 
         public ParamOneofCase
         getParamOneofCase() {
@@ -39710,8 +39680,7 @@ public final class ProtoBuf {
                 case 0:
                 default:
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -40254,7 +40223,7 @@ public final class ProtoBuf {
                     paramOneof_ = null;
                 }
                 paramOneofCase_ = 2;
-                onChanged();;
+                onChanged();
                 return currencyBuilder_;
             }
 
@@ -40395,7 +40364,7 @@ public final class ProtoBuf {
                     paramOneof_ = null;
                 }
                 paramOneofCase_ = 3;
-                onChanged();;
+                onChanged();
                 return dateTimeBuilder_;
             }
             @java.lang.Override
@@ -41308,8 +41277,7 @@ public final class ProtoBuf {
                 if (!getHydratedHsm()
                         .equals(other.getHydratedHsm())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -43016,8 +42984,7 @@ public final class ProtoBuf {
                 if (!getRequestMessageKey()
                         .equals(other.getRequestMessageKey())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -44050,8 +44017,7 @@ public final class ProtoBuf {
                 if (getExpiryTimestamp()
                         != other.getExpiryTimestamp()) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -44986,8 +44952,7 @@ public final class ProtoBuf {
                 if (!getKey()
                         .equals(other.getKey())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -45618,8 +45583,7 @@ public final class ProtoBuf {
                 if (!getKey()
                         .equals(other.getKey())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -46713,8 +46677,7 @@ public final class ProtoBuf {
                 if (!getContextInfo()
                         .equals(other.getContextInfo())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -48638,8 +48601,7 @@ public final class ProtoBuf {
                 if (!getContextInfo()
                         .equals(other.getContextInfo())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -50103,7 +50065,7 @@ public final class ProtoBuf {
          */
         it.auties.whatsapp4j.constant.ProtoBuf.LocationMessageOrBuilder getLocationMessageOrBuilder();
 
-        public it.auties.whatsapp4j.constant.ProtoBuf.FourRowTemplate.TitleCase getTitleCase();
+        it.auties.whatsapp4j.constant.ProtoBuf.FourRowTemplate.TitleCase getTitleCase();
     }
     /**
      * Protobuf type {@code it.auties.whatsapp4j.constant.FourRowTemplate}
@@ -50305,7 +50267,7 @@ public final class ProtoBuf {
             LOCATIONMESSAGE(5),
             TITLE_NOT_SET(0);
             private final int value;
-            private TitleCase(int value) {
+            TitleCase(int value) {
                 this.value = value;
             }
             /**
@@ -50332,7 +50294,7 @@ public final class ProtoBuf {
             public int getNumber() {
                 return this.value;
             }
-        };
+        }
 
         public TitleCase
         getTitleCase() {
@@ -50718,8 +50680,7 @@ public final class ProtoBuf {
                 case 0:
                 default:
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -51778,7 +51739,7 @@ public final class ProtoBuf {
                     title_ = null;
                 }
                 titleCase_ = 1;
-                onChanged();;
+                onChanged();
                 return documentMessageBuilder_;
             }
 
@@ -51919,7 +51880,7 @@ public final class ProtoBuf {
                     title_ = null;
                 }
                 titleCase_ = 2;
-                onChanged();;
+                onChanged();
                 return highlyStructuredMessageBuilder_;
             }
 
@@ -52060,7 +52021,7 @@ public final class ProtoBuf {
                     title_ = null;
                 }
                 titleCase_ = 3;
-                onChanged();;
+                onChanged();
                 return imageMessageBuilder_;
             }
 
@@ -52201,7 +52162,7 @@ public final class ProtoBuf {
                     title_ = null;
                 }
                 titleCase_ = 4;
-                onChanged();;
+                onChanged();
                 return videoMessageBuilder_;
             }
 
@@ -52342,7 +52303,7 @@ public final class ProtoBuf {
                     title_ = null;
                 }
                 titleCase_ = 5;
-                onChanged();;
+                onChanged();
                 return locationMessageBuilder_;
             }
             @java.lang.Override
@@ -52554,7 +52515,7 @@ public final class ProtoBuf {
          */
         it.auties.whatsapp4j.constant.ProtoBuf.LocationMessageOrBuilder getLocationMessageOrBuilder();
 
-        public it.auties.whatsapp4j.constant.ProtoBuf.HydratedFourRowTemplate.TitleCase getTitleCase();
+        it.auties.whatsapp4j.constant.ProtoBuf.HydratedFourRowTemplate.TitleCase getTitleCase();
     }
     /**
      * Protobuf type {@code it.auties.whatsapp4j.constant.HydratedFourRowTemplate}
@@ -52743,7 +52704,7 @@ public final class ProtoBuf {
             LOCATIONMESSAGE(5),
             TITLE_NOT_SET(0);
             private final int value;
-            private TitleCase(int value) {
+            TitleCase(int value) {
                 this.value = value;
             }
             /**
@@ -52770,7 +52731,7 @@ public final class ProtoBuf {
             public int getNumber() {
                 return this.value;
             }
-        };
+        }
 
         public TitleCase
         getTitleCase() {
@@ -53277,8 +53238,7 @@ public final class ProtoBuf {
                 case 0:
                 default:
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -54348,7 +54308,7 @@ public final class ProtoBuf {
                     title_ = null;
                 }
                 titleCase_ = 1;
-                onChanged();;
+                onChanged();
                 return documentMessageBuilder_;
             }
 
@@ -54587,7 +54547,7 @@ public final class ProtoBuf {
                     title_ = null;
                 }
                 titleCase_ = 3;
-                onChanged();;
+                onChanged();
                 return imageMessageBuilder_;
             }
 
@@ -54728,7 +54688,7 @@ public final class ProtoBuf {
                     title_ = null;
                 }
                 titleCase_ = 4;
-                onChanged();;
+                onChanged();
                 return videoMessageBuilder_;
             }
 
@@ -54869,7 +54829,7 @@ public final class ProtoBuf {
                     title_ = null;
                 }
                 titleCase_ = 5;
-                onChanged();;
+                onChanged();
                 return locationMessageBuilder_;
             }
             @java.lang.Override
@@ -54989,7 +54949,7 @@ public final class ProtoBuf {
          */
         it.auties.whatsapp4j.constant.ProtoBuf.HydratedFourRowTemplateOrBuilder getHydratedFourRowTemplateOrBuilder();
 
-        public it.auties.whatsapp4j.constant.ProtoBuf.TemplateMessage.FormatCase getFormatCase();
+        it.auties.whatsapp4j.constant.ProtoBuf.TemplateMessage.FormatCase getFormatCase();
     }
     /**
      * Protobuf type {@code it.auties.whatsapp4j.constant.TemplateMessage}
@@ -55133,7 +55093,7 @@ public final class ProtoBuf {
             HYDRATEDFOURROWTEMPLATE(2),
             FORMAT_NOT_SET(0);
             private final int value;
-            private FormatCase(int value) {
+            FormatCase(int value) {
                 this.value = value;
             }
             /**
@@ -55157,7 +55117,7 @@ public final class ProtoBuf {
             public int getNumber() {
                 return this.value;
             }
-        };
+        }
 
         public FormatCase
         getFormatCase() {
@@ -55368,8 +55328,7 @@ public final class ProtoBuf {
                 case 0:
                 default:
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -56097,7 +56056,7 @@ public final class ProtoBuf {
                     format_ = null;
                 }
                 formatCase_ = 1;
-                onChanged();;
+                onChanged();
                 return fourRowTemplateBuilder_;
             }
 
@@ -56238,7 +56197,7 @@ public final class ProtoBuf {
                     format_ = null;
                 }
                 formatCase_ = 2;
-                onChanged();;
+                onChanged();
                 return hydratedFourRowTemplateBuilder_;
             }
             @java.lang.Override
@@ -56694,8 +56653,7 @@ public final class ProtoBuf {
                 if (getSelectedIndex()
                         != other.getSelectedIndex()) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -57742,8 +57700,7 @@ public final class ProtoBuf {
                 if (!getDescription()
                         .equals(other.getDescription())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -59247,8 +59204,7 @@ public final class ProtoBuf {
                 if (!getFirstImageId()
                         .equals(other.getFirstImageId())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -60892,8 +60848,7 @@ public final class ProtoBuf {
                 if (!getContextInfo()
                         .equals(other.getContextInfo())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -62334,8 +62289,7 @@ public final class ProtoBuf {
                 if (!getContextInfo()
                         .equals(other.getContextInfo())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -63553,8 +63507,7 @@ public final class ProtoBuf {
                 if (!getMessage()
                         .equals(other.getMessage())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -64266,8 +64219,7 @@ public final class ProtoBuf {
                 if (!getSerializedXmlBytes()
                         .equals(other.getSerializedXmlBytes())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -66544,8 +66496,7 @@ public final class ProtoBuf {
                 if (!getDeviceSyncMessage()
                         .equals(other.getDeviceSyncMessage())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -71055,8 +71006,7 @@ public final class ProtoBuf {
                 if (!getParticipant()
                         .equals(other.getParticipant())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -72665,7 +72615,7 @@ public final class ProtoBuf {
 
             private final int value;
 
-            private WEB_FEATURES_FLAG(int value) {
+            WEB_FEATURES_FLAG(int value) {
                 this.value = value;
             }
 
@@ -73671,8 +73621,7 @@ public final class ProtoBuf {
             if (hasRecentStickersV2()) {
                 if (recentStickersV2_ != other.recentStickersV2_) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -76118,8 +76067,7 @@ public final class ProtoBuf {
             }
             if (!getNotifyMessage5List()
                     .equals(other.getNotifyMessage5List())) return false;
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -77247,8 +77195,7 @@ public final class ProtoBuf {
                 if (!getParticipant()
                         .equals(other.getParticipant())) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -78340,8 +78287,7 @@ public final class ProtoBuf {
             }
             if (!getNotifyMessagesList()
                     .equals(other.getNotifyMessagesList())) return false;
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -79474,7 +79420,7 @@ public final class ProtoBuf {
 
             private final int value;
 
-            private PAYMENT_INFO_CURRENCY(int value) {
+            PAYMENT_INFO_CURRENCY(int value) {
                 this.value = value;
             }
 
@@ -79660,7 +79606,7 @@ public final class ProtoBuf {
 
             private final int value;
 
-            private PAYMENT_INFO_STATUS(int value) {
+            PAYMENT_INFO_STATUS(int value) {
                 this.value = value;
             }
 
@@ -79990,7 +79936,7 @@ public final class ProtoBuf {
 
             private final int value;
 
-            private PAYMENT_INFO_TXNSTATUS(int value) {
+            PAYMENT_INFO_TXNSTATUS(int value) {
                 this.value = value;
             }
 
@@ -80406,8 +80352,7 @@ public final class ProtoBuf {
             if (hasTxnStatus()) {
                 if (txnStatus_ != other.txnStatus_) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -82141,7 +82086,7 @@ public final class ProtoBuf {
 
             private final int value;
 
-            private WEB_MESSAGE_INFO_STATUS(int value) {
+            WEB_MESSAGE_INFO_STATUS(int value) {
                 this.value = value;
             }
 
@@ -82876,7 +82821,7 @@ public final class ProtoBuf {
 
             private final int value;
 
-            private WEB_MESSAGE_INFO_STUBTYPE(int value) {
+            WEB_MESSAGE_INFO_STUBTYPE(int value) {
                 this.value = value;
             }
 
@@ -83762,8 +83707,7 @@ public final class ProtoBuf {
                 if (getEphemeralDuration()
                         != other.getEphemeralDuration()) return false;
             }
-            if (!unknownFields.equals(other.unknownFields)) return false;
-            return true;
+            return unknownFields.equals(other.unknownFields);
         }
 
         @java.lang.Override
@@ -84363,10 +84307,7 @@ public final class ProtoBuf {
 
             @java.lang.Override
             public final boolean isInitialized() {
-                if (!hasKey()) {
-                    return false;
-                }
-                return true;
+                return hasKey();
             }
 
             @java.lang.Override
@@ -86269,7 +86210,7 @@ public final class ProtoBuf {
     getDescriptor() {
         return descriptor;
     }
-    private static  com.google.protobuf.Descriptors.FileDescriptor
+    private static final com.google.protobuf.Descriptors.FileDescriptor
             descriptor;
     static {
         java.lang.String[] descriptorData = {
@@ -86322,7 +86263,7 @@ public final class ProtoBuf {
                         "edJid\030\017 \003(\t\022\030\n\020conversionSource\030\022 \001(\t\022\026\n" +
                         "\016conversionData\030\023 \001(\014\022\036\n\026conversionDelay" +
                         "Seconds\030\024 \001(\r\022\027\n\017forwardingScore\030\025 \001(\r\022\023" +
-                        "\n\013isForwarded\030\026 \001(\010\0229\n\010quotedAd\030\027 \001(\0132\'." +
+                        "\n\013isForwarded\030\026 \001(\010\0229\n\010quotedAd\030\027 \001(\0132'." +
                         "it.auties.whatsapp4j.constant.AdReplyInfo\022>" +
                         "\n\016placeholderKey\030\030 \001(\0132&.it.auties.whats" +
                         "app4j.utils.MessageKey\022\022\n\nexpiration\030\031 \001" +

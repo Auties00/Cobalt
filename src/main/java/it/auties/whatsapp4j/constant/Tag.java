@@ -29,6 +29,7 @@ public enum Tag {
 
     @Getter
     private final int data;
+
     public static @NonNull Tag forData(int data){
         return Arrays.stream(values()).filter(entry -> entry.data() == data).findAny().orElseThrow(() -> new IllegalArgumentException("Tag#forData: cannot convert %s to any tag".formatted(data)));
     }

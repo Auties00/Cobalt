@@ -1,4 +1,4 @@
-package it.auties.whatsapp4j.model;
+package it.auties.whatsapp4j.manager;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -6,7 +6,10 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import it.auties.whatsapp4j.utils.BytesArray;
 import it.auties.whatsapp4j.utils.CypherUtils;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -19,7 +22,7 @@ import java.util.prefs.Preferences;
 @NoArgsConstructor
 @Data
 @Accessors(fluent = true, chain = true)
-public class WhatsappKeys {
+public class WhatsappKeysManager {
     @JsonProperty
     private static final @NotNull ObjectWriter JACKSON_WRITER = new ObjectMapper().writer();
     @JsonProperty
@@ -34,14 +37,14 @@ public class WhatsappKeys {
     private @Nullable BytesArray encKey, macKey;
 
     @SneakyThrows
-    public static WhatsappKeys buildInstance() {
+    public static WhatsappKeysManager fromPreferences() {
         final var preferences = Preferences.userRoot().get("whatsapp", null);
         if(preferences != null){
-            return JACKSON_READER.readValue(preferences, WhatsappKeys.class);
+            return JACKSON_READER.readValue(preferences, WhatsappKeysManager.class);
         }
 
         var keyPair = CypherUtils.calculateRandomKeyPair();
-        return new WhatsappKeys(Base64.getEncoder().encodeToString(BytesArray.random(16).data()), null, null, keyPair.getPublicKey(), keyPair.getPrivateKey(), null, null);
+        return new WhatsappKeysManager(Base64.getEncoder().encodeToString(BytesArray.random(16).data()), null, null, keyPair.getPublicKey(), keyPair.getPrivateKey(), null, null);
     }
 
     public boolean mayRestore() {
@@ -55,7 +58,7 @@ public class WhatsappKeys {
     }
 
     @SneakyThrows
-    public void resetKeys(){
+    public void deleteKeysFromMemory(){
         Preferences.userRoot().clear();
     }
 }

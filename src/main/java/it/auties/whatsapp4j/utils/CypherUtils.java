@@ -6,11 +6,11 @@ import org.jetbrains.annotations.NotNull;
 import org.whispersystems.curve25519.Curve25519;
 import org.whispersystems.curve25519.Curve25519KeyPair;
 
-import javax.crypto.*;
+import javax.crypto.Cipher;
+import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.GeneralSecurityException;
-import java.security.Signature;
 
 @UtilityClass
 public class CypherUtils {
@@ -20,7 +20,7 @@ public class CypherUtils {
     private final String AES_ALGORITHM = "AES/CBC/PKCS5PADDING";
     private final int BLOCK_SIZE = 16;
 
-    public Curve25519KeyPair calculateRandomKeyPair(){
+    public @NotNull Curve25519KeyPair calculateRandomKeyPair(){
         return CURVE_25519.generateKeyPair();
     }
 
@@ -43,5 +43,13 @@ public class CypherUtils {
         final var keySpec = new SecretKeySpec(secretKey.data(), AES);
         cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(encrypted.cut(BLOCK_SIZE).data()));
         return BytesArray.forArray(cipher.doFinal(encrypted.slice(BLOCK_SIZE).data()));
+    }
+
+    public @NotNull BytesArray aesEncrypt(byte[] decrypted, @NotNull BytesArray encKey) throws GeneralSecurityException{
+        final var iv = BytesArray.random(BLOCK_SIZE);
+        final var cipher = Cipher.getInstance(AES_ALGORITHM);
+        final var keySpec = new SecretKeySpec(encKey.data(), AES);
+        cipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(iv.data()));
+        return iv.merged(BytesArray.forArray(cipher.doFinal(decrypted)));
     }
 }
