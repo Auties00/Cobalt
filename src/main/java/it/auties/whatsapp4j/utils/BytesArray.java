@@ -1,5 +1,6 @@
 package it.auties.whatsapp4j.utils;
 
+import jakarta.xml.bind.DatatypeConverter;
 import org.glassfish.grizzly.utils.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -67,6 +68,10 @@ public record BytesArray(byte[] data) {
 
     public ByteBuffer toBuffer() {
         return ByteBuffer.wrap(data);
+    }
+
+    public String toHex(){
+        return DatatypeConverter.printHexBinary(data);
     }
 
     @Override

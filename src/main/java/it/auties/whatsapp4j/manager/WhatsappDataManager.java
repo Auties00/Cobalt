@@ -3,13 +3,26 @@ package it.auties.whatsapp4j.manager;
 import it.auties.whatsapp4j.constant.ProtoBuf;
 import it.auties.whatsapp4j.model.WhatsappListener;
 import it.auties.whatsapp4j.model.*;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.*;
 
-public record WhatsappDataManager(@NotNull List<WhatsappChat> chats, @NotNull List<WhatsappContact> contacts, long initializationTimeStamp) {
-    private static final WhatsappDataManager INSTANCE = new WhatsappDataManager(new ArrayList<>(), new ArrayList<>(), Instant.now().getEpochSecond());
+@RequiredArgsConstructor
+@Data
+@Accessors(fluent = true)
+public class WhatsappDataManager {
+    private static final WhatsappDataManager INSTANCE = new WhatsappDataManager(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), Instant.now().getEpochSecond());
+    private final @NotNull List<WhatsappChat> chats;
+    private final @NotNull List<WhatsappContact> contacts;
+    private final @NotNull List<WhatsappPendingMessage> pendingMessages;
+    private final long initializationTimeStamp;
+    private @Nullable String phoneNumber;
+
     public static WhatsappDataManager singletonInstance() {
         return INSTANCE;
     }
@@ -34,7 +47,23 @@ public record WhatsappDataManager(@NotNull List<WhatsappChat> chats, @NotNull Li
         chats.add(chat);
     }
 
-    public void clear(){
+    public boolean isPendingMessageId(@NotNull String id){
+        return pendingMessages.stream().anyMatch(e -> Objects.equals(e.message().info().getKey().getId(), id));
+    }
+
+    public void addPendingMessage(@NotNull WhatsappPendingMessage pendingMessage){
+        pendingMessages.add(pendingMessage);
+    }
+
+    public void resolvePendingMessage(@NotNull String id, int statusCode){
+        var pendingMessage = pendingMessages.stream().filter(e -> Objects.equals(e.message().info().getKey().getId(), id)).findAny().orElseThrow();
+        var chat = findChatByName(pendingMessage.message().chatName()).orElseThrow();
+        chat.messages().add(pendingMessage.message());
+        pendingMessages.remove(pendingMessage);
+        pendingMessage.callback().accept(statusCode);
+    }
+
+    public void clear() {
         chats.clear();
         contacts.clear();
     }
@@ -48,12 +77,12 @@ public record WhatsappDataManager(@NotNull List<WhatsappChat> chats, @NotNull Li
 
         if (node.description().equals("response")) {
             var type = node.attrs().getOrDefault("type", "");
-            if(type == null){
+            if (type == null) {
                 return;
             }
 
             var nodes = (List<WhatsappNode>) node.content();
-            if(nodes == null) {
+            if (nodes == null) {
                 return;
             }
 
@@ -97,20 +126,20 @@ public record WhatsappDataManager(@NotNull List<WhatsappChat> chats, @NotNull Li
             }
         } else if (node.description().equals("action")) {
             var action = node.attrs().get("add");
-            if(action == null){
+            if (action == null) {
                 return;
             }
 
             var nodes = (List<WhatsappNode>) node.content();
-            if(nodes == null) {
+            if (nodes == null) {
                 return;
             }
 
-           processMessagesFromNodes(nodes, listeners);
+            processMessagesFromNodes(nodes, listeners);
         }
     }
 
-    private void processMessagesFromNodes(@NotNull List<WhatsappNode> nodes, @NotNull List<WhatsappListener> listeners){
+    private void processMessagesFromNodes(@NotNull List<WhatsappNode> nodes, @NotNull List<WhatsappListener> listeners) {
         nodes.stream()
                 .map(WhatsappNode::content)
                 .map(ProtoBuf.WebMessageInfo.class::cast)
@@ -136,5 +165,17 @@ public record WhatsappDataManager(@NotNull List<WhatsappChat> chats, @NotNull Li
                         listeners.forEach(listener -> listener.onNewMessageReceived(chat, message, message.sender(chat).isEmpty()));
                     }
                 });
+    }
+
+    public @NotNull List<WhatsappChat> chats() {
+        return chats;
+    }
+
+    public @NotNull List<WhatsappContact> contacts() {
+        return contacts;
+    }
+
+    public long initializationTimeStamp() {
+        return initializationTimeStamp;
     }
 }

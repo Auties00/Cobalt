@@ -1,8 +1,9 @@
 package it.auties.whatsapp4j.model;
 
 public abstract class WhatsappListener {
-    public void onConnected(String name, boolean firstLogin){}
+    public void onConnected(WhatsappUserInformation info, boolean firstLogin){}
     public void onDisconnected(){}
+    public void onInformationUpdate(WhatsappUserInformation info){}
 
     public void onPhoneStatusUpdate(){}
 
@@ -14,6 +15,5 @@ public abstract class WhatsappListener {
 
     public void onNewMessageReceived(WhatsappChat chat, WhatsappMessage message, boolean sentByMe){}
 
-    public void onBlacklistReceived(){}
-    public void onBlacklistUpdate(){}
+    public void onBlocklistUpdate(WhatsappBlocklist blocklist){}
 }

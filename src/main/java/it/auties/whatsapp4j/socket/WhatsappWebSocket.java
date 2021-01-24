@@ -2,11 +2,12 @@ package it.auties.whatsapp4j.socket;
 
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.api.WhatsappState;
-import it.auties.whatsapp4j.model.WhatsappListener;
+import it.auties.whatsapp4j.model.*;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
-import it.auties.whatsapp4j.model.WhatsappNode;
 import it.auties.whatsapp4j.request.*;
+import it.auties.whatsapp4j.response.ListResponse;
+import it.auties.whatsapp4j.response.MapResponse;
 import it.auties.whatsapp4j.response.Response;
 import it.auties.whatsapp4j.utils.*;
 import jakarta.websocket.*;
@@ -88,7 +89,7 @@ public class WhatsappWebSocket {
 
   @OnOpen
   public void onOpen(@NotNull Session session) {
-    if(this.session == null) {
+    if(this.session == null || !session.isOpen()) {
       this.session = session;
     }
 
@@ -135,13 +136,16 @@ public class WhatsappWebSocket {
 
   @SneakyThrows
   private void generateQrCode(@NotNull String message){
-    var res = Response.fromJson(message);
+    if(state == WhatsappState.LOGGED_IN){
+      return;
+    }
 
+    var res = Response.fromWhatsappResponse(message);
     var status = res.getInteger("status");
     Validate.isTrue(status != 429, "Out of attempts to scan the QR code");
 
     var ttl = res.getInteger("ttl");
-    CompletableFuture.delayedExecutor(ttl, TimeUnit.MILLISECONDS).execute(() -> disconnect(null, false, true));
+    CompletableFuture.delayedExecutor(ttl, TimeUnit.MILLISECONDS).execute(() -> generateQrCode(message));
 
     qrCode.generateQRCodeImage(res.getNullableString("ref"), whatsappKeys.publicKey(), whatsappKeys.clientId()).open();
     this.state = WhatsappState.WAITING_FOR_LOGIN;
@@ -154,7 +158,7 @@ public class WhatsappWebSocket {
 
   @SneakyThrows
   private void solveChallenge(@NotNull String message){
-    var res = Response.fromJson(message);
+    var res = Response.fromWhatsappResponse(message);
     var status = res.getNullableInteger("status");
     if(status != null){
       switch (status) {
@@ -185,7 +189,7 @@ public class WhatsappWebSocket {
 
   @SneakyThrows
   private void handleChallengeResponse(@NotNull String message){
-    var res = Response.fromJson(message);
+    var res = Response.fromWhatsappResponse(message);
     var status = res.getNullableInteger("status");
     Validate.isTrue(status != null && status == 200, "Could not solve whatsapp challenge for server and client token renewal: %s".formatted(message));
     this.state = WhatsappState.LOGGED_IN;
@@ -193,9 +197,9 @@ public class WhatsappWebSocket {
 
   @SneakyThrows
   private void login(@NotNull String message){
-    var res = Response.fromJson(message);
+    var res = Response.fromWhatsappResponse(message).toModel(WhatsappUserInformation.class);
 
-    var base64Secret = res.getString("secret");
+    var base64Secret = res.getSecret();
     var secret = BytesArray.forBase64(base64Secret);
     var pubKey = secret.cut(32);
     var sharedSecret = calculateSharedSecret(pubKey.data(), whatsappKeys.privateKey());
@@ -209,9 +213,9 @@ public class WhatsappWebSocket {
     var key = sharedSecretExpanded.cut(32);
     var keysDecrypted = aesDecrypt(keysEncrypted, key);
 
-    whatsappKeys.initializeKeys(res.getString("serverToken"), res.getString("clientToken"), keysDecrypted.cut(32), keysDecrypted.slice(32, 64));
+    whatsappKeys.initializeKeys(res.getServerToken(), res.getClientToken(), keysDecrypted.cut(32), keysDecrypted.slice(32, 64));
     this.state = WhatsappState.LOGGED_IN;
-    listeners.forEach(listener -> listener.onConnected(res.getNullableString("pushname"), true));
+    listeners.forEach(listener -> listener.onConnected(res, true));
   }
 
   @SneakyThrows
@@ -223,17 +227,22 @@ public class WhatsappWebSocket {
   }
 
   @SneakyThrows
-  public void disconnect(@Nullable String reason, boolean logout, boolean reconnect){
+  public @NotNull WhatsappWebSocket disconnect(@Nullable String reason, boolean logout, boolean reconnect){
     Validate.isTrue(state != WhatsappState.NOTHING, "WhatsappAPI: Cannot terminate the connection with whatsapp as it doesn't exist");
     if(logout) sendJsonMessage(new LogOutRequest(whatsappKeys, options), whatsappKeys::deleteKeysFromMemory);
 
     whatsappManager.clear();
-    scheduler.shutdownNow();
     session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, reason));
     listeners.forEach(WhatsappListener::onDisconnected);
 
     this.state = WhatsappState.NOTHING;
-    if(reconnect) connect();
+    if(!reconnect) {
+      return this;
+    }
+
+    var newSocket = new WhatsappWebSocket(listeners, options, whatsappKeys);
+    newSocket.connect();
+    return newSocket;
   }
 
   @SneakyThrows
@@ -244,16 +253,54 @@ public class WhatsappWebSocket {
   @SneakyThrows
   private void handleMessage(@NotNull String message){
     var res = Response.fromJson(message);
-    if (res.hasKey("pushname")) {
-      listeners.forEach(listener -> listener.onConnected(res.getNullableString("pushname"), false));
+
+    if(res.data() instanceof ListResponse listResponse){
+      handleList(listResponse);
       return;
     }
 
-    if(res.hasKey("type") && res.hasKey("kind")){
-      var type = res.getNullableString("type");
-      var kind = res.getNullableString("kind");
-      disconnect(kind, false, options.reconnectWhenDisconnected().apply(kind));
+    var mapResponse = (MapResponse) res.data();
+    if(whatsappManager.isPendingMessageId(res.tag())){
+      whatsappManager.resolvePendingMessage(res.tag(), mapResponse.getInteger("status"));
       return;
     }
+
+
+    if(res.description() == null){
+      return;
+    }
+
+    switch (res.description()){
+      case "Conn" -> handleUserInformation(mapResponse.toModel(WhatsappUserInformation.class));
+      case "Blocklist" -> handleBlocklist(mapResponse.toModel(WhatsappBlocklist.class));
+      case "Cmd" -> handleCmd(mapResponse);
+    }
+  }
+
+  private void handleUserInformation(@NotNull WhatsappUserInformation info) {
+    if(info.getRef() == null){
+      listeners.forEach(listener -> listener.onInformationUpdate(info));
+      return;
+    }
+
+    whatsappManager.phoneNumber(info.getWid().replaceAll("@c.us", "@s.whatsapp.net"));
+    listeners.forEach(listener -> listener.onConnected(info, false));
+  }
+
+  private void handleBlocklist(@NotNull WhatsappBlocklist blocklist) {
+    listeners.forEach(listener -> listener.onBlocklistUpdate(blocklist));
+  }
+
+  private void handleCmd(@NotNull MapResponse res){
+    if (!res.hasKey("type") || !res.hasKey("kind")) {
+      return;
+    }
+
+    var kind = res.getNullableString("kind");
+    disconnect(kind, false, options.reconnectWhenDisconnected().apply(kind));
+  }
+
+  private void handleList(@NotNull ListResponse listResponse){
+
   }
 }

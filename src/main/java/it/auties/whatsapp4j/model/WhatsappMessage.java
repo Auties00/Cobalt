@@ -29,11 +29,7 @@ public record WhatsappMessage(@NotNull ProtoBuf.WebMessageInfo info) {
     }
 
     public @NotNull Optional<String> sender(@NotNull WhatsappChat chat) {
-        if (chat.isGroup()){
-            return info.getKey().getFromMe() ? Optional.empty() : WhatsappDataManager.singletonInstance().findContactByJid(info.getParticipant()).map(WhatsappContact::bestName);
-        }
-
-        return info.getKey().getFromMe() ? Optional.empty() : Optional.ofNullable(chat.name() == null ? chat.jid() : chat.name());
+        return chat.isGroup() ? info.getKey().getFromMe() ? Optional.empty() : WhatsappDataManager.singletonInstance().findContactByJid(info.getParticipant()).map(WhatsappContact::bestName) : info.getKey().getFromMe() ? Optional.empty() : Optional.of(chat.name());
     }
 
     public @NotNull Optional<WhatsappQuotedMessage> quotedMessage(){
@@ -59,7 +55,7 @@ public record WhatsappMessage(@NotNull ProtoBuf.WebMessageInfo info) {
 
         var participant = context.getParticipant();
         var sender = MANAGER.findContactByJid(participant).map(WhatsappContact::bestName).orElse(participant);
-        return Optional.of(new WhatsappQuotedMessage(text.get(), sender));
+        return Optional.of(new WhatsappQuotedMessage(text.get(), sender, sender.equals(MANAGER.phoneNumber())));
     }
 
     public @NotNull String chatName(){

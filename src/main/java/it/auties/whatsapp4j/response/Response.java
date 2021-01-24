@@ -4,44 +4,35 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
+import it.auties.whatsapp4j.model.WhatsappResponseNode;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
-public record Response(Map<String, Object> data) {
-    private static final ObjectReader JACKSON = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            .reader();
-
-    public static @NotNull Response fromJson(@NotNull String json) throws JsonProcessingException {
+public interface Response {
+    ObjectMapper JACKSON = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    static @NotNull MapResponse fromWhatsappResponse(@NotNull String json) throws JsonProcessingException {
         var index = json.indexOf("{");
-        return index == -1 ? new Response(new HashMap<>()) : new Response(JACKSON.forType(new TypeReference<>() {}).readValue(json.substring(index)));
+        return new MapResponse(index == -1 ? Map.of() : JACKSON.readValue(json.substring(index), new TypeReference<>() {}));
     }
 
-    public boolean hasKey(@NotNull String key){
-        return data.containsKey(key);
-    }
+    static @NotNull WhatsappResponseNode fromJson(@NotNull String parse) throws JsonProcessingException {
+        var split = parse.split(",", 2);
+        var tag = split[0];
+        var contentJson = JACKSON.readTree(split[1]);
 
-    public String getString(@NotNull String key){
-        return getObject(key, String.class).orElseThrow();
-    }
+        try {
+            var contentMap = JACKSON.convertValue(contentJson, new TypeReference<HashMap<String, Object>>() {});
+            return new WhatsappResponseNode(tag, null, new MapResponse(contentMap));
+        }catch (IllegalArgumentException ignored){
+            var contentList = JACKSON.convertValue(contentJson, new TypeReference<List<Object>>() {});
+            if(contentList.get(1) instanceof Map<?, ?> content){
+                return new WhatsappResponseNode(tag, (String) contentList.get(0), new MapResponse((Map<String, Object>) content));
+            }
 
-    public String getNullableString(@NotNull String key){
-        return getObject(key, String.class).orElse(null);
-    }
-
-    public Integer getNullableInteger(@NotNull String key){
-        return getObject(key, Integer.class).orElse(null);
-    }
-
-    public int getInteger(@NotNull String key){
-        return getObject(key, Integer.class).orElseThrow();
-    }
-
-    public <T> Optional<T> getObject(@NotNull String key, @NotNull Class<T> clazz){
-        return Optional.ofNullable(data().get(key)).map(clazz::cast);
+            return new WhatsappResponseNode(tag, null, new ListResponse(contentList));
+        }
     }
 }

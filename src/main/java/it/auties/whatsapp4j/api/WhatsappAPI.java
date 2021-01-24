@@ -2,28 +2,28 @@ package it.auties.whatsapp4j.api;
 
 import it.auties.whatsapp4j.constant.Flag;
 import it.auties.whatsapp4j.constant.Metric;
+import it.auties.whatsapp4j.constant.ProtoBuf;
 import it.auties.whatsapp4j.constant.UserPresence;
-import it.auties.whatsapp4j.model.WhatsappListener;
+import it.auties.whatsapp4j.model.*;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
-import it.auties.whatsapp4j.model.WhatsappNode;
-import it.auties.whatsapp4j.model.WhatsappNodeBuilder;
 import it.auties.whatsapp4j.request.UserPresenceUpdateRequest;
 import it.auties.whatsapp4j.socket.WhatsappWebSocket;
+import it.auties.whatsapp4j.utils.BytesArray;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.time.Instant;
+import java.util.*;
+import java.util.function.Consumer;
 
 @Accessors(fluent = true)
 public class WhatsappAPI extends WhatsappListener {
+    private @NotNull WhatsappWebSocket socket;
     private final @NotNull WhatsappConfiguration configuration;
     private final @Getter @NotNull WhatsappDataManager manager;
     private final @Getter @NotNull WhatsappKeysManager keys;
-    private final @NotNull WhatsappWebSocket socket;
     private final @NotNull List<WhatsappListener> listeners;
     private int numberOfMessagesSent;
     public WhatsappAPI(){
@@ -55,8 +55,33 @@ public class WhatsappAPI extends WhatsappListener {
     }
 
     public WhatsappAPI reconnect(){
-        socket.disconnect(null, false, true);
+        this.socket = socket.disconnect(null, false, true);
         return this;
+    }
+
+    public void sendMessage(@NotNull String remoteJid, @NotNull String text, @NotNull Consumer<Integer> callback) {
+        var id = BytesArray.random(10).toHex();
+        var message = ProtoBuf.WebMessageInfo.newBuilder()
+                .setMessage(ProtoBuf.Message.newBuilder()
+                        .setConversation(text)
+                        .build())
+                .setKey(ProtoBuf.MessageKey.newBuilder()
+                        .setFromMe(true)
+                        .setRemoteJid(remoteJid)
+                        .setId(id)
+                        .build())
+                .setMessageTimestamp(Instant.now().getEpochSecond())
+                .setStatus(ProtoBuf.WebMessageInfo.WEB_MESSAGE_INFO_STATUS.PENDING)
+                .build();
+
+        var node = WhatsappNodeBuilder.builder()
+                .description("action")
+                .attrs(Map.of("type", "relay", "epoch", String.valueOf(numberOfMessagesSent++)))
+                .content(List.of(new WhatsappNode("message", Map.of(), message)))
+                .build();
+
+        manager.addPendingMessage(new WhatsappPendingMessage(new WhatsappMessage(message), callback));
+        socket.sendBinaryMessage(node, Metric.MESSAGE, Flag.IGNORE);
     }
 
     public void loadConversation(@NotNull String remoteJid, int messageCount) {
