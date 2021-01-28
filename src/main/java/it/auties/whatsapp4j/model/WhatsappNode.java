@@ -8,7 +8,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Map;
 
 @RecordBuilder
-@ToString(exclude = "content")
+@ToString
 public record WhatsappNode(@NotNull String description, @NotNull Map<String, String> attrs, @Nullable Object content) {
 
 }

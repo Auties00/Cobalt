@@ -1,8 +1,10 @@
 package it.auties.whatsapp4j.manager;
 
+import it.auties.whatsapp4j.constant.MuteType;
 import it.auties.whatsapp4j.constant.ProtoBuf;
 import it.auties.whatsapp4j.model.WhatsappListener;
 import it.auties.whatsapp4j.model.*;
+import it.auties.whatsapp4j.utils.WhatsappIdUtils;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
@@ -28,11 +30,27 @@ public class WhatsappDataManager {
     }
 
     public Optional<WhatsappContact> findContactByJid(@NotNull String jid) {
-        return contacts.stream().filter(e -> Objects.equals(e.jid(), jid)).findFirst();
+        return contacts.stream().filter(e -> Objects.equals(e.jid(), WhatsappIdUtils.parseJid(jid))).findFirst();
+    }
+
+    public Optional<WhatsappContact> findContactByName(@NotNull String name) {
+        return contacts.stream().filter(e -> Objects.equals(e.name(), name)).findFirst();
+    }
+
+    public Optional<WhatsappMessage> findMessage(@NotNull WhatsappChat chat, @NotNull ProtoBuf.Message message){
+        return chat.messages().stream().filter(e -> Objects.equals(e.info().getMessage(), message)).findAny();
     }
 
     public Optional<WhatsappChat> findChatByJid(@NotNull String jid) {
-        return chats.stream().filter(e -> Objects.equals(e.jid(), jid)).findFirst();
+        return chats.stream().filter(e -> Objects.equals(e.jid(), WhatsappIdUtils.parseJid(jid))).findFirst();
+    }
+
+    public Optional<WhatsappMessage> findMessageById(@NotNull WhatsappChat chat, @NotNull String id){
+        return chat.messages().stream().filter(e -> Objects.equals(e.info().getKey().getId(), id)).findAny();
+    }
+
+    public @NotNull Optional<WhatsappChat> findChatByMessage(@NotNull WhatsappMessage message){
+        return findChatByJid(message.info().getKey().getRemoteJid());
     }
 
     public Optional<WhatsappChat> findChatByName(@NotNull String name) {
@@ -57,10 +75,14 @@ public class WhatsappDataManager {
 
     public void resolvePendingMessage(@NotNull String id, int statusCode){
         var pendingMessage = pendingMessages.stream().filter(e -> Objects.equals(e.message().info().getKey().getId(), id)).findAny().orElseThrow();
-        var chat = findChatByName(pendingMessage.message().chatName()).orElseThrow();
-        chat.messages().add(pendingMessage.message());
+        var chat = findChatByMessage(pendingMessage.message());
+        if(chat.isEmpty()){
+            return;
+        }
+
+        chat.get().messages().add(pendingMessage.message());
         pendingMessages.remove(pendingMessage);
-        pendingMessage.callback().accept(statusCode);
+        pendingMessage.callback().accept(pendingMessage.message(), statusCode);
     }
 
     public void clear() {
@@ -113,9 +135,10 @@ public class WhatsappDataManager {
                                         .jid(jid)
                                         .name(matchingContact.map(WhatsappContact::bestName).orElseGet(() -> chatName == null ? jid.split("@")[0] : chatName))
                                         .unreadMessages(Integer.parseInt(chatAttributes.get("count")))
-                                        .mute(chatAttributes.get("mute"))
+                                        .mute(MuteType.forValue(Integer.parseInt(chatAttributes.get("mute"))))
                                         .spam(Boolean.parseBoolean(chatAttributes.get("spam")))
                                         .messages(new WhatsappMessages())
+                                        .presences(new HashMap<>())
                                         .build();
                                 addChat(chat);
                             });
@@ -125,17 +148,58 @@ public class WhatsappDataManager {
                 case "message" -> processMessagesFromNodes(nodes, listeners);
             }
         } else if (node.description().equals("action")) {
-            var action = node.attrs().get("add");
-            if (action == null) {
+            var childNodes = (List<WhatsappNode>) node.content();
+            if (childNodes == null || childNodes.isEmpty()) {
                 return;
             }
 
-            var nodes = (List<WhatsappNode>) node.content();
-            if (nodes == null) {
-                return;
-            }
+            var firstChildNode = childNodes.get(0);
+            switch (firstChildNode.description()){
+                case "read" -> {
+                    var jid = firstChildNode.attrs().get("jid");
+                    if (jid == null) {
+                        return;
+                    }
 
-            processMessagesFromNodes(nodes, listeners);
+                    var type = Boolean.parseBoolean(firstChildNode.attrs().getOrDefault("type", "true"));
+                    var chat = findChatByJid(jid).orElseThrow();
+                    chat.unreadMessages(type ? 0 : -1);
+                }
+
+                case "received" -> {
+                    var chat = findChatByJid(firstChildNode.attrs().get("jid"));
+                    if(chat.isEmpty()){
+                        return;
+                    }
+                    
+                    var message = findMessageById(chat.get(), firstChildNode.attrs().get("index"));
+                    if(message.isEmpty()){
+                        return;
+                    }
+
+                    var status = switch (firstChildNode.attrs().get("type")){
+                        case "read" -> ProtoBuf.WebMessageInfo.WEB_MESSAGE_INFO_STATUS.READ;
+                        case "message" -> ProtoBuf.WebMessageInfo.WEB_MESSAGE_INFO_STATUS.DELIVERY_ACK;
+                        case "error" -> ProtoBuf.WebMessageInfo.WEB_MESSAGE_INFO_STATUS.ERROR;
+                        default -> throw new IllegalStateException("Unexpected value");
+                    };
+
+                    if (status.getNumber() <= message.get().info().getStatus().getNumber() && status != ProtoBuf.WebMessageInfo.WEB_MESSAGE_INFO_STATUS.ERROR) {
+                        return;
+                    }
+
+                    message.get().info(message.get().info().toBuilder().setStatus(status).build());
+                }
+
+                default -> {
+                    var action = node.attrs().get("add");
+                    if(action == null){
+                        return;
+                    }
+
+                    processMessagesFromNodes(childNodes, listeners);
+                }
+            }
         }
     }
 
@@ -147,35 +211,36 @@ public class WhatsappDataManager {
                 .map(WhatsappMessage::new)
                 .forEach(message -> {
                     var jid = message.info().getKey().getRemoteJid();
-                    var chatOpt = findChatByJid(jid);
-                    if (chatOpt.isEmpty()) {
-                        var chat = WhatsappChat.builder()
+                    var chat = findChatByJid(jid).orElseGet(() -> {
+                        var chatTemp = WhatsappChat.builder()
                                 .jid(jid)
-                                .name(message.chatName())
+                                .name(jid)
                                 .messages(new WhatsappMessages(message))
+                                .presences(new HashMap<>())
                                 .build();
-                        addChat(chat);
-                        listeners.forEach(e -> e.onChatReceived(chat));
+                        addChat(chatTemp);
+                        listeners.forEach(e -> e.onChatReceived(chatTemp));
+                        return chatTemp;
+                    });
+
+                    if(message.info().hasMessage() && message.info().getMessage().hasProtocolMessage() && message.info().getMessage().getProtocolMessage().hasKey() && message.info().getMessage().getProtocolMessage().getKey().hasId()){
+                        var oldMessage = findMessageById(chat, message.info().getMessage().getProtocolMessage().getKey().getId());
+                        oldMessage.ifPresent(chat.messages()::remove);
+                    }
+
+                    chat.messages().remove(message);
+                    chat.messages().add(message);
+                    if (initializationTimeStamp > message.info().getMessageTimestamp()) {
                         return;
                     }
 
-                    var chat = chatOpt.get();
-                    chat.messages().add(message);
-                    if (initializationTimeStamp <= message.info().getMessageTimestamp()) {
-                        listeners.forEach(listener -> listener.onNewMessageReceived(chat, message, message.sender(chat).isEmpty()));
+                    var fromMe = message.sender().isEmpty();
+                    if(!fromMe && message.info().getStatus() != ProtoBuf.WebMessageInfo.WEB_MESSAGE_INFO_STATUS.READ && !message.info().getIgnore()){
+                        chat.unreadMessages(chat.unreadMessages() + 1);
                     }
+
+                    listeners.forEach(listener -> listener.onNewMessageReceived(chat, message, fromMe));
                 });
-    }
 
-    public @NotNull List<WhatsappChat> chats() {
-        return chats;
-    }
-
-    public @NotNull List<WhatsappContact> contacts() {
-        return contacts;
-    }
-
-    public long initializationTimeStamp() {
-        return initializationTimeStamp;
     }
 }

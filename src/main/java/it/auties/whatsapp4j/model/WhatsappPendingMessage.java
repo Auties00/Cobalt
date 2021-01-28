@@ -1,8 +1,12 @@
 package it.auties.whatsapp4j.model;
 
+import io.soabase.recordbuilder.core.RecordBuilder;
+import lombok.ToString;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
-public record WhatsappPendingMessage(@NotNull WhatsappMessage message, @NotNull Consumer<Integer> callback) {
+@RecordBuilder
+@ToString
+public record WhatsappPendingMessage(@NotNull WhatsappMessage message, @NotNull BiConsumer<WhatsappMessage, Integer> callback) {
 }

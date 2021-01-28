@@ -1,6 +1,7 @@
 package it.auties.whatsapp4j.utils;
 
 import at.favre.lib.crypto.HKDF;
+import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 import org.whispersystems.curve25519.Curve25519;
@@ -28,24 +29,28 @@ public class CypherUtils {
         return BytesArray.forArray(CURVE_25519.calculateAgreement(publicKey, privateKey));
     }
 
-    public @NotNull BytesArray hmacSha256(@NotNull BytesArray plain, @NotNull BytesArray key) throws GeneralSecurityException {
+    @SneakyThrows
+    public @NotNull BytesArray hmacSha256(@NotNull BytesArray plain, @NotNull BytesArray key) {
         final var localMac = Mac.getInstance(HMAC_SHA256);
         localMac.init(new SecretKeySpec(key.data(), HMAC_SHA256));
         return BytesArray.forArray(localMac.doFinal(plain.data()));
     }
 
+    @SneakyThrows
     public @NotNull BytesArray hkdfExpand(@NotNull BytesArray input, int size) {
         return BytesArray.forArray(HKDF.fromHmacSha256().expand(HKDF.fromHmacSha256().extract(null, input.data()), null, size));
     }
 
-    public @NotNull BytesArray aesDecrypt(@NotNull BytesArray encrypted, @NotNull BytesArray secretKey) throws GeneralSecurityException{
+    @SneakyThrows
+    public @NotNull BytesArray aesDecrypt(@NotNull BytesArray encrypted, @NotNull BytesArray secretKey) {
         final var cipher = Cipher.getInstance(AES_ALGORITHM);
         final var keySpec = new SecretKeySpec(secretKey.data(), AES);
         cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(encrypted.cut(BLOCK_SIZE).data()));
         return BytesArray.forArray(cipher.doFinal(encrypted.slice(BLOCK_SIZE).data()));
     }
 
-    public @NotNull BytesArray aesEncrypt(byte[] decrypted, @NotNull BytesArray encKey) throws GeneralSecurityException{
+    @SneakyThrows
+    public @NotNull BytesArray aesEncrypt(byte[] decrypted, @NotNull BytesArray encKey) {
         final var iv = BytesArray.random(BLOCK_SIZE);
         final var cipher = Cipher.getInstance(AES_ALGORITHM);
         final var keySpec = new SecretKeySpec(encKey.data(), AES);

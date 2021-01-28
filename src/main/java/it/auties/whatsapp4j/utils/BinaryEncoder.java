@@ -31,7 +31,7 @@ public record BinaryEncoder(List<Byte> cache) {
         return toByteArray();
     }
 
-    private void pushByte(int value) {
+    private void pushUnsignedInt(int value) {
         cache.add((byte) (value & 0xff));
     }
 
@@ -40,27 +40,27 @@ public record BinaryEncoder(List<Byte> cache) {
     }
 
     private void pushInt20(int value) {
-        pushBytes(new int[]{((value >> 16) & 0x0f), ((value >> 8) & 0xff), (value & 0xff)});
+        pushUnsignedInts(new int[]{((value >> 16) & 0x0f), ((value >> 8) & 0xff), (value & 0xff)});
     }
 
-    private void pushBytes(int @NotNull [] bytes) {
-        for(var entry : bytes) cache.add((byte) entry);
+    private void pushUnsignedInts(int @NotNull [] ints) {
+        for(var entry : ints) cache.add((byte) entry);
     }
 
     private void pushString(@NotNull String str) {
-        pushBytes(toIntArray(str.getBytes()));
+        pushUnsignedInts(toUnsignedIntArray(str.getBytes()));
     }
 
     private void writeByteLength(int length) {
         if (length >= 1 << 20) {
-            this.pushByte(Tag.BINARY_32.data());
+            this.pushUnsignedInt(Tag.BINARY_32.data());
             this.pushInt4(length);
         } else if (length >= 256) {
-            this.pushByte(Tag.BINARY_20.data());
+            this.pushUnsignedInt(Tag.BINARY_20.data());
             this.pushInt20(length);
         } else {
-            this.pushByte(Tag.BINARY_8.data());
-            this.pushByte(length);
+            this.pushUnsignedInt(Tag.BINARY_8.data());
+            this.pushUnsignedInt(length);
         }
     }
 
@@ -70,7 +70,7 @@ public record BinaryEncoder(List<Byte> cache) {
     }
 
     private void writeJid(@Nullable String left, @NotNull String right) {
-        this.pushByte(Tag.JID_PAIR.data());
+        this.pushUnsignedInt(Tag.JID_PAIR.data());
         if(left != null && left.length() > 0){
             writeString(left, false);
         } else {
@@ -82,7 +82,7 @@ public record BinaryEncoder(List<Byte> cache) {
 
     private void writeToken(int token) {
         Validate.isTrue(token <= 500, "Invalid token");
-        this.pushByte(token);
+        this.pushUnsignedInt(token);
     }
 
     private void writeString(@NotNull String token, boolean i) {
@@ -118,11 +118,11 @@ public record BinaryEncoder(List<Byte> cache) {
 
     private void writeListStart(int listSize) {
         if (listSize == 0) {
-            this.pushByte(Tag.LIST_EMPTY.data());
+            this.pushUnsignedInt(Tag.LIST_EMPTY.data());
         } else if (listSize < 256) {
-            this.pushBytes(new int[]{Tag.LIST_8.data(), listSize});
+            this.pushUnsignedInts(new int[]{Tag.LIST_8.data(), listSize});
         } else {
-            this.pushBytes(new int[]{Tag.LIST_16.data(), listSize});
+            this.pushUnsignedInts(new int[]{Tag.LIST_16.data(), listSize});
         }
     }
 
@@ -140,7 +140,7 @@ public record BinaryEncoder(List<Byte> cache) {
         }else if(content instanceof ProtoBuf.WebMessageInfo contentAsMessage){
             var data = contentAsMessage.toByteArray();
             this.writeByteLength(data.length);
-            this.pushBytes(toIntArray(data));
+            this.pushUnsignedInts(toUnsignedIntArray(data));
         }else {
             throw new IllegalArgumentException("Cannot encode content " + content);
         }
@@ -152,7 +152,7 @@ public record BinaryEncoder(List<Byte> cache) {
         return array;
     }
 
-    private int @NotNull [] toIntArray(byte @NotNull [] input){
+    private int @NotNull [] toUnsignedIntArray(byte @NotNull [] input){
         var array = new int[input.length];
         for (var x = 0; x < input.length; x++) array[x] = input[x] & 0xff;
         return array;

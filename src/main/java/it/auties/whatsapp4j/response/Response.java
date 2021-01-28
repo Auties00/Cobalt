@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.whatsapp4j.model.WhatsappResponseNode;
+import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
@@ -13,12 +14,14 @@ import java.util.Map;
 
 public interface Response {
     ObjectMapper JACKSON = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    static @NotNull MapResponse fromWhatsappResponse(@NotNull String json) throws JsonProcessingException {
+    @SneakyThrows
+    static @NotNull MapResponse fromWhatsappResponse(@NotNull String json) {
         var index = json.indexOf("{");
         return new MapResponse(index == -1 ? Map.of() : JACKSON.readValue(json.substring(index), new TypeReference<>() {}));
     }
 
-    static @NotNull WhatsappResponseNode fromJson(@NotNull String parse) throws JsonProcessingException {
+    @SneakyThrows
+    static @NotNull WhatsappResponseNode fromJson(@NotNull String parse) {
         var split = parse.split(",", 2);
         var tag = split[0];
         var contentJson = JACKSON.readTree(split[1]);

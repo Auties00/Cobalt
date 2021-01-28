@@ -2,15 +2,23 @@ package it.auties.whatsapp4j.model;
 
 import it.auties.whatsapp4j.constant.ProtoBuf;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
+import it.auties.whatsapp4j.utils.WhatsappIdUtils;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.ToString;
-import org.glassfish.grizzly.utils.Pair;
+import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.Instant;
 import java.util.Optional;
 
-@ToString(exclude = "info")
-public record WhatsappMessage(@NotNull ProtoBuf.WebMessageInfo info) {
+@AllArgsConstructor
+@Data
+@Accessors(fluent = true)
+@ToString
+public class WhatsappMessage {
     private static final WhatsappDataManager MANAGER = WhatsappDataManager.singletonInstance();
+    private @NotNull ProtoBuf.WebMessageInfo info;
 
     public @NotNull Optional<String> text(@NotNull ProtoBuf.Message message) {
         if (message.hasConversation()) {
@@ -28,11 +36,21 @@ public record WhatsappMessage(@NotNull ProtoBuf.WebMessageInfo info) {
         return text(info.getMessage());
     }
 
-    public @NotNull Optional<String> sender(@NotNull WhatsappChat chat) {
-        return chat.isGroup() ? info.getKey().getFromMe() ? Optional.empty() : WhatsappDataManager.singletonInstance().findContactByJid(info.getParticipant()).map(WhatsappContact::bestName) : info.getKey().getFromMe() ? Optional.empty() : Optional.of(chat.name());
+    public @NotNull Optional<String> sender() {
+        var jid = senderJid();
+        if(jid.isEmpty()){
+            return Optional.empty();
+        }
+
+        var contact = MANAGER.findContactByJid(jid.get());
+        return contact.isEmpty() ? Optional.empty() : Optional.ofNullable(contact.get().bestName());
     }
 
-    public @NotNull Optional<WhatsappQuotedMessage> quotedMessage(){
+    public @NotNull Optional<String> senderJid() {
+        return info.getKey().getFromMe() ? Optional.empty() : info.hasParticipant() ? Optional.of(info.getParticipant()) : info.getKey().hasParticipant() ? Optional.of(info.getKey().getParticipant()) : Optional.of(info.getKey().getRemoteJid());
+    }
+
+    public @NotNull Optional<WhatsappMessage> quotedMessage(){
         var message = info.getMessage();
         if(!message.hasExtendedTextMessage()){
             return Optional.empty();
@@ -43,23 +61,11 @@ public record WhatsappMessage(@NotNull ProtoBuf.WebMessageInfo info) {
             return Optional.empty();
         }
 
-        var context = extendedMessage.getContextInfo();
-        var text = text(context.getQuotedMessage());
-        if(text.isEmpty()){
-            return Optional.empty();
-        }
-
-        if(!context.hasParticipant()){
-            return Optional.empty();
-        }
-
-        var participant = context.getParticipant();
-        var sender = MANAGER.findContactByJid(participant).map(WhatsappContact::bestName).orElse(participant);
-        return Optional.of(new WhatsappQuotedMessage(text.get(), sender, sender.equals(MANAGER.phoneNumber())));
+        return MANAGER.findMessage(MANAGER.findChatByMessage(this).orElseThrow(), extendedMessage.getContextInfo().getQuotedMessage());
     }
 
-    public @NotNull String chatName(){
-        var jid = info.hasMessage() && info.getMessage().hasExtendedTextMessage() && info.getMessage().getExtendedTextMessage().hasContextInfo() && info.getMessage().getExtendedTextMessage().getContextInfo().hasParticipant() ? info.getMessage().getExtendedTextMessage().getContextInfo().getParticipant() : info.hasParticipant() ? info.getParticipant() : info.getKey().getRemoteJid();
-        return MANAGER.findContactByJid(jid).map(WhatsappContact::bestName).orElse(jid);
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof WhatsappMessage that && that.info.getKey().getId().equals(this.info.getKey().getId());
     }
 }

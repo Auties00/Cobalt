@@ -2,6 +2,7 @@ package it.auties.whatsapp4j.socket;
 
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.api.WhatsappState;
+import it.auties.whatsapp4j.constant.UserPresence;
 import it.auties.whatsapp4j.model.*;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
@@ -20,11 +21,11 @@ import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.security.GeneralSecurityException;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -74,7 +75,6 @@ public class WhatsappWebSocket {
     }
   }
 
-  @SneakyThrows
   public void sendBinaryMessage(@NotNull WhatsappNode node, byte... tags) {
     Validate.isTrue(state == WhatsappState.LOGGED_IN, "WhatsappAPI: Cannot send a binary message, wrong state: %s".formatted(state.name()));
 
@@ -115,7 +115,7 @@ public class WhatsappWebSocket {
   }
 
   @OnMessage
-  public void onBinaryMessage(byte[] msg) throws GeneralSecurityException {
+  public void onBinaryMessage(byte[] msg) {
     Validate.isTrue(msg[0] != '!', "Server pong from whatsapp, why did this get through?");
     Validate.isTrue(state == WhatsappState.LOGGED_IN, "Not logged in, did whatsapp send us a binary message to early?");
 
@@ -134,20 +134,22 @@ public class WhatsappWebSocket {
     whatsappManager.digestWhatsappNode(whatsappMessage, listeners);
   }
 
-  @SneakyThrows
   private void generateQrCode(@NotNull String message){
     if(state == WhatsappState.LOGGED_IN){
       return;
     }
 
     var res = Response.fromWhatsappResponse(message);
-    var status = res.getInteger("status");
+    var status = res.getInt("status");
     Validate.isTrue(status != 429, "Out of attempts to scan the QR code");
 
-    var ttl = res.getInteger("ttl");
+    var ttl = res.getInt("ttl");
     CompletableFuture.delayedExecutor(ttl, TimeUnit.MILLISECONDS).execute(() -> generateQrCode(message));
 
-    qrCode.generateQRCodeImage(res.getNullableString("ref"), whatsappKeys.publicKey(), whatsappKeys.clientId()).open();
+    var ref = res.getString("ref");
+    Validate.isTrue(ref.isPresent(), "Cannot find ref for QR code generation");
+
+    qrCode.generateQRCodeImage(ref.get(), whatsappKeys.publicKey(), whatsappKeys.clientId()).open();
     this.state = WhatsappState.WAITING_FOR_LOGIN;
   }
 
@@ -156,46 +158,40 @@ public class WhatsappWebSocket {
     sendJsonMessage(login, () -> this.state = WhatsappState.SOLVE_CHALLENGE);
   }
 
-  @SneakyThrows
   private void solveChallenge(@NotNull String message){
     var res = Response.fromWhatsappResponse(message);
-    var status = res.getNullableInteger("status");
-    if(status != null){
+    res.getInteger("status").ifPresentOrElse(status -> {
       switch (status) {
-        case 200, 405 -> {
-          this.state = WhatsappState.LOGGED_IN;
-          return;
-        }
-
+        case 200, 405 -> this.state = WhatsappState.LOGGED_IN;
         case 401, 403, 409 -> {
           whatsappKeys.deleteKeysFromMemory();
           disconnect(null, false, true);
-          return;
         }
+        default -> sendChallenge(res);
       }
-    }
+    }, () -> sendChallenge(res));
+  }
 
-    var challengeBase64 = res.getNullableString("challenge");
-    if(challengeBase64 == null){
+  private void sendChallenge(@NotNull MapResponse res){
+    var challengeBase64 = res.getString("challenge");
+    if(challengeBase64.isEmpty()){
       this.state = WhatsappState.LOGGED_IN;
       return;
     }
 
-    var challenge = BytesArray.forBase64(challengeBase64);
+    var challenge = BytesArray.forBase64(challengeBase64.get());
     var signedChallenge = hmacSha256(challenge, Objects.requireNonNull(whatsappKeys.macKey()));
     var solveChallengeRequest = new SolveChallengeRequest(whatsappKeys, options, signedChallenge);
     sendJsonMessage(solveChallengeRequest, () -> this.state = WhatsappState.SENT_CHALLENGE);
   }
 
-  @SneakyThrows
   private void handleChallengeResponse(@NotNull String message){
     var res = Response.fromWhatsappResponse(message);
-    var status = res.getNullableInteger("status");
-    Validate.isTrue(status != null && status == 200, "Could not solve whatsapp challenge for server and client token renewal: %s".formatted(message));
+    var status = res.getInteger("status");
+    Validate.isTrue(status.isPresent() && status.get() == 200, "Could not solve whatsapp challenge for server and client token renewal: %s".formatted(message));
     this.state = WhatsappState.LOGGED_IN;
   }
 
-  @SneakyThrows
   private void login(@NotNull String message){
     var res = Response.fromWhatsappResponse(message).toModel(WhatsappUserInformation.class);
 
@@ -250,10 +246,8 @@ public class WhatsappWebSocket {
     session.getAsyncRemote().sendPing(ByteBuffer.allocate(0));
   }
 
-  @SneakyThrows
   private void handleMessage(@NotNull String message){
     var res = Response.fromJson(message);
-
     if(res.data() instanceof ListResponse listResponse){
       handleList(listResponse);
       return;
@@ -261,10 +255,9 @@ public class WhatsappWebSocket {
 
     var mapResponse = (MapResponse) res.data();
     if(whatsappManager.isPendingMessageId(res.tag())){
-      whatsappManager.resolvePendingMessage(res.tag(), mapResponse.getInteger("status"));
+      whatsappManager.resolvePendingMessage(res.tag(), mapResponse.getInt("status"));
       return;
     }
-
 
     if(res.description() == null){
       return;
@@ -274,6 +267,9 @@ public class WhatsappWebSocket {
       case "Conn" -> handleUserInformation(mapResponse.toModel(WhatsappUserInformation.class));
       case "Blocklist" -> handleBlocklist(mapResponse.toModel(WhatsappBlocklist.class));
       case "Cmd" -> handleCmd(mapResponse);
+      case "Props" -> handleProps(mapResponse.toModel(WhatsappProps.class));
+      case "Presence" -> handlePresence(mapResponse.toModel(WhatsappPresence.class));
+      case "Msg", "MsgInfo" -> {}
     }
   }
 
@@ -283,7 +279,7 @@ public class WhatsappWebSocket {
       return;
     }
 
-    whatsappManager.phoneNumber(info.getWid().replaceAll("@c.us", "@s.whatsapp.net"));
+    whatsappManager.phoneNumber(WhatsappIdUtils.parseJid(info.getWid()));
     listeners.forEach(listener -> listener.onConnected(info, false));
   }
 
@@ -291,16 +287,58 @@ public class WhatsappWebSocket {
     listeners.forEach(listener -> listener.onBlocklistUpdate(blocklist));
   }
 
+  private void handleProps(@NotNull WhatsappProps props) {
+    listeners.forEach(listener -> listener.onPropsReceived(props));
+  }
+
   private void handleCmd(@NotNull MapResponse res){
     if (!res.hasKey("type") || !res.hasKey("kind")) {
       return;
     }
 
-    var kind = res.getNullableString("kind");
+    var kind = res.getString("kind").orElse("unknown");
     disconnect(kind, false, options.reconnectWhenDisconnected().apply(kind));
   }
 
-  private void handleList(@NotNull ListResponse listResponse){
+  private void handlePresence(@NotNull WhatsappPresence res){
+    var chatOpt = whatsappManager.findChatByJid(res.getId());
+    if(chatOpt.isEmpty()){
+      return;
+    }
 
+    var chat = chatOpt.get();
+    if(chat.isGroup()){
+      if(res.getParticipant() == null) {
+        return;
+      }
+
+      var participantOpt = whatsappManager.findContactByJid(res.getParticipant());
+      if(participantOpt.isEmpty()){
+        return;
+      }
+
+      var participant = participantOpt.get();
+      chat.presences().put(participant, res.getPresence());
+      return;
+    }
+
+    var contactOpt = whatsappManager.findContactByJid(res.getId());
+    if(contactOpt.isEmpty()){
+      return;
+    }
+
+    var contact = contactOpt.get();
+    if(res.getOffsetFromLastSeen() != null) {
+      var lastSeen = contact.lastSeen();
+      var instant = lastSeen == null ? Instant.ofEpochSecond(res.getOffsetFromLastSeen()) : lastSeen.toInstant().plusSeconds(res.getOffsetFromLastSeen());
+      contact.lastSeen(ZonedDateTime.ofInstant(instant, ZoneId.systemDefault()));
+    }else if(res.getPresence() == UserPresence.UNAVAILABLE && (contact.lastKnownPresence() == UserPresence.AVAILABLE || contact.lastKnownPresence() == UserPresence.COMPOSING)){
+      contact.lastSeen(ZonedDateTime.ofInstant(Instant.now(), ZoneId.systemDefault()));
+    }
+    contact.lastKnownPresence(res.getPresence());
+  }
+
+  private void handleList(@NotNull ListResponse listResponse){
+    //TODO: Handle List Response
   }
 }

@@ -1,7 +1,6 @@
 package it.auties.whatsapp4j.response;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
@@ -12,19 +11,15 @@ public record MapResponse(@NotNull Map<String, Object> data) implements Response
         return data.containsKey(key);
     }
 
-    public String getString(@NotNull String key){
-        return getObject(key, String.class).orElseThrow();
+    public Optional<String> getString(@NotNull String key){
+        return getObject(key, String.class);
     }
 
-    public String getNullableString(@NotNull String key){
-        return getObject(key, String.class).orElse(null);
+    public Optional<Integer> getInteger(@NotNull String key){
+        return getObject(key, Integer.class);
     }
 
-    public Integer getNullableInteger(@NotNull String key){
-        return getObject(key, Integer.class).orElse(null);
-    }
-
-    public int getInteger(@NotNull String key){
+    public int getInt(@NotNull String key){
         return getObject(key, Integer.class).orElseThrow();
     }
 
@@ -32,7 +27,7 @@ public record MapResponse(@NotNull Map<String, Object> data) implements Response
         return Optional.ofNullable(data().get(key)).map(clazz::cast);
     }
 
-    public <T> @NotNull T toModel(Class<T> clazz) throws JsonProcessingException {
-        return JACKSON.reader().forType(clazz).readValue(JACKSON.writer().writeValueAsString(data));
+    public <T> @NotNull T toModel(Class<T> clazz) {
+        return JACKSON.convertValue(data, clazz);
     }
 }

@@ -5,7 +5,7 @@
  */
 package it.auties.whatsapp4j.utils;
 
-import it.auties.whatsapp4j.constant.ProtoBuf.WebMessageInfo;
+import it.auties.whatsapp4j.constant.ProtoBuf;
 import it.auties.whatsapp4j.constant.Tag;
 import it.auties.whatsapp4j.constant.Tokens;
 import it.auties.whatsapp4j.model.WhatsappNode;
@@ -181,7 +181,7 @@ public class BinaryDecoder {
             default -> throw new IllegalStateException("BinaryReader#readNode: unexpected tag: " + tag);
         };
 
-        return description.equals("message") ? WebMessageInfo.parseFrom(data.data()) : data.toString();
+        return description.equals("message") ? ProtoBuf.WebMessageInfo.parseFrom(data.data()) : data.toString();
     }
 
     private @NotNull List<WhatsappNode> readList(int tag) {

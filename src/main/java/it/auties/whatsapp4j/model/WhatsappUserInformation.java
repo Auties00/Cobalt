@@ -7,10 +7,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@ToString
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class WhatsappUserInformation {
     @JsonProperty("ref")
@@ -57,6 +59,7 @@ public class WhatsappUserInformation {
     @AllArgsConstructor
     @NoArgsConstructor
     @Data
+    @ToString
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class Features {
         @JsonProperty("URL")
@@ -68,6 +71,7 @@ public class WhatsappUserInformation {
     @AllArgsConstructor
     @NoArgsConstructor
     @Data
+    @ToString
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class Phone {
         @JsonProperty("wa_version")

@@ -10,13 +10,15 @@ import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.request.UserPresenceUpdateRequest;
 import it.auties.whatsapp4j.socket.WhatsappWebSocket;
 import it.auties.whatsapp4j.utils.BytesArray;
+import it.auties.whatsapp4j.utils.Validate;
+import it.auties.whatsapp4j.utils.WhatsappIdUtils;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 @Accessors(fluent = true)
 public class WhatsappAPI extends WhatsappListener {
@@ -59,8 +61,7 @@ public class WhatsappAPI extends WhatsappListener {
         return this;
     }
 
-    public void sendMessage(@NotNull String remoteJid, @NotNull String text, @NotNull Consumer<Integer> callback) {
-        var id = BytesArray.random(10).toHex();
+    public void sendMessage(@NotNull String remoteJid, @NotNull String text, @NotNull BiConsumer<WhatsappMessage, Integer> callback) {
         var message = ProtoBuf.WebMessageInfo.newBuilder()
                 .setMessage(ProtoBuf.Message.newBuilder()
                         .setConversation(text)
@@ -68,12 +69,44 @@ public class WhatsappAPI extends WhatsappListener {
                 .setKey(ProtoBuf.MessageKey.newBuilder()
                         .setFromMe(true)
                         .setRemoteJid(remoteJid)
-                        .setId(id)
+                        .setId(WhatsappIdUtils.randomId())
                         .build())
                 .setMessageTimestamp(Instant.now().getEpochSecond())
                 .setStatus(ProtoBuf.WebMessageInfo.WEB_MESSAGE_INFO_STATUS.PENDING)
                 .build();
 
+        sendMessage(message, callback);
+    }
+
+    public void sendMessage(@NotNull String remoteJid, @NotNull String text, @NotNull WhatsappMessage quotedMessage, @NotNull BiConsumer<WhatsappMessage, Integer> callback) {
+        var chat = manager.findChatByJid(remoteJid);
+        Validate.isTrue(chat.isPresent(), "WhatsappAPI: Cannot send a quoted message to %s as the chat doesn't exist", remoteJid);
+
+        var message = ProtoBuf.WebMessageInfo.newBuilder()
+                .setMessage(ProtoBuf.Message.newBuilder()
+                        .setExtendedTextMessage(ProtoBuf.ExtendedTextMessage.newBuilder()
+                                .setText(text)
+                                .setContextInfo(ProtoBuf.ContextInfo.newBuilder()
+                                        .setQuotedMessage(quotedMessage.info().getMessage())
+                                        .setParticipant(quotedMessage.senderJid().orElse(manager.phoneNumber()))
+                                        .setStanzaId(quotedMessage.info().getKey().getId())
+                                        .setRemoteJid(quotedMessage.info().getKey().getRemoteJid())
+                                        .build())
+                                .build())
+                        .build())
+                .setKey(ProtoBuf.MessageKey.newBuilder()
+                        .setFromMe(true)
+                        .setRemoteJid(remoteJid)
+                        .setId(WhatsappIdUtils.randomId())
+                        .build())
+                .setMessageTimestamp(Instant.now().getEpochSecond())
+                .setStatus(ProtoBuf.WebMessageInfo.WEB_MESSAGE_INFO_STATUS.PENDING)
+                .build();
+
+        sendMessage(message, callback);
+    }
+
+    public void sendMessage(@NotNull ProtoBuf.WebMessageInfo message, @NotNull BiConsumer<WhatsappMessage, Integer> callback){
         var node = WhatsappNodeBuilder.builder()
                 .description("action")
                 .attrs(Map.of("type", "relay", "epoch", String.valueOf(numberOfMessagesSent++)))

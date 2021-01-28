@@ -1,5 +1,6 @@
 package it.auties.whatsapp4j.model;
 
+import it.auties.whatsapp4j.constant.UserPresence;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -8,6 +9,8 @@ import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.ZonedDateTime;
+import java.util.Calendar;
 import java.util.Optional;
 
 @AllArgsConstructor
@@ -21,6 +24,8 @@ public class WhatsappContact{
     private @Nullable String name;
     private @Nullable String shortName;
     private @Nullable String profilePicture;
+    private @Nullable UserPresence lastKnownPresence;
+    private @Nullable ZonedDateTime lastSeen;
 
     public @Nullable String bestName(){
         return name != null ? name : shortName != null ? shortName : chosenName != null ? chosenName : null;
