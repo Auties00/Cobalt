@@ -1,8 +1,3 @@
-/*
-    Getting this class to work was not very easy, but I surely couldn't have done it without the help of:
-    https://github.com/JicuNull/WhatsJava/blob/master/src/main/java/icu/jnet/whatsjava/encryption/BinaryEncoder.java - Java implementation, helped me to correctly cast a byte to an unsigned int, before I was using a method that just didn't work
-    https://github.com/adiwajshing/Baileys/blob/master/src/Binary/Encoder.ts - Typescript implementation, the logic was far less error prone than the one used by the python implementation on https://github.com/sigalor/whatsapp-web-reveng and the one I came up with.
- */
 package it.auties.whatsapp4j.utils;
 
 import it.auties.whatsapp4j.constant.ProtoBuf;
@@ -12,13 +7,19 @@ import it.auties.whatsapp4j.model.WhatsappNode;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
-public record BinaryEncoder(List<Byte> cache) {
-    public byte @NotNull [] encodeMessage(@NotNull WhatsappNode node){
+public final class BinaryEncoder {
+    private final List<Byte> cache;
+    public BinaryEncoder() {
+        this.cache = new ArrayList<>();
+    }
+
+    public byte @NotNull [] encodeMessage(@NotNull WhatsappNode node) {
         cache.clear();
         return writeNode(node);
     }
@@ -44,7 +45,7 @@ public record BinaryEncoder(List<Byte> cache) {
     }
 
     private void pushUnsignedInts(int @NotNull [] ints) {
-        for(var entry : ints) cache.add((byte) entry);
+        for (var entry : ints) cache.add((byte) entry);
     }
 
     private void pushString(@NotNull String str) {
@@ -71,7 +72,7 @@ public record BinaryEncoder(List<Byte> cache) {
 
     private void writeJid(@Nullable String left, @NotNull String right) {
         this.pushUnsignedInt(Tag.JID_PAIR.data());
-        if(left != null && left.length() > 0){
+        if (left != null && left.length() > 0) {
             writeString(left, false);
         } else {
             this.writeToken(Tag.LIST_EMPTY.data());
@@ -111,8 +112,8 @@ public record BinaryEncoder(List<Byte> cache) {
 
     private void writeAttributes(@NotNull Map<String, String> attrs) {
         attrs.forEach((key, value) -> {
-                this.writeString(key, false);
-                this.writeString(value, false);
+            this.writeString(key, false);
+            this.writeString(value, false);
         });
     }
 
@@ -127,34 +128,58 @@ public record BinaryEncoder(List<Byte> cache) {
     }
 
     private void writeContent(@Nullable Object content) {
-        if(content == null){
+        if (content == null) {
             return;
         }
 
-        if(content instanceof String contentAsString){
+        if (content instanceof String contentAsString) {
             writeString(contentAsString, true);
-        }else if(content instanceof List<?> contentAsList){
+        } else if (content instanceof List<?> contentAsList) {
             Validate.isTrue(contentAsList.stream().allMatch(e -> e instanceof WhatsappNode), "Cannot encode content(%s): expected List<WhatsappNode>, got List<%s>", content, contentAsList.getClass().getTypeName());
             writeListStart(contentAsList.size());
             contentAsList.stream().map(WhatsappNode.class::cast).filter(Objects::nonNull).forEach(this::writeNode);
-        }else if(content instanceof ProtoBuf.WebMessageInfo contentAsMessage){
+        } else if (content instanceof ProtoBuf.WebMessageInfo contentAsMessage) {
             var data = contentAsMessage.toByteArray();
             this.writeByteLength(data.length);
             this.pushUnsignedInts(toUnsignedIntArray(data));
-        }else {
+        } else {
             throw new IllegalArgumentException("Cannot encode content " + content);
         }
     }
 
-    private byte @NotNull [] toByteArray(){
+    private byte @NotNull [] toByteArray() {
         var array = new byte[cache.size()];
         for (var x = 0; x < cache.size(); x++) array[x] = cache.get(x);
         return array;
     }
 
-    private int @NotNull [] toUnsignedIntArray(byte @NotNull [] input){
+    private int @NotNull [] toUnsignedIntArray(byte @NotNull [] input) {
         var array = new int[input.length];
         for (var x = 0; x < input.length; x++) array[x] = input[x] & 0xff;
         return array;
     }
+
+    public List<Byte> cache() {
+        return cache;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || obj.getClass() != this.getClass()) return false;
+        var that = (BinaryEncoder) obj;
+        return Objects.equals(this.cache, that.cache);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(cache);
+    }
+
+    @Override
+    public String toString() {
+        return "BinaryEncoder[" +
+                "cache=" + cache + ']';
+    }
+
 }

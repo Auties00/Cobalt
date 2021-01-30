@@ -20,6 +20,7 @@
         <curve25519-version>0.5.0</curve25519-version>
         <hkdf-version>1.0.2</hkdf-version>
         <protobuf-version>3.14.0</protobuf-version>
+        <google-reflections-version>0.9.12</google-reflections-version>
     </properties>
 
     <build>
@@ -40,10 +41,10 @@
                 <configuration>
                     <annotationProcessorPaths>
                         <annotationProcessorPath>
-                        <groupId>org.projectlombok</groupId>
-                        <artifactId>lombok</artifactId>
-                        <version>${lombok-version}</version>
-                    </annotationProcessorPath>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok-version}</version>
+                        </annotationProcessorPath>
                         <annotationProcessorPath>
                             <groupId>io.soabase.record-builder</groupId>
                             <artifactId>record-builder-processor</artifactId>
@@ -115,6 +116,11 @@
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
             <version>${nullsafe-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.reflections</groupId>
+            <artifactId>reflections</artifactId>
+            <version>${google-reflections-version}</version>
         </dependency>
 
         <!-- Cryptographic dependencies -->

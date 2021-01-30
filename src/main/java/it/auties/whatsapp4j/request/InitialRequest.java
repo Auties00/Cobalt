@@ -6,7 +6,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-
 public class InitialRequest extends WhatsappRequest {
     public InitialRequest(@NotNull WhatsappKeysManager keysManager, @NotNull WhatsappConfiguration options) {
         super(keysManager, options);

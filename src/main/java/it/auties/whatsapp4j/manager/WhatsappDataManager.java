@@ -4,8 +4,10 @@ import it.auties.whatsapp4j.constant.MuteType;
 import it.auties.whatsapp4j.constant.ProtoBuf;
 import it.auties.whatsapp4j.model.WhatsappListener;
 import it.auties.whatsapp4j.model.*;
-import it.auties.whatsapp4j.utils.WhatsappIdUtils;
+import it.auties.whatsapp4j.utils.WhatsappUtils;
+import lombok.AccessLevel;
 import lombok.Data;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
@@ -14,35 +16,27 @@ import org.jetbrains.annotations.Nullable;
 import java.time.Instant;
 import java.util.*;
 
-@RequiredArgsConstructor
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Data
 @Accessors(fluent = true)
 public class WhatsappDataManager {
-    private static final WhatsappDataManager INSTANCE = new WhatsappDataManager(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), Instant.now().getEpochSecond());
     private final @NotNull List<WhatsappChat> chats;
     private final @NotNull List<WhatsappContact> contacts;
     private final @NotNull List<WhatsappPendingMessage> pendingMessages;
     private final long initializationTimeStamp;
     private @Nullable String phoneNumber;
-
-    public static WhatsappDataManager singletonInstance() {
-        return INSTANCE;
-    }
+    private static final @NotNull @Getter WhatsappDataManager singletonInstance = new WhatsappDataManager(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), Instant.now().getEpochSecond());
 
     public Optional<WhatsappContact> findContactByJid(@NotNull String jid) {
-        return contacts.stream().filter(e -> Objects.equals(e.jid(), WhatsappIdUtils.parseJid(jid))).findFirst();
+        return contacts.stream().filter(e -> Objects.equals(e.jid(), WhatsappUtils.parseJid(jid))).findFirst();
     }
 
     public Optional<WhatsappContact> findContactByName(@NotNull String name) {
         return contacts.stream().filter(e -> Objects.equals(e.name(), name)).findFirst();
     }
 
-    public Optional<WhatsappMessage> findMessage(@NotNull WhatsappChat chat, @NotNull ProtoBuf.Message message){
-        return chat.messages().stream().filter(e -> Objects.equals(e.info().getMessage(), message)).findAny();
-    }
-
     public Optional<WhatsappChat> findChatByJid(@NotNull String jid) {
-        return chats.stream().filter(e -> Objects.equals(e.jid(), WhatsappIdUtils.parseJid(jid))).findFirst();
+        return chats.stream().filter(e -> Objects.equals(e.jid(), WhatsappUtils.parseJid(jid))).findFirst();
     }
 
     public Optional<WhatsappMessage> findMessageById(@NotNull WhatsappChat chat, @NotNull String id){
@@ -75,14 +69,11 @@ public class WhatsappDataManager {
 
     public void resolvePendingMessage(@NotNull String id, int statusCode){
         var pendingMessage = pendingMessages.stream().filter(e -> Objects.equals(e.message().info().getKey().getId(), id)).findAny().orElseThrow();
-        var chat = findChatByMessage(pendingMessage.message());
-        if(chat.isEmpty()){
-            return;
-        }
-
-        chat.get().messages().add(pendingMessage.message());
-        pendingMessages.remove(pendingMessage);
-        pendingMessage.callback().accept(pendingMessage.message(), statusCode);
+        findChatByMessage(pendingMessage.message()).ifPresent(chat -> {
+            chat.messages().add(pendingMessage.message());
+            pendingMessage.callback().accept(pendingMessage.message(), statusCode);
+            pendingMessages.remove(pendingMessage);
+        });
     }
 
     public void clear() {
@@ -239,7 +230,7 @@ public class WhatsappDataManager {
                         chat.unreadMessages(chat.unreadMessages() + 1);
                     }
 
-                    listeners.forEach(listener -> listener.onNewMessageReceived(chat, message, fromMe));
+                    listeners.forEach(listener -> listener.onNewMessageReceived(chat, message));
                 });
 
     }

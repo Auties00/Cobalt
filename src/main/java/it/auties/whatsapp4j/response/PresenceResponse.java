@@ -1,4 +1,4 @@
-package it.auties.whatsapp4j.model;
+package it.auties.whatsapp4j.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -17,7 +17,7 @@ import java.util.List;
 @Data
 @ToString
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class WhatsappPresence {
+public class PresenceResponse {
     @JsonProperty("id")
     private @NotNull String id;
     @JsonProperty("participant")

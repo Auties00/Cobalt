@@ -1,12 +1,18 @@
-package it.auties.whatsapp4j.model;
+package it.auties.whatsapp4j.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@AllArgsConstructor
+@NoArgsConstructor
+@Data
 @ToString
-public class WhatsappProps {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class PropsResponse {
     @JsonProperty("webCatalogManagement")
     public boolean webCatalogManagement;
     @JsonProperty("catalogManagement")

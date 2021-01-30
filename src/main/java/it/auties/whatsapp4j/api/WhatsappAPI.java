@@ -1,5 +1,6 @@
 package it.auties.whatsapp4j.api;
 
+import it.auties.whatsapp4j.annotation.RegisterListenerProcessor;
 import it.auties.whatsapp4j.constant.Flag;
 import it.auties.whatsapp4j.constant.Metric;
 import it.auties.whatsapp4j.constant.ProtoBuf;
@@ -9,9 +10,8 @@ import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.request.UserPresenceUpdateRequest;
 import it.auties.whatsapp4j.socket.WhatsappWebSocket;
-import it.auties.whatsapp4j.utils.BytesArray;
 import it.auties.whatsapp4j.utils.Validate;
-import it.auties.whatsapp4j.utils.WhatsappIdUtils;
+import it.auties.whatsapp4j.utils.WhatsappUtils;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
@@ -21,12 +21,11 @@ import java.util.*;
 import java.util.function.BiConsumer;
 
 @Accessors(fluent = true)
-public class WhatsappAPI extends WhatsappListener {
+public class WhatsappAPI {
     private @NotNull WhatsappWebSocket socket;
     private final @NotNull WhatsappConfiguration configuration;
     private final @Getter @NotNull WhatsappDataManager manager;
     private final @Getter @NotNull WhatsappKeysManager keys;
-    private final @NotNull List<WhatsappListener> listeners;
     private int numberOfMessagesSent;
     public WhatsappAPI(){
         this(WhatsappConfiguration.defaultOptions());
@@ -34,10 +33,9 @@ public class WhatsappAPI extends WhatsappListener {
 
     public WhatsappAPI(@NotNull WhatsappConfiguration configuration){
         this.configuration = configuration;
-        this.listeners = new ArrayList<>();
         this.manager = WhatsappDataManager.singletonInstance();
         this.keys = WhatsappKeysManager.fromPreferences();
-        this.socket = new WhatsappWebSocket(listeners, configuration, keys);
+        this.socket = new WhatsappWebSocket(configuration, keys);
         this.numberOfMessagesSent = 0;
     }
 
@@ -57,7 +55,7 @@ public class WhatsappAPI extends WhatsappListener {
     }
 
     public WhatsappAPI reconnect(){
-        this.socket = socket.disconnect(null, false, true);
+        socket.disconnect(null, false, true);
         return this;
     }
 
@@ -69,7 +67,7 @@ public class WhatsappAPI extends WhatsappListener {
                 .setKey(ProtoBuf.MessageKey.newBuilder()
                         .setFromMe(true)
                         .setRemoteJid(remoteJid)
-                        .setId(WhatsappIdUtils.randomId())
+                        .setId(WhatsappUtils.randomId())
                         .build())
                 .setMessageTimestamp(Instant.now().getEpochSecond())
                 .setStatus(ProtoBuf.WebMessageInfo.WEB_MESSAGE_INFO_STATUS.PENDING)
@@ -97,7 +95,7 @@ public class WhatsappAPI extends WhatsappListener {
                 .setKey(ProtoBuf.MessageKey.newBuilder()
                         .setFromMe(true)
                         .setRemoteJid(remoteJid)
-                        .setId(WhatsappIdUtils.randomId())
+                        .setId(WhatsappUtils.randomId())
                         .build())
                 .setMessageTimestamp(Instant.now().getEpochSecond())
                 .setStatus(ProtoBuf.WebMessageInfo.WEB_MESSAGE_INFO_STATUS.PENDING)
@@ -160,12 +158,12 @@ public class WhatsappAPI extends WhatsappListener {
     }
 
     public WhatsappAPI registerListener(WhatsappListener listener){
-        listeners.add(listener);
+        Validate.isTrue(socket.listeners().add(listener), "WhatsappAPI: Cannot add listener %s", listener.getClass().getName());
         return this;
     }
 
     public WhatsappAPI removeListener(WhatsappListener listener){
-        listeners.remove(listener);
+        Validate.isTrue(socket.listeners().remove(listener), "WhatsappAPI: Cannot remove listener %s", listener.getClass().getName());
         return this;
     }
 }

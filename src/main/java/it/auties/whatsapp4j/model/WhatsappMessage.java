@@ -2,14 +2,14 @@ package it.auties.whatsapp4j.model;
 
 import it.auties.whatsapp4j.constant.ProtoBuf;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
-import it.auties.whatsapp4j.utils.WhatsappIdUtils;
+import it.auties.whatsapp4j.utils.WhatsappUtils;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
-import java.time.Instant;
 import java.util.Optional;
 
 @AllArgsConstructor
@@ -20,36 +20,24 @@ public class WhatsappMessage {
     private static final WhatsappDataManager MANAGER = WhatsappDataManager.singletonInstance();
     private @NotNull ProtoBuf.WebMessageInfo info;
 
-    public @NotNull Optional<String> text(@NotNull ProtoBuf.Message message) {
-        if (message.hasConversation()) {
-            return Optional.of(message.getConversation());
-        }
-
-        if (message.hasExtendedTextMessage()) {
-            return Optional.of(message.getExtendedTextMessage().getText());
-        }
-
-        return Optional.empty();
-    }
-
     public @NotNull Optional<String> text() {
-        return text(info.getMessage());
+        return WhatsappUtils.extractText(info.getMessage());
     }
 
-    public @NotNull Optional<String> sender() {
+    public @NotNull Optional<WhatsappContact> sender() {
         var jid = senderJid();
         if(jid.isEmpty()){
             return Optional.empty();
         }
 
-        var contact = MANAGER.findContactByJid(jid.get());
-        return contact.isEmpty() ? Optional.empty() : Optional.ofNullable(contact.get().bestName());
+        return MANAGER.findContactByJid(jid.get());
     }
 
     public @NotNull Optional<String> senderJid() {
         return info.getKey().getFromMe() ? Optional.empty() : info.hasParticipant() ? Optional.of(info.getParticipant()) : info.getKey().hasParticipant() ? Optional.of(info.getKey().getParticipant()) : Optional.of(info.getKey().getRemoteJid());
     }
 
+    @SneakyThrows
     public @NotNull Optional<WhatsappMessage> quotedMessage(){
         var message = info.getMessage();
         if(!message.hasExtendedTextMessage()){
@@ -61,7 +49,27 @@ public class WhatsappMessage {
             return Optional.empty();
         }
 
-        return MANAGER.findMessage(MANAGER.findChatByMessage(this).orElseThrow(), extendedMessage.getContextInfo().getQuotedMessage());
+        var context = extendedMessage.getContextInfo();
+        if(!context.hasQuotedMessage()){
+            return Optional.empty();
+        }
+
+        var chat = MANAGER.findChatByMessage(this);
+        if(chat.isEmpty()){
+            return Optional.empty();
+        }
+
+        var textOpt = WhatsappUtils.extractText(context.getQuotedMessage());
+        if(textOpt.isEmpty()){
+            return Optional.empty();
+        }
+
+        var textToSearch = textOpt.get();
+        return chat.get().messages().stream().filter(e -> e.text().map(text -> text.equals(textToSearch) && context.getStanzaId().equals(e.info().getKey().getId())).orElse(false)).findAny();
+    }
+
+    public boolean sentByMe(){
+        return info.getKey().getFromMe();
     }
 
     @Override

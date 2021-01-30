@@ -1,23 +1,28 @@
 package it.auties.whatsapp4j.model;
 
+import it.auties.whatsapp4j.response.BlocklistResponse;
+import it.auties.whatsapp4j.response.PropsResponse;
+import it.auties.whatsapp4j.response.UserInformationResponse;
 import org.jetbrains.annotations.NotNull;
 
-public abstract class WhatsappListener {
-    public void onConnected(@NotNull WhatsappUserInformation info, boolean firstLogin){}
-    public void onDisconnected(){}
-    public void onInformationUpdate(WhatsappUserInformation info){}
+public interface WhatsappListener {
+    default void onConnected(@NotNull UserInformationResponse info, boolean firstLogin){}
+    default void onDisconnected(){}
+    default void onInformationUpdate(UserInformationResponse info){}
 
-    public void onPhoneStatusUpdate(){}
+    default void onPhoneStatusUpdate(){}
 
-    public void onContactsReceived(){ }
-    public void onContactReceived(){ }
+    default void onContactsReceived(){ }
+    default void onContactReceived(){ }
 
-    public void onChatsReceived(){}
-    public void onChatReceived(WhatsappChat chat){}
+    default void onChatsReceived(){}
+    default void onChatReceived(WhatsappChat chat){}
 
-    public void onNewMessageReceived(@NotNull WhatsappChat chat, @NotNull WhatsappMessage message, boolean sentByMe){}
+    default void onNewMessageReceived(@NotNull WhatsappChat chat, @NotNull WhatsappMessage message){
 
-    public void onBlocklistUpdate(@NotNull WhatsappBlocklist blocklist){}
+    }
 
-    public void onPropsReceived(@NotNull WhatsappProps props){}
+    default void onBlocklistUpdate(@NotNull BlocklistResponse blocklist){}
+
+    default void onPropsUpdate(@NotNull PropsResponse props){}
 }
