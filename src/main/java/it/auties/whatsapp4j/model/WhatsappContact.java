@@ -1,33 +1,49 @@
 package it.auties.whatsapp4j.model;
 
-import it.auties.whatsapp4j.constant.UserPresence;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.ToString;
+import lombok.*;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.ZonedDateTime;
-import java.util.Calendar;
+import java.util.Map;
 import java.util.Optional;
 
 @AllArgsConstructor
-@Builder
 @Data
+@Builder
 @Accessors(fluent = true)
 @ToString
-public class WhatsappContact{
-    private @NotNull String jid;
-    private @Nullable String chosenName;
-    private @Nullable String name;
-    private @Nullable String shortName;
-    private @Nullable String profilePicture;
-    private @Nullable UserPresence lastKnownPresence;
+public class WhatsappContact {
+    private final @NotNull String jid;
+    private final @Nullable String chosenName;
+    private final @Nullable String name;
+    private final @Nullable String shortName;
+    private @Nullable WhatsappContactStatus lastKnownPresence;
     private @Nullable ZonedDateTime lastSeen;
+    public static @NotNull WhatsappContact fromAttributes(@NotNull Map<String, String> attrs){
+        return WhatsappContact.builder()
+                .jid(attrs.get("jid"))
+                .name(attrs.get("name"))
+                .chosenName(attrs.get("notify"))
+                .shortName(attrs.get("short"))
+                .build();
+    }
 
-    public @Nullable String bestName(){
-        return name != null ? name : shortName != null ? shortName : chosenName != null ? chosenName : null;
+    public @NotNull Optional<String> bestName() {
+        return Optional.ofNullable(name != null ? name : chosenName);
+    }
+
+    public @NotNull String bestName(@NotNull String orElse) {
+        return bestName().orElse(orElse);
+    }
+
+
+    public @NotNull Optional<WhatsappContactStatus> lastKnownPresence(){
+        return Optional.ofNullable(lastKnownPresence);
+    }
+
+    public @NotNull Optional<ZonedDateTime> lastSeen(){
+        return Optional.ofNullable(lastSeen);
     }
 }

@@ -1,0 +1,19 @@
+package it.auties.whatsapp4j.request.impl;
+
+import it.auties.whatsapp4j.model.WhatsappConfiguration;
+import it.auties.whatsapp4j.request.model.JsonRequest;
+import it.auties.whatsapp4j.response.impl.json.DiscardResponse;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
+
+public abstract class LogOutRequest extends JsonRequest<DiscardResponse> {
+    public LogOutRequest(@NotNull WhatsappConfiguration configuration) {
+        super(configuration);
+    }
+
+    @Override
+    public @NotNull List<Object> buildBody() {
+        return List.of("admin", "Conn", "disconnect");
+    }
+}

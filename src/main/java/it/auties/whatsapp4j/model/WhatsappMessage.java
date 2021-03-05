@@ -1,8 +1,9 @@
 package it.auties.whatsapp4j.model;
 
-import it.auties.whatsapp4j.constant.ProtoBuf;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
+import it.auties.whatsapp4j.model.WhatsappProtobuf.WebMessageInfo;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.SneakyThrows;
@@ -10,6 +11,8 @@ import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @AllArgsConstructor
@@ -18,54 +21,54 @@ import java.util.Optional;
 @ToString
 public class WhatsappMessage {
     private static final WhatsappDataManager MANAGER = WhatsappDataManager.singletonInstance();
-    private @NotNull ProtoBuf.WebMessageInfo info;
+    private @NotNull WebMessageInfo info;
+    private @NotNull Map<WhatsappContact, WebMessageInfo.WEB_MESSAGE_INFO_STATUS> readStatus;
+    public WhatsappMessage(@NotNull WebMessageInfo info){
+        this(info, new HashMap<>());
+    }
 
     public @NotNull Optional<String> text() {
         return WhatsappUtils.extractText(info.getMessage());
     }
 
+    public @NotNull String id(){
+        return info.getKey().getId();
+    }
+
     public @NotNull Optional<WhatsappContact> sender() {
         var jid = senderJid();
-        if(jid.isEmpty()){
-            return Optional.empty();
-        }
-
-        return MANAGER.findContactByJid(jid.get());
+        return jid.isEmpty() ? Optional.empty() : MANAGER.findContactByJid(jid.get());
     }
 
     public @NotNull Optional<String> senderJid() {
-        return info.getKey().getFromMe() ? Optional.empty() : info.hasParticipant() ? Optional.of(info.getParticipant()) : info.getKey().hasParticipant() ? Optional.of(info.getKey().getParticipant()) : Optional.of(info.getKey().getRemoteJid());
+        return sentByMe() ? Optional.empty() : info.hasParticipant() ? Optional.of(info.getParticipant()) : info.getKey().hasParticipant() ? Optional.of(info.getKey().getParticipant()) : Optional.of(info.getKey().getRemoteJid());
     }
 
     @SneakyThrows
     public @NotNull Optional<WhatsappMessage> quotedMessage(){
-        var message = info.getMessage();
-        if(!message.hasExtendedTextMessage()){
-            return Optional.empty();
+        if (info.hasMessage()) {
+            System.out.println("Msg");
+            return WhatsappUtils.extractContext(info.getMessage()).flatMap(context -> MANAGER.findChatByMessage(this).flatMap(chat -> MANAGER.findQuotedMessageInChatByContext(chat, context)));
         }
 
-        var extendedMessage = message.getExtendedTextMessage();
-        if(!extendedMessage.hasContextInfo()){
-            return Optional.empty();
-        }
+        System.out.println("no message");
+        return Optional.empty();
+    }
 
-        var context = extendedMessage.getContextInfo();
-        if(!context.hasQuotedMessage()){
-            return Optional.empty();
-        }
+    public boolean starred(){
+        return info.getStarred();
+    }
 
-        var chat = MANAGER.findChatByMessage(this);
-        if(chat.isEmpty()){
-            return Optional.empty();
-        }
+    public void starred(boolean starred){
+        this.info = info.toBuilder().setStarred(starred).build();
+    }
 
-        var textOpt = WhatsappUtils.extractText(context.getQuotedMessage());
-        if(textOpt.isEmpty()){
-            return Optional.empty();
-        }
+    public @NotNull WebMessageInfo.WEB_MESSAGE_INFO_STATUS status(){
+        return info.getStatus();
+    }
 
-        var textToSearch = textOpt.get();
-        return chat.get().messages().stream().filter(e -> e.text().map(text -> text.equals(textToSearch) && context.getStanzaId().equals(e.info().getKey().getId())).orElse(false)).findAny();
+    public void status(@NotNull WebMessageInfo.WEB_MESSAGE_INFO_STATUS status){
+        this.info = info.toBuilder().setStatus(status).build();
     }
 
     public boolean sentByMe(){

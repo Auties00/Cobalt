@@ -1,12 +1,6 @@
 package it.auties.whatsapp4j.annotation;
 
 import it.auties.whatsapp4j.model.WhatsappListener;
-
-import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 import org.reflections.Reflections;
@@ -15,6 +9,11 @@ import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @UtilityClass
 public class RegisterListenerProcessor {
