@@ -13,33 +13,79 @@ import java.util.Base64;
 import java.util.Optional;
 import java.util.stream.IntStream;
 
+/**
+ * An utility class that wraps an array of bytes
+ * It provides an easy interface to modify said data, convert it or generate it
+ * This is intended to only be used for WhatsappWeb's WebSocket binary operations
+ */
 public record BinaryArray(byte[] data) {
+    /**
+     * Returns a {@code BinaryArray} wrapping an empty bytes array
+     * @return an empty {@code BinaryArray}
+     */
     public static @NotNull BinaryArray empty(){
         return forArray(new byte[]{});
     }
 
+    /**
+     * Returns a {@code BinaryArray} wrapping an input array of bytes
+     *
+     * @param in the array of bytes to wrap
+     * @return a new {@code BinaryArray}, its content might be empty
+     */
     public static @NotNull BinaryArray forArray(byte[] in){
         return new BinaryArray(in);
     }
 
+    /**
+     * Returns a {@code BinaryArray} wrapping a single byte
+     *
+     * @param in the byte to wrap
+     * @return a new non empty {@code BinaryArray}
+     */
     public static @NotNull BinaryArray singleton(byte in){
         return new BinaryArray(new byte[]{in});
     }
 
+    /**
+     * Returns a {@code BinaryArray} wrapping the array of bytes representing a UTF-8 string
+     *
+     * @param in the String to wrap
+     * @return a new {@code BinaryArray}, its content might be empty
+     */
     public static @NotNull BinaryArray forString(@NotNull String in){
         return forArray(in.getBytes());
     }
 
-    public static @NotNull BinaryArray forBase64(String input){
+    /**
+     * Returns a {@code BinaryArray} wrapping the array of bytes representing a UTF-8 string encoded using the Base64 format
+     *
+     * @param input the Base64 encoded String to wrap
+     * @return a new {@code BinaryArray}, its content might be empty
+     */
+    public static @NotNull BinaryArray forBase64(@NotNull String input){
         return forArray(Base64.getDecoder().decode(input));
     }
 
+    /**
+     * Returns a {@code BinaryArray} wrapping the array of pseudo random bytes with length equal to {@param length}
+     *
+     * @param length the length of the array to wrap
+     * @return a new {@code BinaryArray}, its content can be empty only if {@param length} equals 0
+     */
     public static @NotNull BinaryArray random(int length){
         final var result = new byte[length];
         new SecureRandom().nextBytes(result);
         return forArray(result);
     }
 
+    /**
+     * Returns a new {@code BinaryArray} wrapping a new byte array
+     * Said new byte array is obtained by slicing the byte array that this object wraps from index 0, inclusive, to {@param end}, exclusive
+     *
+     * @param end the exclusive index used to slice this object's bytes array
+     * @return a new {@code BinaryArray} with the above characteristics
+     */
     public @NotNull BinaryArray cut(int end){
         return slice(0, end);
     }

@@ -16,6 +16,10 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
+/**
+ * A utility class to find all classes annotated with {@code RegisterListener}
+ * This class uses Google's reflections library to find said classes anywhere in the project
+ */
 @UtilityClass
 public class RegisterListenerProcessor {
     private final Reflections reflections = new Reflections(new ConfigurationBuilder()

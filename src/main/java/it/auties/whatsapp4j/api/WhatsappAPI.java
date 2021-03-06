@@ -32,6 +32,12 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
+/**
+ * A class used to interface a user to WhatsappWeb's WebSocket
+ * It provides various functionalities, including the possibility to query, set and modify data associated with the loaded session of whatsapp
+ * It can be configured using a default configuration or a custom one
+ * Multiple instances of this class can be initialized, though it is not advisable as {@code WhatsappDataManager} is a singleton and cannot distinguish between the data associated with each session
+ */
 @Accessors(fluent = true)
 public class WhatsappAPI {
     private final @NotNull WhatsappWebSocket socket;

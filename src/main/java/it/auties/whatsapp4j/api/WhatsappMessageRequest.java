@@ -12,6 +12,12 @@ import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 
+/**
+ * An utility class used to make it easier to build a raw {@code WebMessageInfo}
+ * This class specifies the content, recipient and metadata of said message
+ * Various named constructors are available to initialize this class easily
+ * An associated builder class is accessible using the static {@code builder} method
+ */
 @Builder
 @Accessors(fluent = true)
 public class WhatsappMessageRequest {
