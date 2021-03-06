@@ -1,6 +1,6 @@
 package it.auties.whatsapp4j.response.impl.binary;
 
-import it.auties.whatsapp4j.response.model.BinaryResponseModel;
+import it.auties.whatsapp4j.response.model.binary.BinaryResponseModel;
 import it.auties.whatsapp4j.model.WhatsappChat;
 import it.auties.whatsapp4j.model.WhatsappNode;
 import lombok.NoArgsConstructor;

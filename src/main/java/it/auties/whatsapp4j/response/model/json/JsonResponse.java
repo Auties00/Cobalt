@@ -1,9 +1,11 @@
-package it.auties.whatsapp4j.response.model;
+package it.auties.whatsapp4j.response.model.json;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.auties.whatsapp4j.response.model.shared.Response;
+import it.auties.whatsapp4j.response.model.shared.ResponseModel;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;

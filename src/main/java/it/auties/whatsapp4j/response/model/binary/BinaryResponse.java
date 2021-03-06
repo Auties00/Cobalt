@@ -1,11 +1,11 @@
-package it.auties.whatsapp4j.response.model;
+package it.auties.whatsapp4j.response.model.binary;
 
 import it.auties.whatsapp4j.model.WhatsappNode;
+import it.auties.whatsapp4j.response.model.shared.Response;
+import it.auties.whatsapp4j.response.model.shared.ResponseModel;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.ParameterizedType;
-import java.util.NoSuchElementException;
 
 public record BinaryResponse(@NotNull WhatsappNode node) implements Response {
     public <T extends ResponseModel> @NotNull T toModel(@NotNull Class<T> clazz) {

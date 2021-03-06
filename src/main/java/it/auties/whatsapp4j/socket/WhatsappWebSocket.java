@@ -7,10 +7,10 @@ import it.auties.whatsapp4j.model.*;
 import it.auties.whatsapp4j.request.impl.*;
 import it.auties.whatsapp4j.response.impl.binary.ChatResponse;
 import it.auties.whatsapp4j.response.impl.json.*;
-import it.auties.whatsapp4j.response.model.JsonListResponse;
-import it.auties.whatsapp4j.response.model.JsonResponse;
-import it.auties.whatsapp4j.response.model.BinaryResponse;
-import it.auties.whatsapp4j.response.impl.WhatsappResponse;
+import it.auties.whatsapp4j.response.model.json.JsonListResponse;
+import it.auties.whatsapp4j.response.model.json.JsonResponse;
+import it.auties.whatsapp4j.response.model.binary.BinaryResponse;
+import it.auties.whatsapp4j.response.impl.shared.WhatsappResponse;
 import it.auties.whatsapp4j.utils.*;
 import jakarta.websocket.*;
 import lombok.AllArgsConstructor;
@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 
 import static it.auties.whatsapp4j.utils.CypherUtils.*;
 
-@ClientEndpoint(configurator = WebSocketConfiguration.class)
+@ClientEndpoint(configurator = WhatsappSocketConfiguration.class)
 @AllArgsConstructor
 @Data
 @Accessors(fluent = true)
@@ -76,7 +76,7 @@ public class WhatsappWebSocket {
   @OnMessage
   public void onBinaryMessage(byte @NotNull [] msg) {
     Validate.isTrue(msg[0] != '!', "Server pong from whatsapp, why did this get through?");
-    Validate.isTrue(state == SocketState.LOGGED_IN, "Not logged in, did whatsapp send us a binary message to early?");
+    Validate.isTrue(state == SocketState.LOGGED_IN, "Not logged in, did whatsapp send us a binary message to early?", IllegalStateException.class);
 
     var binaryMessage = BinaryArray.forArray(msg);
     var tagAndMessagePair = binaryMessage.indexOf(',').map(binaryMessage::split).orElseThrow();
@@ -86,7 +86,7 @@ public class WhatsappWebSocket {
 
     var message = messageContent.slice(32);
     var hmacValidation = hmacSha256(message, Objects.requireNonNull(whatsappKeys.macKey()));
-    Validate.isTrue(hmacValidation.equals(messageContent.cut(32)), "Cannot login: Hmac validation failed!");
+    Validate.isTrue(hmacValidation.equals(messageContent.cut(32)), "Cannot login: Hmac validation failed!", SecurityException.class);
 
     var decryptedMessage = aesDecrypt(message, Objects.requireNonNull(whatsappKeys.encKey()));
     var whatsappMessage = binaryDecoder.decodeDecryptedMessage(decryptedMessage);
@@ -113,7 +113,7 @@ public class WhatsappWebSocket {
 
     var res = JsonResponse.fromJson(message);
     var status = res.getInt("status");
-    Validate.isTrue(status != 429, "Out of attempts to scan the QR code");
+    Validate.isTrue(status != 429, "Out of attempts to scan the QR code", IllegalStateException.class);
 
     var ttl = res.getInt("ttl");
     CompletableFuture.delayedExecutor(ttl, TimeUnit.MILLISECONDS).execute(() -> generateQrCode(message));
@@ -174,7 +174,7 @@ public class WhatsappWebSocket {
     var sharedSecretExpanded = hkdfExpand(sharedSecret, 80);
 
     var hmacValidation = hmacSha256(secret.cut(32).merged(secret.slice(64)), sharedSecretExpanded.slice(32, 64));
-    Validate.isTrue(hmacValidation.equals(secret.slice(32, 64)), "Cannot login: Hmac validation failed!");
+    Validate.isTrue(hmacValidation.equals(secret.slice(32, 64)), "Cannot login: Hmac validation failed!", SecurityException.class);
 
     var keysEncrypted = sharedSecretExpanded.slice(64).merged(secret.slice(64));
     var key = sharedSecretExpanded.cut(32);
@@ -186,14 +186,14 @@ public class WhatsappWebSocket {
   }
 
   public void connect() {
-    Validate.isTrue(state == SocketState.NOTHING, "WhatsappAPI: Cannot establish a connection with whatsapp as one already exists");
+    Validate.isTrue(state == SocketState.NOTHING,  "WhatsappAPI: Cannot establish a connection with whatsapp as one already exists", IllegalStateException.class);
     openConnection();
     scheduler.scheduleAtFixedRate(this::sendPing, 0, 1, TimeUnit.MINUTES);
   }
 
   @SneakyThrows
   public void disconnect(@Nullable String reason, boolean logout, boolean reconnect){
-    Validate.isTrue(state != SocketState.NOTHING, "WhatsappAPI: Cannot terminate the connection with whatsapp as it doesn't exist");
+    Validate.isTrue(state != SocketState.NOTHING, "WhatsappAPI: Cannot terminate the connection with whatsapp as it doesn't exist", IllegalStateException.class);
     whatsappManager.clear();
     if(logout) new LogOutRequest(options){}.send(session(), whatsappKeys::deleteKeysFromMemory);
     session().close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, reason));

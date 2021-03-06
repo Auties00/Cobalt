@@ -2,8 +2,10 @@ package it.auties.whatsapp4j.utils;
 
 import at.favre.lib.crypto.HKDF;
 import it.auties.whatsapp4j.binary.BinaryArray;
+import it.auties.whatsapp4j.model.WhatsappProtobuf;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
+import org.apache.xmlgraphics.image.loader.impl.imageio.ImageIOUtil;
 import org.jetbrains.annotations.NotNull;
 import org.whispersystems.curve25519.Curve25519;
 import org.whispersystems.curve25519.Curve25519KeyPair;
@@ -12,6 +14,8 @@ import javax.crypto.Cipher;
 import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import javax.imageio.ImageIO;
+import java.net.URL;
 
 @UtilityClass
 public class CypherUtils {

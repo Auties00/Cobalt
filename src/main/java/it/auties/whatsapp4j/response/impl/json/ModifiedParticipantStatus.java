@@ -9,11 +9,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.Map;
 
-@Jacksonized
 public record ModifiedParticipantStatus(String jid, int status) {
     @JsonCreator
-    public static ModifiedParticipantStatus forJson(@NotNull Map<String, Map<String, Integer>> json) {
-        var jid = new ArrayList<>(json.keySet()).get(0);
-        return new ModifiedParticipantStatus(jid, json.get(jid).get("code"));
+    public ModifiedParticipantStatus(@NotNull Map<String, Map<String, Integer>> json) {
+        this(new ArrayList<>(json.keySet()).get(0), json.get(new ArrayList<>(json.keySet()).get(0)).get("code"));
     }
 }

@@ -32,7 +32,7 @@ public class WhatsappMessages extends ArrayList<WhatsappMessage> {
 
     @Override
     public boolean addAll(Collection<? extends WhatsappMessage> c) {
-        return c.stream().map(this::add).reduce(true, (a, b) -> a && b);
+        return c.stream().map(this::addOrReplace).reduce(true, (a, b) -> a && b);
     }
 
     @Override

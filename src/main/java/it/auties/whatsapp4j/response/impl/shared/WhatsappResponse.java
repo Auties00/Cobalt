@@ -1,12 +1,13 @@
-package it.auties.whatsapp4j.response.impl;
+package it.auties.whatsapp4j.response.impl.shared;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.soabase.recordbuilder.core.RecordBuilder;
-import it.auties.whatsapp4j.response.model.JsonListResponse;
-import it.auties.whatsapp4j.response.model.JsonResponse;
-import it.auties.whatsapp4j.response.model.Response;
+import it.auties.whatsapp4j.response.impl.WhatsappResponseBuilder;
+import it.auties.whatsapp4j.response.model.json.JsonListResponse;
+import it.auties.whatsapp4j.response.model.json.JsonResponse;
+import it.auties.whatsapp4j.response.model.shared.Response;
 import lombok.ToString;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

@@ -3,7 +3,7 @@ package it.auties.whatsapp4j.request.impl;
 
 import it.auties.whatsapp4j.model.WhatsappConfiguration;
 import it.auties.whatsapp4j.request.model.JsonRequest;
-import it.auties.whatsapp4j.response.model.JsonResponseModel;
+import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;

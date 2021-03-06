@@ -4,7 +4,7 @@ import it.auties.whatsapp4j.response.impl.json.PhoneBatteryResponse;
 import it.auties.whatsapp4j.response.impl.json.BlocklistResponse;
 import it.auties.whatsapp4j.response.impl.json.PropsResponse;
 import it.auties.whatsapp4j.response.impl.json.UserInformationResponse;
-import it.auties.whatsapp4j.response.model.JsonListResponse;
+import it.auties.whatsapp4j.response.model.json.JsonListResponse;
 import org.jetbrains.annotations.NotNull;
 
 public interface WhatsappListener {

@@ -1,9 +1,8 @@
 package it.auties.whatsapp4j.request.impl;
 
-import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.model.WhatsappConfiguration;
 import it.auties.whatsapp4j.request.model.BinaryRequest;
-import it.auties.whatsapp4j.response.model.ResponseModel;
+import it.auties.whatsapp4j.response.model.shared.ResponseModel;
 import it.auties.whatsapp4j.model.WhatsappNode;
 import org.jetbrains.annotations.NotNull;
 

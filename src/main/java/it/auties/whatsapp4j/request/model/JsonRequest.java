@@ -1,9 +1,9 @@
 package it.auties.whatsapp4j.request.model;
 
 import it.auties.whatsapp4j.model.WhatsappConfiguration;
-import it.auties.whatsapp4j.response.model.JsonResponse;
-import it.auties.whatsapp4j.response.model.JsonResponseModel;
-import it.auties.whatsapp4j.response.model.Response;
+import it.auties.whatsapp4j.response.model.json.JsonResponse;
+import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
+import it.auties.whatsapp4j.response.model.shared.Response;
 import it.auties.whatsapp4j.utils.Validate;
 import jakarta.websocket.Session;
 import lombok.SneakyThrows;

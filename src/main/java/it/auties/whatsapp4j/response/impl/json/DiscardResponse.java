@@ -1,9 +1,7 @@
 package it.auties.whatsapp4j.response.impl.json;
 
-import it.auties.whatsapp4j.response.model.JsonResponseModel;
-import lombok.ToString;
+import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
 
-@ToString
-public class DiscardResponse implements JsonResponseModel {
+public record DiscardResponse() implements JsonResponseModel {
 
 }

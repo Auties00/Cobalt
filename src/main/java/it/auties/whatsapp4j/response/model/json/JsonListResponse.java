@@ -1,6 +1,6 @@
-package it.auties.whatsapp4j.response.model;
+package it.auties.whatsapp4j.response.model.json;
 
-import it.auties.whatsapp4j.response.model.Response;
+import it.auties.whatsapp4j.response.model.shared.Response;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;

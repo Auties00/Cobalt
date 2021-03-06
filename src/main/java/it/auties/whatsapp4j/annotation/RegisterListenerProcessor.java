@@ -13,6 +13,7 @@ import org.reflections.util.ConfigurationBuilder;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 @UtilityClass
@@ -33,7 +34,7 @@ public class RegisterListenerProcessor {
             return (WhatsappListener) Arrays.stream(clazz.getConstructors())
                     .filter(constructor -> constructor.getParameterCount() == 0)
                     .findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException("WhatsappAPI: Cannot initialize listener %s, missing no args constructor".formatted(clazz.getName())))
+                    .orElseThrow(() -> new MissingConstructorException("WhatsappAPI: Cannot initialize listener %s, missing no args constructor", clazz.getName()))
                     .newInstance();
         }catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
             throw new RuntimeException("WhatsappAPI: Cannot initialize class %s%s".formatted(clazz.getName(), e.getMessage() == null ? "" : " with error %s".formatted(e.getMessage())));

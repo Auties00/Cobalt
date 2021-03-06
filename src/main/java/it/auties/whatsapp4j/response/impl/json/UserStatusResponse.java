@@ -1,23 +1,21 @@
 package it.auties.whatsapp4j.response.impl.json;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.whatsapp4j.response.model.JsonResponseModel;
-import lombok.Data;
+import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
+
 import lombok.ToString;
+import lombok.extern.jackson.Jacksonized;
 import org.jetbrains.annotations.NotNull;
 
-@Data
+import java.util.Optional;
+
+@Jacksonized
 @ToString
 public class UserStatusResponse implements JsonResponseModel {
-    private String status;
-
     @JsonProperty("status")
-    public void setStatus(@NotNull Object val) {
-        if(val instanceof Integer){
-            this.status = null;
-            return;
-        }
+    private Object status;
 
-        this.status = (String) val;
+    public @NotNull Optional<String> status(){
+        return status instanceof Integer ? Optional.empty() : Optional.of((String) status);
     }
 }

@@ -1,5 +1,7 @@
 package it.auties.whatsapp4j.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
