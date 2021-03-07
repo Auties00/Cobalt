@@ -4,6 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
+/**
+ * The constants of this enumerated type describe the various flags that can be used when sending a WhatsappNode, encrypted using {@code BinaryEncoder}, to WhatsappWeb's WebSocket
+ * Some of these constants are also used to describe a {@code WhatsappContact}'s status in the {@code WhatsappContactStatus} class
+ */
 @AllArgsConstructor
 @Accessors(fluent = true)
 public enum BinaryFlag {

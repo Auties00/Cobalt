@@ -1,4 +1,4 @@
-package it.auties.whatsapp4j.annotation;
+package it.auties.whatsapp4j.listener;
 
 import org.jetbrains.annotations.NotNull;
 

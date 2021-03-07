@@ -9,10 +9,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.stream.IntStream;
 
-public class BinaryEncoder {
-    private final @NotNull List<Byte> cache;
-    public BinaryEncoder() {
-        this.cache = new ArrayList<>();
+/**
+ * A class used to encode a WhatsappNode and then send it to WhatsappWeb's WebSocket
+ */
+public record BinaryEncoder(@NotNull List<Byte> cache) {
+    public BinaryEncoder(){
+        this(new ArrayList<>());
     }
 
     public byte @NotNull [] encodeMessage(@NotNull WhatsappNode node) {
@@ -51,7 +53,7 @@ public class BinaryEncoder {
     private void writeByteLength(int length) {
         var tag = length >= 1 << 20 ? BinaryTag.BINARY_32 : length >= 256 ? BinaryTag.BINARY_20 : BinaryTag.BINARY_8;
         pushUnsignedInt(tag.data());
-        switch (tag){
+        switch (tag) {
             case BINARY_32 -> pushInt4(length);
             case BINARY_20 -> pushInt20(length);
             case BINARY_8 -> pushUnsignedInt(length);
@@ -109,7 +111,7 @@ public class BinaryEncoder {
         writeJid(token.substring(0, jidSepIndex), token.substring(jidSepIndex + 1));
     }
 
-    private void writeStrings(@NotNull String... tokens){
+    private void writeStrings(@NotNull String... tokens) {
         Arrays.stream(tokens).forEach(token -> writeString(token, false));
     }
 
@@ -149,7 +151,7 @@ public class BinaryEncoder {
         throw new IllegalArgumentException("Cannot encode content " + content);
     }
 
-    private boolean validateList(@NotNull List<?> list){
+    private boolean validateList(@NotNull List<?> list) {
         return list.stream().map(Object::getClass).allMatch(WhatsappNode.class::isAssignableFrom);
     }
 
@@ -160,6 +162,6 @@ public class BinaryEncoder {
     }
 
     private int @NotNull [] toUnsignedIntArray(byte @NotNull [] input) {
-        return IntStream.range(0, input.length).map(x -> input[x] & 0xff).toArray();
+        return IntStream.range(0, input.length).map(x -> Byte.toUnsignedInt(input[x])).toArray();
     }
 }

@@ -1,6 +1,7 @@
 package it.auties.whatsapp4j.socket;
 
 import it.auties.whatsapp4j.binary.*;
+import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.model.*;
@@ -284,7 +285,7 @@ public class WhatsappWebSocket {
             .filter(Optional::isPresent)
             .map(Optional::get)
             .forEach(message -> {
-              message.readStatus().put(to.get(), WhatsappProtobuf.WebMessageInfo.WEB_MESSAGE_INFO_STATUS.forNumber(ackResponse.ack()));
+              message.individualReadStatus().put(to.get(), WhatsappProtobuf.WebMessageInfo.WEB_MESSAGE_INFO_STATUS.forNumber(ackResponse.ack()));
               whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onMessageReadStatusUpdate(chat.get(), to.get(), message)));
             });
   }
@@ -353,6 +354,7 @@ public class WhatsappWebSocket {
     }
 
     contact.lastKnownPresence(res.presence());
+    chat.presences().put(contact, res.presence());
     whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onContactPresenceUpdate(chat, contact)));
   }
 

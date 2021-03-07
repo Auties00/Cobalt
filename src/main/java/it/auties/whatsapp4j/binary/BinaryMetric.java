@@ -8,6 +8,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.stream.IntStream;
 
+/**
+ * The constants of this enumerated type describe the various metrics that can be used when sending a WhatsappNode, encrypted using {@code BinaryEncoder}, to WhatsappWeb's WebSocket
+ */
 @AllArgsConstructor
 @Accessors(fluent = true)
 public enum BinaryMetric {

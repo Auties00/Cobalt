@@ -1,4 +1,4 @@
-package it.auties.whatsapp4j.annotation;
+package it.auties.whatsapp4j.listener;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

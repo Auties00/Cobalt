@@ -1,8 +1,3 @@
-/*
-    Getting this class to work was not very easy, but I surely couldn't have done it without the help of:
-    https://github.com/JicuNull/WhatsJava/blob/master/src/main/java/icu/jnet/whatsjava/encryption/BinaryDecoder.java - Java implementation, helped me to correctly cast a byte to an unsigned int, before I was using a method that just didn't work
-    https://github.com/adiwajshing/Baileys/blob/master/src/Binary/Decoder.ts - Typescript implementation, the logic was far less error prone than the one used by the python implementation on https://github.com/sigalor/whatsapp-web-reveng and the one I came up with.
- */
 package it.auties.whatsapp4j.binary;
 
 import it.auties.whatsapp4j.model.WhatsappNode;
@@ -18,10 +13,22 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+/**
+ * A class used to decode an encrypted BinaryArray received from WhatsappWeb's WebSocket
+ * Getting this class to work was not very easy, but I surely couldn't have done it without the help of:
+ * https://github.com/JicuNull/WhatsJava/blob/master/src/main/java/icu/jnet/whatsjava/encryption/BinaryDecoder.java - Java implementation, helped me to correctly cast a byte to an unsigned int, before I was using a method that just didn't work
+ * https://github.com/adiwajshing/Baileys/blob/master/src/Binary/Decoder.ts - Typescript implementation, the logic was far less error prone than the one used by the python implementation on https://github.com/sigalor/whatsapp-web-reveng and the one I came up with.
+ */
 public class BinaryDecoder {
     private BinaryArray buffer;
     private int index;
 
+    /**
+     * Decrypts the encoded BinaryArray provided as input
+     * This method should not be used by multiple concurrent threads on the same instance
+     * @param buffer the BinaryArray to decrypt
+     * @return a WhatsappNode containing all the information that was decrypted
+     */
     public @NotNull WhatsappNode decodeDecryptedMessage(@NotNull BinaryArray buffer) {
         this.buffer = buffer;
         this.index = 0;
@@ -94,7 +101,7 @@ public class BinaryDecoder {
     }
 
     private int readUnsignedInt(){
-        return readByte() & 0xff;
+        return Byte.toUnsignedInt(readByte());
     }
 
     private boolean isListTag(int tag) {

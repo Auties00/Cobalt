@@ -1,5 +1,6 @@
 package it.auties.whatsapp4j.manager;
 
+import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.model.WhatsappProtobuf.WebMessageInfo;
 import it.auties.whatsapp4j.request.model.Request;
 import it.auties.whatsapp4j.response.impl.json.PhoneBatteryResponse;
@@ -20,6 +21,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+/**
+ * This class is a singleton and holds all of the data regarding a session with WhatsappWeb's WebSocket
+ * It also provides various methods to query this data
+ * It should not be used by multiple sessions as, being a singleton, it cannot determine and divide data coming from different sessions
+ * It should not be initialized manually
+ */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Data
 @Accessors(fluent = true)
@@ -34,47 +41,104 @@ public class WhatsappDataManager {
     private @Nullable String phoneNumber;
     private long tag;
 
+    /**
+     * Queries the first contact whose jid is equal to {@param jid}
+     * @param jid the jid to search
+     * @return a non empty Optional containing the first result if any is found otherwise an empty Optional empty
+     */
     public @NotNull Optional<WhatsappContact> findContactByJid(@NotNull String jid) {
         return contacts.stream().filter(e -> Objects.equals(e.jid(), WhatsappUtils.parseJid(jid))).findFirst();
     }
 
+    /**
+     * Queries the first contact whose name is equal to {@param name}
+     * @param name the name to search
+     * @return a non empty Optional containing the first result if any is found otherwise an empty Optional empty
+     */
     public @NotNull Optional<WhatsappContact> findContactByName(@NotNull String name) {
         return contacts.stream().filter(e -> Objects.equals(e.bestName().orElse(null), name)).findFirst();
     }
 
+    /**
+     * Queries every contact whose name is equal to {@param name}
+     * @param name the name to search
+     * @return a Set containing every result
+     */
     public @NotNull Set<WhatsappContact> findContactsByName(@NotNull String name) {
         return contacts.stream().filter(e -> Objects.equals(e.bestName().orElse(null), name)).collect(Collectors.toUnmodifiableSet());
     }
 
+    /**
+     * Queries the first chat whose jid is equal to {@param jid}
+     * @param jid the jid to search
+     * @return a non empty Optional containing the first result if any is found otherwise an empty Optional empty
+     */
     public @NotNull Optional<WhatsappChat> findChatByJid(@NotNull String jid) {
         return chats.stream().filter(e -> Objects.equals(e.jid(), WhatsappUtils.parseJid(jid))).findFirst();
     }
 
+    /**
+     * Queries the message in {@param chat} whose id is equal to {@param id}
+     * @param chat the chat to search in
+     * @param id the id to search
+     * @return a non empty Optional containing the result if it is found otherwise an empty Optional empty
+     */
     public @NotNull Optional<WhatsappMessage> findMessageById(@NotNull WhatsappChat chat, @NotNull String id){
         return chat.messages().stream().filter(e -> Objects.equals(e.info().getKey().getId(), id)).findAny();
     }
 
+    /**
+     * Queries the quoted message in {@param chat} using {@param context}
+     * @param chat the chat to search in
+     * @param context the context to use
+     * @return a non empty Optional containing the result if it is found otherwise an empty Optional empty
+     */
     public @NotNull Optional<WhatsappMessage> findQuotedMessageInChatByContext(@NotNull WhatsappChat chat, @NotNull WhatsappProtobuf.ContextInfo context){
-        System.out.println("Lookup for: " + context);
         return chat.messages().stream().filter(e -> context.getStanzaId().equals(e.info().getKey().getId())).findAny();
     }
 
+    /**
+     * Queries the chat associated with {@param message}
+     * @param message the message to use as context
+     * @return a non empty Optional containing the result if it is found otherwise an empty Optional empty
+     */
     public @NotNull Optional<WhatsappChat> findChatByMessage(@NotNull WhatsappMessage message){
         return findChatByJid(message.info().getKey().getRemoteJid());
     }
 
+    /**
+     * Queries the first chat whose name is equal to {@param name}
+     * @param name the name to search
+     * @return a non empty Optional containing the first result if any is found otherwise an empty Optional empty
+     */
     public @NotNull Optional<WhatsappChat> findChatByName(@NotNull String name) {
         return chats.stream().filter(e -> Objects.equals(e.name(), name)).findFirst();
     }
 
+    /**
+     * Queries every chat whose name is equal to {@param name}
+     * @param name the name to search
+     * @return a Set containing every result
+     */
     public @NotNull Set<WhatsappChat> findChatsByName(@NotNull String name) {
         return chats.stream().filter(e -> Objects.equals(e.name(), name)).collect(Collectors.toUnmodifiableSet());
     }
 
-    public @NotNull Optional<Request<?>> findPendingRequest(String tag){
+    /**
+     * Queries the first Request whose tag is equal to {@param tag}
+     * @param tag the tag to search
+     * @return a non empty Optional containing the first result if any is found otherwise an empty Optional empty
+     */
+    public @NotNull Optional<Request<?>> findPendingRequest(@NotNull String tag){
         return pendingRequests.stream().filter(req -> req.tag().equals(tag)).findAny();
     }
 
+    /**
+     * Queries the first Request whose tag is equal to {@param messageTag} and, if any is found, resolves the request using {@param response}
+     * @param messageTag the tag to search
+     * @param response the response to complete the request with
+     * @return true if any request matching {@param messageTag} is found
+     */
     public boolean resolvePendingRequest(@NotNull String messageTag, @NotNull Response response) {
         var req = findPendingRequest(messageTag);
         if(req.isEmpty()){
@@ -87,11 +151,46 @@ public class WhatsappDataManager {
         return true;
     }
 
+    /**
+     * Clears all data associated with the WhatsappWeb's WebSocket session
+     */
     public void clear() {
         chats.clear();
         contacts.clear();
+        pendingRequests.clear();
     }
 
+    /**
+     * Returns the incremental tag and then increments it
+     * @return the tag
+     */
+    public long tagAndIncrement(){
+        return tag++;
+    }
+
+    /**
+     * Returns the phone number
+     * @return the phone number
+     * @throws NullPointerException if the phone number is null
+     */
+    public @NotNull String phoneNumber(){
+        return Objects.requireNonNull(phoneNumber, "WhatsappAPI: Phone number is missing");
+    }
+
+    /**
+     * Executes a runnable on a single threaded ExecutorService
+     * This should be used to be sure that when a listener should be called it's called on a thread that is not the WebSocket's
+     * If this condition isn't met, if the thread is put on hold to wait for a response for a pending request, the WebSocket will freeze
+     */
+    public void callOnListenerThread(@NotNull Runnable runnable){
+        listenerService.execute(runnable);
+    }
+
+    /**
+     * Digests a {@code node} adding the data it contains to the data this singleton holds
+     * @param socket the WebSocket associated with the WhatsappWeb's session
+     * @param node the WhatsappNode to digest
+     */
     public void digestWhatsappNode(@NotNull WhatsappWebSocket socket, @NotNull WhatsappNode node) {
         var description = node.description();
         var attrs = node.attrs();
@@ -101,13 +200,9 @@ public class WhatsappDataManager {
             return;
         }
 
-        if (description.equals("response")) {
-            parseResponse(socket, node, content);
-            return;
-        }
-
-        if (description.equals("action")) {
-            parseAction(socket, node, content);
+        switch (description) {
+            case "response" -> parseResponse(socket, node, content);
+            case "action" -> parseAction(socket, node, content);
         }
     }
 
@@ -193,7 +288,7 @@ public class WhatsappDataManager {
     }
 
     private void archiveChat(@NotNull WhatsappChat chat, boolean archive) {
-        chat.archived(archive);
+        chat.isArchived(archive);
         listeners.forEach(listener -> callOnListenerThread(() -> {
             if (archive) {
                 listener.onChatArchived(chat);
@@ -329,8 +424,8 @@ public class WhatsappDataManager {
             return;
         }
 
-        message.status(status);
-        listeners.forEach(listener -> callOnListenerThread(() -> listener.onMessageStatusUpdate(chat, message)));
+        message.globalStatus(status);
+        listeners.forEach(listener -> callOnListenerThread(() -> listener.onMessageGlobalReadStatusUpdate(chat, message)));
     }
 
     private void parseReadStatus(@NotNull WhatsappNode firstChildNode) {
@@ -393,7 +488,7 @@ public class WhatsappDataManager {
             return;
         }
 
-        if(!message.sentByMe() && message.status() != WebMessageInfo.WEB_MESSAGE_INFO_STATUS.READ && !message.info().getIgnore()){
+        if(!message.sentByMe() && message.globalStatus() != WebMessageInfo.WEB_MESSAGE_INFO_STATUS.READ && !message.info().getIgnore()){
             chat.unreadMessages(chat.unreadMessages() + 1);
         }
 
@@ -409,17 +504,5 @@ public class WhatsappDataManager {
         }catch (InterruptedException | ExecutionException ex){
             throw new RuntimeException("WhatsappAPI: Cannot query chat to build unknown chat with jid %s".formatted(jid));
         }
-    }
-
-    public long tagAndIncrement(){
-        return tag++;
-    }
-
-    public @NotNull String phoneNumber(){
-        return Objects.requireNonNull(phoneNumber, "WhatsappAPI: Phone number is missing");
-    }
-    
-    public void callOnListenerThread(@NotNull Runnable runnable){
-        listenerService.execute(runnable);
     }
 }

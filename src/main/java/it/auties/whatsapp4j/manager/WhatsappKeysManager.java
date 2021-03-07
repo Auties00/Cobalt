@@ -18,6 +18,10 @@ import java.util.Base64;
 import java.util.Objects;
 import java.util.prefs.Preferences;
 
+/**
+ * This class is a data class used to hold the clientId, serverToken, clientToken, publicKey, privateKey, encryptionKey and macKey
+ * It can be serialized using Jackson and deserialized using the fromPreferences named constructor
+ */
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
@@ -34,6 +38,10 @@ public class WhatsappKeysManager {
     @JsonProperty
     private @Nullable BinaryArray encKey, macKey;
 
+    /**
+     * Constructs a new WhatsappKeysManager from the saved preferences on this machine
+     * @return a new WhatsappKeysManager with the above characteristics
+     */
     @SneakyThrows
     public static WhatsappKeysManager fromPreferences() {
         final var preferences = Preferences.userRoot().get("whatsapp", null);
@@ -45,16 +53,27 @@ public class WhatsappKeysManager {
         return new WhatsappKeysManager(Base64.getEncoder().encodeToString(BinaryArray.random(16).data()), null, null, keyPair.getPublicKey(), keyPair.getPrivateKey(), null, null);
     }
 
+    /**
+     * Checks if the serverToken and clientToken are not null
+     * @return true if both the serverToken and clientToken are not null
+     */
     public boolean mayRestore() {
         return Objects.nonNull(serverToken) && Objects.nonNull(clientToken);
     }
 
+    /**
+     * Initializes the serverToken, clientToken, encryptionKey and macKey with non null values
+     */
     @SneakyThrows
     public void initializeKeys(@NotNull String serverToken, @NotNull String clientToken, @NotNull BinaryArray encKey, @NotNull BinaryArray macKey){
         encKey(encKey).macKey(macKey).serverToken(serverToken).clientToken(clientToken);
         Preferences.userRoot().put("whatsapp", JACKSON_WRITER.writeValueAsString(this));
     }
 
+    /**
+     * Clears all the keys from this machine's memory
+     * This method doesn't clear this object's values
+     */
     @SneakyThrows
     public void deleteKeysFromMemory(){
         Preferences.userRoot().clear();

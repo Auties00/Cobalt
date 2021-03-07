@@ -7,6 +7,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
 
+
 @UtilityClass
 public class BinaryTokens {
     public final @NotNull List<String> DOUBLE_BYTE = List.of();

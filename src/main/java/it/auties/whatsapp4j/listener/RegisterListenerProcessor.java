@@ -1,6 +1,5 @@
-package it.auties.whatsapp4j.annotation;
+package it.auties.whatsapp4j.listener;
 
-import it.auties.whatsapp4j.model.WhatsappListener;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 import org.reflections.Reflections;
@@ -13,7 +12,6 @@ import org.reflections.util.ConfigurationBuilder;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 /**

@@ -9,13 +9,35 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
+/**
+ * The constants of this enumerated type describe the various status that a {@link WhatsappContact} can be in
+ */
 @AllArgsConstructor
 @Accessors(fluent = true)
 public enum WhatsappContactStatus {
+    /**
+     * When the contact is online
+     */
     AVAILABLE(BinaryFlag.AVAILABLE),
+
+    /**
+     * When the contact is offline
+     */
     UNAVAILABLE(BinaryFlag.UNAVAILABLE),
+
+    /**
+     * When the contact is writing a text message
+     */
     COMPOSING(BinaryFlag.COMPOSING),
+
+    /**
+     * When the contact is recording an audio message
+     */
     RECORDING(BinaryFlag.RECORDING),
+
+    /**
+     * When the contact stops writing or recording
+     */
     PAUSED(BinaryFlag.PAUSED);
 
     @Getter

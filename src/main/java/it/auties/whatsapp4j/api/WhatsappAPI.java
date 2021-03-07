@@ -1,9 +1,10 @@
 package it.auties.whatsapp4j.api;
 
-import it.auties.whatsapp4j.annotation.MissingConstructorException;
-import it.auties.whatsapp4j.annotation.RegisterListenerProcessor;
+import it.auties.whatsapp4j.listener.MissingConstructorException;
+import it.auties.whatsapp4j.listener.RegisterListenerProcessor;
 import it.auties.whatsapp4j.binary.BinaryFlag;
 import it.auties.whatsapp4j.binary.BinaryMetric;
+import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.request.impl.NodeRequest;
@@ -11,7 +12,6 @@ import it.auties.whatsapp4j.request.impl.QueryRequest;
 import it.auties.whatsapp4j.request.impl.SubscribeUserPresence;
 import it.auties.whatsapp4j.response.impl.binary.ChatResponse;
 import it.auties.whatsapp4j.response.impl.binary.MessagesResponse;
-import it.auties.whatsapp4j.response.impl.binary.NodeResponse;
 import it.auties.whatsapp4j.response.impl.json.*;
 import it.auties.whatsapp4j.socket.WhatsappWebSocket;
 import it.auties.whatsapp4j.utils.Validate;
@@ -22,10 +22,8 @@ import lombok.experimental.Accessors;
 import org.glassfish.tyrus.core.Beta;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
 import java.time.ZonedDateTime;
 import java.time.chrono.ChronoZonedDateTime;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -796,7 +794,7 @@ public class WhatsappAPI {
      *
      */
     public @NotNull CompletableFuture<SimpleStatusResponse> archive(@NotNull WhatsappChat chat){
-        Validate.isTrue(!chat.archived(), "WhatsappAPI: Cannot archive chat with jid %s as it's already archived", IllegalStateException.class, chat.jid());
+        Validate.isTrue(!chat.isArchived(), "WhatsappAPI: Cannot archive chat with jid %s as it's already archived", IllegalStateException.class, chat.jid());
 
         var lastMessage = chat.lastMessage().orElseThrow();
         var node = WhatsappNodeBuilder.builder()
@@ -818,7 +816,7 @@ public class WhatsappAPI {
      *
      */
     public @NotNull CompletableFuture<SimpleStatusResponse> unarchive(@NotNull WhatsappChat chat){
-        Validate.isTrue(chat.archived(), "WhatsappAPI: Cannot unarchive chat with jid %s as it's not archived", IllegalStateException.class, chat.jid());
+        Validate.isTrue(chat.isArchived(), "WhatsappAPI: Cannot unarchive chat with jid %s as it's not archived", IllegalStateException.class, chat.jid());
         var lastMessage = chat.lastMessage().orElseThrow();
         var node = WhatsappNodeBuilder.builder()
                 .description("action")
