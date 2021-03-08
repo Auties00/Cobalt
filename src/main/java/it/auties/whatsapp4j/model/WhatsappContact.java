@@ -2,7 +2,10 @@ package it.auties.whatsapp4j.model;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -25,7 +28,7 @@ import java.util.Optional;
 @ToString
 public class WhatsappContact {
     /**
-     * The non null unique id used to identify this contact
+     * The non null unique jid used to identify this contact
      */
     private final @NotNull String jid;
 

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.soabase.recordbuilder.core.RecordBuilder;
-import it.auties.whatsapp4j.response.impl.WhatsappResponseBuilder;
 import it.auties.whatsapp4j.response.model.json.JsonListResponse;
 import it.auties.whatsapp4j.response.model.json.JsonResponse;
 import it.auties.whatsapp4j.response.model.shared.Response;
@@ -15,10 +14,28 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.util.HashMap;
 
+/**
+ * A model that contains information about a response sent by Whatsapp for a request
+ *
+ * @param tag the tag used for the request
+ * @param description a nullable String that describes how to categorize the data that is object holds
+ * @param data the data that this object holds
+ */
 @RecordBuilder
 @ToString
 public record WhatsappResponse(@NotNull String tag, @Nullable String description, @NotNull Response data) {
+    /**
+     * An instance of Jackson used to deserialize JSON Strings
+     */
     private static final ObjectMapper JACKSON = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+    /**
+     * Constructs a new instance of WhatsappResponse from a json string
+     *
+     * @param parse the json string to parse
+     * @throws IllegalArgumentException if {@param parse} cannot be parsed
+     * @return a new instance of WhatsappResponse with the above characteristics
+     */
     public static @NotNull WhatsappResponse fromJson(@NotNull String parse) {
         try {
             var split = parse.split(",", 2);

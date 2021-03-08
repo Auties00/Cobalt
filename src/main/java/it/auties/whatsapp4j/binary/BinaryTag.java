@@ -4,10 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
-import java.util.stream.IntStream;
 
 /**
  * The constants of this enumerated type describe the various tags used by an encrypted {@code BinaryArray}

@@ -2,5 +2,10 @@ package it.auties.whatsapp4j.response.model.json;
 
 import it.auties.whatsapp4j.response.model.shared.ResponseModel;
 
-public interface JsonResponseModel extends ResponseModel {
+/**
+ * An interface to represent a class that may represent a JSON String sent by WhatsappWeb's WebSocket
+ *
+ * @param <T> the type of the data this object holds
+ */
+public non-sealed interface JsonResponseModel extends ResponseModel {
 }

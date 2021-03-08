@@ -57,6 +57,7 @@
                     <release>${java-version}</release>
                     <compilerArgs>
                         <arg>--enable-preview</arg>
+                        <arg>--add-exports=lombok/lombok.extern.jackson=NativeWhatsapp4j</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>

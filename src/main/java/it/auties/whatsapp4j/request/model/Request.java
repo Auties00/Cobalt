@@ -1,12 +1,13 @@
 package it.auties.whatsapp4j.request.model;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.core.type.TypeReference;
+import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.model.WhatsappConfiguration;
+import it.auties.whatsapp4j.model.WhatsappNode;
 import it.auties.whatsapp4j.response.model.shared.Response;
 import it.auties.whatsapp4j.response.model.shared.ResponseModel;
-import it.auties.whatsapp4j.binary.BinaryEncoder;
+import it.auties.whatsapp4j.utils.Validate;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -16,32 +17,101 @@ import org.jetbrains.annotations.NotNull;
 import java.lang.reflect.ParameterizedType;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * An abstract model class that represents a request made from the client to the server
+ * This class only allows two types of requests:<br/>
+ * {@link JsonRequest} - a json encoded response made from a List of Objects<br/>
+ * {@link BinaryRequest} - an aes encrypted {@link WhatsappNode}<br/>
+ * All of its implementations must be abstract in order for the accessor {@link Request#modelClass()} to work
+ * @param <M>
+ */
 @RequiredArgsConstructor
 @Accessors(fluent = true)
-public abstract class Request<M extends ResponseModel> {
-    protected static final ObjectWriter JACKSON = new ObjectMapper().writerWithDefaultPrettyPrinter();
-    protected static final BinaryEncoder ENCODER = new BinaryEncoder();
+public sealed abstract class Request<M extends ResponseModel> permits BinaryRequest, JsonRequest {
+    /**
+     * A singleton instance of WhatsappDataManager
+     */
     protected static final WhatsappDataManager MANAGER = WhatsappDataManager.singletonInstance();
 
+    /**
+     * The non null tag of this request
+     * This tag must be unique even amongst different sessions linked to the same encryption keys after the login process has been completed
+     */
     protected final @NotNull @Getter String tag;
+
+
+    /**
+     * The configuration used for {@link WhatsappAPI}
+     */
     protected final @NotNull WhatsappConfiguration configuration;
+
+
+    /**
+     * A future completed when Whatsapp sends a response if {@link Request#isCompletable()} returns true
+     * Otherwise, it's completed as soon as the request is successfully sent to WhatsappWeb's WebSocket
+     */
     protected final @NotNull @Getter CompletableFuture<M> future;
+
+
+    /**
+     * Constructs a new instance of a Request using a custom non null request tag
+     *
+     * @param tag the custom non null tag to assign to this request
+     * @param configuration the configuration used for {@link WhatsappAPI}
+     */
     protected Request(@NotNull String tag, @NotNull WhatsappConfiguration configuration){
         this(tag, configuration, new CompletableFuture<>());
     }
 
+    /**
+     * Constructs a new instance of a Request using the default request tag built using {@param configuration}
+     *
+     * @param configuration the configuration used for {@link WhatsappAPI}
+     */
     protected Request(@NotNull WhatsappConfiguration configuration){
         this(WhatsappUtils.buildRequestTag(configuration), configuration);
     }
 
+    /**
+     * Returns the body of this request
+     * For json requests, this should be a List of objects
+     * For binary requests, it should be a WhatsappNode
+     *
+     * @return an object to send to WhatsappWeb's WebSocket
+     */
     public abstract @NotNull Object buildBody();
-    public abstract void complete(@NotNull Response response);
+
+    /**
+     * Returns whether this request is completable or not
+     * @return true if the request is completable
+     */
     public boolean isCompletable() {
         return false;
     }
 
+    /**
+     * Completes this request using {@param response}
+     *
+     * @param response the response used to complete {@link Request#future}
+     * @throws IllegalArgumentException if this request isn't completable
+     * @throws ClassCastException if {@link Request#<M>} is not a concrete type, the reason is explained here {@link Request#modelClass()}
+     */
+    public void complete(@NotNull Response response){
+        Validate.isTrue(isCompletable(), "WhatsappAPI: Cannot complete a request with tag %s: this request is marked as non completable", tag());
+        future.completeAsync(() -> response.toModel(modelClass()));
+    }
+
+    /**
+     * Returns a Class representing {@link Request#<M>}
+     * In order for this method to work, the implementations of the implementations of this class must also be abstract and initialized using only concrete types, generics will break this implementation
+     * A {@link TypeReference} couldn't have been used in this case as the exact type of {@link Request#<M>} is needed to effectively convert the response to the model
+     * In Kotlin, it's possible to do the following: {@code inline fun <reified T> modelClass(): KClass<T> = T::class}, although, inline functions cannot be accessed from Java
+     *
+     * @throws ClassCastException if {@link Request#<M>} isn't a concrete type
+     * @return a class representing {@link Request#<M>}
+     */
     @SuppressWarnings("unchecked")
-    public @NotNull Class<M> modelClass(){
+    private @NotNull Class<M> modelClass() throws ClassCastException{
         return (Class<M>) ((ParameterizedType) this.getClass().getGenericSuperclass()).getActualTypeArguments()[0];
     }
 }

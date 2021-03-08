@@ -1,11 +1,14 @@
 package it.auties.whatsapp4j.request.impl;
 
 import it.auties.whatsapp4j.model.WhatsappConfiguration;
+import it.auties.whatsapp4j.model.WhatsappNode;
 import it.auties.whatsapp4j.request.model.BinaryRequest;
 import it.auties.whatsapp4j.response.model.shared.ResponseModel;
-import it.auties.whatsapp4j.model.WhatsappNode;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * A binary request used to transmit a {@link WhatsappNode} to WhatsappWeb's WebSocket
+ */
 public abstract class NodeRequest<M extends ResponseModel> extends BinaryRequest<M> {
     private final @NotNull WhatsappNode node;
     private final boolean completable;

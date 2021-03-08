@@ -30,7 +30,7 @@ import java.util.Optional;
 @ToString
 public class WhatsappChat {
     /**
-     * The non null unique id used to identify this chat
+     * The non null unique jid used to identify this chat
      */
     private final @NotNull String jid;
 
@@ -58,7 +58,7 @@ public class WhatsappChat {
     private final @NotNull Map<WhatsappContact, WhatsappContactStatus> presences;
 
     /**
-     * The nullable new unique id for this WhatsappChat
+     * The nullable new unique jid for this WhatsappChat
      * This field is not null when a contact changes phone number and connects their new phone number with Whatsapp
      */
     private final @Nullable String newJid;

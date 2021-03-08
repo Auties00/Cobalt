@@ -7,15 +7,25 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.InvocationTargetException;
 
-public record BinaryResponse(@NotNull WhatsappNode node) implements Response {
-    public <T extends ResponseModel> @NotNull T toModel(@NotNull Class<T> clazz) {
+/**
+ * A record that wraps a WhatsappNode sent by WhatsappWeb's WebSocket as response for a request
+ * This WhatsappNode can be converted to a ResponseModel using {@link BinaryResponse#toModel(Class)}
+ * This class is final, this means that it cannot be extended
+ */
+public final record BinaryResponse(@NotNull WhatsappNode node) implements Response {
+    /**
+     * Converts this object to a BinaryResponseModel
+     *
+     * @param clazz a Class that represents {@param <T>}
+     * @param <T> the specific raw type of the model
+     * @return an instance of the type of model requested
+     */
+    @Override
+    public <T extends ResponseModel> @NotNull T toModel(@NotNull Class<T> clazz) throws ClassCastException{
         try {
-            var result = clazz.getConstructor().newInstance();
-            if (!(result instanceof BinaryResponseModel binaryResponseModel)) throw new IllegalArgumentException("WhatsappAPI: Cannot convert to BinaryResponse: expected BinaryResponseModel");
-            binaryResponseModel.populateWithData(node);
-            return result;
+            return clazz.getConstructor(WhatsappNode.class).newInstance(node);
         }catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException ex){
-            throw new RuntimeException(ex.getMessage());
+            throw new ClassCastException(ex.getMessage());
         }
     }
 }

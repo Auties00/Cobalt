@@ -1,14 +1,11 @@
 package it.auties.whatsapp4j.model;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
-import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
-import it.auties.whatsapp4j.utils.WhatsappUtils;
 import it.auties.whatsapp4j.model.WhatsappProtobuf.WebMessageInfo;
-
+import it.auties.whatsapp4j.utils.WhatsappUtils;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;

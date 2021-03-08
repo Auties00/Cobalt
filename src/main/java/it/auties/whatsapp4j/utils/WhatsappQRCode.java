@@ -9,6 +9,9 @@ import java.awt.*;
 import java.io.File;
 import java.util.Base64;
 
+/**
+ * A utility class used to generate QR codes to authenticate with whatsapp
+ */
 public class WhatsappQRCode {
     private @Nullable File qr;
     private @Nullable String ref;

@@ -3,6 +3,9 @@ package it.auties.whatsapp4j.response.impl.json;
 import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
 import lombok.extern.jackson.Jacksonized;
 
+/**
+ * A json model that contains information about the properties of a session
+ */
 @Jacksonized
 public record PropsResponse(boolean webCatalogManagement, boolean catalogManagement, boolean webCatalogCart,
                             int webGroupV2Enabled, boolean stickerSearchEnabled,

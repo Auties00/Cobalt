@@ -1,20 +1,43 @@
 package it.auties.whatsapp4j.request.model;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.model.WhatsappConfiguration;
-import it.auties.whatsapp4j.response.model.json.JsonResponse;
 import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
-import it.auties.whatsapp4j.response.model.shared.Response;
-import it.auties.whatsapp4j.utils.Validate;
 import jakarta.websocket.Session;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public abstract class JsonRequest<M extends JsonResponseModel> extends Request<M> {
+/**
+ * An abstract model class that represents a json request made from the client to the server
+ *
+ * @param <M>
+ */
+public abstract non-sealed class JsonRequest<M extends JsonResponseModel> extends Request<M> {
+    /**
+     * An instance of Jackson used to serialize objects as JSON
+     */
+    private static final ObjectWriter JACKSON = new ObjectMapper().writerWithDefaultPrettyPrinter();
+
+    /**
+     * Constructs a new instance of a JsonRequest using the default request tag built using {@param configuration}
+     *
+     * @param configuration the configuration used for {@link WhatsappAPI}
+     */
     protected JsonRequest(@NotNull WhatsappConfiguration configuration) {
         super(configuration);
     }
 
+    /**
+     * Sends a json request to the WebSocket linked to {@param session}
+     * This message is serialized using {@link JsonRequest#JACKSON}
+     *
+     * @param session the WhatsappWeb's WebSocket session
+     * @param callback a callback to execute after the request has been successfully been sent
+     * @return this request
+     */
     @SneakyThrows
     public JsonRequest<M> send(@NotNull Session session, @Nullable Runnable callback) {
         var body = buildBody();
@@ -45,18 +68,15 @@ public abstract class JsonRequest<M extends JsonResponseModel> extends Request<M
         return this;
     }
 
+    /**
+     * Sends a json request to the WebSocket linked to {@param session}
+     * This message is serialized using {@link JsonRequest#JACKSON}
+     *
+     * @param session the WhatsappWeb's WebSocket session
+     * @return this request
+     */
     @SneakyThrows
     public JsonRequest<M> send(@NotNull Session session) {
         return send(session, null);
-    }
-
-    @Override
-    public void complete(@NotNull Response response){
-        Validate.isTrue(isCompletable(), "WhatsappAPI: Cannot complete a request that isn't completable");
-        if(!(response instanceof JsonResponse jsonResponse)) {
-            throw new IllegalArgumentException("WhatsappAPI: Cannot complete request: expected JsonResponse, got %s".formatted(response.getClass().getName()));
-        }
-
-        future.complete(jsonResponse.toModel(modelClass()));
     }
 }

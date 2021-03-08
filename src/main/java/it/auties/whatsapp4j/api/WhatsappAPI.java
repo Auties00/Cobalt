@@ -1,22 +1,22 @@
 package it.auties.whatsapp4j.api;
 
-import it.auties.whatsapp4j.listener.MissingConstructorException;
-import it.auties.whatsapp4j.listener.RegisterListenerProcessor;
 import it.auties.whatsapp4j.binary.BinaryFlag;
 import it.auties.whatsapp4j.binary.BinaryMetric;
+import it.auties.whatsapp4j.listener.MissingConstructorException;
+import it.auties.whatsapp4j.listener.RegisterListenerProcessor;
 import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
+import it.auties.whatsapp4j.model.*;
 import it.auties.whatsapp4j.request.impl.NodeRequest;
 import it.auties.whatsapp4j.request.impl.QueryRequest;
-import it.auties.whatsapp4j.request.impl.SubscribeUserPresence;
+import it.auties.whatsapp4j.request.impl.SubscribeUserPresenceRequest;
 import it.auties.whatsapp4j.response.impl.binary.ChatResponse;
 import it.auties.whatsapp4j.response.impl.binary.MessagesResponse;
 import it.auties.whatsapp4j.response.impl.json.*;
 import it.auties.whatsapp4j.socket.WhatsappWebSocket;
 import it.auties.whatsapp4j.utils.Validate;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
-import it.auties.whatsapp4j.model.*;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import org.glassfish.tyrus.core.Beta;
@@ -154,7 +154,7 @@ public class WhatsappAPI {
      *
      */
     public @NotNull WhatsappAPI subscribeToUserPresence(@NotNull WhatsappContact contact){
-        var subscribe = new SubscribeUserPresence(configuration, contact.jid()){};
+        var subscribe = new SubscribeUserPresenceRequest(configuration, contact.jid()){};
         subscribe.send(socket.session());
         return this;
     }
@@ -317,7 +317,7 @@ public class WhatsappAPI {
                 .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.QUERY_MESSAGES)
                 .future()
                 .thenApply(res -> {
-                    chat.messages().addAll(res.messages());
+                    chat.messages().addAll(res.data().orElseThrow());
                     return chat;
                 });
     }
@@ -464,8 +464,8 @@ public class WhatsappAPI {
      * @param group the target group
      * @param newDescription the new name for the group
      * @throws IllegalArgumentException if the provided chat is not a group
-     * @throws ExecutionException if the previous description id cannot be queried, usually happens if the call to this method is on the same thread as the WebSocket
-     * @throws InterruptedException if the previous description id cannot be queried, usually happens if the call to this method is on the same thread as the WebSocket
+     * @throws ExecutionException if the previous description jid cannot be queried, usually happens if the call to this method is on the same thread as the WebSocket
+     * @throws InterruptedException if the previous description jid cannot be queried, usually happens if the call to this method is on the same thread as the WebSocket
      *
      */
     public @NotNull CompletableFuture<SimpleStatusResponse> changeGroupDescription(@NotNull WhatsappChat group, @NotNull String newDescription) throws ExecutionException, InterruptedException {

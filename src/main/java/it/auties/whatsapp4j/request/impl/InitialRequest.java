@@ -8,6 +8,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A JSON request used to signal to WhatsappWeb's WebSocket that the authentication process can begin
+ */
 public abstract class InitialRequest extends JsonRequest<DiscardResponse> {
     private final @NotNull WhatsappKeysManager whatsappKeys;
     public InitialRequest(@NotNull WhatsappConfiguration configuration, @NotNull WhatsappKeysManager whatsappKeys){

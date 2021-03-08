@@ -1,12 +1,15 @@
 package it.auties.whatsapp4j.binary;
 
-import it.auties.whatsapp4j.model.WhatsappProtobuf;
 import it.auties.whatsapp4j.model.WhatsappNode;
+import it.auties.whatsapp4j.model.WhatsappProtobuf;
 import it.auties.whatsapp4j.utils.Validate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 /**

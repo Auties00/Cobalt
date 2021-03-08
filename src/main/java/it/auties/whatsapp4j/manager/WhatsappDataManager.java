@@ -1,6 +1,7 @@
 package it.auties.whatsapp4j.manager;
 
 import it.auties.whatsapp4j.listener.WhatsappListener;
+import it.auties.whatsapp4j.model.*;
 import it.auties.whatsapp4j.model.WhatsappProtobuf.WebMessageInfo;
 import it.auties.whatsapp4j.request.model.Request;
 import it.auties.whatsapp4j.response.impl.json.PhoneBatteryResponse;
@@ -8,8 +9,10 @@ import it.auties.whatsapp4j.response.model.json.JsonResponse;
 import it.auties.whatsapp4j.response.model.shared.Response;
 import it.auties.whatsapp4j.socket.WhatsappWebSocket;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
-import it.auties.whatsapp4j.model.*;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -78,9 +81,9 @@ public class WhatsappDataManager {
     }
 
     /**
-     * Queries the message in {@param chat} whose id is equal to {@param id}
+     * Queries the message in {@param chat} whose jid is equal to {@param jid}
      * @param chat the chat to search in
-     * @param id the id to search
+     * @param id the jid to search
      * @return a non empty Optional containing the result if it is found otherwise an empty Optional empty
      */
     public @NotNull Optional<WhatsappMessage> findMessageById(@NotNull WhatsappChat chat, @NotNull String id){
@@ -497,7 +500,7 @@ public class WhatsappDataManager {
 
     private @NotNull WhatsappChat queryMissingChat(@NotNull WhatsappWebSocket socket, @NotNull String jid) {
         try {
-            var chatTemp = socket.queryChat(jid).get().chat().orElseThrow();
+            var chatTemp = socket.queryChat(jid).get().data().orElseThrow();
             chats.add(chatTemp);
             listeners.forEach(listener -> callOnListenerThread(() -> listener.onChatReceived(chatTemp)));
             return chatTemp;

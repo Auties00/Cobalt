@@ -7,6 +7,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -30,5 +31,18 @@ public record WhatsappNode(@NotNull String description, @NotNull Map<String, Str
                 .filter(entry -> entry instanceof WhatsappNode)
                 .map(WhatsappNode.class::cast)
                 .collect(Collectors.toUnmodifiableList());
+    }
+
+    /**
+     * Returns a list of child WhatsappNodes
+     *
+     * @throws NullPointerException if {@link WhatsappNode#content} is null
+     * @throws IllegalArgumentException if {@link WhatsappNode#content} is not a List
+     * @return a non null list containing WhatsappNodes extracted from this node's content
+     */
+    public @NotNull List<WhatsappNode> childNodes(){
+        var content = Objects.requireNonNull(content(), "WhatsappAPI: Cannot extract child nodes from %s: null content".formatted(this));
+        if(!(content instanceof List<?> listContent)) throw new IllegalArgumentException("WhatsappAPI: Cannot extract child nodes from %s: expected List<?> as content".formatted(this));
+        return fromGenericList(listContent);
     }
 }

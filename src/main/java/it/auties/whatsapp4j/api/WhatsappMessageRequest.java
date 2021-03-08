@@ -1,9 +1,9 @@
 package it.auties.whatsapp4j.api;
 
-import it.auties.whatsapp4j.model.WhatsappProtobuf;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
-import it.auties.whatsapp4j.utils.WhatsappUtils;
 import it.auties.whatsapp4j.model.WhatsappMessage;
+import it.auties.whatsapp4j.model.WhatsappProtobuf;
+import it.auties.whatsapp4j.utils.WhatsappUtils;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;

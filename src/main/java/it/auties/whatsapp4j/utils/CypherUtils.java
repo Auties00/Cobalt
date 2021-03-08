@@ -2,10 +2,8 @@ package it.auties.whatsapp4j.utils;
 
 import at.favre.lib.crypto.HKDF;
 import it.auties.whatsapp4j.binary.BinaryArray;
-import it.auties.whatsapp4j.model.WhatsappProtobuf;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
-import org.apache.xmlgraphics.image.loader.impl.imageio.ImageIOUtil;
 import org.jetbrains.annotations.NotNull;
 import org.whispersystems.curve25519.Curve25519;
 import org.whispersystems.curve25519.Curve25519KeyPair;
@@ -14,9 +12,11 @@ import javax.crypto.Cipher;
 import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import javax.imageio.ImageIO;
-import java.net.URL;
 
+/**
+ * This utility class provides helper functionality to easily encrypt and decrypt data
+ * This class should only be used for WhatsappWeb's WebSocket binary operations
+ */
 @UtilityClass
 public class CypherUtils {
     private final Curve25519 CURVE_25519 = Curve25519.getInstance(Curve25519.JAVA);

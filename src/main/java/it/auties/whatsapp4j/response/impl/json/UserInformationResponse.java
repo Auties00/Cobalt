@@ -5,6 +5,10 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
 
+/**
+ * A json model that contains information only about the user linked to the session
+ *
+ */
 @Jacksonized
 public record UserInformationResponse(String ref, String wid, boolean connected,
                                       String isResponse, String serverToken,

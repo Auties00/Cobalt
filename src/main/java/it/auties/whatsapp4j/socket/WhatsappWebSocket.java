@@ -1,18 +1,24 @@
 package it.auties.whatsapp4j.socket;
 
+import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.binary.*;
 import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
-import it.auties.whatsapp4j.model.*;
+import it.auties.whatsapp4j.model.WhatsappConfiguration;
+import it.auties.whatsapp4j.model.WhatsappContactStatus;
+import it.auties.whatsapp4j.model.WhatsappNodeBuilder;
+import it.auties.whatsapp4j.model.WhatsappProtobuf;
 import it.auties.whatsapp4j.request.impl.*;
 import it.auties.whatsapp4j.response.impl.binary.ChatResponse;
 import it.auties.whatsapp4j.response.impl.json.*;
+import it.auties.whatsapp4j.response.impl.shared.WhatsappResponse;
+import it.auties.whatsapp4j.response.model.binary.BinaryResponse;
 import it.auties.whatsapp4j.response.model.json.JsonListResponse;
 import it.auties.whatsapp4j.response.model.json.JsonResponse;
-import it.auties.whatsapp4j.response.model.binary.BinaryResponse;
-import it.auties.whatsapp4j.response.impl.shared.WhatsappResponse;
-import it.auties.whatsapp4j.utils.*;
+import it.auties.whatsapp4j.utils.Validate;
+import it.auties.whatsapp4j.utils.WhatsappQRCode;
+import it.auties.whatsapp4j.utils.WhatsappUtils;
 import jakarta.websocket.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -27,7 +33,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -35,6 +44,11 @@ import java.util.concurrent.TimeUnit;
 
 import static it.auties.whatsapp4j.utils.CypherUtils.*;
 
+/**
+ * This class is an interface between this API and WhatsappWeb's WebClient
+ * This methods should not be used by any project, excluding obviously WhatsappWeb4j
+ * Instead, {@link WhatsappAPI} should be used
+ */
 @ClientEndpoint(configurator = WhatsappSocketConfiguration.class)
 @AllArgsConstructor
 @Data
@@ -244,12 +258,11 @@ public class WhatsappWebSocket {
   }
 
   private void handleChatCmd(@NotNull ChatCmdResponse cmdResponse){
-    System.out.println("Cmd: " + cmdResponse);
     if(cmdResponse.cmd() == null){
       return;
     }
 
-    var chatOpt = whatsappManager.findChatByJid(cmdResponse.id());
+    var chatOpt = whatsappManager.findChatByJid(cmdResponse.jid());
     if(chatOpt.isEmpty()){
       return;
     }

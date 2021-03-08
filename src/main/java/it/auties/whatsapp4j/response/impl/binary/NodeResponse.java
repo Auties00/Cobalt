@@ -1,25 +1,20 @@
 package it.auties.whatsapp4j.response.impl.binary;
 
-import it.auties.whatsapp4j.response.model.binary.BinaryResponseModel;
 import it.auties.whatsapp4j.model.WhatsappNode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import it.auties.whatsapp4j.response.model.binary.BinaryResponseModel;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.Objects;
-
-@NoArgsConstructor
-@ToString
-public class NodeResponse implements BinaryResponseModel {
-    private @Nullable WhatsappNode node;
-
-    @Override
-    public void populateWithData(@NotNull WhatsappNode node) {
-        this.node = node;
-    }
-
-    public @NotNull WhatsappNode node() {
-        return Objects.requireNonNull(node);
+/**
+ * A binary model to represent a WhatsappNode that contains {@link WhatsappNode}
+ * The property {@link NodeResponse#data} is nullable and should be accessed using the accessor {@link NodeResponse#data()}
+ */
+public class NodeResponse extends BinaryResponseModel<WhatsappNode> {
+    /**
+     * Constructs a new NodeResponse from {@param node}
+     *
+     * @param node the node to wrap
+     */
+    protected NodeResponse(@NotNull WhatsappNode node) {
+        super(node);
     }
 }

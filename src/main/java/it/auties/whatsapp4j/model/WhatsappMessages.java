@@ -43,7 +43,7 @@ public class WhatsappMessages extends ArrayList<WhatsappMessage> {
     }
 
     /**
-     * Adds {@param message} if no other entry in this collection has an id that matches the one of {@param message}
+     * Adds {@param message} if no other entry in this collection has an jid that matches the one of {@param message}
      * Otherwise, it removes said entry and adds {@param message}
      * @param message the non null message to add to this collection
      * @return true if {@param message} was replaced
@@ -56,7 +56,7 @@ public class WhatsappMessages extends ArrayList<WhatsappMessage> {
     }
 
     /**
-     * Adds each entry of {@param collection} if no other entry in this collection has an id that matches said entry's
+     * Adds each entry of {@param collection} if no other entry in this collection has an jid that matches said entry's
      * Otherwise, it removes said entry and adds said entry
      * @param collection the collection to add to this collection
      */
