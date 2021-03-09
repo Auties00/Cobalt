@@ -1,6 +1,6 @@
 package it.auties.whatsapp4j.request.impl;
 
-import it.auties.whatsapp4j.model.WhatsappConfiguration;
+import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.model.WhatsappNode;
 import it.auties.whatsapp4j.request.model.BinaryRequest;
 import it.auties.whatsapp4j.response.model.shared.ResponseModel;

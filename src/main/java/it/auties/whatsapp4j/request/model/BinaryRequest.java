@@ -6,7 +6,7 @@ import it.auties.whatsapp4j.binary.BinaryEncoder;
 import it.auties.whatsapp4j.binary.BinaryFlag;
 import it.auties.whatsapp4j.binary.BinaryMetric;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
-import it.auties.whatsapp4j.model.WhatsappConfiguration;
+import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.model.WhatsappNode;
 import it.auties.whatsapp4j.response.model.shared.ResponseModel;
 import it.auties.whatsapp4j.utils.CypherUtils;

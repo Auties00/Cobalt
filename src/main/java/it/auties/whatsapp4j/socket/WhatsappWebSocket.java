@@ -5,7 +5,7 @@ import it.auties.whatsapp4j.binary.*;
 import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
-import it.auties.whatsapp4j.model.WhatsappConfiguration;
+import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.model.WhatsappContactStatus;
 import it.auties.whatsapp4j.model.WhatsappNodeBuilder;
 import it.auties.whatsapp4j.model.WhatsappProtobuf;

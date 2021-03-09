@@ -1,4 +1,4 @@
-package it.auties.whatsapp4j.model;
+package it.auties.whatsapp4j.api;
 
 import it.auties.whatsapp4j.binary.BinaryArray;
 import lombok.Builder;
@@ -62,7 +62,7 @@ public class WhatsappConfiguration {
    * The first and only parameter of this function is a String describing the reason the connection was terminated
    */
   @Default
-  private final Function<String, Boolean> reconnectWhenDisconnected = (reason) -> true;
+  private final @NotNull Function<String, Boolean> reconnectWhenDisconnected = (reason) -> true;
 
   /**
    * This property determines whether the requests sent to WhatsappWeb's WebSocket should be sent asynchronously or not

@@ -662,7 +662,6 @@ public class WhatsappAPI {
                 .future();
     }
 
-
     /**
      * Blocks a contact
      *

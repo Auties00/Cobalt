@@ -2,7 +2,7 @@ package it.auties.whatsapp4j.utils;
 
 import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
-import it.auties.whatsapp4j.model.WhatsappConfiguration;
+import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.model.WhatsappContact;
 import it.auties.whatsapp4j.model.WhatsappNode;
 import it.auties.whatsapp4j.model.WhatsappProtobuf;

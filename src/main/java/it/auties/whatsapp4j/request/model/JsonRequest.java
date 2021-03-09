@@ -3,7 +3,7 @@ package it.auties.whatsapp4j.request.model;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import it.auties.whatsapp4j.api.WhatsappAPI;
-import it.auties.whatsapp4j.model.WhatsappConfiguration;
+import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
 import jakarta.websocket.Session;
 import lombok.SneakyThrows;
