@@ -4,7 +4,7 @@
 
     <groupId>it.auties</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>0.1</version>
+    <version>0.1-SNAPSHOT</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Standalone fully-featured Whatsapp Web API for Java and Kotlin</description>
     <url>https://github.com/Auties00/WhatsappWeb4j</url>
@@ -15,8 +15,8 @@
         </developer>
     </developers>
     <scm>  
-        <connection>scm:git:git://github.com/Auties00/WhatsappWeb4j.git</connection>  
-        <developerConnection>scm:git:ssh://github.com:Auties00/WhatsappWeb4j.git</developerConnection>   
+        <connection>scm:git:git://github.com/Auties00/WhatsappWeb4j.git</connection>
+        <developerConnection>scm:git:git@github.com:Auties00/WhatsappWeb4j.git</developerConnection>
         <url>https://github.com/Auties00/WhatsappWeb4j/tree/master</url>
         <tag>whatsappweb4j-0.1</tag>
     </scm>
