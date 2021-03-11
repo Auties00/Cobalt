@@ -83,7 +83,7 @@ public class WhatsappChat {
      * The time in seconds since {@link java.time.Instant#EPOCH} when this chat was pinned to the top
      * If the chat isn't pinned, this field has a value of 0
      */
-    private int pinned;
+    private long pinned;
 
     /**
      * The time in seconds before a message is automatically deleted from this chat both locally and from WhatsappWeb's servers
@@ -131,7 +131,7 @@ public class WhatsappChat {
                 .isArchived(Boolean.parseBoolean(attrs.get("archive")))
                 .name(attrs.getOrDefault("name", WhatsappUtils.phoneNumberFromJid(jid)))
                 .isReadOnly(Boolean.parseBoolean(attrs.get("read_only")))
-                .pinned(Integer.parseInt(attrs.getOrDefault("pin", "0")))
+                .pinned(Long.parseLong(attrs.getOrDefault("pin", "0")))
                 .messages(new WhatsappMessages())
                 .presences(new HashMap<>())
                 .build();

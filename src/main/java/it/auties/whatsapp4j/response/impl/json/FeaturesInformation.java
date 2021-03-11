@@ -11,6 +11,6 @@ import org.jetbrains.annotations.Nullable;
  * @param flags unknown
  */
 @Jacksonized
-record FeaturesInformation(boolean url, @Nullable String flags) {
+public record FeaturesInformation(boolean url, @Nullable String flags) {
 
 }

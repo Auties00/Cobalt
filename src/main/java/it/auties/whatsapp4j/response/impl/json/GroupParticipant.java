@@ -12,6 +12,6 @@ import org.jetbrains.annotations.NotNull;
  * @param isSuperAdmin a flag to determine whether the participant is a super admin
  */
 @Jacksonized
-record GroupParticipant(@NotNull String jid, boolean isAdmin, boolean isSuperAdmin) {
+public record GroupParticipant(@NotNull String jid, boolean isAdmin, boolean isSuperAdmin) {
 
 }

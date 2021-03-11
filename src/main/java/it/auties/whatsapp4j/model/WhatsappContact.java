@@ -80,7 +80,6 @@ public class WhatsappContact {
                 .build();
     }
 
-
     /**
      * Returns an optional String representing the first valid(non null) name for this contact
      * If no valid name is found, an empty optional is returned

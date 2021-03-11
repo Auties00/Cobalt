@@ -16,7 +16,7 @@ import org.jetbrains.annotations.Nullable;
  * @param deviceModel a nullable String that represents the model of the phone
  */
 @Jacksonized
-record PhoneInformation(@Nullable String waVersion, @Nullable String mcc, @Nullable String mnc,
+public record PhoneInformation(@Nullable String waVersion, @Nullable String mcc, @Nullable String mnc,
                         @Nullable String osVersion, @Nullable String osBuildNumber,
                         @Nullable String deviceManufacturer, @Nullable String deviceModel) {
 }
