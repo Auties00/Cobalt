@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>it.auties</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.1</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Standalone fully-featured Whatsapp Web API for Java and Kotlin</description>
     <url>https://github.com/Auties00/WhatsappWeb4j</url>
@@ -20,7 +18,7 @@
         <connection>scm:git:git://github.com/Auties00/WhatsappWeb4j.git</connection>  
         <developerConnection>scm:git:ssh://github.com:Auties00/WhatsappWeb4j.git</developerConnection>   
         <url>https://github.com/Auties00/WhatsappWeb4j/tree/master</url>
-        <tag>HEAD</tag>
+        <tag>whatsappweb4j-0.1</tag>
     </scm>
     <distributionManagement>
         <snapshotRepository>
