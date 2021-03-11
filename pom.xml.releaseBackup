@@ -14,9 +14,9 @@
             <email>alautiero@gmail.com</email>
         </developer>
     </developers>
-    <scm>
+    <scm>  
+        <connection>scm:git:git://github.com/Auties00/WhatsappWeb4j.git</connection>
         <url>https://github.com/Auties00/WhatsappWeb4j/tree/master</url>
-        <connection>scm:git:https://github.com/Auties00/WhatsappWeb4j.git</connection>
         <tag>whatsappweb4j-0.1</tag>
     </scm>
     <distributionManagement>
