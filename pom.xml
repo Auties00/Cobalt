@@ -17,16 +17,16 @@
     <scm>
         <url>https://github.com/Auties00/WhatsappWeb4j/tree/master</url>
         <connection>scm:git:https://github.com/Auties00/WhatsappWeb4j.git</connection>
-      <tag>whatsappweb4j-0.1</tag>
-  </scm>
+        <tag>whatsappweb4j-0.1</tag>
+    </scm>
     <distributionManagement>
         <snapshotRepository>
             <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
         <repository>
             <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
     </distributionManagement>
     <profiles>
@@ -133,7 +133,7 @@
                 <extensions>true</extensions>
                 <configuration>
                     <serverId>ossrh</serverId>
-                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
                     <autoReleaseAfterClose>true</autoReleaseAfterClose>
                 </configuration>
             </plugin>
