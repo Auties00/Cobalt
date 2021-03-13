@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>it.auties</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>1.1-SNAPSHOT</version>
+    <version>1.0-SNAPSHOT</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Standalone fully-featured Whatsapp Web API for Java and Kotlin</description>
     <url>https://github.com/Auties00/WhatsappWeb4j</url>
@@ -16,8 +16,8 @@
     <scm>
         <url>https://github.com/Auties00/WhatsappWeb4j/tree/master</url>
         <connection>scm:git:https://github.com/Auties00/WhatsappWeb4j.git</connection>
-      <tag>HEAD</tag>
-  </scm>
+        <tag>HEAD</tag>
+    </scm>
     <distributionManagement>
         <snapshotRepository>
             <id>ossrh</id>
@@ -138,7 +138,7 @@
                         </goals>
                         <configuration>
                             <release>${java-version}</release>
-                            <sourcepath>${project.build.outputDirectory}:${project.build.directory}\generated-sources\annotations</sourcepath>
+                            <sourcepath>${project.build.sourceDirectory}:${project.build.directory}\generated-sources\annotations</sourcepath>
                             <additionalOptions>--enable-preview --add-exports=lombok/lombok.extern.jackson=NativeWhatsapp4j</additionalOptions>
                         </configuration>
                     </execution>
