@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
     <groupId>it.auties</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>1.1-SNAPSHOT</version>
+    <version>1.0-SNAPSHOT</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Standalone fully-featured Whatsapp Web API for Java and Kotlin</description>
     <url>https://github.com/Auties00/WhatsappWeb4j</url>
@@ -17,7 +16,6 @@
     <scm>
         <url>https://github.com/Auties00/WhatsappWeb4j/tree/master</url>
         <connection>scm:git:https://github.com/Auties00/WhatsappWeb4j.git</connection>
-        <tag>whatsappweb4j-0.1</tag>
     </scm>
     <distributionManagement>
         <snapshotRepository>
@@ -61,9 +59,10 @@
     <packaging>jar</packaging>
 
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java-version>15</java-version>
         <maven-compiler-plugin-version>3.8.1</maven-compiler-plugin-version>
-        <lombok-version>1.18.16</lombok-version>
+        <lombok-version>edge-SNAPSHOT</lombok-version>
         <record-builder-version>1.14.ea</record-builder-version>
         <nullsafe-version>RELEASE</nullsafe-version>
         <tyrus-version>2.0.0</tyrus-version>
@@ -73,45 +72,101 @@
         <hkdf-version>1.0.2</hkdf-version>
         <protobuf-version>3.14.0</protobuf-version>
         <google-reflections-version>0.9.12</google-reflections-version>
+        <delombok.output>${project.build.directory}\delomboked-sources</delombok.output>
     </properties>
 
     <build>
         <plugins>
+            <!-- Delombok
+            <plugin>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok-maven-plugin</artifactId>
+                <version>1.18.18.0</version>
+                <configuration>
+                    <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+                    <outputDirectory>${delombok.output}</outputDirectory>
+                    <addOutputDirectory>false</addOutputDirectory>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>delombok</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            -->
+
+            <!-- Compiler -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven-compiler-plugin-version}</version>
-                <executions>
-                    <execution>
-                        <id>compile</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                    </execution>
-                </executions>
                 <configuration>
-                    <annotationProcessorPaths>
-                        <annotationProcessorPath>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                            <version>${lombok-version}</version>
-                        </annotationProcessorPath>
-                        <annotationProcessorPath>
-                            <groupId>io.soabase.record-builder</groupId>
-                            <artifactId>record-builder-processor</artifactId>
-                            <version>${record-builder-version}</version>
-                        </annotationProcessorPath>
-                    </annotationProcessorPaths>
                     <source>${java-version}</source>
                     <target>${java-version}</target>
                     <release>${java-version}</release>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok-version}</version>
+                        </path>
+                        <path>
+                            <groupId>io.soabase.record-builder</groupId>
+                            <artifactId>record-builder-processor</artifactId>
+                            <version>${record-builder-version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                    <compilerArguments>
+                        <AaddGeneratedAnnotation>false</AaddGeneratedAnnotation>
+                        <Adebug>true</Adebug>
+                    </compilerArguments>
                     <compilerArgs>
                         <arg>--enable-preview</arg>
                         <arg>--add-exports=lombok/lombok.extern.jackson=NativeWhatsapp4j</arg>
                     </compilerArgs>
+                    <failOnError>true</failOnError>
                 </configuration>
             </plugin>
+
+            <!-- Attach sources and javadocs -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.0.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <release>${java-version}</release>
+                            <sourcepath>${project.build.outputDirectory}:${project.build.directory}\generated-sources\annotations</sourcepath>
+                            <additionalOptions>--enable-preview --add-exports=lombok/lombok.extern.jackson=NativeWhatsapp4j</additionalOptions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Deploy -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
@@ -144,6 +199,10 @@
         <repository>
             <id>jitpack.io</id>
             <url>https://jitpack.io</url>
+        </repository>
+        <repository>
+            <id>projectlombok.org</id>
+            <url>https://projectlombok.org/edge-releases</url>
         </repository>
     </repositories>
 

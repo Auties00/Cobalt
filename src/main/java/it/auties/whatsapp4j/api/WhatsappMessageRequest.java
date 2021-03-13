@@ -34,18 +34,6 @@ public class WhatsappMessageRequest {
             .recipient(recipient);
   }
 
-  public static WhatsappMessageRequestBuilder withText(@NotNull String text){
-    return WhatsappMessageRequest
-            .builder()
-            .text(text);
-  }
-
-  public static WhatsappMessageRequest ofText(@NotNull String recipient, @NotNull String text){
-    return withRecipient(recipient)
-            .text(text)
-            .build();
-  }
-
   public static WhatsappMessageRequest ofQuotedText(@NotNull String recipient, @NotNull String text, @NotNull WhatsappMessage quotedMessage){
     return withRecipient(recipient)
             .quotedMessage(quotedMessage)

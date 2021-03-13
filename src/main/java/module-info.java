@@ -2,7 +2,7 @@ module NativeWhatsapp4j {
     requires com.fasterxml.jackson.databind;
     requires org.jetbrains.annotations;
     requires jakarta.websocket;
-    requires lombok;
+    requires static lombok;
     requires io.soabase.record.builder.core;
     requires grizzly.framework;
     requires jakarta.xml.bind;
