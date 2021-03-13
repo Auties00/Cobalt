@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>it.auties</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Standalone fully-featured Whatsapp Web API for Java and Kotlin</description>
     <url>https://github.com/Auties00/WhatsappWeb4j</url>
@@ -16,7 +16,8 @@
     <scm>
         <url>https://github.com/Auties00/WhatsappWeb4j/tree/master</url>
         <connection>scm:git:https://github.com/Auties00/WhatsappWeb4j.git</connection>
-    </scm>
+      <tag>whatsappweb4j-1.0</tag>
+  </scm>
     <distributionManagement>
         <snapshotRepository>
             <id>ossrh</id>
@@ -62,7 +63,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java-version>15</java-version>
         <maven-compiler-plugin-version>3.8.1</maven-compiler-plugin-version>
-        <lombok-version>edge-SNAPSHOT</lombok-version>
+        <lombok-version>1.18.18</lombok-version>
         <record-builder-version>1.14.ea</record-builder-version>
         <nullsafe-version>RELEASE</nullsafe-version>
         <tyrus-version>2.0.0</tyrus-version>
@@ -77,28 +78,6 @@
 
     <build>
         <plugins>
-            <!-- Delombok
-            <plugin>
-                <groupId>org.projectlombok</groupId>
-                <artifactId>lombok-maven-plugin</artifactId>
-                <version>1.18.18.0</version>
-                <configuration>
-                    <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
-                    <outputDirectory>${delombok.output}</outputDirectory>
-                    <addOutputDirectory>false</addOutputDirectory>
-                    <encoding>${project.build.sourceEncoding}</encoding>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>delombok</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            -->
-
             <!-- Compiler -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
