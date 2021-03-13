@@ -28,14 +28,18 @@ public class WhatsappMessageRequest {
   private final @Nullable WhatsappMessage quotedMessage;
   private final boolean forwarded;
 
-  public static WhatsappMessageRequestBuilder withRecipient(@NotNull String recipient){
+  public static WhatsappMessageRequest ofText(@NotNull String recipient, @NotNull String text){
     return WhatsappMessageRequest
             .builder()
-            .recipient(recipient);
+            .recipient(recipient)
+            .text(text)
+            .build();
   }
 
   public static WhatsappMessageRequest ofQuotedText(@NotNull String recipient, @NotNull String text, @NotNull WhatsappMessage quotedMessage){
-    return withRecipient(recipient)
+    return WhatsappMessageRequest
+            .builder()
+            .recipient(recipient)
             .quotedMessage(quotedMessage)
             .text(text)
             .build();
