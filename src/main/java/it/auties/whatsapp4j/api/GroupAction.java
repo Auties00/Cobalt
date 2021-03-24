@@ -1,16 +1,40 @@
 package it.auties.whatsapp4j.api;
 
+import it.auties.whatsapp4j.model.WhatsappChat;
 import org.jetbrains.annotations.NotNull;
 
 
 /**
- * The constants of this enumerated type describe the various actions that can be executed on a {@code WhatsappContact} in a {@code WhatsappChat}
- * Said chat should be a group
- * Said actions can be executed using various methods in {@code WhatsappAPI}
+ * The constants of this enumerated type describe the various actions that can be executed on a {@link it.auties.whatsapp4j.model.WhatsappContact} in a {@link it.auties.whatsapp4j.model.WhatsappChat}.
+ * Said chat should be a group: {@link WhatsappChat#isGroup()}.
+ * Said actions can be executed using various methods in {@link WhatsappAPI}.
  */
 public enum GroupAction {
-    ADD, REMOVE, PROMOTE, DEMOTE;
+    /**
+     * Adds a contact to a group
+     */
+    ADD,
 
+    /**
+     * Removes a contact from a group
+     */
+    REMOVE,
+
+    /**
+     * Promotes a contact to admin in a group
+     */
+    PROMOTE,
+
+    /**
+     * Demotes a contact to user in a group
+     */
+    DEMOTE;
+
+    /**
+     * Returns the name of this enumerated constant
+     *
+     * @return a lowercase non null String
+     */
     public @NotNull String data(){
         return name().toLowerCase();
     }

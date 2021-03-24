@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A class used to define a pair of headers necessary to start a session with WhatsappWeb's WebSocket
- * Without these, WhatsappWeb's WebSocket would respond with a 401 http status error code
+ * A class used to define a pair of headers necessary to start a session with WhatsappWeb's WebSocket.
+ * Without these, WhatsappWeb's WebSocket would respond with a 401 http status error code.
  */
 public class WhatsappSocketConfiguration extends ClientEndpointConfig.Configurator{
   @Override

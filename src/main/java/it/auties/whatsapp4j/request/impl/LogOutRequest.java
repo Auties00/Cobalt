@@ -2,7 +2,7 @@ package it.auties.whatsapp4j.request.impl;
 
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.request.model.JsonRequest;
-import it.auties.whatsapp4j.response.impl.json.DiscardResponse;
+import it.auties.whatsapp4j.response.impl.DiscardResponse;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;

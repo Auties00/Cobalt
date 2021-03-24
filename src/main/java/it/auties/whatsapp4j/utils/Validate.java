@@ -12,23 +12,23 @@ import org.jetbrains.annotations.NotNull;
 @UtilityClass
 public class Validate {
     /**
-     * Throws an exception of type IllegalArgumentException with message {@param message} formatted using {@param args} if {@param value} is not true
+     * Throws an exception of type IllegalArgumentException with message {@code message} formatted using {@code args} if {@code value} is not true
      *
      * @param value the value to check
-     * @param message the message of the exception to throw if {@param value} isn't true
-     * @param args the arguments used to format the exception thrown if {@param value} isn't true
+     * @param message the message of the exception to throw if {@code value} isn't true
+     * @param args the arguments used to format the exception thrown if {@code value} isn't true
      */
     public void isTrue(boolean value, @NotNull String message, @NotNull Object... args) {
         isTrue(value, message, IllegalArgumentException.class, args);
     }
 
     /**
-     * Throws an exception of type {@param exception} with message {@param message} formatted using {@param args} if {@param value} is not true
+     * Throws an exception of type {@code exception} with message {@code message} formatted using {@code args} if {@code value} is not true
      *
      * @param value the value to check
-     * @param message the message of the exception to throw if {@param value} isn't true
-     * @param exception the type of exception to throw if {@param value} isn't true
-     * @param args the arguments used to format the exception thrown if {@param value} isn't true
+     * @param message the message of the exception to throw if {@code value} isn't true
+     * @param exception the type of exception to throw if {@code value} isn't true
+     * @param args the arguments used to format the exception thrown if {@code value} isn't true
      */
     @SneakyThrows
     public void isTrue(boolean value, @NotNull String message, @NotNull Class<? extends Exception> exception, @NotNull Object... args) {

@@ -8,7 +8,7 @@ import it.auties.whatsapp4j.binary.BinaryMetric;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.model.WhatsappNode;
-import it.auties.whatsapp4j.response.model.shared.ResponseModel;
+import it.auties.whatsapp4j.response.model.ResponseModel;
 import it.auties.whatsapp4j.utils.CypherUtils;
 import jakarta.websocket.Session;
 import lombok.SneakyThrows;
@@ -38,7 +38,7 @@ public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends 
     }
 
     /**
-     * Constructs a new instance of a BinaryRequest using the default request tag built using {@param configuration}
+     * Constructs a new instance of a BinaryRequest using the default request tag built using {@code configuration}
      *
      * @param configuration the configuration used for {@link WhatsappAPI}
      */
@@ -47,8 +47,8 @@ public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends 
     }
 
     /**
-     * Sends a binary request to the WebSocket linked to {@param session}
-     * This message is encoded using {@link BinaryRequest#ENCODER} and then encrypted using {@param whatsappKeys}
+     * Sends a binary request to the WebSocket linked to {@code session}.
+     * This message is encoded using {@link BinaryRequest#ENCODER} and then encrypted using {@code whatsappKeys}.
      *
      * @param session the WhatsappWeb's WebSocket session
      * @param whatsappKeys the keys used to encrypt this message

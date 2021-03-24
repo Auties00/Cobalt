@@ -5,25 +5,25 @@ import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.model.WhatsappChat;
 import it.auties.whatsapp4j.model.WhatsappContact;
 import it.auties.whatsapp4j.model.WhatsappMessage;
-import it.auties.whatsapp4j.response.impl.json.BlocklistResponse;
-import it.auties.whatsapp4j.response.impl.json.PhoneBatteryResponse;
-import it.auties.whatsapp4j.response.impl.json.PropsResponse;
-import it.auties.whatsapp4j.response.impl.json.UserInformationResponse;
-import it.auties.whatsapp4j.response.model.json.JsonListResponse;
+import it.auties.whatsapp4j.response.impl.BlocklistResponse;
+import it.auties.whatsapp4j.response.impl.PhoneBatteryResponse;
+import it.auties.whatsapp4j.response.impl.PropsResponse;
+import it.auties.whatsapp4j.response.impl.UserInformationResponse;
+import it.auties.whatsapp4j.response.model.JsonListResponse;
 import it.auties.whatsapp4j.socket.WhatsappWebSocket;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * This interface can be used to listen for events fired when new information is sent by WhatsappWeb's socket
- * A WhatsappListener can be registered manually using {@link WhatsappAPI#registerListener(WhatsappListener)}
- * Otherwise, it can be registered by annotating it with the {@link RegisterListener} annotation
- * If the latter option is used, auto detection of listeners by calling {@link WhatsappAPI#autodetectListeners()}
+ * This interface can be used to listen for events fired when new information is sent by WhatsappWeb's socket.
+ * A WhatsappListener can be registered manually using {@link WhatsappAPI#registerListener(WhatsappListener)}.
+ * Otherwise, it can be registered by annotating it with the {@link RegisterListener} annotation.
+ * If the latter option is used, auto detection of listeners by calling {@link WhatsappAPI#autodetectListeners()}.
  */
 public interface WhatsappListener {
     /**
-     * Called when {@link WhatsappWebSocket} successfully establishes a connection and logs in into an account
-     * When this event is called, any data, including chats and contact, is not guaranteed to be already in memory
-     * Instead {@link WhatsappListener#onChatsReceived()} and {@link WhatsappListener#onContactsReceived()} should be used
+     * Called when {@link WhatsappWebSocket} successfully establishes a connection and logs in into an account.
+     * When this event is called, any data, including chats and contact, is not guaranteed to be already in memory.
+     * Instead, {@link WhatsappListener#onChatsReceived()} and {@link WhatsappListener#onContactsReceived()} should be used.
      *
      * @param info the information sent by WhatsappWeb's WebSocket about this session
      * @param firstLogin whether this is the first time this session has been started or if the keys for this already existed
@@ -31,30 +31,30 @@ public interface WhatsappListener {
     default void onLoggedIn(@NotNull UserInformationResponse info, boolean firstLogin){ }
 
     /**
-     * Called when {@link WhatsappWebSocket} successfully disconnects from WhatsappWeb's WebSocket
-     * When this event is called, any data, including chats and contact, is guaranteed to not be available anymore
+     * Called when {@link WhatsappWebSocket} successfully disconnects from WhatsappWeb's WebSocket.
+     * When this event is called, any data, including chats and contact, is guaranteed to not be available anymore.
      */
     default void onDisconnected(){}
 
     /**
-     * Called when new information regarding this session is available
-     * Only the new data will be available in {@param info} as it's a partial object
+     * Called when new information regarding this session is available.
+     * Only the new data will be available in {@code info} as it's a partial object.
      *
      * @param info the partial object used to represent the new data available for this session
      */
     default void onInformationUpdate(@NotNull UserInformationResponse info){}
 
     /**
-     * Called when {@link WhatsappWebSocket} receives a plain text list
-     * This data is usually not very useful, but it may be necessary for particular use cases
+     * Called when {@link WhatsappWebSocket} receives a plain text list.
+     * This data is usually not very useful, but it may be necessary for particular use cases.
      *
      * @param response the list received as plain text by {@link WhatsappWebSocket}
      */
     default void onListResponse(@NotNull JsonListResponse response){}
 
     /**
-     * Called when {@link WhatsappWebSocket} receives all the contacts from WhatsappWeb's WebSocket
-     * To access this data use {@link WhatsappDataManager#contacts()}
+     * Called when {@link WhatsappWebSocket} receives all the contacts from WhatsappWeb's WebSocket.
+     * To access this data use {@link WhatsappDataManager#contacts()}.
      */
     default void onContactsReceived(){ }
 
@@ -73,9 +73,9 @@ public interface WhatsappListener {
     default void onContactReceived(@NotNull WhatsappContact contact){ }
 
     /**
-     * Called when {@link WhatsappWebSocket} receives an update regarding the presence of a contact
-     * If {@param chat} is a conversation with {@param contact}, the new presence is available by calling {@link WhatsappContact#lastKnownPresence()}
-     * Otherwise, it should be queried using {@link WhatsappChat#presences()}
+     * Called when {@link WhatsappWebSocket} receives an update regarding the presence of a contact.
+     * If {@code chat} is a conversation with {@code contact}, the new presence is available by calling {@link WhatsappContact#lastKnownPresence()}.
+     * Otherwise, it should be queried using {@link WhatsappChat#presences()}.
      *
      * @param chat the chat that this update regards
      * @param contact the contact that this update regards
@@ -83,8 +83,8 @@ public interface WhatsappListener {
     default void onContactPresenceUpdate(@NotNull WhatsappChat chat, @NotNull WhatsappContact contact){}
 
     /**
-     * Called when {@link WhatsappWebSocket} receives all the chats from WhatsappWeb's WebSocket
-     * To access this data use {@link WhatsappDataManager#chats()}
+     * Called when {@link WhatsappWebSocket} receives all the chats from WhatsappWeb's WebSocket.
+     * To access this data use {@link WhatsappDataManager#chats()}.
      */
     default void onChatsReceived(){}
 
@@ -139,9 +139,9 @@ public interface WhatsappListener {
     default void onNewMessageReceived(@NotNull WhatsappChat chat, @NotNull WhatsappMessage message){ }
 
     /**
-     * Called when the read status of a message changes
-     * If {@param chat} is a conversation with {@param contact}, the new read status can be considered valid for the message itself
-     * Otherwise, it should be considered valid only for {@param contact} without making assumptions about the status of the message for other participants of the group
+     * Called when the read status of a message changes.
+     * If {@code chat} is a conversation with {@code contact}, the new read status can be considered valid for the message itself.
+     * Otherwise, it should be considered valid only for {@code contact} without making assumptions about the status of the message for other participants of the group.
      *
      * @param chat the chat where the message is
      * @param contact the contact that this update regards
@@ -188,10 +188,10 @@ public interface WhatsappListener {
     default void onMessageUnstarred(@NotNull WhatsappChat chat, @NotNull WhatsappMessage message){}
 
     /**
-     * Called when the global read status of a message changes
-     * This status can be accessed calling {@link WhatsappMessage#globalStatus()}
-     * If {@param chat} is a conversation, {@link WhatsappMessage#globalStatus()} is equal to the one stored in {@link WhatsappMessage#individualReadStatus()} for the corresponding contact
-     * Otherwise, it is guaranteed that each value stored in {@link WhatsappMessage#individualReadStatus()} for each participant of the chat is equal or higher hierarchically then {@link WhatsappMessage#globalStatus()}
+     * Called when the global read status of a message changes.
+     * This status can be accessed calling {@link WhatsappMessage#globalStatus()}.
+     * If {@code chat} is a conversation, {@link WhatsappMessage#globalStatus()} is equal to the one stored in {@link WhatsappMessage#individualReadStatus()} for the corresponding contact.
+     * Otherwise, it is guaranteed that each value stored in {@link WhatsappMessage#individualReadStatus()} for each participant of the chat is equal or higher hierarchically then {@link WhatsappMessage#globalStatus()}.
      *
      * @param chat the chat where the message is
      * @param message the message that was unstarred
@@ -200,8 +200,8 @@ public interface WhatsappListener {
     default void onMessageGlobalReadStatusUpdate(@NotNull WhatsappChat chat, @NotNull WhatsappMessage message){}
 
     /**
-     * Called when an updated blocklist is received
-     * This method is called both when a connection is established with WhatsappWeb and when a contact is added or removed from the blocklist
+     * Called when an updated blocklist is received.
+     * This method is called both when a connection is established with WhatsappWeb and when a contact is added or removed from the blocklist.
      *
      * @param blocklist the updated blocklist
      *
@@ -209,9 +209,9 @@ public interface WhatsappListener {
     default void onBlocklistUpdate(@NotNull BlocklistResponse blocklist){}
 
     /**
-     * Called when an updated list of properties is received
-     * This method is called both when a connection is established with WhatsappWeb and when new props are available
-     * In the latter case though, this object should be considered as partial and is guaranteed to contain only updated entries
+     * Called when an updated list of properties is received.
+     * This method is called both when a connection is established with WhatsappWeb and when new props are available.
+     * In the latter case though, this object should be considered as partial and is guaranteed to contain only updated entries.
      *
      * @param props the updated list of properties
      *

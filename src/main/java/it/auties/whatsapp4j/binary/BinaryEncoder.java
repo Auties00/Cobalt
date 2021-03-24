@@ -13,13 +13,24 @@ import java.util.Map;
 import java.util.stream.IntStream;
 
 /**
- * A class used to encode a WhatsappNode and then send it to WhatsappWeb's WebSocket
+ * A class used to encode a WhatsappNode and then send it to WhatsappWeb's WebSocket.
+ * To decode a message use instead {@link BinaryDecoder}.
+ *
+ * @param cache the message to encode
  */
 public record BinaryEncoder(@NotNull List<Byte> cache) {
+    /**
+     * Constructs a new empty {@link BinaryEncoder}
+     */
     public BinaryEncoder(){
         this(new ArrayList<>());
     }
 
+    /**
+     * Encodes {@code node} as an array of bytes
+     *
+     * @return a new array of bytes
+     */
     public byte @NotNull [] encodeMessage(@NotNull WhatsappNode node) {
         cache.clear();
         return writeNode(node);

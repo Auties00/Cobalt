@@ -10,11 +10,11 @@ import org.jetbrains.annotations.NotNull;
 import java.util.function.Function;
 
 /**
- * A configuration class used to specify the behaviour of {@link it.auties.whatsapp4j.api.WhatsappAPI}
- * Each field is immutable, this means that once this class has been initialized, cannot be changed
- * If reflection is used, it is not guaranteed that the settings will effectively change
- * This class should be configured using its builder, accessible using {@link WhatsappConfiguration#builder()}
- * An all arguments constructor is also available if considered more suitable for the coding style of the project
+ * A configuration class used to specify the behaviour of {@link it.auties.whatsapp4j.api.WhatsappAPI}.
+ * Each field is immutable, this means that once this class has been initialized, cannot be changed.
+ * If reflection is used, it is not guaranteed that the settings will effectively change.
+ * This class should be configured using its builder, accessible using {@link WhatsappConfiguration#builder()}.
+ * An all arguments constructor is also available if considered more suitable for the coding style of the project.
  */
 @Builder
 @Data

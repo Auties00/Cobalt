@@ -33,7 +33,7 @@ public class WhatsappUtils {
      * Returns an optional String representing the text stored by this message
      *
      * @param message the target message
-     * @return a non empty optional String if {@param message} is a text message
+     * @return a non empty optional String if {@code message} is a text message
      */
     public @NotNull Optional<String> extractText(@NotNull WhatsappProtobuf.Message message) {
         return message.hasConversation() ? Optional.of(message.getConversation()) : message.hasExtendedTextMessage() ? Optional.of(message.getExtendedTextMessage().getText()) : Optional.empty();
@@ -69,7 +69,7 @@ public class WhatsappUtils {
     }
 
     /**
-     * Returns a request tag built using {@param configuration}
+     * Returns a request tag built using {@code configuration}
      *
      * @param configuration the configuration to use to build the message
      * @return a non null String
@@ -79,27 +79,27 @@ public class WhatsappUtils {
     }
 
     /**
-     * Returns a ZoneDateTime for {@param time}
+     * Returns a ZoneDateTime for {@code time}
      *
      * @param time the time in seconds since {@link Instant#EPOCH}
-     * @return a non null empty optional if the {@param time} isn't 0
+     * @return a non null empty optional if the {@code time} isn't 0
      */
     public @NotNull Optional<ZonedDateTime> parseWhatsappTime(long time){
         return time == 0 ? Optional.empty() : Optional.of(ZonedDateTime.ofInstant(Instant.ofEpochSecond(time), ZoneId.systemDefault()));
     }
 
     /**
-     * Returns a boolean that determines whether {@param jid} is a group
+     * Returns a boolean that determines whether {@code jid} is a group
      *
      * @param jid the input jid
-     * @return true if {@param jid} is a group
+     * @return true if {@code jid} is a group
      */
     public boolean isGroup(@NotNull String jid){
         return jid.contains("-");
     }
 
     /**
-     * Returns an optional context for {@param message}
+     * Returns an optional context for {@code message}
      *
      * @param message the input raw protobuf message
      * @return a non empty optional if any context is present
@@ -140,10 +140,10 @@ public class WhatsappUtils {
     }
 
     /**
-     * Returns a List of WhatsappNodes that represent {@param contacts}
+     * Returns a List of WhatsappNodes that represent {@code contacts}
      *
      * @param contacts any number of contacts to convert
-     * @throws IllegalArgumentException if {@param contacts} is empty
+     * @throws IllegalArgumentException if {@code contacts} is empty
      * @return a non null List of WhatsappNodes
      */
     public @NotNull List<WhatsappNode> jidsToParticipantNodes(@NotNull WhatsappContact... contacts){
@@ -151,10 +151,10 @@ public class WhatsappUtils {
     }
 
     /**
-     * Returns a List of WhatsappNodes that represent {@param jids}
+     * Returns a List of WhatsappNodes that represent {@code jids}
      *
      * @param jids any number of jids to convert
-     * @throws IllegalArgumentException if {@param jids} is empty
+     * @throws IllegalArgumentException if {@code jids} is empty
      * @return a non null List of WhatsappNodes
      */
     public @NotNull List<WhatsappNode> jidsToParticipantNodes(@NotNull String... jids){

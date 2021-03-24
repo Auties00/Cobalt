@@ -5,8 +5,8 @@ import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.model.WhatsappNode;
-import it.auties.whatsapp4j.response.model.shared.Response;
-import it.auties.whatsapp4j.response.model.shared.ResponseModel;
+import it.auties.whatsapp4j.response.model.Response;
+import it.auties.whatsapp4j.response.model.ResponseModel;
 import it.auties.whatsapp4j.utils.Validate;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import lombok.Getter;
@@ -18,11 +18,13 @@ import java.lang.reflect.ParameterizedType;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * An abstract model class that represents a request made from the client to the server
- * This class only allows two types of requests:<br/>
- * {@link JsonRequest} - a json encoded response made from a List of Objects<br/>
- * {@link BinaryRequest} - an aes encrypted {@link WhatsappNode}<br/>
- * All of its implementations must be abstract in order for the accessor {@link Request#modelClass()} to work
+ * An abstract model class that represents a request made from the client to the server.
+ * All of its implementations must be abstract in order for the accessor {@link Request#modelClass()} to work.
+ * 
+ * This class only allows two types of requests:
+ * <li>{@link JsonRequest} - a json encoded response made from a List of Objects</li>
+ * <li>{@link BinaryRequest} - an aes encrypted {@link WhatsappNode}</li>
+ * 
  * @param <M>
  */
 @RequiredArgsConstructor
@@ -34,8 +36,8 @@ public sealed abstract class Request<M extends ResponseModel> permits BinaryRequ
     protected static final WhatsappDataManager MANAGER = WhatsappDataManager.singletonInstance();
 
     /**
-     * The non null tag of this request
-     * This tag must be unique even amongst different sessions linked to the same encryption keys after the login process has been completed
+     * The non null tag of this request.
+     * This tag must be unique even amongst different sessions linked to the same encryption keys after the login process has been completed.
      */
     protected final @NotNull @Getter String tag;
 
@@ -47,8 +49,8 @@ public sealed abstract class Request<M extends ResponseModel> permits BinaryRequ
 
 
     /**
-     * A future completed when Whatsapp sends a response if {@link Request#isCompletable()} returns true
-     * Otherwise, it's completed as soon as the request is successfully sent to WhatsappWeb's WebSocket
+     * A future completed when Whatsapp sends a response if {@link Request#isCompletable()} returns true.
+     * Otherwise, it's completed as soon as the request is successfully sent to WhatsappWeb's WebSocket.
      */
     protected final @NotNull @Getter CompletableFuture<M> future;
 
@@ -64,7 +66,7 @@ public sealed abstract class Request<M extends ResponseModel> permits BinaryRequ
     }
 
     /**
-     * Constructs a new instance of a Request using the default request tag built using {@param configuration}
+     * Constructs a new instance of a Request using the default request tag built using {@code configuration}
      *
      * @param configuration the configuration used for {@link WhatsappAPI}
      */
@@ -83,6 +85,7 @@ public sealed abstract class Request<M extends ResponseModel> permits BinaryRequ
 
     /**
      * Returns whether this request is completable or not
+     * 
      * @return true if the request is completable
      */
     public boolean isCompletable() {
@@ -90,7 +93,7 @@ public sealed abstract class Request<M extends ResponseModel> permits BinaryRequ
     }
 
     /**
-     * Completes this request using {@param response}
+     * Completes this request using {@code response}
      *
      * @param response the response used to complete {@link Request#future}
      * @throws IllegalArgumentException if this request isn't completable

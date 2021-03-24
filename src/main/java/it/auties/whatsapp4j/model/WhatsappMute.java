@@ -9,8 +9,8 @@ import java.time.ZonedDateTime;
 import java.util.Optional;
 
 /**
- * An immutable model class that represents a WhatsappMute
- * To change the mute status of a {@link WhatsappChat} use {@link WhatsappAPI#mute(WhatsappChat)} and {@link WhatsappAPI#unmute(WhatsappChat)}
+ * An immutable model class that represents a WhatsappMute.
+ * To change the mute status of a {@link WhatsappChat} use {@link WhatsappAPI#mute(WhatsappChat)} and {@link WhatsappAPI#unmute(WhatsappChat)}.
  *
  * @param time the end date of the mute associated with this object stored as second since {@link Instant#EPOCH}
  */

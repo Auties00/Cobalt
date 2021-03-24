@@ -6,6 +6,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -20,58 +21,59 @@ import java.util.stream.IntStream;
  */
 public record BinaryArray(byte[] data) {
     /**
-     * Constructs a new empty {@code BinaryArray}
-     * @return a new {@code BinaryArray} wrapping an empty bytes array
+     * Constructs a new empty {@link BinaryArray}
+     *
+     * @return a new {@link BinaryArray}
      */
     public static @NotNull BinaryArray empty(){
         return forArray(new byte[0]);
     }
 
     /**
-     * Constructs a new {@code BinaryArray} wrapping {@param in}
+     * Constructs a new {@link BinaryArray} that wraps an array of bytes
      *
      * @param in the array of bytes to wrap
-     * @return a new {@code BinaryArray} wrapping {@code in}
+     * @return a new {@link BinaryArray}
      */
     public static @NotNull BinaryArray forArray(byte[] in){
         return new BinaryArray(in);
     }
 
     /**
-     * Constructs a new non empty {@code BinaryArray}
+     * Constructs a new non empty {@link BinaryArray} that wraps a byte
      *
      * @param in the byte to wrap
-     * @return a new non empty {@code BinaryArray} wrapping a bytes array that only contains {@param in}
+     * @return a new non empty {@link BinaryArray}
      */
     public static @NotNull BinaryArray singleton(byte in){
         return new BinaryArray(new byte[]{in});
     }
 
     /**
-     * Constructs a new {@code BinaryArray} wrapping the array of bytes representing a UTF-8 string
+     * Constructs a new {@link BinaryArray} that wraps the array of bytes obtained from a UTF-8 encoded String
      *
      * @param in the String to wrap
-     * @return a new {@code BinaryArray} wrapping {@param in}
+     * @return a new {@link BinaryArray}
      */
     public static @NotNull BinaryArray forString(@NotNull String in){
         return forArray(in.getBytes());
     }
 
     /**
-     * Constructs a {@code BinaryArray} wrapping the array of bytes representing a Base64 encoded String in UTF-8 format
+     * Constructs a {@link BinaryArray} that wraps the array of bytes obtained from a Base64 encoded String
      *
      * @param input the Base64 encoded String to wrap
-     * @return a new {@code BinaryArray} wrapping {@param input}
+     * @return a new {@link BinaryArray}
      */
     public static @NotNull BinaryArray forBase64(@NotNull String input){
         return forArray(Base64.getDecoder().decode(input));
     }
 
     /**
-     * Constructs a {@code BinaryArray} wrapping a generated array of {@param length }pseudo random bytes
+     * Constructs a {@link BinaryArray} that wraps an array of pseudorandom bytes
      *
      * @param length the length of the array to generate and wrap
-     * @return a new {@code BinaryArray} of length {@param length}
+     * @return a new {@link BinaryArray}
      */
     public static @NotNull BinaryArray random(int length){
         final var result = new byte[length];
@@ -80,57 +82,56 @@ public record BinaryArray(byte[] data) {
     }
 
     /**
-     * Constructs a new {@code BinaryArray} wrapping this object's bytes array sliced from
-     * 0, inclusive
-     * {@param end}, exclusive
+     * Constructs a new {@link BinaryArray} whose content is a subsequence of this object.
+     * The content of the new {@link BinaryArray} will start at position 0 and will contain {@code length} elements.
      *
-     * @param end the exclusive index used to slice this object's bytes array
-     * @return a new {@code BinaryArray} with the above characteristics
+     * @param length the length of the new {@link BinaryArray}
+     * @return a new {@link BinaryArray}
      */
-    public @NotNull BinaryArray cut(int end){
-        return slice(0, end);
+    public @NotNull BinaryArray cut(int length){
+        return slice(0, length);
     }
 
     /**
-     * Constructs a new {@code BinaryArray} wrapping this object's bytes array sliced from
-     * {@param start}, inclusive
-     * this object's bytes array size, exclusive
+     * Constructs a new {@link BinaryArray} whose content is a subsequence of this object.
+     * The content of the new {@link BinaryArray} will start at position {@code start} and will contain {@code size() - start} elements.
      *
-     * @param start the inclusive index used to slice this object's bytes array
-     * @return a new {@code BinaryArray} with the above characteristics
+     * @param start the inclusive index to slice this object
+     * @return a new {@link BinaryArray}
      */
     public @NotNull BinaryArray slice(int start){
         return slice(start, data.length);
     }
 
     /**
-     * Constructs a {@code Pair} of two {@code BinaryArray} obtained by splitting this object's bytes array at {@param split}
+     * Constructs a new {@link BinaryArray} whose content is a subsequence of this object.
+     * The content of the new {@link BinaryArray} will start at position {@code start} and will contain {@code end - start} elements.
      *
-     * @param split the index to split this object's array
-     * @return a Pair with the above characteristics
-     */
-    public @NotNull Pair<BinaryArray, BinaryArray> split(int split){
-        return new Pair<>(cut(split), slice(split + 1));
-    }
-
-    /**
-     * Returns a new {@code BinaryArray} wrapping this object's bytes array sliced from
-     * {@param start}, inclusive
-     * {@param end}, exclusive
-     *
-     * @param start the inclusive starting index used to slice this object's bytes array
-     * @param end the exclusive ending index used to slice this object's bytes array
-     * @return a new {@code BinaryArray} with the above characteristics
+     * @param start the inclusive starting index to slice this object
+     * @param end the exclusive ending index to slice this object
+     * @return a new {@link BinaryArray}
      */
     public @NotNull BinaryArray slice(int start, int end){
         return forArray(Arrays.copyOfRange(data, start, end));
     }
 
     /**
-     * Constructs a new {@code BinaryArray} by concatenating this object and {@param array}
+     * Constructs a {@link Pair} of two {@link BinaryArray} obtained by splitting this object at {@code split}.
+     * The first {@link BinaryArray} will start at index 0 and end at index {@code split - 1}.
+     * The second {@link BinaryArray} will start at index {@code split + 1} and end at index {@code size() - 1}.
      *
-     * @param array the {@code BinaryArray} to concatenate
-     * @return a new {@code BinaryArray} wrapping a bytes array obtained by concatenating this object's bytes array and {@param array}'s bytes array
+     * @param split the index to split this object's array
+     * @return a new {@link Pair}
+     */
+    public @NotNull Pair<BinaryArray, BinaryArray> split(int split){
+        return new Pair<>(cut(split), slice(split + 1));
+    }
+
+    /**
+     * Constructs a new {@link BinaryArray} obtained by concatenating this object and {@code array}
+     *
+     * @param array the {@link BinaryArray} to concatenate
+     * @return a new {@link BinaryArray}
      */
     public @NotNull BinaryArray merged(@NotNull BinaryArray array){
         var result = Arrays.copyOf(data, size() + array.size());
@@ -139,12 +140,12 @@ public record BinaryArray(byte[] data) {
     }
 
     /**
-     * Returns the index within this object's bytes array of the first occurrence of a byte that matches {@param character}
+     * Returns the index within this object's bytes array of the first occurrence of a byte that matches {@code character}
      * If this condition is met, a non empty Optional wrapping said index is returned
      * Otherwise, an empty Optional is returned
      *
      * @param character the character to search
-     * @return an Optional wrapping an int with the above characteristics
+     * @return a new Optional
      */
     public @NotNull Optional<Integer> indexOf(char character){
         return IntStream.range(0, size()).filter(index -> data[index] == character).boxed().findFirst();
@@ -154,7 +155,7 @@ public record BinaryArray(byte[] data) {
      * Returns the byte value at the specified index for this object's bytes array
      *
      * @param index the index, ranges from 0 to size() - 1
-     * @return the byte at {@param index}
+     * @return the byte at {@code index}
      */
     public byte at(int index){
         return data[index];
@@ -163,44 +164,44 @@ public record BinaryArray(byte[] data) {
     /**
      * Returns the size of the array of bytes that this object wraps
      *
-     * @return an unsigned int representing the size of the array of bytes that this object wraps
+     * @return an unsigned int
      */
     public int size(){
         return data.length;
     }
 
     /**
-     * Constructs a new ByteBuffer from this object's array of bytes
+     * Constructs a new {@link ByteBuffer} from this object's array of bytes
      *
-     * @return an ByteBuffer with the above characteristics
+     * @return a new {@link ByteBuffer}
      */
     public @NotNull ByteBuffer toBuffer() {
         return ByteBuffer.wrap(data);
     }
 
     /**
-     * Constructs a new hex from this object's array of bytes
+     * Constructs a new hex String from this object's array of bytes
      *
-     * @return a String with the above characteristics
+     * @return a String in hex format
      */
     public @NotNull String toHex(){
         return DatatypeConverter.printHexBinary(data);
     }
 
     /**
-     * Checks if this object and {@param o} are equal
+     * Checks if this object and {@code other} are equal
      *
-     * @return true if {@param o} is an instance of {@code BinaryArray} and if they wrap two arrays considered equal
+     * @return true if {@code other} is an instance of {@link BinaryArray} and if they wrap two arrays considered equal by {@link Arrays#equals(byte[], byte[])}
      */
     @Override
-    public boolean equals(@Nullable Object o) {
-        return o instanceof BinaryArray that && Arrays.equals(data, that.data);
+    public boolean equals(@Nullable Object other) {
+        return other instanceof BinaryArray that && Arrays.equals(data, that.data);
     }
 
     /**
      * Constructs a UTF-8 encoded String using this object's array of bytes
      *
-     * @return a String with the above characteristics
+     * @return a new UTF-8 String
      */
     @Override
     public @NotNull String toString() {

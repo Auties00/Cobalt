@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
-import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
+import it.auties.whatsapp4j.response.model.JsonResponseModel;
 import jakarta.websocket.Session;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
@@ -22,7 +22,7 @@ public abstract non-sealed class JsonRequest<M extends JsonResponseModel> extend
     private static final ObjectWriter JACKSON = new ObjectMapper().writerWithDefaultPrettyPrinter();
 
     /**
-     * Constructs a new instance of a JsonRequest using the default request tag built using {@param configuration}
+     * Constructs a new instance of a JsonRequest using the default request tag built using {@code configuration}
      *
      * @param configuration the configuration used for {@link WhatsappAPI}
      */
@@ -31,8 +31,8 @@ public abstract non-sealed class JsonRequest<M extends JsonResponseModel> extend
     }
 
     /**
-     * Sends a json request to the WebSocket linked to {@param session}
-     * This message is serialized using {@link JsonRequest#JACKSON}
+     * Sends a json request to the WebSocket linked to {@code session}.
+     * This message is serialized using {@link JsonRequest#JACKSON}.
      *
      * @param session the WhatsappWeb's WebSocket session
      * @param callback a callback to execute after the request has been successfully been sent
@@ -69,8 +69,8 @@ public abstract non-sealed class JsonRequest<M extends JsonResponseModel> extend
     }
 
     /**
-     * Sends a json request to the WebSocket linked to {@param session}
-     * This message is serialized using {@link JsonRequest#JACKSON}
+     * Sends a json request to the WebSocket linked to {@code session}.
+     * This message is serialized using {@link JsonRequest#JACKSON}.
      *
      * @param session the WhatsappWeb's WebSocket session
      * @return this request

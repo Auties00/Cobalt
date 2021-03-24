@@ -19,8 +19,8 @@ import java.util.Objects;
 import java.util.prefs.Preferences;
 
 /**
- * This class is a data class used to hold the clientId, serverToken, clientToken, publicKey, privateKey, encryptionKey and macKey
- * It can be serialized using Jackson and deserialized using the fromPreferences named constructor
+ * This class is a data class used to hold the clientId, serverToken, clientToken, publicKey, privateKey, encryptionKey and macKey.
+ * It can be serialized using Jackson and deserialized using the fromPreferences named constructor.
  */
 @AllArgsConstructor
 @NoArgsConstructor
@@ -40,6 +40,7 @@ public class WhatsappKeysManager {
 
     /**
      * Constructs a new WhatsappKeysManager from the saved preferences on this machine
+     *
      * @return a new WhatsappKeysManager with the above characteristics
      */
     @SneakyThrows
@@ -55,6 +56,7 @@ public class WhatsappKeysManager {
 
     /**
      * Checks if the serverToken and clientToken are not null
+     *
      * @return true if both the serverToken and clientToken are not null
      */
     public boolean mayRestore() {
@@ -71,8 +73,8 @@ public class WhatsappKeysManager {
     }
 
     /**
-     * Clears all the keys from this machine's memory
-     * This method doesn't clear this object's values
+     * Clears all the keys from this machine's memory.
+     * This method doesn't clear this object's values.
      */
     @SneakyThrows
     public void deleteKeysFromMemory(){

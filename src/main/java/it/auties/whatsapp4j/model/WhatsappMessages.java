@@ -9,9 +9,9 @@ import java.util.Collections;
 import java.util.Comparator;
 
 /**
- * This class is an implementation of ArrayList used to store the {@link WhatsappMessage} in a {@link WhatsappChat}
- * The messages stored in this collection are guaranteed to be stored chronologically
- * This contract can be technically broken using reflection to access the array associated with this collection, though, obviously, it's not advisable
+ * This class is an implementation of ArrayList used to store the {@link WhatsappMessage} in a {@link WhatsappChat}.
+ * The messages stored in this collection are guaranteed to be stored chronologically.
+ * This contract can be technically broken using reflection to access the array associated with this collection, though, obviously, it's not advisable.
  */
 @NoArgsConstructor
 public class WhatsappMessages extends ArrayList<WhatsappMessage> {
@@ -23,6 +23,7 @@ public class WhatsappMessages extends ArrayList<WhatsappMessage> {
 
     /**
      * Constructs a new instance of WhatsappMessages from a WhatsappMessage
+     * 
      * @param message the first non null entry to add to this collection
      */
     public WhatsappMessages(@NotNull WhatsappMessage message) {
@@ -30,9 +31,10 @@ public class WhatsappMessages extends ArrayList<WhatsappMessage> {
     }
 
     /**
-     * Adds {@param message} to this collection in the right position in order to respect the contract explained previously
+     * Adds {@code message} to this collection in the right position in order to respect the contract explained previously
+     * 
      * @param message the non null message to add to this collection
-     * @return true if {@param message} was added successfully
+     * @return true if {@code message} was added successfully
      */
     @Override
     public boolean add(@NotNull WhatsappMessage message) {
@@ -43,10 +45,11 @@ public class WhatsappMessages extends ArrayList<WhatsappMessage> {
     }
 
     /**
-     * Adds {@param message} if no other entry in this collection has an jid that matches the one of {@param message}
-     * Otherwise, it removes said entry and adds {@param message}
+     * Adds {@code message} if no other entry in this collection has an jid that matches the one of {@code message}.
+     * Otherwise, it removes said entry and adds {@code message}.
+     * 
      * @param message the non null message to add to this collection
-     * @return true if {@param message} was replaced
+     * @return true if {@code message} was replaced
      */
     public boolean addOrReplace(@NotNull WhatsappMessage message){
         var result = contains(message);
@@ -56,8 +59,9 @@ public class WhatsappMessages extends ArrayList<WhatsappMessage> {
     }
 
     /**
-     * Adds each entry of {@param collection} if no other entry in this collection has an jid that matches said entry's
-     * Otherwise, it removes said entry and adds said entry
+     * Adds each entry of {@code collection} if no other entry in this collection has an jid that matches said entry's.
+     * Otherwise, it removes said entry and adds said entry.
+     * 
      * @param collection the collection to add to this collection
      */
     @Override

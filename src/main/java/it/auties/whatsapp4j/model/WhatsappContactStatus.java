@@ -43,6 +43,11 @@ public enum WhatsappContactStatus {
     @Getter
     private final BinaryFlag flag;
 
+    /**
+     * Returns the name of this enumerated constant
+     *
+     * @return a lowercase non null String
+     */
     public @NotNull String data() {
         return name().toLowerCase();
     }

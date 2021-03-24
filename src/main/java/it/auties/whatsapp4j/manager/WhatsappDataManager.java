@@ -4,9 +4,9 @@ import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.model.*;
 import it.auties.whatsapp4j.model.WhatsappProtobuf.WebMessageInfo;
 import it.auties.whatsapp4j.request.model.Request;
-import it.auties.whatsapp4j.response.impl.json.PhoneBatteryResponse;
-import it.auties.whatsapp4j.response.model.json.JsonResponse;
-import it.auties.whatsapp4j.response.model.shared.Response;
+import it.auties.whatsapp4j.response.impl.PhoneBatteryResponse;
+import it.auties.whatsapp4j.response.model.JsonResponse;
+import it.auties.whatsapp4j.response.model.Response;
 import it.auties.whatsapp4j.socket.WhatsappWebSocket;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import lombok.AccessLevel;
@@ -25,10 +25,10 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 /**
- * This class is a singleton and holds all of the data regarding a session with WhatsappWeb's WebSocket
- * It also provides various methods to query this data
- * It should not be used by multiple sessions as, being a singleton, it cannot determine and divide data coming from different sessions
- * It should not be initialized manually
+ * This class is a singleton and holds all of the data regarding a session with WhatsappWeb's WebSocket.
+ * It also provides various methods to query this data.
+ * It should not be used by multiple sessions as, being a singleton, it cannot determine and divide data coming from different sessions.
+ * It should not be initialized manually.
  */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Data
@@ -45,7 +45,8 @@ public class WhatsappDataManager {
     private long tag;
 
     /**
-     * Queries the first contact whose jid is equal to {@param jid}
+     * Queries the first contact whose jid is equal to {@code jid}
+     * 
      * @param jid the jid to search
      * @return a non empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
@@ -54,7 +55,8 @@ public class WhatsappDataManager {
     }
 
     /**
-     * Queries the first contact whose name is equal to {@param name}
+     * Queries the first contact whose name is equal to {@code name}
+     * 
      * @param name the name to search
      * @return a non empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
@@ -63,7 +65,8 @@ public class WhatsappDataManager {
     }
 
     /**
-     * Queries every contact whose name is equal to {@param name}
+     * Queries every contact whose name is equal to {@code name}
+     * 
      * @param name the name to search
      * @return a Set containing every result
      */
@@ -72,7 +75,8 @@ public class WhatsappDataManager {
     }
 
     /**
-     * Queries the first chat whose jid is equal to {@param jid}
+     * Queries the first chat whose jid is equal to {@code jid}
+     * 
      * @param jid the jid to search
      * @return a non empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
@@ -81,7 +85,8 @@ public class WhatsappDataManager {
     }
 
     /**
-     * Queries the message in {@param chat} whose jid is equal to {@param jid}
+     * Queries the message in {@code chat} whose jid is equal to {@code jid}
+     * 
      * @param chat the chat to search in
      * @param id the jid to search
      * @return a non empty Optional containing the result if it is found otherwise an empty Optional empty
@@ -91,7 +96,8 @@ public class WhatsappDataManager {
     }
 
     /**
-     * Queries the quoted message in {@param chat} using {@param context}
+     * Queries the quoted message in {@code chat} using {@code context}
+     * 
      * @param chat the chat to search in
      * @param context the context to use
      * @return a non empty Optional containing the result if it is found otherwise an empty Optional empty
@@ -101,7 +107,8 @@ public class WhatsappDataManager {
     }
 
     /**
-     * Queries the chat associated with {@param message}
+     * Queries the chat associated with {@code message}
+     * 
      * @param message the message to use as context
      * @return a non empty Optional containing the result if it is found otherwise an empty Optional empty
      */
@@ -110,7 +117,8 @@ public class WhatsappDataManager {
     }
 
     /**
-     * Queries the first chat whose name is equal to {@param name}
+     * Queries the first chat whose name is equal to {@code name}
+     * 
      * @param name the name to search
      * @return a non empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
@@ -119,7 +127,8 @@ public class WhatsappDataManager {
     }
 
     /**
-     * Queries every chat whose name is equal to {@param name}
+     * Queries every chat whose name is equal to {@code name}
+     * 
      * @param name the name to search
      * @return a Set containing every result
      */
@@ -128,7 +137,8 @@ public class WhatsappDataManager {
     }
 
     /**
-     * Queries the first Request whose tag is equal to {@param tag}
+     * Queries the first Request whose tag is equal to {@code tag}
+     * 
      * @param tag the tag to search
      * @return a non empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
@@ -137,10 +147,11 @@ public class WhatsappDataManager {
     }
 
     /**
-     * Queries the first Request whose tag is equal to {@param messageTag} and, if any is found, resolves the request using {@param response}
+     * Queries the first Request whose tag is equal to {@code messageTag} and, if any is found, resolves the request using {@code response}
+     * 
      * @param messageTag the tag to search
      * @param response the response to complete the request with
-     * @return true if any request matching {@param messageTag} is found
+     * @return true if any request matching {@code messageTag} is found
      */
     public boolean resolvePendingRequest(@NotNull String messageTag, @NotNull Response response) {
         var req = findPendingRequest(messageTag);
@@ -165,6 +176,7 @@ public class WhatsappDataManager {
 
     /**
      * Returns the incremental tag and then increments it
+     *
      * @return the tag
      */
     public long tagAndIncrement(){
@@ -173,6 +185,7 @@ public class WhatsappDataManager {
 
     /**
      * Returns the phone number
+     *
      * @return the phone number
      * @throws NullPointerException if the phone number is null
      */
@@ -181,9 +194,9 @@ public class WhatsappDataManager {
     }
 
     /**
-     * Executes a runnable on a single threaded ExecutorService
-     * This should be used to be sure that when a listener should be called it's called on a thread that is not the WebSocket's
-     * If this condition isn't met, if the thread is put on hold to wait for a response for a pending request, the WebSocket will freeze
+     * Executes a runnable on a single threaded ExecutorService.
+     * This should be used to be sure that when a listener should be called it's called on a thread that is not the WebSocket's.
+     * If this condition isn't met, if the thread is put on hold to wait for a response for a pending request, the WebSocket will freeze.
      */
     public void callOnListenerThread(@NotNull Runnable runnable){
         listenerService.execute(runnable);
@@ -191,6 +204,7 @@ public class WhatsappDataManager {
 
     /**
      * Digests a {@code node} adding the data it contains to the data this singleton holds
+     *
      * @param socket the WebSocket associated with the WhatsappWeb's session
      * @param node the WhatsappNode to digest
      */

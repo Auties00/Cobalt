@@ -16,10 +16,10 @@ import java.util.Optional;
 
 
 /**
- * A model class that represents a WhatsappContact
- * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers
- * Instead, methods inside {@link WhatsappAPI} should be used
- * This class also offers a builder, accessible using {@link WhatsappContact#builder()}
+ * A model class that represents a WhatsappContact.
+ * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
+ * Instead, methods inside {@link WhatsappAPI} should be used.
+ * This class also offers a builder, accessible using {@link WhatsappContact#builder()}.
  */
 @AllArgsConstructor
 @Data
@@ -33,9 +33,9 @@ public class WhatsappContact {
     private final @NotNull String jid;
 
     /**
-     * The nullable name specified by this contact when he created a Whatsapp account
-     * Theoretically, it should not be possible for this field to be null as its required when registering for Whatsapp
-     * Though it looks that it can be removed later, so its nullable
+     * The nullable name specified by this contact when he created a Whatsapp account.
+     * Theoretically, it should not be possible for this field to be null as its required when registering for Whatsapp.
+     * Though it looks that it can be removed later, so its nullable.
      */
     private final @Nullable String chosenName;
 
@@ -51,25 +51,26 @@ public class WhatsappContact {
     private final @Nullable String shortName;
 
     /**
-     * The nullable last known presence of this contact
-     * This field is associated only with the presence of this contact in the corresponding conversation
-     * If, for example, this contact is composing, recording or paused in a group this field will not be affected
-     * Instead, {@link WhatsappChat#presences()} should be used
-     * By default, Whatsapp will not send updates about a contact's status unless they send a message or are in the recent contacts
-     * To force Whatsapp to send updates, use {@link WhatsappAPI#subscribeToUserPresence(WhatsappContact)}
+     * The nullable last known presence of this contact.
+     * This field is associated only with the presence of this contact in the corresponding conversation.
+     * If, for example, this contact is composing, recording or paused in a group this field will not be affected.
+     * Instead, {@link WhatsappChat#presences()} should be used.
+     * By default, Whatsapp will not send updates about a contact's status unless they send a message or are in the recent contacts.
+     * To force Whatsapp to send updates, use {@link WhatsappAPI#subscribeToUserPresence(WhatsappContact)}.
      */
     private @Nullable WhatsappContactStatus lastKnownPresence;
 
     /**
-     * The nullable last time this contact was seen available
-     * Any contact can decide to hide this information in their privacy settings
+     * The nullable last time this contact was seen available.
+     * Any contact can decide to hide this information in their privacy settings.
      */
     private @Nullable ZonedDateTime lastSeen;
 
     /**
-     * Constructs a new WhatsappContact from a map of attributes
-     * This method is usually used to deserialize a WhatsappContact from the attributes of a {@link WhatsappNode}
-     * @return a new instance of WhatsappContact
+     * Constructs a new WhatsappContact from a map of attributes.
+     * This method is usually used to deserialize a WhatsappContact from the attributes of a {@link WhatsappNode}.
+     *
+     * @return a new instance of WhatsappContact.
      */
     public static @NotNull WhatsappContact fromAttributes(@NotNull Map<String, String> attrs){
         return WhatsappContact.builder()
@@ -81,10 +82,10 @@ public class WhatsappContact {
     }
 
     /**
-     * Returns an optional String representing the first valid(non null) name for this contact
-     * If no valid name is found, an empty optional is returned
-     * In this case, consider using the the phone number of this contact as a name
-     * It can be obtained by passing this contact's jid to {@link WhatsappUtils#phoneNumberFromJid(String)}
+     * Returns an optional String representing the first valid(non null) name for this contact.
+     * If no valid name is found, an empty optional is returned.
+     * In this case, consider using the the phone number of this contact as a name.
+     * It can be obtained by passing this contact's jid to {@link WhatsappUtils#phoneNumberFromJid(String)}.
      *
      * @return an optional String
      */
@@ -94,8 +95,8 @@ public class WhatsappContact {
 
 
     /**
-     * Returns a non null String representing the first valid(non null) name for this contact
-     * If no valid name is found, {@param orElse} is returned
+     * Returns a non null String representing the first valid(non null) name for this contact.
+     * If no valid name is found, {@code orElse} is returned.
      *
      * @param orElse a non null String returned if no valid name is present for this contact
      * @return a non null String
@@ -106,8 +107,8 @@ public class WhatsappContact {
 
 
     /**
-     * Returns an optional object wrapping this contact's last known presence
-     * If this information isn't available, an empty optional is returned
+     * Returns an optional object wrapping this contact's last known presence.
+     * If this information isn't available, an empty optional is returned.
      *
      * @return an optional object wrapping this contact's last known presence
      */
@@ -116,8 +117,8 @@ public class WhatsappContact {
     }
 
     /**
-     * Returns an optional object wrapping the last time this contact was seen
-     * If this information isn't available, an empty optional is returned
+     * Returns an optional object wrapping the last time this contact was seen.
+     * If this information isn't available, an empty optional is returned.
      *
      * @return an optional object wrapping the last time this contact was seen available
      */

@@ -7,15 +7,14 @@ import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.model.WhatsappContactStatus;
-import it.auties.whatsapp4j.model.WhatsappNodeBuilder;
+import it.auties.whatsapp4j.model.WhatsappNode;
 import it.auties.whatsapp4j.model.WhatsappProtobuf;
 import it.auties.whatsapp4j.request.impl.*;
-import it.auties.whatsapp4j.response.impl.binary.ChatResponse;
-import it.auties.whatsapp4j.response.impl.json.*;
-import it.auties.whatsapp4j.response.impl.shared.WhatsappResponse;
-import it.auties.whatsapp4j.response.model.binary.BinaryResponse;
-import it.auties.whatsapp4j.response.model.json.JsonListResponse;
-import it.auties.whatsapp4j.response.model.json.JsonResponse;
+import it.auties.whatsapp4j.response.impl.*;
+import it.auties.whatsapp4j.model.WhatsappResponse;
+import it.auties.whatsapp4j.response.model.BinaryResponse;
+import it.auties.whatsapp4j.response.model.JsonListResponse;
+import it.auties.whatsapp4j.response.model.JsonResponse;
 import it.auties.whatsapp4j.utils.Validate;
 import it.auties.whatsapp4j.utils.WhatsappQRCode;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
@@ -45,9 +44,9 @@ import java.util.concurrent.TimeUnit;
 import static it.auties.whatsapp4j.utils.CypherUtils.*;
 
 /**
- * This class is an interface between this API and WhatsappWeb's WebClient
- * This methods should not be used by any project, excluding obviously WhatsappWeb4j
- * Instead, {@link WhatsappAPI} should be used
+ * This class is an interface between this API and WhatsappWeb's WebClient.
+ * This methods should not be used by any project, excluding obviously WhatsappWeb4j.
+ * Instead, {@link WhatsappAPI} should be used.
  */
 @ClientEndpoint(configurator = WhatsappSocketConfiguration.class)
 @AllArgsConstructor
@@ -233,6 +232,7 @@ public class WhatsappWebSocket {
       return;
     }
 
+    System.out.println(message);
     var mapResponse = (JsonResponse) res.data();
     if(mapResponse.data().isEmpty()){
       return;
@@ -309,7 +309,8 @@ public class WhatsappWebSocket {
       return;
     }
 
-    whatsappManager.phoneNumber(WhatsappUtils.parseJid(info.ref()));
+    System.out.println("REF: " + info);
+    whatsappManager.phoneNumber(WhatsappUtils.parseJid(info.wid()));
     whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onLoggedIn(info, false)));
   }
 
@@ -380,7 +381,7 @@ public class WhatsappWebSocket {
   }
 
   public @NotNull CompletableFuture<ChatResponse> queryChat(@NotNull String jid) {
-    var node = WhatsappNodeBuilder
+    var node = WhatsappNode
             .builder()
             .description("query")
             .attrs(Map.of("jid", jid, "epoch", String.valueOf(whatsappManager.tagAndIncrement()), "type", "chat"))

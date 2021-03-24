@@ -17,6 +17,14 @@ public class WhatsappQRCode {
     private @Nullable String ref;
     private static final int SIZE = 250;
 
+    /**
+     * Generates a QR code to initialize the connection with WhatsappWeb's WebSocket
+     *
+     * @param ref the ref to generate the qr code, might be null
+     * @param publicKey the non null publicKey
+     * @param clientId the non null client id
+     * @return the same object it was called on
+     */
     @SneakyThrows
     public @NotNull WhatsappQRCode generateQRCodeImage(@Nullable String ref, byte @NotNull [] publicKey, @NotNull String clientId) {
         if(ref != null) this.ref = ref;
@@ -27,13 +35,14 @@ public class WhatsappQRCode {
         return this;
     }
 
+    /**
+     * Opens the qr code stored by this object using the default image editor.
+     * This will probably not work on Linux distros that don't provide a GUI.
+     * Looking for alternatives.
+     */
+    @SneakyThrows
     public void open() {
         if(qr == null) return;
-        openImageWithDesktop();
-    }
-
-    @SneakyThrows
-    private void openImageWithDesktop(){
         Desktop.getDesktop().open(qr);
     }
 }

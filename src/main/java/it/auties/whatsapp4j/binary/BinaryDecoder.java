@@ -1,7 +1,6 @@
 package it.auties.whatsapp4j.binary;
 
 import it.auties.whatsapp4j.model.WhatsappNode;
-import it.auties.whatsapp4j.model.WhatsappNodeBuilder;
 import it.auties.whatsapp4j.model.WhatsappProtobuf;
 import it.auties.whatsapp4j.utils.Validate;
 import lombok.SneakyThrows;
@@ -14,20 +13,30 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
- * A class used to decode an encrypted BinaryArray received from WhatsappWeb's WebSocket
+ * A class used to decode an encrypted BinaryArray received from WhatsappWeb's WebSocket.
+ * To encode a message use {@link BinaryDecoder} instead.
  * Getting this class to work was not very easy, but I surely couldn't have done it without the help of:
- * https://github.com/JicuNull/WhatsJava/blob/master/src/main/java/icu/jnet/whatsjava/encryption/BinaryDecoder.java - Java implementation, helped me to correctly cast a byte to an unsigned int, before I was using a method that just didn't work
- * https://github.com/adiwajshing/Baileys/blob/master/src/Binary/Decoder.ts - Typescript implementation, the logic was far less error prone than the one used by the python implementation on https://github.com/sigalor/whatsapp-web-reveng and the one I came up with.
+ *
+ * <li>https://github.com/JicuNull/WhatsJava/blob/master/src/main/java/icu/jnet/whatsjava/encryption/BinaryDecoder.java - Java implementation, helped me to correctly cast a byte to an unsigned int, before I was using a method that just didn't work</li
+ * <li>https://github.com/adiwajshing/Baileys/blob/master/src/Binary/Decoder.ts - Typescript implementation, the logic was far less error prone than the one used by the python implementation on https://github.com/sigalor/whatsapp-web-reveng and the one I came up with</li>
  */
 public class BinaryDecoder {
+    /**
+     * The {@link BinaryArray} to decode
+     */
     private BinaryArray buffer;
+
+    /**
+     * The current index
+     */
     private int index;
 
     /**
-     * Decrypts the encoded BinaryArray provided as input
+     * Decodes {@code buffer} as a new {@link WhatsappNode}
      * This method should not be used by multiple concurrent threads on the same instance
+     *
      * @param buffer the BinaryArray to decrypt
-     * @return a WhatsappNode containing all the information that was decrypted
+     * @return a new {@link WhatsappNode} containing all the information that was decrypted
      */
     public @NotNull WhatsappNode decodeDecryptedMessage(@NotNull BinaryArray buffer) {
         this.buffer = buffer;
@@ -171,7 +180,7 @@ public class BinaryDecoder {
         }
 
         var tag = readUnsignedInt();
-        return WhatsappNodeBuilder.builder()
+        return WhatsappNode.builder()
                 .description(description)
                 .attrs(attrs)
                 .content(isListTag(tag) ? readList(tag) : isBinaryTag(tag) ? parseMessage(description, tag) : readString(tag))

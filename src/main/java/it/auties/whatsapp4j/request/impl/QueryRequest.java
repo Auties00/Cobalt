@@ -2,8 +2,9 @@ package it.auties.whatsapp4j.request.impl;
 
 
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
+import it.auties.whatsapp4j.model.WhatsappNode;
 import it.auties.whatsapp4j.request.model.JsonRequest;
-import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
+import it.auties.whatsapp4j.response.model.JsonResponseModel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -12,6 +13,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A JSON request used to transmit a query request to WhatsappWeb's WebSocket
+ */
 public abstract class QueryRequest<M extends JsonResponseModel> extends JsonRequest<M> {
     private final @NotNull String jid;
     private final @NotNull QueryType queryType;
