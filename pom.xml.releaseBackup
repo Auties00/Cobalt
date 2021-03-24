@@ -63,8 +63,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java-version>15</java-version>
         <maven-compiler-plugin-version>3.8.1</maven-compiler-plugin-version>
-        <lombok-version>1.18.18</lombok-version>
-        <record-builder-version>1.14.ea</record-builder-version>
+        <lombok-version>1.18.19</lombok-version>
+        <delombok-version>1.18.18.0</delombok-version>
         <nullsafe-version>RELEASE</nullsafe-version>
         <tyrus-version>2.0.0</tyrus-version>
         <jackson-version>2.12.0</jackson-version>
@@ -78,7 +78,28 @@
 
     <build>
         <plugins>
-            <!-- Compiler -->
+            <!-- Delombok -->
+           <plugin>
+               <groupId>org.projectlombok</groupId>
+               <artifactId>lombok-maven-plugin</artifactId>
+               <version>${delombok-version}</version>
+               <configuration>
+                   <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+                   <outputDirectory>${delombok.output}</outputDirectory>
+                   <addOutputDirectory>false</addOutputDirectory>
+                   <encoding>${project.build.sourceEncoding}</encoding>
+               </configuration>
+               <executions>
+                   <execution>
+                       <phase>prepare-package</phase>
+                       <goals>
+                           <goal>delombok</goal>
+                       </goals>
+                   </execution>
+               </executions>
+           </plugin>
+
+           <!-- Compiler -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -93,11 +114,6 @@
                             <artifactId>lombok</artifactId>
                             <version>${lombok-version}</version>
                         </path>
-                        <path>
-                            <groupId>io.soabase.record-builder</groupId>
-                            <artifactId>record-builder-processor</artifactId>
-                            <version>${record-builder-version}</version>
-                        </path>
                     </annotationProcessorPaths>
                     <compilerArguments>
                         <AaddGeneratedAnnotation>false</AaddGeneratedAnnotation>
@@ -111,39 +127,6 @@
                 </configuration>
             </plugin>
 
-            <!-- Attach sources and javadocs -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>3.0.1</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.2.0</version>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <release>${java-version}</release>
-                            <sourcepath>${project.build.sourceDirectory}:${project.build.directory}\generated-sources\annotations</sourcepath>
-                            <additionalOptions>--enable-preview --add-exports=lombok/lombok.extern.jackson=NativeWhatsapp4j</additionalOptions>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
 
             <!-- Deploy -->
             <plugin>
@@ -227,18 +210,6 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${lombok-version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.soabase.record-builder</groupId>
-            <artifactId>record-builder-core</artifactId>
-            <version>${record-builder-version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.soabase.record-builder</groupId>
-            <artifactId>record-builder-processor</artifactId>
-            <version>${record-builder-version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
