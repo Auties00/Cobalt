@@ -61,7 +61,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java-version>15</java-version>
+        <java-version>16</java-version>
         <maven-compiler-plugin-version>3.8.1</maven-compiler-plugin-version>
         <lombok-version>1.18.19</lombok-version>
         <delombok-version>1.18.18.0</delombok-version>
@@ -99,7 +99,7 @@
                </executions>
            </plugin>
 
-           <!-- Compiler -->
+           <!-- Compile -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -121,12 +121,45 @@
                     </compilerArguments>
                     <compilerArgs>
                         <arg>--enable-preview</arg>
-                        <arg>--add-exports=lombok/lombok.extern.jackson=NativeWhatsapp4j</arg>
                     </compilerArgs>
                     <failOnError>true</failOnError>
                 </configuration>
             </plugin>
 
+            <!-- Attach sources and javadocs -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.0.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <javadocExecutable>${java.home}/bin/javadoc.exe</javadocExecutable>
+                            <release>${java-version}</release>
+                            <sourcepath>${delombok.output}</sourcepath>
+                            <additionalOptions>--enable-preview</additionalOptions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 
             <!-- Deploy -->
             <plugin>
