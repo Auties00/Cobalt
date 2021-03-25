@@ -17,8 +17,11 @@ import java.util.stream.IntStream;
  * To encode a message use {@link BinaryDecoder} instead.
  * Getting this class to work was not very easy, but I surely couldn't have done it without the help of:
  *
- * <li>https://github.com/JicuNull/WhatsJava/blob/master/src/main/java/icu/jnet/whatsjava/encryption/BinaryDecoder.java - Java implementation, helped me to correctly cast a byte to an unsigned int, before I was using a method that just didn't work</li
+ * <ul>
+ * <li>https://github.com/JicuNull/WhatsJava/blob/master/src/main/java/icu/jnet/whatsjava/encryption/BinaryDecoder.java - Java implementation, helped me to correctly cast a byte to an unsigned int, before I was using a method that just didn't work</li>
  * <li>https://github.com/adiwajshing/Baileys/blob/master/src/Binary/Decoder.ts - Typescript implementation, the logic was far less error prone than the one used by the python implementation on https://github.com/sigalor/whatsapp-web-reveng and the one I came up with</li>
+ * </ul>
+ *
  */
 public class BinaryDecoder {
     /**

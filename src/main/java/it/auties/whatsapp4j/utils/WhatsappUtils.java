@@ -100,10 +100,10 @@ public class WhatsappUtils {
 
     /**
      * Returns an optional context for {@code message}
+     * the beauty of composition, r/badcode where u at
      *
      * @param message the input raw protobuf message
      * @return a non empty optional if any context is present
-     * @apiNote the beauty of composition, r/badcode where u at
      */
     public @NotNull Optional<WhatsappProtobuf.ContextInfo> extractContext(@NotNull WhatsappProtobuf.Message message){
         if(message.hasImageMessage()){

@@ -22,8 +22,10 @@ import java.util.concurrent.CompletableFuture;
  * All of its implementations must be abstract in order for the accessor {@link Request#modelClass()} to work.
  * 
  * This class only allows two types of requests:
+ * <ul>
  * <li>{@link JsonRequest} - a json encoded response made from a List of Objects</li>
  * <li>{@link BinaryRequest} - an aes encrypted {@link WhatsappNode}</li>
+ * </ul>
  * 
  * @param <M>
  */
@@ -97,7 +99,7 @@ public sealed abstract class Request<M extends ResponseModel> permits BinaryRequ
      *
      * @param response the response used to complete {@link Request#future}
      * @throws IllegalArgumentException if this request isn't completable
-     * @throws ClassCastException if {@link Request#<M>} is not a concrete type, the reason is explained here {@link Request#modelClass()}
+     * @throws ClassCastException if the type parameter of this object is not a concrete type, the reason is explained here {@link Request#modelClass()}
      */
     public void complete(@NotNull Response response){
         Validate.isTrue(isCompletable(), "WhatsappAPI: Cannot complete a request with tag %s: this request is marked as non completable", tag());
@@ -105,13 +107,13 @@ public sealed abstract class Request<M extends ResponseModel> permits BinaryRequ
     }
 
     /**
-     * Returns a Class representing {@link Request#<M>}
+     * Returns a Class representing the type parameter of this object
      * In order for this method to work, the implementations of the implementations of this class must also be abstract and initialized using only concrete types, generics will break this implementation
-     * A {@link TypeReference} couldn't have been used in this case as the exact type of {@link Request#<M>} is needed to effectively convert the response to the model
+     * A {@link TypeReference} couldn't have been used in this case as the exact type of the type parameter of this object is needed to effectively convert the response to the model
      * In Kotlin, it's possible to do the following: {@code inline fun <reified T> modelClass(): KClass<T> = T::class}, although, inline functions cannot be accessed from Java
      *
-     * @throws ClassCastException if {@link Request#<M>} isn't a concrete type
-     * @return a class representing {@link Request#<M>}
+     * @throws ClassCastException if the type parameter of this object isn't a concrete type
+     * @return a class representing the type parameter of this object
      */
     @SuppressWarnings("unchecked")
     private @NotNull Class<M> modelClass() throws ClassCastException{
