@@ -52,8 +52,7 @@ public class WhatsappMessages extends ArrayList<WhatsappMessage> {
      * @return true if {@code message} was replaced
      */
     public boolean addOrReplace(@NotNull WhatsappMessage message){
-        var result = contains(message);
-        remove(message);
+        var result = remove(message);
         add(message);
         return result;
     }
