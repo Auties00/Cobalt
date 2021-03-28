@@ -3,8 +3,6 @@ package it.auties.whatsapp4j.response.impl;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
-import lombok.Builder;
-import lombok.Builder;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;

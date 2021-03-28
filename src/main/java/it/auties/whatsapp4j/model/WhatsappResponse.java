@@ -7,7 +7,6 @@ import it.auties.whatsapp4j.response.model.JsonListResponse;
 import it.auties.whatsapp4j.response.model.JsonResponse;
 import it.auties.whatsapp4j.response.model.Response;
 import lombok.Builder;
-import lombok.ToString;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,7 +46,7 @@ public record WhatsappResponse(@NotNull String tag, @Nullable String description
             if(content.isEmpty()){
                 return response.data(new JsonResponse(new HashMap<>())).build();
             }
-      
+
             var jsonNode = JACKSON.readTree(content);
             if (!jsonNode.isArray()) {
                 return response.data(new JsonResponse(JACKSON.readerFor(new TypeReference<>(){}).readValue(jsonNode))).build();

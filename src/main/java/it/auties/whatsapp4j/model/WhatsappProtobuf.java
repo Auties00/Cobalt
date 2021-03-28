@@ -245,10 +245,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.HydratedQuickReplyButton prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -690,10 +690,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.HydratedURLButton prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -1135,10 +1135,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.HydratedCallButton prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -1394,7 +1394,7 @@ public final class WhatsappProtobuf {
          */
         it.auties.whatsapp4j.model.WhatsappProtobuf.HydratedCallButton getCallButton();
 
-        public it.auties.whatsapp4j.model.WhatsappProtobuf.HydratedTemplateButton.HydratedButtonCase getHydratedButtonCase();
+        it.auties.whatsapp4j.model.WhatsappProtobuf.HydratedTemplateButton.HydratedButtonCase getHydratedButtonCase();
     }
     /**
      * Protobuf type {@code it.auties.whatsapp4j.model.HydratedTemplateButton}
@@ -1415,7 +1415,7 @@ public final class WhatsappProtobuf {
             CALLBUTTON(3),
             HYDRATEDBUTTON_NOT_SET(0);
             private final int value;
-            private HydratedButtonCase(int value) {
+            HydratedButtonCase(int value) {
                 this.value = value;
             }
             /**
@@ -1438,7 +1438,7 @@ public final class WhatsappProtobuf {
             public int getNumber() {
                 return this.value;
             }
-        };
+        }
 
         @java.lang.Override
         public HydratedButtonCase
@@ -1711,10 +1711,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.HydratedTemplateButton prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -2223,10 +2223,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.QuickReplyButton prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -2628,10 +2628,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.URLButton prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -3023,10 +3023,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.CallButton prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -3262,7 +3262,7 @@ public final class WhatsappProtobuf {
          */
         it.auties.whatsapp4j.model.WhatsappProtobuf.CallButton getCallButton();
 
-        public it.auties.whatsapp4j.model.WhatsappProtobuf.TemplateButton.ButtonCase getButtonCase();
+        it.auties.whatsapp4j.model.WhatsappProtobuf.TemplateButton.ButtonCase getButtonCase();
     }
     /**
      * Protobuf type {@code it.auties.whatsapp4j.model.TemplateButton}
@@ -3283,7 +3283,7 @@ public final class WhatsappProtobuf {
             CALLBUTTON(3),
             BUTTON_NOT_SET(0);
             private final int value;
-            private ButtonCase(int value) {
+            ButtonCase(int value) {
                 this.value = value;
             }
             /**
@@ -3306,7 +3306,7 @@ public final class WhatsappProtobuf {
             public int getNumber() {
                 return this.value;
             }
-        };
+        }
 
         @java.lang.Override
         public ButtonCase
@@ -3579,10 +3579,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.TemplateButton prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -4124,10 +4124,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.Location prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -4621,10 +4621,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.Point prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -4893,7 +4893,7 @@ public final class WhatsappProtobuf {
          */
         it.auties.whatsapp4j.model.WhatsappProtobuf.Location getLocation();
 
-        public it.auties.whatsapp4j.model.WhatsappProtobuf.InteractiveAnnotation.ActionCase getActionCase();
+        it.auties.whatsapp4j.model.WhatsappProtobuf.InteractiveAnnotation.ActionCase getActionCase();
     }
     /**
      * Protobuf type {@code it.auties.whatsapp4j.model.InteractiveAnnotation}
@@ -4913,7 +4913,7 @@ public final class WhatsappProtobuf {
             LOCATION(2),
             ACTION_NOT_SET(0);
             private final int value;
-            private ActionCase(int value) {
+            ActionCase(int value) {
                 this.value = value;
             }
             /**
@@ -4934,7 +4934,7 @@ public final class WhatsappProtobuf {
             public int getNumber() {
                 return this.value;
             }
-        };
+        }
 
         @java.lang.Override
         public ActionCase
@@ -5167,10 +5167,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.InteractiveAnnotation prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -5584,11 +5584,11 @@ public final class WhatsappProtobuf {
                 public boolean isInRange(int number) {
                     return AD_REPLY_INFO_MEDIATYPE.forNumber(number) != null;
                 }
-            };
+            }
 
             private final int value;
 
-            private AD_REPLY_INFO_MEDIATYPE(int value) {
+            AD_REPLY_INFO_MEDIATYPE(int value) {
                 this.value = value;
             }
 
@@ -5849,10 +5849,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.AdReplyInfo prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -7074,10 +7074,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.ContextInfo prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -8071,10 +8071,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.SenderKeyDistributionMessage prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -9539,10 +9539,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.ImageMessage prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -10900,10 +10900,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.ContactMessage prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -11911,10 +11911,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.LocationMessage prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -12838,11 +12838,11 @@ public final class WhatsappProtobuf {
                 public boolean isInRange(int number) {
                     return EXTENDED_TEXT_MESSAGE_FONTTYPE.forNumber(number) != null;
                 }
-            };
+            }
 
             private final int value;
 
-            private EXTENDED_TEXT_MESSAGE_FONTTYPE(int value) {
+            EXTENDED_TEXT_MESSAGE_FONTTYPE(int value) {
                 this.value = value;
             }
 
@@ -12922,11 +12922,11 @@ public final class WhatsappProtobuf {
                 public boolean isInRange(int number) {
                     return EXTENDED_TEXT_MESSAGE_PREVIEWTYPE.forNumber(number) != null;
                 }
-            };
+            }
 
             private final int value;
 
-            private EXTENDED_TEXT_MESSAGE_PREVIEWTYPE(int value) {
+            EXTENDED_TEXT_MESSAGE_PREVIEWTYPE(int value) {
                 this.value = value;
             }
 
@@ -13532,10 +13532,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.ExtendedTextMessage prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -15021,10 +15021,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.DocumentMessage prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -16446,10 +16446,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.AudioMessage prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -17391,11 +17391,11 @@ public final class WhatsappProtobuf {
                 public boolean isInRange(int number) {
                     return VIDEO_MESSAGE_ATTRIBUTION.forNumber(number) != null;
                 }
-            };
+            }
 
             private final int value;
 
-            private VIDEO_MESSAGE_ATTRIBUTION(int value) {
+            VIDEO_MESSAGE_ATTRIBUTION(int value) {
                 this.value = value;
             }
 
@@ -18248,10 +18248,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.VideoMessage prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -19312,10 +19312,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.Call prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -19677,10 +19677,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.Chat prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -20048,11 +20048,11 @@ public final class WhatsappProtobuf {
                 public boolean isInRange(int number) {
                     return PROTOCOL_MESSAGE_TYPE.forNumber(number) != null;
                 }
-            };
+            }
 
             private final int value;
 
-            private PROTOCOL_MESSAGE_TYPE(int value) {
+            PROTOCOL_MESSAGE_TYPE(int value) {
                 this.value = value;
             }
 
@@ -20330,10 +20330,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.ProtocolMessage prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -20825,11 +20825,11 @@ public final class WhatsappProtobuf {
                 public boolean isInRange(int number) {
                     return HISTORY_SYNC_NOTIFICATION_HISTORYSYNCTYPE.forNumber(number) != null;
                 }
-            };
+            }
 
             private final int value;
 
-            private HISTORY_SYNC_NOTIFICATION_HISTORYSYNCTYPE(int value) {
+            HISTORY_SYNC_NOTIFICATION_HISTORYSYNCTYPE(int value) {
                 this.value = value;
             }
 
@@ -21174,10 +21174,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.HistorySyncNotification prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -21879,10 +21879,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.ContactsArrayMessage prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -22391,10 +22391,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.HSMCurrency prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -22792,11 +22792,11 @@ public final class WhatsappProtobuf {
                 public boolean isInRange(int number) {
                     return HSM_DATE_TIME_COMPONENT_DAYOFWEEKTYPE.forNumber(number) != null;
                 }
-            };
+            }
 
             private final int value;
 
-            private HSM_DATE_TIME_COMPONENT_DAYOFWEEKTYPE(int value) {
+            HSM_DATE_TIME_COMPONENT_DAYOFWEEKTYPE(int value) {
                 this.value = value;
             }
 
@@ -22876,11 +22876,11 @@ public final class WhatsappProtobuf {
                 public boolean isInRange(int number) {
                     return HSM_DATE_TIME_COMPONENT_CALENDARTYPE.forNumber(number) != null;
                 }
-            };
+            }
 
             private final int value;
 
-            private HSM_DATE_TIME_COMPONENT_CALENDARTYPE(int value) {
+            HSM_DATE_TIME_COMPONENT_CALENDARTYPE(int value) {
                 this.value = value;
             }
 
@@ -23203,10 +23203,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.HSMDateTimeComponent prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -23695,10 +23695,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.HSMDateTimeUnixEpoch prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -23852,7 +23852,7 @@ public final class WhatsappProtobuf {
          */
         it.auties.whatsapp4j.model.WhatsappProtobuf.HSMDateTimeUnixEpoch getUnixEpoch();
 
-        public it.auties.whatsapp4j.model.WhatsappProtobuf.HSMDateTime.DatetimeOneofCase getDatetimeOneofCase();
+        it.auties.whatsapp4j.model.WhatsappProtobuf.HSMDateTime.DatetimeOneofCase getDatetimeOneofCase();
     }
     /**
      * Protobuf type {@code it.auties.whatsapp4j.model.HSMDateTime}
@@ -23872,7 +23872,7 @@ public final class WhatsappProtobuf {
             UNIXEPOCH(2),
             DATETIMEONEOF_NOT_SET(0);
             private final int value;
-            private DatetimeOneofCase(int value) {
+            DatetimeOneofCase(int value) {
                 this.value = value;
             }
             /**
@@ -23894,7 +23894,7 @@ public final class WhatsappProtobuf {
             public int getNumber() {
                 return this.value;
             }
-        };
+        }
 
         @java.lang.Override
         public DatetimeOneofCase
@@ -24083,10 +24083,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.HSMDateTime prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -24333,7 +24333,7 @@ public final class WhatsappProtobuf {
          */
         it.auties.whatsapp4j.model.WhatsappProtobuf.HSMDateTime getDateTime();
 
-        public it.auties.whatsapp4j.model.WhatsappProtobuf.HSMLocalizableParameter.ParamOneofCase getParamOneofCase();
+        it.auties.whatsapp4j.model.WhatsappProtobuf.HSMLocalizableParameter.ParamOneofCase getParamOneofCase();
     }
     /**
      * Protobuf type {@code it.auties.whatsapp4j.model.HSMLocalizableParameter}
@@ -24354,7 +24354,7 @@ public final class WhatsappProtobuf {
             DATETIME(3),
             PARAMONEOF_NOT_SET(0);
             private final int value;
-            private ParamOneofCase(int value) {
+            ParamOneofCase(int value) {
                 this.value = value;
             }
             /**
@@ -24376,7 +24376,7 @@ public final class WhatsappProtobuf {
             public int getNumber() {
                 return this.value;
             }
-        };
+        }
 
         @java.lang.Override
         public ParamOneofCase
@@ -24619,10 +24619,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.HSMLocalizableParameter prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -25690,10 +25690,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.HighlyStructuredMessage prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -26583,10 +26583,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.SendPaymentMessage prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -27155,10 +27155,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.RequestPaymentMessage prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -27635,10 +27635,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.DeclinePaymentRequestMessage prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -27924,10 +27924,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.CancelPaymentRequestMessage prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -28647,10 +28647,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.LiveLocationMessage prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -30013,10 +30013,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.StickerMessage prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -30834,7 +30834,7 @@ public final class WhatsappProtobuf {
          */
         it.auties.whatsapp4j.model.WhatsappProtobuf.LocationMessage getLocationMessage();
 
-        public it.auties.whatsapp4j.model.WhatsappProtobuf.FourRowTemplate.TitleCase getTitleCase();
+        it.auties.whatsapp4j.model.WhatsappProtobuf.FourRowTemplate.TitleCase getTitleCase();
     }
     /**
      * Protobuf type {@code it.auties.whatsapp4j.model.FourRowTemplate}
@@ -30858,7 +30858,7 @@ public final class WhatsappProtobuf {
             LOCATIONMESSAGE(5),
             TITLE_NOT_SET(0);
             private final int value;
-            private TitleCase(int value) {
+            TitleCase(int value) {
                 this.value = value;
             }
             /**
@@ -30883,7 +30883,7 @@ public final class WhatsappProtobuf {
             public int getNumber() {
                 return this.value;
             }
-        };
+        }
 
         @java.lang.Override
         public TitleCase
@@ -31408,10 +31408,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.FourRowTemplate prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -32093,7 +32093,7 @@ public final class WhatsappProtobuf {
          */
         it.auties.whatsapp4j.model.WhatsappProtobuf.LocationMessage getLocationMessage();
 
-        public it.auties.whatsapp4j.model.WhatsappProtobuf.HydratedFourRowTemplate.TitleCase getTitleCase();
+        it.auties.whatsapp4j.model.WhatsappProtobuf.HydratedFourRowTemplate.TitleCase getTitleCase();
     }
     /**
      * Protobuf type {@code it.auties.whatsapp4j.model.HydratedFourRowTemplate}
@@ -32120,7 +32120,7 @@ public final class WhatsappProtobuf {
             LOCATIONMESSAGE(5),
             TITLE_NOT_SET(0);
             private final int value;
-            private TitleCase(int value) {
+            TitleCase(int value) {
                 this.value = value;
             }
             /**
@@ -32145,7 +32145,7 @@ public final class WhatsappProtobuf {
             public int getNumber() {
                 return this.value;
             }
-        };
+        }
 
         @java.lang.Override
         public TitleCase
@@ -32753,10 +32753,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.HydratedFourRowTemplate prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -33442,7 +33442,7 @@ public final class WhatsappProtobuf {
          */
         it.auties.whatsapp4j.model.WhatsappProtobuf.HydratedFourRowTemplate getHydratedFourRowTemplate();
 
-        public it.auties.whatsapp4j.model.WhatsappProtobuf.TemplateMessage.FormatCase getFormatCase();
+        it.auties.whatsapp4j.model.WhatsappProtobuf.TemplateMessage.FormatCase getFormatCase();
     }
     /**
      * Protobuf type {@code it.auties.whatsapp4j.model.TemplateMessage}
@@ -33462,7 +33462,7 @@ public final class WhatsappProtobuf {
             HYDRATEDFOURROWTEMPLATE(2),
             FORMAT_NOT_SET(0);
             private final int value;
-            private FormatCase(int value) {
+            FormatCase(int value) {
                 this.value = value;
             }
             /**
@@ -33484,7 +33484,7 @@ public final class WhatsappProtobuf {
             public int getNumber() {
                 return this.value;
             }
-        };
+        }
 
         @java.lang.Override
         public FormatCase
@@ -33765,10 +33765,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.TemplateMessage prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -34404,10 +34404,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.TemplateButtonReplyMessage prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -34991,10 +34991,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.CatalogSnapshot prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -35991,10 +35991,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.ProductSnapshot prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -36948,10 +36948,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.ProductMessage prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -37772,10 +37772,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.GroupInviteMessage prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -38441,10 +38441,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.DeviceSentMessage prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -38779,10 +38779,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.DeviceSyncMessage prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -40554,10 +40554,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.Message prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -42310,10 +42310,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.MessageKey prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -43073,11 +43073,11 @@ public final class WhatsappProtobuf {
                 public boolean isInRange(int number) {
                     return WEB_FEATURES_FLAG.forNumber(number) != null;
                 }
-            };
+            }
 
             private final int value;
 
-            private WEB_FEATURES_FLAG(int value) {
+            WEB_FEATURES_FLAG(int value) {
                 this.value = value;
             }
 
@@ -44280,10 +44280,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.WebFeatures prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -45934,10 +45934,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.TabletNotificationsInfo prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -46565,10 +46565,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.NotificationMessageInfo prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -47185,10 +47185,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.WebNotificationsInfo prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -47708,11 +47708,11 @@ public final class WhatsappProtobuf {
                 public boolean isInRange(int number) {
                     return PAYMENT_INFO_CURRENCY.forNumber(number) != null;
                 }
-            };
+            }
 
             private final int value;
 
-            private PAYMENT_INFO_CURRENCY(int value) {
+            PAYMENT_INFO_CURRENCY(int value) {
                 this.value = value;
             }
 
@@ -47882,11 +47882,11 @@ public final class WhatsappProtobuf {
                 public boolean isInRange(int number) {
                     return PAYMENT_INFO_STATUS.forNumber(number) != null;
                 }
-            };
+            }
 
             private final int value;
 
-            private PAYMENT_INFO_STATUS(int value) {
+            PAYMENT_INFO_STATUS(int value) {
                 this.value = value;
             }
 
@@ -48200,11 +48200,11 @@ public final class WhatsappProtobuf {
                 public boolean isInRange(int number) {
                     return PAYMENT_INFO_TXNSTATUS.forNumber(number) != null;
                 }
-            };
+            }
 
             private final int value;
 
-            private PAYMENT_INFO_TXNSTATUS(int value) {
+            PAYMENT_INFO_TXNSTATUS(int value) {
                 this.value = value;
             }
 
@@ -48682,10 +48682,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.PaymentInfo prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**
@@ -49625,11 +49625,11 @@ public final class WhatsappProtobuf {
                 public boolean isInRange(int number) {
                     return WEB_MESSAGE_INFO_STATUS.forNumber(number) != null;
                 }
-            };
+            }
 
             private final int value;
 
-            private WEB_MESSAGE_INFO_STATUS(int value) {
+            WEB_MESSAGE_INFO_STATUS(int value) {
                 this.value = value;
             }
 
@@ -50348,11 +50348,11 @@ public final class WhatsappProtobuf {
                 public boolean isInRange(int number) {
                     return WEB_MESSAGE_INFO_STUBTYPE.forNumber(number) != null;
                 }
-            };
+            }
 
             private final int value;
 
-            private WEB_MESSAGE_INFO_STUBTYPE(int value) {
+            WEB_MESSAGE_INFO_STUBTYPE(int value) {
                 this.value = value;
             }
 
@@ -51436,10 +51436,10 @@ public final class WhatsappProtobuf {
         }
 
         public static Builder newBuilder() {
-            return (Builder) DEFAULT_INSTANCE.createBuilder();
+            return DEFAULT_INSTANCE.createBuilder();
         }
         public static Builder newBuilder(it.auties.whatsapp4j.model.WhatsappProtobuf.WebMessageInfo prototype) {
-            return (Builder) DEFAULT_INSTANCE.createBuilder(prototype);
+            return DEFAULT_INSTANCE.createBuilder(prototype);
         }
 
         /**

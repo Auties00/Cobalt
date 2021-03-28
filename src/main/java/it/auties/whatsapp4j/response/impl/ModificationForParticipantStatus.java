@@ -1,7 +1,6 @@
 package it.auties.whatsapp4j.response.impl;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import lombok.Builder;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;

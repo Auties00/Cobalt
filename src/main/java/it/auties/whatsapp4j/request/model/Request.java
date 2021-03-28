@@ -2,8 +2,8 @@ package it.auties.whatsapp4j.request.model;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.whatsapp4j.api.WhatsappAPI;
-import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
+import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.model.WhatsappNode;
 import it.auties.whatsapp4j.response.model.Response;
 import it.auties.whatsapp4j.response.model.ResponseModel;
@@ -20,13 +20,13 @@ import java.util.concurrent.CompletableFuture;
 /**
  * An abstract model class that represents a request made from the client to the server.
  * All of its implementations must be abstract in order for the accessor {@link Request#modelClass()} to work.
- * 
+ *
  * This class only allows two types of requests:
  * <ul>
  * <li>{@link JsonRequest} - a json encoded response made from a List of Objects</li>
  * <li>{@link BinaryRequest} - an aes encrypted {@link WhatsappNode}</li>
  * </ul>
- * 
+ *
  * @param <M>
  */
 @RequiredArgsConstructor
@@ -87,7 +87,7 @@ public sealed abstract class Request<M extends ResponseModel> permits BinaryRequ
 
     /**
      * Returns whether this request is completable or not
-     * 
+     *
      * @return true if the request is completable
      */
     public boolean isCompletable() {

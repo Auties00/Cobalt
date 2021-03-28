@@ -24,5 +24,6 @@ public enum GroupSetting {
     /**
      * The name of the setting linked to this enumerated constant
      */
-    private final @Getter String data;
+    private final @Getter
+    String data;
 }

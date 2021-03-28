@@ -21,65 +21,67 @@ import java.time.Instant;
 @Builder
 @Accessors(fluent = true)
 public class WhatsappMessageRequest {
-  private final @NotNull WhatsappDataManager MANAGER = WhatsappDataManager.singletonInstance();
-  private final @NotNull @Default String id = WhatsappUtils.randomId();
-  private final @NotNull String recipient;
-  private final @NotNull String text;
-  private final @Nullable WhatsappMessage quotedMessage;
-  private final boolean forwarded;
+    private final @NotNull WhatsappDataManager MANAGER = WhatsappDataManager.singletonInstance();
+    private final @NotNull
+    @Default
+    String id = WhatsappUtils.randomId();
+    private final @NotNull String recipient;
+    private final @NotNull String text;
+    private final @Nullable WhatsappMessage quotedMessage;
+    private final boolean forwarded;
 
-  public static WhatsappMessageRequest ofText(@NotNull String recipient, @NotNull String text){
-    return WhatsappMessageRequest
-            .builder()
-            .recipient(recipient)
-            .text(text)
-            .build();
-  }
-
-  public static WhatsappMessageRequest ofQuotedText(@NotNull String recipient, @NotNull String text, @NotNull WhatsappMessage quotedMessage){
-    return WhatsappMessageRequest
-            .builder()
-            .recipient(recipient)
-            .quotedMessage(quotedMessage)
-            .text(text)
-            .build();
-  }
-
-  public @NotNull WhatsappProtobuf.WebMessageInfo buildMessage(){
-    if(quotedMessage == null) {
-      return applyKey(!forwarded ? WhatsappProtobuf.WebMessageInfo.newBuilder().setMessage(WhatsappProtobuf.Message.newBuilder().setConversation(text)) : WhatsappProtobuf.WebMessageInfo.newBuilder()
-              .setMessage(WhatsappProtobuf.Message.newBuilder()
-                      .setExtendedTextMessage(WhatsappProtobuf.ExtendedTextMessage.newBuilder()
-                              .setText(text)
-                              .setContextInfo(WhatsappProtobuf.ContextInfo.newBuilder().setIsForwarded(true).build())
-                              .build())
-                      .build()));
+    public static WhatsappMessageRequest ofText(@NotNull String recipient, @NotNull String text) {
+        return WhatsappMessageRequest
+                .builder()
+                .recipient(recipient)
+                .text(text)
+                .build();
     }
 
-    return applyKey(WhatsappProtobuf.WebMessageInfo.newBuilder()
-            .setMessage(WhatsappProtobuf.Message.newBuilder()
-                    .setExtendedTextMessage(WhatsappProtobuf.ExtendedTextMessage.newBuilder()
-                            .setText(text)
-                            .setContextInfo(WhatsappProtobuf.ContextInfo.newBuilder()
-                                    .setQuotedMessage(quotedMessage.info().getMessage())
-                                    .setParticipant(quotedMessage.senderJid().orElse(MANAGER.phoneNumber()))
-                                    .setStanzaId(quotedMessage.info().getKey().getId())
-                                    .setRemoteJid(quotedMessage.info().getKey().getRemoteJid())
-                                    .setIsForwarded(forwarded)
-                                    .build())
-                            .build())
-                    .build()));
-  }
+    public static WhatsappMessageRequest ofQuotedText(@NotNull String recipient, @NotNull String text, @NotNull WhatsappMessage quotedMessage) {
+        return WhatsappMessageRequest
+                .builder()
+                .recipient(recipient)
+                .quotedMessage(quotedMessage)
+                .text(text)
+                .build();
+    }
 
-  private @NotNull WhatsappProtobuf.WebMessageInfo applyKey(@NotNull WhatsappProtobuf.WebMessageInfo.Builder builder){
-    return builder
-            .setKey(WhatsappProtobuf.MessageKey.newBuilder()
-                    .setFromMe(true)
-                    .setRemoteJid(recipient)
-                    .setId(WhatsappUtils.randomId())
-                    .build())
-            .setMessageTimestamp(Instant.now().getEpochSecond())
-            .setStatus(WhatsappProtobuf.WebMessageInfo.WEB_MESSAGE_INFO_STATUS.PENDING)
-            .build();
-  }
+    public @NotNull WhatsappProtobuf.WebMessageInfo buildMessage() {
+        if (quotedMessage == null) {
+            return applyKey(!forwarded ? WhatsappProtobuf.WebMessageInfo.newBuilder().setMessage(WhatsappProtobuf.Message.newBuilder().setConversation(text)) : WhatsappProtobuf.WebMessageInfo.newBuilder()
+                    .setMessage(WhatsappProtobuf.Message.newBuilder()
+                            .setExtendedTextMessage(WhatsappProtobuf.ExtendedTextMessage.newBuilder()
+                                    .setText(text)
+                                    .setContextInfo(WhatsappProtobuf.ContextInfo.newBuilder().setIsForwarded(true).build())
+                                    .build())
+                            .build()));
+        }
+
+        return applyKey(WhatsappProtobuf.WebMessageInfo.newBuilder()
+                .setMessage(WhatsappProtobuf.Message.newBuilder()
+                        .setExtendedTextMessage(WhatsappProtobuf.ExtendedTextMessage.newBuilder()
+                                .setText(text)
+                                .setContextInfo(WhatsappProtobuf.ContextInfo.newBuilder()
+                                        .setQuotedMessage(quotedMessage.info().getMessage())
+                                        .setParticipant(quotedMessage.senderJid().orElse(MANAGER.phoneNumber()))
+                                        .setStanzaId(quotedMessage.info().getKey().getId())
+                                        .setRemoteJid(quotedMessage.info().getKey().getRemoteJid())
+                                        .setIsForwarded(forwarded)
+                                        .build())
+                                .build())
+                        .build()));
+    }
+
+    private @NotNull WhatsappProtobuf.WebMessageInfo applyKey(@NotNull WhatsappProtobuf.WebMessageInfo.Builder builder) {
+        return builder
+                .setKey(WhatsappProtobuf.MessageKey.newBuilder()
+                        .setFromMe(true)
+                        .setRemoteJid(recipient)
+                        .setId(WhatsappUtils.randomId())
+                        .build())
+                .setMessageTimestamp(Instant.now().getEpochSecond())
+                .setStatus(WhatsappProtobuf.WebMessageInfo.WEB_MESSAGE_INFO_STATUS.PENDING)
+                .build();
+    }
 }

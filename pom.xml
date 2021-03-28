@@ -75,7 +75,7 @@
         <nullsafe-version>RELEASE</nullsafe-version>
         <tyrus-version>2.0.0</tyrus-version>
         <jackson-version>2.12.0</jackson-version>
-        <qrgen-version>2.6.0</qrgen-version>
+        <zxing-version>3.4.1</zxing-version>
         <curve25519-version>0.5.0</curve25519-version>
         <hkdf-version>1.0.2</hkdf-version>
         <protobuf-version>3.14.0</protobuf-version>
@@ -197,19 +197,19 @@
         </plugins>
     </build>
 
-    <repositories>
-        <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
-        </repository>
-    </repositories>
-
     <dependencies>
         <!-- JakartaEE 9 Tyrus Implementation, needed for WebSockets -->
         <dependency>
             <groupId>org.glassfish.tyrus</groupId>
             <artifactId>tyrus-server</artifactId>
             <version>${tyrus-version}</version>
+        </dependency>
+
+        <!-- Qr code library -->
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>core</artifactId>
+            <version>${zxing-version}</version>
         </dependency>
 
         <!-- Data Structures dependencies -->
@@ -225,11 +225,6 @@
         </dependency>
 
         <!-- Cryptographic dependencies -->
-        <dependency>
-            <groupId>com.github.kenglxn.qrgen</groupId>
-            <artifactId>javase</artifactId>
-            <version>${qrgen-version}</version>
-        </dependency>
         <dependency>
             <groupId>org.whispersystems</groupId>
             <artifactId>curve25519-java</artifactId>

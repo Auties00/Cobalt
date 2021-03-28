@@ -1,6 +1,5 @@
 package it.auties.whatsapp4j.response.impl;
 
-import lombok.Builder;
 import org.jetbrains.annotations.Nullable;
 
 /**

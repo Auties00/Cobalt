@@ -1,17 +1,17 @@
 package it.auties.whatsapp4j.socket;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
+import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.binary.*;
 import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
-import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.model.WhatsappContactStatus;
 import it.auties.whatsapp4j.model.WhatsappNode;
 import it.auties.whatsapp4j.model.WhatsappProtobuf;
+import it.auties.whatsapp4j.model.WhatsappResponse;
 import it.auties.whatsapp4j.request.impl.*;
 import it.auties.whatsapp4j.response.impl.*;
-import it.auties.whatsapp4j.model.WhatsappResponse;
 import it.auties.whatsapp4j.response.model.BinaryResponse;
 import it.auties.whatsapp4j.response.model.JsonListResponse;
 import it.auties.whatsapp4j.response.model.JsonResponse;
@@ -130,12 +130,12 @@ public class WhatsappWebSocket {
     Validate.isTrue(status != 429, "Out of attempts to scan the QR code", IllegalStateException.class);
 
     var ttl = res.getInt("ttl");
-    CompletableFuture.delayedExecutor(ttl, TimeUnit.MILLISECONDS).execute(() -> generateQrCode(message));
+    CompletableFuture.delayedExecutor(ttl, TimeUnit.SECONDS).execute(() -> generateQrCode(message));
 
     var ref = res.getString("ref");
     Validate.isTrue(ref.isPresent(), "Cannot find ref for QR code generation");
 
-    qrCode.generateQRCodeImage(ref.get(), whatsappKeys.publicKey(), whatsappKeys.clientId()).open();
+    qrCode.generateAndPrint(ref.get(), whatsappKeys.publicKey(), whatsappKeys.clientId());
     state(SocketState.WAITING_FOR_LOGIN);
   }
 

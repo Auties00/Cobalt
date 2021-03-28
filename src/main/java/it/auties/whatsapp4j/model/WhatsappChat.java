@@ -120,7 +120,7 @@ public class WhatsappChat {
      *
      * @return a new instance of WhatsappChat
      */
-    public static @NotNull WhatsappChat fromAttributes(@NotNull Map<String, String> attrs){
+    public static @NotNull WhatsappChat fromAttributes(@NotNull Map<String, String> attrs) {
         var jid = attrs.get("jid");
         return WhatsappChat.builder()
                 .timestamp(Long.parseLong(attrs.get("t")))
@@ -143,7 +143,7 @@ public class WhatsappChat {
      *
      * @return true if this chat is a group
      */
-    public boolean isGroup(){
+    public boolean isGroup() {
         return WhatsappUtils.isGroup(jid);
     }
 
@@ -152,7 +152,7 @@ public class WhatsappChat {
      *
      * @return true if this chat has a new jid
      */
-    public boolean hasNewJid(){
+    public boolean hasNewJid() {
         return newJid != null;
     }
 
@@ -161,7 +161,7 @@ public class WhatsappChat {
      *
      * @return a non empty optional if the new jid is not null, otherwise an empty optional
      */
-    public @NotNull Optional<String> newJid(){
+    public @NotNull Optional<String> newJid() {
         return Optional.ofNullable(newJid);
     }
 
@@ -170,7 +170,7 @@ public class WhatsappChat {
      *
      * @return true if this chat is pinned
      */
-    public boolean isPinned(){
+    public boolean isPinned() {
         return pinned != 0;
     }
 
@@ -179,7 +179,7 @@ public class WhatsappChat {
      *
      * @return a non empty optional if the chat is pinned, otherwise an empty optional
      */
-    public @NotNull Optional<ZonedDateTime> pinned(){
+    public @NotNull Optional<ZonedDateTime> pinned() {
         return WhatsappUtils.parseWhatsappTime(pinned);
     }
 
@@ -188,7 +188,7 @@ public class WhatsappChat {
      *
      * @return true if ephemeral messages are enabled for this chat
      */
-    public boolean isEphemeralChat(){
+    public boolean isEphemeralChat() {
         return ephemeralMessageDuration != 0 && ephemeralMessagesToggleTime != 0;
     }
 
@@ -197,7 +197,7 @@ public class WhatsappChat {
      *
      * @return a non empty optional if ephemeral messages are enabled for this chat, otherwise an empty optional
      */
-    public @NotNull Optional<ZonedDateTime> ephemeralMessageDuration(){
+    public @NotNull Optional<ZonedDateTime> ephemeralMessageDuration() {
         return WhatsappUtils.parseWhatsappTime(ephemeralMessageDuration);
     }
 
@@ -206,7 +206,7 @@ public class WhatsappChat {
      *
      * @return a non empty optional if ephemeral messages are enabled for this chat, otherwise an empty optional
      */
-    public @NotNull Optional<ZonedDateTime> ephemeralMessagesToggleTime(){
+    public @NotNull Optional<ZonedDateTime> ephemeralMessagesToggleTime() {
         return WhatsappUtils.parseWhatsappTime(ephemeralMessagesToggleTime);
     }
 
@@ -215,7 +215,7 @@ public class WhatsappChat {
      *
      * @return a non empty optional if {@link WhatsappChat#messages} isn't empty, otherwise an empty optional
      */
-    public @NotNull Optional<WhatsappMessage> lastMessage(){
+    public @NotNull Optional<WhatsappMessage> lastMessage() {
         return !messages.isEmpty() ? Optional.of(messages.get(messages.size() - 1)) : Optional.empty();
     }
 }

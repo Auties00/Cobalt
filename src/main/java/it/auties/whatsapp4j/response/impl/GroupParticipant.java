@@ -1,7 +1,6 @@
 package it.auties.whatsapp4j.response.impl;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Builder;
 import org.jetbrains.annotations.NotNull;
 
 /**

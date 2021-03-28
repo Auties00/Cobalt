@@ -23,7 +23,7 @@ public class WhatsappMessages extends ArrayList<WhatsappMessage> {
 
     /**
      * Constructs a new instance of WhatsappMessages from a WhatsappMessage
-     * 
+     *
      * @param message the first non null entry to add to this collection
      */
     public WhatsappMessages(@NotNull WhatsappMessage message) {
@@ -32,7 +32,7 @@ public class WhatsappMessages extends ArrayList<WhatsappMessage> {
 
     /**
      * Adds {@code message} to this collection in the right position in order to respect the contract explained previously
-     * 
+     *
      * @param message the non null message to add to this collection
      * @return true if {@code message} was added successfully
      */
@@ -47,11 +47,11 @@ public class WhatsappMessages extends ArrayList<WhatsappMessage> {
     /**
      * Adds {@code message} if no other entry in this collection has an jid that matches the one of {@code message}.
      * Otherwise, it removes said entry and adds {@code message}.
-     * 
+     *
      * @param message the non null message to add to this collection
      * @return true if {@code message} was replaced
      */
-    public boolean addOrReplace(@NotNull WhatsappMessage message){
+    public boolean addOrReplace(@NotNull WhatsappMessage message) {
         var result = remove(message);
         add(message);
         return result;
@@ -60,7 +60,7 @@ public class WhatsappMessages extends ArrayList<WhatsappMessage> {
     /**
      * Adds each entry of {@code collection} if no other entry in this collection has an jid that matches said entry's.
      * Otherwise, it removes said entry and adds said entry.
-     * 
+     *
      * @param collection the collection to add to this collection
      */
     @Override

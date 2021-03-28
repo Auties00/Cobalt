@@ -4,8 +4,6 @@ import it.auties.whatsapp4j.model.WhatsappNode;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.InvocationTargetException;
-
 /**
  * A record that wraps a WhatsappNode sent by WhatsappWeb's WebSocket as response for a request.
  * This WhatsappNode can be converted to a ResponseModel using {@link BinaryResponse#toModel(Class)}.

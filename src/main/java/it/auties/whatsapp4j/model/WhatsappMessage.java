@@ -50,7 +50,7 @@ public class WhatsappMessage {
      *
      * @param info the raw protobuf to wrap
      */
-    public WhatsappMessage(@NotNull WebMessageInfo info){
+    public WhatsappMessage(@NotNull WebMessageInfo info) {
         this(info, new HashMap<>());
     }
 
@@ -68,7 +68,7 @@ public class WhatsappMessage {
      *
      * @return a non null String
      */
-    public @NotNull String id(){
+    public @NotNull String id() {
         return info.getKey().getId();
     }
 
@@ -96,7 +96,7 @@ public class WhatsappMessage {
      *
      * @return a non empty optional {@link WhatsappMessage} if this message quotes a message
      */
-    public @NotNull Optional<WhatsappMessage> quotedMessage(){
+    public @NotNull Optional<WhatsappMessage> quotedMessage() {
         return info.hasMessage() ? WhatsappUtils.extractContext(info.getMessage()).flatMap(context -> MANAGER.findChatByMessage(this).flatMap(chat -> MANAGER.findQuotedMessageInChatByContext(chat, context))) : Optional.empty();
     }
 
@@ -105,7 +105,7 @@ public class WhatsappMessage {
      *
      * @return true if this message is marked as important
      */
-    public boolean starred(){
+    public boolean starred() {
         return info.getStarred();
     }
 
@@ -114,7 +114,7 @@ public class WhatsappMessage {
      *
      * @param starred the new value to assign to the starred field
      */
-    public void starred(boolean starred){
+    public void starred(boolean starred) {
         this.info = info.toBuilder().setStarred(starred).build();
     }
 
@@ -125,7 +125,7 @@ public class WhatsappMessage {
      *
      * @return the non null global status of this message
      */
-    public @NotNull WebMessageInfo.WEB_MESSAGE_INFO_STATUS globalStatus(){
+    public @NotNull WebMessageInfo.WEB_MESSAGE_INFO_STATUS globalStatus() {
         return info.getStatus();
     }
 
@@ -134,7 +134,7 @@ public class WhatsappMessage {
      *
      * @param status the new status to assign to the globalStatus field
      */
-    public void globalStatus(@NotNull WebMessageInfo.WEB_MESSAGE_INFO_STATUS status){
+    public void globalStatus(@NotNull WebMessageInfo.WEB_MESSAGE_INFO_STATUS status) {
         this.info = info.toBuilder().setStatus(status).build();
     }
 
@@ -143,7 +143,7 @@ public class WhatsappMessage {
      *
      * @return true if this message was sent by yourself
      */
-    public boolean sentByMe(){
+    public boolean sentByMe() {
         return info.getKey().getFromMe();
     }
 

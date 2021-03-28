@@ -72,7 +72,7 @@ public class WhatsappContact {
      *
      * @return a new instance of WhatsappContact.
      */
-    public static @NotNull WhatsappContact fromAttributes(@NotNull Map<String, String> attrs){
+    public static @NotNull WhatsappContact fromAttributes(@NotNull Map<String, String> attrs) {
         return WhatsappContact.builder()
                 .jid(attrs.get("jid"))
                 .name(attrs.get("name"))
@@ -112,7 +112,7 @@ public class WhatsappContact {
      *
      * @return an optional object wrapping this contact's last known presence
      */
-    public @NotNull Optional<WhatsappContactStatus> lastKnownPresence(){
+    public @NotNull Optional<WhatsappContactStatus> lastKnownPresence() {
         return Optional.ofNullable(lastKnownPresence);
     }
 
@@ -122,7 +122,7 @@ public class WhatsappContact {
      *
      * @return an optional object wrapping the last time this contact was seen available
      */
-    public @NotNull Optional<ZonedDateTime> lastSeen(){
+    public @NotNull Optional<ZonedDateTime> lastSeen() {
         return Optional.ofNullable(lastSeen);
     }
 }

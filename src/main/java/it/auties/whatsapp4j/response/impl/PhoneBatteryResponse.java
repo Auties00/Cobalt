@@ -1,7 +1,6 @@
 package it.auties.whatsapp4j.response.impl;
 
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
-import lombok.Builder;
 
 /**
  * A json model that contains information the battery status of the phone associated with this session

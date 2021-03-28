@@ -20,63 +20,63 @@ import java.util.function.Function;
 @Data
 @Accessors(fluent = true)
 public class WhatsappConfiguration {
-  /**
-   * The url of WhatsappWeb's WebSocket
-   * This may change based on the region this API is being used in
-   */
-  @Default
-  private final @NotNull String whatsappUrl = "wss://web.whatsapp.com/ws";
+    /**
+     * The url of WhatsappWeb's WebSocket
+     * This may change based on the region this API is being used in
+     */
+    @Default
+    private final @NotNull String whatsappUrl = "wss://web.whatsapp.com/ws";
 
-  /**
-   * The tag used to authenticate when logging in and exchanging keys with WhatsappWeb's WebSocket
-   * This should be, for example, the name of your service
-   */
-  @Default
-  private final @NotNull String whatsappTag = "W4J";
+    /**
+     * The tag used to authenticate when logging in and exchanging keys with WhatsappWeb's WebSocket
+     * This should be, for example, the name of your service
+     */
+    @Default
+    private final @NotNull String whatsappTag = "W4J";
 
-  /**
-   * The tag used to send both json requests to WhatsappWeb's WebSocket after the authentication process has succeeded
-   * The tag used to send binary requests to WhatsappWeb's WebSocket after the authentication process has succeeded is built using {@link it.auties.whatsapp4j.utils.WhatsappUtils#buildRequestTag(WhatsappConfiguration)}
-   * It is important to use a pseudo random string as using the same tag two times in a binary request, even in different sessions, will make the request fail
-   */
-  @Default
-  private final @NotNull String requestTag = BinaryArray.random(12).toHex();
+    /**
+     * The tag used to send both json requests to WhatsappWeb's WebSocket after the authentication process has succeeded
+     * The tag used to send binary requests to WhatsappWeb's WebSocket after the authentication process has succeeded is built using {@link it.auties.whatsapp4j.utils.WhatsappUtils#buildRequestTag(WhatsappConfiguration)}
+     * It is important to use a pseudo random string as using the same tag two times in a binary request, even in different sessions, will make the request fail
+     */
+    @Default
+    private final @NotNull String requestTag = BinaryArray.random(12).toHex();
 
-  /**
-   * The description provided to Whatsapp during the authentication process
-   * This should be, for example, the name of your service
-   */
-  @Default
-  private final @NotNull String description = "Whatsapp4j";
+    /**
+     * The description provided to Whatsapp during the authentication process
+     * This should be, for example, the name of your service
+     */
+    @Default
+    private final @NotNull String description = "Whatsapp4j";
 
-  /**
-   * The short description provided to Whatsapp during the authentication process
-   * This should be, for example, an acronym for your service
-   */
-  @Default
-  private final @NotNull String shortDescription = "W4J";
+    /**
+     * The short description provided to Whatsapp during the authentication process
+     * This should be, for example, an acronym for your service
+     */
+    @Default
+    private final @NotNull String shortDescription = "W4J";
 
-  /**
-   * When someone logs into WhatsappWeb from another location, this function is used to determine if the connection should be reclaimed
-   * If the connection should be reclaimed this function should return true
-   * The first and only parameter of this function is a String describing the reason the connection was terminated
-   */
-  @Default
-  private final @NotNull Function<String, Boolean> reconnectWhenDisconnected = (reason) -> true;
+    /**
+     * When someone logs into WhatsappWeb from another location, this function is used to determine if the connection should be reclaimed
+     * If the connection should be reclaimed this function should return true
+     * The first and only parameter of this function is a String describing the reason the connection was terminated
+     */
+    @Default
+    private final @NotNull Function<String, Boolean> reconnectWhenDisconnected = (reason) -> true;
 
-  /**
-   * This property determines whether the requests sent to WhatsappWeb's WebSocket should be sent asynchronously or not
-   * It is recommended to set this field to true as it helps with performance while not using necessarily more resources
-   */
-  @Default
-  private final boolean async = true;
+    /**
+     * This property determines whether the requests sent to WhatsappWeb's WebSocket should be sent asynchronously or not
+     * It is recommended to set this field to true as it helps with performance while not using necessarily more resources
+     */
+    @Default
+    private final boolean async = true;
 
-  /**
-   * Constructs a new instance of WhatsappConfiguration with default options
-   *
-   * @return a new instance of WhatsappConfiguration with the above characteristics
-   */
-  public static @NotNull WhatsappConfiguration defaultOptions(){
-    return WhatsappConfiguration.builder().build();
-  }
+    /**
+     * Constructs a new instance of WhatsappConfiguration with default options
+     *
+     * @return a new instance of WhatsappConfiguration with the above characteristics
+     */
+    public static @NotNull WhatsappConfiguration defaultOptions() {
+        return WhatsappConfiguration.builder().build();
+    }
 }
