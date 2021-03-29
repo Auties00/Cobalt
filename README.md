@@ -14,14 +14,14 @@ Add this dependency to your dependencies in the pom:
 <dependency>
     <groupId>com.github.auties00</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>1.0</version>
+    <version>1.1</version>
 </dependency>
 ```
 
 #### Gradle
 Add this dependency to your build.gradle:
 ```groovy
-implementation 'com.github.auties00:whatsappweb4j:1.0'
+implementation 'com.github.auties00:whatsappweb4j:1.1'
 ```
 
 ### Javadocs
