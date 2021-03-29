@@ -459,3 +459,28 @@ var response = future.get(); // Wait for the future to complete
 var future = api.leave(group);  // A future for the request
 var response = future.get(); // Wait for the future to complete
 ```
+
+## How to contribute
+
+The current release of lombok does not work with java16 which is required to
+compile the projects code.
+
+### Building and installing Lombok
+
+Run the following instructions to build a patched version of lombok:
+
+`git clone https://github.com/Rawi01/lombok
+cd lombok
+git checkout recordWithInterface
+ant dist`
+
+Then install the version in your local maven repo:
+
+`mvn install:install-file -Dfile=lombok-1.18.19.jar  -DgroupId=org.projectlombok -DartifactId=lombok -Dversion=fixed -Dpackaging=jar`
+
+Delombok needs to point this last version, to do so do the following:
+`cd ${HOME}/.m2/repository/org/projectlombok/lombok-maven/1.18.18.0/
+vi lombok-maven-1.18.18.0.pom`
+To replace the lombok.version so that it reads: `<lombok.version>fixed</lombok.version>`
+
+You can now run `mvn clean install` to build and test your version of the library.
