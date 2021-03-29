@@ -2,9 +2,9 @@
 
 ### What is WhatsappWeb4j
 
-WhatsappWeb4j is a standalone library built to interact with [WhatsappWeb](https://web.whatsapp.com/). This means that no browser, application or
+WhatsappWeb##### is a standalone library built to interact with [WhatsappWeb](https://web.whatsapp.com/). This means that no browser, application or
 any additional software is necessary to use this library. This library was built for [Java 15](https://openjdk.java.net/projects/jdk/15/) and [JakartaEE 9](https://jakarta.ee/release/9/). 
-Support for Java 11, the latest LTS as of this date, will come soon. Any help to this library is welcomed as long as the coding style of the project is respected. 
+Support for Java 1##### the latest LTS as of this date, will come soon. Any help to this library is welcomed as long as the coding style of the project is respected. 
 
 ### How to install 
 
@@ -25,7 +25,7 @@ implementation 'com.github.auties00:whatsappweb4j:1.1'
 ```
 
 ### Javadocs
-Javadocs for WhatsappWeb4j are available [here](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/index.html), all contributions are welcomed!
+Javadocs for WhatsappWeb##### are available [here](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/index.html), all contributions are welcomed!
 
 ### How to configure WhatsappWeb4j
 To use this library, start by initializing an instance of WhatsappAPI:
@@ -103,7 +103,7 @@ public class YourAwesomeListener implements WhatsappListener {
 ```
 
 There are two ways to register listeners:
-1. Manually
+1.  Manually
 
     ```java
     api.registerListener(new YourAwesomeListener());
@@ -253,27 +253,27 @@ Then, after the subscribeToUserPresence's future is completed, query again the p
 
 ### Query data about a group, or a contact
 
-1. Text status
+##### Text status
    ``` java
    var statusFuture = api.queryUserStatus(contact); // A completable future
    var statusResponse = statusFuture.get(); // Wait for the future to complete
    var textStatus = statusResponse.status().orElse("No status found"); // The contact's status
    ```
    
-2. Profile picture or chat picture
+##### Profile picture or chat picture
    ``` java
    var pictureFuture = api.queryChatPicture(chat); // A completable future
    var pictureResponse = pictureFuture.get(); // Wait for the future to complete
    var pictureUrl = pictureResponse.url(); // The picture for this chat
    ```
    
-3. Group's Metadata
+##### Group's Metadata
    ``` java
    var metadataFuture = api.queryChatPicture(group); // A completable future
    var metadata = metadataFuture.get(); // The group's metadata
    ```
 
-4. Groups in common with a contact
+##### Groups in common with a contact
    ``` java
    var groupsFuture = api.queryGroupsInCommon(contact); // A completable future
    var groupsResponse = metadataFuture.get(); // Wait for the future to complete
@@ -319,55 +319,55 @@ var messages = response.data().orElseThrow(); // The requested messages
 
 ### Miscellaneous chat related methods
 
-1. Mute a chat
+##### Mute a chat
 ``` java
 var future = api.mute(chat);  // A future for the request
 var response = future.get(); // Wait for the future to complete
 ```
 
-2. Unmute a chat
+##### Unmute a chat
 ``` java
 var future = api.mute(chat);  // A future for the request
 var response = future.get(); // Wait for the future to complete
 ```
 
-2. Archive a chat
+##### Archive a chat
 ``` java
 var future = api.archive(chat);  // A future for the request
 var response = future.get(); // Wait for the future to complete
 ```
 
-3. Unrchive a chat
+##### Unrchive a chat
 ``` java
 var future = api.unarchive(chat);  // A future for the request
 var response = future.get(); // Wait for the future to complete
 ```
 
-4. Enable ephemeral messages in a chat
+##### Enable ephemeral messages in a chat
 ``` java
 var future = api.enableEphemeralMessages(chat);  // A future for the request
 var response = future.get(); // Wait for the future to complete
 ```   
 
-5. Mark a chat as read
+##### Mark a chat as read
 ``` java
 var future = api.markAsRead(chat);  // A future for the request
 var response = future.get(); // Wait for the future to complete
 ```   
 
-6. Mark a chat as unread
+##### Mark a chat as unread
 ``` java
 var future = api.markAsUnread(chat);  // A future for the request
 var response = future.get(); // Wait for the future to complete
 ```   
 
-7. Pin a chat
+##### Pin a chat
 ``` java
 var future = api.pin(chat);  // A future for the request
 var response = future.get(); // Wait for the future to complete
 ``` 
 
-8. Unpin a chat
+##### Unpin a chat
 ``` java
 var future = api.unpin(chat);  // A future for the request
 var response = future.get(); // Wait for the future to complete
@@ -375,7 +375,7 @@ var response = future.get(); // Wait for the future to complete
 
 ### Execute an action on contact for a group
 
-1. Add a contact to a group
+##### Add a contact to a group
 ``` java
 var future = api.add(group, contact);  // A future for the request
 var response = future.get(); // Wait for the future to complete
@@ -384,7 +384,7 @@ var response = future.get(); // Wait for the future to complete
 var success = response.modifications();
 ```
 
-2. Remove a contact from a group
+##### Remove a contact from a group
 ``` java
 var future = api.remove(group, contact);  // A future for the request
 var response = future.get(); // Wait for the future to complete
@@ -393,7 +393,7 @@ var response = future.get(); // Wait for the future to complete
 var success = response.modifications();
 ```
 
-3. Promote a contact to admin in a group
+##### Promote a contact to admin in a group
 ``` java
 var future = api.promote(group, contact);  // A future for the request
 var response = future.get(); // Wait for the future to complete
@@ -402,7 +402,7 @@ var response = future.get(); // Wait for the future to complete
 var success = response.modifications();
 ```
 
-4. Demote a contact to user in a group
+##### Demote a contact to user in a group
 ``` java
 var future = api.demote(group, contact);  // A future for the request
 var response = future.get(); // Wait for the future to complete
@@ -413,48 +413,48 @@ var success = response.modifications();
 
 ### Change the metadata/settings of a group
 
-1. Change the group's name/subject
+##### Change the group's name/subject
 ``` java
 var future = api.changeGroupName(group, newName);  // A future for the request
 var response = future.get(); // Wait for the future to complete
 ```
 
-2. Change the group's description
+##### Change the group's description
 ``` java
 var future = api.changeGroupDescription(group, newDescription);  // A future for the request
 var response = future.get(); // Wait for the future to complete
 ```
 
-3. Change who can send messages in the group
+##### Change who can send messages in the group
 ``` java
 var future = api.changeWhoCanSendMessagesInGroup(group, policy);  // A future for the request
 var response = future.get(); // Wait for the future to complete
 ```
 
-4. Change who can edit the metadata/settings in the group
+##### Change who can edit the metadata/settings in the group
 ``` java
 var future = api.changeWhoCanEditGroupInfo(group, policy);  // A future for the request
 var response = future.get(); // Wait for the future to complete
 ```
 
-5. Change the icon/picture of a group
+##### Change the icon/picture of a group
 
 > **_IMPORTANT:_**  This method is in the API marked as Beta but is not yet implemented
 
-6. Remove the icon/picture of a group 
+##### Remove the icon/picture of a group 
 ``` java
 var future = api.removeGroupPicture(group);  // A future for the request
 var response = future.get(); // Wait for the future to complete
 ```
 
 ### Miscellaneous group related methods
-1. Create a group
+##### Create a group
 ``` java
-var future = api.createGroup(group, friend, friend1, friend2);  // A future for the request
+var future = api.createGroup(group, friend, friend##### friend2);  // A future for the request
 var response = future.get(); // Wait for the future to complete
 ```
 
-1. Leave a group
+##### Leave a group
 ``` java
 var future = api.leave(group);  // A future for the request
 var response = future.get(); // Wait for the future to complete
