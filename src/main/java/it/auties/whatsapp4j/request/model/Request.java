@@ -5,6 +5,7 @@ import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.model.WhatsappNode;
+import it.auties.whatsapp4j.response.model.JsonResponse;
 import it.auties.whatsapp4j.response.model.Response;
 import it.auties.whatsapp4j.response.model.ResponseModel;
 import it.auties.whatsapp4j.utils.Validate;
@@ -16,6 +17,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.ParameterizedType;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 /**
  * An abstract model class that represents a request made from the client to the server.
@@ -103,7 +105,14 @@ public sealed abstract class Request<M extends ResponseModel> permits BinaryRequ
      */
     public void complete(@NotNull Response response){
         Validate.isTrue(isCompletable(), "WhatsappAPI: Cannot complete a request with tag %s: this request is marked as non completable", tag());
-        future.completeAsync(() -> response.toModel(modelClass()));
+
+        future.completeAsync(() -> {
+            if(response instanceof JsonResponse jsonResponse && !jsonResponse.isSuccessful()){
+                throw new IllegalStateException("Cannot complete request with response %s".formatted(response));
+            }
+
+            return response.toModel(modelClass());
+        });
     }
 
     /**

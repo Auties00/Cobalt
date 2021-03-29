@@ -22,9 +22,7 @@ import java.time.Instant;
 @Accessors(fluent = true)
 public class WhatsappMessageRequest {
     private final @NotNull WhatsappDataManager MANAGER = WhatsappDataManager.singletonInstance();
-    private final @NotNull
-    @Default
-    String id = WhatsappUtils.randomId();
+    private final @NotNull @Default String id = WhatsappUtils.randomId();
     private final @NotNull String recipient;
     private final @NotNull String text;
     private final @Nullable WhatsappMessage quotedMessage;

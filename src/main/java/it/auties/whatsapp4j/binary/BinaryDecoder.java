@@ -203,7 +203,7 @@ public class BinaryDecoder {
     }
 
     private @NotNull List<WhatsappNode> readList(int tag) {
-        return IntStream.range(0, readListSize(tag)).mapToObj(e -> readNode()).collect(Collectors.toList());
+        return IntStream.range(0, readListSize(tag)).mapToObj(e -> readNode()).toList();
     }
 
     private void checkEOS(int length) {

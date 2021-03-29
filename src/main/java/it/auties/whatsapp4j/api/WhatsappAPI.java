@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 /**
  * A class used to interface a user to WhatsappWeb's WebSocket.
@@ -38,10 +39,8 @@ import java.util.concurrent.ExecutionException;
 public class WhatsappAPI {
     private final @NotNull WhatsappWebSocket socket;
     private final @NotNull WhatsappConfiguration configuration;
-    private final @Getter
-    @NotNull WhatsappDataManager manager;
-    private final @Getter
-    @NotNull WhatsappKeysManager keys;
+    private final @Getter @NotNull WhatsappDataManager manager;
+    private final @Getter @NotNull WhatsappKeysManager keys;
 
     /**
      * Creates a new WhatsappAPI with default configuration
@@ -144,11 +143,10 @@ public class WhatsappAPI {
      *
      * @param contact the contact whose status the api should receive updates on
      */
-    public @NotNull WhatsappAPI subscribeToUserPresence(@NotNull WhatsappContact contact) {
-        var subscribe = new SubscribeUserPresenceRequest(configuration, contact.jid()) {
-        };
-        subscribe.send(socket.session());
-        return this;
+    public @NotNull CompletableFuture<SimpleStatusResponse> subscribeToUserPresence(@NotNull WhatsappContact contact) {
+        return new SubscribeUserPresenceRequest<SimpleStatusResponse>(configuration, contact.jid()) {}
+                .send(socket.session())
+                .future();
     }
 
     /**
@@ -437,23 +435,24 @@ public class WhatsappAPI {
      * @param group          the target group
      * @param newDescription the new name for the group
      * @throws IllegalArgumentException if the provided chat is not a group
-     * @throws ExecutionException       if the previous description jid cannot be queried, usually happens if the call to this method is on the same thread as the WebSocket
-     * @throws InterruptedException     if the previous description jid cannot be queried, usually happens if the call to this method is on the same thread as the WebSocket
      */
-    public @NotNull CompletableFuture<SimpleStatusResponse> changeGroupDescription(@NotNull WhatsappChat group, @NotNull String newDescription) throws ExecutionException, InterruptedException {
+    public @NotNull CompletableFuture<SimpleStatusResponse> changeGroupDescription(@NotNull WhatsappChat group, @NotNull String newDescription) {
         Validate.isTrue(group.isGroup(), "WhatsappAPI: Cannot change group's description: %s is not a group", group.jid());
 
-        var previousId = queryGroupMetadata(group).get().descriptionMessageId();
-        var tag = WhatsappUtils.buildRequestTag(configuration);
-        var node = WhatsappNode.builder()
-                .description("action")
-                .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                .content(List.of(new WhatsappNode("group", Map.of("jid", group.jid(), "author", manager.phoneNumber(), "id", tag, "type", "description"), List.of(new WhatsappNode("description", Map.of("id", WhatsappUtils.randomId(), "prev", Objects.requireNonNullElse(previousId, "none")), newDescription)))))
-                .build();
+        return queryGroupMetadata(group)
+                .thenApplyAsync(GroupMetadataResponse::descriptionMessageId)
+                .thenComposeAsync(previousId -> {
+                    var tag = WhatsappUtils.buildRequestTag(configuration);
+                    var node = WhatsappNode.builder()
+                            .description("action")
+                            .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
+                            .content(List.of(new WhatsappNode("group", Map.of("jid", group.jid(), "author", manager.phoneNumber(), "id", tag, "type", "description"), List.of(new WhatsappNode("description", Map.of("id", WhatsappUtils.randomId(), "prev", Objects.requireNonNullElse(previousId, "none")), newDescription)))))
+                            .build();
 
-        return new NodeRequest<SimpleStatusResponse>(tag, configuration, node) {}
-                .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.GROUP)
-                .future();
+                    return new NodeRequest<SimpleStatusResponse>(tag, configuration, node) {}
+                            .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.GROUP)
+                            .future();
+                });
     }
 
     /**

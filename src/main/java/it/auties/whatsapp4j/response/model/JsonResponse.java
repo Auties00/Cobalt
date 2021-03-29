@@ -38,6 +38,15 @@ public final record JsonResponse(@NotNull Map<String, ?> data) implements Respon
     }
 
     /**
+     * Returns whether the request was successful or not
+     *
+     * @return true if the request was successful
+     */
+    public boolean isSuccessful(){
+        return getInteger("status").map(status -> status == 200).orElse(true);
+    }
+
+    /**
      * Returns if a key is present in the json that this object wraps
      *
      * @param key the key to search

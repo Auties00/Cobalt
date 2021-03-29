@@ -6,6 +6,8 @@ import it.auties.whatsapp4j.model.WhatsappChat;
 import it.auties.whatsapp4j.model.WhatsappContact;
 import it.auties.whatsapp4j.request.model.JsonRequest;
 import it.auties.whatsapp4j.response.impl.DiscardResponse;
+import it.auties.whatsapp4j.response.impl.SimpleStatusResponse;
+import it.auties.whatsapp4j.response.model.JsonResponseModel;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -14,7 +16,7 @@ import java.util.List;
  * A JSON request used to force WhatsappWeb's WebSocket to send updates regarding a contact's status.
  * After this message, the status can be fetched by listening to {@link WhatsappListener#onContactPresenceUpdate(WhatsappChat, WhatsappContact)} or {@link WhatsappContact#lastKnownPresence()}.
  */
-public abstract class SubscribeUserPresenceRequest extends JsonRequest<DiscardResponse> {
+public abstract class SubscribeUserPresenceRequest<M extends JsonResponseModel> extends JsonRequest<M> {
     private final @NotNull String jid;
 
     public SubscribeUserPresenceRequest(@NotNull WhatsappConfiguration configuration, @NotNull String jid) {
@@ -25,5 +27,10 @@ public abstract class SubscribeUserPresenceRequest extends JsonRequest<DiscardRe
     @Override
     public @NotNull List<Object> buildBody() {
         return List.of("action", "presence", "subscribe", jid);
+    }
+
+    @Override
+    public boolean isCompletable() {
+        return true;
     }
 }

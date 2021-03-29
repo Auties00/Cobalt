@@ -161,6 +161,6 @@ public class WhatsappUtils {
         Validate.isTrue(jids.length != 0, "WhatsappAPI: Cannot convert an array of jids to a list of jid nodes as the array is empty!");
         return Arrays.stream(jids)
                 .map(jid -> new WhatsappNode("participant", Map.of("jid", jid), null))
-                .collect(Collectors.toUnmodifiableList());
+                .toList();
     }
 }

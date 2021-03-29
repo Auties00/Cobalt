@@ -29,7 +29,7 @@ public record WhatsappNode(@NotNull String description, @NotNull Map<String, Str
         return list.stream()
                 .filter(entry -> entry instanceof WhatsappNode)
                 .map(WhatsappNode.class::cast)
-                .collect(Collectors.toUnmodifiableList());
+                .toList();
     }
 
     /**

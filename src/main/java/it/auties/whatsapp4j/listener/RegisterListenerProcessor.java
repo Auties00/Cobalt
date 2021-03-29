@@ -36,7 +36,7 @@ public class RegisterListenerProcessor {
                 .stream()
                 .map(RegisterListenerProcessor::cast)
                 .map(RegisterListenerProcessor::newInstance)
-                .collect(Collectors.toUnmodifiableList());
+                .toList();
     }
 
     private @NotNull Class<? extends WhatsappListener> cast(@NotNull Class<?> clazz){

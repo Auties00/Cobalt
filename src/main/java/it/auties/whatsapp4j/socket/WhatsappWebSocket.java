@@ -232,7 +232,6 @@ public class WhatsappWebSocket {
       return;
     }
 
-    System.out.println(message);
     var mapResponse = (JsonResponse) res.data();
     if(mapResponse.data().isEmpty()){
       return;
@@ -309,7 +308,6 @@ public class WhatsappWebSocket {
       return;
     }
 
-    System.out.println("REF: " + info);
     whatsappManager.phoneNumber(WhatsappUtils.parseJid(info.wid()));
     whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onLoggedIn(info, false)));
   }
