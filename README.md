@@ -264,10 +264,6 @@ Then, after the subscribeToUserPresence's future is completed, query again the p
    ``` java
    var pictureFuture = api.queryChatPicture(chat); // A completable future
    var pictureResponse = pictureFuture.get(); // Wait for the future to complete
-   if(pictureResponse.status() == 404) { // Check if the user has no chat picture
-      return;
-   }
-   
    var pictureUrl = pictureResponse.url(); // The picture for this chat
    ```
    
@@ -281,10 +277,6 @@ Then, after the subscribeToUserPresence's future is completed, query again the p
    ``` java
    var groupsFuture = api.queryGroupsInCommon(contact); // A completable future
    var groupsResponse = metadataFuture.get(); // Wait for the future to complete
-   if(pictureResponse.status() != 200) { // Check if the request was successfull
-      return;
-   }
-   
    var groups = groupsResponse.groups(); // A list of common groups
    ```
    
@@ -331,63 +323,54 @@ var messages = response.data().orElseThrow(); // The requested messages
 ``` java
 var future = api.mute(chat);  // A future for the request
 var response = future.get(); // Wait for the future to complete
-var isSuccessful = response.status() == 200; // Check if the request was successfull
 ```
 
 2. Unmute a chat
 ``` java
 var future = api.mute(chat);  // A future for the request
 var response = future.get(); // Wait for the future to complete
-var isSuccessful = response.status() == 200; // Check if the request was successfull
 ```
 
 2. Archive a chat
 ``` java
 var future = api.archive(chat);  // A future for the request
 var response = future.get(); // Wait for the future to complete
-var isSuccessful = response.status() == 200; // Check if the request was successfull
 ```
 
 3. Unrchive a chat
 ``` java
 var future = api.unarchive(chat);  // A future for the request
 var response = future.get(); // Wait for the future to complete
-var isSuccessful = response.status() == 200; // Check if the request was successfull
 ```
 
 4. Enable ephemeral messages in a chat
 ``` java
 var future = api.enableEphemeralMessages(chat);  // A future for the request
 var response = future.get(); // Wait for the future to complete
-var isSuccessful = response.status() == 200; // Check if the request was successfull
 ```   
 
 5. Mark a chat as read
 ``` java
 var future = api.markAsRead(chat);  // A future for the request
 var response = future.get(); // Wait for the future to complete
-var isSuccessful = response.status() == 200; // Check if the request was successfull
 ```   
 
 6. Mark a chat as unread
 ``` java
 var future = api.markAsUnread(chat);  // A future for the request
 var response = future.get(); // Wait for the future to complete
-var isSuccessful = response.status() == 200; // Check if the request was successfull
 ```   
 
 7. Pin a chat
 ``` java
 var future = api.pin(chat);  // A future for the request
 var response = future.get(); // Wait for the future to complete
-var isSuccessful = response.status() == 200; // Check if the request was successfull
 ``` 
 
 8. Unpin a chat
 ``` java
 var future = api.unpin(chat);  // A future for the request
 var response = future.get(); // Wait for the future to complete
-var isSuccessful = response.status() == 200; // Check if the request was successfull
 ```
 
 ### Execute an action on contact for a group
@@ -396,11 +379,6 @@ var isSuccessful = response.status() == 200; // Check if the request was success
 ``` java
 var future = api.add(group, contact);  // A future for the request
 var response = future.get(); // Wait for the future to complete
-if(response.status() != 200){ // Check if the request was successfull
- return;
-}
-
-
 // A list of modifications made by the request
 // Each entry contains the jid of the affected contact and the status of said moification  
 var success = response.modifications();
@@ -410,11 +388,6 @@ var success = response.modifications();
 ``` java
 var future = api.remove(group, contact);  // A future for the request
 var response = future.get(); // Wait for the future to complete
-if(response.status() != 200){ // Check if the request was successfull
- return;
-}
-
-
 // A list of modifications made by the request
 // Each entry contains the jid of the affected contact and the status of said moification  
 var success = response.modifications();
@@ -424,11 +397,6 @@ var success = response.modifications();
 ``` java
 var future = api.promote(group, contact);  // A future for the request
 var response = future.get(); // Wait for the future to complete
-if(response.status() != 200){ // Check if the request was successfull
- return;
-}
-
-
 // A list of modifications made by the request
 // Each entry contains the jid of the affected contact and the status of said moification  
 var success = response.modifications();
@@ -438,11 +406,6 @@ var success = response.modifications();
 ``` java
 var future = api.demote(group, contact);  // A future for the request
 var response = future.get(); // Wait for the future to complete
-if(response.status() != 200){ // Check if the request was successfull
- return;
-}
-
-
 // A list of modifications made by the request
 // Each entry contains the jid of the affected contact and the status of said moification  
 var success = response.modifications();
@@ -454,28 +417,24 @@ var success = response.modifications();
 ``` java
 var future = api.changeGroupName(group, newName);  // A future for the request
 var response = future.get(); // Wait for the future to complete
-var isSuccessful = response.status() == 200; // Check if the request was successfull
 ```
 
 2. Change the group's description
 ``` java
 var future = api.changeGroupDescription(group, newDescription);  // A future for the request
 var response = future.get(); // Wait for the future to complete
-var isSuccessful = response.status() == 200; // Check if the request was successfull
 ```
 
 3. Change who can send messages in the group
 ``` java
 var future = api.changeWhoCanSendMessagesInGroup(group, policy);  // A future for the request
 var response = future.get(); // Wait for the future to complete
-var isSuccessful = response.status() == 200; // Check if the request was successfull
 ```
 
 4. Change who can edit the metadata/settings in the group
 ``` java
 var future = api.changeWhoCanEditGroupInfo(group, policy);  // A future for the request
 var response = future.get(); // Wait for the future to complete
-var isSuccessful = response.status() == 200; // Check if the request was successfull
 ```
 
 5. Change the icon/picture of a group
@@ -486,7 +445,6 @@ var isSuccessful = response.status() == 200; // Check if the request was success
 ``` java
 var future = api.removeGroupPicture(group);  // A future for the request
 var response = future.get(); // Wait for the future to complete
-var isSuccessful = response.status() == 200; // Check if the request was successfull
 ```
 
 ### Miscellaneous group related methods
@@ -494,12 +452,10 @@ var isSuccessful = response.status() == 200; // Check if the request was success
 ``` java
 var future = api.createGroup(group, friend, friend1, friend2);  // A future for the request
 var response = future.get(); // Wait for the future to complete
-var isSuccessful = response.status() == 200; // Check if the request was successfull
 ```
 
 1. Leave a group
 ``` java
 var future = api.leave(group);  // A future for the request
 var response = future.get(); // Wait for the future to complete
-var isSuccessful = response.status() == 200; // Check if the request was successfull
 ```
