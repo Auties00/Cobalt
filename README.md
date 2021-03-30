@@ -2,9 +2,9 @@
 
 ### What is WhatsappWeb4j
 
-WhatsappWeb##### is a standalone library built to interact with [WhatsappWeb](https://web.whatsapp.com/). This means that no browser, application or
+WhatsappWeb4j is a standalone library built to interact with [WhatsappWeb](https://web.whatsapp.com/). This means that no browser, application or
 any additional software is necessary to use this library. This library was built for [Java 16](https://openjdk.java.net/projects/jdk/16/) and [JakartaEE 9](https://jakarta.ee/release/9/). 
-Support for Java 1##### the latest LTS as of this date, will come soon. Any help to this library is welcomed as long as the coding style of the project is respected. 
+Support for Java 11, the latest LTS as of this date, will come soon. Any help to this library is welcomed as long as the coding style of the project is respected. 
 
 ### How to install 
 
@@ -25,7 +25,7 @@ implementation 'com.github.auties00:whatsappweb4j:1.1'
 ```
 
 ### Javadocs
-Javadocs for WhatsappWeb##### are available [here](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/index.html), all contributions are welcomed!
+Javadocs for WhatsappWeb4j are available [here](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/index.html), all contributions are welcomed!
 
 ### How to configure WhatsappWeb4j
 To use this library, start by initializing an instance of WhatsappAPI:
