@@ -5,6 +5,7 @@ import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.model.WhatsappChat;
 import it.auties.whatsapp4j.model.WhatsappContact;
 import it.auties.whatsapp4j.model.WhatsappMessage;
+import it.auties.whatsapp4j.model.WhatsappUserMessage;
 import it.auties.whatsapp4j.response.impl.BlocklistResponse;
 import it.auties.whatsapp4j.response.impl.PhoneBatteryResponse;
 import it.auties.whatsapp4j.response.impl.PropsResponse;
@@ -148,7 +149,7 @@ public interface WhatsappListener {
      * @param message the message this update regards
      *
      */
-    default void onMessageReadStatusUpdate(@NotNull WhatsappChat chat, @NotNull WhatsappContact contact, @NotNull WhatsappMessage message){}
+    default void onMessageReadStatusUpdate(@NotNull WhatsappChat chat, @NotNull WhatsappContact contact, @NotNull WhatsappUserMessage message){}
 
     /**
      * Called when the metadata or content of a message is updated
@@ -167,7 +168,7 @@ public interface WhatsappListener {
      * @param everyone whether this message was deleted by you only for yourself or whether the message was permanently removed
      *
      */
-    default void onMessageDeleted(@NotNull WhatsappChat chat, @NotNull WhatsappMessage message, boolean everyone){}
+    default void onMessageDeleted(@NotNull WhatsappChat chat, @NotNull WhatsappUserMessage message, boolean everyone){}
 
     /**
      * Called when a message is starred
@@ -176,7 +177,7 @@ public interface WhatsappListener {
      * @param message the message that was starred
      *
      */
-    default void onMessageStarred(@NotNull WhatsappChat chat, @NotNull WhatsappMessage message){}
+    default void onMessageStarred(@NotNull WhatsappChat chat, @NotNull WhatsappUserMessage message){}
 
     /**
      * Called when a message is unstarred
@@ -185,19 +186,19 @@ public interface WhatsappListener {
      * @param message the message that was unstarred
      *
      */
-    default void onMessageUnstarred(@NotNull WhatsappChat chat, @NotNull WhatsappMessage message){}
+    default void onMessageUnstarred(@NotNull WhatsappChat chat, @NotNull WhatsappUserMessage message){}
 
     /**
      * Called when the global read status of a message changes.
-     * This status can be accessed calling {@link WhatsappMessage#globalStatus()}.
-     * If {@code chat} is a conversation, {@link WhatsappMessage#globalStatus()} is equal to the one stored in {@link WhatsappMessage#individualReadStatus()} for the corresponding contact.
-     * Otherwise, it is guaranteed that each value stored in {@link WhatsappMessage#individualReadStatus()} for each participant of the chat is equal or higher hierarchically then {@link WhatsappMessage#globalStatus()}.
+     * This status can be accessed calling {@link WhatsappUserMessage#globalStatus()}.
+     * If {@code chat} is a conversation, {@link WhatsappUserMessage#globalStatus()} is equal to the one stored in {@link WhatsappUserMessage#individualReadStatus()} for the corresponding contact.
+     * Otherwise, it is guaranteed that each value stored in {@link WhatsappUserMessage#individualReadStatus()} for each participant of the chat is equal or higher hierarchically then {@link WhatsappUserMessage#globalStatus()}.
      *
      * @param chat the chat where the message is
      * @param message the message that was unstarred
      *
      */
-    default void onMessageGlobalReadStatusUpdate(@NotNull WhatsappChat chat, @NotNull WhatsappMessage message){}
+    default void onMessageGlobalReadStatusUpdate(@NotNull WhatsappChat chat, @NotNull WhatsappUserMessage message){}
 
     /**
      * Called when an updated blocklist is received.

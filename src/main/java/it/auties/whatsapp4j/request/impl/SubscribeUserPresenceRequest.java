@@ -5,8 +5,6 @@ import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.model.WhatsappChat;
 import it.auties.whatsapp4j.model.WhatsappContact;
 import it.auties.whatsapp4j.request.model.JsonRequest;
-import it.auties.whatsapp4j.response.impl.DiscardResponse;
-import it.auties.whatsapp4j.response.impl.SimpleStatusResponse;
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
 import org.jetbrains.annotations.NotNull;
 

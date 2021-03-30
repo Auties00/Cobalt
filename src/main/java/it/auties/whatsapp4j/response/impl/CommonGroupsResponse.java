@@ -8,7 +8,6 @@ import it.auties.whatsapp4j.response.model.JsonResponseModel;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * A json model that contains information about the groups in common with a WhatsappContact

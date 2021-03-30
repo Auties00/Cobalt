@@ -11,7 +11,6 @@ import org.reflections.util.ConfigurationBuilder;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * A utility class to find all classes annotated with {@link RegisterListener}.

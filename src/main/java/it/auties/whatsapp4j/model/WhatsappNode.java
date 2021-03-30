@@ -6,8 +6,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * An immutable model class that represents the primary unit used by WhatsappWeb's WebSocket to communicate with the client.
@@ -40,9 +38,14 @@ public record WhatsappNode(@NotNull String description, @NotNull Map<String, Str
      * @throws IllegalArgumentException if {@link WhatsappNode#content} is not a List
      */
     public @NotNull List<WhatsappNode> childNodes() {
-        var content = Objects.requireNonNull(content(), "WhatsappAPI: Cannot extract child nodes from %s: null content".formatted(this));
-        if (!(content instanceof List<?> listContent))
+        if(content == null){
+            return List.of();
+        }
+
+        if (!(content instanceof List<?> listContent)) {
             throw new IllegalArgumentException("WhatsappAPI: Cannot extract child nodes from %s: expected List<?> as content".formatted(this));
+        }
+
         return fromGenericList(listContent);
     }
 }

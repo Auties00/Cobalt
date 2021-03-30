@@ -8,6 +8,7 @@ import it.auties.whatsapp4j.response.impl.PhoneBatteryResponse;
 import it.auties.whatsapp4j.response.model.JsonResponse;
 import it.auties.whatsapp4j.response.model.Response;
 import it.auties.whatsapp4j.socket.WhatsappWebSocket;
+import it.auties.whatsapp4j.utils.WhatsappMessageFactory;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import lombok.AccessLevel;
 import lombok.Data;
@@ -92,7 +93,18 @@ public class WhatsappDataManager {
      * @return a non empty Optional containing the result if it is found otherwise an empty Optional empty
      */
     public @NotNull Optional<WhatsappMessage> findMessageById(@NotNull WhatsappChat chat, @NotNull String id){
-        return chat.messages().stream().filter(e -> Objects.equals(e.info().getKey().getId(), id)).findAny();
+        return chat.messages().stream().filter(e -> Objects.equals(e.id(), id)).findAny();
+    }
+
+    /**
+     * Queries the user message in {@code chat} whose jid is equal to {@code jid}
+     *
+     * @param chat the chat to search in
+     * @param id the jid to search
+     * @return a non empty Optional containing the result if it is found otherwise an empty Optional empty
+     */
+    public @NotNull Optional<WhatsappUserMessage> findUserMessageById(@NotNull WhatsappChat chat, @NotNull String id){
+        return chat.messages().userMessages().filter(e -> Objects.equals(e.id(), id)).findAny();
     }
 
     /**
@@ -102,8 +114,8 @@ public class WhatsappDataManager {
      * @param context the context to use
      * @return a non empty Optional containing the result if it is found otherwise an empty Optional empty
      */
-    public @NotNull Optional<WhatsappMessage> findQuotedMessageInChatByContext(@NotNull WhatsappChat chat, @NotNull WhatsappProtobuf.ContextInfo context){
-        return chat.messages().stream().filter(e -> context.getStanzaId().equals(e.info().getKey().getId())).findAny();
+    public @NotNull Optional<WhatsappUserMessage> findQuotedMessageInChatByContext(@NotNull WhatsappChat chat, @NotNull WhatsappProtobuf.ContextInfo context){
+        return chat.messages().userMessages().filter(e -> context.getStanzaId().equals(e.id())).findAny();
     }
 
     /**
@@ -335,7 +347,7 @@ public class WhatsappDataManager {
                 .map(WhatsappNode::attrs)
                 .map(entry -> entry.get("index"))
                 .filter(Objects::nonNull)
-                .map(id -> findMessageById(chat, id))
+                .map(id -> findUserMessageById(chat, id))
                 .map(Optional::orElseThrow)
                 .forEach(message -> {
                     chat.messages().remove(message);
@@ -357,7 +369,7 @@ public class WhatsappDataManager {
                 .map(WhatsappNode::attrs)
                 .map(entry -> entry.get("index"))
                 .filter(Objects::nonNull)
-                .map(id -> findMessageById(chat, id))
+                .map(id -> findUserMessageById(chat, id))
                 .map(Optional::orElseThrow)
                 .forEach(message -> {
                     message.starred(false);
@@ -379,7 +391,7 @@ public class WhatsappDataManager {
                 .map(WhatsappNode::content)
                 .filter(entry -> entry instanceof WebMessageInfo)
                 .map(WebMessageInfo.class::cast)
-                .map(WhatsappMessage::new)
+                .map(WhatsappMessageFactory::buildUserMessageFromProtobuf)
                 .forEach(message -> {
                     chat.messages().addOrReplace(message);
                     listeners.forEach(listener -> callOnListenerThread(() -> listener.onMessageStarred(chat, message)));
@@ -424,7 +436,7 @@ public class WhatsappDataManager {
         }
 
         var chat = chatOpt.get();
-        var messageOpt = findMessageById(chat, firstChildNode.attrs().get("index"));
+        var messageOpt = findUserMessageById(chat, firstChildNode.attrs().get("index"));
         if(messageOpt.isEmpty()){
             return;
         }
@@ -483,18 +495,20 @@ public class WhatsappDataManager {
                 .map(WhatsappNode::content)
                 .map(WebMessageInfo.class::cast)
                 .filter(Objects::nonNull)
-                .map(WhatsappMessage::new)
+                .map(WhatsappMessageFactory::buildMessageFromProtobuf)
                 .forEach(message -> processMessage(socket, message));
     }
 
     private void processMessage(@NotNull WhatsappWebSocket socket, @NotNull WhatsappMessage message) {
         var jid = message.info().getKey().getRemoteJid();
         var chat = findChatByJid(jid).orElseGet(() -> queryMissingChat(socket, jid));
-        if(message.info().getMessage().getProtocolMessage().getKey().hasId()){
-            findMessageById(chat, message.info().getMessage().getProtocolMessage().getKey().getId()).ifPresent(oldMessage -> {
-                chat.messages().remove(oldMessage);
-                listeners.forEach(listener -> callOnListenerThread(() -> listener.onMessageDeleted(chat, oldMessage, true)));
-            });
+        if(!message.isUserMessage()){
+            if(message.info().getMessage().getProtocolMessage().getKey().hasId()){
+                findUserMessageById(chat, message.info().getMessage().getProtocolMessage().getKey().getId()).ifPresent(oldMessage -> {
+                    chat.messages().remove(oldMessage);
+                    listeners.forEach(listener -> callOnListenerThread(() -> listener.onMessageDeleted(chat, oldMessage, true)));
+                });
+            }
         }
 
         if(chat.messages().addOrReplace(message)){
@@ -505,8 +519,10 @@ public class WhatsappDataManager {
             return;
         }
 
-        if(!message.sentByMe() && message.globalStatus() != WebMessageInfo.WEB_MESSAGE_INFO_STATUS.READ && !message.info().getIgnore()){
-            chat.unreadMessages(chat.unreadMessages() + 1);
+        if(message instanceof WhatsappUserMessage userMessage) {
+            if (!userMessage.sentByMe() && userMessage.globalStatus() != WebMessageInfo.WEB_MESSAGE_INFO_STATUS.READ && !message.info().getIgnore()) {
+                chat.unreadMessages(chat.unreadMessages() + 1);
+            }
         }
 
         listeners.forEach(listener -> callOnListenerThread(() -> listener.onNewMessageReceived(chat, message)));

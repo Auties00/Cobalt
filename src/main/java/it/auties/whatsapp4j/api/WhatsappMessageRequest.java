@@ -1,8 +1,8 @@
 package it.auties.whatsapp4j.api;
 
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
-import it.auties.whatsapp4j.model.WhatsappMessage;
 import it.auties.whatsapp4j.model.WhatsappProtobuf;
+import it.auties.whatsapp4j.model.WhatsappUserMessage;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -25,7 +25,7 @@ public class WhatsappMessageRequest {
     private final @NotNull @Default String id = WhatsappUtils.randomId();
     private final @NotNull String recipient;
     private final @NotNull String text;
-    private final @Nullable WhatsappMessage quotedMessage;
+    private final @Nullable WhatsappUserMessage quotedMessage;
     private final boolean forwarded;
 
     public static WhatsappMessageRequest ofText(@NotNull String recipient, @NotNull String text) {
@@ -36,7 +36,7 @@ public class WhatsappMessageRequest {
                 .build();
     }
 
-    public static WhatsappMessageRequest ofQuotedText(@NotNull String recipient, @NotNull String text, @NotNull WhatsappMessage quotedMessage) {
+    public static WhatsappMessageRequest ofQuotedText(@NotNull String recipient, @NotNull String text, @NotNull WhatsappUserMessage quotedMessage) {
         return WhatsappMessageRequest
                 .builder()
                 .recipient(recipient)

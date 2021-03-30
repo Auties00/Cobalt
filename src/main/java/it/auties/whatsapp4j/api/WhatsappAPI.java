@@ -26,8 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 /**
  * A class used to interface a user to WhatsappWeb's WebSocket.
@@ -274,7 +272,12 @@ public class WhatsappAPI {
      * @return a CompletableFuture that resolves in the original WhatsappChat
      */
     public @NotNull CompletableFuture<WhatsappChat> loadConversation(@NotNull WhatsappChat chat) {
-        return loadConversation(chat, chat.messages().get(0), 20);
+        return chat.firstMessage()
+                .map(userMessage -> loadConversation(chat, userMessage, 20))
+                .orElseGet(() -> queryChat(chat.jid()).thenApply(res -> {
+                    chat.messages().addAll(res.data().orElseThrow().messages());
+                    return chat;
+                }));
     }
 
 
@@ -286,7 +289,7 @@ public class WhatsappAPI {
      * @param messageCount the amount of messages to load
      * @return a CompletableFuture that resolves in the original WhatsappChat
      */
-    public @NotNull CompletableFuture<WhatsappChat> loadConversation(@NotNull WhatsappChat chat, @NotNull WhatsappMessage lastMessage, int messageCount) {
+    public @NotNull CompletableFuture<WhatsappChat> loadConversation(@NotNull WhatsappChat chat, @NotNull WhatsappUserMessage lastMessage, int messageCount) {
         var node = WhatsappNode.builder()
                 .description("query")
                 .attrs(Map.of("owner", String.valueOf(lastMessage.sentByMe()), "index", lastMessage.id(), "type", "message", "epoch", String.valueOf(manager.tagAndIncrement()), "jid", chat.jid(), "kind", "before", "count", String.valueOf(messageCount)))

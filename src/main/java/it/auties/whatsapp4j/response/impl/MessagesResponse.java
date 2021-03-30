@@ -1,10 +1,10 @@
 package it.auties.whatsapp4j.response.impl;
 
-import it.auties.whatsapp4j.model.WhatsappMessage;
 import it.auties.whatsapp4j.model.WhatsappMessages;
 import it.auties.whatsapp4j.model.WhatsappNode;
 import it.auties.whatsapp4j.model.WhatsappProtobuf;
 import it.auties.whatsapp4j.response.model.BinaryResponseModel;
+import it.auties.whatsapp4j.utils.WhatsappMessageFactory;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.stream.Collectors;
@@ -28,7 +28,7 @@ public class MessagesResponse extends BinaryResponseModel<WhatsappMessages> {
                 .map(WhatsappNode::content)
                 .filter(childContent -> childContent instanceof WhatsappProtobuf.WebMessageInfo)
                 .map(WhatsappProtobuf.WebMessageInfo.class::cast)
-                .map(WhatsappMessage::new)
+                .map(WhatsappMessageFactory::buildMessageFromProtobuf)
                 .collect(Collectors.toCollection(WhatsappMessages::new));
     }
 }

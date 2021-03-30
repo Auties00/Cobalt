@@ -105,6 +105,7 @@ public class WhatsappWebSocket {
     var decryptedMessage = aesDecrypt(message, Objects.requireNonNull(whatsappKeys.encKey()));
     var whatsappMessage = binaryDecoder.decodeDecryptedMessage(decryptedMessage);
     if(whatsappManager.resolvePendingRequest(messageTag, new BinaryResponse(whatsappMessage))){
+      System.out.println(whatsappMessage);
       return;
     }
 
@@ -293,7 +294,7 @@ public class WhatsappWebSocket {
     }
 
     Arrays.stream(ackResponse.ids())
-            .map(id -> whatsappManager.findMessageById(chat.get(), id))
+            .map(id -> whatsappManager.findUserMessageById(chat.get(), id))
             .filter(Optional::isPresent)
             .map(Optional::get)
             .forEach(message -> {

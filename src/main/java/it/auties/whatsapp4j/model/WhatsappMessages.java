@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.stream.Stream;
 
 /**
  * This class is an implementation of ArrayList used to store the {@link WhatsappMessage} in a {@link WhatsappChat}.
@@ -19,7 +20,6 @@ public class WhatsappMessages extends ArrayList<WhatsappMessage> {
      * The default comparator used to sort the entries in this collection
      */
     private static final Comparator<WhatsappMessage> ENTRY_COMPARATOR = Comparator.comparingLong(message -> message.info().getMessageTimestamp());
-
 
     /**
      * Constructs a new instance of WhatsappMessages from a WhatsappMessage
@@ -86,5 +86,27 @@ public class WhatsappMessages extends ArrayList<WhatsappMessage> {
     @Override
     public boolean addAll(int index, Collection<? extends WhatsappMessage> c) {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Returns a Stream containing only sever messages
+     *
+     * @return a non null stream
+     */
+    public @NotNull Stream<WhatsappServerMessage> serverMessages(){
+        return this.stream()
+                .filter(message -> !message.isUserMessage())
+                .map(WhatsappServerMessage.class::cast);
+    }
+
+    /**
+     * Returns a Stream containing only user messages
+     *
+     * @return a non null stream
+     */
+    public Stream<WhatsappUserMessage> userMessages(){
+        return this.stream()
+                .filter(WhatsappMessage::isUserMessage)
+                .map(WhatsappUserMessage.class::cast);
     }
 }
