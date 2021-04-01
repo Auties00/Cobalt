@@ -21,7 +21,7 @@ public final class WhatsappServerMessage extends WhatsappMessage {
      * @param info the raw protobuf to wrap
      */
     public WhatsappServerMessage(@NotNull WhatsappProtobuf.WebMessageInfo info) {
-        super(info, info.hasMessageStubType() || info.getMessage().hasProtocolMessage() || info.getMessage().hasDeviceSentMessage() || info.getMessage().hasDeviceSyncMessage());
+        super(info, !info.hasMessage());
     }
 
     /**

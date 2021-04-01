@@ -99,7 +99,7 @@ public record BinaryArray(byte[] data) {
      * @return a new {@link BinaryArray}
      */
     public @NotNull BinaryArray slice(int start){
-        return slice(start, data.length);
+        return slice(start, size());
     }
 
     /**
@@ -111,7 +111,7 @@ public record BinaryArray(byte[] data) {
      * @return a new {@link BinaryArray}
      */
     public @NotNull BinaryArray slice(int start, int end){
-        return forArray(Arrays.copyOfRange(data, start, end));
+        return forArray(Arrays.copyOfRange(data, start >= 0 ? start : size() + start, end >= 0 ? end : size() + end));
     }
 
     /**

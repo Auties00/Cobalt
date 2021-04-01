@@ -17,11 +17,7 @@ public class WhatsappMessageFactory {
      * @return a non null WhatsappMessage
      */
     public @NotNull WhatsappMessage buildMessageFromProtobuf(@NotNull WhatsappProtobuf.WebMessageInfo info){
-        if(info.hasMessageStubType() || info.getMessage().hasProtocolMessage() || info.getMessage().hasDeviceSentMessage() || info.getMessage().hasDeviceSyncMessage()){
-            return new WhatsappServerMessage(info);
-        }
-        
-        return buildUserMessageFromProtobuf(info);
+        return info.hasMessage() ? buildUserMessageFromProtobuf(info) : new WhatsappServerMessage(info);
     }
 
     /**
@@ -38,7 +34,7 @@ public class WhatsappMessageFactory {
             return new WhatsappGroupInviteMessage(info);
         }else if(message.hasLiveLocationMessage() || message.hasLocationMessage()){
             return new WhatsappLocationMessage(info);
-        }else if(message.hasImageMessage() || message.hasDocumentMessage() || message.hasVideoMessage() || message.hasStickerMessage()){
+        }else if(message.hasImageMessage() || message.hasDocumentMessage() || message.hasVideoMessage() || message.hasStickerMessage() || message.hasAudioMessage()){
             return new WhatsappMediaMessage(info);
         }else if(message.hasConversation() || message.hasExtendedTextMessage()){
             return new WhatsappTextMessage(info);

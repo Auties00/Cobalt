@@ -5,9 +5,11 @@ import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.model.WhatsappContact;
 import it.auties.whatsapp4j.model.WhatsappNode;
+import it.auties.whatsapp4j.model.WhatsappProtobuf;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 
+import java.net.URL;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -109,5 +111,81 @@ public class WhatsappUtils {
         return Arrays.stream(jids)
                 .map(jid -> new WhatsappNode("participant", Map.of("jid", jid), null))
                 .toList();
+    }
+
+    /**
+     * Returns a binary array containing an encrypted media
+     *
+     * @param url the url of the encrypted media to download
+     * @return a non empty optional if the media is available
+     */
+    public @NotNull Optional<BinaryArray> readEncryptedMedia(@NotNull String url) {
+        try {
+            return Optional.of(BinaryArray.forArray(new URL(url).openStream().readAllBytes()));
+        }catch (Exception e){
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Returns the media key of a media message
+     *
+     * @param message the raw protobuf that holds a media
+     * @throws IllegalArgumentException if the input message is not a media file
+     * @return a non null array of bytes
+     */
+    public @NotNull BinaryArray readMediaKey(WhatsappProtobuf.Message message) {
+        if (message.hasImageMessage()) {
+            return BinaryArray.forArray(message.getImageMessage().getMediaKey().toByteArray());
+        }
+
+        if (message.hasDocumentMessage()){
+            return BinaryArray.forArray(message.getDocumentMessage().getMediaKey().toByteArray());
+        }
+
+        if (message.hasVideoMessage()) {
+            return BinaryArray.forArray(message.getVideoMessage().getMediaKey().toByteArray());
+        }
+
+        if (message.hasStickerMessage()) {
+            return BinaryArray.forArray(message.getStickerMessage().getMediaKey().toByteArray());
+        }
+
+        if(message.hasAudioMessage()) {
+            return BinaryArray.forArray(message.getAudioMessage().getMediaKey().toByteArray());
+        }
+
+        throw new IllegalArgumentException("WhatsappAPI: Cannot extract media key");
+    }
+
+    /**
+     * Returns the media url of a media message
+     *
+     * @param message the raw protobuf that holds a media
+     * @throws IllegalArgumentException if the input message is not a media file
+     * @return a non null array of bytes
+     */
+    public @NotNull String readMediaUrl(WhatsappProtobuf.Message message) {
+        if (message.hasImageMessage()) {
+            return message.getImageMessage().getUrl();
+        }
+
+        if (message.hasDocumentMessage()){
+            return message.getDocumentMessage().getUrl();
+        }
+
+        if (message.hasVideoMessage()) {
+            return message.getVideoMessage().getUrl();
+        }
+
+        if (message.hasStickerMessage()) {
+            return message.getStickerMessage().getUrl();
+        }
+
+        if(message.hasAudioMessage()) {
+            return message.getAudioMessage().getUrl();
+        }
+        
+        throw new IllegalArgumentException("WhatsappAPI: Cannot extract media url");
     }
 }

@@ -1,12 +1,22 @@
 package it.auties.whatsapp4j.model;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
+import it.auties.whatsapp4j.binary.BinaryArray;
+import it.auties.whatsapp4j.utils.CypherUtils;
+import it.auties.whatsapp4j.utils.Validate;
+import it.auties.whatsapp4j.utils.WhatsappUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.io.BufferedReader;
+import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.util.Optional;
 
 /**
@@ -20,6 +30,11 @@ import java.util.Optional;
 @ToString
 public final class WhatsappMediaMessage extends WhatsappUserMessage {
     /**
+     * The raw media that this message holds
+     */
+    private final @NotNull ByteBuffer media;
+
+    /**
      * The type of media that this object wraps
      */
     private final @NotNull WhatsappMediaMessageType type;
@@ -30,8 +45,10 @@ public final class WhatsappMediaMessage extends WhatsappUserMessage {
      * @param info the raw protobuf to wrap
      */
     public WhatsappMediaMessage(@NotNull WhatsappProtobuf.WebMessageInfo info) {
-        super(info, info.getMessage().hasImageMessage() || info.getMessage().hasDocumentMessage() || info.getMessage().hasVideoMessage() || info.getMessage().hasStickerMessage());
-        this.type = WhatsappMediaMessageType.fromMessage(info.getMessage());
+        super(info, info.getMessage().hasImageMessage() || info.getMessage().hasDocumentMessage() || info.getMessage().hasVideoMessage() || info.getMessage().hasStickerMessage() || info.getMessage().hasAudioMessage());
+        var message = info.getMessage();
+        this.type = WhatsappMediaMessageType.fromMessage(message);
+        this.media = CypherUtils.mediaDecrypt(this);
     }
 
     /**
@@ -56,6 +73,4 @@ public final class WhatsappMediaMessage extends WhatsappUserMessage {
 
         return message.getStickerMessage().hasContextInfo() ? Optional.of(message.getStickerMessage().getContextInfo()) : Optional.empty();
     }
-
-    //TODO: Decrypt file and provide an accessor to access it
 }

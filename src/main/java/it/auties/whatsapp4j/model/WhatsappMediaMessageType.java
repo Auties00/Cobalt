@@ -39,11 +39,35 @@ public enum WhatsappMediaMessageType {
      * @return a non null enumerated type
      */
     public static @NotNull WhatsappMediaMessageType fromMessage(@NotNull WhatsappProtobuf.Message message){
-        if (message.hasImageMessage()) return IMAGE;
-        if (message.hasDocumentMessage()) return DOCUMENT;
-        if (message.hasAudioMessage()) return AUDIO;
-        if (message.hasVideoMessage()) return VIDEO;
-        if (message.hasStickerMessage()) return STICKER;
+        if (message.hasImageMessage()){
+            return IMAGE;
+        }
+
+        if (message.hasDocumentMessage()){
+            return DOCUMENT;
+        }
+
+        if (message.hasAudioMessage()){
+            return AUDIO;
+        }
+
+        if (message.hasVideoMessage()){
+            return VIDEO;
+        }
+
+        if (message.hasStickerMessage()){
+            return STICKER;
+        }
+
         throw new IllegalArgumentException("WhatsappAPI: Cannot deduce type of WhatsappMediaMessage");
+    }
+
+    /**
+     * Returns the key used to encrypt a media message
+     *
+     * @return a non null array of bytes
+     */
+    public byte @NotNull [] key(){
+        return "WhatsApp %s Keys".formatted(this == STICKER ? "Image" : this.name().charAt(0) + this.name().substring(1).toLowerCase()).getBytes();
     }
 }

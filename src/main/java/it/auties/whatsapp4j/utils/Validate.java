@@ -32,6 +32,6 @@ public class Validate {
      */
     @SneakyThrows
     public void isTrue(boolean value, @NotNull String message, @NotNull Class<? extends Exception> exception, @NotNull Object... args) {
-        if(!value) exception.getConstructor(String.class).newInstance(message.formatted(args));
+        if(!value) throw exception.getConstructor(String.class).newInstance(message.formatted(args));
     }
 }
