@@ -7,7 +7,6 @@ import lombok.ToString;
 import org.jetbrains.annotations.NotNull;
 import org.reflections.ReflectionUtils;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Optional;

@@ -74,7 +74,7 @@
         <maven-javadoc-plugin-version>3.2.0</maven-javadoc-plugin-version>
         <maven-deploy-plugin-version>2.8.2</maven-deploy-plugin-version>
         <nexus-staging-maven-plugin-version>1.6.7</nexus-staging-maven-plugin-version>
-        <lombok-version>fixed</lombok-version>
+        <lombok-version>1.18.20</lombok-version>
         <delombok-version>1.18.18.0</delombok-version>
         <nullsafe-version>RELEASE</nullsafe-version>
         <tyrus-version>2.0.0</tyrus-version>
