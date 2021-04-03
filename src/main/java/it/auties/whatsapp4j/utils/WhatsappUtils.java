@@ -128,13 +128,36 @@ public class WhatsappUtils {
     }
 
     /**
+     * Returns the media url of a media message
+     *
+     * @param message the raw protobuf that holds a media
+     * @throws IllegalArgumentException if the input message is not a media file
+     * @return a non null array of bytes
+     */
+    public @NotNull Optional<String> readMediaCaption(WhatsappProtobuf.Message message) {
+        if (message.hasDocumentMessage() || message.hasStickerMessage() || message.hasAudioMessage()){
+            return Optional.empty();
+        }
+
+        if (message.hasImageMessage()) {
+            return message.getImageMessage().hasCaption() ? Optional.of(message.getImageMessage().getCaption()) : Optional.empty();
+        }
+
+        if (message.hasVideoMessage()) {
+            return message.getVideoMessage().hasCaption() ? Optional.of(message.getVideoMessage().getCaption()) : Optional.empty();
+        }
+
+        throw new IllegalArgumentException("WhatsappAPI: Cannot extract media caption");
+    }
+
+    /**
      * Returns the media key of a media message
      *
      * @param message the raw protobuf that holds a media
      * @throws IllegalArgumentException if the input message is not a media file
      * @return a non null array of bytes
      */
-    public @NotNull BinaryArray readMediaKey(WhatsappProtobuf.Message message) {
+    public @NotNull BinaryArray readMediaKey(@NotNull WhatsappProtobuf.Message message) {
         if (message.hasImageMessage()) {
             return BinaryArray.forArray(message.getImageMessage().getMediaKey().toByteArray());
         }
@@ -165,7 +188,7 @@ public class WhatsappUtils {
      * @throws IllegalArgumentException if the input message is not a media file
      * @return a non null array of bytes
      */
-    public @NotNull String readMediaUrl(WhatsappProtobuf.Message message) {
+    public @NotNull String readMediaUrl(@NotNull WhatsappProtobuf.Message message) {
         if (message.hasImageMessage()) {
             return message.getImageMessage().getUrl();
         }

@@ -4,6 +4,7 @@ import ezvcard.Ezvcard;
 import ezvcard.VCard;
 import ezvcard.io.chain.ChainingTextStringParser;
 import it.auties.whatsapp4j.api.WhatsappAPI;
+import it.auties.whatsapp4j.builder.WhatsappContactMessageBuilder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -43,6 +44,16 @@ public final class WhatsappContactMessage extends WhatsappUserMessage {
                 .map(ChainingTextStringParser::all)
                 .flatMap(Collection::stream)
                 .toList();
+    }
+
+
+    /**
+     * Returns a new {@link WhatsappContactMessageBuilder} to build a new message that can be later sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}
+     *
+     * @return a non null WhatsappContactMessageBuilder
+     */
+    public @NotNull WhatsappContactMessageBuilder newContactMessage(){
+        return new WhatsappContactMessageBuilder();
     }
 
     /**

@@ -1,22 +1,17 @@
 package it.auties.whatsapp4j.model;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
-import it.auties.whatsapp4j.binary.BinaryArray;
+import it.auties.whatsapp4j.builder.WhatsappMediaMessageBuilder;
 import it.auties.whatsapp4j.utils.CypherUtils;
-import it.auties.whatsapp4j.utils.Validate;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.BufferedReader;
-import java.net.URL;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.util.Optional;
 
 /**
@@ -40,6 +35,11 @@ public final class WhatsappMediaMessage extends WhatsappUserMessage {
     private final @NotNull WhatsappMediaMessageType type;
 
     /**
+     * The raw media that this message holds
+     */
+    private final @Nullable String caption;
+
+    /**
      * Constructs a WhatsappMediaMessage from a raw protobuf object
      *
      * @param info the raw protobuf to wrap
@@ -47,8 +47,18 @@ public final class WhatsappMediaMessage extends WhatsappUserMessage {
     public WhatsappMediaMessage(@NotNull WhatsappProtobuf.WebMessageInfo info) {
         super(info, info.getMessage().hasImageMessage() || info.getMessage().hasDocumentMessage() || info.getMessage().hasVideoMessage() || info.getMessage().hasStickerMessage() || info.getMessage().hasAudioMessage());
         var message = info.getMessage();
+        this.caption = WhatsappUtils.readMediaCaption(message).orElse(null);
         this.type = WhatsappMediaMessageType.fromMessage(message);
         this.media = CypherUtils.mediaDecrypt(this);
+    }
+
+    /**
+     * Returns a new {@link WhatsappMediaMessageBuilder} to build a new message that can be later sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}
+     *
+     * @return a non null WhatsappMediaMessageBuilder
+     */
+    public @NotNull WhatsappMediaMessageBuilder newMediaMessage(){
+        return new WhatsappMediaMessageBuilder();
     }
 
     /**
@@ -72,5 +82,14 @@ public final class WhatsappMediaMessage extends WhatsappUserMessage {
         }
 
         return message.getStickerMessage().hasContextInfo() ? Optional.of(message.getStickerMessage().getContextInfo()) : Optional.empty();
+    }
+
+    /**
+     * Returns an optional String representing the caption of this message
+     *
+     * @return a non empty optional if this message has a caption
+     */
+    public @NotNull Optional<String> caption(){
+        return Optional.ofNullable(caption);
     }
 }

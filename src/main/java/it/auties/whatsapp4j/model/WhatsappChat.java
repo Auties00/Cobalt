@@ -216,7 +216,8 @@ public class WhatsappChat {
      * @return a non empty optional if {@link WhatsappChat#messages} isn't empty, otherwise an empty optional
      */
     public @NotNull Optional<WhatsappUserMessage> lastMessage() {
-        return messages.isEmpty() ? Optional.empty() : messages.userMessages().findFirst();
+        var userMessages = messages.userMessages().toList();
+        return userMessages.isEmpty() ? Optional.empty() : Optional.of(userMessages.get(userMessages.size() - 1));
     }
 
     /**
@@ -225,6 +226,6 @@ public class WhatsappChat {
      * @return a non empty optional if {@link WhatsappChat#messages} isn't empty, otherwise an empty optional
      */
     public @NotNull Optional<WhatsappUserMessage> firstMessage() {
-        return messages.isEmpty() ? Optional.empty() : Optional.of(messages.userMessages().toList().get(0));
+        return messages.userMessages().findFirst();
     }
 }

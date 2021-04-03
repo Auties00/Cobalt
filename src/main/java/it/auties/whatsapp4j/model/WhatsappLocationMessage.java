@@ -1,6 +1,7 @@
 package it.auties.whatsapp4j.model;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
+import it.auties.whatsapp4j.builder.WhatsappLocationMessageBuilder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -66,6 +67,15 @@ public final class WhatsappLocationMessage extends WhatsappUserMessage {
         this.isLive = info.getMessage().hasLiveLocationMessage() || info.getMessage().getLocationMessage().getIsLive();
         this.accuracy = info.getMessage().hasLiveLocationMessage() ? info.getMessage().getLiveLocationMessage().getAccuracyInMeters() : info.getMessage().getLocationMessage().getAccuracyInMeters();
         this.speed = info.getMessage().hasLiveLocationMessage() ? info.getMessage().getLiveLocationMessage().getSpeedInMps() : info.getMessage().getLocationMessage().getSpeedInMps();
+    }
+
+    /**
+     * Returns a new {@link WhatsappLocationMessageBuilder} to build a new message that can be later sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}
+     *
+     * @return a non null WhatsappLocationMessageBuilder
+     */
+    public @NotNull WhatsappLocationMessageBuilder newLocationMessage(){
+        return new WhatsappLocationMessageBuilder();
     }
 
     /**

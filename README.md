@@ -199,7 +199,7 @@ var text = WhatsappProtobuf.WebMessageInfo.newBuilder()
         .setMessage(conversation)
         .setKey(key)
         .setMessageTimestamp(Instant.now().getEpochSecond())
-        .setStatus(WhatsappProtobuf.WebMessageInfo.WEB_MESSAGE_INFO_STATUS.PENDING)
+        .setStatus(WhatsappProtobuf.WebMessageInfo.WebMessageInfoStatus.PENDING)
         .build();
 
 var context = WhatsappProtobuf.ContextInfo.newBuilder()
@@ -217,7 +217,7 @@ var quotedText = WhatsappProtobuf.WebMessageInfo.newBuilder()
         .setMessage(extendedTextMessage)
         .setKey(key)
         .setMessageTimestamp(Instant.now().getEpochSecond())
-        .setStatus(WhatsappProtobuf.WebMessageInfo.WEB_MESSAGE_INFO_STATUS.PENDING)
+        .setStatus(WhatsappProtobuf.WebMessageInfo.WebMessageInfoStatus.PENDING)
         .build();
 ```
 

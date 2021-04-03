@@ -41,6 +41,7 @@ public class WhatsappDataManager {
     private final @NotNull List<WhatsappContact> contacts;
     private final @NotNull List<Request<?>> pendingRequests;
     private final @NotNull List<WhatsappListener> listeners;
+    private @Nullable WhatsappMediaConnection mediaConnection;
     private final long initializationTimeStamp;
     private @Nullable String phoneNumber;
     private long tag;
@@ -203,6 +204,16 @@ public class WhatsappDataManager {
      */
     public @NotNull String phoneNumber(){
         return Objects.requireNonNull(phoneNumber, "WhatsappAPI: Phone number is missing");
+    }
+
+    /**
+     * Returns the media connection
+     *
+     * @return the media connection
+     * @throws NullPointerException if the media connection is null
+     */
+    public @NotNull WhatsappMediaConnection mediaConnection(){
+        return Objects.requireNonNull(mediaConnection, "WhatsappAPI: Media connection is missing");
     }
 
     /**
@@ -443,13 +454,13 @@ public class WhatsappDataManager {
 
         var message = messageOpt.get();
         var status = switch (firstChildNode.attrs().get("type")){
-            case "read" -> WebMessageInfo.WEB_MESSAGE_INFO_STATUS.READ;
-            case "message" -> WebMessageInfo.WEB_MESSAGE_INFO_STATUS.DELIVERY_ACK;
-            case "error" -> WebMessageInfo.WEB_MESSAGE_INFO_STATUS.ERROR;
+            case "read" -> WebMessageInfo.WebMessageInfoStatus.READ;
+            case "message" -> WebMessageInfo.WebMessageInfoStatus.DELIVERY_ACK;
+            case "error" -> WebMessageInfo.WebMessageInfoStatus.ERROR;
             default -> throw new IllegalStateException("Unexpected value");
         };
 
-        if (status.getNumber() <= message.info().getStatus().getNumber() && status != WebMessageInfo.WEB_MESSAGE_INFO_STATUS.ERROR) {
+        if (status.getNumber() <= message.info().getStatus().getNumber() && status != WebMessageInfo.WebMessageInfoStatus.ERROR) {
             return;
         }
 
@@ -520,7 +531,7 @@ public class WhatsappDataManager {
         }
 
         if(message instanceof WhatsappUserMessage userMessage) {
-            if (!userMessage.sentByMe() && userMessage.globalStatus() != WebMessageInfo.WEB_MESSAGE_INFO_STATUS.READ && !message.info().getIgnore()) {
+            if (!userMessage.sentByMe() && userMessage.globalStatus() != WebMessageInfo.WebMessageInfoStatus.READ && !message.info().getIgnore()) {
                 chat.unreadMessages(chat.unreadMessages() + 1);
             }
         }

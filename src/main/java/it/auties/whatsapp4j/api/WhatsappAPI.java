@@ -153,8 +153,8 @@ public class WhatsappAPI {
      * @param request the message request, specifies the type of message to send, the recipient of the message and the metadata of the message
      * @return a CompletableFuture that resolves in a MessageResponse wrapping the status of the message request and, if the status == 200, the time in seconds the message was registered on the server
      */
-    public @NotNull CompletableFuture<MessageResponse> sendMessage(@NotNull WhatsappMessageRequest request) {
-        return sendMessage(request.buildMessage());
+    public @NotNull CompletableFuture<MessageResponse> sendMessage(@NotNull WhatsappUserMessage request) {
+        return sendMessage(request.info());
     }
 
     /**
@@ -847,4 +847,5 @@ public class WhatsappAPI {
                 .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.QUERY_MESSAGES)
                 .future();
     }
+
 }

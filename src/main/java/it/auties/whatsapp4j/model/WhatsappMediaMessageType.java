@@ -32,6 +32,11 @@ public enum WhatsappMediaMessageType {
     STICKER;
 
     /**
+     * The URL used to build the media request
+     */
+    private static final String WHATSAPP_URL = "https://media-mxp1-1.cdn.whatsapp.net/mms/%s";
+
+    /**
      * Returns the type of media that a raw protobuf object holds
      *
      * @param message the message to analyze
@@ -68,6 +73,36 @@ public enum WhatsappMediaMessageType {
      * @return a non null array of bytes
      */
     public byte @NotNull [] key(){
-        return "WhatsApp %s Keys".formatted(this == STICKER ? "Image" : this.name().charAt(0) + this.name().substring(1).toLowerCase()).getBytes();
+        var name = whatsappName();
+        return "WhatsApp %s Keys".formatted(Character.toUpperCase(name.charAt(0)) + name.substring(1)).getBytes();
+    }
+
+
+    /**
+     * Returns the URL used to upload this enumerated type to Whatsapp Web's servers
+     *
+     * @return a non null string
+     */
+    public @NotNull String url(){
+        return WHATSAPP_URL.formatted(whatsappName());
+    }
+
+
+    /**
+     * Returns a name that can be interpreted by Whatsapp Web's servers
+     *
+     * @return a non null string
+     */
+    public @NotNull String whatsappName(){
+        return this == STICKER ? IMAGE.whatsappName() : this.name().toLowerCase();
+    }
+
+    /**
+     * Returns whether this enumerated type is streamable
+     *
+     * @return true if streamable
+     */
+    public boolean isStreamable(){
+        return this == AUDIO || this == VIDEO;
     }
 }

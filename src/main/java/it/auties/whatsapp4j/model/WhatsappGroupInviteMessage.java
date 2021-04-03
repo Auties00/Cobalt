@@ -1,6 +1,7 @@
 package it.auties.whatsapp4j.model;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
+import it.auties.whatsapp4j.builder.WhatsappGroupInviteMessageBuilder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -67,6 +68,15 @@ public final class WhatsappGroupInviteMessage extends WhatsappUserMessage {
         this.code = invite.getInviteCode();
         this.thumbnail = invite.getJpegThumbnail().asReadOnlyByteBuffer();
         this.expiration = ZonedDateTime.ofInstant(Instant.ofEpochSecond(invite.getInviteExpiration()), ZoneId.systemDefault());
+    }
+
+    /**
+     * Returns a new {@link WhatsappGroupInviteMessageBuilder} to build a new message that can be later sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}
+     *
+     * @return a non null WhatsappGroupInviteMessageBuilder
+     */
+    public @NotNull WhatsappGroupInviteMessageBuilder newGroupInviteMessage(){
+        return new WhatsappGroupInviteMessageBuilder();
     }
 
     /**

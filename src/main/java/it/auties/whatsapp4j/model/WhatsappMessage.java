@@ -12,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -35,6 +36,11 @@ public abstract sealed class WhatsappMessage permits WhatsappUserMessage, Whatsa
     protected @NotNull WebMessageInfo info;
 
     /**
+     * The chat where this message is stored
+     */
+    protected final @NotNull WhatsappChat chat;
+
+    /**
      * Constructs a WhatsappUserMessage from a raw protobuf object if the condition is met
      *
      * @param info the raw protobuf to wrap
@@ -43,6 +49,15 @@ public abstract sealed class WhatsappMessage permits WhatsappUserMessage, Whatsa
     public WhatsappMessage(@NotNull WhatsappProtobuf.WebMessageInfo info, boolean condition) {
         Validate.isTrue(condition, "WhatsappAPI: Cannot construct WhatsappMessage as the condition to build this object wasn't met");
         this.info = info;
+        this.chat = MANAGER.findChatByJid(info.getKey().getRemoteJid()).orElseThrow();
+    }
+
+    /**
+     * A constructor used for lombok
+     */
+    public WhatsappMessage() {
+        this.info = WebMessageInfo.getDefaultInstance();
+        this.chat = WhatsappChat.fromAttributes(Map.of());
     }
 
     /**

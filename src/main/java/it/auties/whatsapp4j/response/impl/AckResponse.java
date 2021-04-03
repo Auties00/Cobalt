@@ -12,7 +12,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @param cmd a nullable identifier for the request
  * @param ids a non null array of message ids that this update regards
- * @param ack an unsigned int representing {@link WhatsappProtobuf.WebMessageInfo.WEB_MESSAGE_INFO_STATUS}
+ * @param ack an unsigned int representing {@link WhatsappProtobuf.WebMessageInfo.WebMessageInfoStatus}
  * @param from the sender of the messages that this update regards
  * @param to chat of the messages that this update regards
  * @param timestamp the time in seconds since {@link java.time.Instant#EPOCH} when the update was dispatched by the server

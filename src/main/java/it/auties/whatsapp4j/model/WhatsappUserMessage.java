@@ -1,12 +1,15 @@
 package it.auties.whatsapp4j.model;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
-import lombok.Getter;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -15,9 +18,16 @@ import java.util.Optional;
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
  * Instead, methods inside {@link WhatsappAPI} should be used.
  */
+@EqualsAndHashCode(callSuper = true)
 @Accessors(fluent = true)
 @ToString
+@Data
 public abstract sealed class WhatsappUserMessage extends WhatsappMessage permits WhatsappContactMessage, WhatsappGenericMessage, WhatsappGroupInviteMessage, WhatsappLocationMessage, WhatsappMediaMessage, WhatsappTextMessage {
+    /**
+     * A nullable {@link WhatsappMessage} representing the message quoted by this message if in memory
+     */
+    private final @Nullable WhatsappUserMessage quotedMessage;
+
     /**
      * A map that holds the read status of this message for each participant.
      * If the chat associated with this chat is not a group, this map's size will always be 1.
@@ -26,7 +36,12 @@ public abstract sealed class WhatsappUserMessage extends WhatsappMessage permits
      * In this case it is guaranteed that every value stored in this map for each participant of this chat is equal or higher hierarchically then {@link WhatsappUserMessage#globalStatus()}.
      * It is important to remember that it is guaranteed that every participant will be present as a key.
      */
-    private @NotNull @Getter final Map<WhatsappContact, WhatsappProtobuf.WebMessageInfo.WEB_MESSAGE_INFO_STATUS> individualReadStatus;
+    private final @NotNull Map<WhatsappContact, WhatsappProtobuf.WebMessageInfo.WebMessageInfoStatus> individualReadStatus;
+
+    /**
+     * Whether this message was forwarded or not
+     */
+    protected final boolean isForwarded;
 
     /**
      * Constructs a WhatsappUserMessage from a raw protobuf object if it's a message and the condition is met
@@ -37,11 +52,18 @@ public abstract sealed class WhatsappUserMessage extends WhatsappMessage permits
     public WhatsappUserMessage(@NotNull WhatsappProtobuf.WebMessageInfo info, boolean condition) {
         super(info, info.hasMessage() && condition);
         this.individualReadStatus = new HashMap<>();
+        this.quotedMessage = contextInfo().flatMap(context -> MANAGER.findChatByMessage(this).flatMap(chat -> MANAGER.findQuotedMessageInChatByContext(chat, context))).orElse(null);
+        this.isForwarded = contextInfo().map(WhatsappProtobuf.ContextInfo::getIsForwarded).orElse(false);
     }
 
+    /**
+     * A constructor used for lombok
+     */
     protected WhatsappUserMessage() {
         super(WhatsappProtobuf.WebMessageInfo.getDefaultInstance(), true);
         this.individualReadStatus = new HashMap<>();
+        this.quotedMessage = null;
+        this.isForwarded = false;
     }
 
     /**
@@ -86,7 +108,7 @@ public abstract sealed class WhatsappUserMessage extends WhatsappMessage permits
      * @return a non empty optional {@link WhatsappMessage} if this message quotes a message
      */
     public @NotNull Optional<WhatsappUserMessage> quotedMessage() {
-        return !info.hasMessage() ? Optional.empty() : contextInfo().flatMap(context -> MANAGER.findChatByMessage(this).flatMap(chat -> MANAGER.findQuotedMessageInChatByContext(chat, context)));
+        return Optional.ofNullable(quotedMessage);
     }
 
     /**
@@ -114,7 +136,7 @@ public abstract sealed class WhatsappUserMessage extends WhatsappMessage permits
      *
      * @return the non null global status of this message
      */
-    public @NotNull WhatsappProtobuf.WebMessageInfo.WEB_MESSAGE_INFO_STATUS globalStatus() {
+    public @NotNull WhatsappProtobuf.WebMessageInfo.WebMessageInfoStatus globalStatus() {
         return info.getStatus();
     }
 
@@ -123,7 +145,25 @@ public abstract sealed class WhatsappUserMessage extends WhatsappMessage permits
      *
      * @param status the new status to assign to the globalStatus field
      */
-    public void globalStatus(@NotNull WhatsappProtobuf.WebMessageInfo.WEB_MESSAGE_INFO_STATUS status) {
+    public void globalStatus(@NotNull WhatsappProtobuf.WebMessageInfo.WebMessageInfoStatus status) {
         this.info = info.toBuilder().setStatus(status).build();
+    }
+
+    /**
+     * Returns a list of {@link WhatsappContact} mentioned in this message
+     *
+     * @return a non null List
+     */
+    public @NotNull List<WhatsappContact> mentions(){
+        return contextInfo().map(context -> context.getMentionedJidList().stream().map(MANAGER::findContactByJid).filter(Optional::isPresent).map(Optional::get).toList()).orElse(List.of());
+    }
+
+    /**
+     * Returns the number of {@link WhatsappContact} mentioned in this message
+     *
+     * @return an unsigned int
+     */
+    public int mentionsCount(){
+        return contextInfo().map(WhatsappProtobuf.ContextInfo::getMentionedJidCount).orElse(0);
     }
 }

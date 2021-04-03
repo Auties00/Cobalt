@@ -29,7 +29,7 @@ public final class WhatsappServerMessage extends WhatsappMessage {
      *
      * @return the non null global status of this message
      */
-    public @NotNull WhatsappProtobuf.WebMessageInfo.WEB_MESSAGE_INFO_STUBTYPE type(){
+    public @NotNull WhatsappProtobuf.WebMessageInfo.WebMessageInfoStubType type(){
         return info.getMessageStubType();
     }
 

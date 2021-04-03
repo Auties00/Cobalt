@@ -1,6 +1,7 @@
 package it.auties.whatsapp4j.model;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
+import it.auties.whatsapp4j.builder.WhatsappTextMessageBuilder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -22,7 +23,7 @@ public final class WhatsappTextMessage extends WhatsappUserMessage {
     /**
      * The text wrapped by this object
      */
-    private final @NotNull String text;
+    protected final @NotNull String text;
 
     /**
      * Constructs a WhatsappUserMessage from a raw protobuf object
@@ -32,6 +33,15 @@ public final class WhatsappTextMessage extends WhatsappUserMessage {
     public WhatsappTextMessage(@NotNull WhatsappProtobuf.WebMessageInfo info) {
         super(info, info.getMessage().hasExtendedTextMessage() || info.getMessage().hasConversation());
         this.text = info.getMessage().hasConversation() ? info.getMessage().getConversation() : info.getMessage().getExtendedTextMessage().getText();
+    }
+
+    /**
+     * Returns a new {@link WhatsappTextMessageBuilder} to build a new message that can be later sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}
+     *
+     * @return a non null WhatsappTextMessageBuilder
+     */
+    public @NotNull WhatsappTextMessageBuilder newTextMessage(){
+        return new WhatsappTextMessageBuilder();
     }
 
     /**
