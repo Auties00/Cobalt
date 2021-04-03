@@ -467,26 +467,13 @@ compile the projects code.
 
 ### Building and installing Lombok
 
-Run the following instructions to build a patched version of lombok:
+This project can be built quite easily, the only tricky part is that the delombok maven plugin needs to point to lombok 1.18.20 instead of 1.18.18. To fix this:
 
-```
-git clone https://github.com/Rawi01/lombok
-cd lombok
-git checkout recordWithInterface
-ant dist
-```
-
-Then install the version in your local maven repo:
-
-```
-mvn install:install-file -Dfile=lombok-1.18.19.jar -DgroupId=org.projectlombok -DartifactId=lombok -Dversion=fixed -Dpackaging=jar`
-```
-
-Delombok needs to point this last version, to do so do the following:
-```
-cd ${HOME}/.m2/repository/org/projectlombok/lombok-maven/1.18.18.0/
-vi lombok-maven-1.18.18.0.pom
-```
-To replace the lombok.version so that it reads: `<lombok.version>fixed</lombok.version>`
+1. Execute these commands:
+    ```
+    cd ${HOME}/.m2/repository/org/projectlombok/lombok-maven/1.18.18.0/
+    vi lombok-maven-1.18.18.0.pom
+    ```
+2. Replace the lombok.version property so that it reads: `<lombok.version>1.18.20</lombok.version>`
 
 You can now run `mvn clean install` to build and test your version of the library.
