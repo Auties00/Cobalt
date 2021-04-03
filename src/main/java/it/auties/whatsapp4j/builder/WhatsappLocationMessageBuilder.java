@@ -2,6 +2,7 @@ package it.auties.whatsapp4j.builder;
 
 import it.auties.whatsapp4j.model.WhatsappCoordinates;
 import it.auties.whatsapp4j.model.WhatsappLocationMessage;
+import it.auties.whatsapp4j.model.WhatsappMediaMessage;
 import it.auties.whatsapp4j.utils.ProtobufUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -48,6 +49,11 @@ public class WhatsappLocationMessageBuilder extends WhatsappMessageBuilder<Whats
      */
     private float speed;
 
+    /**
+     * Builds a {@link WhatsappLocationMessage} from the data provided
+     *
+     * @return a non null WhatsappLocationMessage
+     */
     @Override
     public @NotNull WhatsappLocationMessage create() {
         Objects.requireNonNull(chat, "WhatsappAPI: Cannot create a WhatsappLocation with a null chat");

@@ -53,11 +53,11 @@ public final class WhatsappMediaMessage extends WhatsappUserMessage {
     }
 
     /**
-     * Returns a new {@link WhatsappMediaMessageBuilder} to build a new message that can be later sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}
+     * Constructs a new {@link WhatsappMediaMessageBuilder} to build a new message that can be later sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}
      *
      * @return a non null WhatsappMediaMessageBuilder
      */
-    public @NotNull WhatsappMediaMessageBuilder newMediaMessage(){
+    public static @NotNull WhatsappMediaMessageBuilder newMediaMessage(){
         return new WhatsappMediaMessageBuilder();
     }
 

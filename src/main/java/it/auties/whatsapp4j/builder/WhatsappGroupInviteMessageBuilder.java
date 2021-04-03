@@ -1,6 +1,7 @@
 package it.auties.whatsapp4j.builder;
 
 import it.auties.whatsapp4j.model.WhatsappGroupInviteMessage;
+import it.auties.whatsapp4j.model.WhatsappLocationMessage;
 import it.auties.whatsapp4j.utils.ProtobufUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -48,6 +49,11 @@ public class WhatsappGroupInviteMessageBuilder extends WhatsappMessageBuilder<Wh
      */
     private @Nullable ZonedDateTime expiration;
 
+    /**
+     * Builds a {@link WhatsappGroupInviteMessage} from the data provided
+     *
+     * @return a non null WhatsappGroupInviteMessage
+     */
     @Override
     public @NotNull WhatsappGroupInviteMessage create() {
         Objects.requireNonNull(chat, "WhatsappAPI: Cannot create a WhatsappGroupInvite with a null chat");

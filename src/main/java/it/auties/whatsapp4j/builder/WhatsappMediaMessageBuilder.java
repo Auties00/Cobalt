@@ -2,6 +2,7 @@ package it.auties.whatsapp4j.builder;
 
 import it.auties.whatsapp4j.model.WhatsappMediaMessage;
 import it.auties.whatsapp4j.model.WhatsappMediaMessageType;
+import it.auties.whatsapp4j.model.WhatsappTextMessage;
 import it.auties.whatsapp4j.utils.ProtobufUtils;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -32,6 +33,11 @@ public class WhatsappMediaMessageBuilder extends WhatsappMessageBuilder<Whatsapp
      */
     private @Nullable @Setter String caption;
 
+    /**
+     * Builds a {@link WhatsappMediaMessage} from the data provided
+     *
+     * @return a non null WhatsappMediaMessage
+     */
     @Override
     public @NotNull WhatsappMediaMessage create() {
         Objects.requireNonNull(chat, "WhatsappAPI: Cannot create a WhatsappText with a null chat");

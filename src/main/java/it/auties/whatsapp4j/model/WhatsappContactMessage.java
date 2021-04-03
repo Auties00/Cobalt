@@ -48,11 +48,11 @@ public final class WhatsappContactMessage extends WhatsappUserMessage {
 
 
     /**
-     * Returns a new {@link WhatsappContactMessageBuilder} to build a new message that can be later sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}
+     * Constructs a new {@link WhatsappContactMessageBuilder} to build a new message that can be later sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}
      *
      * @return a non null WhatsappContactMessageBuilder
      */
-    public @NotNull WhatsappContactMessageBuilder newContactMessage(){
+    public static @NotNull WhatsappContactMessageBuilder newContactMessage(){
         return new WhatsappContactMessageBuilder();
     }
 

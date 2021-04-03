@@ -70,11 +70,11 @@ public final class WhatsappLocationMessage extends WhatsappUserMessage {
     }
 
     /**
-     * Returns a new {@link WhatsappLocationMessageBuilder} to build a new message that can be later sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}
+     * Constructs a new {@link WhatsappLocationMessageBuilder} to build a new message that can be later sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}
      *
      * @return a non null WhatsappLocationMessageBuilder
      */
-    public @NotNull WhatsappLocationMessageBuilder newLocationMessage(){
+    public static @NotNull WhatsappLocationMessageBuilder newLocationMessage(){
         return new WhatsappLocationMessageBuilder();
     }
 

@@ -2,6 +2,7 @@ package it.auties.whatsapp4j.builder;
 
 import ezvcard.VCard;
 import it.auties.whatsapp4j.model.WhatsappContactMessage;
+import it.auties.whatsapp4j.model.WhatsappGroupInviteMessage;
 import it.auties.whatsapp4j.utils.ProtobufUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -23,6 +24,11 @@ public class WhatsappContactMessageBuilder extends WhatsappMessageBuilder<Whatsa
      */
     private @Nullable List<VCard> sharedContacts;
 
+    /**
+     * Builds a {@link WhatsappContactMessage} from the data provided
+     *
+     * @return a non null WhatsappContactMessage
+     */
     @Override
     public @NotNull WhatsappContactMessage create() {
         Objects.requireNonNull(chat, "WhatsappAPI: Cannot create a WhatsappContactMessage with a null chat");    

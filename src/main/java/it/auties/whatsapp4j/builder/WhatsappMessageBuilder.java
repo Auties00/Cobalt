@@ -9,6 +9,8 @@ import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
+
 @NoArgsConstructor
 @Data
 abstract class WhatsappMessageBuilder<R> {

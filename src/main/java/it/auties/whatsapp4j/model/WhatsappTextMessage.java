@@ -36,11 +36,11 @@ public final class WhatsappTextMessage extends WhatsappUserMessage {
     }
 
     /**
-     * Returns a new {@link WhatsappTextMessageBuilder} to build a new message that can be later sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}
+     * Constructs a new {@link WhatsappTextMessageBuilder} to build a new message that can be later sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}
      *
      * @return a non null WhatsappTextMessageBuilder
      */
-    public @NotNull WhatsappTextMessageBuilder newTextMessage(){
+    public static @NotNull WhatsappTextMessageBuilder newTextMessage(){
         return new WhatsappTextMessageBuilder();
     }
 

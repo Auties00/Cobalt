@@ -20,6 +20,11 @@ public class WhatsappTextMessageBuilder extends WhatsappMessageBuilder<WhatsappT
      */
     private @Nullable @Setter String text;
 
+    /**
+     * Builds a {@link WhatsappTextMessage} from the data provided
+     *
+     * @return a non null WhatsappTextMessage
+     */
     @Override
     public @NotNull WhatsappTextMessage create() {
         Objects.requireNonNull(chat, "WhatsappAPI: Cannot create a WhatsappText with a null chat");

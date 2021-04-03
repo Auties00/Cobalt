@@ -71,11 +71,11 @@ public final class WhatsappGroupInviteMessage extends WhatsappUserMessage {
     }
 
     /**
-     * Returns a new {@link WhatsappGroupInviteMessageBuilder} to build a new message that can be later sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}
+     * Constructs a new {@link WhatsappGroupInviteMessageBuilder} to build a new message that can be later sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}
      *
      * @return a non null WhatsappGroupInviteMessageBuilder
      */
-    public @NotNull WhatsappGroupInviteMessageBuilder newGroupInviteMessage(){
+    public static @NotNull WhatsappGroupInviteMessageBuilder newGroupInviteMessage(){
         return new WhatsappGroupInviteMessageBuilder();
     }
 

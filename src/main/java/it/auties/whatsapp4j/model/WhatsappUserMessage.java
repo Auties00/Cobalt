@@ -22,7 +22,7 @@ import java.util.Optional;
 @Accessors(fluent = true)
 @ToString
 @Data
-public abstract sealed class WhatsappUserMessage extends WhatsappMessage permits WhatsappContactMessage, WhatsappGenericMessage, WhatsappGroupInviteMessage, WhatsappLocationMessage, WhatsappMediaMessage, WhatsappTextMessage {
+public abstract sealed class WhatsappUserMessage extends WhatsappMessage permits WhatsappContactMessage, WhatsappGroupInviteMessage, WhatsappLocationMessage, WhatsappMediaMessage, WhatsappTextMessage, WhatsappGenericMessage {
     /**
      * A nullable {@link WhatsappMessage} representing the message quoted by this message if in memory
      */
