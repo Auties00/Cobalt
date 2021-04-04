@@ -28,14 +28,7 @@ public class WhatsappConfiguration {
     private final @NotNull String whatsappUrl = "wss://web.whatsapp.com/ws";
 
     /**
-     * The tag used to authenticate when logging in and exchanging keys with WhatsappWeb's WebSocket
-     * This should be, for example, the name of your service
-     */
-    @Default
-    private final @NotNull String whatsappTag = "W4J";
-
-    /**
-     * The tag used to send both json requests to WhatsappWeb's WebSocket after the authentication process has succeeded
+     * The tag used to send messages to WhatsappWeb's WebSocket
      * The tag used to send binary requests to WhatsappWeb's WebSocket after the authentication process has succeeded is built using {@link it.auties.whatsapp4j.utils.WhatsappUtils#buildRequestTag(WhatsappConfiguration)}
      * It is important to use a pseudo random string as using the same tag two times in a binary request, even in different sessions, will make the request fail
      */

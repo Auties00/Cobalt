@@ -52,8 +52,7 @@ public sealed abstract class Request<M extends ResponseModel> permits BinaryRequ
 
 
     /**
-     * A future completed when Whatsapp sends a response if {@link Request#isCompletable()} returns true.
-     * Otherwise, it's completed as soon as the request is successfully sent to WhatsappWeb's WebSocket.
+     * A future completed when Whatsapp sends a response
      */
     protected final @NotNull @Getter CompletableFuture<M> future;
 
@@ -87,15 +86,6 @@ public sealed abstract class Request<M extends ResponseModel> permits BinaryRequ
     public abstract @NotNull Object buildBody();
 
     /**
-     * Returns whether this request is completable or not
-     *
-     * @return true if the request is completable
-     */
-    public boolean isCompletable() {
-        return false;
-    }
-
-    /**
      * Completes this request using {@code response}
      *
      * @param response the response used to complete {@link Request#future}
@@ -103,8 +93,6 @@ public sealed abstract class Request<M extends ResponseModel> permits BinaryRequ
      * @throws ClassCastException if the type parameter of this object is not a concrete type, the reason is explained here {@link Request#modelClass()}
      */
     public void complete(@NotNull Response response){
-        Validate.isTrue(isCompletable(), "WhatsappAPI: Cannot complete a request with tag %s: this request is marked as non completable", tag());
-
         future.completeAsync(() -> {
             if(response instanceof JsonResponse jsonResponse && !jsonResponse.isSuccessful()){
                 throw new IllegalStateException("Cannot complete request with response %s".formatted(response));

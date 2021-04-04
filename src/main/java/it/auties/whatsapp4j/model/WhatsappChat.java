@@ -30,6 +30,11 @@ import java.util.Optional;
 @ToString
 public class WhatsappChat {
     /**
+     * The non null display name of this chat
+     */
+    private @NotNull String name;
+
+    /**
      * The non null unique jid used to identify this chat
      */
     private final @NotNull String jid;
@@ -38,11 +43,6 @@ public class WhatsappChat {
      * A non null arrayList of messages in this chat sorted chronologically
      */
     private final @NotNull WhatsappMessages messages;
-
-    /**
-     * The non null display name of this chat
-     */
-    private final @NotNull String name;
 
     /**
      * A map that holds the status of each participant, excluding yourself, for this chat.

@@ -21,7 +21,7 @@ public class WhatsappMediaMessageBuilder extends WhatsappMessageBuilder<Whatsapp
     /**
      * The raw media that this message holds
      */
-    private @Nullable @Setter ByteBuffer media;
+    private @Setter byte @Nullable [] media;
 
     /**
      * The type of media that this object wraps

@@ -1,11 +1,11 @@
 package it.auties.whatsapp4j.listener;
 
+import it.auties.whatsapp4j.api.GroupAction;
+import it.auties.whatsapp4j.api.GroupPolicy;
+import it.auties.whatsapp4j.api.GroupSetting;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
-import it.auties.whatsapp4j.model.WhatsappChat;
-import it.auties.whatsapp4j.model.WhatsappContact;
-import it.auties.whatsapp4j.model.WhatsappMessage;
-import it.auties.whatsapp4j.model.WhatsappUserMessage;
+import it.auties.whatsapp4j.model.*;
 import it.auties.whatsapp4j.response.impl.BlocklistResponse;
 import it.auties.whatsapp4j.response.impl.PhoneBatteryResponse;
 import it.auties.whatsapp4j.response.impl.PropsResponse;
@@ -130,6 +130,40 @@ public interface WhatsappListener {
      * @param chat the chat whose ephemeral status changed
      */
     default void onChatEphemeralStatusChange(@NotNull WhatsappChat chat){}
+
+    /**
+     * Called when a group's subject changes
+     *
+     * @param group the group whose subject changed
+     */
+    default void onGroupSubjectChange(@NotNull WhatsappChat group){}
+
+    /**
+     * Called when a group's description changes
+     *
+     * @param group the group whose description changed
+     * @param description the new description
+     * @param descriptionId the id of the new description
+     */
+    default void onGroupDescriptionChange(@NotNull WhatsappChat group, @NotNull String description, @NotNull String descriptionId){}
+
+    /**
+     * Called when a group's settings change
+     *
+     * @param group the group whose settings changed
+     * @param setting the setting that changed
+     * @param policy the new policy that was set
+     */
+    default void onGroupSettingsChange(@NotNull WhatsappChat group, @NotNull GroupSetting setting, @NotNull GroupPolicy policy){}
+
+    /**
+     * Called when an action is executed on a group's participant
+     *
+     * @param group the group where the action was executed
+     * @param participant the target of the action that was executed
+     * @param action the type of the action that was executed
+     */
+    default void onGroupAction(@NotNull WhatsappChat group, @NotNull WhatsappContact participant, @NotNull GroupAction action){ }
 
     /**
      * Called when a new message is received in a chat

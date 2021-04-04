@@ -20,7 +20,17 @@ public enum GroupPolicy {
     ADMINS;
 
     /**
-     * Returns the name of this enumerated constant
+     * Returns a GroupPolicy based on a boolean value obtained from Whatsapp
+     *
+     * @param input the boolean value obtained from Whatsapp
+     * @return a lowercase non null String
+     */
+    public static @NotNull GroupPolicy forData(boolean input) {
+        return input ? ADMINS : ANYONE;
+    }
+
+    /**
+     * Returns a boolean parsed as a string for Whatsapp
      *
      * @return a lowercase non null String
      */

@@ -29,14 +29,8 @@ public abstract class NodeRequest<M extends ResponseModel> extends BinaryRequest
         this.completable = completable;
     }
 
-
     @Override
     public @NotNull WhatsappNode buildBody() {
         return node;
-    }
-
-    @Override
-    public boolean isCompletable() {
-        return completable;
     }
 }

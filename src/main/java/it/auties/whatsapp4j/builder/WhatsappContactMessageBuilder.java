@@ -7,6 +7,7 @@ import it.auties.whatsapp4j.utils.ProtobufUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -16,13 +17,12 @@ import java.util.Objects;
 
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-@Data
 @Accessors(fluent = true)
 public class WhatsappContactMessageBuilder extends WhatsappMessageBuilder<WhatsappContactMessage> {
     /**
      * A non null list of parsed VCards, one for each contact that the raw protobuf message used to build this object holds
      */
-    private @Nullable List<VCard> sharedContacts;
+    private @Nullable @Setter List<VCard> sharedContacts;
 
     /**
      * Builds a {@link WhatsappContactMessage} from the data provided

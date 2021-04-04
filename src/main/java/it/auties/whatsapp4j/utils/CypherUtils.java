@@ -102,12 +102,12 @@ public class CypherUtils {
     }
 
     @SneakyThrows
-    public ByteBuffer mediaDecrypt(@NotNull WhatsappMediaMessage mediaMessage) {
+    public byte @NotNull [] mediaDecrypt(@NotNull WhatsappMediaMessage mediaMessage) {
         var message = mediaMessage.info().getMessage();
         var url = WhatsappUtils.readMediaUrl(message);
         var data = WhatsappUtils.readEncryptedMedia(url).orElse(null);
         if(data == null){
-            return BinaryArray.empty().toBuffer();
+            return new byte[0];
         }
 
         var mediaKey = WhatsappUtils.readMediaKey(message);
@@ -120,9 +120,9 @@ public class CypherUtils {
         var mac = data.slice(-10);
 
         var hmacValidation = hmacSha256(iv.merged(file), macKey).cut(10);
-        Validate.isTrue(hmacValidation.equals(mac), "Cannot login: Hmac validation failed!", SecurityException.class);
+        Validate.isTrue(hmacValidation.equals(mac), "Cannot decode media message with id %s", mediaMessage.id(), SecurityException.class);
 
-        return aesDecrypt(iv, file, cypherKey).toBuffer();
+        return aesDecrypt(iv, file, cypherKey).data();
     }
 
     @SneakyThrows

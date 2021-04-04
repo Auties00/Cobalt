@@ -6,6 +6,7 @@ import it.auties.whatsapp4j.utils.ProtobufUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -16,38 +17,37 @@ import java.util.Objects;
 
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-@Data
 @Accessors(fluent = true)
 public class WhatsappGroupInviteMessageBuilder extends WhatsappMessageBuilder<WhatsappGroupInviteMessage> {
     /**
      * The jid of the group that this invite regards
      */
-    private @Nullable String jid;
+    private @Nullable @Setter String jid;
 
     /**
      * The name of the group that this invite regards
      */
-    private @Nullable String name;
+    private @Nullable @Setter String name;
 
     /**
      * The caption for this invite
      */
-    private @Nullable String caption;
+    private @Nullable @Setter String caption;
 
     /**
      * The code of the group that this invite regards
      */
-    private @Nullable String code;
+    private @Nullable @Setter String code;
 
     /**
      * The thumbnail of the group that this invite regards
      */
-    private @Nullable ByteBuffer thumbnail;
+    private @Nullable @Setter ByteBuffer thumbnail;
 
     /**
      * The date when this invitation expires
      */
-    private @Nullable ZonedDateTime expiration;
+    private @Nullable @Setter ZonedDateTime expiration;
 
     /**
      * Builds a {@link WhatsappGroupInviteMessage} from the data provided

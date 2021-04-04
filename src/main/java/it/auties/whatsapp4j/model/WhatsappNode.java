@@ -1,11 +1,14 @@
 package it.auties.whatsapp4j.model;
 
+import it.auties.whatsapp4j.response.model.JsonResponse;
+import it.auties.whatsapp4j.utils.Validate;
 import lombok.Builder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * An immutable model class that represents the primary unit used by WhatsappWeb's WebSocket to communicate with the client.
@@ -17,6 +20,26 @@ import java.util.Map;
  */
 @Builder
 public record WhatsappNode(@NotNull String description, @NotNull Map<String, String> attrs, @Nullable Object content) {
+    /**
+     * Constructs a WhatsappNode from a list
+     *
+     * @param list the generic list to parse
+     * @return a non null list containing only objects from {@code list} of type WhatsappNode
+     */
+    @SuppressWarnings("unchecked")
+    public static @NotNull WhatsappNode fromList(@NotNull List<?> list) {
+        Validate.isTrue(list.size() == 3, "WhatsappAPI: Cannot parse %s as a WhatsappNode", list);
+        if(!(list.get(0) instanceof String description)){
+            throw new IllegalArgumentException("WhatsappAPI: Cannot parse %s as a WhatsappNode, no description found".formatted(list));
+        }
+
+        if(!(list.get(1) instanceof String attrs)){
+            throw new IllegalArgumentException("WhatsappAPI: Cannot parse %s as a WhatsappNode, no attrs found".formatted(list));
+        }
+
+        return new WhatsappNode(description, (Map<String, String>) JsonResponse.fromJson(attrs).data(), list.get(2));
+    }
+
     /**
      * Constructs a list of WhatsappNodes from a generic List
      *

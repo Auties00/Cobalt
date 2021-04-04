@@ -26,9 +26,4 @@ public abstract class SubscribeUserPresenceRequest<M extends JsonResponseModel> 
     public @NotNull List<Object> buildBody() {
         return List.of("action", "presence", "subscribe", jid);
     }
-
-    @Override
-    public boolean isCompletable() {
-        return true;
-    }
 }

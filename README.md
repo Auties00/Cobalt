@@ -14,14 +14,14 @@ Add this dependency to your dependencies in the pom:
 <dependency>
     <groupId>com.github.auties00</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>1.1</version>
+    <version>1.2</version>
 </dependency>
 ```
 
 #### Gradle
 Add this dependency to your build.gradle:
 ```groovy
-implementation 'com.github.auties00:whatsappweb4j:1.1'
+implementation 'com.github.auties00:whatsappweb4j:1.2'
 ```
 
 ### Javadocs
@@ -36,8 +36,7 @@ Alternatively, you can provide a custom [WhatsappConfiguration](https://www.java
 ```java
 var configuration = WhatsappConfiguration.builder()
         .whatsappUrl("wss://web.whatsapp.com/ws") // WhatsappWeb's WebSocket URL
-        .whatsappTag("W4J") // The tag used for log in requests
-        .requestTag("requestTag") // The tag used for post log in requests
+        .requestTag("requestTag") // The tag used for requests made to WhatsappWeb's WebSocket
         .description("Whatsapp4j") // The description provided to Whatsapp during the authentication process
         .shortDescription("W4J") // An acronym for the description
         .reconnectWhenDisconnected((reason) -> true) // Determines whether the connection should be reclaimed
@@ -47,58 +46,16 @@ var configuration = WhatsappConfiguration.builder()
 var api = new WhatsappAPI(configuration);
 ```
 
-Now create a [WhatsappListener](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/listener/WhatsappListener.html), rember to implement only the methods that you need:
+Now create a [WhatsappListener](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/listener/WhatsappListener.html), remember to implement only the methods that you need:
 ```java
 public class YourAwesomeListener implements WhatsappListener {
-    public void onLoggedIn(UserInformationResponse info, boolean firstLogin) { }
+    public void onLoggedIn(UserInformationResponse info, boolean firstLogin) {
+       System.out.println("Connected :)");
+    }
     
-    public void onDisconnected() { }
-
-    public void onInformationUpdate(UserInformationResponse info) { }
-
-    public void onListResponse(JsonListResponse response) { }
-
-    public void onContactsReceived() { }
-
-    public void onContactUpdate(WhatsappContact contact) { }
-
-    public void onContactReceived(WhatsappContact contact) { }
-
-    public void onContactPresenceUpdate(WhatsappChat chat, WhatsappContact contact) { }
-
-    public void onChatsReceived() { }
-
-    public void onChatReceived(WhatsappChat chat) { }
-
-    public void onChatArchived(WhatsappChat chat) { }
-
-    public void onChatUnarchived(WhatsappChat chat) { }
-
-    public void onChatMuteChange(WhatsappChat chat) { }
-
-    public void onChatReadStatusChange(WhatsappChat chat) { }
-
-    public void onChatEphemeralStatusChange(WhatsappChat chat) { }
-
-    public void onNewMessageReceived(WhatsappChat chat, WhatsappMessage message) { }
-
-    public void onMessageReadStatusUpdate(WhatsappChat chat, WhatsappContact contact, WhatsappMessage message) { }
-
-    public void onMessageUpdate(WhatsappChat chat, WhatsappMessage message) { }
-
-    public void onMessageDeleted(WhatsappChat chat, WhatsappMessage message, boolean everyone) { }
-
-    public void onMessageStarred(WhatsappChat chat, WhatsappMessage message) { }
-
-    public void onMessageUnstarred(WhatsappChat chat, WhatsappMessage message) { }
-
-    public void onMessageGlobalReadStatusUpdate(WhatsappChat chat, WhatsappMessage message) { }
-
-    public void onBlocklistUpdate(BlocklistResponse blocklist) { }
-
-    public void onPropsUpdate(PropsResponse props) { }
-
-    public void onPhoneBatteryStatusUpdate(PhoneBatteryResponse battery) { }
+    public void onDisconnected() {
+       System.out.println("Disconnected :(");
+    }
 }
 ```
 
@@ -147,7 +104,7 @@ All the messages, chats and contacts stored in memory can be accessed using the 
 var manager = api.manager(); // Get an instance of WhatsappDataManager
 var chats = api.chats(); // Get all the chats in memory
 var contacts = api.contacts(); // Get all the contacts in memory
-var number = api.phoneNumber(); // Get your phone number as a jid
+var number = api.phoneNumberJid(); // Get your phone number as a jid
 ```
 > **_IMPORTANT:_** When your program first starts up, these fields will be empty. To be notified when they are populated, implement the corresponding method in a WhatsappListener
 
@@ -167,25 +124,70 @@ Optional<WhatsappMessage> findQuotedMessageInChatByContext(WhatsappChat chat, Co
 ```
 
 The keys linked to an active session can be accessed using [WhatsappKeysManager](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/manager/WhatsappKeysManager.html).
-### Sending messages
+### Create and send a message
 
-> **_IMPORTANT:_** Support for non text messages is not currently available, though, it's planned
-
-Create an instance of [WhatsappMessageRequest](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/api/WhatsappMessageRequest.html):
+##### Create a Text Message
 ```java
-var textBuilder = WhatsappMessageRequest
-        .builder()
-        .recipient(recipient) // The receipent of this message
-        .text(text) // The text of this message
-        .quotedMessage(quotedMessage) // The message to quote
-        .forwarded(false) // Whether this message is forwarded or not
-        .build(); // Builds an instance of WhatsappMessageRequest
-
-var text = WhatsappMessageRequest.ofText(recipient, text);
-var quotedText = WhatsappMessageRequest.ofQuotedText(recipient, text, quotedMessage);
+var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
+        
+var text = WhatsappTextMessage.newTextMessage(chat, "Hello my friend :)"); // Create a new text message
+var quotedText = WhatsappTextMessage.newTextMessage(chat, "Hello my friend ;)", anotherMessage); // Create a new text message that quotes another message
+        
+var textWithBuilder = WhatsappTextMessage.newTextMessage() // Create a new WhatsappTextMessageBuilder
+        .chat(chat) // Set the chat for this message
+        .text(text) // Set the text for this message
+        .forwarded(true) // Set whether this message is forwarded or not
+        .quotedMessage(someMessage) // Set the message that this message quotes
+        .create();
 ```
 
-Alternatively, you can use the [WebMessageInfo](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/model/WhatsappProtobuf.WebMessageInfo.html), the raw Protobuf object, even though it's not recommended as it's not very developer friendly:
+##### Create a Media Message
+```java
+// Read the file you want to send as an array of bytes, here are two common examples
+var fileMedia = Files.readAllBytes(file.toPath());
+var urlMedia = url.openStream().readAllBytes();
+
+var media = WhatsappMediaMessage.newMediaMessage() // Create a new media message
+        .caption("Look at this!") // Set the caption of the message, that is the text below the file. Only available for images and videos
+        .media(file) // Set the media as an array of bytes
+        .type(WhatsappMediaMessageType.IMAGE) // Set the type of media you want to send
+        .create();
+```
+
+##### Create a Location Message
+```java
+var location = WhatsappLocationMessage.newLocationMessage() // Create a new location message
+        .caption("Look at this!") // Set the caption of the message, that is the text below the file. Not available if this message is live
+        .coordinates(new WhatsappCoordinates(138.9193, 1183.1389, 10)) // Set the coordinates of the location to share
+        .accuracy(10) // Set the accuracy in meters of the coordinates to share
+        .live(false) // Set whether this message is live or not
+        .speed(19) // Set the speed of the device in meters per second
+        .thumbnail(thumbnail) // Set the thumbnail of this message
+        .create();
+```
+
+##### Create a Group Invite Message
+```java
+var invite = WhatsappGroupInviteMessage.newGroupInviteMessage()
+        .caption("Come join my group of fellow programmers") // Set the caption of this message
+        .name("Fellow Programmers 1.0") // Set the name of the group
+        .thumbnail(thumbnail) // Set the thumbnail of the group
+        .expiration(ZonedDateTime.now().plusDays(90)) // Set the date of expiration for this invite
+        .jid("jid@g.us") // Set the jid of the group
+        .code("1931130") // Set the code of the group
+        .create();
+```
+
+##### Create a Contact(s) Message
+```java
+var contacts = WhatsappContactMessage.newContactMessage()
+        .sharedContacts(List.of(contactVCard, anotherVCard))
+        .create();
+```
+
+##### Create a raw message
+If the options above don't satisfy your needs, open an issue and request the feature you need. In the meanwhile though, you can use you can create your own [WebMessageInfo](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/model/WhatsappProtobuf.WebMessageInfo.html), the raw Protobuf object for a message, even though it's not recommended as it's not very developer friendly.
+Here is an example on how to create a raw text message:
 ```java
 var key = WhatsappProtobuf.MessageKey.newBuilder()
         .setFromMe(true)
@@ -193,7 +195,9 @@ var key = WhatsappProtobuf.MessageKey.newBuilder()
         .setId(WhatsappUtils.randomId())
         .build();
 
-var conversation = WhatsappProtobuf.Message.newBuilder().setConversation(text);
+var conversation = WhatsappProtobuf.Message.newBuilder()
+        .setConversation(text)
+        .build();
 
 var text = WhatsappProtobuf.WebMessageInfo.newBuilder()
         .setMessage(conversation)
@@ -211,7 +215,11 @@ var context = WhatsappProtobuf.ContextInfo.newBuilder()
         .build();
 
 var extendedTextMessage = WhatsappProtobuf.Message.newBuilder()
-        .setExtendedTextMessage(WhatsappProtobuf.ExtendedTextMessage.newBuilder().setText(text).setContextInfo(context));
+        .setExtendedTextMessage(WhatsappProtobuf.ExtendedTextMessage.newBuilder()
+            .setText(text)
+            .setContextInfo(context)
+            .build())
+        .build();
 
 var quotedText = WhatsappProtobuf.WebMessageInfo.newBuilder()
         .setMessage(extendedTextMessage)
@@ -219,6 +227,11 @@ var quotedText = WhatsappProtobuf.WebMessageInfo.newBuilder()
         .setMessageTimestamp(Instant.now().getEpochSecond())
         .setStatus(WhatsappProtobuf.WebMessageInfo.WebMessageInfoStatus.PENDING)
         .build();
+```
+
+##### Send a message
+```java
+api.sendMessage(message);
 ```
 
 ### Online status

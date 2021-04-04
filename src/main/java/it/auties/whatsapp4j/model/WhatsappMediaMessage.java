@@ -6,12 +6,16 @@ import it.auties.whatsapp4j.utils.CypherUtils;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.Optional;
 
 /**
@@ -27,7 +31,7 @@ public final class WhatsappMediaMessage extends WhatsappUserMessage {
     /**
      * The raw media that this message holds
      */
-    private final @NotNull ByteBuffer media;
+    private final byte @NotNull [] media;
 
     /**
      * The type of media that this object wraps
@@ -91,5 +95,16 @@ public final class WhatsappMediaMessage extends WhatsappUserMessage {
      */
     public @NotNull Optional<String> caption(){
         return Optional.ofNullable(caption);
+    }
+
+
+    /**
+     * Saves the media that this message wraps to a file
+     *
+     * @param file the file where the data will be written, if the file doesn't exist it will be created automatically
+     */
+    @SneakyThrows
+    public void saveMediaToFile(@NotNull File file){
+        Files.write(file.toPath(), media, StandardOpenOption.CREATE);
     }
 }

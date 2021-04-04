@@ -10,6 +10,8 @@ import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.concurrent.CompletableFuture;
+
 /**
  * An abstract model class that represents a json request made from the client to the server
  *
@@ -20,6 +22,16 @@ public abstract non-sealed class JsonRequest<M extends JsonResponseModel> extend
      * An instance of Jackson used to serialize objects as JSON
      */
     private static final ObjectWriter JACKSON = new ObjectMapper().writerWithDefaultPrettyPrinter();
+
+    /**
+     * Constructs a new instance of a JsonRequest using a custom non null request tag
+     *
+     * @param tag the custom non null tag to assign to this request
+     * @param configuration the configuration used for {@link WhatsappAPI}
+     */
+    protected JsonRequest(@NotNull String tag, @NotNull WhatsappConfiguration configuration) {
+        super(tag, configuration);
+    }
 
     /**
      * Constructs a new instance of a JsonRequest using the default request tag built using {@code configuration}
@@ -34,49 +46,19 @@ public abstract non-sealed class JsonRequest<M extends JsonResponseModel> extend
      * Sends a json request to the WebSocket linked to {@code session}.
      * This message is serialized using {@link JsonRequest#JACKSON}.
      *
-     * @param session the WhatsappWeb's WebSocket session
-     * @param callback a callback to execute after the request has been successfully been sent
-     * @return this request
      */
     @SneakyThrows
-    public JsonRequest<M> send(@NotNull Session session, @Nullable Runnable callback) {
+    public CompletableFuture<M> send(@NotNull Session session) {
         var body = buildBody();
         var json = JACKSON.writeValueAsString(body);
         var request = "%s,%s".formatted(tag, json);
         if (configuration.async()) {
-            session.getAsyncRemote().sendObject(request, __ -> {
-                if (callback != null) callback.run();
-                if (isCompletable()) {
-                    MANAGER.pendingRequests().add(this);
-                    return;
-                }
-
-                future.complete(null);
-            });
-
-            return this;
+            session.getAsyncRemote().sendObject(request, __ -> MANAGER.pendingRequests().add(this));
+            return future();
         }
 
         session.getBasicRemote().sendObject(request);
-        if (callback != null) callback.run();
-        if (isCompletable()) {
-            MANAGER.pendingRequests().add(this);
-            return this;
-        }
-
-        future.complete(null);
-        return this;
-    }
-
-    /**
-     * Sends a json request to the WebSocket linked to {@code session}.
-     * This message is serialized using {@link JsonRequest#JACKSON}.
-     *
-     * @param session the WhatsappWeb's WebSocket session
-     * @return this request
-     */
-    @SneakyThrows
-    public JsonRequest<M> send(@NotNull Session session) {
-        return send(session, null);
+        MANAGER.pendingRequests().add(this);
+        return future();
     }
 }

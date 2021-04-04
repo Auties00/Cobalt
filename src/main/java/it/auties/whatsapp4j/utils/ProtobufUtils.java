@@ -42,7 +42,7 @@ public class ProtobufUtils {
         if(quotedMessage != null){
             context
                     .setQuotedMessage(quotedMessage.info().getMessage())
-                    .setParticipant(quotedMessage.senderJid().orElse(MANAGER.phoneNumber()))
+                    .setParticipant(quotedMessage.senderJid())
                     .setStanzaId(quotedMessage.info().getKey().getId())
                     .setRemoteJid(quotedMessage.info().getKey().getRemoteJid())
                     .setIsForwarded(forwarded);
@@ -57,8 +57,8 @@ public class ProtobufUtils {
 
     }
 
-    public @NotNull WhatsappProtobuf.Message createMediaMessage(@Nullable String caption, @NotNull ByteBuffer media, @NotNull WhatsappMediaMessageType type){
-        var upload = CypherUtils.mediaEncrypt(MANAGER.mediaConnection(), media.array(), type);
+    public @NotNull WhatsappProtobuf.Message createMediaMessage(@Nullable String caption, byte @NotNull [] media, @NotNull WhatsappMediaMessageType type){
+        var upload = CypherUtils.mediaEncrypt(MANAGER.mediaConnection(), media, type);
         var message = WhatsappProtobuf.Message.newBuilder();
 
         switch (type){
@@ -133,7 +133,7 @@ public class ProtobufUtils {
         if(quotedMessage != null){
             context
                     .setQuotedMessage(quotedMessage.info().getMessage())
-                    .setParticipant(quotedMessage.senderJid().orElse(MANAGER.phoneNumber()))
+                    .setParticipant(quotedMessage.senderJid())
                     .setStanzaId(quotedMessage.info().getKey().getId())
                     .setRemoteJid(quotedMessage.info().getKey().getRemoteJid())
                     .setIsForwarded(forwarded);
@@ -148,7 +148,7 @@ public class ProtobufUtils {
 
     }
 
-    public @NotNull WhatsappProtobuf.Message createLocationMessage(@NotNull WhatsappCoordinates coordinates, @Nullable String caption, @Nullable ByteBuffer thumbnail, boolean live, int accuracy, float speed) {
+    public @NotNull WhatsappProtobuf.Message createLocationMessage(@NotNull WhatsappCoordinates coordinates, @Nullable String caption, byte @Nullable [] thumbnail, boolean live, int accuracy, float speed) {
         var message = WhatsappProtobuf.Message.newBuilder();
         if(live){
             message.setLiveLocationMessage(WhatsappProtobuf.LiveLocationMessage.newBuilder()
@@ -157,7 +157,7 @@ public class ProtobufUtils {
                     .setCaption(caption)
                     .setAccuracyInMeters(accuracy)
                     .setSpeedInMps(speed)
-                    .setJpegThumbnail(thumbnail == null ? null : ByteString.copyFrom(thumbnail.array())));
+                    .setJpegThumbnail(thumbnail == null ? null : ByteString.copyFrom(thumbnail)));
 
             return message.build();
         }
@@ -168,7 +168,7 @@ public class ProtobufUtils {
                 .setDegreesLongitude(coordinates.longitude())
                 .setAccuracyInMeters(accuracy)
                 .setSpeedInMps(speed)
-                .setJpegThumbnail(thumbnail == null ? null : ByteString.copyFrom(thumbnail.array())));
+                .setJpegThumbnail(thumbnail == null ? null : ByteString.copyFrom(thumbnail)));
 
         return message.build();
     }

@@ -34,7 +34,7 @@ public final class WhatsappLocationMessage extends WhatsappUserMessage {
     /**
      * The non encrypted thumbnail of the message wrapped by this object
      */
-    private final @NotNull ByteBuffer thumbnail;
+    private final byte @NotNull [] thumbnail;
 
     /**
      * Whether the location wrapped by this object is being updated in real time or not
@@ -63,7 +63,7 @@ public final class WhatsappLocationMessage extends WhatsappUserMessage {
         var north = info.getMessage().hasLiveLocationMessage() ? info.getMessage().getLiveLocationMessage().getDegreesClockwiseFromMagneticNorth() : info.getMessage().getLocationMessage().getDegreesClockwiseFromMagneticNorth();
         this.coordinates = new WhatsappCoordinates(latitude, longitude, north);
         this.caption = info.getMessage().hasLiveLocationMessage() ? info.getMessage().getLiveLocationMessage().getCaption() : info.getMessage().getLocationMessage().getComment();
-        this.thumbnail = info.getMessage().hasLiveLocationMessage() ? info.getMessage().getLiveLocationMessage().getJpegThumbnail().asReadOnlyByteBuffer() : info.getMessage().getLocationMessage().getJpegThumbnail().asReadOnlyByteBuffer();
+        this.thumbnail = info.getMessage().hasLiveLocationMessage() ? info.getMessage().getLiveLocationMessage().getJpegThumbnail().toByteArray() : info.getMessage().getLocationMessage().getJpegThumbnail().toByteArray();
         this.isLive = info.getMessage().hasLiveLocationMessage() || info.getMessage().getLocationMessage().getIsLive();
         this.accuracy = info.getMessage().hasLiveLocationMessage() ? info.getMessage().getLiveLocationMessage().getAccuracyInMeters() : info.getMessage().getLocationMessage().getAccuracyInMeters();
         this.speed = info.getMessage().hasLiveLocationMessage() ? info.getMessage().getLiveLocationMessage().getSpeedInMps() : info.getMessage().getLocationMessage().getSpeedInMps();

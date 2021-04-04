@@ -15,6 +15,7 @@ import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * An abstract model class that represents a binary request made from the client to the server
@@ -57,7 +58,7 @@ public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends 
      * @return this request
      */
     @SneakyThrows
-    public BinaryRequest<M> send(@NotNull Session session, @NotNull WhatsappKeysManager whatsappKeys, @NotNull BinaryFlag flag, @NotNull BinaryMetric... tags) {
+    public CompletableFuture<M> send(@NotNull Session session, @NotNull WhatsappKeysManager whatsappKeys, @NotNull BinaryFlag flag, @NotNull BinaryMetric... tags) {
         var body = buildBody();
         if (!(body instanceof WhatsappNode node)) {
             throw new IllegalArgumentException("WhatsappRequest#sendRequest: Cannot accept %s as content for binary message, expected List<WhatsappNode>".formatted(body.getClass().getName()));
@@ -69,25 +70,12 @@ public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends 
         var hmacSign = CypherUtils.hmacSha256(encrypted, Objects.requireNonNull(whatsappKeys.macKey()));
         var binaryMessage = messageTag.merged(BinaryArray.forArray(BinaryMetric.toArray(tags)).merged(BinaryArray.singleton(flag.data()))).merged(hmacSign).merged(encrypted).toBuffer();
         if (configuration.async()) {
-            session.getAsyncRemote().sendBinary(binaryMessage, __ -> {
-                if(isCompletable()) {
-                    MANAGER.pendingRequests().add(this);
-                    return;
-                }
-
-                future.complete(null);
-            });
-
-            return this;
+            session.getAsyncRemote().sendBinary(binaryMessage, __ -> MANAGER.pendingRequests().add(this));
+            return future;
         }
 
         session.getBasicRemote().sendBinary(binaryMessage);
-        if(isCompletable()) {
-            MANAGER.pendingRequests().add(this);
-            return this;
-        }
-
-        future.complete(null);
-        return this;
+        MANAGER.pendingRequests().add(this);
+        return future;
     }
 }

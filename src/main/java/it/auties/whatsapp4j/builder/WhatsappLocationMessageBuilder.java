@@ -7,6 +7,7 @@ import it.auties.whatsapp4j.utils.ProtobufUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -16,38 +17,37 @@ import java.util.Objects;
 
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-@Data
 @Accessors(fluent = true)
 public class WhatsappLocationMessageBuilder extends WhatsappMessageBuilder<WhatsappLocationMessage> {
     /**
      * The coordinates of the location wrapped by this object
      */
-    private @Nullable WhatsappCoordinates coordinates;
+    private @Nullable @Setter WhatsappCoordinates coordinates;
 
     /**
      * The caption of the message wrapped by this object
      */
-    private @Nullable String caption;
+    private @Nullable @Setter String caption;
 
     /**
      * The non encrypted thumbnail of the message wrapped by this object
      */
-    private @Nullable ByteBuffer thumbnail;
+    private @Setter byte @Nullable [] thumbnail;
 
     /**
      * Whether the location wrapped by this object is being updated in real time or not
      */
-    private boolean live;
+    private @Setter boolean live;
 
     /**
      * The accuracy in meters of the coordinates of the location that this object wraps
      */
-    private int accuracy;
+    private @Setter int accuracy;
 
     /**
      * The speed in meters per second of the device that sent the location that this object wraps
      */
-    private float speed;
+    private @Setter float speed;
 
     /**
      * Builds a {@link WhatsappLocationMessage} from the data provided

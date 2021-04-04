@@ -12,7 +12,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 @NoArgsConstructor
-@Data
 abstract class WhatsappMessageBuilder<R> {
     /**
      * The chat where this message is stored

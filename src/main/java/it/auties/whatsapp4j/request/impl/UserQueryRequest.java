@@ -15,10 +15,10 @@ import java.util.List;
 /**
  * A JSON request used to transmit a query request to WhatsappWeb's WebSocket
  */
-public abstract class QueryRequest<M extends JsonResponseModel> extends JsonRequest<M> {
+public abstract class UserQueryRequest<M extends JsonResponseModel> extends JsonRequest<M> {
     private final @NotNull String jid;
     private final @NotNull QueryType queryType;
-    public QueryRequest(@NotNull WhatsappConfiguration configuration, @NotNull String jid, @NotNull QueryType queryType) {
+    public UserQueryRequest(@NotNull WhatsappConfiguration configuration, @NotNull String jid, @NotNull QueryType queryType) {
         super(configuration);
         this.jid = jid;
         this.queryType = queryType;
@@ -31,11 +31,6 @@ public abstract class QueryRequest<M extends JsonResponseModel> extends JsonRequ
         list.addAll(queryType.data());
         list.add(jid);
         return list;
-    }
-
-    @Override
-    public boolean isCompletable() {
-        return true;
     }
 
     @AllArgsConstructor

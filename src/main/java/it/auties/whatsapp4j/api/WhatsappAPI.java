@@ -9,7 +9,7 @@ import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.model.*;
 import it.auties.whatsapp4j.request.impl.NodeRequest;
-import it.auties.whatsapp4j.request.impl.QueryRequest;
+import it.auties.whatsapp4j.request.impl.UserQueryRequest;
 import it.auties.whatsapp4j.request.impl.SubscribeUserPresenceRequest;
 import it.auties.whatsapp4j.response.impl.*;
 import it.auties.whatsapp4j.socket.WhatsappWebSocket;
@@ -142,9 +142,7 @@ public class WhatsappAPI {
      * @param contact the contact whose status the api should receive updates on
      */
     public @NotNull CompletableFuture<SimpleStatusResponse> subscribeToUserPresence(@NotNull WhatsappContact contact) {
-        return new SubscribeUserPresenceRequest<SimpleStatusResponse>(configuration, contact.jid()) {}
-                .send(socket.session())
-                .future();
+        return new SubscribeUserPresenceRequest<SimpleStatusResponse>(configuration, contact.jid()) {}.send(socket.session());
     }
 
     /**
@@ -170,9 +168,7 @@ public class WhatsappAPI {
                 .content(List.of(new WhatsappNode("message", Map.of(), message)))
                 .build();
 
-        return new NodeRequest<MessageResponse>(message.getKey().getId(), configuration, node) {}
-                .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.MESSAGE)
-                .future();
+        return new NodeRequest<MessageResponse>(message.getKey().getId(), configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.MESSAGE);
     }
 
     /**
@@ -182,9 +178,7 @@ public class WhatsappAPI {
      * @return a CompletableFuture that resolves in a UserStatusResponse wrapping the text status of the target contact if the request is successful
      */
     public @NotNull CompletableFuture<UserStatusResponse> queryUserStatus(@NotNull WhatsappContact contact) {
-        return new QueryRequest<UserStatusResponse>(configuration, contact.jid(), QueryRequest.QueryType.USER_STATUS) {}
-                .send(socket.session())
-                .future();
+        return new UserQueryRequest<UserStatusResponse>(configuration, contact.jid(), UserQueryRequest.QueryType.USER_STATUS) {}.send(socket.session());
     }
 
     /**
@@ -194,9 +188,7 @@ public class WhatsappAPI {
      * @return a CompletableFuture that resolves in a ChatPictureResponse wrapping the status of the request and, if the status == 200, a link to the requested picture
      */
     public @NotNull CompletableFuture<ChatPictureResponse> queryChatPicture(@NotNull WhatsappChat chat) {
-        return new QueryRequest<ChatPictureResponse>(configuration, chat.jid(), QueryRequest.QueryType.CHAT_PICTURE) {}
-                .send(socket.session())
-                .future();
+        return new UserQueryRequest<ChatPictureResponse>(configuration, chat.jid(), UserQueryRequest.QueryType.CHAT_PICTURE) {}.send(socket.session());
     }
 
     /**
@@ -208,9 +200,7 @@ public class WhatsappAPI {
      */
     public @NotNull CompletableFuture<GroupMetadataResponse> queryGroupMetadata(@NotNull WhatsappChat chat) {
         Validate.isTrue(chat.isGroup(), "WhatsappAPI: Cannot query metadata for %s as it's not a group", chat.jid());
-        return new QueryRequest<GroupMetadataResponse>(configuration, chat.jid(), QueryRequest.QueryType.GROUP_METADATA) {}
-                .send(socket.session())
-                .future();
+        return new UserQueryRequest<GroupMetadataResponse>(configuration, chat.jid(), UserQueryRequest.QueryType.GROUP_METADATA) {}.send(socket.session());
     }
 
     /**
@@ -220,9 +210,7 @@ public class WhatsappAPI {
      * @return a CompletableFuture that resolves in a CommonGroupsResponse wrapping the status of the request and, if the status == 200, a list of groups in common with the specified contact
      */
     public @NotNull CompletableFuture<CommonGroupsResponse> queryGroupsInCommon(@NotNull WhatsappContact contact) {
-        return new QueryRequest<CommonGroupsResponse>(configuration, contact.jid(), QueryRequest.QueryType.GROUPS_IN_COMMON) {}
-                .send(socket.session())
-                .future();
+        return new UserQueryRequest<CommonGroupsResponse>(configuration, contact.jid(), UserQueryRequest.QueryType.GROUPS_IN_COMMON) {}.send(socket.session());
     }
 
     /**
@@ -260,9 +248,7 @@ public class WhatsappAPI {
                 .content(null)
                 .build();
 
-        return new NodeRequest<MessagesResponse>(configuration, node) {}
-                .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.QUERY_MESSAGES)
-                .future();
+        return new NodeRequest<MessagesResponse>(configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.QUERY_MESSAGES);
     }
 
     /**
@@ -297,7 +283,6 @@ public class WhatsappAPI {
 
         return new NodeRequest<MessagesResponse>(configuration, node) {}
                 .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.QUERY_MESSAGES)
-                .future()
                 .thenApply(res -> {
                     chat.messages().addAll(res.data().orElseThrow());
                     return chat;
@@ -316,9 +301,7 @@ public class WhatsappAPI {
                 .content(List.of(new WhatsappNode("presence", Map.of("type", presence.data()), null)))
                 .build();
 
-        return new NodeRequest<DiscardResponse>(configuration, node, false) {}
-                .send(socket.session(), keys, presence.flag(), BinaryMetric.PRESENCE)
-                .future();
+        return new NodeRequest<DiscardResponse>(configuration, node, false) {}.send(socket.session(), keys, presence.flag(), BinaryMetric.PRESENCE);
     }
 
     /**
@@ -334,9 +317,7 @@ public class WhatsappAPI {
                 .content(List.of(new WhatsappNode("presence", Map.of("type", presence.data(), "to", chat.jid()), null)))
                 .build();
 
-        return new NodeRequest<DiscardResponse>(configuration, node, false) {}
-                .send(socket.session(), keys, presence.flag(), BinaryMetric.PRESENCE)
-                .future();
+        return new NodeRequest<DiscardResponse>(configuration, node, false) {}.send(socket.session(), keys, presence.flag(), BinaryMetric.PRESENCE);
     }
 
     /**
@@ -399,12 +380,10 @@ public class WhatsappAPI {
         var node = WhatsappNode.builder()
                 .description("action")
                 .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                .content(List.of(new WhatsappNode("group", Map.of("jid", group.jid(), "author", manager.phoneNumber(), "id", tag, "type", action.data()), jids)))
+                .content(List.of(new WhatsappNode("group", Map.of("jid", group.jid(), "author", manager.phoneNumberJid(), "id", tag, "type", action.data()), jids)))
                 .build();
 
-        return new NodeRequest<GroupModificationResponse>(tag, configuration, node) {}
-                .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.GROUP)
-                .future();
+        return new NodeRequest<GroupModificationResponse>(tag, configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.GROUP);
     }
 
     /**
@@ -423,12 +402,10 @@ public class WhatsappAPI {
         var node = WhatsappNode.builder()
                 .description("action")
                 .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                .content(List.of(new WhatsappNode("group", Map.of("jid", group.jid(), "subject", newName, "author", manager.phoneNumber(), "id", tag, "type", "subject"), null)))
+                .content(List.of(new WhatsappNode("group", Map.of("jid", group.jid(), "subject", newName, "author", manager.phoneNumberJid(), "id", tag, "type", "subject"), null)))
                 .build();
 
-        return new NodeRequest<SimpleStatusResponse>(tag, configuration, node) {}
-                .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.GROUP)
-                .future();
+        return new NodeRequest<SimpleStatusResponse>(tag, configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.GROUP);
     }
 
 
@@ -449,12 +426,10 @@ public class WhatsappAPI {
                     var node = WhatsappNode.builder()
                             .description("action")
                             .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                            .content(List.of(new WhatsappNode("group", Map.of("jid", group.jid(), "author", manager.phoneNumber(), "id", tag, "type", "description"), List.of(new WhatsappNode("description", Map.of("id", WhatsappUtils.randomId(), "prev", Objects.requireNonNullElse(previousId, "none")), newDescription)))))
+                            .content(List.of(new WhatsappNode("group", Map.of("jid", group.jid(), "author", manager.phoneNumberJid(), "id", tag, "type", "description"), List.of(new WhatsappNode("description", Map.of("id", WhatsappUtils.randomId(), "prev", Objects.requireNonNullElse(previousId, "none")), newDescription)))))
                             .build();
 
-                    return new NodeRequest<SimpleStatusResponse>(tag, configuration, node) {}
-                            .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.GROUP)
-                            .future();
+                    return new NodeRequest<SimpleStatusResponse>(tag, configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.GROUP);
                 });
     }
 
@@ -494,12 +469,10 @@ public class WhatsappAPI {
         var node = WhatsappNode.builder()
                 .description("action")
                 .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                .content(List.of(new WhatsappNode("group", Map.of("jid", group.jid(), "author", manager.phoneNumber(), "id", tag, "type", "prop"), List.of(new WhatsappNode(setting.data(), Map.of("value", policy.data()), null)))))
+                .content(List.of(new WhatsappNode("group", Map.of("jid", group.jid(), "author", manager.phoneNumberJid(), "id", tag, "type", "prop"), List.of(new WhatsappNode(setting.data(), Map.of("value", policy.data()), null)))))
                 .build();
 
-        return new NodeRequest<SimpleStatusResponse>(tag, configuration, node) {}
-                .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.GROUP)
-                .future();
+        return new NodeRequest<SimpleStatusResponse>(tag, configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.GROUP);
     }
 
     /**
@@ -521,9 +494,7 @@ public class WhatsappAPI {
                 .content(List.of(new WhatsappNode("picture", Map.of("jid", group.jid(), "id", tag, "type", "set"), List.of(new WhatsappNode("image", Map.of(), "ASAS")))))
                 .build();
 
-        return new NodeRequest<SimpleStatusResponse>(tag, configuration, node) {}
-                .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.PICTURE)
-                .future();
+        return new NodeRequest<SimpleStatusResponse>(tag, configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.PICTURE);
     }
 
     /**
@@ -541,9 +512,7 @@ public class WhatsappAPI {
                 .content(List.of(new WhatsappNode("picture", Map.of("jid", group.jid(), "id", tag, "type", "delete"), null)))
                 .build();
 
-        return new NodeRequest<SimpleStatusResponse>(configuration, node) {}
-                .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.PICTURE)
-                .future();
+        return new NodeRequest<SimpleStatusResponse>(configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.PICTURE);
     }
 
     /**
@@ -558,12 +527,10 @@ public class WhatsappAPI {
         var node = WhatsappNode.builder()
                 .description("action")
                 .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                .content(List.of(new WhatsappNode("group", Map.of("jid", group.jid(), "author", manager.phoneNumber(), "id", tag, "type", "leave"), null)))
+                .content(List.of(new WhatsappNode("group", Map.of("jid", group.jid(), "author", manager.phoneNumberJid(), "id", tag, "type", "leave"), null)))
                 .build();
 
-        return new NodeRequest<SimpleStatusResponse>(tag, configuration, node) {}
-                .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.GROUP)
-                .future();
+        return new NodeRequest<SimpleStatusResponse>(tag, configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.GROUP);
     }
 
     /**
@@ -601,9 +568,7 @@ public class WhatsappAPI {
                 .content(List.of(new WhatsappNode("chat", Map.of("jid", chat.jid(), "mute", String.valueOf(untilInSeconds), "type", "mute"), null)))
                 .build();
 
-        return new NodeRequest<SimpleStatusResponse>(configuration, node) {}
-                .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.CHAT)
-                .future();
+        return new NodeRequest<SimpleStatusResponse>(configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.CHAT);
     }
 
     /**
@@ -621,9 +586,7 @@ public class WhatsappAPI {
                 .content(List.of(new WhatsappNode("chat", Map.of("jid", chat.jid(), "previous", chat.mute().muteEndDate().map(ChronoZonedDateTime::toEpochSecond).map(String::valueOf).orElseThrow(), "type", "mute"), null)))
                 .build();
 
-        return new NodeRequest<SimpleStatusResponse>(configuration, node) {}
-                .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.CHAT)
-                .future();
+        return new NodeRequest<SimpleStatusResponse>(configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.CHAT);
     }
 
     /**
@@ -640,9 +603,7 @@ public class WhatsappAPI {
                 .content(List.of(new WhatsappNode("block", Map.of("jid", contact.jid()), null)))
                 .build();
 
-        return new NodeRequest<SimpleStatusResponse>(configuration, node) {}
-                .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.BLOCK)
-                .future();
+        return new NodeRequest<SimpleStatusResponse>(configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.BLOCK);
     }
 
     /**
@@ -657,12 +618,10 @@ public class WhatsappAPI {
         var node = WhatsappNode.builder()
                 .description("action")
                 .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                .content(List.of(new WhatsappNode("group", Map.of("jid", chat.jid(), "author", manager.phoneNumber(), "id", tag, "type", "prop"), List.of(new WhatsappNode("ephemeral", Map.of("value", "604800"), null)))))
+                .content(List.of(new WhatsappNode("group", Map.of("jid", chat.jid(), "author", manager.phoneNumberJid(), "id", tag, "type", "prop"), List.of(new WhatsappNode("ephemeral", Map.of("value", "604800"), null)))))
                 .build();
 
-        return new NodeRequest<SimpleStatusResponse>(tag, configuration, node) {}
-                .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.GROUP)
-                .future();
+        return new NodeRequest<SimpleStatusResponse>(tag, configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.GROUP);
     }
 
     /**
@@ -697,9 +656,7 @@ public class WhatsappAPI {
                 .content(List.of(new WhatsappNode("read", Map.of("owner", String.valueOf(lastMessage.sentByMe()), "jid", chat.jid(), "count", String.valueOf(flag), "index", lastMessage.info().getKey().getId()), null)))
                 .build();
 
-        return new NodeRequest<SimpleStatusResponse>(configuration, node) {}
-                .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.READ)
-                .future();
+        return new NodeRequest<SimpleStatusResponse>(configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.READ);
     }
 
     /**
@@ -716,9 +673,7 @@ public class WhatsappAPI {
                 .content(List.of(new WhatsappNode("chat", Map.of("jid", chat.jid(), "pin", String.valueOf(ZonedDateTime.now().toEpochSecond()), "type", "pin"), null)))
                 .build();
 
-        return new NodeRequest<SimpleStatusResponse>(configuration, node) {}
-                .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.CHAT)
-                .future();
+        return new NodeRequest<SimpleStatusResponse>(configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.CHAT);
     }
 
     /**
@@ -737,9 +692,7 @@ public class WhatsappAPI {
                 .content(List.of(new WhatsappNode("chat", Map.of("jid", chat.jid(), "previous", lastPin.get(), "type", "pin"), null)))
                 .build();
 
-        return new NodeRequest<SimpleStatusResponse>(configuration, node) {}
-                .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.CHAT)
-                .future();
+        return new NodeRequest<SimpleStatusResponse>(configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.CHAT);
     }
 
     /**
@@ -758,9 +711,7 @@ public class WhatsappAPI {
                 .content(List.of(new WhatsappNode("chat", Map.of("owner", String.valueOf(lastMessage.sentByMe()), "jid", chat.jid(), "index", lastMessage.info().getKey().getId(), "type", "archive"), null)))
                 .build();
 
-        return new NodeRequest<SimpleStatusResponse>(configuration, node) {}
-                .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.CHAT)
-                .future();
+        return new NodeRequest<SimpleStatusResponse>(configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.CHAT);
     }
 
     /**
@@ -778,9 +729,7 @@ public class WhatsappAPI {
                 .content(List.of(new WhatsappNode("chat", Map.of("owner", String.valueOf(lastMessage.sentByMe()), "jid", chat.jid(), "index", lastMessage.info().getKey().getId(), "type", "unarchive"), null)))
                 .build();
 
-        return new NodeRequest<SimpleStatusResponse>(configuration, node) {}
-                .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.CHAT)
-                .future();
+        return new NodeRequest<SimpleStatusResponse>(configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.CHAT);
     }
 
     /**
@@ -799,12 +748,10 @@ public class WhatsappAPI {
         var node = WhatsappNode.builder()
                 .description("action")
                 .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                .content(List.of(new WhatsappNode("group", Map.of("subject", subject, "author", manager.phoneNumber(), "id", tag, "type", "create"), WhatsappUtils.jidsToParticipantNodes(contacts))))
+                .content(List.of(new WhatsappNode("group", Map.of("subject", subject, "author", manager.phoneNumberJid(), "id", tag, "type", "create"), WhatsappUtils.jidsToParticipantNodes(contacts))))
                 .build();
 
-        return new NodeRequest<GroupModificationResponse>(tag, configuration, node) {}
-                .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.GROUP)
-                .future();
+        return new NodeRequest<GroupModificationResponse>(tag, configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.GROUP);
     }
 
     /**
@@ -822,9 +769,7 @@ public class WhatsappAPI {
                 .content(null)
                 .build();
 
-        return new NodeRequest<MessagesResponse>(configuration, node) {}
-                .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.QUERY_MESSAGES)
-                .future();
+        return new NodeRequest<MessagesResponse>(configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.QUERY_MESSAGES);
     }
 
     /**
@@ -843,9 +788,7 @@ public class WhatsappAPI {
                 .content(null)
                 .build();
 
-        return new NodeRequest<MessagesResponse>(configuration, node) {}
-                .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.QUERY_MESSAGES)
-                .future();
+        return new NodeRequest<MessagesResponse>(configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.QUERY_MESSAGES);
     }
 
 }

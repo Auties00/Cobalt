@@ -4,6 +4,7 @@ import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.request.model.JsonRequest;
 import it.auties.whatsapp4j.response.impl.DiscardResponse;
+import it.auties.whatsapp4j.response.model.JsonResponseModel;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -11,7 +12,7 @@ import java.util.List;
 /**
  * A JSON request used to signal to WhatsappWeb's WebSocket that the authentication process can begin
  */
-public abstract class InitialRequest extends JsonRequest<DiscardResponse> {
+public abstract class InitialRequest<M extends JsonResponseModel> extends JsonRequest<M> {
     private final @NotNull WhatsappKeysManager whatsappKeys;
     public InitialRequest(@NotNull WhatsappConfiguration configuration, @NotNull WhatsappKeysManager whatsappKeys){
         super(configuration);

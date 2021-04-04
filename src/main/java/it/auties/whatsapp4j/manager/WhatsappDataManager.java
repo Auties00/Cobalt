@@ -43,7 +43,7 @@ public class WhatsappDataManager {
     private final @NotNull List<WhatsappListener> listeners;
     private @Nullable WhatsappMediaConnection mediaConnection;
     private final long initializationTimeStamp;
-    private @Nullable String phoneNumber;
+    private @Nullable String phoneNumberJid;
     private long tag;
 
     /**
@@ -202,8 +202,8 @@ public class WhatsappDataManager {
      * @return the phone number
      * @throws NullPointerException if the phone number is null
      */
-    public @NotNull String phoneNumber(){
-        return Objects.requireNonNull(phoneNumber, "WhatsappAPI: Phone number is missing");
+    public @NotNull String phoneNumberJid(){
+        return Objects.requireNonNull(phoneNumberJid, "WhatsappAPI: Phone number is missing");
     }
 
     /**
