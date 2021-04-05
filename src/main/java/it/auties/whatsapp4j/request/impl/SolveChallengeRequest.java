@@ -4,7 +4,6 @@ import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.request.model.JsonRequest;
-import it.auties.whatsapp4j.response.impl.DiscardResponse;
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
 import org.jetbrains.annotations.NotNull;
 

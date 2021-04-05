@@ -6,7 +6,6 @@ import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.model.WhatsappContact;
 import it.auties.whatsapp4j.model.WhatsappNode;
 import it.auties.whatsapp4j.model.WhatsappProtobuf;
-import it.auties.whatsapp4j.response.model.JsonResponse;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 

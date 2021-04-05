@@ -1,8 +1,5 @@
 package it.auties.whatsapp4j.listener;
 
-import it.auties.whatsapp4j.api.GroupAction;
-import it.auties.whatsapp4j.api.GroupPolicy;
-import it.auties.whatsapp4j.api.GroupSetting;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.model.*;
@@ -154,7 +151,7 @@ public interface WhatsappListener {
      * @param setting the setting that changed
      * @param policy the new policy that was set
      */
-    default void onGroupSettingsChange(@NotNull WhatsappChat group, @NotNull GroupSetting setting, @NotNull GroupPolicy policy){}
+    default void onGroupSettingsChange(@NotNull WhatsappChat group, @NotNull WhatsappGroupSetting setting, @NotNull WhatsappGroupPolicy policy){}
 
     /**
      * Called when an action is executed on a group's participant
@@ -163,7 +160,7 @@ public interface WhatsappListener {
      * @param participant the target of the action that was executed
      * @param action the type of the action that was executed
      */
-    default void onGroupAction(@NotNull WhatsappChat group, @NotNull WhatsappContact participant, @NotNull GroupAction action){ }
+    default void onGroupAction(@NotNull WhatsappChat group, @NotNull WhatsappContact participant, @NotNull WhatsappGroupAction action){ }
 
     /**
      * Called when a new message is received in a chat

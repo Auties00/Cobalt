@@ -8,7 +8,6 @@ import it.auties.whatsapp4j.model.WhatsappNode;
 import it.auties.whatsapp4j.response.model.JsonResponse;
 import it.auties.whatsapp4j.response.model.Response;
 import it.auties.whatsapp4j.response.model.ResponseModel;
-import it.auties.whatsapp4j.utils.Validate;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

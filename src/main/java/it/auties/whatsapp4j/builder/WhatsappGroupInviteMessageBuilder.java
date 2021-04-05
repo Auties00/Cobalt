@@ -1,9 +1,7 @@
 package it.auties.whatsapp4j.builder;
 
 import it.auties.whatsapp4j.model.WhatsappGroupInviteMessage;
-import it.auties.whatsapp4j.model.WhatsappLocationMessage;
 import it.auties.whatsapp4j.utils.ProtobufUtils;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

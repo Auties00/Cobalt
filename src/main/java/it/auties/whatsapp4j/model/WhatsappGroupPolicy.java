@@ -1,14 +1,14 @@
-package it.auties.whatsapp4j.api;
+package it.auties.whatsapp4j.model;
 
-import it.auties.whatsapp4j.model.WhatsappChat;
+import it.auties.whatsapp4j.api.WhatsappAPI;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * The constants of this enumerated type describe the various policies that can be enforced for a {@link GroupSetting} in a {@link it.auties.whatsapp4j.model.WhatsappChat}.
+ * The constants of this enumerated type describe the various policies that can be enforced for a {@link WhatsappGroupSetting} in a {@link it.auties.whatsapp4j.model.WhatsappChat}.
  * Said chat should be a group: {@link WhatsappChat#isGroup()}.
  * Said actions can be executed using various methods in {@link WhatsappAPI}.
  */
-public enum GroupPolicy {
+public enum WhatsappGroupPolicy {
     /**
      * Allows both admins and users
      */
@@ -25,7 +25,7 @@ public enum GroupPolicy {
      * @param input the boolean value obtained from Whatsapp
      * @return a lowercase non null String
      */
-    public static @NotNull GroupPolicy forData(boolean input) {
+    public static @NotNull WhatsappGroupPolicy forData(boolean input) {
         return input ? ADMINS : ANYONE;
     }
 

@@ -1,6 +1,7 @@
 package it.auties.whatsapp4j.socket;
 
-import it.auties.whatsapp4j.api.*;
+import it.auties.whatsapp4j.api.WhatsappAPI;
+import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.binary.*;
 import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
@@ -28,7 +29,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -84,7 +88,7 @@ public class WhatsappWebSocket {
     CompletableFuture.delayedExecutor(response.ttl(), TimeUnit.SECONDS).execute(() -> generateQrCode(response));
 
     Validate.isTrue(response.ref() != null, "Cannot find ref for QR code generation");
-    qrCode.generateAndPrint(response.ref(), whatsappKeys.publicKey(), whatsappKeys.clientId());
+    qrCode.generateAndPrint(response.ref(), whatsappKeys.keyPair().getPublic().getEncoded(), whatsappKeys.clientId());
   }
 
   private void solveChallenge(@NotNull TakeOverResponse response){
@@ -105,14 +109,16 @@ public class WhatsappWebSocket {
 
     var challenge = BinaryArray.forBase64(challengeBase64);
     var signedChallenge = hmacSha256(challenge, Objects.requireNonNull(whatsappKeys.macKey()));
-    new SolveChallengeRequest<SimpleStatusResponse>(options, whatsappKeys, signedChallenge){}.send(session()).thenAccept(result -> Validate.isTrue(result.status() == 200, "Could not solve whatsapp challenge for server and client token renewal: %s".formatted(result)));
+
+    var request = new SolveChallengeRequest<SimpleStatusResponse>(options, whatsappKeys, signedChallenge){};
+    request.send(session()).thenAccept(result -> Validate.isTrue(result.status() == 200, "Could not solve whatsapp challenge for server and client token renewal: %s".formatted(result)));
   }
 
   private void login(@NotNull UserInformationResponse response){
     var base64Secret = response.secret();
     var secret = BinaryArray.forBase64(base64Secret);
     var pubKey = secret.cut(32);
-    var sharedSecret = calculateSharedSecret(pubKey.data(), whatsappKeys.privateKey());
+    var sharedSecret = calculateSharedSecret(pubKey.data(), whatsappKeys.keyPair().getPrivate().getEncoded());
     var sharedSecretExpanded = hkdfExpand(sharedSecret, 80);
 
     var hmacValidation = hmacSha256(secret.cut(32).merged(secret.slice(64)), sharedSecretExpanded.slice(32, 64));
@@ -205,8 +211,7 @@ public class WhatsappWebSocket {
   private void sendPing(){
     session().getAsyncRemote().sendPing(ByteBuffer.allocate(0));
   }
-
-  @SuppressWarnings("unchecked")
+  
   private void handleChatCmd(@NotNull ChatCmdResponse cmdResponse){
     if(cmdResponse.cmd() == null){
       return;
@@ -219,46 +224,47 @@ public class WhatsappWebSocket {
 
     var chat = chatOpt.get();
     var node = WhatsappNode.fromList(cmdResponse.data());
-    var content = Objects.requireNonNull(node.content(), "WhatsappAPI: Cannot parse a chat cmd with no content");
+    var content = String.valueOf(Objects.requireNonNull(node.content(), "WhatsappAPI: Cannot parse a chat cmd with no content"));
+    
     switch (node.description()){
-      case "restrict" -> notifyGroupSettingChange(chat, GroupSetting.EDIT_GROUP_INFO, (boolean) content);
-      case "announce" -> notifyGroupSettingChange(chat, GroupSetting.SEND_MESSAGES, (boolean) content);
-      case "add", "remove", "promote", "demote" -> notifyGroupAction(chat, node, (Map<String, ?>) content);
-      case "ephemeral" -> updateAndNotifyEphemeralStatus(chat, (long) content);
-      case "desc_add" -> notifyGroupDescriptionChange(chat, (Map<String, ?>) content);
-      case "subject" -> updateAndNotifyGroupSubject(chat, (Map<String, ?>) content);
+      case "restrict" -> notifyGroupSettingChange(chat, WhatsappGroupSetting.EDIT_GROUP_INFO, content);
+      case "announce" -> notifyGroupSettingChange(chat, WhatsappGroupSetting.SEND_MESSAGES, content);
+      case "add", "remove", "promote", "demote" -> notifyGroupAction(chat, node, content);
+      case "ephemeral" -> updateAndNotifyEphemeralStatus(chat, content);
+      case "desc_add" -> notifyGroupDescriptionChange(chat, content);
+      case "subject" -> updateAndNotifyGroupSubject(chat, content);
     }
   }
 
-  private void notifyGroupDescriptionChange(@NotNull WhatsappChat chat, @NotNull Map<String, ?> content) {
-    var response = new JsonResponse(content).toModel(DescriptionChangeResponse.class);
+  private void notifyGroupDescriptionChange(@NotNull WhatsappChat chat, @NotNull String content) {
+    var response = JsonResponse.fromJson(content).toModel(DescriptionChangeResponse.class);
     whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onGroupDescriptionChange(chat, response.description(), response.descriptionId())));
   }
 
-  private void updateAndNotifyGroupSubject(@NotNull WhatsappChat chat, @NotNull Map<String, ?> content) {
-    var response = new JsonResponse(content).toModel(SubjectChangeResponse.class);
+  private void updateAndNotifyGroupSubject(@NotNull WhatsappChat chat, @NotNull String content) {
+    var response = JsonResponse.fromJson(content).toModel(SubjectChangeResponse.class);
     chat.name(response.subject());
     whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onGroupSubjectChange(chat)));
   }
 
-  private void updateAndNotifyEphemeralStatus(@NotNull WhatsappChat chat, long content) {
-    chat.ephemeralMessageDuration(content);
+  private void updateAndNotifyEphemeralStatus(@NotNull WhatsappChat chat, @NotNull String content) {
+    chat.ephemeralMessageDuration(Long.parseLong(content));
     chat.ephemeralMessagesToggleTime(ZonedDateTime.now().toEpochSecond());
     whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onChatEphemeralStatusChange(chat)));
   }
 
-  private void notifyGroupAction(@NotNull WhatsappChat chat, @NotNull WhatsappNode node, @NotNull Map<String, ?> content) {
-    new JsonResponse(content)
+  private void notifyGroupAction(@NotNull WhatsappChat chat, @NotNull WhatsappNode node, @NotNull String content) {
+    JsonResponse.fromJson(content)
             .toModel(GroupActionResponse.class)
             .participants()
             .stream()
             .map(whatsappManager::findContactByJid)
             .map(Optional::orElseThrow)
-            .forEach(contact -> whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onGroupAction(chat, contact, GroupAction.valueOf(node.description().toUpperCase())))));
+            .forEach(contact -> whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onGroupAction(chat, contact, WhatsappGroupAction.valueOf(node.description().toUpperCase())))));
   }
 
-  private void notifyGroupSettingChange(@NotNull WhatsappChat chat, @NotNull GroupSetting setting, boolean content) {
-    whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onGroupSettingsChange(chat, setting, GroupPolicy.forData(content))));
+  private void notifyGroupSettingChange(@NotNull WhatsappChat chat, @NotNull WhatsappGroupSetting setting, @NotNull String content) {
+    whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onGroupSettingsChange(chat, setting, WhatsappGroupPolicy.forData(Boolean.parseBoolean(content)))));
   }
 
   private void handleMessageInfo(@NotNull AckResponse ackResponse){

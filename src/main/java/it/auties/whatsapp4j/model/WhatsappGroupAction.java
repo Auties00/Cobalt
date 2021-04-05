@@ -1,6 +1,6 @@
-package it.auties.whatsapp4j.api;
+package it.auties.whatsapp4j.model;
 
-import it.auties.whatsapp4j.model.WhatsappChat;
+import it.auties.whatsapp4j.api.WhatsappAPI;
 import org.jetbrains.annotations.NotNull;
 
 
@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
  * Said chat should be a group: {@link WhatsappChat#isGroup()}.
  * Said actions can be executed using various methods in {@link WhatsappAPI}.
  */
-public enum GroupAction {
+public enum WhatsappGroupAction {
     /**
      * Adds a contact to a group
      */

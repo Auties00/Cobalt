@@ -8,7 +8,6 @@ import it.auties.whatsapp4j.response.model.JsonResponseModel;
 import jakarta.websocket.Session;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.CompletableFuture;
 

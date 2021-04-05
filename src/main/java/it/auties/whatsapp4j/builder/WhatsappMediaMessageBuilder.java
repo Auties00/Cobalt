@@ -2,7 +2,6 @@ package it.auties.whatsapp4j.builder;
 
 import it.auties.whatsapp4j.model.WhatsappMediaMessage;
 import it.auties.whatsapp4j.model.WhatsappMediaMessageType;
-import it.auties.whatsapp4j.model.WhatsappTextMessage;
 import it.auties.whatsapp4j.utils.ProtobufUtils;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -11,7 +10,6 @@ import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 @EqualsAndHashCode(callSuper = true)

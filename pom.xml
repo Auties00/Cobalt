@@ -95,6 +95,13 @@
                <groupId>org.projectlombok</groupId>
                <artifactId>lombok-maven-plugin</artifactId>
                <version>${delombok-version}</version>
+               <dependencies>
+                   <dependency>
+                       <groupId>org.projectlombok</groupId>
+                       <artifactId>lombok</artifactId>
+                       <version>${lombok-version}</version>
+                   </dependency>
+               </dependencies>
                <configuration>
                    <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
                    <outputDirectory>${delombok.output}</outputDirectory>
@@ -127,10 +134,6 @@
                             <version>${lombok-version}</version>
                         </path>
                     </annotationProcessorPaths>
-                    <compilerArguments>
-                        <AaddGeneratedAnnotation>false</AaddGeneratedAnnotation>
-                        <Adebug>true</Adebug>
-                    </compilerArguments>
                     <compilerArgs>
                         <arg>--enable-preview</arg>
                     </compilerArgs>
@@ -237,11 +240,6 @@
         </dependency>
 
         <!-- Cryptographic dependencies -->
-        <dependency>
-            <groupId>org.whispersystems</groupId>
-            <artifactId>curve25519-java</artifactId>
-            <version>${curve25519-version}</version>
-        </dependency>
         <dependency>
             <groupId>at.favre.lib</groupId>
             <artifactId>hkdf</artifactId>

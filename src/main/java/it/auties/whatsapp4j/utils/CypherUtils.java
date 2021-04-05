@@ -11,10 +11,9 @@ import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.whispersystems.curve25519.Curve25519;
-import org.whispersystems.curve25519.Curve25519KeyPair;
 
 import javax.crypto.Cipher;
+import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -24,9 +23,16 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.ByteBuffer;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
+import java.util.NoSuchElementException;
+
+import static it.auties.whatsapp4j.binary.BinaryArray.forArray;
 
 /**
  * This utility class provides helper functionality to easily encrypt and decrypt data
@@ -35,26 +41,37 @@ import java.util.Base64;
 @UtilityClass
 public class CypherUtils {
     private final HttpClient CLIENT = HttpClient.newHttpClient();
-    private final Curve25519 CURVE_25519 = Curve25519.getInstance(Curve25519.JAVA);
+    private final String CURVE_25519 = "X25519";
+    private final String CURVE_25519_KEY = "XDH";
     private final String HMAC_SHA256 = "HmacSHA256";
     private final String AES = "AES";
     private final String AES_ALGORITHM = "AES/CBC/PKCS5PADDING";
     private final String SHA256 = "SHA-256";
     private final int BLOCK_SIZE = 16;
 
-    public @NotNull Curve25519KeyPair calculateRandomKeyPair(){
-        return CURVE_25519.generateKeyPair();
+    @SneakyThrows
+    public @NotNull KeyPair calculateRandomKeyPair(){
+        final var kpg = KeyPairGenerator.getInstance(CURVE_25519);
+        return kpg.generateKeyPair();
     }
 
-    public @NotNull BinaryArray calculateSharedSecret(byte @NotNull [] publicKey, byte @NotNull [] privateKey){
-        return BinaryArray.forArray(CURVE_25519.calculateAgreement(publicKey, privateKey));
+    @SneakyThrows
+    public @NotNull BinaryArray calculateSharedSecret(byte @NotNull [] publicKeyBytes, byte @NotNull [] privateKeyBytes){
+        var keyFactory = KeyFactory.getInstance(CURVE_25519);
+        var publicKey = keyFactory.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
+        var privateKey = keyFactory.generatePrivate(new PKCS8EncodedKeySpec(privateKeyBytes));
+
+        var keyAgreement = KeyAgreement.getInstance(CURVE_25519_KEY);
+        keyAgreement.init(privateKey);
+        keyAgreement.doPhase(publicKey, true);
+        return forArray(keyAgreement.generateSecret());
     }
 
     @SneakyThrows
     public @NotNull BinaryArray hmacSha256(@NotNull BinaryArray plain, @NotNull BinaryArray key) {
         final var localMac = Mac.getInstance(HMAC_SHA256);
         localMac.init(new SecretKeySpec(key.data(), HMAC_SHA256));
-        return BinaryArray.forArray(localMac.doFinal(plain.data()));
+        return forArray(localMac.doFinal(plain.data()));
     }
 
     @SneakyThrows
@@ -64,7 +81,7 @@ public class CypherUtils {
 
     @SneakyThrows
     public @NotNull BinaryArray hkdfExpand(@NotNull BinaryArray input, byte @Nullable [] data, int size) {
-        return BinaryArray.forArray(HKDF.fromHmacSha256().extractAndExpand(null, input.data(), data, size));
+        return forArray(HKDF.fromHmacSha256().extractAndExpand(null, input.data(), data, size));
     }
 
     @SneakyThrows
@@ -77,7 +94,7 @@ public class CypherUtils {
         final var cipher = Cipher.getInstance(AES_ALGORITHM);
         final var keySpec = new SecretKeySpec(secretKey.data(), AES);
         cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(iv.data()));
-        return BinaryArray.forArray(cipher.doFinal(encrypted.slice(BLOCK_SIZE).data()));
+        return forArray(cipher.doFinal(encrypted.slice(BLOCK_SIZE).data()));
     }
 
     @SneakyThrows
@@ -91,7 +108,7 @@ public class CypherUtils {
         final var keySpec = new SecretKeySpec(encKey.data(), AES);
         cipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(iv.data()));
 
-        var result = BinaryArray.forArray(cipher.doFinal(decrypted));
+        var result = forArray(cipher.doFinal(decrypted));
         return withIv ? iv.merged(result) : result;
     }
 
@@ -152,8 +169,8 @@ public class CypherUtils {
 
         var response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         var body = JsonResponse.fromJson(response.body());
-        var encodedUrl = body.getString("url").orElseThrow(() -> new RuntimeException("WhatsappAPI: Cannot upload media, missing url response %s".formatted(body)));
-        var directPath = body.getString("direct_path").orElseThrow(() -> new RuntimeException("WhatsappAPI: Cannot upload media, missing direct path response %s".formatted(body)));
+        var encodedUrl = body.getString("url").orElseThrow(() -> new NoSuchElementException("WhatsappAPI: Cannot upload media, missing url response %s".formatted(body)));
+        var directPath = body.getString("direct_path").orElseThrow(() -> new NoSuchElementException("WhatsappAPI: Cannot upload media, missing direct path response %s".formatted(body)));
 
         return new WhatsappMediaUpload(encodedUrl, directPath, mediaKey, encFile, fileSha256, fileEncSha256, sidecar, type);
     }
@@ -164,7 +181,7 @@ public class CypherUtils {
         var output = new ByteArrayOutputStream();
         var chunk = new byte[80];
         while (input.read(chunk) != -1) {
-            var sign = hmacSha256(BinaryArray.forArray(chunk), macKey);
+            var sign = hmacSha256(forArray(chunk), macKey);
             output.write(sign.cut(10).data());
         }
 

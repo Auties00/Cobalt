@@ -14,6 +14,7 @@ import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.security.KeyPair;
 import java.util.Base64;
 import java.util.Objects;
 import java.util.prefs.Preferences;
@@ -34,7 +35,7 @@ public class WhatsappKeysManager {
     @JsonProperty
     private @Nullable String serverToken, clientToken;
     @JsonProperty
-    private byte[] publicKey, privateKey;
+    private @NotNull KeyPair keyPair;
     @JsonProperty
     private @Nullable BinaryArray encKey, macKey;
 
@@ -50,8 +51,7 @@ public class WhatsappKeysManager {
             return JACKSON_READER.readValue(preferences, WhatsappKeysManager.class);
         }
 
-        var keyPair = CypherUtils.calculateRandomKeyPair();
-        return new WhatsappKeysManager(Base64.getEncoder().encodeToString(BinaryArray.random(16).data()), null, null, keyPair.getPublicKey(), keyPair.getPrivateKey(), null, null);
+        return new WhatsappKeysManager(Base64.getEncoder().encodeToString(BinaryArray.random(16).data()), null, null, CypherUtils.calculateRandomKeyPair(), null, null);
     }
 
     /**

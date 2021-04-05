@@ -3,13 +3,10 @@ package it.auties.whatsapp4j.builder;
 import it.auties.whatsapp4j.model.WhatsappChat;
 import it.auties.whatsapp4j.model.WhatsappMessage;
 import it.auties.whatsapp4j.model.WhatsappUserMessage;
-import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Objects;
 
 @NoArgsConstructor
 abstract class WhatsappMessageBuilder<R> {

@@ -1,5 +1,6 @@
-package it.auties.whatsapp4j.api;
+package it.auties.whatsapp4j.model;
 
+import it.auties.whatsapp4j.api.WhatsappAPI;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -10,7 +11,7 @@ import lombok.experimental.Accessors;
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum GroupSetting {
+public enum WhatsappGroupSetting {
     /**
      * Who can edit the metadata of a group
      */

@@ -9,8 +9,8 @@ import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.model.*;
 import it.auties.whatsapp4j.request.impl.NodeRequest;
-import it.auties.whatsapp4j.request.impl.UserQueryRequest;
 import it.auties.whatsapp4j.request.impl.SubscribeUserPresenceRequest;
+import it.auties.whatsapp4j.request.impl.UserQueryRequest;
 import it.auties.whatsapp4j.response.impl.*;
 import it.auties.whatsapp4j.socket.WhatsappWebSocket;
 import it.auties.whatsapp4j.utils.Validate;
@@ -328,7 +328,7 @@ public class WhatsappAPI {
      * @throws IllegalArgumentException if the provided chat is not a group
      */
     public @NotNull CompletableFuture<GroupModificationResponse> promote(@NotNull WhatsappChat group, @NotNull WhatsappContact... contacts) {
-        return executeActionOnGroupParticipant(group, GroupAction.PROMOTE, WhatsappUtils.jidsToParticipantNodes(contacts));
+        return executeActionOnGroupParticipant(group, WhatsappGroupAction.PROMOTE, WhatsappUtils.jidsToParticipantNodes(contacts));
     }
 
     /**
@@ -339,7 +339,7 @@ public class WhatsappAPI {
      * @throws IllegalArgumentException if the provided chat is not a group
      */
     public @NotNull CompletableFuture<GroupModificationResponse> demote(@NotNull WhatsappChat group, @NotNull WhatsappContact... contacts) {
-        return executeActionOnGroupParticipant(group, GroupAction.DEMOTE, WhatsappUtils.jidsToParticipantNodes(contacts));
+        return executeActionOnGroupParticipant(group, WhatsappGroupAction.DEMOTE, WhatsappUtils.jidsToParticipantNodes(contacts));
     }
 
     /**
@@ -350,7 +350,7 @@ public class WhatsappAPI {
      * @throws IllegalArgumentException if the provided chat is not a group
      */
     public @NotNull CompletableFuture<GroupModificationResponse> add(@NotNull WhatsappChat group, @NotNull WhatsappContact... contacts) {
-        return executeActionOnGroupParticipant(group, GroupAction.ADD, WhatsappUtils.jidsToParticipantNodes(contacts));
+        return executeActionOnGroupParticipant(group, WhatsappGroupAction.ADD, WhatsappUtils.jidsToParticipantNodes(contacts));
     }
 
     /**
@@ -361,7 +361,7 @@ public class WhatsappAPI {
      * @throws IllegalArgumentException if the provided chat is not a group
      */
     public @NotNull CompletableFuture<GroupModificationResponse> remove(@NotNull WhatsappChat group, @NotNull WhatsappContact... contacts) {
-        return executeActionOnGroupParticipant(group, GroupAction.REMOVE, WhatsappUtils.jidsToParticipantNodes(contacts));
+        return executeActionOnGroupParticipant(group, WhatsappGroupAction.REMOVE, WhatsappUtils.jidsToParticipantNodes(contacts));
     }
 
     /**
@@ -372,7 +372,7 @@ public class WhatsappAPI {
      * @param jids   the raw WhatsappNodes representing the contacts the action should be executed on
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    public @NotNull CompletableFuture<GroupModificationResponse> executeActionOnGroupParticipant(@NotNull WhatsappChat group, @NotNull GroupAction action, @NotNull List<WhatsappNode> jids) {
+    public @NotNull CompletableFuture<GroupModificationResponse> executeActionOnGroupParticipant(@NotNull WhatsappChat group, @NotNull WhatsappGroupAction action, @NotNull List<WhatsappNode> jids) {
         Validate.isTrue(group.isGroup(), "WhatsappAPI: Cannot change group's name: %s is not a group", group.jid());
         Validate.isTrue(!jids.isEmpty(), "WhatsappAPI: Cannot change group's name: expected at least one participant node");
 
@@ -440,8 +440,8 @@ public class WhatsappAPI {
      * @param policy the new policy to enforce
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    public @NotNull CompletableFuture<SimpleStatusResponse> changeWhoCanSendMessagesInGroup(@NotNull WhatsappChat group, @NotNull GroupPolicy policy) {
-        return changeGroupSetting(group, GroupSetting.SEND_MESSAGES, policy);
+    public @NotNull CompletableFuture<SimpleStatusResponse> changeWhoCanSendMessagesInGroup(@NotNull WhatsappChat group, @NotNull WhatsappGroupPolicy policy) {
+        return changeGroupSetting(group, WhatsappGroupSetting.SEND_MESSAGES, policy);
     }
 
     /**
@@ -451,8 +451,8 @@ public class WhatsappAPI {
      * @param policy the new policy to enforce
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    public @NotNull CompletableFuture<SimpleStatusResponse> changeWhoCanEditGroupInfo(@NotNull WhatsappChat group, @NotNull GroupPolicy policy) {
-        return changeGroupSetting(group, GroupSetting.EDIT_GROUP_INFO, policy);
+    public @NotNull CompletableFuture<SimpleStatusResponse> changeWhoCanEditGroupInfo(@NotNull WhatsappChat group, @NotNull WhatsappGroupPolicy policy) {
+        return changeGroupSetting(group, WhatsappGroupSetting.EDIT_GROUP_INFO, policy);
     }
 
     /**
@@ -463,7 +463,7 @@ public class WhatsappAPI {
      * @param policy  the new policy to enforce
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    public @NotNull CompletableFuture<SimpleStatusResponse> changeGroupSetting(@NotNull WhatsappChat group, @NotNull GroupSetting setting, @NotNull GroupPolicy policy) {
+    public @NotNull CompletableFuture<SimpleStatusResponse> changeGroupSetting(@NotNull WhatsappChat group, @NotNull WhatsappGroupSetting setting, @NotNull WhatsappGroupPolicy policy) {
         Validate.isTrue(group.isGroup(), "WhatsappAPI: Cannot change group's setting: %s is not a group", group.jid());
         var tag = WhatsappUtils.buildRequestTag(configuration);
         var node = WhatsappNode.builder()

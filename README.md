@@ -27,6 +27,18 @@ implementation 'com.github.auties00:whatsappweb4j:1.2'
 ### Javadocs
 Javadocs for WhatsappWeb4j are available [here](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/index.html), all contributions are welcomed!
 
+### How to contribute
+
+As of today, no additional configuration is needed to edit this project. I recommend using the latest version of IntelliJ.
+
+1. [Fork this project](https://docs.github.com/en/github/getting-started-with-github/fork-a-repo)
+2. [Clone the new repo](https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/cloning-a-repository)
+3. [Create a new branch](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/managing-branches#creating-a-branch)
+3. Once you are implementing the new feature, [create a new merge request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request)
+
+If you are trying to implement a feature that is present on WhatsappWeb's WebClient, for example audio or video calls, consider using [WhatsappWeb4jRequestAnalyzer](https://github.com/Auties00/whatsappweb4j-request-analyzer),
+a tool I built for this exact purpose.
+
 ### How to configure WhatsappWeb4j
 To use this library, start by initializing an instance of WhatsappAPI:
 ```java
@@ -473,20 +485,3 @@ var future = api.leave(group);  // A future for the request
 var response = future.get(); // Wait for the future to complete
 ```
 
-## How to contribute
-
-The current release of lombok does not work with java16 which is required to
-compile the projects code.
-
-### Building and installing Lombok
-
-This project can be built quite easily, the only tricky part is that the delombok maven plugin needs to point to lombok 1.18.20 instead of 1.18.18. To fix this:
-
-1. Execute these commands:
-    ```
-    cd ${HOME}/.m2/repository/org/projectlombok/lombok-maven/1.18.18.0/
-    vi lombok-maven-1.18.18.0.pom
-    ```
-2. Replace the lombok.version property so that it reads: `<lombok.version>1.18.20</lombok.version>`
-
-You can now run `mvn clean install` to build and test your version of the library.
