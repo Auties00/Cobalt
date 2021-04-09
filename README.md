@@ -318,7 +318,7 @@ var jidChat = api.queryChat(chatJid); // Loads a chat assiosiated with a jid
 If the chat is already in memory, to load more messages:
 ``` java
 api.loadConversation(chat); // Loads the twenty messages that came chronologically before the oldest one
-api.loadConversation(chat, numOfMessages, message); // Loads the numOfMessages that came chronologically before the specified message
+api.loadConversation(chat, message, numOfMessages); // Loads the numOfMessages that came chronologically before the specified message
 ```
 
 ### Search messages
