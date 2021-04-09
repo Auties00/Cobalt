@@ -114,9 +114,9 @@ api.logout();
 All the messages, chats and contacts stored in memory can be accessed using the singleton [WhatsappDataManager](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/manager/WhatsappDataManager.html):
 ```java
 var manager = api.manager(); // Get an instance of WhatsappDataManager
-var chats = api.chats(); // Get all the chats in memory
-var contacts = api.contacts(); // Get all the contacts in memory
-var number = api.phoneNumberJid(); // Get your phone number as a jid
+var chats = manager.chats(); // Get all the chats in memory
+var contacts = manager.contacts(); // Get all the contacts in memory
+var number = manager.phoneNumberJid(); // Get your phone number as a jid
 ```
 > **_IMPORTANT:_** When your program first starts up, these fields will be empty. To be notified when they are populated, implement the corresponding method in a WhatsappListener
 
