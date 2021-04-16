@@ -14,7 +14,8 @@ import java.util.List;
  * A JSON request used to force WhatsappWeb's WebSocket to send updates regarding a contact's status.
  * After this message, the status can be fetched by listening to {@link WhatsappListener#onContactPresenceUpdate(WhatsappChat, WhatsappContact)} or {@link WhatsappContact#lastKnownPresence()}.
  */
-public abstract class SubscribeUserPresenceRequest<M extends JsonResponseModel> extends JsonRequest<M> {
+public class SubscribeUserPresenceRequest<M extends JsonResponseModel<M>>
+        extends JsonRequest<SubscribeUserPresenceRequest<M>,M> {
     private final @NotNull String jid;
 
     public SubscribeUserPresenceRequest(@NotNull WhatsappConfiguration configuration, @NotNull String jid) {

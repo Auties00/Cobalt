@@ -11,7 +11,8 @@ import java.util.List;
 /**
  * A JSON request used to signal to WhatsappWeb's WebSocket that the authentication process can begin
  */
-public abstract class InitialRequest<M extends JsonResponseModel> extends JsonRequest<M> {
+public class InitialRequest<M extends JsonResponseModel<M>>
+        extends JsonRequest<InitialRequest<M>,M> {
     private final @NotNull WhatsappKeysManager whatsappKeys;
     public InitialRequest(@NotNull WhatsappConfiguration configuration, @NotNull WhatsappKeysManager whatsappKeys){
         super(configuration);

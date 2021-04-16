@@ -19,7 +19,7 @@ import java.util.Optional;
 @Data
 @Accessors(fluent = true)
 @ToString
-public final class WhatsappLocationMessage extends WhatsappUserMessage {
+public final class WhatsappLocationMessage extends WhatsappUserMessage<WhatsappLocationMessage> {
     /**
      * The coordinates of the location wrapped by this object
      */

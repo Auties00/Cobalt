@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotNull;
  * A binary model to represent a WhatsappNode that contains {@link WhatsappChat}
  * The property {@link ChatResponse#data} is nullable and should be accessed using the accessor {@link ChatResponse#data()}
  */
-public class ChatResponse extends BinaryResponseModel<WhatsappChat> {
+public class ChatResponse extends BinaryResponseModel<ChatResponse,WhatsappChat> {
     /**
      * Constructs a new ChatResponse from {@code node}
      * If {@code node} cannot be parsed no exception is thrown

@@ -12,6 +12,7 @@ import it.auties.whatsapp4j.response.impl.*;
 import it.auties.whatsapp4j.response.model.BinaryResponse;
 import it.auties.whatsapp4j.response.model.JsonListResponse;
 import it.auties.whatsapp4j.response.model.JsonResponse;
+import it.auties.whatsapp4j.response.model.ResponseModel;
 import it.auties.whatsapp4j.utils.Validate;
 import it.auties.whatsapp4j.utils.WhatsappQRCode;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
@@ -133,7 +134,10 @@ public class WhatsappWebSocket {
 
   @OnMessage
   public void onMessage(@NotNull String message) {
-    var res = WhatsappResponse.fromJson(message);
+    var res = new WhatsappResponse().fromJson(message);
+
+
+
     if(res.data() instanceof JsonListResponse listResponse){
       handleList(listResponse);
       return;
@@ -153,14 +157,15 @@ public class WhatsappWebSocket {
     }
 
     switch (res.description()){
-      case "Conn" -> handleUserInformation(mapResponse.toModel(UserInformationResponse.class));
-      case "Blocklist" -> handleBlocklist(mapResponse.toModel(BlocklistResponse.class));
+      case "Conn" -> handleUserInformation((UserInformationResponse) mapResponse.toModel(UserInformationResponse.class));
+      case "Blocklist" -> handleBlocklist((BlocklistResponse) mapResponse.toModel(BlocklistResponse.class));
       case "Cmd" -> handleCmd(mapResponse);
-      case "Props" -> handleProps(mapResponse.toModel(PropsResponse.class));
-      case "Presence" -> handlePresence(mapResponse.toModel(PresenceResponse.class));
-      case "Msg", "MsgInfo" -> handleMessageInfo(mapResponse.toModel(AckResponse.class));
-      case "Chat" -> handleChatCmd(mapResponse.toModel(ChatCmdResponse.class));
+      case "Props" -> handleProps((PropsResponse) mapResponse.toModel(PropsResponse.class));
+      case "Presence" -> handlePresence((PresenceResponse) mapResponse.toModel(PresenceResponse.class));
+      case "Msg", "MsgInfo" -> handleMessageInfo((AckResponse) mapResponse.toModel(AckResponse.class));
+      case "Chat" -> handleChatCmd((ChatCmdResponse) mapResponse.toModel(ChatCmdResponse.class));
     }
+
   }
 
   @OnMessage
@@ -170,8 +175,8 @@ public class WhatsappWebSocket {
     var binaryMessage = BinaryArray.forArray(msg);
     var tagAndMessagePair = binaryMessage.indexOf(',').map(binaryMessage::split).orElseThrow();
 
-    var messageTag  = tagAndMessagePair.getFirst().toString();
-    var messageContent  = tagAndMessagePair.getSecond();
+    var messageTag  = tagAndMessagePair.getKey().toString();
+    var messageContent  = tagAndMessagePair.getValue();
 
     var message = messageContent.slice(32);
     var hmacValidation = hmacSha256(message, Objects.requireNonNull(whatsappKeys.macKey()));
@@ -211,7 +216,7 @@ public class WhatsappWebSocket {
   private void sendPing(){
     session().getAsyncRemote().sendPing(ByteBuffer.allocate(0));
   }
-  
+
   private void handleChatCmd(@NotNull ChatCmdResponse cmdResponse){
     if(cmdResponse.cmd() == null){
       return;
@@ -225,7 +230,7 @@ public class WhatsappWebSocket {
     var chat = chatOpt.get();
     var node = WhatsappNode.fromList(cmdResponse.data());
     var content = String.valueOf(Objects.requireNonNull(node.content(), "WhatsappAPI: Cannot parse a chat cmd with no content"));
-    
+
     switch (node.description()){
       case "restrict" -> notifyGroupSettingChange(chat, WhatsappGroupSetting.EDIT_GROUP_INFO, content);
       case "announce" -> notifyGroupSettingChange(chat, WhatsappGroupSetting.SEND_MESSAGES, content);
@@ -237,12 +242,12 @@ public class WhatsappWebSocket {
   }
 
   private void notifyGroupDescriptionChange(@NotNull WhatsappChat chat, @NotNull String content) {
-    var response = JsonResponse.fromJson(content).toModel(DescriptionChangeResponse.class);
+    DescriptionChangeResponse response = (DescriptionChangeResponse) JsonResponse.fromJson(content).toModel(DescriptionChangeResponse.class);
     whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onGroupDescriptionChange(chat, response.description(), response.descriptionId())));
   }
 
   private void updateAndNotifyGroupSubject(@NotNull WhatsappChat chat, @NotNull String content) {
-    var response = JsonResponse.fromJson(content).toModel(SubjectChangeResponse.class);
+    SubjectChangeResponse response = (SubjectChangeResponse) JsonResponse.fromJson(content).toModel(SubjectChangeResponse.class);
     chat.name(response.subject());
     whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onGroupSubjectChange(chat)));
   }
@@ -254,9 +259,9 @@ public class WhatsappWebSocket {
   }
 
   private void notifyGroupAction(@NotNull WhatsappChat chat, @NotNull WhatsappNode node, @NotNull String content) {
-    JsonResponse.fromJson(content)
-            .toModel(GroupActionResponse.class)
-            .participants()
+    GroupActionResponse responseModel = (GroupActionResponse) JsonResponse.fromJson(content)
+            .toModel(GroupActionResponse.class);
+    responseModel .participants()
             .stream()
             .map(whatsappManager::findContactByJid)
             .map(Optional::orElseThrow)
@@ -316,7 +321,7 @@ public class WhatsappWebSocket {
     whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onPropsUpdate(props)));
   }
 
-  private void handleCmd(@NotNull JsonResponse res){
+  private void handleCmd(@NotNull JsonResponse<?,?> res){
     if (!res.hasKey("type") || !res.hasKey("kind")) {
       return;
     }
@@ -375,11 +380,9 @@ public class WhatsappWebSocket {
   }
 
   public @NotNull CompletableFuture<ChatResponse> queryChat(@NotNull String jid) {
-    var node = WhatsappNode
-            .builder()
+    var node = new WhatsappNode()
             .description("query")
-            .attrs(Map.of("jid", jid, "epoch", String.valueOf(whatsappManager.tagAndIncrement()), "type", "chat"))
-            .build();
+            .attrs(Map.of("jid", jid, "epoch", String.valueOf(whatsappManager.tagAndIncrement()), "type", "chat"));
 
     return new NodeRequest<ChatResponse>(options, node){}.send(session(), whatsappKeys, BinaryFlag.IGNORE, BinaryMetric.QUERY_CHAT);
   }

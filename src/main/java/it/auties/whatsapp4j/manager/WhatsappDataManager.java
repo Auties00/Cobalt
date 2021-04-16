@@ -39,7 +39,7 @@ public class WhatsappDataManager {
     private final @NotNull ExecutorService listenerService;
     private final @NotNull List<WhatsappChat> chats;
     private final @NotNull List<WhatsappContact> contacts;
-    private final @NotNull List<Request<?>> pendingRequests;
+    private final @NotNull List<Request<?,?>> pendingRequests;
     private final @NotNull List<WhatsappListener> listeners;
     private  WhatsappMediaConnection mediaConnection;
     private final long initializationTimeStamp;
@@ -104,7 +104,7 @@ public class WhatsappDataManager {
      * @param id the jid to search
      * @return a non empty Optional containing the result if it is found otherwise an empty Optional empty
      */
-    public @NotNull Optional<WhatsappUserMessage> findUserMessageById(@NotNull WhatsappChat chat, @NotNull String id){
+    public @NotNull Optional<WhatsappUserMessage<?>> findUserMessageById(@NotNull WhatsappChat chat, @NotNull String id){
         return chat.messages().userMessages().filter(e -> Objects.equals(e.id(), id)).findAny();
     }
 
@@ -115,7 +115,7 @@ public class WhatsappDataManager {
      * @param context the context to use
      * @return a non empty Optional containing the result if it is found otherwise an empty Optional empty
      */
-    public @NotNull Optional<WhatsappUserMessage> findQuotedMessageInChatByContext(@NotNull WhatsappChat chat, @NotNull WhatsappProtobuf.ContextInfo context){
+    public @NotNull Optional<WhatsappUserMessage<?>> findQuotedMessageInChatByContext(@NotNull WhatsappChat chat, @NotNull WhatsappProtobuf.ContextInfo context){
         return chat.messages().userMessages().filter(e -> context.getStanzaId().equals(e.id())).findAny();
     }
 
@@ -155,7 +155,7 @@ public class WhatsappDataManager {
      * @param tag the tag to search
      * @return a non empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
-    public @NotNull Optional<Request<?>> findPendingRequest(@NotNull String tag){
+    public @NotNull Optional<Request<?,?>> findPendingRequest(@NotNull String tag){
         return pendingRequests.stream().filter(req -> req.tag().equals(tag)).findAny();
     }
 
@@ -319,7 +319,10 @@ public class WhatsappDataManager {
             return;
         }
 
-        WhatsappNode.fromGenericList(content).forEach(childNode -> listeners.forEach(listener -> callOnListenerThread(() -> listener.onPhoneBatteryStatusUpdate(new JsonResponse(childNode.attrs()).toModel(PhoneBatteryResponse.class)))));
+        WhatsappNode.fromGenericList(content).forEach(childNode -> listeners.forEach(listener -> callOnListenerThread(
+
+                () -> listener.onPhoneBatteryStatusUpdate((PhoneBatteryResponse) new JsonResponse(childNode.attrs()).toModel(PhoneBatteryResponse.class))))
+        );
     }
 
     private void muteChat(@NotNull WhatsappNode node, @NotNull WhatsappChat chat) {

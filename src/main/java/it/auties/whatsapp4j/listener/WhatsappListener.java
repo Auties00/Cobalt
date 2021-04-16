@@ -19,7 +19,7 @@ import jakarta.validation.constraints.NotNull;
  */
 public interface WhatsappListener {
     /**
-     * Called when {@link WhatsappWebSocket} successfully establishes a connection and logs in into an account.
+     * Called when WhatsappWebSocket successfully establishes a connection and logs in into an account.
      * When this event is called, any data, including chats and contact, is not guaranteed to be already in memory.
      * Instead, {@link WhatsappListener#onChatsReceived()} and {@link WhatsappListener#onContactsReceived()} should be used.
      *
@@ -29,7 +29,7 @@ public interface WhatsappListener {
     default void onLoggedIn(@NotNull UserInformationResponse info, boolean firstLogin){ }
 
     /**
-     * Called when {@link WhatsappWebSocket} successfully disconnects from WhatsappWeb's WebSocket.
+     * Called when WhatsappWebSocket successfully disconnects from WhatsappWeb's WebSocket.
      * When this event is called, any data, including chats and contact, is guaranteed to not be available anymore.
      */
     default void onDisconnected(){}
@@ -43,37 +43,37 @@ public interface WhatsappListener {
     default void onInformationUpdate(@NotNull UserInformationResponse info){}
 
     /**
-     * Called when {@link WhatsappWebSocket} receives a plain text list.
+     * Called when WhatsappWebSocket receives a plain text list.
      * This data is usually not very useful, but it may be necessary for particular use cases.
      *
-     * @param response the list received as plain text by {@link WhatsappWebSocket}
+     * @param response the list received as plain text by 
      */
     default void onListResponse(@NotNull JsonListResponse response){}
 
     /**
-     * Called when {@link WhatsappWebSocket} receives all the contacts from WhatsappWeb's WebSocket.
-     * To access this data use {@link WhatsappDataManager#contacts()}.
+     * Called when receives all the contacts from WhatsappWeb's WebSocket.
+     * To access this data use .
      */
     default void onContactsReceived(){ }
 
     /**
-     * Called when {@link WhatsappWebSocket} receives an update regarding a contact
+     * Called when  WhatsappWebSocket receives an update regarding a contact
      *
      * @param contact the updated contact
      */
     default void onContactUpdate(@NotNull WhatsappContact contact){ }
 
     /**
-     * Called when {@link WhatsappWebSocket} receives a new contact
+     * Called when WhatsappWebSocket receives a new contact
      *
      * @param contact the new contact
      */
     default void onContactReceived(@NotNull WhatsappContact contact){ }
 
     /**
-     * Called when {@link WhatsappWebSocket} receives an update regarding the presence of a contact.
+     * Called when WhatsappWebSocket receives an update regarding the presence of a contact.
      * If {@code chat} is a conversation with {@code contact}, the new presence is available by calling {@link WhatsappContact#lastKnownPresence()}.
-     * Otherwise, it should be queried using {@link WhatsappChat#presences()}.
+     * Otherwise, it should be queried using WhatsappChat#presences().
      *
      * @param chat the chat that this update regards
      * @param contact the contact that this update regards
@@ -81,13 +81,13 @@ public interface WhatsappListener {
     default void onContactPresenceUpdate(@NotNull WhatsappChat chat, @NotNull WhatsappContact contact){}
 
     /**
-     * Called when {@link WhatsappWebSocket} receives all the chats from WhatsappWeb's WebSocket.
-     * To access this data use {@link WhatsappDataManager#chats()}.
+     * Called when WhatsappWebSocket receives all the chats from WhatsappWeb's WebSocket.
+     * To access this data use {WhatsappDataManager#chats().
      */
     default void onChatsReceived(){}
 
     /**
-     * Called when {@link WhatsappWebSocket} receives a new chat
+     * Called when WhatsappWebSocket receives a new chat
      *
      * @param chat the new chat
      */

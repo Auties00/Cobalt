@@ -1,5 +1,6 @@
 package it.auties.whatsapp4j.api;
 
+import com.google.common.annotations.Beta;
 import it.auties.whatsapp4j.binary.BinaryFlag;
 import it.auties.whatsapp4j.binary.BinaryMetric;
 import it.auties.whatsapp4j.listener.MissingConstructorException;
@@ -17,7 +18,6 @@ import it.auties.whatsapp4j.utils.Validate;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import org.glassfish.tyrus.core.Beta;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.ZonedDateTime;
@@ -142,7 +142,8 @@ public class WhatsappAPI {
      * @param contact the contact whose status the api should receive updates on
      */
     public @NotNull CompletableFuture<SimpleStatusResponse> subscribeToUserPresence(@NotNull WhatsappContact contact) {
-        return new SubscribeUserPresenceRequest<SimpleStatusResponse>(configuration, contact.jid()) {}.send(socket.session());
+        return new SubscribeUserPresenceRequest<SimpleStatusResponse>(configuration, contact.jid())
+        {}.send(socket.session());
     }
 
     /**
@@ -162,11 +163,10 @@ public class WhatsappAPI {
      * @return a CompletableFuture that resolves in a MessageResponse wrapping the status of the message request and, if the status == 200, the time in seconds the message was registered on the server
      */
     public @NotNull CompletableFuture<MessageResponse> sendMessage(@NotNull WhatsappProtobuf.WebMessageInfo message) {
-        var node = WhatsappNode.builder()
+        var node = new WhatsappNode()
                 .description("action")
                 .attrs(Map.of("type", "relay", "epoch", String.valueOf(manager.tagAndIncrement())))
-                .content(List.of(new WhatsappNode("message", Map.of(), message)))
-                .build();
+                .content(List.of(new WhatsappNode("message", Map.of(), message)));
 
         return new NodeRequest<MessageResponse>(message.getKey().getId(), configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.MESSAGE);
     }
@@ -242,11 +242,10 @@ public class WhatsappAPI {
      * @return a CompletableFuture that resolves in a ChatResponse wrapping the chat that was requested
      */
     public @NotNull CompletableFuture<MessagesResponse> queryFavouriteMessagesInChat(@NotNull WhatsappChat chat, int count) {
-        var node = WhatsappNode.builder()
+        var node = new WhatsappNode()
                 .description("query")
                 .attrs(Map.of("chat", chat.jid(), "count", String.valueOf(count), "epoch", String.valueOf(manager.tagAndIncrement()), "type", "star"))
-                .content(null)
-                .build();
+                .content(null);
 
         return new NodeRequest<MessagesResponse>(configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.QUERY_MESSAGES);
     }
@@ -276,10 +275,9 @@ public class WhatsappAPI {
      * @return a CompletableFuture that resolves in the original WhatsappChat
      */
     public @NotNull CompletableFuture<WhatsappChat> loadConversation(@NotNull WhatsappChat chat, @NotNull WhatsappUserMessage lastMessage, int messageCount) {
-        var node = WhatsappNode.builder()
+        var node = new WhatsappNode()
                 .description("query")
-                .attrs(Map.of("owner", String.valueOf(lastMessage.sentByMe()), "index", lastMessage.id(), "type", "message", "epoch", String.valueOf(manager.tagAndIncrement()), "jid", chat.jid(), "kind", "before", "count", String.valueOf(messageCount)))
-                .build();
+                .attrs(Map.of("owner", String.valueOf(lastMessage.sentByMe()), "index", lastMessage.id(), "type", "message", "epoch", String.valueOf(manager.tagAndIncrement()), "jid", chat.jid(), "kind", "before", "count", String.valueOf(messageCount)));
 
         return new NodeRequest<MessagesResponse>(configuration, node) {}
                 .send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.QUERY_MESSAGES)
@@ -295,11 +293,10 @@ public class WhatsappAPI {
      * @param presence the new status
      */
     public @NotNull CompletableFuture<DiscardResponse> changePresence(@NotNull WhatsappContactStatus presence) {
-        var node = WhatsappNode.builder()
+        var node = new WhatsappNode()
                 .description("action")
                 .attrs(Map.of("type", "set", "epoch", String.valueOf(manager.tagAndIncrement())))
-                .content(List.of(new WhatsappNode("presence", Map.of("type", presence.data()), null)))
-                .build();
+                .content(List.of(new WhatsappNode("presence", Map.of("type", presence.data()), null)));
 
         return new NodeRequest<DiscardResponse>(configuration, node, false) {}.send(socket.session(), keys, presence.flag(), BinaryMetric.PRESENCE);
     }
@@ -311,11 +308,10 @@ public class WhatsappAPI {
      * @param chat     the target chat
      */
     public @NotNull CompletableFuture<DiscardResponse> changePresence(@NotNull WhatsappContactStatus presence, @NotNull WhatsappChat chat) {
-        var node = WhatsappNode.builder()
+        var node = new WhatsappNode()
                 .description("action")
                 .attrs(Map.of("type", "set", "epoch", String.valueOf(manager.tagAndIncrement())))
-                .content(List.of(new WhatsappNode("presence", Map.of("type", presence.data(), "to", chat.jid()), null)))
-                .build();
+                .content(List.of(new WhatsappNode("presence", Map.of("type", presence.data(), "to", chat.jid()), null)));
 
         return new NodeRequest<DiscardResponse>(configuration, node, false) {}.send(socket.session(), keys, presence.flag(), BinaryMetric.PRESENCE);
     }
@@ -377,11 +373,10 @@ public class WhatsappAPI {
         Validate.isTrue(!jids.isEmpty(), "WhatsappAPI: Cannot change group's name: expected at least one participant node");
 
         var tag = WhatsappUtils.buildRequestTag(configuration);
-        var node = WhatsappNode.builder()
+        var node = new WhatsappNode()
                 .description("action")
                 .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                .content(List.of(new WhatsappNode("group", Map.of("jid", group.jid(), "author", manager.phoneNumberJid(), "id", tag, "type", action.data()), jids)))
-                .build();
+                .content(List.of(new WhatsappNode("group", Map.of("jid", group.jid(), "author", manager.phoneNumberJid(), "id", tag, "type", action.data()), jids)));
 
         return new NodeRequest<GroupModificationResponse>(tag, configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.GROUP);
     }
@@ -399,11 +394,10 @@ public class WhatsappAPI {
         Validate.isTrue(!newName.isBlank(), "WhatsappAPI: Cannot change group's name: the new name cannot be empty or blank");
 
         var tag = WhatsappUtils.buildRequestTag(configuration);
-        var node = WhatsappNode.builder()
+        var node = new WhatsappNode()
                 .description("action")
                 .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                .content(List.of(new WhatsappNode("group", Map.of("jid", group.jid(), "subject", newName, "author", manager.phoneNumberJid(), "id", tag, "type", "subject"), null)))
-                .build();
+                .content(List.of(new WhatsappNode("group", Map.of("jid", group.jid(), "subject", newName, "author", manager.phoneNumberJid(), "id", tag, "type", "subject"), null)));
 
         return new NodeRequest<SimpleStatusResponse>(tag, configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.GROUP);
     }
@@ -423,11 +417,10 @@ public class WhatsappAPI {
                 .thenApplyAsync(GroupMetadataResponse::descriptionMessageId)
                 .thenComposeAsync(previousId -> {
                     var tag = WhatsappUtils.buildRequestTag(configuration);
-                    var node = WhatsappNode.builder()
+                    var node = new WhatsappNode()
                             .description("action")
                             .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                            .content(List.of(new WhatsappNode("group", Map.of("jid", group.jid(), "author", manager.phoneNumberJid(), "id", tag, "type", "description"), List.of(new WhatsappNode("description", Map.of("id", WhatsappUtils.randomId(), "prev", Objects.requireNonNullElse(previousId, "none")), newDescription)))))
-                            .build();
+                            .content(List.of(new WhatsappNode("group", Map.of("jid", group.jid(), "author", manager.phoneNumberJid(), "id", tag, "type", "description"), List.of(new WhatsappNode("description", Map.of("id", WhatsappUtils.randomId(), "prev", Objects.requireNonNullElse(previousId, "none")), newDescription)))));
 
                     return new NodeRequest<SimpleStatusResponse>(tag, configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.GROUP);
                 });
@@ -466,11 +459,10 @@ public class WhatsappAPI {
     public @NotNull CompletableFuture<SimpleStatusResponse> changeGroupSetting(@NotNull WhatsappChat group, @NotNull WhatsappGroupSetting setting, @NotNull WhatsappGroupPolicy policy) {
         Validate.isTrue(group.isGroup(), "WhatsappAPI: Cannot change group's setting: %s is not a group", group.jid());
         var tag = WhatsappUtils.buildRequestTag(configuration);
-        var node = WhatsappNode.builder()
+        var node = new WhatsappNode()
                 .description("action")
                 .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                .content(List.of(new WhatsappNode("group", Map.of("jid", group.jid(), "author", manager.phoneNumberJid(), "id", tag, "type", "prop"), List.of(new WhatsappNode(setting.data(), Map.of("value", policy.data()), null)))))
-                .build();
+                .content(List.of(new WhatsappNode("group", Map.of("jid", group.jid(), "author", manager.phoneNumberJid(), "id", tag, "type", "prop"), List.of(new WhatsappNode(setting.data(), Map.of("value", policy.data()), null)))));
 
         return new NodeRequest<SimpleStatusResponse>(tag, configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.GROUP);
     }
@@ -488,11 +480,10 @@ public class WhatsappAPI {
         Validate.isTrue(group.isGroup(), "WhatsappAPI: Cannot change group's picture: %s is not a group", group.jid());
 
         var tag = WhatsappUtils.buildRequestTag(configuration);
-        var node = WhatsappNode.builder()
+        var node = new WhatsappNode()
                 .description("action")
                 .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                .content(List.of(new WhatsappNode("picture", Map.of("jid", group.jid(), "id", tag, "type", "set"), List.of(new WhatsappNode("image", Map.of(), "ASAS")))))
-                .build();
+                .content(List.of(new WhatsappNode("picture", Map.of("jid", group.jid(), "id", tag, "type", "set"), List.of(new WhatsappNode("image", Map.of(), "ASAS")))));
 
         return new NodeRequest<SimpleStatusResponse>(tag, configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.PICTURE);
     }
@@ -506,11 +497,10 @@ public class WhatsappAPI {
     public @NotNull CompletableFuture<SimpleStatusResponse> removeGroupPicture(@NotNull WhatsappChat group) {
         Validate.isTrue(group.isGroup(), "WhatsappAPI: Cannot remove group's picture: %s is not a group", group.jid());
         var tag = WhatsappUtils.buildRequestTag(configuration);
-        var node = WhatsappNode.builder()
+        var node = new WhatsappNode()
                 .description("action")
                 .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                .content(List.of(new WhatsappNode("picture", Map.of("jid", group.jid(), "id", tag, "type", "delete"), null)))
-                .build();
+                .content(List.of(new WhatsappNode("picture", Map.of("jid", group.jid(), "id", tag, "type", "delete"), null)));
 
         return new NodeRequest<SimpleStatusResponse>(configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.PICTURE);
     }
@@ -524,11 +514,10 @@ public class WhatsappAPI {
     public @NotNull CompletableFuture<SimpleStatusResponse> leave(@NotNull WhatsappChat group) {
         Validate.isTrue(group.isGroup(), "WhatsappAPI: Cannot leave group: %s is not a group", group.jid());
         var tag = WhatsappUtils.buildRequestTag(configuration);
-        var node = WhatsappNode.builder()
+        var node = new WhatsappNode()
                 .description("action")
                 .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                .content(List.of(new WhatsappNode("group", Map.of("jid", group.jid(), "author", manager.phoneNumberJid(), "id", tag, "type", "leave"), null)))
-                .build();
+                .content(List.of(new WhatsappNode("group", Map.of("jid", group.jid(), "author", manager.phoneNumberJid(), "id", tag, "type", "leave"), null)));
 
         return new NodeRequest<SimpleStatusResponse>(tag, configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.GROUP);
     }
@@ -562,11 +551,10 @@ public class WhatsappAPI {
      */
     public @NotNull CompletableFuture<SimpleStatusResponse> mute(@NotNull WhatsappChat chat, long untilInSeconds) {
         Validate.isTrue(!chat.mute().isMuted(), "WhatsappAPI: Cannot mute chat with jid %s: chat is already muted", IllegalStateException.class, chat.jid());
-        var node = WhatsappNode.builder()
+        var node = new WhatsappNode()
                 .description("action")
                 .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                .content(List.of(new WhatsappNode("chat", Map.of("jid", chat.jid(), "mute", String.valueOf(untilInSeconds), "type", "mute"), null)))
-                .build();
+                .content(List.of(new WhatsappNode("chat", Map.of("jid", chat.jid(), "mute", String.valueOf(untilInSeconds), "type", "mute"), null)));
 
         return new NodeRequest<SimpleStatusResponse>(configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.CHAT);
     }
@@ -580,11 +568,10 @@ public class WhatsappAPI {
     public @NotNull CompletableFuture<SimpleStatusResponse> unmute(@NotNull WhatsappChat chat) {
         Validate.isTrue(chat.mute().isMuted(), "WhatsappAPI: Cannot unmute chat with jid %s: chat is not muted", chat.jid());
 
-        var node = WhatsappNode.builder()
+        var node = new WhatsappNode()
                 .description("action")
                 .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                .content(List.of(new WhatsappNode("chat", Map.of("jid", chat.jid(), "previous", chat.mute().muteEndDate().map(ChronoZonedDateTime::toEpochSecond).map(String::valueOf).orElseThrow(), "type", "mute"), null)))
-                .build();
+                .content(List.of(new WhatsappNode("chat", Map.of("jid", chat.jid(), "previous", chat.mute().muteEndDate().map(ChronoZonedDateTime::toEpochSecond).map(String::valueOf).orElseThrow(), "type", "mute"), null)));
 
         return new NodeRequest<SimpleStatusResponse>(configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.CHAT);
     }
@@ -597,11 +584,10 @@ public class WhatsappAPI {
      */
     @Beta
     public @NotNull CompletableFuture<SimpleStatusResponse> block(@NotNull WhatsappContact contact) {
-        var node = WhatsappNode.builder()
+        var node = new WhatsappNode()
                 .description("action")
                 .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                .content(List.of(new WhatsappNode("block", Map.of("jid", contact.jid()), null)))
-                .build();
+                .content(List.of(new WhatsappNode("block", Map.of("jid", contact.jid()), null)));
 
         return new NodeRequest<SimpleStatusResponse>(configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.BLOCK);
     }
@@ -615,11 +601,10 @@ public class WhatsappAPI {
     public @NotNull CompletableFuture<SimpleStatusResponse> enableEphemeralMessages(@NotNull WhatsappChat chat) {
         Validate.isTrue(!chat.isEphemeralChat(), "WhatsappAPI: Cannot enable ephemeral messages for chat with jid %s: ephemeral messages are already enabled", IllegalStateException.class, chat.jid());
         var tag = WhatsappUtils.buildRequestTag(configuration);
-        var node = WhatsappNode.builder()
+        var node = new WhatsappNode()
                 .description("action")
                 .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                .content(List.of(new WhatsappNode("group", Map.of("jid", chat.jid(), "author", manager.phoneNumberJid(), "id", tag, "type", "prop"), List.of(new WhatsappNode("ephemeral", Map.of("value", "604800"), null)))))
-                .build();
+                .content(List.of(new WhatsappNode("group", Map.of("jid", chat.jid(), "author", manager.phoneNumberJid(), "id", tag, "type", "prop"), List.of(new WhatsappNode("ephemeral", Map.of("value", "604800"), null)))));
 
         return new NodeRequest<SimpleStatusResponse>(tag, configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.GROUP);
     }
@@ -650,11 +635,10 @@ public class WhatsappAPI {
      */
     public @NotNull CompletableFuture<SimpleStatusResponse> markChat(@NotNull WhatsappChat chat, int flag) {
         var lastMessage = chat.lastMessage().orElseThrow();
-        var node = WhatsappNode.builder()
+        var node = new WhatsappNode()
                 .description("action")
                 .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                .content(List.of(new WhatsappNode("read", Map.of("owner", String.valueOf(lastMessage.sentByMe()), "jid", chat.jid(), "count", String.valueOf(flag), "index", lastMessage.info().getKey().getId()), null)))
-                .build();
+                .content(List.of(new WhatsappNode("read", Map.of("owner", String.valueOf(lastMessage.sentByMe()), "jid", chat.jid(), "count", String.valueOf(flag), "index", lastMessage.info().getKey().getId()), null)));
 
         return new NodeRequest<SimpleStatusResponse>(configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.READ);
     }
@@ -667,11 +651,10 @@ public class WhatsappAPI {
      */
     public @NotNull CompletableFuture<SimpleStatusResponse> pin(@NotNull WhatsappChat chat) {
         Validate.isTrue(!chat.isPinned(), "WhatsappAPI: Cannot pin chat with jid %s as it's already pinned", IllegalStateException.class, chat.jid());
-        var node = WhatsappNode.builder()
+        var node = new WhatsappNode()
                 .description("action")
                 .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                .content(List.of(new WhatsappNode("chat", Map.of("jid", chat.jid(), "pin", String.valueOf(ZonedDateTime.now().toEpochSecond()), "type", "pin"), null)))
-                .build();
+                .content(List.of(new WhatsappNode("chat", Map.of("jid", chat.jid(), "pin", String.valueOf(ZonedDateTime.now().toEpochSecond()), "type", "pin"), null)));
 
         return new NodeRequest<SimpleStatusResponse>(configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.CHAT);
     }
@@ -686,11 +669,10 @@ public class WhatsappAPI {
         var lastPin = chat.pinned().map(ChronoZonedDateTime::toEpochSecond).map(String::valueOf);
         Validate.isTrue(lastPin.isPresent(), "WhatsappAPI: Cannot unpin chat with jid %s as it's not pinned", IllegalStateException.class, chat.jid());
 
-        var node = WhatsappNode.builder()
+        var node = new WhatsappNode()
                 .description("action")
                 .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                .content(List.of(new WhatsappNode("chat", Map.of("jid", chat.jid(), "previous", lastPin.get(), "type", "pin"), null)))
-                .build();
+                .content(List.of(new WhatsappNode("chat", Map.of("jid", chat.jid(), "previous", lastPin.get(), "type", "pin"), null)));
 
         return new NodeRequest<SimpleStatusResponse>(configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.CHAT);
     }
@@ -705,11 +687,10 @@ public class WhatsappAPI {
         Validate.isTrue(!chat.isArchived(), "WhatsappAPI: Cannot archive chat with jid %s as it's already archived", IllegalStateException.class, chat.jid());
 
         var lastMessage = chat.lastMessage().orElseThrow();
-        var node = WhatsappNode.builder()
+        var node = new WhatsappNode()
                 .description("action")
                 .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                .content(List.of(new WhatsappNode("chat", Map.of("owner", String.valueOf(lastMessage.sentByMe()), "jid", chat.jid(), "index", lastMessage.info().getKey().getId(), "type", "archive"), null)))
-                .build();
+                .content(List.of(new WhatsappNode("chat", Map.of("owner", String.valueOf(lastMessage.sentByMe()), "jid", chat.jid(), "index", lastMessage.info().getKey().getId(), "type", "archive"), null)));
 
         return new NodeRequest<SimpleStatusResponse>(configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.CHAT);
     }
@@ -723,11 +704,10 @@ public class WhatsappAPI {
     public @NotNull CompletableFuture<SimpleStatusResponse> unarchive(@NotNull WhatsappChat chat) {
         Validate.isTrue(chat.isArchived(), "WhatsappAPI: Cannot unarchive chat with jid %s as it's not archived", IllegalStateException.class, chat.jid());
         var lastMessage = chat.lastMessage().orElseThrow();
-        var node = WhatsappNode.builder()
+        var node = new WhatsappNode()
                 .description("action")
                 .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                .content(List.of(new WhatsappNode("chat", Map.of("owner", String.valueOf(lastMessage.sentByMe()), "jid", chat.jid(), "index", lastMessage.info().getKey().getId(), "type", "unarchive"), null)))
-                .build();
+                .content(List.of(new WhatsappNode("chat", Map.of("owner", String.valueOf(lastMessage.sentByMe()), "jid", chat.jid(), "index", lastMessage.info().getKey().getId(), "type", "unarchive"), null)));
 
         return new NodeRequest<SimpleStatusResponse>(configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.CHAT);
     }
@@ -745,11 +725,10 @@ public class WhatsappAPI {
         Validate.isTrue(contacts.length > 0, "WhatsappAPI: Cannot create a group with name %s with no participants", subject);
 
         var tag = WhatsappUtils.buildRequestTag(configuration);
-        var node = WhatsappNode.builder()
+        var node = new WhatsappNode()
                 .description("action")
                 .attrs(Map.of("epoch", String.valueOf(manager.tagAndIncrement()), "type", "set"))
-                .content(List.of(new WhatsappNode("group", Map.of("subject", subject, "author", manager.phoneNumberJid(), "id", tag, "type", "create"), WhatsappUtils.jidsToParticipantNodes(contacts))))
-                .build();
+                .content(List.of(new WhatsappNode("group", Map.of("subject", subject, "author", manager.phoneNumberJid(), "id", tag, "type", "create"), WhatsappUtils.jidsToParticipantNodes(contacts))));
 
         return new NodeRequest<GroupModificationResponse>(tag, configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.GROUP);
     }
@@ -763,11 +742,10 @@ public class WhatsappAPI {
      * @param page   the page to query
      */
     public @NotNull CompletableFuture<MessagesResponse> search(@NotNull String search, int count, int page) {
-        var node = WhatsappNode.builder()
+        var node = new WhatsappNode()
                 .description("query")
                 .attrs(Map.of("search", search, "count", String.valueOf(count), "epoch", String.valueOf(manager.tagAndIncrement()), "page", String.valueOf(page), "type", "search"))
-                .content(null)
-                .build();
+                .content(null);
 
         return new NodeRequest<MessagesResponse>(configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.QUERY_MESSAGES);
     }
@@ -782,11 +760,10 @@ public class WhatsappAPI {
      * @param page   the page to query
      */
     public @NotNull CompletableFuture<MessagesResponse> searchInChat(@NotNull String search, @NotNull WhatsappChat chat, int count, int page) {
-        var node = WhatsappNode.builder()
+        var node = new WhatsappNode()
                 .description("query")
                 .attrs(Map.of("search", search, "jid", chat.jid(), "count", String.valueOf(count), "epoch", String.valueOf(manager.tagAndIncrement()), "page", String.valueOf(page), "type", "search"))
-                .content(null)
-                .build();
+                .content(null);
 
         return new NodeRequest<MessagesResponse>(configuration, node) {}.send(socket.session(), keys, BinaryFlag.IGNORE, BinaryMetric.QUERY_MESSAGES);
     }

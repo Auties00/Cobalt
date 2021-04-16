@@ -22,11 +22,11 @@ import java.util.Optional;
 @Accessors(fluent = true)
 @ToString
 @Data
-public abstract class WhatsappUserMessage extends WhatsappMessage {
+public abstract class WhatsappUserMessage<J extends WhatsappUserMessage<J>> extends WhatsappMessage<J> {
     /**
      * A nullable {@link WhatsappMessage} representing the message quoted by this message if in memory
      */
-    private final  WhatsappUserMessage quotedMessage;
+    private final  WhatsappUserMessage<?> quotedMessage;
 
     /**
      * A map that holds the read status of this message for each participant.
@@ -99,7 +99,7 @@ public abstract class WhatsappUserMessage extends WhatsappMessage {
      *
      * @return a non empty optional {@link WhatsappMessage} if this message quotes a message
      */
-    public @NotNull Optional<WhatsappUserMessage> quotedMessage() {
+    public @NotNull Optional<WhatsappUserMessage<?>> quotedMessage() {
         return Optional.ofNullable(quotedMessage);
     }
 

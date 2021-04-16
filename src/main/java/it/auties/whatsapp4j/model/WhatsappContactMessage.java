@@ -24,7 +24,7 @@ import java.util.Optional;
 @Data
 @Accessors(fluent = true)
 @ToString
-public final class WhatsappContactMessage extends WhatsappUserMessage {
+public final class WhatsappContactMessage extends WhatsappUserMessage<WhatsappContactMessage> {
     /**
      * A non null list of parsed VCards, one for each contact that the raw protobuf message used to build this object holds
      */

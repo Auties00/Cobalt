@@ -172,7 +172,7 @@ public class CypherUtils {
         var encodedUrl = body.getString("url").orElseThrow(() -> new NoSuchElementException("WhatsappAPI: Cannot upload media, missing url response %s".formatted(body)));
         var directPath = body.getString("direct_path").orElseThrow(() -> new NoSuchElementException("WhatsappAPI: Cannot upload media, missing direct path response %s".formatted(body)));
 
-        return new WhatsappMediaUpload(encodedUrl, directPath, mediaKey, encFile, fileSha256, fileEncSha256, sidecar, type);
+        return new WhatsappMediaUpload(encodedUrl.toString(), directPath.toString(), mediaKey, encFile, fileSha256, fileEncSha256, sidecar, type);
     }
 
     @SneakyThrows

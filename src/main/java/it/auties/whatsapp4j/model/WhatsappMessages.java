@@ -104,7 +104,8 @@ public class WhatsappMessages extends ArrayList<WhatsappMessage> {
      *
      * @return a non null stream
      */
-    public Stream<WhatsappUserMessage> userMessages(){
+    public Stream<WhatsappUserMessage<?>> userMessages(){
+        //noinspection unchecked
         return this.stream()
                 .filter(WhatsappMessage::isUserMessage)
                 .map(WhatsappUserMessage.class::cast);

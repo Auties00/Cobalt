@@ -9,7 +9,7 @@ import java.util.Optional;
 /**
  * A json model that contains information about the text status of a contact
  */
-public class UserStatusResponse implements JsonResponseModel {
+public class UserStatusResponse implements JsonResponseModel<UserStatusResponse> {
     /**
      * The textual status of a contact or the http status code for the original request
      */

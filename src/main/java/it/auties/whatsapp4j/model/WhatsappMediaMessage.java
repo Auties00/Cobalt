@@ -26,7 +26,7 @@ import java.util.Optional;
 @Data
 @Accessors(fluent = true)
 @ToString
-public final class WhatsappMediaMessage extends WhatsappUserMessage {
+public final class WhatsappMediaMessage extends WhatsappUserMessage<WhatsappMediaMessage> {
     /**
      * The raw media that this message holds
      */

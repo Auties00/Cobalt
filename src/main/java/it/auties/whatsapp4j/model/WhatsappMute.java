@@ -6,15 +6,24 @@ import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
  * An immutable model class that represents a WhatsappMute.
  * To change the mute status of a {@link WhatsappChat} use {@link WhatsappAPI#mute(WhatsappChat)} and {@link WhatsappAPI#unmute(WhatsappChat)}.
  *
- * @param time the end date of the mute associated with this object stored as second since {@link Instant#EPOCH}
  */
-public record WhatsappMute(long time) {
+public final class WhatsappMute {
+    private final long time;
+
+    /**
+     * @param time the end date of the mute associated with this object stored as second since {@link Instant#EPOCH}
+     */
+    public WhatsappMute(long time) {
+        this.time = time;
+    }
+
     /**
      * Returns whether the chat associated with this object is muted or not
      *
@@ -41,4 +50,28 @@ public record WhatsappMute(long time) {
     public @NotNull Optional<ZonedDateTime> muteEndDate() {
         return isMuted() ? Optional.of(ZonedDateTime.ofInstant(Instant.ofEpochSecond(time), ZoneId.systemDefault())) : Optional.empty();
     }
+
+    public long time() {
+        return time;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || obj.getClass() != this.getClass()) return false;
+        var that = (WhatsappMute) obj;
+        return this.time == that.time;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(time);
+    }
+
+    @Override
+    public String toString() {
+        return "WhatsappMute[" +
+                "time=" + time + ']';
+    }
+
 }

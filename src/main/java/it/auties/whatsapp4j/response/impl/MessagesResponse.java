@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
  * A binary model to represent a WhatsappNode that contains {@link WhatsappMessages}
  * The property {@link MessagesResponse#data} is nullable and should be accessed using the accessor {@link MessagesResponse#data()}
  */
-public class MessagesResponse extends BinaryResponseModel<WhatsappMessages> {
+public class MessagesResponse extends BinaryResponseModel<MessagesResponse,WhatsappMessages> {
     /**
      * Constructs a new MessagesResponse from {@code node}
      * If {@code node} cannot be parsed no exception is thrown

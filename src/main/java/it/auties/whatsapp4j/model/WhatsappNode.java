@@ -1,24 +1,52 @@
 package it.auties.whatsapp4j.model;
 
 import it.auties.whatsapp4j.response.model.JsonResponse;
+import it.auties.whatsapp4j.response.model.ResponseModel;
 import it.auties.whatsapp4j.utils.Validate;
 import lombok.Builder;
 import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 
 
 import java.util.List;
 import java.util.Map;
 
-/**
- * An immutable model class that represents the primary unit used by WhatsappWeb's WebSocket to communicate with the client.
- * This class also offers a builder, accessible using {@link WhatsappNodeBuilder}.
- *
- * @param description a non null String that describes the data that this object holds in its {@code attrs} and {@code content}
- * @param attrs       a non null Map of strings that describe additional information related to the content of this object or an encoded object when sending a message a protobuf object is not optimal
- * @param content     a nullable object, usually a {@link WhatsappNode}, a {@link String} or a {@link WhatsappProtobuf}'s object
- */
-@Builder
-public record WhatsappNode(@NotNull String description, @NotNull Map<String, String> attrs,  Object content) {
+@Getter
+@Setter
+@Accessors(chain = true,fluent = true)
+public class WhatsappNode implements ResponseModel<WhatsappNode> {
+    private String description;
+    private Map<String, String> attrs;
+    private Object content;
+
+    public WhatsappNode() {
+        this(null, null, null);
+    }
+
+    public WhatsappNode(String description) {
+        this(description,null,null);
+    }
+
+    public WhatsappNode(String description, Map<String, String> attrs) {
+        this(description,attrs,null);
+    }
+
+    /**
+     * An immutable model class that represents the primary unit used by WhatsappWeb's WebSocket to communicate with the client.
+     *
+     * @param description a non null String that describes the data that this object holds in its {@code attrs} and {@code content}
+     * @param attrs       a non null Map of strings that describe additional information related to the content of this object or an encoded object when sending a message a protobuf object is not optimal
+     * @param content     a nullable object, usually a {@link WhatsappNode}, a {@link String} or a {@link WhatsappProtobuf}'s object
+     */
+
+    public WhatsappNode(@NotNull String description, @NotNull Map<String, String> attrs,  Object content) {
+        this.description = description;
+        this.attrs = attrs;
+        this.content = content;
+    }
+
     /**
      * Constructs a WhatsappNode from a list
      *

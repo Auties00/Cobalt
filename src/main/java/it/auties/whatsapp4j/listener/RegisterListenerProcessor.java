@@ -1,13 +1,8 @@
 package it.auties.whatsapp4j.listener;
 
-import lombok.experimental.UtilityClass;
+import io.github.classgraph.ClassGraph;
 import jakarta.validation.constraints.NotNull;
-import org.reflections.Reflections;
-import org.reflections.scanners.ResourcesScanner;
-import org.reflections.scanners.SubTypesScanner;
-import org.reflections.scanners.TypeAnnotationsScanner;
-import org.reflections.util.ClasspathHelper;
-import org.reflections.util.ConfigurationBuilder;
+import lombok.experimental.UtilityClass;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
@@ -19,20 +14,15 @@ import java.util.List;
 @UtilityClass
 public class RegisterListenerProcessor {
     /**
-     * An instance of Reflections, used to visit all classes loaded by the class loader
-     */
-    private final Reflections reflections = new Reflections(new ConfigurationBuilder()
-            .setScanners(new SubTypesScanner(false), new ResourcesScanner(), new TypeAnnotationsScanner())
-            .setUrls(ClasspathHelper.forJavaClassPath()));
-
-    /**
      * Queries all classes annotated with {@link RegisterListener} and initializes them using a no args constructor
      *
      * @return a list of {@link WhatsappListener}
      */
     public @NotNull List<WhatsappListener> queryAllListeners() {
-        return reflections.getTypesAnnotatedWith(RegisterListener.class)
+        return new ClassGraph().enableClassInfo().enableClassInfo().enableAnnotationInfo().scan()
+                .getClassesWithAnnotation(RegisterListener.class.getCanonicalName())
                 .stream()
+                .map(a-> a.loadClass())
                 .map(RegisterListenerProcessor::cast)
                 .map(RegisterListenerProcessor::newInstance)
                 .toList();

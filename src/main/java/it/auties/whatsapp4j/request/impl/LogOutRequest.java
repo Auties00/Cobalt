@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * A JSON request used to signal to WhatsappWeb's WebSocket that this session's keys should be invalidated and the session closed
  */
-public abstract class LogOutRequest extends JsonRequest<DiscardResponse> {
+public class LogOutRequest extends JsonRequest<LogOutRequest,DiscardResponse> {
     public LogOutRequest(@NotNull WhatsappConfiguration configuration) {
         super(configuration);
     }
