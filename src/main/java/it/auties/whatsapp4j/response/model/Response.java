@@ -12,7 +12,7 @@ import jakarta.validation.constraints.NotNull;
  * <li>{@link JsonListResponse} - characterized by a list of objects serialized as a JSON String</li>
  * </ul>
  */
-public sealed interface Response permits BinaryResponse, JsonResponse, JsonListResponse {
+public interface Response {
     /**
      * Converts this object to a ResponseModel
      *
