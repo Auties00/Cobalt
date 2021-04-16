@@ -146,8 +146,6 @@
                         <configuration>
                             <javadocExecutable>${java.home}/bin/javadoc.exe</javadocExecutable>
                             <release>${java-version}</release>
-                            <sourcepath>${delombok.output}</sourcepath>
-                            <additionalOptions>--enable-preview</additionalOptions>
                         </configuration>
                     </execution>
                 </executions>
