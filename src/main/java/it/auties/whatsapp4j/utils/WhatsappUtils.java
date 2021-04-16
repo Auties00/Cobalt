@@ -7,7 +7,7 @@ import it.auties.whatsapp4j.model.WhatsappContact;
 import it.auties.whatsapp4j.model.WhatsappNode;
 import it.auties.whatsapp4j.model.WhatsappProtobuf;
 import lombok.experimental.UtilityClass;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 import java.net.URL;
 import java.time.Instant;

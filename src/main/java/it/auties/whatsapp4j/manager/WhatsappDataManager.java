@@ -15,8 +15,8 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import jakarta.validation.constraints.NotNull;
+
 
 import java.time.Instant;
 import java.util.*;
@@ -41,9 +41,9 @@ public class WhatsappDataManager {
     private final @NotNull List<WhatsappContact> contacts;
     private final @NotNull List<Request<?>> pendingRequests;
     private final @NotNull List<WhatsappListener> listeners;
-    private @Nullable WhatsappMediaConnection mediaConnection;
+    private  WhatsappMediaConnection mediaConnection;
     private final long initializationTimeStamp;
-    private @Nullable String phoneNumberJid;
+    private  String phoneNumberJid;
     private long tag;
 
     /**
@@ -246,7 +246,7 @@ public class WhatsappDataManager {
         }
     }
 
-    private void parseAction(@NotNull WhatsappWebSocket socket, @NotNull WhatsappNode node, @Nullable Object content) {
+    private void parseAction(@NotNull WhatsappWebSocket socket, @NotNull WhatsappNode node,  Object content) {
         if(!(content instanceof List<?> listContent)){
             return;
         }
@@ -409,7 +409,7 @@ public class WhatsappDataManager {
                 });
     }
 
-    private void parseResponse(@NotNull WhatsappWebSocket socket, @NotNull WhatsappNode node, @Nullable Object content) {
+    private void parseResponse(@NotNull WhatsappWebSocket socket, @NotNull WhatsappNode node,  Object content) {
         var type = node.attrs().get("type");
         if (type == null) {
             return;

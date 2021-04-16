@@ -7,8 +7,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import jakarta.validation.constraints.NotNull;
+
 
 import java.util.List;
 import java.util.Objects;
@@ -20,7 +20,7 @@ public class WhatsappContactMessageBuilder extends WhatsappMessageBuilder<Whatsa
     /**
      * A non null list of parsed VCards, one for each contact that the raw protobuf message used to build this object holds
      */
-    private @Nullable @Setter List<VCard> sharedContacts;
+    private  @Setter List<VCard> sharedContacts;
 
     /**
      * Builds a {@link WhatsappContactMessage} from the data provided

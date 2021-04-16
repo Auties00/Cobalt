@@ -7,8 +7,8 @@ import it.auties.whatsapp4j.response.model.JsonListResponse;
 import it.auties.whatsapp4j.response.model.JsonResponse;
 import it.auties.whatsapp4j.response.model.Response;
 import lombok.Builder;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import jakarta.validation.constraints.NotNull;
+
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -21,7 +21,7 @@ import java.util.HashMap;
  * @param data the data that this object holds
  */
 @Builder
-public record WhatsappResponse(@NotNull String tag, @Nullable String description, @NotNull Response data) {
+public record WhatsappResponse(@NotNull String tag,  String description, @NotNull Response data) {
     /**
      * An instance of Jackson used to deserialize JSON Strings
      */

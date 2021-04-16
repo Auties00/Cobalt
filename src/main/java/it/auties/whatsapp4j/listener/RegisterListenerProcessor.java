@@ -1,7 +1,7 @@
 package it.auties.whatsapp4j.listener;
 
 import lombok.experimental.UtilityClass;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 import org.reflections.scanners.SubTypesScanner;

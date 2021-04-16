@@ -11,8 +11,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import jakarta.validation.constraints.NotNull;
+
 
 import java.security.KeyPair;
 import java.util.Base64;
@@ -33,11 +33,11 @@ public class WhatsappKeysManager {
     @JsonProperty
     private @NotNull String clientId;
     @JsonProperty
-    private @Nullable String serverToken, clientToken;
+    private  String serverToken, clientToken;
     @JsonProperty
     private @NotNull KeyPair keyPair;
     @JsonProperty
-    private @Nullable BinaryArray encKey, macKey;
+    private  BinaryArray encKey, macKey;
 
     /**
      * Constructs a new WhatsappKeysManager from the saved preferences on this machine

@@ -12,7 +12,7 @@ import it.auties.whatsapp4j.response.model.ResponseModel;
 import it.auties.whatsapp4j.utils.CypherUtils;
 import jakarta.websocket.Session;
 import lombok.SneakyThrows;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;

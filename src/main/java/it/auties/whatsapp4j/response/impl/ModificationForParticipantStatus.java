@@ -1,7 +1,7 @@
 package it.auties.whatsapp4j.response.impl;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.ArrayList;
 import java.util.Map;

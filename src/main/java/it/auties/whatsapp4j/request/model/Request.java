@@ -12,7 +12,7 @@ import it.auties.whatsapp4j.utils.WhatsappUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 import java.lang.reflect.ParameterizedType;
 import java.util.concurrent.CompletableFuture;

@@ -7,7 +7,7 @@ import it.auties.whatsapp4j.utils.Validate;
 import lombok.Data;
 import lombok.ToString;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.Instant;
 import java.time.ZoneId;

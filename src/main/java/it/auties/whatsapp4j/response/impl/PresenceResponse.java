@@ -3,8 +3,8 @@ package it.auties.whatsapp4j.response.impl;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.model.WhatsappContactStatus;
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import jakarta.validation.constraints.NotNull;
+
 
 /**
  * A json model that contains information about an update regarding the presence of a contact in a chat
@@ -16,6 +16,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public record PresenceResponse(@NotNull @JsonProperty("id") String jid,
                                @NotNull @JsonProperty("type") WhatsappContactStatus presence,
-                               @Nullable @JsonProperty("t") Long offsetFromLastSeen,
-                               @Nullable String participant) implements JsonResponseModel {
+                                @JsonProperty("t") Long offsetFromLastSeen,
+                                String participant) implements JsonResponseModel {
 }

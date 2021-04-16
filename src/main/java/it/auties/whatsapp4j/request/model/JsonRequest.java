@@ -7,7 +7,7 @@ import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
 import jakarta.websocket.Session;
 import lombok.SneakyThrows;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.concurrent.CompletableFuture;
 

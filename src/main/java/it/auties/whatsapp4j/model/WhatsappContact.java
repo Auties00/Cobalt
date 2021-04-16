@@ -7,8 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.ToString;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.ZonedDateTime;
 import java.util.Map;
@@ -37,18 +36,18 @@ public class WhatsappContact {
      * Theoretically, it should not be possible for this field to be null as its required when registering for Whatsapp.
      * Though it looks that it can be removed later, so its nullable.
      */
-    private final @Nullable String chosenName;
+    private final  String chosenName;
 
     /**
      * The nullable name associated with this contact on the phone connected with Whatsapp
      */
-    private final @Nullable String name;
+    private final  String name;
 
     /**
      * The nullable short name associated with this contact on the phone connected with Whatsapp
      * If a name is available, theoretically, also a short name should be
      */
-    private final @Nullable String shortName;
+    private final  String shortName;
 
     /**
      * The nullable last known presence of this contact.
@@ -58,13 +57,13 @@ public class WhatsappContact {
      * By default, Whatsapp will not send updates about a contact's status unless they send a message or are in the recent contacts.
      * To force Whatsapp to send updates, use {@link WhatsappAPI#subscribeToUserPresence(WhatsappContact)}.
      */
-    private @Nullable WhatsappContactStatus lastKnownPresence;
+    private  WhatsappContactStatus lastKnownPresence;
 
     /**
      * The nullable last time this contact was seen available.
      * Any contact can decide to hide this information in their privacy settings.
      */
-    private @Nullable ZonedDateTime lastSeen;
+    private  ZonedDateTime lastSeen;
 
     /**
      * Constructs a new WhatsappContact from a map of attributes.

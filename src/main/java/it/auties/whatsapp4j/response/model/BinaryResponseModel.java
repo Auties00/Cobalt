@@ -2,8 +2,8 @@ package it.auties.whatsapp4j.response.model;
 
 import it.auties.whatsapp4j.model.WhatsappNode;
 import lombok.ToString;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import jakarta.validation.constraints.NotNull;
+
 
 import java.util.Optional;
 
@@ -17,7 +17,7 @@ public non-sealed abstract class BinaryResponseModel<T> implements ResponseModel
     /**
      * The data that this response wraps
      */
-    protected @Nullable T data;
+    protected  T data;
 
     /**
      * Constructs a new BinaryResponseModel from {@code node}

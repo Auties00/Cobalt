@@ -1,6 +1,6 @@
 package it.auties.whatsapp4j.response.model;
 
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
 

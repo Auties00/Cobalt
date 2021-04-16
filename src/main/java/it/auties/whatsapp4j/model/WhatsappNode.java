@@ -3,8 +3,8 @@ package it.auties.whatsapp4j.model;
 import it.auties.whatsapp4j.response.model.JsonResponse;
 import it.auties.whatsapp4j.utils.Validate;
 import lombok.Builder;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import jakarta.validation.constraints.NotNull;
+
 
 import java.util.List;
 import java.util.Map;
@@ -18,7 +18,7 @@ import java.util.Map;
  * @param content     a nullable object, usually a {@link WhatsappNode}, a {@link String} or a {@link WhatsappProtobuf}'s object
  */
 @Builder
-public record WhatsappNode(@NotNull String description, @NotNull Map<String, String> attrs, @Nullable Object content) {
+public record WhatsappNode(@NotNull String description, @NotNull Map<String, String> attrs,  Object content) {
     /**
      * Constructs a WhatsappNode from a list
      *

@@ -1,7 +1,7 @@
 package it.auties.whatsapp4j.response.impl;
 
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
-import org.jetbrains.annotations.Nullable;
+
 
 /**
  * A json model that contains information regarding a {@link it.auties.whatsapp4j.request.impl.TakeOverRequest}
@@ -10,5 +10,5 @@ import org.jetbrains.annotations.Nullable;
  * @param ref a token sent by Whatsapp to login, might be null
  * @param ttl time to live in seconds for the ref
  */
-public record InitialResponse(int status, @Nullable String ref, int ttl) implements JsonResponseModel{
+public record InitialResponse(int status,  String ref, int ttl) implements JsonResponseModel{
 }

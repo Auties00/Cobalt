@@ -1,7 +1,7 @@
 package it.auties.whatsapp4j.response.impl;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * A json model that contains information about the participant of a group

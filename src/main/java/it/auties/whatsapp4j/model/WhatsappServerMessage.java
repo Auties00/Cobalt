@@ -3,7 +3,7 @@ package it.auties.whatsapp4j.model;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.Optional;
 

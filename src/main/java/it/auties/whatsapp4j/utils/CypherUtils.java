@@ -9,8 +9,8 @@ import it.auties.whatsapp4j.model.WhatsappMediaUpload;
 import it.auties.whatsapp4j.response.model.JsonResponse;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import jakarta.validation.constraints.NotNull;
+
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
@@ -80,7 +80,7 @@ public class CypherUtils {
     }
 
     @SneakyThrows
-    public @NotNull BinaryArray hkdfExpand(@NotNull BinaryArray input, byte @Nullable [] data, int size) {
+    public @NotNull BinaryArray hkdfExpand(@NotNull BinaryArray input, byte  [] data, int size) {
         return forArray(HKDF.fromHmacSha256().extractAndExpand(null, input.data(), data, size));
     }
 

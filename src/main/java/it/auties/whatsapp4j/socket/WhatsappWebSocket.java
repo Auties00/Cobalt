@@ -20,8 +20,8 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import jakarta.validation.constraints.NotNull;
+
 
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -50,8 +50,8 @@ import static it.auties.whatsapp4j.utils.CypherUtils.*;
 @Data
 @Accessors(fluent = true)
 public class WhatsappWebSocket {
-  private @Nullable Session session;
-  private @Nullable WhatsappMediaConnection mediaConnection;
+  private  Session session;
+  private  WhatsappMediaConnection mediaConnection;
   private boolean loggedIn;
   private final @NotNull ScheduledExecutorService scheduler;
   private final @NotNull ScheduledExecutorService mediaSessionScheduler;
@@ -193,7 +193,7 @@ public class WhatsappWebSocket {
   }
 
   @SneakyThrows
-  public void disconnect(@Nullable String reason, boolean logout, boolean reconnect){
+  public void disconnect( String reason, boolean logout, boolean reconnect){
     Validate.isTrue(loggedIn, "WhatsappAPI: Cannot terminate the connection with whatsapp as it doesn't exist", IllegalStateException.class);
     whatsappManager.clear();
     if(logout) new LogOutRequest(options){}.send(session()).thenRun(whatsappKeys::deleteKeysFromMemory);

@@ -8,8 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.ToString;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+
+import jakarta.validation.constraints.NotNull;
 
 import java.time.ZonedDateTime;
 import java.util.HashMap;
@@ -61,7 +61,7 @@ public class WhatsappChat {
      * The nullable new unique jid for this WhatsappChat.
      * This field is not null when a contact changes phone number and connects their new phone number with Whatsapp.
      */
-    private final @Nullable String newJid;
+    private final  String newJid;
 
     /**
      * The time in seconds since {@link java.time.Instant#EPOCH} for the latest message in {@link WhatsappChat#messages}

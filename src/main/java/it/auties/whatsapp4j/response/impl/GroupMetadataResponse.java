@@ -2,8 +2,8 @@ package it.auties.whatsapp4j.response.impl;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import jakarta.validation.constraints.NotNull;
+
 
 import java.time.Instant;
 import java.util.List;
@@ -29,13 +29,13 @@ public record GroupMetadataResponse(@JsonProperty("id") @NotNull String jid,
                                     @JsonProperty("owner") @NotNull String founderJid,
                                     @JsonProperty("creation") int foundationTimestamp, @NotNull String subject,
                                     @JsonProperty("subjectTime") Integer lastSubjectUpdateTimestamp,
-                                    @JsonProperty("subjectOwner") @Nullable String lastSubjectUpdateJid,
+                                    @JsonProperty("subjectOwner")  String lastSubjectUpdateJid,
                                     @JsonProperty("restrict") boolean onlyAdminsCanChangeSettings,
                                     @JsonProperty("announce") boolean onlyAdminsCanWriteMessages,
-                                    @JsonProperty("desc") @Nullable String description,
-                                    @JsonProperty("descId") @Nullable String descriptionMessageId,
-                                    @JsonProperty("descOwner") @Nullable String lastDescriptionUpdateJid,
-                                    @JsonProperty("descTime") @Nullable Integer lastDescriptionUpdateTimestamp,
+                                    @JsonProperty("desc")  String description,
+                                    @JsonProperty("descId")  String descriptionMessageId,
+                                    @JsonProperty("descOwner")  String lastDescriptionUpdateJid,
+                                    @JsonProperty("descTime")  Integer lastDescriptionUpdateTimestamp,
                                     @NotNull List<GroupParticipant> participants) implements JsonResponseModel {
 
 }

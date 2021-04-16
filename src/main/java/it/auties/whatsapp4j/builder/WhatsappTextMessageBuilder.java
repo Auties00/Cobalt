@@ -6,8 +6,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import jakarta.validation.constraints.NotNull;
+
 
 import java.util.Objects;
 
@@ -18,7 +18,7 @@ public class WhatsappTextMessageBuilder extends WhatsappMessageBuilder<WhatsappT
     /**
      * The text of this message
      */
-    private @Nullable @Setter String text;
+    private  @Setter String text;
 
     /**
      * Builds a {@link WhatsappTextMessage} from the data provided

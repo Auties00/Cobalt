@@ -2,8 +2,8 @@ package it.auties.whatsapp4j.response.impl;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import jakarta.validation.constraints.NotNull;
+
 
 import java.util.List;
 
@@ -14,7 +14,7 @@ import java.util.List;
  * @param cmd a nullable String used to describe the update
  * @param data a list of objects that represent the encoded update
  */
-public record ChatCmdResponse(@JsonProperty("id") @NotNull String jid, @Nullable String cmd,
+public record ChatCmdResponse(@JsonProperty("id") @NotNull String jid,  String cmd,
                               @NotNull List<Object> data) implements JsonResponseModel {
 
 }

@@ -5,7 +5,7 @@ import it.auties.whatsapp4j.binary.BinaryFlag;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.Arrays;
 

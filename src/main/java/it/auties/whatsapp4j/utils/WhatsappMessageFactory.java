@@ -2,7 +2,7 @@ package it.auties.whatsapp4j.utils;
 
 import it.auties.whatsapp4j.model.*;
 import lombok.experimental.UtilityClass;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * A utility class used to convert raw protobuf objects in WhatsappMessage objects

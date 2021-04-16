@@ -1,6 +1,6 @@
 package it.auties.whatsapp4j.response.impl;
 
-import org.jetbrains.annotations.Nullable;
+
 
 /**
  * A json model that contains information about the phone of the user associated with this session
@@ -14,7 +14,7 @@ import org.jetbrains.annotations.Nullable;
  * @param deviceManufacturer a nullable String that represents the brand of the phone
  * @param deviceModel a nullable String that represents the model of the phone
  */
-public record PhoneInformation(@Nullable String waVersion, @Nullable String mcc, @Nullable String mnc,
-                        @Nullable String osVersion, @Nullable String osBuildNumber,
-                        @Nullable String deviceManufacturer, @Nullable String deviceModel) {
+public record PhoneInformation( String waVersion,  String mcc,  String mnc,
+                         String osVersion,  String osBuildNumber,
+                         String deviceManufacturer,  String deviceModel) {
 }

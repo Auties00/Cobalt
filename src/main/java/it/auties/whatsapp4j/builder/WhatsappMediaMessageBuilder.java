@@ -7,8 +7,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import jakarta.validation.constraints.NotNull;
+
 
 import java.util.Objects;
 
@@ -19,17 +19,17 @@ public class WhatsappMediaMessageBuilder extends WhatsappMessageBuilder<Whatsapp
     /**
      * The raw media that this message holds
      */
-    private @Setter byte @Nullable [] media;
+    private @Setter byte  [] media;
 
     /**
      * The type of media that this object wraps
      */
-    private @Nullable @Setter WhatsappMediaMessageType type;
+    private  @Setter WhatsappMediaMessageType type;
 
     /**
      * The raw media that this message holds
      */
-    private @Nullable @Setter String caption;
+    private  @Setter String caption;
 
     /**
      * Builds a {@link WhatsappMediaMessage} from the data provided

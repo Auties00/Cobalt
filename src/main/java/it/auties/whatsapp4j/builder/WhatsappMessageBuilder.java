@@ -5,20 +5,20 @@ import it.auties.whatsapp4j.model.WhatsappMessage;
 import it.auties.whatsapp4j.model.WhatsappUserMessage;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import jakarta.validation.constraints.NotNull;
+
 
 @NoArgsConstructor
 abstract class WhatsappMessageBuilder<R> {
     /**
      * The chat where this message is stored
      */
-    protected @Nullable @Setter WhatsappChat chat;
+    protected  @Setter WhatsappChat chat;
 
     /**
      * A nullable {@link WhatsappMessage} representing the message quoted by this message if in memory
      */
-    protected @Nullable @Setter WhatsappUserMessage quotedMessage;
+    protected  @Setter WhatsappUserMessage quotedMessage;
 
     /**
      * Whether this message was forwarded or not

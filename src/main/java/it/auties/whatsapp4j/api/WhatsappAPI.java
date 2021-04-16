@@ -18,7 +18,7 @@ import it.auties.whatsapp4j.utils.WhatsappUtils;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import org.glassfish.tyrus.core.Beta;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.ZonedDateTime;
 import java.time.chrono.ChronoZonedDateTime;

@@ -1,6 +1,6 @@
 package it.auties.whatsapp4j.model;
 
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * The constants of this enumerated type describe the various types of media type that a {@link WhatsappMediaMessage} can hold

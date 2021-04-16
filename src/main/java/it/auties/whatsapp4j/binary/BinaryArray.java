@@ -2,8 +2,8 @@ package it.auties.whatsapp4j.binary;
 
 import jakarta.xml.bind.DatatypeConverter;
 import org.glassfish.grizzly.utils.Pair;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import jakarta.validation.constraints.NotNull;
+
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -193,7 +193,7 @@ public record BinaryArray(byte[] data) {
      * @return true if {@code other} is an instance of {@link BinaryArray} and if they wrap two arrays considered equal by {@link Arrays#equals(byte[], byte[])}
      */
     @Override
-    public boolean equals(@Nullable Object other) {
+    public boolean equals( Object other) {
         return other instanceof BinaryArray that && Arrays.equals(data, that.data);
     }
 

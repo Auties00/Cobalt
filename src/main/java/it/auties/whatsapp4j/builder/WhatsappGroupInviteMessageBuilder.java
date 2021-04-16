@@ -6,8 +6,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import jakarta.validation.constraints.NotNull;
+
 
 import java.nio.ByteBuffer;
 import java.time.ZonedDateTime;
@@ -20,32 +20,32 @@ public class WhatsappGroupInviteMessageBuilder extends WhatsappMessageBuilder<Wh
     /**
      * The jid of the group that this invite regards
      */
-    private @Nullable @Setter String jid;
+    private  @Setter String jid;
 
     /**
      * The name of the group that this invite regards
      */
-    private @Nullable @Setter String name;
+    private  @Setter String name;
 
     /**
      * The caption for this invite
      */
-    private @Nullable @Setter String caption;
+    private  @Setter String caption;
 
     /**
      * The code of the group that this invite regards
      */
-    private @Nullable @Setter String code;
+    private  @Setter String code;
 
     /**
      * The thumbnail of the group that this invite regards
      */
-    private @Nullable @Setter ByteBuffer thumbnail;
+    private  @Setter ByteBuffer thumbnail;
 
     /**
      * The date when this invitation expires
      */
-    private @Nullable @Setter ZonedDateTime expiration;
+    private  @Setter ZonedDateTime expiration;
 
     /**
      * Builds a {@link WhatsappGroupInviteMessage} from the data provided

@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.model.WhatsappProtobuf;
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import jakarta.validation.constraints.NotNull;
+
 
 /**
  * A json model that contains information regarding an update about the read status of a message
@@ -18,8 +18,8 @@ import org.jetbrains.annotations.Nullable;
  * @param timestamp the time in seconds since {@link java.time.Instant#EPOCH} when the update was dispatched by the server
  * @param participant if {@code to} is a group, the participant that this update regards
  */
-public record AckResponse(@Nullable String cmd,
+public record AckResponse( String cmd,
                                 @NotNull @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) @JsonProperty("id") String[] ids,
                                 int ack, @NotNull String from, @NotNull String to, @JsonProperty("t") int timestamp,
-                                @Nullable String participant) implements JsonResponseModel {
+                                 String participant) implements JsonResponseModel {
 }

@@ -8,8 +8,8 @@ import it.auties.whatsapp4j.model.WhatsappMediaMessageType;
 import it.auties.whatsapp4j.model.WhatsappProtobuf;
 import it.auties.whatsapp4j.model.WhatsappUserMessage;
 import lombok.experimental.UtilityClass;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import jakarta.validation.constraints.NotNull;
+
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -33,7 +33,7 @@ public class ProtobufUtils {
                 .build();
     }
 
-    public @NotNull WhatsappProtobuf.Message createTextMessage(@NotNull String text, @Nullable WhatsappUserMessage quotedMessage, boolean forwarded){
+    public @NotNull WhatsappProtobuf.Message createTextMessage(@NotNull String text,  WhatsappUserMessage quotedMessage, boolean forwarded){
         if (!forwarded && quotedMessage == null) {
             return WhatsappProtobuf.Message.newBuilder().setConversation(text).build();
         }
@@ -57,7 +57,7 @@ public class ProtobufUtils {
 
     }
 
-    public @NotNull WhatsappProtobuf.Message createMediaMessage(@Nullable String caption, byte @NotNull [] media, @NotNull WhatsappMediaMessageType type){
+    public @NotNull WhatsappProtobuf.Message createMediaMessage( String caption, byte @NotNull [] media, @NotNull WhatsappMediaMessageType type){
         var upload = CypherUtils.mediaEncrypt(MANAGER.mediaConnection(), media, type);
         var message = WhatsappProtobuf.Message.newBuilder();
 
@@ -124,7 +124,7 @@ public class ProtobufUtils {
         return message.build();
     }
 
-    public @NotNull WhatsappProtobuf.Message createLocationMessage(@NotNull String text, @Nullable WhatsappUserMessage quotedMessage, boolean forwarded){
+    public @NotNull WhatsappProtobuf.Message createLocationMessage(@NotNull String text,  WhatsappUserMessage quotedMessage, boolean forwarded){
         if (!forwarded && quotedMessage == null) {
             return WhatsappProtobuf.Message.newBuilder().setConversation(text).build();
         }
@@ -148,7 +148,7 @@ public class ProtobufUtils {
 
     }
 
-    public @NotNull WhatsappProtobuf.Message createLocationMessage(@NotNull WhatsappCoordinates coordinates, @Nullable String caption, byte @Nullable [] thumbnail, boolean live, int accuracy, float speed) {
+    public @NotNull WhatsappProtobuf.Message createLocationMessage(@NotNull WhatsappCoordinates coordinates,  String caption, byte  [] thumbnail, boolean live, int accuracy, float speed) {
         var message = WhatsappProtobuf.Message.newBuilder();
         if(live){
             message.setLiveLocationMessage(WhatsappProtobuf.LiveLocationMessage.newBuilder()
@@ -173,7 +173,7 @@ public class ProtobufUtils {
         return message.build();
     }
 
-    public @NotNull WhatsappProtobuf.Message createGroupInviteMessage(@NotNull String jid, @NotNull String name, @Nullable String caption, @NotNull String code, @Nullable ByteBuffer thumbnail, @Nullable ZonedDateTime expiration) {
+    public @NotNull WhatsappProtobuf.Message createGroupInviteMessage(@NotNull String jid, @NotNull String name,  String caption, @NotNull String code,  ByteBuffer thumbnail,  ZonedDateTime expiration) {
         var invite = WhatsappProtobuf.GroupInviteMessage.newBuilder()
                 .setGroupJid(jid)
                 .setGroupName(name)

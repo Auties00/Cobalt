@@ -2,7 +2,7 @@ package it.auties.whatsapp4j.response.impl;
 
 import it.auties.whatsapp4j.model.WhatsappNode;
 import it.auties.whatsapp4j.response.model.BinaryResponseModel;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * A binary model to represent a WhatsappNode that contains {@link WhatsappNode}
