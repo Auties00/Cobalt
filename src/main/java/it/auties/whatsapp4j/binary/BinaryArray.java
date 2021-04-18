@@ -1,7 +1,7 @@
 package it.auties.whatsapp4j.binary;
 
-import it.auties.whatsapp4j.utils.Pair;
 import jakarta.xml.bind.DatatypeConverter;
+import org.glassfish.grizzly.utils.Pair;
 import jakarta.validation.constraints.NotNull;
 
 

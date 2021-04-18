@@ -31,7 +31,7 @@ import java.util.concurrent.CompletableFuture;
  */
 @RequiredArgsConstructor
 @Accessors(fluent = true)
-public abstract class Request<J extends Request<J,M>,M extends ResponseModel<M>>{
+public sealed abstract class Request<M extends ResponseModel> permits BinaryRequest, JsonRequest {
     /**
      * A singleton instance of WhatsappDataManager
      */
@@ -97,7 +97,7 @@ public abstract class Request<J extends Request<J,M>,M extends ResponseModel<M>>
                 throw new IllegalStateException("Cannot complete request with response %s".formatted(response));
             }
 
-            return (M) response.toModel(modelClass());
+            return response.toModel(modelClass());
         });
     }
 

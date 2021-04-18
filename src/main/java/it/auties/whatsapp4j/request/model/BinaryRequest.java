@@ -22,8 +22,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * @param <M>
  */
-public abstract class BinaryRequest<M extends ResponseModel<M>>
-        extends Request<BinaryRequest<M>,M> {
+public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends Request<M> {
     /**
      * An instance of BinaryEncoder used to serialize {@link WhatsappNode} as a Whatsapp encoded array of bytes
      */

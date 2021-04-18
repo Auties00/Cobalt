@@ -183,10 +183,11 @@ public class BinaryDecoder {
         }
 
         var tag = readUnsignedInt();
-        return new WhatsappNode()
+        return WhatsappNode.builder()
                 .description(description)
                 .attrs(attrs)
-                .content(isListTag(tag) ? readList(tag) : isBinaryTag(tag) ? parseMessage(description, tag) : readString(tag));
+                .content(isListTag(tag) ? readList(tag) : isBinaryTag(tag) ? parseMessage(description, tag) : readString(tag))
+                .build();
     }
 
     @SneakyThrows

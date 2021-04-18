@@ -12,8 +12,7 @@ import java.util.Objects;
 /**
  * A JSON request used to reclaim a previously started session, interrupted by the user logging in from another location
  */
-public class TakeOverRequest<M extends JsonResponseModel<M>>
-        extends JsonRequest<TakeOverRequest<M>,M>{
+public abstract class TakeOverRequest<M extends JsonResponseModel> extends JsonRequest<M>{
     private final @NotNull WhatsappKeysManager whatsappKeys;
     public TakeOverRequest(@NotNull WhatsappConfiguration configuration, @NotNull WhatsappKeysManager whatsappKeys){
         super("s1", configuration);

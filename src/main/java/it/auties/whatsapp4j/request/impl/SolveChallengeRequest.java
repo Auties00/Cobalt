@@ -16,8 +16,7 @@ import java.util.Objects;
  * WhatsappWeb's WebSocket sends a challenge when it needs to verify that a pair of keys previously used are still valid.
  * This doesn't happen everytime after the first login, but it's important to handle this case.
  */
-public class SolveChallengeRequest<M extends JsonResponseModel<M>>
-        extends JsonRequest<SolveChallengeRequest<M>,M> {
+public abstract class SolveChallengeRequest<M extends JsonResponseModel> extends JsonRequest<M> {
     private final @NotNull WhatsappKeysManager whatsappKeys;
     private final @NotNull BinaryArray challenge;
 

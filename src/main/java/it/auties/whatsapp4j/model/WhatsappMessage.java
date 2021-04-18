@@ -23,8 +23,7 @@ import java.util.Optional;
 @Data
 @Accessors(fluent = true)
 @ToString
-public abstract class WhatsappMessage<J extends WhatsappMessage<J>>
-{
+public abstract sealed class WhatsappMessage permits WhatsappUserMessage, WhatsappServerMessage {
     /**
      * A singleton instance of {@link WhatsappDataManager}
      */

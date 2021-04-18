@@ -9,23 +9,17 @@ import jakarta.validation.constraints.NotNull;
  * This WhatsappNode can be converted to a ResponseModel using {@link BinaryResponse#toModel(Class)}.
  * This class is final, this means that it cannot be extended.
  */
-public final class BinaryResponse implements Response<BinaryResponse,WhatsappNode> {
-
-    private final WhatsappNode node;
-
-    public BinaryResponse(@NotNull WhatsappNode node)  {
-        this.node = node;
-    }
-
+public final record BinaryResponse(@NotNull WhatsappNode node) implements Response {
     /**
      * Converts this object to a BinaryResponseModel
      *
      * @param clazz a Class that represents {@code <T>}
+     * @param <T> the specific raw type of the model
      * @return an instance of the type of model requested
      */
     @Override
     @SneakyThrows
-    public WhatsappNode toModel(@NotNull Class<WhatsappNode> clazz) {
+    public <T extends ResponseModel> @NotNull T toModel(@NotNull Class<T> clazz) {
         return clazz.getConstructor(WhatsappNode.class).newInstance(node);
     }
 }

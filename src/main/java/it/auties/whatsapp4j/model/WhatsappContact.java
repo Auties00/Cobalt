@@ -23,7 +23,7 @@ import java.util.Optional;
 @AllArgsConstructor
 @Data
 @Builder
-@Accessors(fluent = true,chain = true)
+@Accessors(fluent = true)
 @ToString
 public class WhatsappContact {
     /**

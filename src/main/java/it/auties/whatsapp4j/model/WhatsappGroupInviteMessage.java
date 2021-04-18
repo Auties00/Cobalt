@@ -23,7 +23,7 @@ import java.util.Optional;
 @Data
 @Accessors(fluent = true)
 @ToString
-public final class WhatsappGroupInviteMessage extends WhatsappUserMessage<WhatsappGroupInviteMessage> {
+public final class WhatsappGroupInviteMessage extends WhatsappUserMessage {
     /**
      * The jid of the group that this invite regards
      */

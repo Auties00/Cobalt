@@ -3,7 +3,6 @@ package it.auties.whatsapp4j.response.model;
 import it.auties.whatsapp4j.model.WhatsappNode;
 import lombok.ToString;
 import jakarta.validation.constraints.NotNull;
-import lombok.experimental.Accessors;
 
 
 import java.util.Optional;
@@ -14,13 +13,11 @@ import java.util.Optional;
  * @param <T> the type of the data this object holds
  */
 @ToString
-@Accessors(chain = true)
-public abstract class BinaryResponseModel<J extends BinaryResponseModel<J, T>, T> implements ResponseModel<J> {
-    private final WhatsappNode node;
+public non-sealed abstract class BinaryResponseModel<T> implements ResponseModel {
     /**
      * The data that this response wraps
      */
-    protected T data;
+    protected  T data;
 
     /**
      * Constructs a new BinaryResponseModel from {@code node}
@@ -29,7 +26,6 @@ public abstract class BinaryResponseModel<J extends BinaryResponseModel<J, T>, T
      */
     protected BinaryResponseModel(@NotNull WhatsappNode node) {
 
-        this.node = node;
     }
 
     /**

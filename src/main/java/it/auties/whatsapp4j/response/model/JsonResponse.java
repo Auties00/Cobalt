@@ -5,9 +5,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.experimental.Accessors;
 
 import java.util.Map;
 import java.util.Optional;
@@ -18,17 +15,7 @@ import java.util.Optional;
  * If a model is not available or necessary, many getters are available to query data.
  * This class is final, this means that it cannot be extended.
  */
-@Accessors(chain = true,fluent = true)
-@Getter
-@Setter
-public final class JsonResponse<J extends JsonResponse<J,T>,T extends ResponseModel<T>> implements Response<J,T> {
-
-    private Map<String, ?> data;
-
-    public JsonResponse(@NotNull Map<String, ?> data) {
-        this.data = data;
-    }
-
+public final record JsonResponse(@NotNull Map<String, ?> data) implements Response {
     /**
      * An instance of Jackson used to deserialize JSON Strings
      */
@@ -116,10 +103,11 @@ public final class JsonResponse<J extends JsonResponse<J,T>,T extends ResponseMo
      * Converts this object to a JsonResponseModel
      *
      * @param clazz a Class that represents {@code <T>}
+     * @param <T> the specific raw type of the model
      * @return an instance of the type of model requested
      */
     @Override
-    public T toModel(@NotNull Class<T> clazz) {
+    public <T extends ResponseModel> @NotNull T toModel(@NotNull Class<T> clazz) {
         return JACKSON.convertValue(data, clazz);
     }
 }

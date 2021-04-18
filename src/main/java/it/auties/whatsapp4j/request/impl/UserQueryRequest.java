@@ -15,8 +15,7 @@ import java.util.List;
 /**
  * A JSON request used to transmit a query request to WhatsappWeb's WebSocket
  */
-public class UserQueryRequest<M extends JsonResponseModel<M>>
-        extends JsonRequest<UserQueryRequest<M>,M> {
+public abstract class UserQueryRequest<M extends JsonResponseModel> extends JsonRequest<M> {
     private final @NotNull String jid;
     private final @NotNull QueryType queryType;
     public UserQueryRequest(@NotNull WhatsappConfiguration configuration, @NotNull String jid, @NotNull QueryType queryType) {
