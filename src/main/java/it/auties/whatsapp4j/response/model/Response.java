@@ -20,5 +20,8 @@ public interface Response {
      * @param <T> the specific raw type of the model
      * @return an instance of the type of model requested
      */
-    <T extends ResponseModel> @NotNull T toModel(@NotNull Class<T> clazz);
+   default  <T extends ResponseModel> @NotNull T toModel(@NotNull Class<T> clazz)
+   {
+       throw new UnsupportedOperationException("To model is not supported on this object");
+   }
 }

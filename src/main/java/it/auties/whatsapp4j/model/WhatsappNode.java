@@ -8,17 +8,30 @@ import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * An immutable model class that represents the primary unit used by WhatsappWeb's WebSocket to communicate with the client.
  * This class also offers a builder, accessible using {@link WhatsappNodeBuilder}.
  *
- * @param description a non null String that describes the data that this object holds in its {@code attrs} and {@code content}
- * @param attrs       a non null Map of strings that describe additional information related to the content of this object or an encoded object when sending a message a protobuf object is not optimal
- * @param content     a nullable object, usually a {@link WhatsappNode}, a {@link String} or a {@link WhatsappProtobuf}'s object
  */
 @Builder
-public record WhatsappNode(@NotNull String description, @NotNull Map<String, String> attrs,  Object content) {
+public final class WhatsappNode {
+    private final @NotNull String description;
+    private final @NotNull Map<String, String> attrs;
+    private final Object content;
+
+    /**
+     * @param description a non null String that describes the data that this object holds in its {@code attrs} and {@code content}
+     * @param attrs       a non null Map of strings that describe additional information related to the content of this object or an encoded object when sending a message a protobuf object is not optimal
+     * @param content     a nullable object, usually a {@link WhatsappNode}, a {@link String} or a {@link WhatsappProtobuf}'s object
+     */
+    public WhatsappNode(@NotNull String description, @NotNull Map<String, String> attrs, Object content) {
+        this.description = description;
+        this.attrs = attrs;
+        this.content = content;
+    }
+
     /**
      * Constructs a WhatsappNode from a list
      *
@@ -28,11 +41,11 @@ public record WhatsappNode(@NotNull String description, @NotNull Map<String, Str
     @SuppressWarnings("unchecked")
     public static @NotNull WhatsappNode fromList(@NotNull List<?> list) {
         Validate.isTrue(list.size() == 3, "WhatsappAPI: Cannot parse %s as a WhatsappNode", list);
-        if(!(list.get(0) instanceof String description)){
+        if (!(list.get(0) instanceof String description)) {
             throw new IllegalArgumentException("WhatsappAPI: Cannot parse %s as a WhatsappNode, no description found".formatted(list));
         }
 
-        if(!(list.get(1) instanceof String attrs)){
+        if (!(list.get(1) instanceof String attrs)) {
             throw new IllegalArgumentException("WhatsappAPI: Cannot parse %s as a WhatsappNode, no attrs found".formatted(list));
         }
 
@@ -60,7 +73,7 @@ public record WhatsappNode(@NotNull String description, @NotNull Map<String, Str
      * @throws IllegalArgumentException if {@link WhatsappNode#content} is not a List
      */
     public @NotNull List<WhatsappNode> childNodes() {
-        if(content == null){
+        if (content == null) {
             return List.of();
         }
 
@@ -70,4 +83,40 @@ public record WhatsappNode(@NotNull String description, @NotNull Map<String, Str
 
         return fromGenericList(listContent);
     }
+
+    public @NotNull String description() {
+        return description;
+    }
+
+    public @NotNull Map<String, String> attrs() {
+        return attrs;
+    }
+
+    public Object content() {
+        return content;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || obj.getClass() != this.getClass()) return false;
+        var that = (WhatsappNode) obj;
+        return Objects.equals(this.description, that.description) &&
+                Objects.equals(this.attrs, that.attrs) &&
+                Objects.equals(this.content, that.content);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(description, attrs, content);
+    }
+
+    @Override
+    public String toString() {
+        return "WhatsappNode[" +
+                "description=" + description + ", " +
+                "attrs=" + attrs + ", " +
+                "content=" + content + ']';
+    }
+
 }

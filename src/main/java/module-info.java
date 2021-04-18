@@ -1,10 +1,20 @@
 module it.auties.whatsapp4j {
     requires jakarta.activation;
     requires jakarta.validation;
-    requires com.fasterxml.jackson.annotation;
+    requires jakarta.xml.bind;
+    requires jakarta.websocket.api;
+
+    requires com.google.common;
+
+    requires com.fasterxml.jackson.databind;
 
     requires static ez.vcard;
+    requires static hkdf;
+
     requires static lombok;
-    requires com.fasterxml.jackson.databind;
+
+    requires java.prefs;
+    requires java.net.http;
+    requires io.github.classgraph;
 
 }

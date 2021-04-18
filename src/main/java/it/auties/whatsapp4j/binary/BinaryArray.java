@@ -1,8 +1,8 @@
 package it.auties.whatsapp4j.binary;
 
-import jakarta.xml.bind.DatatypeConverter;
-import org.glassfish.grizzly.utils.Pair;
+import it.auties.whatsapp4j.response.model.Pair;
 import jakarta.validation.constraints.NotNull;
+import jakarta.xml.bind.DatatypeConverter;
 
 
 import java.nio.ByteBuffer;
@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.IntStream;
 
@@ -18,13 +19,21 @@ import java.util.stream.IntStream;
  * It provides an easy interface to modify said data, convert it or generate it
  * This is intended to only be used for WhatsappWeb's WebSocket binary operations
  */
-public record BinaryArray(byte[] data) {
+public final class BinaryArray {
+    private final byte[] data;
+
+    /**
+     */
+    public BinaryArray(byte[] data) {
+        this.data = data;
+    }
+
     /**
      * Constructs a new empty {@link BinaryArray}
      *
      * @return a new {@link BinaryArray}
      */
-    public static @NotNull BinaryArray empty(){
+    public static @NotNull BinaryArray empty() {
         return forArray(new byte[0]);
     }
 
@@ -34,7 +43,7 @@ public record BinaryArray(byte[] data) {
      * @param in the array of bytes to wrap
      * @return a new {@link BinaryArray}
      */
-    public static @NotNull BinaryArray forArray(byte[] in){
+    public static @NotNull BinaryArray forArray(byte[] in) {
         return new BinaryArray(in);
     }
 
@@ -44,7 +53,7 @@ public record BinaryArray(byte[] data) {
      * @param in the byte to wrap
      * @return a new non empty {@link BinaryArray}
      */
-    public static @NotNull BinaryArray singleton(byte in){
+    public static @NotNull BinaryArray singleton(byte in) {
         return new BinaryArray(new byte[]{in});
     }
 
@@ -54,7 +63,7 @@ public record BinaryArray(byte[] data) {
      * @param in the String to wrap
      * @return a new {@link BinaryArray}
      */
-    public static @NotNull BinaryArray forString(@NotNull String in){
+    public static @NotNull BinaryArray forString(@NotNull String in) {
         return forArray(in.getBytes());
     }
 
@@ -64,7 +73,7 @@ public record BinaryArray(byte[] data) {
      * @param input the Base64 encoded String to wrap
      * @return a new {@link BinaryArray}
      */
-    public static @NotNull BinaryArray forBase64(@NotNull String input){
+    public static @NotNull BinaryArray forBase64(@NotNull String input) {
         return forArray(Base64.getDecoder().decode(input));
     }
 
@@ -74,7 +83,7 @@ public record BinaryArray(byte[] data) {
      * @param length the length of the array to generate and wrap
      * @return a new {@link BinaryArray}
      */
-    public static @NotNull BinaryArray random(int length){
+    public static @NotNull BinaryArray random(int length) {
         final var result = new byte[length];
         new SecureRandom().nextBytes(result);
         return forArray(result);
@@ -87,7 +96,7 @@ public record BinaryArray(byte[] data) {
      * @param length the length of the new {@link BinaryArray}
      * @return a new {@link BinaryArray}
      */
-    public @NotNull BinaryArray cut(int length){
+    public @NotNull BinaryArray cut(int length) {
         return slice(0, length);
     }
 
@@ -98,7 +107,7 @@ public record BinaryArray(byte[] data) {
      * @param start the inclusive index to slice this object
      * @return a new {@link BinaryArray}
      */
-    public @NotNull BinaryArray slice(int start){
+    public @NotNull BinaryArray slice(int start) {
         return slice(start, size());
     }
 
@@ -110,7 +119,7 @@ public record BinaryArray(byte[] data) {
      * @param end the exclusive ending index to slice this object
      * @return a new {@link BinaryArray}
      */
-    public @NotNull BinaryArray slice(int start, int end){
+    public @NotNull BinaryArray slice(int start, int end) {
         return forArray(Arrays.copyOfRange(data, start >= 0 ? start : size() + start, end >= 0 ? end : size() + end));
     }
 
@@ -122,7 +131,7 @@ public record BinaryArray(byte[] data) {
      * @param split the index to split this object's array
      * @return a new {@link Pair}
      */
-    public @NotNull Pair<BinaryArray, BinaryArray> split(int split){
+    public @NotNull Pair<BinaryArray, BinaryArray> split(int split) {
         return new Pair<>(cut(split), slice(split + 1));
     }
 
@@ -132,7 +141,7 @@ public record BinaryArray(byte[] data) {
      * @param array the {@link BinaryArray} to concatenate
      * @return a new {@link BinaryArray}
      */
-    public @NotNull BinaryArray merged(@NotNull BinaryArray array){
+    public @NotNull BinaryArray merged(@NotNull BinaryArray array) {
         var result = Arrays.copyOf(data, size() + array.size());
         System.arraycopy(array.data, 0, result, size(), array.size());
         return forArray(result);
@@ -146,7 +155,7 @@ public record BinaryArray(byte[] data) {
      * @param character the character to search
      * @return a new Optional
      */
-    public @NotNull Optional<Integer> indexOf(char character){
+    public @NotNull Optional<Integer> indexOf(char character) {
         return IntStream.range(0, size()).filter(index -> data[index] == character).boxed().findFirst();
     }
 
@@ -156,7 +165,7 @@ public record BinaryArray(byte[] data) {
      * @param index the index, ranges from 0 to size() - 1
      * @return the byte at {@code index}
      */
-    public byte at(int index){
+    public byte at(int index) {
         return data[index];
     }
 
@@ -165,7 +174,7 @@ public record BinaryArray(byte[] data) {
      *
      * @return an unsigned int
      */
-    public int size(){
+    public int size() {
         return data.length;
     }
 
@@ -183,7 +192,7 @@ public record BinaryArray(byte[] data) {
      *
      * @return a String in hex format
      */
-    public @NotNull String toHex(){
+    public @NotNull String toHex() {
         return DatatypeConverter.printHexBinary(data);
     }
 
@@ -193,7 +202,7 @@ public record BinaryArray(byte[] data) {
      * @return true if {@code other} is an instance of {@link BinaryArray} and if they wrap two arrays considered equal by {@link Arrays#equals(byte[], byte[])}
      */
     @Override
-    public boolean equals( Object other) {
+    public boolean equals(Object other) {
         return other instanceof BinaryArray that && Arrays.equals(data, that.data);
     }
 
@@ -206,4 +215,14 @@ public record BinaryArray(byte[] data) {
     public @NotNull String toString() {
         return new String(data(), StandardCharsets.UTF_8);
     }
+
+    public byte[] data() {
+        return data;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(data);
+    }
+
 }

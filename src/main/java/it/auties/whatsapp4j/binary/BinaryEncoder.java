@@ -6,23 +6,28 @@ import it.auties.whatsapp4j.utils.Validate;
 import jakarta.validation.constraints.NotNull;
 
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.IntStream;
 
 /**
  * A class used to encode a WhatsappNode and then send it to WhatsappWeb's WebSocket.
  * To decode a message use instead {@link BinaryDecoder}.
  *
- * @param cache the message to encode
  */
-public record BinaryEncoder(@NotNull List<Byte> cache) {
+public final class BinaryEncoder {
+    private final @NotNull List<Byte> cache;
+
+    /**
+     * @param cache the message to encode
+     */
+    public BinaryEncoder(@NotNull List<Byte> cache) {
+        this.cache = cache;
+    }
+
     /**
      * Constructs a new empty {@link BinaryEncoder}
      */
-    public BinaryEncoder(){
+    public BinaryEncoder() {
         this(new ArrayList<>());
     }
 
@@ -79,7 +84,7 @@ public record BinaryEncoder(@NotNull List<Byte> cache) {
         pushString(string);
     }
 
-    private void writeJid( String left, @NotNull String right) {
+    private void writeJid(String left, @NotNull String right) {
         pushUnsignedInt(BinaryTag.JID_PAIR.data());
         if (left != null && left.length() > 0) {
             writeStrings(left, right);
@@ -138,7 +143,7 @@ public record BinaryEncoder(@NotNull List<Byte> cache) {
         pushUnsignedInts(tag.data(), listSize);
     }
 
-    private void writeContent( Object content) {
+    private void writeContent(Object content) {
         if (content == null) {
             return;
         }
@@ -178,4 +183,28 @@ public record BinaryEncoder(@NotNull List<Byte> cache) {
     private int @NotNull [] toUnsignedIntArray(byte @NotNull [] input) {
         return IntStream.range(0, input.length).map(x -> Byte.toUnsignedInt(input[x])).toArray();
     }
+
+    public @NotNull List<Byte> cache() {
+        return cache;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || obj.getClass() != this.getClass()) return false;
+        var that = (BinaryEncoder) obj;
+        return Objects.equals(this.cache, that.cache);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(cache);
+    }
+
+    @Override
+    public String toString() {
+        return "BinaryEncoder[" +
+                "cache=" + cache + ']';
+    }
+
 }

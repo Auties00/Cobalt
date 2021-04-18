@@ -31,7 +31,7 @@ import java.util.concurrent.CompletableFuture;
  */
 @RequiredArgsConstructor
 @Accessors(fluent = true)
-public sealed abstract class Request<M extends ResponseModel> permits BinaryRequest, JsonRequest {
+public abstract class Request<M extends ResponseModel> {
     /**
      * A singleton instance of WhatsappDataManager
      */

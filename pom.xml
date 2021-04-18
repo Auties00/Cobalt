@@ -74,18 +74,20 @@
         <maven-javadoc-plugin-version>3.2.0</maven-javadoc-plugin-version>
         <maven-deploy-plugin-version>2.8.2</maven-deploy-plugin-version>
         <nexus-staging-maven-plugin-version>1.6.7</nexus-staging-maven-plugin-version>
+
         <lombok-version>1.18.20</lombok-version>
-        <nullsafe-version>RELEASE</nullsafe-version>
-        <tyrus-version>2.0.0</tyrus-version>
+
+
         <jackson-version>2.12.3</jackson-version>
-        <zxing-version>3.4.1</zxing-version>
         <curve25519-version>0.5.0</curve25519-version>
+
         <hkdf-version>1.0.2</hkdf-version>
-        <protobuf-version>3.14.0</protobuf-version>
-        <google-reflections-version>0.9.12</google-reflections-version>
+
         <vcard-version>0.11.2</vcard-version>
 
-        <ee.modules>1.1.1.7-jre16</ee.modules>
+        <ee.modules>0.0.0_0-SNAPSHOT</ee.modules>
+        <classgraph.version>4.8.104</classgraph.version>
+
     </properties>
 
     <build>
@@ -99,6 +101,7 @@
                     <source>${java-version}</source>
                     <target>${java-version}</target>
                     <release>${java-version}</release>
+                    <fork>true</fork>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.mapstruct</groupId>
@@ -112,10 +115,12 @@
                         </path>
                     </annotationProcessorPaths>
                     <annotationProcessors>
-                        <annotationProcessor>org.mapstruct.ap.MappingProcessor</annotationProcessor>
+                        <annotationProcessor>lombok.launch.AnnotationProcessorHider$AnnotationProcessor</annotationProcessor>
                     </annotationProcessors>
                     <!-- Enable lombok compilation access to com.sun, and access to mapstruct to build-->
-                    <compilerArgs>--illegal-access=permit</compilerArgs>
+                    <compilerArgs>
+                        <arg>-J--illegal-access=permit</arg>
+                    </compilerArgs>
                     <failOnError>true</failOnError>
                 </configuration>
             </plugin>
@@ -153,6 +158,60 @@
                 </executions>
             </plugin>
 
+            <plugin>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.2.4</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <artifactSet>
+                        <includes>
+                            <include>com.googlecode.ez-vcard</include>
+                            <include>at.favre.lib:hkdf</include>
+                        </includes>
+                    </artifactSet>
+                    <filters>
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>
+                                <exclude>module-info.java</exclude>
+                                <exclude>META-INF/*.SF</exclude>
+                                <exclude>META-INF/*.DSA</exclude>
+                                <exclude>META-INF/*.RSA</exclude>
+                                <exclude>META-INF/services</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>add-module-infos</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>add-module-info</goal>
+                        </goals>
+                        <configuration>
+                            <overwriteExistingFiles>true</overwriteExistingFiles>
+                            <module>
+                                <moduleInfoFile>
+                                    src/moditect/module-info.java
+                                </moduleInfoFile>
+                            </module>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- Deploy -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -183,38 +242,25 @@
     </build>
 
     <dependencies>
-        <!-- Qr code library -->
-        <dependency>
-            <groupId>com.google.zxing</groupId>
-            <artifactId>core</artifactId>
-            <version>${zxing-version}</version>
-        </dependency>
-
+        <!-- Shaded Libraries -->
         <!-- Contact's Vcard Parser library -->
         <dependency>
             <groupId>com.googlecode.ez-vcard</groupId>
             <artifactId>ez-vcard</artifactId>
             <version>${vcard-version}</version>
         </dependency>
-
-        <!-- Data Structures dependencies -->
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-javalite</artifactId>
-            <version>${protobuf-version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson-version}</version>
-        </dependency>
-
         <!-- Cryptographic dependencies -->
         <dependency>
             <groupId>at.favre.lib</groupId>
             <artifactId>hkdf</artifactId>
             <version>${hkdf-version}</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson-version}</version>
         </dependency>
 
         <!-- Annotations & Reflection dependencies -->
@@ -223,12 +269,6 @@
             <artifactId>lombok</artifactId>
             <version>${lombok-version}</version>
             <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.reflections</groupId>
-            <artifactId>reflections</artifactId>
-            <version>${google-reflections-version}</version>
         </dependency>
 
         <dependency>
@@ -245,8 +285,26 @@
 
         <dependency>
             <groupId>com.guicedee.services</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
+            <version>${ee.modules}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.guicedee.services</groupId>
             <artifactId>undertow-websockets-jsr</artifactId>
             <version>${ee.modules}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.guicedee.services</groupId>
+            <artifactId>guava</artifactId>
+            <version>${ee.modules}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.classgraph</groupId>
+            <artifactId>classgraph</artifactId>
+            <version>${classgraph.version}</version>
         </dependency>
 
     </dependencies>
