@@ -91,7 +91,7 @@
 
         <vcard-version>0.11.2</vcard-version>
 
-        <ee.modules>0.0.0_0-SNAPSHOT</ee.modules>
+        <ee.modules>1.1.1.8-jre16</ee.modules>
         <classgraph.version>4.8.104</classgraph.version>
         <delombok-version>1.18.18.0</delombok-version>
         <delombok.output>${project.build.directory}\delomboked-sources</delombok.output>
