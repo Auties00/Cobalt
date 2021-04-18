@@ -15,8 +15,8 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
-import jakarta.validation.constraints.NotNull;
-
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.*;
@@ -36,14 +36,14 @@ import java.util.stream.Collectors;
 @Accessors(fluent = true)
 public class WhatsappDataManager {
     private static final @Getter WhatsappDataManager singletonInstance = new WhatsappDataManager(Executors.newSingleThreadExecutor(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), Instant.now().getEpochSecond());
-    private final @NotNull ExecutorService listenerService;
+    private final @NotNull ExecutorService requestsService;
     private final @NotNull List<WhatsappChat> chats;
     private final @NotNull List<WhatsappContact> contacts;
     private final @NotNull List<Request<?>> pendingRequests;
     private final @NotNull List<WhatsappListener> listeners;
-    private  WhatsappMediaConnection mediaConnection;
     private final long initializationTimeStamp;
-    private  String phoneNumberJid;
+    private @Nullable String phoneNumberJid;
+    private @Nullable WhatsappMediaConnection mediaConnection;
     private long tag;
 
     /**
@@ -222,7 +222,7 @@ public class WhatsappDataManager {
      * If this condition isn't met, if the thread is put on hold to wait for a response for a pending request, the WebSocket will freeze.
      */
     public void callOnListenerThread(@NotNull Runnable runnable){
-        listenerService.execute(runnable);
+        requestsService.execute(runnable);
     }
 
     /**
@@ -246,7 +246,7 @@ public class WhatsappDataManager {
         }
     }
 
-    private void parseAction(@NotNull WhatsappWebSocket socket, @NotNull WhatsappNode node,  Object content) {
+    private void parseAction(@NotNull WhatsappWebSocket socket, @NotNull WhatsappNode node, @Nullable Object content) {
         if(!(content instanceof List<?> listContent)){
             return;
         }
@@ -409,7 +409,7 @@ public class WhatsappDataManager {
                 });
     }
 
-    private void parseResponse(@NotNull WhatsappWebSocket socket, @NotNull WhatsappNode node,  Object content) {
+    private void parseResponse(@NotNull WhatsappWebSocket socket, @NotNull WhatsappNode node, @Nullable Object content) {
         var type = node.attrs().get("type");
         if (type == null) {
             return;
@@ -514,12 +514,11 @@ public class WhatsappDataManager {
         var jid = message.info().getKey().getRemoteJid();
         var chat = findChatByJid(jid).orElseGet(() -> queryMissingChat(socket, jid));
         if(!message.isUserMessage()){
-            if(message.info().getMessage().getProtocolMessage().getKey().hasId()){
-                findUserMessageById(chat, message.info().getMessage().getProtocolMessage().getKey().getId()).ifPresent(oldMessage -> {
-                    chat.messages().remove(oldMessage);
-                    listeners.forEach(listener -> callOnListenerThread(() -> listener.onMessageDeleted(chat, oldMessage, true)));
-                });
-            }
+            //TODO: This message could also be an history sync, handle this
+            findUserMessageById(chat, message.info().getMessage().getProtocolMessage().getKey().getId()).ifPresent(oldMessage -> {
+                chat.messages().remove(oldMessage);
+                listeners.forEach(listener -> callOnListenerThread(() -> listener.onMessageDeleted(chat, oldMessage, true)));
+            });
         }
 
         if(chat.messages().addOrReplace(message)){
@@ -531,12 +530,17 @@ public class WhatsappDataManager {
         }
 
         if(message instanceof WhatsappUserMessage userMessage) {
-            if (!userMessage.sentByMe() && userMessage.globalStatus() != WebMessageInfo.WebMessageInfoStatus.READ && !message.info().getIgnore()) {
-                chat.unreadMessages(chat.unreadMessages() + 1);
-            }
+            updateUnreadMessages(message, chat, userMessage);
         }
 
         listeners.forEach(listener -> callOnListenerThread(() -> listener.onNewMessageReceived(chat, message)));
+    }
+
+    private void updateUnreadMessages(@NotNull WhatsappMessage message, WhatsappChat chat, WhatsappUserMessage userMessage) {
+        if (userMessage.sentByMe() || userMessage.globalStatus() == WebMessageInfo.WebMessageInfoStatus.READ || message.info().getIgnore()) {
+            return;
+        }
+        chat.unreadMessages(chat.unreadMessages() + 1);
     }
 
     private @NotNull WhatsappChat queryMissingChat(@NotNull WhatsappWebSocket socket, @NotNull String jid) {

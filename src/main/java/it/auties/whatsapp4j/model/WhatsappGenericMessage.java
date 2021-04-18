@@ -1,18 +1,16 @@
 package it.auties.whatsapp4j.model;
 
-import io.github.classgraph.ClassGraph;
-import io.github.classgraph.ClassInfo;
-import io.github.classgraph.MethodInfo;
 import it.auties.whatsapp4j.api.WhatsappAPI;
-import jakarta.validation.constraints.NotNull;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.ToString;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds a miscellaneous message inside.
@@ -36,33 +34,46 @@ public final class WhatsappGenericMessage extends WhatsappUserMessage {
      *
      * @return a non empty optional if this message has a context
      */
-    @SuppressWarnings("unchecked")
     @Override
     @SneakyThrows
     public @NotNull Optional<WhatsappProtobuf.ContextInfo> contextInfo() {
-        var scanResult = new ClassGraph().acceptClasses(info.getMessage().getClass().getCanonicalName())
-                .enableAllInfo()
-                .scan();
-        ClassInfo classInfo = scanResult.getClassInfo(info.getMessage().getClass().getCanonicalName());
-        Set<Method> methods = classInfo.getMethodInfo().stream().map(a -> a.loadClassAndGetMethod()).collect(Collectors.toSet());
-
-        //var methods = ReflectionUtils.getMethods(info.getMessage().getClass(), ReflectionUtils.withModifier(Modifier.PUBLIC), ReflectionUtils.withPrefix("has"));
-        var propertyChecker = methods.stream().filter(this::invoke).findAny();
+        var methods = findCheckerMethods();
+        var propertyChecker = methods.stream().filter(this::invokeCheckerMethod).findAny();
         if(propertyChecker.isEmpty()){
             return Optional.empty();
         }
-        var propertyGetter = info.getMessage().getClass().getMethod(propertyChecker.get().getName().replaceFirst("has", "get"));
+
+        var propertyGetter = findGetterMethod(propertyChecker.get());
         var property = propertyGetter.invoke(info.getMessage());
-        var propertyResult = new ClassGraph().acceptClasses(property.getClass().getCanonicalName())
-                .enableMethodInfo()
-                .scan();
-        ClassInfo propertyClassInfo = propertyResult.getClassInfo(property.getClass().getCanonicalName());
-        Optional<MethodInfo> hasContextInfo = propertyClassInfo.getMethodInfo().stream().filter(a -> a.isPublic() && a.getName().equals("hasContextInfo")).findAny();
-        return hasContextInfo.isEmpty() ? Optional.empty() : Optional.of((WhatsappProtobuf.ContextInfo) property.getClass().getMethod("getContextInfo").invoke(property));
+
+        return findContextInfoMethod(property).map(method -> invokeContextInfoGetter(property, method));
+    }
+
+    private @NotNull Method findGetterMethod(@NotNull Method propertyChecker) throws NoSuchMethodException {
+        return info.getMessage().getClass().getMethod(propertyChecker.getName().replaceFirst("has", "get"));
+    }
+
+    private @NotNull List<Method> findCheckerMethods() {
+        return Arrays.stream(info.getMessage().getClass().getMethods())
+                .filter(method -> Modifier.isPublic(method.getModifiers()) && method.getName().startsWith("has"))
+                .toList();
     }
 
     @SneakyThrows
-    private boolean invoke(Method method) {
+    private boolean invokeCheckerMethod(@NotNull Method method) {
         return (boolean) method.invoke(info.getMessage());
+    }
+
+    private @NotNull Optional<Method> findContextInfoMethod(@NotNull Object property){
+        try {
+            return Optional.of(property.getClass().getMethod("hasContextInfo"));
+        }catch (NoSuchMethodException ex){
+            return Optional.empty();
+        }
+    }
+
+    @SneakyThrows
+    private @NotNull WhatsappProtobuf.ContextInfo invokeContextInfoGetter(@NotNull Object property, @NotNull Method method) {
+        return (WhatsappProtobuf.ContextInfo) method.invoke(property);
     }
 }

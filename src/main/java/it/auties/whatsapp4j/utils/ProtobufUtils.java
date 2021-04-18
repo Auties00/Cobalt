@@ -16,6 +16,10 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.List;
 
+/**
+ * A utility class used to build raw protobuf objects easily.
+ * This class really shouldn't be this complicated.
+ */
 @UtilityClass
 public class ProtobufUtils {
     private final WhatsappDataManager MANAGER = WhatsappDataManager.singletonInstance();
