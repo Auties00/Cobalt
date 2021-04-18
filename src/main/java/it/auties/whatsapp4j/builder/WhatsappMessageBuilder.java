@@ -3,9 +3,9 @@ package it.auties.whatsapp4j.builder;
 import it.auties.whatsapp4j.model.WhatsappChat;
 import it.auties.whatsapp4j.model.WhatsappMessage;
 import it.auties.whatsapp4j.model.WhatsappUserMessage;
+import jakarta.validation.constraints.NotNull;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import jakarta.validation.constraints.NotNull;
 
 
 @NoArgsConstructor

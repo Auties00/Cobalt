@@ -1,8 +1,8 @@
 package it.auties.whatsapp4j.utils;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
-import jakarta.validation.constraints.NotNull;
 
 /**
  * This utility class provides an easy way to check if a condition is satisfied

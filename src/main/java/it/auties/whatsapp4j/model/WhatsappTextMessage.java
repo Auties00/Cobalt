@@ -3,12 +3,11 @@ package it.auties.whatsapp4j.model;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.builder.WhatsappTextMessageBuilder;
 import it.auties.whatsapp4j.utils.ProtobufUtils;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
-import jakarta.validation.constraints.NotNull;
-
 
 import java.util.Optional;
 

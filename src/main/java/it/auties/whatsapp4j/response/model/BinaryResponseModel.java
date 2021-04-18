@@ -1,9 +1,8 @@
 package it.auties.whatsapp4j.response.model;
 
 import it.auties.whatsapp4j.model.WhatsappNode;
-import lombok.ToString;
 import jakarta.validation.constraints.NotNull;
-
+import lombok.ToString;
 
 import java.util.Optional;
 

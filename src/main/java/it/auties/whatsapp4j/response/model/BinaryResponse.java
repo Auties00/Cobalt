@@ -1,8 +1,8 @@
 package it.auties.whatsapp4j.response.model;
 
 import it.auties.whatsapp4j.model.WhatsappNode;
-import lombok.SneakyThrows;
 import jakarta.validation.constraints.NotNull;
+import lombok.SneakyThrows;
 
 /**
  * A record that wraps a WhatsappNode sent by WhatsappWeb's WebSocket as response for a request.

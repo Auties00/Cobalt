@@ -2,9 +2,8 @@ package it.auties.whatsapp4j.utils;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.MultiFormatWriter;
-import lombok.SneakyThrows;
 import jakarta.validation.constraints.NotNull;
-
+import lombok.SneakyThrows;
 
 import java.util.Base64;
 import java.util.Objects;

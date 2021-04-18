@@ -1,8 +1,7 @@
 package it.auties.whatsapp4j.binary;
 
-import lombok.experimental.UtilityClass;
 import jakarta.validation.constraints.NotNull;
-
+import lombok.experimental.UtilityClass;
 
 import java.util.Arrays;
 import java.util.List;

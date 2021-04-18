@@ -7,9 +7,8 @@ import it.auties.whatsapp4j.model.WhatsappCoordinates;
 import it.auties.whatsapp4j.model.WhatsappMediaMessageType;
 import it.auties.whatsapp4j.model.WhatsappProtobuf;
 import it.auties.whatsapp4j.model.WhatsappUserMessage;
-import lombok.experimental.UtilityClass;
 import jakarta.validation.constraints.NotNull;
-
+import lombok.experimental.UtilityClass;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;

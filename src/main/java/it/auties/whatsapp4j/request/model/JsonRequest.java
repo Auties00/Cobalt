@@ -5,9 +5,9 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
+import jakarta.validation.constraints.NotNull;
 import jakarta.websocket.Session;
 import lombok.SneakyThrows;
-import jakarta.validation.constraints.NotNull;
 
 import java.util.concurrent.CompletableFuture;
 

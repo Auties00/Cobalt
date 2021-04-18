@@ -4,32 +4,21 @@ import it.auties.whatsapp4j.model.WhatsappNode;
 import it.auties.whatsapp4j.model.WhatsappProtobuf;
 import it.auties.whatsapp4j.utils.Validate;
 import jakarta.validation.constraints.NotNull;
-import lombok.*;
-import lombok.experimental.Accessors;
 
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 /**
  * A class used to encode a WhatsappNode and then send it to WhatsappWeb's WebSocket.
  * To decode a message use instead {@link BinaryDecoder}.
  *
+ * @param cache the message to encode
+ *
  */
-@Getter
-@Setter
-@Accessors(chain = true,fluent = true)
-@EqualsAndHashCode
-@ToString
-public final class BinaryEncoder {
-    private final @NotNull List<Byte> cache;
-
-    /**
-     * @param cache the message to encode
-     */
-    public BinaryEncoder(@NotNull List<Byte> cache) {
-        this.cache = cache;
-    }
+public record BinaryEncoder(@NotNull List<Byte> cache) {
 
     /**
      * Constructs a new empty {@link BinaryEncoder}

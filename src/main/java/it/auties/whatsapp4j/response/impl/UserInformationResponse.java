@@ -1,11 +1,8 @@
 package it.auties.whatsapp4j.response.impl;
 
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
-import lombok.*;
-import lombok.experimental.Accessors;
 
 import java.util.List;
-import java.util.Objects;
 
 /**
  * A json model that contains information only about the user linked to the session

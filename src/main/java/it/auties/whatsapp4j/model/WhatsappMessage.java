@@ -4,18 +4,16 @@ import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.model.WhatsappProtobuf.WebMessageInfo;
 import it.auties.whatsapp4j.utils.Validate;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
-import jakarta.validation.constraints.NotNull;
 
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * A model class that represents a WhatsappMessage.

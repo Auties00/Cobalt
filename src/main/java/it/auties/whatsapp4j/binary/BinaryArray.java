@@ -3,8 +3,6 @@ package it.auties.whatsapp4j.binary;
 import it.auties.whatsapp4j.response.model.Pair;
 import jakarta.validation.constraints.NotNull;
 import jakarta.xml.bind.DatatypeConverter;
-import lombok.*;
-import lombok.experimental.Accessors;
 
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;

@@ -6,13 +6,12 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.utils.CypherUtils;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
-import jakarta.validation.constraints.NotNull;
-
 
 import java.util.Base64;
 import java.util.Objects;

@@ -1,6 +1,7 @@
 package it.auties.whatsapp4j.response.model;
 
 import jakarta.validation.constraints.NotNull;
+
 import java.util.Objects;
 
 /**

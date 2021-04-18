@@ -3,13 +3,12 @@ package it.auties.whatsapp4j.model;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.ToString;
 import lombok.experimental.Accessors;
-
-import jakarta.validation.constraints.NotNull;
 
 import java.time.ZonedDateTime;
 import java.util.HashMap;

@@ -9,10 +9,10 @@ import it.auties.whatsapp4j.response.model.JsonResponse;
 import it.auties.whatsapp4j.response.model.Response;
 import it.auties.whatsapp4j.response.model.ResponseModel;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
-import jakarta.validation.constraints.NotNull;
 
 import java.lang.reflect.ParameterizedType;
 import java.util.concurrent.CompletableFuture;

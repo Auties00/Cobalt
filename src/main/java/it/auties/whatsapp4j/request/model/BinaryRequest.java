@@ -10,9 +10,9 @@ import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.model.WhatsappNode;
 import it.auties.whatsapp4j.response.model.ResponseModel;
 import it.auties.whatsapp4j.utils.CypherUtils;
+import jakarta.validation.constraints.NotNull;
 import jakarta.websocket.Session;
 import lombok.SneakyThrows;
-import jakarta.validation.constraints.NotNull;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;

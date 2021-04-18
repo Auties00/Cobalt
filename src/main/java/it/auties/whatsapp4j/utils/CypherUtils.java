@@ -7,10 +7,9 @@ import it.auties.whatsapp4j.model.WhatsappMediaMessage;
 import it.auties.whatsapp4j.model.WhatsappMediaMessageType;
 import it.auties.whatsapp4j.model.WhatsappMediaUpload;
 import it.auties.whatsapp4j.response.model.JsonResponse;
+import jakarta.validation.constraints.NotNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
-import jakarta.validation.constraints.NotNull;
-
 import org.whispersystems.curve25519.Curve25519;
 import org.whispersystems.curve25519.Curve25519KeyPair;
 

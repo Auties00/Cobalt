@@ -3,12 +3,11 @@ package it.auties.whatsapp4j.builder;
 import ezvcard.VCard;
 import it.auties.whatsapp4j.model.WhatsappContactMessage;
 import it.auties.whatsapp4j.utils.ProtobufUtils;
+import jakarta.validation.constraints.NotNull;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import jakarta.validation.constraints.NotNull;
-
 
 import java.util.List;
 import java.util.Objects;

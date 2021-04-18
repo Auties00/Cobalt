@@ -2,13 +2,10 @@ package it.auties.whatsapp4j.model;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import jakarta.validation.constraints.NotNull;
-import lombok.*;
-import lombok.experimental.Accessors;
 
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.Objects;
 import java.util.Optional;
 
 /**

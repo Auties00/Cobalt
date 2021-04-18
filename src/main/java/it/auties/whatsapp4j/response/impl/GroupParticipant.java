@@ -2,13 +2,6 @@ package it.auties.whatsapp4j.response.impl;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
-import lombok.experimental.Accessors;
-
-import java.util.Objects;
 
 /**
  * A json model that contains information about the participant of a group

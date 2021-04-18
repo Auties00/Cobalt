@@ -6,8 +6,6 @@ import it.auties.whatsapp4j.response.model.JsonResponse;
 import it.auties.whatsapp4j.response.model.Response;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
 
 import java.io.IOException;
 import java.util.HashMap;

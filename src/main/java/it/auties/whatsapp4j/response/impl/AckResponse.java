@@ -5,14 +5,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.model.WhatsappProtobuf;
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
 import jakarta.validation.constraints.NotNull;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
-import lombok.experimental.Accessors;
 
 import java.time.Instant;
-import java.util.Objects;
 
 
 /**
