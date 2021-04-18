@@ -21,8 +21,5 @@ jobs:
       with:
         java-version: '16'
         distribution: 'adopt'
-    - name: Enable Preview for JDK JavaDoc
-      env:
-        JDK_JAVA_OPTIONS: --enable-preview #for javadoc apparently
     - name: Build with Maven
       run: mvn -B clean compile source:jar javadoc:jar package --file pom.xml
