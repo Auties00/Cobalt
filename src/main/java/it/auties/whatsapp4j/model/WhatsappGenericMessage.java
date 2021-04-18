@@ -4,7 +4,7 @@ import it.auties.whatsapp4j.api.WhatsappAPI;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.ToString;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;

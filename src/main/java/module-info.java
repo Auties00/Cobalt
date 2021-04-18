@@ -10,7 +10,6 @@ module it.auties.whatsapp4j {
 
     exports it.auties.whatsapp4j.model;
 
-    requires jakarta.activation;
     requires jakarta.validation;
     requires jakarta.xml.bind;
     requires jakarta.websocket.api;
@@ -21,12 +20,13 @@ module it.auties.whatsapp4j {
 
     requires static ez.vcard;
     requires static hkdf;
+    requires static curve25519.java;
 
     requires static lombok;
 
     requires java.prefs;
     requires java.net.http;
-    requires io.github.classgraph;
+    requires java.compiler;
 
     opens it.auties.whatsapp4j.model to com.fasterxml.jackson.databind;
     opens it.auties.whatsapp4j.response.impl to com.fasterxml.jackson.databind;

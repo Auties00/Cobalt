@@ -15,13 +15,12 @@ import it.auties.whatsapp4j.response.model.JsonResponse;
 import it.auties.whatsapp4j.utils.Validate;
 import it.auties.whatsapp4j.utils.WhatsappQRCode;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
+import jakarta.validation.constraints.NotNull;
 import jakarta.websocket.*;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -50,7 +49,7 @@ import static it.auties.whatsapp4j.utils.CypherUtils.*;
 @Data
 @Accessors(fluent = true)
 public class WhatsappWebSocket {
-  private @Nullable Session session;
+  private Session session;
   private boolean loggedIn;
   private final @NotNull ScheduledExecutorService pingService;
   private final @NotNull WebSocketContainer webSocketContainer;
@@ -168,8 +167,8 @@ public class WhatsappWebSocket {
     var binaryMessage = BinaryArray.forArray(msg);
     var tagAndMessagePair = binaryMessage.indexOf(',').map(binaryMessage::split).orElseThrow();
 
-    var messageTag  = tagAndMessagePair.getFirst().toString();
-    var messageContent  = tagAndMessagePair.getSecond();
+    var messageTag  = tagAndMessagePair.getKey().toString();
+    var messageContent  = tagAndMessagePair.getValue();
 
     var message = messageContent.slice(32);
     var hmacValidation = hmacSha256(message, Objects.requireNonNull(whatsappKeys.macKey()));
@@ -191,7 +190,7 @@ public class WhatsappWebSocket {
   }
 
   @SneakyThrows
-  public void disconnect(@Nullable String reason, boolean logout, boolean reconnect){
+  public void disconnect(String reason, boolean logout, boolean reconnect){
     Validate.isTrue(loggedIn, "WhatsappAPI: Cannot terminate the connection with whatsapp as it doesn't exist", IllegalStateException.class);
     whatsappManager.clear();
     if(logout) new LogOutRequest(options){}.send(session()).thenRun(whatsappKeys::deleteKeysFromMemory);

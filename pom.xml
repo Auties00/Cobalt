@@ -123,7 +123,7 @@
                     <!-- Enable lombok compilation access to com.sun, and access to mapstruct to build-->
                     <compilerArgs>
                         <arg>-J--illegal-access=permit</arg>
-                        <arg>-J-enable-preview</arg>
+                        <arg>--enable-preview</arg>
                     </compilerArgs>
                     <failOnError>true</failOnError>
                 </configuration>
@@ -187,6 +187,7 @@
                             <javadocExecutable>${java.home}/bin/javadoc.exe</javadocExecutable>
                             <release>${java-version}</release>
                             <detectJavaApiLink>false</detectJavaApiLink>
+                            <source>${delombok.output}</source>
                             <offlineLinks>
                                 <offlineLink>
                                     <!--suppress UnresolvedMavenProperty -->
@@ -215,6 +216,7 @@
                         <includes>
                             <include>com.googlecode.ez-vcard</include>
                             <include>at.favre.lib:hkdf</include>
+                            <include>org.whispersystems</include>
                         </includes>
                     </artifactSet>
                     <filters>
@@ -300,6 +302,13 @@
             <optional>true</optional>
         </dependency>
 
+        <dependency>
+            <groupId>org.whispersystems</groupId>
+            <artifactId>curve25519-java</artifactId>
+            <version>0.5.0</version>
+            <optional>true</optional>
+        </dependency>
+
         <!-- Annotations & Reflection dependencies -->
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -308,11 +317,35 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson-version}</version>
+        </dependency>
+
         <!-- Jakarta EE 9 Modular Libraries -->
 
         <dependency>
             <groupId>com.guicedee.services</groupId>
             <artifactId>jakarta.validation-api</artifactId>
+            <version>${ee.modules}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.guicedee.services</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
+            <version>${ee.modules}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.guicedee.services</groupId>
+            <artifactId>undertow-websockets-jsr</artifactId>
+            <version>${ee.modules}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.guicedee.services</groupId>
+            <artifactId>guava</artifactId>
             <version>${ee.modules}</version>
         </dependency>
 

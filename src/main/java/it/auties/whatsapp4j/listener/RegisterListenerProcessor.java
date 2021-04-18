@@ -1,8 +1,9 @@
 package it.auties.whatsapp4j.listener;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
-import org.jetbrains.annotations.NotNull;
+
 
 import javax.tools.JavaFileObject;
 import javax.tools.StandardJavaFileManager;

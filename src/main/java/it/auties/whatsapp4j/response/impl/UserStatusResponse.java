@@ -5,7 +5,7 @@ import it.auties.whatsapp4j.response.model.JsonResponseModel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.Optional;
 
