@@ -11,14 +11,10 @@ import java.util.Optional;
 /**
  * An immutable model class that represents a WhatsappMute.
  * To change the mute status of a {@link WhatsappChat} use {@link WhatsappAPI#mute(WhatsappChat)} and {@link WhatsappAPI#unmute(WhatsappChat)}.
+ *
+ * @param time the end date of the mute associated with this object stored as second since {@link Instant#EPOCH}
  */
 public record WhatsappMute(long time) {
-    /**
-     * @param time the end date of the mute associated with this object stored as second since {@link Instant#EPOCH}
-     */
-    public WhatsappMute {
-    }
-
     /**
      * Returns whether the chat associated with this object is muted or not
      *
