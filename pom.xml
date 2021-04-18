@@ -184,7 +184,6 @@
                             <goal>jar</goal>
                         </goals>
                         <configuration>
-                            <javadocExecutable>${java.home}/bin/javadoc.exe</javadocExecutable>
                             <release>${java-version}</release>
                             <detectJavaApiLink>false</detectJavaApiLink>
                             <source>${delombok.output}</source>
