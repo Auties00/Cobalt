@@ -1,5 +1,6 @@
 package it.auties.whatsapp4j.request.impl;
 
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.request.model.JsonRequest;
@@ -11,6 +12,7 @@ import java.util.List;
 /**
  * A JSON request used to signal to WhatsappWeb's WebSocket that the authentication process can begin
  */
+@JsonTypeName("initalrequest")
 public class InitialRequest<M extends JsonResponseModel<M>>
         extends JsonRequest<InitialRequest<M>,M> {
     private final @NotNull WhatsappKeysManager whatsappKeys;

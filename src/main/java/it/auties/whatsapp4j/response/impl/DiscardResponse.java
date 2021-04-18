@@ -25,6 +25,4 @@ public final class DiscardResponse implements JsonResponseModel<DiscardResponse>
     public String toString() {
         return "DiscardResponse[]";
     }
-
-
 }

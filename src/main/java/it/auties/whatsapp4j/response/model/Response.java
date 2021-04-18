@@ -21,6 +21,7 @@ import jakarta.validation.constraints.NotNull;
         }
 )
 public interface Response<J extends Response<J, T>, T extends ResponseModel<T>> {
+
     /**
      * Converts this object to a ResponseModel
      *
