@@ -183,7 +183,6 @@
                     <configuration>
                        <!--<source>${delombok.output}</source>-->
                        <sourcepath>${build.outputDirectory}/generated-sources/annotations;${delombok.output}</sourcepath>
-                        <bootclasspath></bootclasspath>
                         <release>${java-version}</release>
                         <!--  -->
                         <failOnError>false</failOnError>
