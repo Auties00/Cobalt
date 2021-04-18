@@ -316,11 +316,5 @@
             <version>${ee.modules}</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.guicedee.services</groupId>
-            <artifactId>javax.activation</artifactId>
-            <version>${ee.modules}</version>
-        </dependency>
-
     </dependencies>
 </project>
