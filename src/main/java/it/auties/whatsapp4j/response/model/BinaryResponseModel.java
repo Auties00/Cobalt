@@ -13,7 +13,7 @@ import java.util.Optional;
  * @param <T> the type of the data this object holds
  */
 @ToString
-public  abstract class BinaryResponseModel<T> implements ResponseModel {
+public non-sealed abstract class BinaryResponseModel<T> implements ResponseModel {
     /**
      * The data that this response wraps
      */

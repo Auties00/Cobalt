@@ -18,22 +18,14 @@ import java.util.stream.IntStream;
  * It provides an easy interface to modify said data, convert it or generate it
  * This is intended to only be used for WhatsappWeb's WebSocket binary operations
  */
-@AllArgsConstructor
-@Getter
-@Setter
-@Accessors(chain = true,fluent = true)
-@EqualsAndHashCode
-@ToString
-public final class BinaryArray {
-    private final byte[] data;
-
-
+public record BinaryArray(byte[] data) {
     /**
      * Constructs a new empty {@link BinaryArray}
      *
      * @return a new {@link BinaryArray}
      */
-    public static @NotNull BinaryArray empty() {
+    public static @NotNull
+    BinaryArray empty() {
         return forArray(new byte[0]);
     }
 
@@ -43,7 +35,8 @@ public final class BinaryArray {
      * @param in the array of bytes to wrap
      * @return a new {@link BinaryArray}
      */
-    public static @NotNull BinaryArray forArray(byte[] in) {
+    public static @NotNull
+    BinaryArray forArray(byte[] in) {
         return new BinaryArray(in);
     }
 
@@ -53,7 +46,8 @@ public final class BinaryArray {
      * @param in the byte to wrap
      * @return a new non empty {@link BinaryArray}
      */
-    public static @NotNull BinaryArray singleton(byte in) {
+    public static @NotNull
+    BinaryArray singleton(byte in) {
         return new BinaryArray(new byte[]{in});
     }
 
@@ -63,7 +57,8 @@ public final class BinaryArray {
      * @param in the String to wrap
      * @return a new {@link BinaryArray}
      */
-    public static @NotNull BinaryArray forString(@NotNull String in) {
+    public static @NotNull
+    BinaryArray forString(@NotNull String in) {
         return forArray(in.getBytes());
     }
 
@@ -73,7 +68,8 @@ public final class BinaryArray {
      * @param input the Base64 encoded String to wrap
      * @return a new {@link BinaryArray}
      */
-    public static @NotNull BinaryArray forBase64(@NotNull String input) {
+    public static @NotNull
+    BinaryArray forBase64(@NotNull String input) {
         return forArray(Base64.getDecoder().decode(input));
     }
 
@@ -83,7 +79,8 @@ public final class BinaryArray {
      * @param length the length of the array to generate and wrap
      * @return a new {@link BinaryArray}
      */
-    public static @NotNull BinaryArray random(int length) {
+    public static @NotNull
+    BinaryArray random(int length) {
         final var result = new byte[length];
         new SecureRandom().nextBytes(result);
         return forArray(result);
@@ -96,7 +93,8 @@ public final class BinaryArray {
      * @param length the length of the new {@link BinaryArray}
      * @return a new {@link BinaryArray}
      */
-    public @NotNull BinaryArray cut(int length) {
+    public @NotNull
+    BinaryArray cut(int length) {
         return slice(0, length);
     }
 
@@ -107,7 +105,8 @@ public final class BinaryArray {
      * @param start the inclusive index to slice this object
      * @return a new {@link BinaryArray}
      */
-    public @NotNull BinaryArray slice(int start) {
+    public @NotNull
+    BinaryArray slice(int start) {
         return slice(start, size());
     }
 
@@ -116,10 +115,11 @@ public final class BinaryArray {
      * The content of the new {@link BinaryArray} will start at position {@code start} and will contain {@code end - start} elements.
      *
      * @param start the inclusive starting index to slice this object
-     * @param end the exclusive ending index to slice this object
+     * @param end   the exclusive ending index to slice this object
      * @return a new {@link BinaryArray}
      */
-    public @NotNull BinaryArray slice(int start, int end) {
+    public @NotNull
+    BinaryArray slice(int start, int end) {
         return forArray(Arrays.copyOfRange(data, start >= 0 ? start : size() + start, end >= 0 ? end : size() + end));
     }
 
@@ -131,7 +131,8 @@ public final class BinaryArray {
      * @param split the index to split this object's array
      * @return a new {@link Pair}
      */
-    public @NotNull Pair<BinaryArray, BinaryArray> split(int split) {
+    public @NotNull
+    Pair<BinaryArray, BinaryArray> split(int split) {
         return new Pair<>(cut(split), slice(split + 1));
     }
 
@@ -141,7 +142,8 @@ public final class BinaryArray {
      * @param array the {@link BinaryArray} to concatenate
      * @return a new {@link BinaryArray}
      */
-    public @NotNull BinaryArray merged(@NotNull BinaryArray array) {
+    public @NotNull
+    BinaryArray merged(@NotNull BinaryArray array) {
         var result = Arrays.copyOf(data, size() + array.size());
         System.arraycopy(array.data, 0, result, size(), array.size());
         return forArray(result);
@@ -155,7 +157,8 @@ public final class BinaryArray {
      * @param character the character to search
      * @return a new Optional
      */
-    public @NotNull Optional<Integer> indexOf(char character) {
+    public @NotNull
+    Optional<Integer> indexOf(char character) {
         return IntStream.range(0, size()).filter(index -> data[index] == character).boxed().findFirst();
     }
 
@@ -183,7 +186,8 @@ public final class BinaryArray {
      *
      * @return a new {@link ByteBuffer}
      */
-    public @NotNull ByteBuffer toBuffer() {
+    public @NotNull
+    ByteBuffer toBuffer() {
         return ByteBuffer.wrap(data);
     }
 
@@ -192,7 +196,8 @@ public final class BinaryArray {
      *
      * @return a String in hex format
      */
-    public @NotNull String toHex() {
+    public @NotNull
+    String toHex() {
         return DatatypeConverter.printHexBinary(data);
     }
 

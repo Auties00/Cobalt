@@ -9,6 +9,6 @@ package it.auties.whatsapp4j.response.model;
  * <li>{@link JsonResponseModel} - a model built from a JSON String</li>
  * </ul>
  */
-public interface ResponseModel  {
+public sealed interface ResponseModel permits BinaryResponseModel, JsonResponseModel {
 
 }

@@ -15,28 +15,11 @@ import java.util.Objects;
 
 /**
  * A json model that contains information about an update about the metadata of a WhatsappChat
- *
+ * @param jid  the jid of the WhatsappChat this update regards
+ * @param cmd  a nullable String used to describe the update
+ * @param data a list of objects that represent the encoded update
  */
-@Getter
-@Setter
-@Accessors(chain = true,fluent = true)
-@EqualsAndHashCode
-@ToString
-public final class ChatCmdResponse implements JsonResponseModel {
-    @JsonProperty("id")
-    private final @NotNull String jid;
-    private final String cmd;
-    private final @NotNull List<Object> data;
+public record ChatCmdResponse(@JsonProperty("id") @NotNull String jid, String cmd,
+                              @NotNull List<Object> data) implements JsonResponseModel {
 
-    /**
-     * @param jid the jid of the WhatsappChat this update regards
-     * @param cmd a nullable String used to describe the update
-     * @param data a list of objects that represent the encoded update
-     */
-    public ChatCmdResponse(@JsonProperty("id") @NotNull String jid, String cmd,
-                           @NotNull List<Object> data) {
-        this.jid = jid;
-        this.cmd = cmd;
-        this.data = data;
-    }
 }

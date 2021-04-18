@@ -7,19 +7,8 @@ import lombok.experimental.Accessors;
 
 import java.util.Objects;
 
-@AllArgsConstructor
-@Getter
-@Setter
-@Accessors(chain = true,fluent = true)
-@EqualsAndHashCode
-@ToString
-public final class WhatsappMediaUpload {
-    private final @NotNull String url;
-    private final @NotNull String directPath;
-    private final @NotNull BinaryArray mediaKey;
-    private final byte @NotNull [] file;
-    private final byte @NotNull [] fileSha256;
-    private final byte @NotNull [] fileEncSha256;
-    private final byte @NotNull [] sidecar;
-    private final @NotNull WhatsappMediaMessageType mediaType;
+public record WhatsappMediaUpload(@NotNull String url, @NotNull String directPath,
+                                  @NotNull BinaryArray mediaKey, byte[] file,
+                                  byte[] fileSha256, byte[] fileEncSha256, byte[] sidecar,
+                                  @NotNull WhatsappMediaMessageType mediaType) {
 }

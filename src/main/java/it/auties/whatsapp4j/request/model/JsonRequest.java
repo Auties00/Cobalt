@@ -16,7 +16,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * @param <M>
  */
-public abstract class JsonRequest<M extends JsonResponseModel> extends Request<M> {
+public abstract non-sealed class JsonRequest<M extends JsonResponseModel> extends Request<M> {
     /**
      * An instance of Jackson used to serialize objects as JSON
      */

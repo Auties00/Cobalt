@@ -14,21 +14,12 @@ import java.util.Optional;
 /**
  * An immutable model class that represents a WhatsappMute.
  * To change the mute status of a {@link WhatsappChat} use {@link WhatsappAPI#mute(WhatsappChat)} and {@link WhatsappAPI#unmute(WhatsappChat)}.
- *
  */
-@Getter
-@Setter
-@Accessors(chain = true,fluent = true)
-@EqualsAndHashCode
-@ToString
-public final class WhatsappMute {
-    private final long time;
-
+public record WhatsappMute(long time) {
     /**
      * @param time the end date of the mute associated with this object stored as second since {@link Instant#EPOCH}
      */
-    public WhatsappMute(long time) {
-        this.time = time;
+    public WhatsappMute {
     }
 
     /**
@@ -45,7 +36,8 @@ public final class WhatsappMute {
      *
      * @return a non null enum that describes the type of mute for this object
      */
-    public @NotNull WhatsappMuteType type() {
+    public @NotNull
+    WhatsappMuteType type() {
         return time == -1 ? WhatsappMuteType.MUTED_INDEFINITELY : time == 0 ? WhatsappMuteType.NOT_MUTED : WhatsappMuteType.MUTED_FOR_TIMEFRAME;
     }
 
@@ -54,11 +46,8 @@ public final class WhatsappMute {
      *
      * @return a non empty optional date if {@link WhatsappMute#time} > 0
      */
-    public @NotNull Optional<ZonedDateTime> muteEndDate() {
+    public @NotNull
+    Optional<ZonedDateTime> muteEndDate() {
         return isMuted() ? Optional.of(ZonedDateTime.ofInstant(Instant.ofEpochSecond(time), ZoneId.systemDefault())) : Optional.empty();
-    }
-
-    public long time() {
-        return time;
     }
 }

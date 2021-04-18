@@ -14,28 +14,10 @@ import java.util.Objects;
 
 /**
  * A json model that contains information about a modification made to a group
- *
+ * @param jid           the nullable jid of the group
+ * @param status        the http status code for the original request
+ * @param modifications a list of modifications made to the participants of the group and their relative status
  */
-@Getter
-@Setter
-@Accessors(chain = true,fluent = true)
-@EqualsAndHashCode
-@ToString
-public final class GroupModificationResponse implements JsonResponseModel {
-    @JsonProperty("gid")
-    private final String jid;
-    private final int status;
-    @JsonProperty("participants")
-    private final List<ModificationForParticipantStatus> modifications;
-
-    /**
-     * @param jid the nullable jid of the group
-     * @param status the http status code for the original request
-     * @param modifications a list of modifications made to the participants of the group and their relative status
-     */
-    public GroupModificationResponse(@JsonProperty("gid") String jid, int status, @JsonProperty("participants") List<ModificationForParticipantStatus> modifications) {
-        this.jid = jid;
-        this.status = status;
-        this.modifications = modifications;
-    }
+public record GroupModificationResponse(@JsonProperty("gid") String jid, int status,
+                                        @JsonProperty("participants") List<ModificationForParticipantStatus> modifications) implements JsonResponseModel {
 }

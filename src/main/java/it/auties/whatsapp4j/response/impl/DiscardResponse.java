@@ -10,10 +10,5 @@ import lombok.experimental.Accessors;
 /**
  * A json model that ignores any data provided by a response
  */
-@Getter
-@Setter
-@Accessors(chain = true,fluent = true)
-@EqualsAndHashCode
-@ToString
-public final class DiscardResponse implements JsonResponseModel {
+public record DiscardResponse() implements JsonResponseModel {
 }

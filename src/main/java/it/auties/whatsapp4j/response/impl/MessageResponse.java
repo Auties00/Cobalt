@@ -15,23 +15,8 @@ import java.util.Objects;
 /**
  * A json model that contains information about a WhatsappMessage sent by the client
  *
+ * @param status    the http status code for the original request
+ * @param timeStamp the time in seconds since {@link Instant#EPOCH} when the message was received by the server, null if the request wasn't successfully
  */
-@Getter
-@Setter
-@Accessors(chain = true,fluent = true)
-@EqualsAndHashCode
-@ToString
-public final class MessageResponse implements JsonResponseModel {
-    private final int status;
-    @JsonProperty("t")
-    private final Long timeStamp;
-
-    /**
-     * @param status the http status code for the original request
-     * @param timeStamp the time in seconds since {@link Instant#EPOCH} when the message was received by the server, null if the request wasn't successfully
-     */
-    public MessageResponse(int status, @JsonProperty("t") Long timeStamp) {
-        this.status = status;
-        this.timeStamp = timeStamp;
-    }
+public record MessageResponse(int status, @JsonProperty("t") Long timeStamp) implements JsonResponseModel {
 }

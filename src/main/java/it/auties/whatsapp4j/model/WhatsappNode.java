@@ -2,42 +2,23 @@ package it.auties.whatsapp4j.model;
 
 import it.auties.whatsapp4j.response.model.JsonResponse;
 import it.auties.whatsapp4j.utils.Validate;
-import lombok.*;
 import jakarta.validation.constraints.NotNull;
-import lombok.experimental.Accessors;
-
+import lombok.Builder;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * An immutable model class that represents the primary unit used by WhatsappWeb's WebSocket to communicate with the client.
  * This class also offers a builder, accessible using {@link WhatsappNodeBuilder}.
  *
+ * @param description a non null String that describes the data that this object holds in its {@code attrs} and {@code content}
+ * @param attrs       a non null Map of strings that describe additional information related to the content of this object or an encoded object when sending a message a protobuf object is not optimal
+ * @param content     a nullable object, usually a {@link WhatsappNode}, a {@link String} or a {@link WhatsappProtobuf}'s object
  */
 @Builder
-@Getter
-@Setter
-@Accessors(chain = true,fluent = true)
-@EqualsAndHashCode
-@ToString
-public final class WhatsappNode {
-    private final @NotNull String description;
-    private final @NotNull Map<String, String> attrs;
-    private final Object content;
-
-    /**
-     * @param description a non null String that describes the data that this object holds in its {@code attrs} and {@code content}
-     * @param attrs       a non null Map of strings that describe additional information related to the content of this object or an encoded object when sending a message a protobuf object is not optimal
-     * @param content     a nullable object, usually a {@link WhatsappNode}, a {@link String} or a {@link WhatsappProtobuf}'s object
-     */
-    public WhatsappNode(@NotNull String description, @NotNull Map<String, String> attrs, Object content) {
-        this.description = description;
-        this.attrs = attrs;
-        this.content = content;
-    }
-
+public record WhatsappNode(@NotNull String description,
+                           @NotNull Map<String, String> attrs, Object content) {
     /**
      * Constructs a WhatsappNode from a list
      *
@@ -45,7 +26,8 @@ public final class WhatsappNode {
      * @return a non null list containing only objects from {@code list} of type WhatsappNode
      */
     @SuppressWarnings("unchecked")
-    public static @NotNull WhatsappNode fromList(@NotNull List<?> list) {
+    public static @NotNull
+    WhatsappNode fromList(@NotNull List<?> list) {
         Validate.isTrue(list.size() == 3, "WhatsappAPI: Cannot parse %s as a WhatsappNode", list);
         if (!(list.get(0) instanceof String description)) {
             throw new IllegalArgumentException("WhatsappAPI: Cannot parse %s as a WhatsappNode, no description found".formatted(list));
@@ -64,7 +46,8 @@ public final class WhatsappNode {
      * @param list the generic list to parse
      * @return a non null list containing only objects from {@code list} of type WhatsappNode
      */
-    public static @NotNull List<WhatsappNode> fromGenericList(@NotNull List<?> list) {
+    public static @NotNull
+    List<WhatsappNode> fromGenericList(@NotNull List<?> list) {
         return list.stream()
                 .filter(entry -> entry instanceof WhatsappNode)
                 .map(WhatsappNode.class::cast)
@@ -78,7 +61,8 @@ public final class WhatsappNode {
      * @throws NullPointerException     if {@link WhatsappNode#content} is null
      * @throws IllegalArgumentException if {@link WhatsappNode#content} is not a List
      */
-    public @NotNull List<WhatsappNode> childNodes() {
+    public @NotNull
+    List<WhatsappNode> childNodes() {
         if (content == null) {
             return List.of();
         }
@@ -88,17 +72,5 @@ public final class WhatsappNode {
         }
 
         return fromGenericList(listContent);
-    }
-
-    public @NotNull String description() {
-        return description;
-    }
-
-    public @NotNull Map<String, String> attrs() {
-        return attrs;
-    }
-
-    public Object content() {
-        return content;
     }
 }

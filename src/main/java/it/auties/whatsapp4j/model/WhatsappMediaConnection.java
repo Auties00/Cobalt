@@ -6,13 +6,5 @@ import lombok.experimental.Accessors;
 
 import java.util.Objects;
 
-@AllArgsConstructor
-@Getter
-@Setter
-@Accessors(chain = true,fluent = true)
-@EqualsAndHashCode
-@ToString
-public final class WhatsappMediaConnection {
-    private final @NotNull String auth;
-    private final int ttl;
+public record WhatsappMediaConnection(@NotNull String auth, int ttl) {
 }
