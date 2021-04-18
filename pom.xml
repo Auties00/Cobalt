@@ -88,6 +88,8 @@
 
         <ee.modules>0.0.0_0-SNAPSHOT</ee.modules>
         <classgraph.version>4.8.104</classgraph.version>
+        <delombok-version>1.18.18.0</delombok-version>
+        <delombok.output>${project.build.directory}\delomboked-sources</delombok.output>
 
     </properties>
 
@@ -140,6 +142,35 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- JavaDoc configuration -->
+            <plugin>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok-maven-plugin</artifactId>
+                <version>${delombok-version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.projectlombok</groupId>
+                        <artifactId>lombok</artifactId>
+                        <version>${lombok-version}</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+                    <outputDirectory>${delombok.output}</outputDirectory>
+                    <addOutputDirectory>false</addOutputDirectory>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>delombok</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
@@ -152,8 +183,17 @@
                             <goal>jar</goal>
                         </goals>
                         <configuration>
+                            <sourcepath>${project.basedir}/target/delombok/</sourcepath>
                             <javadocExecutable>${java.home}/bin/javadoc.exe</javadocExecutable>
                             <release>${java-version}</release>
+                            <detectJavaApiLink>false</detectJavaApiLink>
+                            <offlineLinks>
+                                <offlineLink>
+                                    <!--suppress UnresolvedMavenProperty -->
+                                    <url>https://docs.oracle.com/javase/${java-version}/docs/api/</url>
+                                    <location>${project.basedir}</location>
+                                </offlineLink>
+                            </offlineLinks>
                         </configuration>
                     </execution>
                 </executions>
@@ -194,6 +234,7 @@
             <plugin>
                 <groupId>org.moditect</groupId>
                 <artifactId>moditect-maven-plugin</artifactId>
+                <version>1.0.0.RC1</version>
                 <executions>
                     <execution>
                         <id>add-module-infos</id>
@@ -249,14 +290,15 @@
             <groupId>com.googlecode.ez-vcard</groupId>
             <artifactId>ez-vcard</artifactId>
             <version>${vcard-version}</version>
+            <optional>true</optional>
         </dependency>
         <!-- Cryptographic dependencies -->
         <dependency>
             <groupId>at.favre.lib</groupId>
             <artifactId>hkdf</artifactId>
             <version>${hkdf-version}</version>
+            <optional>true</optional>
         </dependency>
-
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -271,6 +313,14 @@
             <version>${lombok-version}</version>
             <scope>provided</scope>
         </dependency>
+
+        <dependency>
+            <groupId>io.github.classgraph</groupId>
+            <artifactId>classgraph</artifactId>
+            <version>${classgraph.version}</version>
+        </dependency>
+
+        <!-- Jakarta EE 9 Modular Libraries -->
 
         <dependency>
             <groupId>com.guicedee.services</groupId>
@@ -302,11 +352,6 @@
             <version>${ee.modules}</version>
         </dependency>
 
-        <dependency>
-            <groupId>io.github.classgraph</groupId>
-            <artifactId>classgraph</artifactId>
-            <version>${classgraph.version}</version>
-        </dependency>
 
     </dependencies>
 </project>
