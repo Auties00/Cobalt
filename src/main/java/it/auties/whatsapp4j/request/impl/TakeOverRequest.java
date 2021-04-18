@@ -1,6 +1,5 @@
 package it.auties.whatsapp4j.request.impl;
 
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.request.model.JsonRequest;
@@ -13,7 +12,6 @@ import java.util.Objects;
 /**
  * A JSON request used to reclaim a previously started session, interrupted by the user logging in from another location
  */
-@JsonTypeName("takeoverequest")
 public class TakeOverRequest<M extends JsonResponseModel<M>>
         extends JsonRequest<TakeOverRequest<M>,M>{
     private final @NotNull WhatsappKeysManager whatsappKeys;

@@ -1,7 +1,6 @@
 package it.auties.whatsapp4j.request.impl;
 
 
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.request.model.JsonRequest;
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
@@ -16,7 +15,6 @@ import java.util.List;
 /**
  * A JSON request used to transmit a query request to WhatsappWeb's WebSocket
  */
-@JsonTypeName("userqueryrequest")
 public class UserQueryRequest<M extends JsonResponseModel<M>>
         extends JsonRequest<UserQueryRequest<M>,M> {
     private final @NotNull String jid;

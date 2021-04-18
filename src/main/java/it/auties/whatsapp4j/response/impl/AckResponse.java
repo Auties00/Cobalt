@@ -2,12 +2,9 @@ package it.auties.whatsapp4j.response.impl;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import it.auties.whatsapp4j.model.WhatsappProtobuf;
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
 import jakarta.validation.constraints.NotNull;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -17,14 +14,11 @@ import java.util.Objects;
  * A json model that contains information regarding an update about the read status of a message
  *
  */
-@JsonTypeName("ackresponse")
 public final class AckResponse implements JsonResponseModel<AckResponse> {
     private final String cmd;
-
     @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
     @JsonProperty("id")
     private final String @NotNull [] ids;
-
     private final int ack;
     private final @NotNull String from;
     private final @NotNull String to;

@@ -12,8 +12,6 @@ import lombok.experimental.Accessors;
 import java.util.Map;
 import java.util.Optional;
 
-import static it.auties.whatsapp4j.utils.JsonContext.JACKSON;
-
 /**
  * A record that wraps a Map representing a JSON String sent by WhatsappWeb's WebSocket as response for a request.
  * This map of attributes can be converted to a ResponseModel using {@link JsonResponse#toModel(Class)}.
@@ -23,14 +21,18 @@ import static it.auties.whatsapp4j.utils.JsonContext.JACKSON;
 @Accessors(chain = true,fluent = true)
 @Getter
 @Setter
-public final class JsonResponse<J extends JsonResponse<J,T>,T extends ResponseModel<T>>
-        implements Response<J,T> {
+public final class JsonResponse<J extends JsonResponse<J,T>,T extends ResponseModel<T>> implements Response<J,T> {
 
     private Map<String, ?> data;
 
     public JsonResponse(@NotNull Map<String, ?> data) {
         this.data = data;
     }
+
+    /**
+     * An instance of Jackson used to deserialize JSON Strings
+     */
+    private static final ObjectMapper JACKSON = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     /**
      * Constructs a new instance of JsonResponse from a json string

@@ -1,6 +1,6 @@
 package it.auties.whatsapp4j.binary;
 
-import it.auties.whatsapp4j.response.model.Pair;
+import it.auties.whatsapp4j.utils.Pair;
 import jakarta.xml.bind.DatatypeConverter;
 import jakarta.validation.constraints.NotNull;
 

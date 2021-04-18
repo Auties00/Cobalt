@@ -5,9 +5,6 @@ module it.auties.whatsapp4j {
     exports it.auties.whatsapp4j.request.impl;
     exports it.auties.whatsapp4j.request.model;
 
-    exports it.auties.whatsapp4j.manager;
-    exports it.auties.whatsapp4j.binary;
-
     requires jakarta.activation;
     requires jakarta.validation;
 

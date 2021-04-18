@@ -1,6 +1,5 @@
 package it.auties.whatsapp4j.request.impl;
 
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.model.WhatsappChat;
@@ -15,7 +14,6 @@ import java.util.List;
  * A JSON request used to force WhatsappWeb's WebSocket to send updates regarding a contact's status.
  * After this message, the status can be fetched by listening to {@link WhatsappListener#onContactPresenceUpdate(WhatsappChat, WhatsappContact)} or {@link WhatsappContact#lastKnownPresence()}.
  */
-@JsonTypeName("subscriberuserpresencerequest")
 public class SubscribeUserPresenceRequest<M extends JsonResponseModel<M>>
         extends JsonRequest<SubscribeUserPresenceRequest<M>,M> {
     private final @NotNull String jid;

@@ -1,6 +1,5 @@
 package it.auties.whatsapp4j.request.impl;
 
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
@@ -17,7 +16,6 @@ import java.util.Objects;
  * WhatsappWeb's WebSocket sends a challenge when it needs to verify that a pair of keys previously used are still valid.
  * This doesn't happen everytime after the first login, but it's important to handle this case.
  */
-@JsonTypeName("solvechallengerequest")
 public class SolveChallengeRequest<M extends JsonResponseModel<M>>
         extends JsonRequest<SolveChallengeRequest<M>,M> {
     private final @NotNull WhatsappKeysManager whatsappKeys;
