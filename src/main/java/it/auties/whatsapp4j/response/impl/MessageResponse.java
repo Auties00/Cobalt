@@ -2,6 +2,11 @@ package it.auties.whatsapp4j.response.impl;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.Accessors;
 
 
 import java.time.Instant;
@@ -11,6 +16,11 @@ import java.util.Objects;
  * A json model that contains information about a WhatsappMessage sent by the client
  *
  */
+@Getter
+@Setter
+@Accessors(chain = true,fluent = true)
+@EqualsAndHashCode
+@ToString
 public final class MessageResponse implements JsonResponseModel {
     private final int status;
     @JsonProperty("t")
@@ -24,35 +34,4 @@ public final class MessageResponse implements JsonResponseModel {
         this.status = status;
         this.timeStamp = timeStamp;
     }
-
-    public int status() {
-        return status;
-    }
-
-    @JsonProperty("t")
-    public Long timeStamp() {
-        return timeStamp;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (MessageResponse) obj;
-        return this.status == that.status &&
-                Objects.equals(this.timeStamp, that.timeStamp);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(status, timeStamp);
-    }
-
-    @Override
-    public String toString() {
-        return "MessageResponse[" +
-                "status=" + status + ", " +
-                "timeStamp=" + timeStamp + ']';
-    }
-
 }

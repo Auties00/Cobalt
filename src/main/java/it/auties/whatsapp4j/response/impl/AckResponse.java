@@ -5,6 +5,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.model.WhatsappProtobuf;
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
 import jakarta.validation.constraints.NotNull;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.Accessors;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -14,6 +19,11 @@ import java.util.Objects;
  * A json model that contains information regarding an update about the read status of a message
  *
  */
+@Getter
+@Setter
+@Accessors(chain = true,fluent = true)
+@EqualsAndHashCode
+@ToString
 public final class AckResponse implements JsonResponseModel {
     private final String cmd;
     @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
@@ -46,68 +56,6 @@ public final class AckResponse implements JsonResponseModel {
         this.to = to;
         this.timestamp = timestamp;
         this.participant = participant;
-    }
-
-    public String cmd() {
-        return cmd;
-    }
-
-    @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-    @JsonProperty("id")
-    public String @NotNull [] ids() {
-        return ids;
-    }
-
-    public int ack() {
-        return ack;
-    }
-
-    public @NotNull String from() {
-        return from;
-    }
-
-    public @NotNull String to() {
-        return to;
-    }
-
-    @JsonProperty("t")
-    public int timestamp() {
-        return timestamp;
-    }
-
-    public String participant() {
-        return participant;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (AckResponse) obj;
-        return Objects.equals(this.cmd, that.cmd) &&
-                Objects.equals(this.ids, that.ids) &&
-                this.ack == that.ack &&
-                Objects.equals(this.from, that.from) &&
-                Objects.equals(this.to, that.to) &&
-                this.timestamp == that.timestamp &&
-                Objects.equals(this.participant, that.participant);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(cmd, ids, ack, from, to, timestamp, participant);
-    }
-
-    @Override
-    public String toString() {
-        return "AckResponse[" +
-                "cmd=" + cmd + ", " +
-                "ids=" + ids + ", " +
-                "ack=" + ack + ", " +
-                "from=" + from + ", " +
-                "to=" + to + ", " +
-                "timestamp=" + timestamp + ", " +
-                "participant=" + participant + ']';
     }
 
 }

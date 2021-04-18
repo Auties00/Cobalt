@@ -1,6 +1,12 @@
 package it.auties.whatsapp4j.response.impl;
 
 
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.Accessors;
+
 import java.util.Objects;
 
 /**
@@ -8,6 +14,11 @@ import java.util.Objects;
  * This record should only be used by {@link UserInformationResponse}
  *
  */
+@Getter
+@Setter
+@Accessors(chain = true,fluent = true)
+@EqualsAndHashCode
+@ToString
 public final class FeaturesInformation {
     private final boolean url;
     private final String flags;
@@ -20,35 +31,4 @@ public final class FeaturesInformation {
         this.url = url;
         this.flags = flags;
     }
-
-    public boolean url() {
-        return url;
-    }
-
-    public String flags() {
-        return flags;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (FeaturesInformation) obj;
-        return this.url == that.url &&
-                Objects.equals(this.flags, that.flags);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(url, flags);
-    }
-
-    @Override
-    public String toString() {
-        return "FeaturesInformation[" +
-                "url=" + url + ", " +
-                "flags=" + flags + ']';
-    }
-
-
 }

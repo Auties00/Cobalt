@@ -3,6 +3,11 @@ package it.auties.whatsapp4j.response.impl;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
 import jakarta.validation.constraints.NotNull;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.Accessors;
 
 
 import java.util.List;
@@ -12,6 +17,11 @@ import java.util.Objects;
  * A json model that contains information about an update about the metadata of a WhatsappChat
  *
  */
+@Getter
+@Setter
+@Accessors(chain = true,fluent = true)
+@EqualsAndHashCode
+@ToString
 public final class ChatCmdResponse implements JsonResponseModel {
     @JsonProperty("id")
     private final @NotNull String jid;
@@ -29,42 +39,4 @@ public final class ChatCmdResponse implements JsonResponseModel {
         this.cmd = cmd;
         this.data = data;
     }
-
-    @JsonProperty("id")
-    public @NotNull String jid() {
-        return jid;
-    }
-
-    public String cmd() {
-        return cmd;
-    }
-
-    public @NotNull List<Object> data() {
-        return data;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (ChatCmdResponse) obj;
-        return Objects.equals(this.jid, that.jid) &&
-                Objects.equals(this.cmd, that.cmd) &&
-                Objects.equals(this.data, that.data);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(jid, cmd, data);
-    }
-
-    @Override
-    public String toString() {
-        return "ChatCmdResponse[" +
-                "jid=" + jid + ", " +
-                "cmd=" + cmd + ", " +
-                "data=" + data + ']';
-    }
-
-
 }

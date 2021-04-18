@@ -2,6 +2,11 @@ package it.auties.whatsapp4j.response.impl;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.Accessors;
 
 import java.util.Objects;
 
@@ -10,6 +15,11 @@ import java.util.Objects;
  * This record should only be used by {@link GroupMetadataResponse}
  *
  */
+@Getter
+@Setter
+@Accessors(chain = true,fluent = true)
+@EqualsAndHashCode
+@ToString
 public final class GroupParticipant {
     @JsonProperty("id")
     private final @NotNull String jid;
@@ -26,42 +36,4 @@ public final class GroupParticipant {
         this.isAdmin = isAdmin;
         this.isSuperAdmin = isSuperAdmin;
     }
-
-    @JsonProperty("id")
-    public @NotNull String jid() {
-        return jid;
-    }
-
-    public boolean isAdmin() {
-        return isAdmin;
-    }
-
-    public boolean isSuperAdmin() {
-        return isSuperAdmin;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (GroupParticipant) obj;
-        return Objects.equals(this.jid, that.jid) &&
-                this.isAdmin == that.isAdmin &&
-                this.isSuperAdmin == that.isSuperAdmin;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(jid, isAdmin, isSuperAdmin);
-    }
-
-    @Override
-    public String toString() {
-        return "GroupParticipant[" +
-                "jid=" + jid + ", " +
-                "isAdmin=" + isAdmin + ", " +
-                "isSuperAdmin=" + isSuperAdmin + ']';
-    }
-
-
 }

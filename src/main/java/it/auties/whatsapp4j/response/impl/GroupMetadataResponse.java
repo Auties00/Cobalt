@@ -3,6 +3,11 @@ package it.auties.whatsapp4j.response.impl;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
 import jakarta.validation.constraints.NotNull;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.Accessors;
 
 
 import java.time.Instant;
@@ -13,6 +18,11 @@ import java.util.Objects;
  * A json model that contains information about the requested metadata of a Whatsapp group
  *
  */
+@Getter
+@Setter
+@Accessors(chain = true,fluent = true)
+@EqualsAndHashCode
+@ToString
 public final class GroupMetadataResponse implements JsonResponseModel {
     @JsonProperty("id")
     private final @NotNull String jid;
@@ -80,112 +90,4 @@ public final class GroupMetadataResponse implements JsonResponseModel {
         this.lastDescriptionUpdateTimestamp = lastDescriptionUpdateTimestamp;
         this.participants = participants;
     }
-
-    @JsonProperty("id")
-    public @NotNull String jid() {
-        return jid;
-    }
-
-    @JsonProperty("owner")
-    public @NotNull String founderJid() {
-        return founderJid;
-    }
-
-    @JsonProperty("creation")
-    public int foundationTimestamp() {
-        return foundationTimestamp;
-    }
-
-    public @NotNull String subject() {
-        return subject;
-    }
-
-    @JsonProperty("subjectTime")
-    public Integer lastSubjectUpdateTimestamp() {
-        return lastSubjectUpdateTimestamp;
-    }
-
-    @JsonProperty("subjectOwner")
-    public String lastSubjectUpdateJid() {
-        return lastSubjectUpdateJid;
-    }
-
-    @JsonProperty("restrict")
-    public boolean onlyAdminsCanChangeSettings() {
-        return onlyAdminsCanChangeSettings;
-    }
-
-    @JsonProperty("announce")
-    public boolean onlyAdminsCanWriteMessages() {
-        return onlyAdminsCanWriteMessages;
-    }
-
-    @JsonProperty("desc")
-    public String description() {
-        return description;
-    }
-
-    @JsonProperty("descId")
-    public String descriptionMessageId() {
-        return descriptionMessageId;
-    }
-
-    @JsonProperty("descOwner")
-    public String lastDescriptionUpdateJid() {
-        return lastDescriptionUpdateJid;
-    }
-
-    @JsonProperty("descTime")
-    public Integer lastDescriptionUpdateTimestamp() {
-        return lastDescriptionUpdateTimestamp;
-    }
-
-    public @NotNull List<GroupParticipant> participants() {
-        return participants;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (GroupMetadataResponse) obj;
-        return Objects.equals(this.jid, that.jid) &&
-                Objects.equals(this.founderJid, that.founderJid) &&
-                this.foundationTimestamp == that.foundationTimestamp &&
-                Objects.equals(this.subject, that.subject) &&
-                Objects.equals(this.lastSubjectUpdateTimestamp, that.lastSubjectUpdateTimestamp) &&
-                Objects.equals(this.lastSubjectUpdateJid, that.lastSubjectUpdateJid) &&
-                this.onlyAdminsCanChangeSettings == that.onlyAdminsCanChangeSettings &&
-                this.onlyAdminsCanWriteMessages == that.onlyAdminsCanWriteMessages &&
-                Objects.equals(this.description, that.description) &&
-                Objects.equals(this.descriptionMessageId, that.descriptionMessageId) &&
-                Objects.equals(this.lastDescriptionUpdateJid, that.lastDescriptionUpdateJid) &&
-                Objects.equals(this.lastDescriptionUpdateTimestamp, that.lastDescriptionUpdateTimestamp) &&
-                Objects.equals(this.participants, that.participants);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(jid, founderJid, foundationTimestamp, subject, lastSubjectUpdateTimestamp, lastSubjectUpdateJid, onlyAdminsCanChangeSettings, onlyAdminsCanWriteMessages, description, descriptionMessageId, lastDescriptionUpdateJid, lastDescriptionUpdateTimestamp, participants);
-    }
-
-    @Override
-    public String toString() {
-        return "GroupMetadataResponse[" +
-                "jid=" + jid + ", " +
-                "founderJid=" + founderJid + ", " +
-                "foundationTimestamp=" + foundationTimestamp + ", " +
-                "subject=" + subject + ", " +
-                "lastSubjectUpdateTimestamp=" + lastSubjectUpdateTimestamp + ", " +
-                "lastSubjectUpdateJid=" + lastSubjectUpdateJid + ", " +
-                "onlyAdminsCanChangeSettings=" + onlyAdminsCanChangeSettings + ", " +
-                "onlyAdminsCanWriteMessages=" + onlyAdminsCanWriteMessages + ", " +
-                "description=" + description + ", " +
-                "descriptionMessageId=" + descriptionMessageId + ", " +
-                "lastDescriptionUpdateJid=" + lastDescriptionUpdateJid + ", " +
-                "lastDescriptionUpdateTimestamp=" + lastDescriptionUpdateTimestamp + ", " +
-                "participants=" + participants + ']';
-    }
-
-
 }

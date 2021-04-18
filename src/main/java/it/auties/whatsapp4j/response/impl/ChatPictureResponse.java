@@ -3,6 +3,11 @@ package it.auties.whatsapp4j.response.impl;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.Accessors;
 
 
 import java.util.Objects;
@@ -11,6 +16,11 @@ import java.util.Objects;
  * A json model that contains information about a requested profile picture
  *
  */
+@Getter
+@Setter
+@Accessors(chain = true,fluent = true)
+@EqualsAndHashCode
+@ToString
 public final class ChatPictureResponse implements JsonResponseModel {
     private final int status;
     private final String url;
@@ -31,40 +41,4 @@ public final class ChatPictureResponse implements JsonResponseModel {
     public ChatPictureResponse(@JsonProperty("eurl") String url, @JsonProperty("tag") String tag, @JsonProperty("status") Integer status) {
         this(Objects.requireNonNullElse(status, 200), url, tag);
     }
-
-    public int status() {
-        return status;
-    }
-
-    public String url() {
-        return url;
-    }
-
-    public String tag() {
-        return tag;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (ChatPictureResponse) obj;
-        return this.status == that.status &&
-                Objects.equals(this.url, that.url) &&
-                Objects.equals(this.tag, that.tag);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(status, url, tag);
-    }
-
-    @Override
-    public String toString() {
-        return "ChatPictureResponse[" +
-                "status=" + status + ", " +
-                "url=" + url + ", " +
-                "tag=" + tag + ']';
-    }
-
 }

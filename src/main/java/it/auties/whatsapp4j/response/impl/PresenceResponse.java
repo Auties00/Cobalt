@@ -4,6 +4,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.model.WhatsappContactStatus;
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
 import jakarta.validation.constraints.NotNull;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.Accessors;
 
 import java.util.Objects;
 
@@ -12,6 +17,11 @@ import java.util.Objects;
  * A json model that contains information about an update regarding the presence of a contact in a chat
  *
  */
+@Getter
+@Setter
+@Accessors(chain = true,fluent = true)
+@EqualsAndHashCode
+@ToString
 public final class PresenceResponse implements JsonResponseModel {
     @JsonProperty("id")
     private final @NotNull String jid;
@@ -36,49 +46,4 @@ public final class PresenceResponse implements JsonResponseModel {
         this.offsetFromLastSeen = offsetFromLastSeen;
         this.participant = participant;
     }
-
-    @JsonProperty("id")
-    public @NotNull String jid() {
-        return jid;
-    }
-
-    @JsonProperty("type")
-    public @NotNull WhatsappContactStatus presence() {
-        return presence;
-    }
-
-    @JsonProperty("t")
-    public Long offsetFromLastSeen() {
-        return offsetFromLastSeen;
-    }
-
-    public String participant() {
-        return participant;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (PresenceResponse) obj;
-        return Objects.equals(this.jid, that.jid) &&
-                Objects.equals(this.presence, that.presence) &&
-                Objects.equals(this.offsetFromLastSeen, that.offsetFromLastSeen) &&
-                Objects.equals(this.participant, that.participant);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(jid, presence, offsetFromLastSeen, participant);
-    }
-
-    @Override
-    public String toString() {
-        return "PresenceResponse[" +
-                "jid=" + jid + ", " +
-                "presence=" + presence + ", " +
-                "offsetFromLastSeen=" + offsetFromLastSeen + ", " +
-                "participant=" + participant + ']';
-    }
-
 }

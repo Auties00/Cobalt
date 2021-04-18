@@ -1,11 +1,20 @@
 package it.auties.whatsapp4j.model;
 
-import java.util.Objects;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.Accessors;
 
 /**
  * An immutable model class that holds a pair of coordinates
  *
  */
+@Getter
+@Setter
+@Accessors(chain = true,fluent = true)
+@EqualsAndHashCode
+@ToString
 public final class WhatsappCoordinates {
     private final double latitude;
     private final double longitude;
@@ -21,39 +30,7 @@ public final class WhatsappCoordinates {
         this.degreesClockwiseFromMagneticNorth = degreesClockwiseFromMagneticNorth;
     }
 
-    public double latitude() {
-        return latitude;
-    }
-
-    public double longitude() {
-        return longitude;
-    }
-
     public int degreesClockwiseFromMagneticNorth() {
         return degreesClockwiseFromMagneticNorth;
     }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (WhatsappCoordinates) obj;
-        return Double.doubleToLongBits(this.latitude) == Double.doubleToLongBits(that.latitude) &&
-                Double.doubleToLongBits(this.longitude) == Double.doubleToLongBits(that.longitude) &&
-                this.degreesClockwiseFromMagneticNorth == that.degreesClockwiseFromMagneticNorth;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(latitude, longitude, degreesClockwiseFromMagneticNorth);
-    }
-
-    @Override
-    public String toString() {
-        return "WhatsappCoordinates[" +
-                "latitude=" + latitude + ", " +
-                "longitude=" + longitude + ", " +
-                "degreesClockwiseFromMagneticNorth=" + degreesClockwiseFromMagneticNorth + ']';
-    }
-
 }

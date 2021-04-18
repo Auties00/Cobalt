@@ -3,14 +3,13 @@ package it.auties.whatsapp4j.binary;
 import it.auties.whatsapp4j.response.model.Pair;
 import jakarta.validation.constraints.NotNull;
 import jakarta.xml.bind.DatatypeConverter;
-
+import lombok.*;
+import lombok.experimental.Accessors;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.IntStream;
 
@@ -19,14 +18,15 @@ import java.util.stream.IntStream;
  * It provides an easy interface to modify said data, convert it or generate it
  * This is intended to only be used for WhatsappWeb's WebSocket binary operations
  */
+@AllArgsConstructor
+@Getter
+@Setter
+@Accessors(chain = true,fluent = true)
+@EqualsAndHashCode
+@ToString
 public final class BinaryArray {
     private final byte[] data;
 
-    /**
-     */
-    public BinaryArray(byte[] data) {
-        this.data = data;
-    }
 
     /**
      * Constructs a new empty {@link BinaryArray}
@@ -196,33 +196,5 @@ public final class BinaryArray {
         return DatatypeConverter.printHexBinary(data);
     }
 
-    /**
-     * Checks if this object and {@code other} are equal
-     *
-     * @return true if {@code other} is an instance of {@link BinaryArray} and if they wrap two arrays considered equal by {@link Arrays#equals(byte[], byte[])}
-     */
-    @Override
-    public boolean equals(Object other) {
-        return other instanceof BinaryArray that && Arrays.equals(data, that.data);
-    }
-
-    /**
-     * Constructs a UTF-8 encoded String using this object's array of bytes
-     *
-     * @return a new UTF-8 String
-     */
-    @Override
-    public @NotNull String toString() {
-        return new String(data(), StandardCharsets.UTF_8);
-    }
-
-    public byte[] data() {
-        return data;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(data);
-    }
 
 }

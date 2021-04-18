@@ -2,6 +2,8 @@ package it.auties.whatsapp4j.model;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import jakarta.validation.constraints.NotNull;
+import lombok.*;
+import lombok.experimental.Accessors;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -14,6 +16,11 @@ import java.util.Optional;
  * To change the mute status of a {@link WhatsappChat} use {@link WhatsappAPI#mute(WhatsappChat)} and {@link WhatsappAPI#unmute(WhatsappChat)}.
  *
  */
+@Getter
+@Setter
+@Accessors(chain = true,fluent = true)
+@EqualsAndHashCode
+@ToString
 public final class WhatsappMute {
     private final long time;
 
@@ -54,24 +61,4 @@ public final class WhatsappMute {
     public long time() {
         return time;
     }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (WhatsappMute) obj;
-        return this.time == that.time;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(time);
-    }
-
-    @Override
-    public String toString() {
-        return "WhatsappMute[" +
-                "time=" + time + ']';
-    }
-
 }

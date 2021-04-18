@@ -6,19 +6,23 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.whatsapp4j.response.model.JsonListResponse;
 import it.auties.whatsapp4j.response.model.JsonResponse;
 import it.auties.whatsapp4j.response.model.Response;
-import lombok.Builder;
 import jakarta.validation.constraints.NotNull;
-
+import lombok.*;
+import lombok.experimental.Accessors;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Objects;
 
 /**
  * A model that contains information about a response sent by Whatsapp for a request
  *
  */
 @Builder
+@Getter
+@Setter
+@Accessors(chain = true,fluent = true)
+@EqualsAndHashCode
+@ToString
 public final class WhatsappResponse {
     /**
      * An instance of Jackson used to deserialize JSON Strings
@@ -87,40 +91,4 @@ public final class WhatsappResponse {
     private static @NotNull String parseContent(@NotNull String content, int index) {
         return content.length() > index && content.charAt(index) == ',' ? parseContent(content, index + 1) : content.substring(index);
     }
-
-    public @NotNull String tag() {
-        return tag;
-    }
-
-    public String description() {
-        return description;
-    }
-
-    public @NotNull Response data() {
-        return data;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (WhatsappResponse) obj;
-        return Objects.equals(this.tag, that.tag) &&
-                Objects.equals(this.description, that.description) &&
-                Objects.equals(this.data, that.data);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(tag, description, data);
-    }
-
-    @Override
-    public String toString() {
-        return "WhatsappResponse[" +
-                "tag=" + tag + ", " +
-                "description=" + description + ", " +
-                "data=" + data + ']';
-    }
-
 }

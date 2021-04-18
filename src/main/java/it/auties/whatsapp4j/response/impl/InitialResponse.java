@@ -2,6 +2,11 @@ package it.auties.whatsapp4j.response.impl;
 
 import it.auties.whatsapp4j.request.impl.TakeOverRequest;
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.Accessors;
 
 import java.util.Objects;
 
@@ -10,6 +15,11 @@ import java.util.Objects;
  * A json model that contains information regarding a {@link TakeOverRequest}
  *
  */
+@Getter
+@Setter
+@Accessors(chain = true,fluent = true)
+@EqualsAndHashCode
+@ToString
 public final class InitialResponse implements JsonResponseModel {
     private final int status;
     private final String ref;
@@ -25,40 +35,4 @@ public final class InitialResponse implements JsonResponseModel {
         this.ref = ref;
         this.ttl = ttl;
     }
-
-    public int status() {
-        return status;
-    }
-
-    public String ref() {
-        return ref;
-    }
-
-    public int ttl() {
-        return ttl;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (InitialResponse) obj;
-        return this.status == that.status &&
-                Objects.equals(this.ref, that.ref) &&
-                this.ttl == that.ttl;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(status, ref, ttl);
-    }
-
-    @Override
-    public String toString() {
-        return "InitialResponse[" +
-                "status=" + status + ", " +
-                "ref=" + ref + ", " +
-                "ttl=" + ttl + ']';
-    }
-
 }

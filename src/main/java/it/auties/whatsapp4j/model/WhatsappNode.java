@@ -2,8 +2,9 @@ package it.auties.whatsapp4j.model;
 
 import it.auties.whatsapp4j.response.model.JsonResponse;
 import it.auties.whatsapp4j.utils.Validate;
-import lombok.Builder;
+import lombok.*;
 import jakarta.validation.constraints.NotNull;
+import lombok.experimental.Accessors;
 
 
 import java.util.List;
@@ -16,6 +17,11 @@ import java.util.Objects;
  *
  */
 @Builder
+@Getter
+@Setter
+@Accessors(chain = true,fluent = true)
+@EqualsAndHashCode
+@ToString
 public final class WhatsappNode {
     private final @NotNull String description;
     private final @NotNull Map<String, String> attrs;
@@ -95,28 +101,4 @@ public final class WhatsappNode {
     public Object content() {
         return content;
     }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (WhatsappNode) obj;
-        return Objects.equals(this.description, that.description) &&
-                Objects.equals(this.attrs, that.attrs) &&
-                Objects.equals(this.content, that.content);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(description, attrs, content);
-    }
-
-    @Override
-    public String toString() {
-        return "WhatsappNode[" +
-                "description=" + description + ", " +
-                "attrs=" + attrs + ", " +
-                "content=" + content + ']';
-    }
-
 }

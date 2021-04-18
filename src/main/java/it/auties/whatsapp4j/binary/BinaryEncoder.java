@@ -4,6 +4,8 @@ import it.auties.whatsapp4j.model.WhatsappNode;
 import it.auties.whatsapp4j.model.WhatsappProtobuf;
 import it.auties.whatsapp4j.utils.Validate;
 import jakarta.validation.constraints.NotNull;
+import lombok.*;
+import lombok.experimental.Accessors;
 
 
 import java.util.*;
@@ -14,6 +16,11 @@ import java.util.stream.IntStream;
  * To decode a message use instead {@link BinaryDecoder}.
  *
  */
+@Getter
+@Setter
+@Accessors(chain = true,fluent = true)
+@EqualsAndHashCode
+@ToString
 public final class BinaryEncoder {
     private final @NotNull List<Byte> cache;
 
@@ -183,28 +190,4 @@ public final class BinaryEncoder {
     private int @NotNull [] toUnsignedIntArray(byte @NotNull [] input) {
         return IntStream.range(0, input.length).map(x -> Byte.toUnsignedInt(input[x])).toArray();
     }
-
-    public @NotNull List<Byte> cache() {
-        return cache;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (BinaryEncoder) obj;
-        return Objects.equals(this.cache, that.cache);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(cache);
-    }
-
-    @Override
-    public String toString() {
-        return "BinaryEncoder[" +
-                "cache=" + cache + ']';
-    }
-
 }

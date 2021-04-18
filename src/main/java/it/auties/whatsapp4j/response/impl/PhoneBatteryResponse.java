@@ -1,6 +1,11 @@
 package it.auties.whatsapp4j.response.impl;
 
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.Accessors;
 
 import java.util.Objects;
 
@@ -8,6 +13,11 @@ import java.util.Objects;
  * A json model that contains information the battery status of the phone associated with this session
  *
  */
+@Getter
+@Setter
+@Accessors(chain = true,fluent = true)
+@EqualsAndHashCode
+@ToString
 public final class PhoneBatteryResponse implements JsonResponseModel {
     private final int value;
     private final boolean live;
@@ -23,40 +33,4 @@ public final class PhoneBatteryResponse implements JsonResponseModel {
         this.live = live;
         this.powerSave = powerSave;
     }
-
-    public int value() {
-        return value;
-    }
-
-    public boolean live() {
-        return live;
-    }
-
-    public boolean powerSave() {
-        return powerSave;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (PhoneBatteryResponse) obj;
-        return this.value == that.value &&
-                this.live == that.live &&
-                this.powerSave == that.powerSave;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(value, live, powerSave);
-    }
-
-    @Override
-    public String toString() {
-        return "PhoneBatteryResponse[" +
-                "value=" + value + ", " +
-                "live=" + live + ", " +
-                "powerSave=" + powerSave + ']';
-    }
-
 }

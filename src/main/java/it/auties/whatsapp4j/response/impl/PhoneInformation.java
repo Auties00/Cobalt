@@ -1,6 +1,12 @@
 package it.auties.whatsapp4j.response.impl;
 
 
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.Accessors;
+
 import java.util.Objects;
 
 /**
@@ -8,6 +14,11 @@ import java.util.Objects;
  * This record should only be used by {@link UserInformationResponse}
  *
  */
+@Getter
+@Setter
+@Accessors(chain = true,fluent = true)
+@EqualsAndHashCode
+@ToString
 public final class PhoneInformation {
     private final String waVersion;
     private final String mcc;
@@ -37,64 +48,4 @@ public final class PhoneInformation {
         this.deviceManufacturer = deviceManufacturer;
         this.deviceModel = deviceModel;
     }
-
-    public String waVersion() {
-        return waVersion;
-    }
-
-    public String mcc() {
-        return mcc;
-    }
-
-    public String mnc() {
-        return mnc;
-    }
-
-    public String osVersion() {
-        return osVersion;
-    }
-
-    public String osBuildNumber() {
-        return osBuildNumber;
-    }
-
-    public String deviceManufacturer() {
-        return deviceManufacturer;
-    }
-
-    public String deviceModel() {
-        return deviceModel;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (PhoneInformation) obj;
-        return Objects.equals(this.waVersion, that.waVersion) &&
-                Objects.equals(this.mcc, that.mcc) &&
-                Objects.equals(this.mnc, that.mnc) &&
-                Objects.equals(this.osVersion, that.osVersion) &&
-                Objects.equals(this.osBuildNumber, that.osBuildNumber) &&
-                Objects.equals(this.deviceManufacturer, that.deviceManufacturer) &&
-                Objects.equals(this.deviceModel, that.deviceModel);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(waVersion, mcc, mnc, osVersion, osBuildNumber, deviceManufacturer, deviceModel);
-    }
-
-    @Override
-    public String toString() {
-        return "PhoneInformation[" +
-                "waVersion=" + waVersion + ", " +
-                "mcc=" + mcc + ", " +
-                "mnc=" + mnc + ", " +
-                "osVersion=" + osVersion + ", " +
-                "osBuildNumber=" + osBuildNumber + ", " +
-                "deviceManufacturer=" + deviceManufacturer + ", " +
-                "deviceModel=" + deviceModel + ']';
-    }
-
 }
