@@ -14,7 +14,6 @@ import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.security.KeyPair;
 import java.util.Base64;
 import java.util.Objects;
 import java.util.prefs.Preferences;
@@ -28,14 +27,15 @@ import java.util.prefs.Preferences;
 @Data
 @Accessors(fluent = true, chain = true)
 public class WhatsappKeysManager {
+    private static final String PREFERENCES_PATH = WhatsappKeysManager.class.getName();
     private static final ObjectWriter JACKSON_WRITER = new ObjectMapper().writer();
     private static final ObjectReader JACKSON_READER = new ObjectMapper().reader();
     @JsonProperty
     private @NotNull String clientId;
     @JsonProperty
-    private @Nullable String serverToken, clientToken;
+    private byte @NotNull [] publicKey, privateKey;
     @JsonProperty
-    private @NotNull KeyPair keyPair;
+    private @Nullable String serverToken, clientToken;
     @JsonProperty
     private @Nullable BinaryArray encKey, macKey;
 
@@ -46,12 +46,13 @@ public class WhatsappKeysManager {
      */
     @SneakyThrows
     public static WhatsappKeysManager fromPreferences() {
-        final var preferences = Preferences.userRoot().get("whatsapp", null);
+        final var preferences = Preferences.userRoot().get(PREFERENCES_PATH, null);
         if(preferences != null){
             return JACKSON_READER.readValue(preferences, WhatsappKeysManager.class);
         }
 
-        return new WhatsappKeysManager(Base64.getEncoder().encodeToString(BinaryArray.random(16).data()), null, null, CypherUtils.calculateRandomKeyPair(), null, null);
+        var keyPair = CypherUtils.calculateRandomKeyPair();
+        return new WhatsappKeysManager(Base64.getEncoder().encodeToString(BinaryArray.random(16).data()), keyPair.getPublicKey(), keyPair.getPrivateKey(), null, null, null, null);
     }
 
     /**
@@ -68,8 +69,7 @@ public class WhatsappKeysManager {
      */
     @SneakyThrows
     public void initializeKeys(@NotNull String serverToken, @NotNull String clientToken, @NotNull BinaryArray encKey, @NotNull BinaryArray macKey){
-        encKey(encKey).macKey(macKey).serverToken(serverToken).clientToken(clientToken);
-        Preferences.userRoot().put("whatsapp", JACKSON_WRITER.writeValueAsString(this));
+        Preferences.userRoot().put(PREFERENCES_PATH, JACKSON_WRITER.writeValueAsString(encKey(encKey).macKey(macKey).serverToken(serverToken).clientToken(clientToken)));
     }
 
     /**

@@ -51,10 +51,8 @@ import static it.auties.whatsapp4j.utils.CypherUtils.*;
 @Accessors(fluent = true)
 public class WhatsappWebSocket {
   private @Nullable Session session;
-  private @Nullable WhatsappMediaConnection mediaConnection;
   private boolean loggedIn;
-  private final @NotNull ScheduledExecutorService scheduler;
-  private final @NotNull ScheduledExecutorService mediaSessionScheduler;
+  private final @NotNull ScheduledExecutorService pingService;
   private final @NotNull WebSocketContainer webSocketContainer;
   private final @NotNull WhatsappDataManager whatsappManager;
   private final @NotNull WhatsappKeysManager whatsappKeys;
@@ -64,7 +62,7 @@ public class WhatsappWebSocket {
   private final @NotNull BinaryEncoder binaryEncoder;
 
   public WhatsappWebSocket(@NotNull WhatsappConfiguration options, @NotNull WhatsappKeysManager whatsappKeys) {
-    this(Executors.newSingleThreadScheduledExecutor(), Executors.newSingleThreadScheduledExecutor(), ContainerProvider.getWebSocketContainer(), WhatsappDataManager.singletonInstance(), whatsappKeys, options, new WhatsappQRCode(), new BinaryDecoder(), new BinaryEncoder());
+    this(Executors.newSingleThreadScheduledExecutor(), ContainerProvider.getWebSocketContainer(), WhatsappDataManager.singletonInstance(), whatsappKeys, options, new WhatsappQRCode(), new BinaryDecoder(), new BinaryEncoder());
     webSocketContainer.setDefaultMaxSessionIdleTimeout(Duration.ofDays(30).toMillis());
   }
 
@@ -85,10 +83,10 @@ public class WhatsappWebSocket {
 
   private void generateQrCode(@NotNull InitialResponse response){
     Validate.isTrue(response.status() != 429, "Out of attempts to scan the QR code", IllegalStateException.class);
-    CompletableFuture.delayedExecutor(response.ttl(), TimeUnit.SECONDS).execute(() -> generateQrCode(response));
+    CompletableFuture.delayedExecutor(response.ttl(), TimeUnit.MILLISECONDS).execute(() -> generateQrCode(response));
 
     Validate.isTrue(response.ref() != null, "Cannot find ref for QR code generation");
-    qrCode.generateAndPrint(response.ref(), whatsappKeys.keyPair().getPublic().getEncoded(), whatsappKeys.clientId());
+    qrCode.generateAndPrint(response.ref(), whatsappKeys.publicKey(), whatsappKeys.clientId());
   }
 
   private void solveChallenge(@NotNull TakeOverResponse response){
@@ -118,7 +116,7 @@ public class WhatsappWebSocket {
     var base64Secret = response.secret();
     var secret = BinaryArray.forBase64(base64Secret);
     var pubKey = secret.cut(32);
-    var sharedSecret = calculateSharedSecret(pubKey.data(), whatsappKeys.keyPair().getPrivate().getEncoded());
+    var sharedSecret = calculateSharedSecret(pubKey.data(), whatsappKeys.privateKey());
     var sharedSecretExpanded = hkdfExpand(sharedSecret, 80);
 
     var hmacValidation = hmacSha256(secret.cut(32).merged(secret.slice(64)), sharedSecretExpanded.slice(32, 64));
@@ -189,7 +187,7 @@ public class WhatsappWebSocket {
   public void connect() {
     Validate.isTrue(!loggedIn,  "WhatsappAPI: Cannot establish a connection with whatsapp as one already exists", IllegalStateException.class);
     openConnection();
-    scheduler.scheduleAtFixedRate(this::sendPing, 0, 1, TimeUnit.MINUTES);
+    pingService.scheduleAtFixedRate(this::sendPing, 0, 1, TimeUnit.MINUTES);
   }
 
   @SneakyThrows
@@ -300,12 +298,32 @@ public class WhatsappWebSocket {
       return;
     }
 
-    if(!whatsappKeys.mayRestore()) login(info);
+    Validate.isTrue(info.connected(), "WhatsappAPI: Cannot establish a connection with WhatsappWeb");
+    if(!whatsappKeys.mayRestore()) {
+      login(info);
+    }
+
+    configureSelfContact(info);
+    scheduleMediaConnection(0);
+    loggedIn(true);
+    whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onLoggedIn(info, false)));
+  }
+
+  private void configureSelfContact(@NotNull UserInformationResponse info) {
     var jid = WhatsappUtils.parseJid(info.wid());
     whatsappManager.contacts().add(new WhatsappContact(jid, null, null, null, null, null));
     whatsappManager.phoneNumberJid(jid);
-    whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onLoggedIn(info, false)));
-    loggedIn(true);
+  }
+
+  private void scheduleMediaConnection(int delay){
+    CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS).execute(this::createMediaConnection);
+  }
+
+  @SneakyThrows
+  private void createMediaConnection(){
+    var connection = new MediaConnectionRequest<MediaConnectionResponse>(options){}.send(session()).get().connection();
+    whatsappManager.mediaConnection(connection);
+    scheduleMediaConnection(connection.ttl());
   }
 
   private void handleBlocklist(@NotNull BlocklistResponse blocklist) {

@@ -5,10 +5,11 @@ import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import org.jetbrains.annotations.NotNull;
-import org.reflections.ReflectionUtils;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -33,24 +34,46 @@ public final class WhatsappGenericMessage extends WhatsappUserMessage {
      *
      * @return a non empty optional if this message has a context
      */
-    @SuppressWarnings("unchecked")
     @Override
     @SneakyThrows
     public @NotNull Optional<WhatsappProtobuf.ContextInfo> contextInfo() {
-        var methods = ReflectionUtils.getMethods(info.getMessage().getClass(), ReflectionUtils.withModifier(Modifier.PUBLIC), ReflectionUtils.withPrefix("has"));
-        var propertyChecker = methods.stream().filter(this::invoke).findAny();
+        var methods = findCheckerMethods();
+        var propertyChecker = methods.stream().filter(this::invokeCheckerMethod).findAny();
         if(propertyChecker.isEmpty()){
             return Optional.empty();
         }
 
-        var propertyGetter = info.getMessage().getClass().getMethod(propertyChecker.get().getName().replaceFirst("has", "get"));
+        var propertyGetter = findGetterMethod(propertyChecker.get());
         var property = propertyGetter.invoke(info.getMessage());
-        var contextChecker = ReflectionUtils.getMethods(property.getClass(), ReflectionUtils.withModifier(Modifier.PUBLIC), ReflectionUtils.withName("hasContextInfo"));
-        return contextChecker.isEmpty() ? Optional.empty() : Optional.of((WhatsappProtobuf.ContextInfo) property.getClass().getMethod("getContextInfo").invoke(property));
+
+        return findContextInfoMethod(property).map(method -> invokeContextInfoGetter(property, method));
+    }
+
+    private @NotNull Method findGetterMethod(@NotNull Method propertyChecker) throws NoSuchMethodException {
+        return info.getMessage().getClass().getMethod(propertyChecker.getName().replaceFirst("has", "get"));
+    }
+
+    private @NotNull List<Method> findCheckerMethods() {
+        return Arrays.stream(info.getMessage().getClass().getMethods())
+                .filter(method -> Modifier.isPublic(method.getModifiers()) && method.getName().startsWith("has"))
+                .toList();
     }
 
     @SneakyThrows
-    private boolean invoke(Method method) {
+    private boolean invokeCheckerMethod(@NotNull Method method) {
         return (boolean) method.invoke(info.getMessage());
+    }
+
+    private @NotNull Optional<Method> findContextInfoMethod(@NotNull Object property){
+        try {
+            return Optional.of(property.getClass().getMethod("hasContextInfo"));
+        }catch (NoSuchMethodException ex){
+            return Optional.empty();
+        }
+    }
+
+    @SneakyThrows
+    private @NotNull WhatsappProtobuf.ContextInfo invokeContextInfoGetter(@NotNull Object property, @NotNull Method method) {
+        return (WhatsappProtobuf.ContextInfo) method.invoke(property);
     }
 }

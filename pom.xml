@@ -83,7 +83,6 @@
         <curve25519-version>0.5.0</curve25519-version>
         <hkdf-version>1.0.2</hkdf-version>
         <protobuf-version>3.14.0</protobuf-version>
-        <google-reflections-version>0.9.12</google-reflections-version>
         <vcard-version>0.11.2</vcard-version>
         <delombok.output>${project.build.directory}\delomboked-sources</delombok.output>
     </properties>
@@ -245,6 +244,11 @@
             <artifactId>hkdf</artifactId>
             <version>${hkdf-version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.whispersystems</groupId>
+            <artifactId>curve25519-java</artifactId>
+            <version>${curve25519-version}</version>
+        </dependency>
 
         <!-- Annotations & Reflection dependencies -->
         <dependency>
@@ -257,11 +261,6 @@
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
             <version>${nullsafe-version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.reflections</groupId>
-            <artifactId>reflections</artifactId>
-            <version>${google-reflections-version}</version>
         </dependency>
     </dependencies>
 </project>

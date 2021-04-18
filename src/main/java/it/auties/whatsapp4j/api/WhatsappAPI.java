@@ -57,6 +57,7 @@ public class WhatsappAPI {
         this.manager = WhatsappDataManager.singletonInstance();
         this.keys = WhatsappKeysManager.fromPreferences();
         this.socket = new WhatsappWebSocket(configuration, keys);
+
     }
 
     /**
@@ -301,7 +302,7 @@ public class WhatsappAPI {
                 .content(List.of(new WhatsappNode("presence", Map.of("type", presence.data()), null)))
                 .build();
 
-        return new NodeRequest<DiscardResponse>(configuration, node, false) {}.send(socket.session(), keys, presence.flag(), BinaryMetric.PRESENCE);
+        return new NodeRequest<DiscardResponse>(configuration, node) {}.send(socket.session(), keys, presence.flag(), BinaryMetric.PRESENCE);
     }
 
     /**
@@ -317,7 +318,7 @@ public class WhatsappAPI {
                 .content(List.of(new WhatsappNode("presence", Map.of("type", presence.data(), "to", chat.jid()), null)))
                 .build();
 
-        return new NodeRequest<DiscardResponse>(configuration, node, false) {}.send(socket.session(), keys, presence.flag(), BinaryMetric.PRESENCE);
+        return new NodeRequest<DiscardResponse>(configuration, node) {}.send(socket.session(), keys, presence.flag(), BinaryMetric.PRESENCE);
     }
 
     /**
@@ -483,9 +484,9 @@ public class WhatsappAPI {
      * @param image the new image
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    @Beta
     public @NotNull CompletableFuture<SimpleStatusResponse> changeGroupPicture(@NotNull WhatsappChat group, byte @NotNull [] image) {
         Validate.isTrue(group.isGroup(), "WhatsappAPI: Cannot change group's picture: %s is not a group", group.jid());
+
 
         var tag = WhatsappUtils.buildRequestTag(configuration);
         var node = WhatsappNode.builder()

@@ -11,9 +11,10 @@ import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.whispersystems.curve25519.Curve25519;
+import org.whispersystems.curve25519.Curve25519KeyPair;
 
 import javax.crypto.Cipher;
-import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -23,12 +24,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.NoSuchElementException;
 
@@ -41,8 +37,7 @@ import static it.auties.whatsapp4j.binary.BinaryArray.forArray;
 @UtilityClass
 public class CypherUtils {
     private final HttpClient CLIENT = HttpClient.newHttpClient();
-    private final String CURVE_25519 = "X25519";
-    private final String CURVE_25519_KEY = "XDH";
+    private final Curve25519 CURVE = Curve25519.getInstance(Curve25519.BEST);
     private final String HMAC_SHA256 = "HmacSHA256";
     private final String AES = "AES";
     private final String AES_ALGORITHM = "AES/CBC/PKCS5PADDING";
@@ -50,21 +45,13 @@ public class CypherUtils {
     private final int BLOCK_SIZE = 16;
 
     @SneakyThrows
-    public @NotNull KeyPair calculateRandomKeyPair(){
-        final var kpg = KeyPairGenerator.getInstance(CURVE_25519);
-        return kpg.generateKeyPair();
+    public @NotNull Curve25519KeyPair calculateRandomKeyPair(){
+        return CURVE.generateKeyPair();
     }
 
     @SneakyThrows
-    public @NotNull BinaryArray calculateSharedSecret(byte @NotNull [] publicKeyBytes, byte @NotNull [] privateKeyBytes){
-        var keyFactory = KeyFactory.getInstance(CURVE_25519);
-        var publicKey = keyFactory.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
-        var privateKey = keyFactory.generatePrivate(new PKCS8EncodedKeySpec(privateKeyBytes));
-
-        var keyAgreement = KeyAgreement.getInstance(CURVE_25519_KEY);
-        keyAgreement.init(privateKey);
-        keyAgreement.doPhase(publicKey, true);
-        return forArray(keyAgreement.generateSecret());
+    public @NotNull BinaryArray calculateSharedSecret(byte @NotNull [] publicKeyBytes, byte @NotNull [] privateKey){
+        return forArray(CURVE.calculateAgreement(publicKeyBytes, privateKey));
     }
 
     @SneakyThrows
@@ -157,7 +144,7 @@ public class CypherUtils {
 
         var fileSha256 = sha256(file);
         var fileEncSha256 = sha256(encFile);
-        var sidecar = type.isStreamable() ? new byte[0] : streamableMediaSidecar(file, macKey);
+        var sidecar = type.isStreamable() ? new byte[0] : mediaSideCard(file, macKey);
 
         var token = Base64.getUrlEncoder().withoutPadding().encodeToString(fileEncSha256);
         var uri = URI.create("%s/%s?auth=%s&token=%s".formatted(type.url(), token, connection.auth(), token));
@@ -176,7 +163,7 @@ public class CypherUtils {
     }
 
     @SneakyThrows
-    public byte @NotNull [] streamableMediaSidecar(byte @NotNull [] file, @NotNull BinaryArray macKey) {
+    public byte @NotNull [] mediaSideCard(byte @NotNull [] file, @NotNull BinaryArray macKey) {
         var input = new ByteArrayInputStream(file);
         var output = new ByteArrayOutputStream();
         var chunk = new byte[80];

@@ -2,6 +2,9 @@ package it.auties.whatsapp4j.response.impl;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
@@ -9,6 +12,9 @@ import java.util.Optional;
 /**
  * A json model that contains information about the text status of a contact
  */
+@AllArgsConstructor
+@Data
+@Accessors(fluent = true)
 public class UserStatusResponse implements JsonResponseModel {
     /**
      * The textual status of a contact or the http status code for the original request
