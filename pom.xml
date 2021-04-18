@@ -181,7 +181,7 @@
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>${maven-javadoc-plugin-version}</version>
                     <configuration>
-                       <!--<source>${delombok.output}</source>-->
+                       <source>${delombok.output}</source>
                        <sourcepath>${build.outputDirectory}/generated-sources/annotations;${delombok.output}</sourcepath>
                         <release>${java-version}</release>
                         <!--  -->
