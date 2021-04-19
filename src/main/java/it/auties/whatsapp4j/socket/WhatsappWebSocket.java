@@ -167,8 +167,8 @@ public class WhatsappWebSocket {
     var binaryMessage = BinaryArray.forArray(msg);
     var tagAndMessagePair = binaryMessage.indexOf(',').map(binaryMessage::split).orElseThrow();
 
-    var messageTag  = tagAndMessagePair.getKey().toString();
-    var messageContent  = tagAndMessagePair.getValue();
+    var messageTag  = tagAndMessagePair.key().toString();
+    var messageContent  = tagAndMessagePair.value();
 
     var message = messageContent.slice(32);
     var hmacValidation = hmacSha256(message, Objects.requireNonNull(whatsappKeys.macKey()));

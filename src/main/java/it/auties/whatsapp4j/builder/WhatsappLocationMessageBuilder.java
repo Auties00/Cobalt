@@ -18,12 +18,12 @@ public class WhatsappLocationMessageBuilder extends WhatsappMessageBuilder<Whats
     /**
      * The coordinates of the location wrapped by this object
      */
-    private  @Setter WhatsappCoordinates coordinates;
+    private @Setter WhatsappCoordinates coordinates;
 
     /**
      * The caption of the message wrapped by this object
      */
-    private  @Setter String caption;
+    private @Setter String caption;
 
     /**
      * The non encrypted thumbnail of the message wrapped by this object

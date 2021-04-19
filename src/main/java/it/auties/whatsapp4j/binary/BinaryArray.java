@@ -1,6 +1,6 @@
 package it.auties.whatsapp4j.binary;
 
-import it.auties.whatsapp4j.response.model.Pair;
+import it.auties.whatsapp4j.utils.Pair;
 import jakarta.validation.constraints.NotNull;
 import jakarta.xml.bind.DatatypeConverter;
 
@@ -22,8 +22,7 @@ public record BinaryArray(byte[] data) {
      *
      * @return a new {@link BinaryArray}
      */
-    public static @NotNull
-    BinaryArray empty() {
+    public static @NotNull BinaryArray empty() {
         return forArray(new byte[0]);
     }
 
@@ -33,8 +32,7 @@ public record BinaryArray(byte[] data) {
      * @param in the array of bytes to wrap
      * @return a new {@link BinaryArray}
      */
-    public static @NotNull
-    BinaryArray forArray(byte[] in) {
+    public static @NotNull BinaryArray forArray(byte[] in) {
         return new BinaryArray(in);
     }
 
@@ -44,8 +42,7 @@ public record BinaryArray(byte[] data) {
      * @param in the byte to wrap
      * @return a new non empty {@link BinaryArray}
      */
-    public static @NotNull
-    BinaryArray singleton(byte in) {
+    public static @NotNull BinaryArray singleton(byte in) {
         return new BinaryArray(new byte[]{in});
     }
 
@@ -55,8 +52,7 @@ public record BinaryArray(byte[] data) {
      * @param in the String to wrap
      * @return a new {@link BinaryArray}
      */
-    public static @NotNull
-    BinaryArray forString(@NotNull String in) {
+    public static @NotNull BinaryArray forString(@NotNull String in) {
         return forArray(in.getBytes());
     }
 
@@ -66,8 +62,7 @@ public record BinaryArray(byte[] data) {
      * @param input the Base64 encoded String to wrap
      * @return a new {@link BinaryArray}
      */
-    public static @NotNull
-    BinaryArray forBase64(@NotNull String input) {
+    public static @NotNull BinaryArray forBase64(@NotNull String input) {
         return forArray(Base64.getDecoder().decode(input));
     }
 
@@ -77,8 +72,7 @@ public record BinaryArray(byte[] data) {
      * @param length the length of the array to generate and wrap
      * @return a new {@link BinaryArray}
      */
-    public static @NotNull
-    BinaryArray random(int length) {
+    public static @NotNull BinaryArray random(int length) {
         final var result = new byte[length];
         new SecureRandom().nextBytes(result);
         return forArray(result);
@@ -91,8 +85,7 @@ public record BinaryArray(byte[] data) {
      * @param length the length of the new {@link BinaryArray}
      * @return a new {@link BinaryArray}
      */
-    public @NotNull
-    BinaryArray cut(int length) {
+    public @NotNull BinaryArray cut(int length) {
         return slice(0, length);
     }
 
@@ -103,8 +96,7 @@ public record BinaryArray(byte[] data) {
      * @param start the inclusive index to slice this object
      * @return a new {@link BinaryArray}
      */
-    public @NotNull
-    BinaryArray slice(int start) {
+    public @NotNull BinaryArray slice(int start) {
         return slice(start, size());
     }
 
@@ -116,8 +108,7 @@ public record BinaryArray(byte[] data) {
      * @param end   the exclusive ending index to slice this object
      * @return a new {@link BinaryArray}
      */
-    public @NotNull
-    BinaryArray slice(int start, int end) {
+    public @NotNull BinaryArray slice(int start, int end) {
         return forArray(Arrays.copyOfRange(data, start >= 0 ? start : size() + start, end >= 0 ? end : size() + end));
     }
 
@@ -129,8 +120,7 @@ public record BinaryArray(byte[] data) {
      * @param split the index to split this object's array
      * @return a new {@link Pair}
      */
-    public @NotNull
-    Pair<BinaryArray, BinaryArray> split(int split) {
+    public @NotNull Pair<BinaryArray, BinaryArray> split(int split) {
         return new Pair<>(cut(split), slice(split + 1));
     }
 
@@ -140,8 +130,7 @@ public record BinaryArray(byte[] data) {
      * @param array the {@link BinaryArray} to concatenate
      * @return a new {@link BinaryArray}
      */
-    public @NotNull
-    BinaryArray merged(@NotNull BinaryArray array) {
+    public @NotNull BinaryArray merged(@NotNull BinaryArray array) {
         var result = Arrays.copyOf(data, size() + array.size());
         System.arraycopy(array.data, 0, result, size(), array.size());
         return forArray(result);
@@ -155,8 +144,7 @@ public record BinaryArray(byte[] data) {
      * @param character the character to search
      * @return a new Optional
      */
-    public @NotNull
-    Optional<Integer> indexOf(char character) {
+    public @NotNull Optional<Integer> indexOf(char character) {
         return IntStream.range(0, size()).filter(index -> data[index] == character).boxed().findFirst();
     }
 
@@ -184,8 +172,7 @@ public record BinaryArray(byte[] data) {
      *
      * @return a new {@link ByteBuffer}
      */
-    public @NotNull
-    ByteBuffer toBuffer() {
+    public @NotNull ByteBuffer toBuffer() {
         return ByteBuffer.wrap(data);
     }
 
@@ -194,10 +181,7 @@ public record BinaryArray(byte[] data) {
      *
      * @return a String in hex format
      */
-    public @NotNull
-    String toHex() {
+    public @NotNull String toHex() {
         return DatatypeConverter.printHexBinary(data);
     }
-
-
 }

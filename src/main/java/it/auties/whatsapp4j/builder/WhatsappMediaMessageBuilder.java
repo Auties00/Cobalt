@@ -18,17 +18,17 @@ public class WhatsappMediaMessageBuilder extends WhatsappMessageBuilder<Whatsapp
     /**
      * The raw media that this message holds
      */
-    private @Setter byte  [] media;
+    private @Setter byte [] media;
 
     /**
      * The type of media that this object wraps
      */
-    private  @Setter WhatsappMediaMessageType type;
+    private @Setter WhatsappMediaMessageType type;
 
     /**
      * The raw media that this message holds
      */
-    private  @Setter String caption;
+    private @Setter String caption;
 
     /**
      * Builds a {@link WhatsappMediaMessage} from the data provided

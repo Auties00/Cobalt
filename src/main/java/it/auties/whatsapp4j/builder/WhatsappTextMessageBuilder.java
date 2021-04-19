@@ -17,7 +17,7 @@ public class WhatsappTextMessageBuilder extends WhatsappMessageBuilder<WhatsappT
     /**
      * The text of this message
      */
-    private  @Setter String text;
+    private @Setter String text;
 
     /**
      * Builds a {@link WhatsappTextMessage} from the data provided

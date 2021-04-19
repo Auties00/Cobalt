@@ -75,31 +75,21 @@
         <maven-javadoc-plugin-version>3.2.0</maven-javadoc-plugin-version>
         <maven-deploy-plugin-version>2.8.2</maven-deploy-plugin-version>
         <nexus-staging-maven-plugin-version>1.6.7</nexus-staging-maven-plugin-version>
-
         <lombok-version>1.18.20</lombok-version>
-
         <maven.jmod.version>3.0.0-alpha-1</maven.jmod.version>
-
         <jackson-version>2.12.3</jackson-version>
         <curve25519-version>0.5.0</curve25519-version>
-
         <hkdf-version>1.0.2</hkdf-version>
-
         <vcard-version>0.11.2</vcard-version>
-
         <ee.modules>1.1.1.8-jre16</ee.modules>
-        <classgraph.version>4.8.104</classgraph.version>
         <delombok-version>1.18.18.0</delombok-version>
         <delombok.output>${project.build.directory}\delomboked-sources</delombok.output>
-
     </properties>
 
     <build>
         <pluginManagement>
             <plugins>
-
-
-                <!-- JavaDoc configuration -->
+                <!-- Delombok the project to prepare for compilation -->
                 <plugin>
                     <groupId>org.projectlombok</groupId>
                     <artifactId>lombok-maven-plugin</artifactId>
@@ -127,8 +117,7 @@
                     </executions>
                 </plugin>
 
-
-                <!-- Compile -->
+                <!-- Compile the project from the delomboked sources -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
@@ -137,24 +126,14 @@
                         <source>${java-version}</source>
                         <target>${java-version}</target>
                         <release>${java-version}</release>
-                        <!--<compileSourceRoots>${delombok.output}</compileSourceRoots>-->
+                        <compileSourceRoots>${delombok.output}</compileSourceRoots>
                         <annotationProcessorPaths>
-                            <path>
-                                <groupId>org.mapstruct</groupId>
-                                <artifactId>mapstruct-processor</artifactId>
-                                <version>1.4.2.Final</version>
-                            </path>
                             <path>
                                 <groupId>org.projectlombok</groupId>
                                 <artifactId>lombok</artifactId>
                                 <version>${lombok-version}</version>
                             </path>
                         </annotationProcessorPaths>
-                        <annotationProcessors>
-                            <annotationProcessor>lombok.launch.AnnotationProcessorHider$AnnotationProcessor
-                            </annotationProcessor>
-                        </annotationProcessors>
-                        <!-- Enable lombok compilation access to com.sun, and access to mapstruct to build-->
                         <compilerArgs>
                             <compilerArg>--enable-preview</compilerArg>
                             <arg>-J--illegal-access=permit</arg>
@@ -163,7 +142,7 @@
                     </configuration>
                 </plugin>
 
-                <!-- Attach sources and javadocs -->
+                <!-- Generate and attach the sourcecode -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
@@ -178,56 +157,23 @@
                     </executions>
                 </plugin>
 
+                <!-- Generate and attach javadocs -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>${maven-javadoc-plugin-version}</version>
                     <configuration>
                         <source>${delombok.output}</source>
-                        <sourcepath>${build.outputDirectory}/generated-sources/annotations;${delombok.output}
-                        </sourcepath>
+                        <sourcepath>${build.outputDirectory}/generated-sources/annotations;${delombok.output}</sourcepath>
                         <release>${java-version}</release>
-                        <!--  -->
-                        <failOnError>false</failOnError>
+                        <failOnError>true</failOnError>
                         <additionalOptions>--enable-preview</additionalOptions>
                         <debug>true</debug>
                         <verbose>true</verbose>
                     </configuration>
                 </plugin>
 
-                <plugin>
-                    <artifactId>maven-shade-plugin</artifactId>
-                    <version>3.2.4</version>
-                    <executions>
-                        <execution>
-                            <phase>package</phase>
-                            <goals>
-                                <goal>shade</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                    <configuration>
-                        <artifactSet>
-                            <includes>
-                                <include>com.googlecode.ez-vcard</include>
-                                <include>at.favre.lib:hkdf</include>
-                                <include>org.whispersystems</include>
-                            </includes>
-                        </artifactSet>
-                        <filters>
-                            <filter>
-                                <artifact>*:*</artifact>
-                                <excludes>
-                                    <exclude>module-info*</exclude>
-                                    <exclude>META-INF/*.SF</exclude>
-                                    <exclude>META-INF/*.DSA</exclude>
-                                    <exclude>META-INF/*.RSA</exclude>
-                                    <exclude>META-INF/services</exclude>
-                                </excludes>
-                            </filter>
-                        </filters>
-                    </configuration>
-                </plugin>
+                <!-- Generate and attach a module info -->
                 <plugin>
                     <groupId>org.moditect</groupId>
                     <artifactId>moditect-maven-plugin</artifactId>
@@ -279,29 +225,6 @@
                 </plugin>
             </plugins>
         </pluginManagement>
-
-        <plugins>
-            <plugin>
-                <groupId>org.projectlombok</groupId>
-                <artifactId>lombok-maven-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-            </plugin>
-        </plugins>
-
     </build>
 
     <dependencies>
@@ -313,6 +236,7 @@
             <version>${vcard-version}</version>
             <optional>true</optional>
         </dependency>
+
         <!-- Cryptographic dependencies -->
         <dependency>
             <groupId>at.favre.lib</groupId>
@@ -320,12 +244,10 @@
             <version>${hkdf-version}</version>
             <optional>true</optional>
         </dependency>
-
         <dependency>
             <groupId>org.whispersystems</groupId>
             <artifactId>curve25519-java</artifactId>
-            <version>0.5.0</version>
-            <optional>true</optional>
+            <version>${curve25519-version}</version>
         </dependency>
 
         <!-- Annotations & Reflection dependencies -->
@@ -333,9 +255,7 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${lombok-version}</version>
-            <scope>provided</scope>
         </dependency>
-
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
@@ -343,30 +263,20 @@
         </dependency>
 
         <!-- Jakarta EE 9 Modular Libraries -->
-
         <dependency>
             <groupId>com.guicedee.services</groupId>
             <artifactId>jakarta.validation-api</artifactId>
             <version>${ee.modules}</version>
         </dependency>
-
         <dependency>
             <groupId>com.guicedee.services</groupId>
             <artifactId>jakarta.xml.bind-api</artifactId>
             <version>${ee.modules}</version>
         </dependency>
-
         <dependency>
             <groupId>com.guicedee.services</groupId>
             <artifactId>undertow-websockets-jsr</artifactId>
             <version>${ee.modules}</version>
         </dependency>
-
-        <dependency>
-            <groupId>com.guicedee.services</groupId>
-            <artifactId>guava</artifactId>
-            <version>${ee.modules}</version>
-        </dependency>
-
     </dependencies>
 </project>

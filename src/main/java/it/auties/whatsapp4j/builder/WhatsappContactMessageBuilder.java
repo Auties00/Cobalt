@@ -19,7 +19,7 @@ public class WhatsappContactMessageBuilder extends WhatsappMessageBuilder<Whatsa
     /**
      * A non null list of parsed VCards, one for each contact that the raw protobuf message used to build this object holds
      */
-    private  @Setter List<VCard> sharedContacts;
+    private @Setter List<VCard> sharedContacts;
 
     /**
      * Builds a {@link WhatsappContactMessage} from the data provided

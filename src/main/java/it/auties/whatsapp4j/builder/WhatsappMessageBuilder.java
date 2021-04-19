@@ -13,12 +13,12 @@ abstract class WhatsappMessageBuilder<R> {
     /**
      * The chat where this message is stored
      */
-    protected  @Setter WhatsappChat chat;
+    protected @Setter WhatsappChat chat;
 
     /**
      * A nullable {@link WhatsappMessage} representing the message quoted by this message if in memory
      */
-    protected  @Setter WhatsappUserMessage quotedMessage;
+    protected @Setter WhatsappUserMessage quotedMessage;
 
     /**
      * Whether this message was forwarded or not

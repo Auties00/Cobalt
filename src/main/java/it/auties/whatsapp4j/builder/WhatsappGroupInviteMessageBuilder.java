@@ -19,32 +19,32 @@ public class WhatsappGroupInviteMessageBuilder extends WhatsappMessageBuilder<Wh
     /**
      * The jid of the group that this invite regards
      */
-    private  @Setter String jid;
+    private @Setter String jid;
 
     /**
      * The name of the group that this invite regards
      */
-    private  @Setter String name;
+    private @Setter String name;
 
     /**
      * The caption for this invite
      */
-    private  @Setter String caption;
+    private @Setter String caption;
 
     /**
      * The code of the group that this invite regards
      */
-    private  @Setter String code;
+    private @Setter String code;
 
     /**
      * The thumbnail of the group that this invite regards
      */
-    private  @Setter ByteBuffer thumbnail;
+    private @Setter ByteBuffer thumbnail;
 
     /**
      * The date when this invitation expires
      */
-    private  @Setter ZonedDateTime expiration;
+    private @Setter ZonedDateTime expiration;
 
     /**
      * Builds a {@link WhatsappGroupInviteMessage} from the data provided

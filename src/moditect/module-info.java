@@ -15,13 +15,10 @@ module it.auties.whatsapp4j {
     requires jakarta.xml.bind;
     requires jakarta.websocket.api;
 
-    requires com.google.common;
-
     requires com.fasterxml.jackson.databind;
 
     requires java.prefs;
     requires java.net.http;
-    requires io.github.classgraph;
 
     opens it.auties.whatsapp4j.model to com.fasterxml.jackson.databind;
     opens it.auties.whatsapp4j.response.impl to com.fasterxml.jackson.databind;
