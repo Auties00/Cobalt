@@ -10,13 +10,5 @@ import java.util.List;
  * This class is final, this means that it cannot be extended.
  */
 public final record JsonListResponse(@NotNull List<Object> data) implements Response {
-    /**
-     * This method is not supported
-     *
-     * @throws UnsupportedOperationException this operation is not supported
-     */
-    @Override
-    public <T extends ResponseModel> @NotNull T toModel(@NotNull Class<T> clazz) {
-        throw new UnsupportedOperationException();
-    }
+
 }

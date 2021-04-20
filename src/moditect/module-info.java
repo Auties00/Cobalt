@@ -9,6 +9,8 @@ module it.auties.whatsapp4j {
     requires jakarta.validation;
     requires jakarta.xml.bind;
     requires jakarta.websocket.api;
+    //the google common package for zxing and protobuf
+    requires com.google.common;
 
     requires static ez.vcard;
     requires static hkdf;

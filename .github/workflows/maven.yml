@@ -22,4 +22,4 @@ jobs:
         java-version: '16'
         distribution: 'adopt'
     - name: Build with Maven
-      run: mvn -B clean compile source:jar javadoc:jar package --file pom.xml
+      run: mvn -B package --file pom.xml

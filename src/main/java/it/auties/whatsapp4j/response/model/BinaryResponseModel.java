@@ -11,12 +11,12 @@ import java.util.Optional;
  *
  * @param <T> the type of the data this object holds
  */
-@ToString
 public non-sealed abstract class BinaryResponseModel<T> implements ResponseModel {
+
     /**
      * The data that this response wraps
      */
-    protected  T data;
+    protected T data;
 
     /**
      * Constructs a new BinaryResponseModel from {@code node}
@@ -34,5 +34,12 @@ public non-sealed abstract class BinaryResponseModel<T> implements ResponseModel
      */
     public Optional<T> data() {
         return Optional.ofNullable(data);
+    }
+
+    @Override
+    public String toString() {
+        return "BinaryResponseModel{" +
+                "data=" + data +
+                '}';
     }
 }
