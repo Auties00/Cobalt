@@ -50,7 +50,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.6</version>
+                        <version>${maven-gpg-plugin-version}</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -70,10 +70,12 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java-version>16</java-version>
+        <maven-gpg-plugin-version>1.6</maven-gpg-plugin-version>
         <maven-compiler-plugin-version>3.8.1</maven-compiler-plugin-version>
         <maven-source-plugin-version>3.0.1</maven-source-plugin-version>
         <maven-javadoc-plugin-version>3.2.0</maven-javadoc-plugin-version>
         <maven-deploy-plugin-version>2.8.2</maven-deploy-plugin-version>
+        <moditech-plugin-version>1.0.0.RC1</moditech-plugin-version>
         <nexus-staging-maven-plugin-version>1.6.7</nexus-staging-maven-plugin-version>
         <lombok-version>1.18.20</lombok-version>
         <maven.jmod.version>3.0.0-alpha-1</maven.jmod.version>
@@ -186,7 +188,7 @@
                 <plugin>
                     <groupId>org.moditect</groupId>
                     <artifactId>moditect-maven-plugin</artifactId>
-                    <version>1.0.0.RC1</version>
+                    <version>${moditech-plugin-version}</version>
                     <executions>
                         <execution>
                             <id>add-module-infos</id>
@@ -197,9 +199,7 @@
                             <configuration>
                                 <overwriteExistingFiles>true</overwriteExistingFiles>
                                 <module>
-                                    <moduleInfoFile>
-                                        src/moditect/module-info.java
-                                    </moduleInfoFile>
+                                    <moduleInfoFile>src/moditect/module-info.java</moduleInfoFile>
                                 </module>
                             </configuration>
                         </execution>
@@ -235,8 +235,8 @@
             </plugins>
         </pluginManagement>
 
+        <!-- Execution order specified for plugins -->
         <plugins>
-            <!-- Execution order specified for plugins -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -261,21 +261,11 @@
     </build>
 
     <dependencies>
-        <!-- Shaded Libraries -->
-        <!-- Contact's Vcard Parser library -->
-        <dependency>
-            <groupId>com.googlecode.ez-vcard</groupId>
-            <artifactId>ez-vcard</artifactId>
-            <version>${vcard-version}</version>
-            <optional>true</optional>
-        </dependency>
-
         <!-- Cryptographic dependencies -->
         <dependency>
             <groupId>at.favre.lib</groupId>
             <artifactId>hkdf</artifactId>
             <version>${hkdf-version}</version>
-            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.whispersystems</groupId>
@@ -288,6 +278,7 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${lombok-version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -301,10 +292,9 @@
             <artifactId>jakarta.validation-api</artifactId>
             <version>${ee.modules}</version>
         </dependency>
-        <!-- Google commons contains zxing and protobuf -->
         <dependency>
             <groupId>com.guicedee.services</groupId>
-            <artifactId>guava</artifactId>
+            <artifactId>undertow-websockets-jsr</artifactId>
             <version>${ee.modules}</version>
         </dependency>
         <dependency>
@@ -312,9 +302,11 @@
             <artifactId>jakarta.xml.bind-api</artifactId>
             <version>${ee.modules}</version>
         </dependency>
+
+        <!-- Google commons contains zxing and protobuf -->
         <dependency>
             <groupId>com.guicedee.services</groupId>
-            <artifactId>undertow-websockets-jsr</artifactId>
+            <artifactId>guava</artifactId>
             <version>${ee.modules}</version>
         </dependency>
     </dependencies>
