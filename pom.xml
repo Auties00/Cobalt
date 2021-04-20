@@ -309,5 +309,13 @@
             <artifactId>guava</artifactId>
             <version>${ee.modules}</version>
         </dependency>
+
+        <!-- Contacts' Vcard parsing library -->
+        <dependency>
+            <groupId>com.googlecode.ez-vcard</groupId>
+            <artifactId>ez-vcard</artifactId>
+            <version>${vcard-version}</version>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 </project>
