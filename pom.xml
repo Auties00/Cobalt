@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.auties00</groupId>
     <artifactId>whatsappweb4j</artifactId>
@@ -49,7 +50,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.6</version>
+                        <version>${maven-gpg-plugin-version}</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -69,175 +70,197 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java-version>16</java-version>
+        <maven-gpg-plugin-version>1.6</maven-gpg-plugin-version>
         <maven-compiler-plugin-version>3.8.1</maven-compiler-plugin-version>
         <maven-source-plugin-version>3.0.1</maven-source-plugin-version>
         <maven-javadoc-plugin-version>3.2.0</maven-javadoc-plugin-version>
         <maven-deploy-plugin-version>2.8.2</maven-deploy-plugin-version>
+        <moditech-plugin-version>1.0.0.RC1</moditech-plugin-version>
         <nexus-staging-maven-plugin-version>1.6.7</nexus-staging-maven-plugin-version>
         <lombok-version>1.18.20</lombok-version>
-        <delombok-version>1.18.18.0</delombok-version>
-        <nullsafe-version>RELEASE</nullsafe-version>
-        <tyrus-version>2.0.0</tyrus-version>
-        <jackson-version>2.12.0</jackson-version>
-        <zxing-version>3.4.1</zxing-version>
+        <maven.jmod.version>3.0.0-alpha-1</maven.jmod.version>
+        <jackson-version>2.12.3</jackson-version>
         <curve25519-version>0.5.0</curve25519-version>
         <hkdf-version>1.0.2</hkdf-version>
-        <protobuf-version>3.14.0</protobuf-version>
         <vcard-version>0.11.2</vcard-version>
+        <ee.modules>1.1.1.8-jre16</ee.modules>
+        <delombok-version>1.18.18.0</delombok-version>
         <delombok.output>${project.build.directory}\delomboked-sources</delombok.output>
     </properties>
 
     <build>
-        <plugins>
-            <!-- Delombok -->
-           <plugin>
-               <groupId>org.projectlombok</groupId>
-               <artifactId>lombok-maven-plugin</artifactId>
-               <version>${delombok-version}</version>
-               <dependencies>
-                   <dependency>
-                       <groupId>org.projectlombok</groupId>
-                       <artifactId>lombok</artifactId>
-                       <version>${lombok-version}</version>
-                   </dependency>
-               </dependencies>
-               <configuration>
-                   <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
-                   <outputDirectory>${delombok.output}</outputDirectory>
-                   <addOutputDirectory>false</addOutputDirectory>
-                   <encoding>${project.build.sourceEncoding}</encoding>
-               </configuration>
-               <executions>
-                   <execution>
-                       <phase>prepare-package</phase>
-                       <goals>
-                           <goal>delombok</goal>
-                       </goals>
-                   </execution>
-               </executions>
-           </plugin>
-
-           <!-- Compile -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>${maven-compiler-plugin-version}</version>
-                <configuration>
-                    <source>${java-version}</source>
-                    <target>${java-version}</target>
-                    <release>${java-version}</release>
-                    <annotationProcessorPaths>
-                        <path>
+        <pluginManagement>
+            <plugins>
+                <!-- Delombok the project to prepare for compilation -->
+                <plugin>
+                    <groupId>org.projectlombok</groupId>
+                    <artifactId>lombok-maven-plugin</artifactId>
+                    <version>${delombok-version}</version>
+                    <dependencies>
+                        <dependency>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                             <version>${lombok-version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                    <compilerArgs>
-                        <arg>--enable-preview</arg>
-                    </compilerArgs>
-                    <failOnError>true</failOnError>
-                </configuration>
-            </plugin>
+                        </dependency>
+                    </dependencies>
+                    <configuration>
+                        <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+                        <outputDirectory>${delombok.output}</outputDirectory>
+                        <addOutputDirectory>false</addOutputDirectory>
+                        <encoding>${project.build.sourceEncoding}</encoding>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <phase>process-sources</phase>
+                            <goals>
+                                <goal>delombok</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
 
-            <!-- Attach sources and javadocs -->
+                <!-- Compile the project from the delomboked sources -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${maven-compiler-plugin-version}</version>
+                    <configuration>
+                        <source>${java-version}</source>
+                        <target>${java-version}</target>
+                        <release>${java-version}</release>
+                        <compileSourceRoots>${delombok.output}</compileSourceRoots>
+                        <annotationProcessorPaths>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                                <version>${lombok-version}</version>
+                            </path>
+                        </annotationProcessorPaths>
+                        <compilerArgs>
+                            <compilerArg>--enable-preview</compilerArg>
+                            <arg>-J--illegal-access=permit</arg>
+                        </compilerArgs>
+                        <failOnError>true</failOnError>
+                    </configuration>
+                </plugin>
+
+                <!-- Generate and attach the sourcecode -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>${maven-source-plugin-version}</version>
+                    <executions>
+                        <execution>
+                            <id>attach-sources</id>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <!-- Generate and attach javadocs -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>${maven-javadoc-plugin-version}</version>
+                    <executions>
+                        <execution>
+                            <phase>prepare-package</phase>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <source>${build.outputDirectory}/src/main/java;${delombok.output}</source>
+                        <sourcepath>${build.outputDirectory}/src/main/java;${delombok.output}
+                        </sourcepath>
+                        <release>${java-version}</release>
+                        <failOnError>true</failOnError>
+                        <additionalOptions>--enable-preview</additionalOptions>
+                        <debug>true</debug>
+                        <verbose>true</verbose>
+                    </configuration>
+                </plugin>
+
+                <!-- Generate and attach a module info -->
+                <plugin>
+                    <groupId>org.moditect</groupId>
+                    <artifactId>moditect-maven-plugin</artifactId>
+                    <version>${moditech-plugin-version}</version>
+                    <executions>
+                        <execution>
+                            <id>add-module-infos</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>add-module-info</goal>
+                            </goals>
+                            <configuration>
+                                <overwriteExistingFiles>true</overwriteExistingFiles>
+                                <module>
+                                    <moduleInfoFile>src/moditect/module-info.java</moduleInfoFile>
+                                </module>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <!-- Deploy -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>${maven-deploy-plugin-version}</version>
+                    <executions>
+                        <execution>
+                            <id>default-deploy</id>
+                            <phase>deploy</phase>
+                            <goals>
+                                <goal>deploy</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.sonatype.plugins</groupId>
+                    <artifactId>nexus-staging-maven-plugin</artifactId>
+                    <version>${nexus-staging-maven-plugin-version}</version>
+                    <extensions>true</extensions>
+                    <configuration>
+                        <serverId>ossrh</serverId>
+                        <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+                        <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <!-- Execution order specified for plugins -->
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok-maven-plugin</artifactId>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
-                <version>${maven-source-plugin-version}</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>${maven-javadoc-plugin-version}</version>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <javadocExecutable>${java.home}/bin/javadoc.exe</javadocExecutable>
-                            <release>${java-version}</release>
-                            <sourcepath>${delombok.output}</sourcepath>
-                            <additionalOptions>--enable-preview</additionalOptions>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- Deploy -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <version>${maven-deploy-plugin-version}</version>
-                <executions>
-                    <execution>
-                        <id>default-deploy</id>
-                        <phase>deploy</phase>
-                        <goals>
-                            <goal>deploy</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
-                <version>${nexus-staging-maven-plugin-version}</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <serverId>ossrh</serverId>
-                    <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                </configuration>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
 
     <dependencies>
-        <!-- JakartaEE 9 Tyrus Implementation, needed for WebSockets -->
-        <dependency>
-            <groupId>org.glassfish.tyrus</groupId>
-            <artifactId>tyrus-server</artifactId>
-            <version>${tyrus-version}</version>
-        </dependency>
-
-        <!-- Qr code library -->
-        <dependency>
-            <groupId>com.google.zxing</groupId>
-            <artifactId>core</artifactId>
-            <version>${zxing-version}</version>
-        </dependency>
-
-        <!-- Contact's Vcard Parser library -->
-        <dependency>
-            <groupId>com.googlecode.ez-vcard</groupId>
-            <artifactId>ez-vcard</artifactId>
-            <version>${vcard-version}</version>
-        </dependency>
-
-        <!-- Data Structures dependencies -->
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-javalite</artifactId>
-            <version>${protobuf-version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson-version}</version>
-        </dependency>
-
         <!-- Cryptographic dependencies -->
         <dependency>
             <groupId>at.favre.lib</groupId>
@@ -258,9 +281,41 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.jetbrains</groupId>
-            <artifactId>annotations</artifactId>
-            <version>${nullsafe-version}</version>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson-version}</version>
+        </dependency>
+
+        <!-- Jakarta EE 9 Modular Libraries -->
+        <dependency>
+            <groupId>com.guicedee.services</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+            <version>${ee.modules}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.guicedee.services</groupId>
+            <artifactId>undertow-websockets-jsr</artifactId>
+            <version>${ee.modules}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.guicedee.services</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
+            <version>${ee.modules}</version>
+        </dependency>
+
+        <!-- Google commons contains zxing and protobuf -->
+        <dependency>
+            <groupId>com.guicedee.services</groupId>
+            <artifactId>guava</artifactId>
+            <version>${ee.modules}</version>
+        </dependency>
+
+        <!-- Contacts' Vcard parsing library -->
+        <dependency>
+            <groupId>com.googlecode.ez-vcard</groupId>
+            <artifactId>ez-vcard</artifactId>
+            <version>${vcard-version}</version>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 </project>

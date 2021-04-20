@@ -2,12 +2,11 @@ package it.auties.whatsapp4j.builder;
 
 import it.auties.whatsapp4j.model.WhatsappTextMessage;
 import it.auties.whatsapp4j.utils.ProtobufUtils;
+import jakarta.validation.constraints.NotNull;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
@@ -18,7 +17,7 @@ public class WhatsappTextMessageBuilder extends WhatsappMessageBuilder<WhatsappT
     /**
      * The text of this message
      */
-    private @Nullable @Setter String text;
+    private @Setter String text;
 
     /**
      * Builds a {@link WhatsappTextMessage} from the data provided

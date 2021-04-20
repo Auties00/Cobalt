@@ -5,11 +5,11 @@ import ezvcard.VCard;
 import ezvcard.io.chain.ChainingTextStringParser;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.builder.WhatsappContactMessageBuilder;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.List;

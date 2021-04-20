@@ -1,7 +1,7 @@
 package it.auties.whatsapp4j.model;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * The constants of this enumerated type describe the various policies that can be enforced for a {@link WhatsappGroupSetting} in a {@link it.auties.whatsapp4j.model.WhatsappChat}.

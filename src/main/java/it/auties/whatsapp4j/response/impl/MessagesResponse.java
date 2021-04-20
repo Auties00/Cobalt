@@ -5,7 +5,7 @@ import it.auties.whatsapp4j.model.WhatsappNode;
 import it.auties.whatsapp4j.model.WhatsappProtobuf;
 import it.auties.whatsapp4j.response.model.BinaryResponseModel;
 import it.auties.whatsapp4j.utils.WhatsappMessageFactory;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.stream.Collectors;
 

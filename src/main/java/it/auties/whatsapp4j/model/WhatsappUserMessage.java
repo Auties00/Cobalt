@@ -1,12 +1,11 @@
 package it.auties.whatsapp4j.model;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.List;
@@ -26,7 +25,7 @@ public abstract sealed class WhatsappUserMessage extends WhatsappMessage permits
     /**
      * A nullable {@link WhatsappMessage} representing the message quoted by this message if in memory
      */
-    private final @Nullable WhatsappUserMessage quotedMessage;
+    private final  WhatsappUserMessage quotedMessage;
 
     /**
      * A map that holds the read status of this message for each participant.

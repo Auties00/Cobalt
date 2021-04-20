@@ -3,12 +3,11 @@ package it.auties.whatsapp4j.model;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.builder.WhatsappTextMessageBuilder;
 import it.auties.whatsapp4j.utils.ProtobufUtils;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 
@@ -94,7 +93,7 @@ public final class WhatsappTextMessage extends WhatsappUserMessage {
      * @param forwarded whether this message should be marked as forwarded
      * @return a non null WhatsappTextMessage
      */
-    public static @NotNull WhatsappTextMessage newTextMessage(@NotNull WhatsappChat chat, @NotNull String text, @Nullable WhatsappUserMessage quotedMessage, boolean forwarded){
+    public static @NotNull WhatsappTextMessage newTextMessage(@NotNull WhatsappChat chat, @NotNull String text,  WhatsappUserMessage quotedMessage, boolean forwarded){
         return new WhatsappTextMessage(ProtobufUtils.createMessageInfo(ProtobufUtils.createTextMessage(text, quotedMessage, forwarded), chat.jid()));
     }
 

@@ -1,7 +1,7 @@
 package it.auties.whatsapp4j.model;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.NoArgsConstructor;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Collection;

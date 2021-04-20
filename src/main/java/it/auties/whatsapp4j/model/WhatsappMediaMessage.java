@@ -4,13 +4,12 @@ import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.builder.WhatsappMediaMessageBuilder;
 import it.auties.whatsapp4j.utils.CypherUtils;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -40,7 +39,7 @@ public final class WhatsappMediaMessage extends WhatsappUserMessage {
     /**
      * The raw media that this message holds
      */
-    private final @Nullable String caption;
+    private final  String caption;
 
     /**
      * Constructs a WhatsappMediaMessage from a raw protobuf object

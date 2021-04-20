@@ -4,10 +4,10 @@ import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.model.WhatsappProtobuf.WebMessageInfo;
 import it.auties.whatsapp4j.utils.Validate;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.ToString;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -23,7 +23,8 @@ import java.util.Optional;
 @Data
 @Accessors(fluent = true)
 @ToString
-public abstract sealed class WhatsappMessage permits WhatsappUserMessage, WhatsappServerMessage {
+public abstract class WhatsappMessage {
+;
     /**
      * A singleton instance of {@link WhatsappDataManager}
      */

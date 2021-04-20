@@ -3,8 +3,7 @@ package it.auties.whatsapp4j.binary;
 import it.auties.whatsapp4j.model.WhatsappNode;
 import it.auties.whatsapp4j.model.WhatsappProtobuf;
 import it.auties.whatsapp4j.utils.Validate;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,12 +16,14 @@ import java.util.stream.IntStream;
  * To decode a message use instead {@link BinaryDecoder}.
  *
  * @param cache the message to encode
+ *
  */
 public record BinaryEncoder(@NotNull List<Byte> cache) {
+
     /**
      * Constructs a new empty {@link BinaryEncoder}
      */
-    public BinaryEncoder(){
+    public BinaryEncoder() {
         this(new ArrayList<>());
     }
 
@@ -79,7 +80,7 @@ public record BinaryEncoder(@NotNull List<Byte> cache) {
         pushString(string);
     }
 
-    private void writeJid(@Nullable String left, @NotNull String right) {
+    private void writeJid(String left, @NotNull String right) {
         pushUnsignedInt(BinaryTag.JID_PAIR.data());
         if (left != null && left.length() > 0) {
             writeStrings(left, right);
@@ -138,7 +139,7 @@ public record BinaryEncoder(@NotNull List<Byte> cache) {
         pushUnsignedInts(tag.data(), listSize);
     }
 
-    private void writeContent(@Nullable Object content) {
+    private void writeContent(Object content) {
         if (content == null) {
             return;
         }

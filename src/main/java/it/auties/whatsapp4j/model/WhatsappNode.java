@@ -2,9 +2,8 @@ package it.auties.whatsapp4j.model;
 
 import it.auties.whatsapp4j.response.model.JsonResponse;
 import it.auties.whatsapp4j.utils.Validate;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
@@ -18,7 +17,8 @@ import java.util.Map;
  * @param content     a nullable object, usually a {@link WhatsappNode}, a {@link String} or a {@link WhatsappProtobuf}'s object
  */
 @Builder
-public record WhatsappNode(@NotNull String description, @NotNull Map<String, String> attrs, @Nullable Object content) {
+public record WhatsappNode(@NotNull String description,
+                           @NotNull Map<String, String> attrs, Object content) {
     /**
      * Constructs a WhatsappNode from a list
      *
@@ -26,13 +26,14 @@ public record WhatsappNode(@NotNull String description, @NotNull Map<String, Str
      * @return a non null list containing only objects from {@code list} of type WhatsappNode
      */
     @SuppressWarnings("unchecked")
-    public static @NotNull WhatsappNode fromList(@NotNull List<?> list) {
+    public static @NotNull
+    WhatsappNode fromList(@NotNull List<?> list) {
         Validate.isTrue(list.size() == 3, "WhatsappAPI: Cannot parse %s as a WhatsappNode", list);
-        if(!(list.get(0) instanceof String description)){
+        if (!(list.get(0) instanceof String description)) {
             throw new IllegalArgumentException("WhatsappAPI: Cannot parse %s as a WhatsappNode, no description found".formatted(list));
         }
 
-        if(!(list.get(1) instanceof String attrs)){
+        if (!(list.get(1) instanceof String attrs)) {
             throw new IllegalArgumentException("WhatsappAPI: Cannot parse %s as a WhatsappNode, no attrs found".formatted(list));
         }
 
@@ -45,7 +46,8 @@ public record WhatsappNode(@NotNull String description, @NotNull Map<String, Str
      * @param list the generic list to parse
      * @return a non null list containing only objects from {@code list} of type WhatsappNode
      */
-    public static @NotNull List<WhatsappNode> fromGenericList(@NotNull List<?> list) {
+    public static @NotNull
+    List<WhatsappNode> fromGenericList(@NotNull List<?> list) {
         return list.stream()
                 .filter(entry -> entry instanceof WhatsappNode)
                 .map(WhatsappNode.class::cast)
@@ -59,8 +61,9 @@ public record WhatsappNode(@NotNull String description, @NotNull Map<String, Str
      * @throws NullPointerException     if {@link WhatsappNode#content} is null
      * @throws IllegalArgumentException if {@link WhatsappNode#content} is not a List
      */
-    public @NotNull List<WhatsappNode> childNodes() {
-        if(content == null){
+    public @NotNull
+    List<WhatsappNode> childNodes() {
+        if (content == null) {
             return List.of();
         }
 

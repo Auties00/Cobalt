@@ -1,7 +1,7 @@
 package it.auties.whatsapp4j.socket;
 
+import jakarta.validation.constraints.NotNull;
 import jakarta.websocket.ClientEndpointConfig;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Map;

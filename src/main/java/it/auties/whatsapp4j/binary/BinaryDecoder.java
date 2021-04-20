@@ -3,8 +3,8 @@ package it.auties.whatsapp4j.binary;
 import it.auties.whatsapp4j.model.WhatsappNode;
 import it.auties.whatsapp4j.model.WhatsappProtobuf;
 import it.auties.whatsapp4j.utils.Validate;
+import jakarta.validation.constraints.NotNull;
 import lombok.SneakyThrows;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.List;

@@ -4,7 +4,7 @@ import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.model.WhatsappNode;
 import it.auties.whatsapp4j.request.model.BinaryRequest;
 import it.auties.whatsapp4j.response.model.ResponseModel;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * A binary request used to transmit a {@link WhatsappNode} to WhatsappWeb's WebSocket

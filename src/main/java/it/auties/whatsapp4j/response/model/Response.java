@@ -1,6 +1,6 @@
 package it.auties.whatsapp4j.response.model;
 
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * An interface that can be implemented to signal that a class may represent a serialization technique used by WhatsappWeb's WebSocket when sending a request.
@@ -20,5 +20,7 @@ public sealed interface Response permits BinaryResponse, JsonResponse, JsonListR
      * @param <T> the specific raw type of the model
      * @return an instance of the type of model requested
      */
-    <T extends ResponseModel> @NotNull T toModel(@NotNull Class<T> clazz);
+   default <T extends ResponseModel> @NotNull T toModel(@NotNull Class<T> clazz) {
+       throw new UnsupportedOperationException("To model is not supported on this object");
+   }
 }

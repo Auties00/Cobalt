@@ -15,10 +15,9 @@ import it.auties.whatsapp4j.response.impl.*;
 import it.auties.whatsapp4j.socket.WhatsappWebSocket;
 import it.auties.whatsapp4j.utils.Validate;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import org.glassfish.tyrus.core.Beta;
-import org.jetbrains.annotations.NotNull;
 
 import java.time.ZonedDateTime;
 import java.time.chrono.ChronoZonedDateTime;
@@ -596,7 +595,6 @@ public class WhatsappAPI {
      * @param contact the target contact
      * @throws IllegalStateException if the contact is already muted
      */
-    @Beta
     public @NotNull CompletableFuture<SimpleStatusResponse> block(@NotNull WhatsappContact contact) {
         var node = WhatsappNode.builder()
                 .description("action")

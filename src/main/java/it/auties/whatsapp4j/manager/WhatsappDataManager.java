@@ -10,13 +10,12 @@ import it.auties.whatsapp4j.response.model.Response;
 import it.auties.whatsapp4j.socket.WhatsappWebSocket;
 import it.auties.whatsapp4j.utils.WhatsappMessageFactory;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.*;
@@ -42,8 +41,8 @@ public class WhatsappDataManager {
     private final @NotNull List<Request<?>> pendingRequests;
     private final @NotNull List<WhatsappListener> listeners;
     private final long initializationTimeStamp;
-    private @Nullable String phoneNumberJid;
-    private @Nullable WhatsappMediaConnection mediaConnection;
+    private String phoneNumberJid;
+    private WhatsappMediaConnection mediaConnection;
     private long tag;
 
     /**
@@ -246,7 +245,7 @@ public class WhatsappDataManager {
         }
     }
 
-    private void parseAction(@NotNull WhatsappWebSocket socket, @NotNull WhatsappNode node, @Nullable Object content) {
+    private void parseAction(@NotNull WhatsappWebSocket socket, @NotNull WhatsappNode node, Object content) {
         if(!(content instanceof List<?> listContent)){
             return;
         }
@@ -409,7 +408,7 @@ public class WhatsappDataManager {
                 });
     }
 
-    private void parseResponse(@NotNull WhatsappWebSocket socket, @NotNull WhatsappNode node, @Nullable Object content) {
+    private void parseResponse(@NotNull WhatsappWebSocket socket, @NotNull WhatsappNode node, Object content) {
         var type = node.attrs().get("type");
         if (type == null) {
             return;

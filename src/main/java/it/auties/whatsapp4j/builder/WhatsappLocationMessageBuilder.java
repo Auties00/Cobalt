@@ -3,12 +3,11 @@ package it.auties.whatsapp4j.builder;
 import it.auties.whatsapp4j.model.WhatsappCoordinates;
 import it.auties.whatsapp4j.model.WhatsappLocationMessage;
 import it.auties.whatsapp4j.utils.ProtobufUtils;
+import jakarta.validation.constraints.NotNull;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
@@ -19,17 +18,17 @@ public class WhatsappLocationMessageBuilder extends WhatsappMessageBuilder<Whats
     /**
      * The coordinates of the location wrapped by this object
      */
-    private @Nullable @Setter WhatsappCoordinates coordinates;
+    private @Setter WhatsappCoordinates coordinates;
 
     /**
      * The caption of the message wrapped by this object
      */
-    private @Nullable @Setter String caption;
+    private @Setter String caption;
 
     /**
      * The non encrypted thumbnail of the message wrapped by this object
      */
-    private @Setter byte @Nullable [] thumbnail;
+    private @Setter byte  [] thumbnail;
 
     /**
      * Whether the location wrapped by this object is being updated in real time or not

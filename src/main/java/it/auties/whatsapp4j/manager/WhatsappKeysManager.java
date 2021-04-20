@@ -6,13 +6,12 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.utils.CypherUtils;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Base64;
 import java.util.Objects;
@@ -35,9 +34,9 @@ public class WhatsappKeysManager {
     @JsonProperty
     private byte @NotNull [] publicKey, privateKey;
     @JsonProperty
-    private @Nullable String serverToken, clientToken;
+    private String serverToken, clientToken;
     @JsonProperty
-    private @Nullable BinaryArray encKey, macKey;
+    private BinaryArray encKey, macKey;
 
     /**
      * Constructs a new WhatsappKeysManager from the saved preferences on this machine

@@ -2,10 +2,10 @@ package it.auties.whatsapp4j.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.whatsapp4j.binary.BinaryFlag;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 

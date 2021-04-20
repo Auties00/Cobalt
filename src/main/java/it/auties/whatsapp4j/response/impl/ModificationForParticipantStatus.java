@@ -1,7 +1,7 @@
 package it.auties.whatsapp4j.response.impl;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -9,7 +9,7 @@ import java.util.Map;
 /**
  * A json model that contains information about a modification made to a participant of a group
  *
- * @param jid the jid of the participant
+ * @param jid    the jid of the participant
  * @param status the http status code for the original request
  */
 public record ModificationForParticipantStatus(@NotNull String jid, int status) {

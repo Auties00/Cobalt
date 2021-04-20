@@ -1,11 +1,11 @@
 package it.auties.whatsapp4j.api;
 
 import it.auties.whatsapp4j.binary.BinaryArray;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Function;
 

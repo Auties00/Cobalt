@@ -3,12 +3,11 @@ package it.auties.whatsapp4j.builder;
 import it.auties.whatsapp4j.model.WhatsappMediaMessage;
 import it.auties.whatsapp4j.model.WhatsappMediaMessageType;
 import it.auties.whatsapp4j.utils.ProtobufUtils;
+import jakarta.validation.constraints.NotNull;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
@@ -19,17 +18,17 @@ public class WhatsappMediaMessageBuilder extends WhatsappMessageBuilder<Whatsapp
     /**
      * The raw media that this message holds
      */
-    private @Setter byte @Nullable [] media;
+    private @Setter byte [] media;
 
     /**
      * The type of media that this object wraps
      */
-    private @Nullable @Setter WhatsappMediaMessageType type;
+    private @Setter WhatsappMediaMessageType type;
 
     /**
      * The raw media that this message holds
      */
-    private @Nullable @Setter String caption;
+    private @Setter String caption;
 
     /**
      * Builds a {@link WhatsappMediaMessage} from the data provided

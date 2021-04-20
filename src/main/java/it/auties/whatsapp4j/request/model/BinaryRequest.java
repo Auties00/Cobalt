@@ -10,9 +10,9 @@ import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.model.WhatsappNode;
 import it.auties.whatsapp4j.response.model.ResponseModel;
 import it.auties.whatsapp4j.utils.CypherUtils;
+import jakarta.validation.constraints.NotNull;
 import jakarta.websocket.Session;
 import lombok.SneakyThrows;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -22,7 +22,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * @param <M>
  */
-public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends Request<M> {
+public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends Request<M>{
     /**
      * An instance of BinaryEncoder used to serialize {@link WhatsappNode} as a Whatsapp encoded array of bytes
      */

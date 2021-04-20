@@ -9,7 +9,7 @@ import it.auties.whatsapp4j.response.impl.PropsResponse;
 import it.auties.whatsapp4j.response.impl.UserInformationResponse;
 import it.auties.whatsapp4j.response.model.JsonListResponse;
 import it.auties.whatsapp4j.socket.WhatsappWebSocket;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * This interface can be used to listen for events fired when new information is sent by WhatsappWeb's socket.
