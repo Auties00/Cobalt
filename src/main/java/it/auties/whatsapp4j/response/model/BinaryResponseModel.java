@@ -13,10 +13,11 @@ import java.util.Optional;
  */
 @ToString
 public non-sealed abstract class BinaryResponseModel<T> implements ResponseModel {
+
     /**
      * The data that this response wraps
      */
-    protected  T data;
+    protected T data;
 
     /**
      * Constructs a new BinaryResponseModel from {@code node}

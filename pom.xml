@@ -162,9 +162,18 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>${maven-javadoc-plugin-version}</version>
+                    <executions>
+                        <execution>
+                            <phase>prepare-package</phase>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                     <configuration>
-                        <source>${delombok.output}</source>
-                        <sourcepath>${build.outputDirectory}/generated-sources/annotations;${delombok.output}</sourcepath>
+                        <source>${build.outputDirectory}/src/main/java;${delombok.output}</source>
+                        <sourcepath>${build.outputDirectory}/src/main/java;${delombok.output}
+                        </sourcepath>
                         <release>${java-version}</release>
                         <failOnError>true</failOnError>
                         <additionalOptions>--enable-preview</additionalOptions>
@@ -225,6 +234,30 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+
+        <plugins>
+            <!-- Execution order specified for plugins -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
     </build>
 
     <dependencies>
@@ -266,6 +299,12 @@
         <dependency>
             <groupId>com.guicedee.services</groupId>
             <artifactId>jakarta.validation-api</artifactId>
+            <version>${ee.modules}</version>
+        </dependency>
+        <!-- Google commons contains zxing and protobuf -->
+        <dependency>
+            <groupId>com.guicedee.services</groupId>
+            <artifactId>guava</artifactId>
             <version>${ee.modules}</version>
         </dependency>
         <dependency>
