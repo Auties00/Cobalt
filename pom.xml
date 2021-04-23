@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.auties00</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>2.1-SNAPSHOT</version>
+    <version>2.0-SNAPSHOT</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Standalone fully-featured Whatsapp Web API for Java and Kotlin</description>
     <url>https://github.com/Auties00/WhatsappWeb4j</url>
@@ -70,6 +70,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java-version>16</java-version>
+        <maven-surefire-plugin-version>3.0.0-M5</maven-surefire-plugin-version>
         <maven-gpg-plugin-version>1.6</maven-gpg-plugin-version>
         <maven-compiler-plugin-version>3.8.1</maven-compiler-plugin-version>
         <maven-source-plugin-version>3.0.1</maven-source-plugin-version>
@@ -86,6 +87,7 @@
         <ee.modules>1.1.1.8-jre16</ee.modules>
         <delombok-version>1.18.18.0</delombok-version>
         <delombok.output>${project.build.directory}\delomboked-sources</delombok.output>
+        <junit-version>5.6.3</junit-version>
     </properties>
 
     <build>
@@ -128,7 +130,7 @@
                         <source>${java-version}</source>
                         <target>${java-version}</target>
                         <release>${java-version}</release>
-                        <compileSourceRoots>${delombok.output}</compileSourceRoots>
+                        <source>${delombok.output}</source>
                         <annotationProcessorPaths>
                             <path>
                                 <groupId>org.projectlombok</groupId>
@@ -141,6 +143,23 @@
                             <arg>-J--illegal-access=permit</arg>
                         </compilerArgs>
                         <failOnError>true</failOnError>
+                    </configuration>
+                </plugin>
+
+                <!-- Test the library to be sure that everything works-->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven-surefire-plugin-version}</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.junit.jupiter</groupId>
+                            <artifactId>junit-jupiter-engine</artifactId>
+                            <version>${junit-version}</version>
+                        </dependency>
+                    </dependencies>
+                    <configuration>
+                        <argLine>--enable-preview</argLine>
                     </configuration>
                 </plugin>
 
@@ -255,21 +274,9 @@
                 <groupId>org.moditect</groupId>
                 <artifactId>moditect-maven-plugin</artifactId>
             </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M5</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.junit.jupiter</groupId>
-                        <artifactId>junit-jupiter-engine</artifactId>
-                        <version>5.6.3</version>
-                    </dependency>
-                </dependencies>
-                <configuration>
-                    <argLine>--enable-preview</argLine>
-                </configuration>
             </plugin>
         </plugins>
     </build>
@@ -333,16 +340,15 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>5.6.3</version>
+            <version>${junit-version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.6.3</version>
+            <version>${junit-version}</version>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 </project>
