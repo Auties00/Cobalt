@@ -5,7 +5,7 @@ import it.auties.whatsapp4j.model.*;
 import it.auties.whatsapp4j.model.WhatsappProtobuf.WebMessageInfo;
 import it.auties.whatsapp4j.request.model.Request;
 import it.auties.whatsapp4j.response.impl.PhoneBatteryResponse;
-import it.auties.whatsapp4j.response.model.JsonResponse;
+import it.auties.whatsapp4j.response.model.BinaryResponse;
 import it.auties.whatsapp4j.response.model.Response;
 import it.auties.whatsapp4j.socket.WhatsappWebSocket;
 import it.auties.whatsapp4j.utils.WhatsappMessageFactory;
@@ -38,7 +38,7 @@ public class WhatsappDataManager {
     private final @NotNull ExecutorService requestsService;
     private final @NotNull List<WhatsappChat> chats;
     private final @NotNull List<WhatsappContact> contacts;
-    private final @NotNull List<Request<?>> pendingRequests;
+    private final @NotNull List<Request<?, ?>> pendingRequests;
     private final @NotNull List<WhatsappListener> listeners;
     private final long initializationTimeStamp;
     private String phoneNumberJid;
@@ -154,7 +154,7 @@ public class WhatsappDataManager {
      * @param tag the tag to search
      * @return a non empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
-    public @NotNull Optional<Request<?>> findPendingRequest(@NotNull String tag){
+    public @NotNull Optional<Request<?, ?>> findPendingRequest(@NotNull String tag){
         return pendingRequests.stream().filter(req -> req.tag().equals(tag)).findAny();
     }
 
@@ -165,7 +165,7 @@ public class WhatsappDataManager {
      * @param response the response to complete the request with
      * @return true if any request matching {@code messageTag} is found
      */
-    public boolean resolvePendingRequest(@NotNull String messageTag, @NotNull Response response) {
+    public boolean resolvePendingRequest(@NotNull String messageTag, @NotNull Response<?> response) {
         var req = findPendingRequest(messageTag);
         if(req.isEmpty()){
             return false;
@@ -318,7 +318,7 @@ public class WhatsappDataManager {
             return;
         }
 
-        WhatsappNode.fromGenericList(content).forEach(childNode -> listeners.forEach(listener -> callOnListenerThread(() -> listener.onPhoneBatteryStatusUpdate(new JsonResponse(childNode.attrs()).toModel(PhoneBatteryResponse.class)))));
+        WhatsappNode.fromGenericList(content).forEach(childNode -> listeners.forEach(listener -> callOnListenerThread(() -> listener.onPhoneBatteryStatusUpdate(new BinaryResponse("", node).toModel(PhoneBatteryResponse.class)))));
     }
 
     private void muteChat(@NotNull WhatsappNode node, @NotNull WhatsappChat chat) {

@@ -1,7 +1,5 @@
 package it.auties.whatsapp4j.request.model;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
@@ -9,19 +7,15 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.websocket.Session;
 import lombok.SneakyThrows;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
  * An abstract model class that represents a json request made from the client to the server
  *
- * @param <M>
+ * @param <M> the type of the model
  */
-public abstract non-sealed class JsonRequest<M extends JsonResponseModel> extends Request<M> {
-    /**
-     * An instance of Jackson used to serialize objects as JSON
-     */
-    private static final ObjectWriter JACKSON = new ObjectMapper().writerWithDefaultPrettyPrinter();
-
+public abstract non-sealed class JsonRequest<M extends JsonResponseModel> extends Request<List<Object>, M> {
     /**
      * Constructs a new instance of a JsonRequest using a custom non null request tag
      *
@@ -42,21 +36,19 @@ public abstract non-sealed class JsonRequest<M extends JsonResponseModel> extend
     }
 
     /**
-     * Sends a json request to the WebSocket linked to {@code session}.
-     * This message is serialized using {@link JsonRequest#JACKSON}.
+     * Sends a json request to the WebSocket linked to {@code session}
      *
-     */
+     * @param session the WhatsappWeb's WebSocket session
+     * @return this request
+     **/
     @SneakyThrows
     public CompletableFuture<M> send(@NotNull Session session) {
-        var body = buildBody();
-        var json = JACKSON.writeValueAsString(body);
-        var request = "%s,%s".formatted(tag, json);
         if (configuration.async()) {
-            session.getAsyncRemote().sendObject(request, __ -> MANAGER.pendingRequests().add(this));
+            session.getAsyncRemote().sendObject(this, __ -> MANAGER.pendingRequests().add(this));
             return future();
         }
 
-        session.getBasicRemote().sendObject(request);
+        session.getBasicRemote().sendObject(this);
         MANAGER.pendingRequests().add(this);
         return future();
     }

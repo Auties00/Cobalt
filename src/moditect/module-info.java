@@ -12,6 +12,7 @@ module it.auties.whatsapp4j {
     //the google common package for zxing and protobuf
     requires com.google.common;
 
+    requires static lombok;
     requires static ez.vcard;
     requires static hkdf;
     requires static curve25519.java;

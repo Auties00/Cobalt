@@ -53,6 +53,7 @@ public class WhatsappConfiguration {
      * When someone logs into WhatsappWeb from another location, this function is used to determine if the connection should be reclaimed
      * If the connection should be reclaimed this function should return true
      * The first and only parameter of this function is a String describing the reason the connection was terminated
+     * By default, WhatsappWeb4j will reclaim connection
      */
     @Default
     private final @NotNull Function<String, Boolean> reconnectWhenDisconnected = (reason) -> true;

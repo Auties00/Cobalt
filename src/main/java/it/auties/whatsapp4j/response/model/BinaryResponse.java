@@ -9,7 +9,11 @@ import lombok.SneakyThrows;
  * This WhatsappNode can be converted to a ResponseModel using {@link BinaryResponse#toModel(Class)}.
  * This class is final, this means that it cannot be extended.
  */
-public final record BinaryResponse(@NotNull WhatsappNode node) implements Response {
+public final class BinaryResponse extends Response<WhatsappNode> {
+    public BinaryResponse(@NotNull String tag, @NotNull WhatsappNode content) {
+        super(tag, null, content);
+    }
+
     /**
      * Converts this object to a BinaryResponseModel
      *
@@ -20,6 +24,6 @@ public final record BinaryResponse(@NotNull WhatsappNode node) implements Respon
     @Override
     @SneakyThrows
     public <T extends ResponseModel> @NotNull T toModel(@NotNull Class<T> clazz) {
-        return clazz.getConstructor(WhatsappNode.class).newInstance(node);
+        return clazz.getConstructor(WhatsappNode.class).newInstance(content);
     }
 }

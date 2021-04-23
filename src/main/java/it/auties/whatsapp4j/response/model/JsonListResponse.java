@@ -9,6 +9,8 @@ import java.util.List;
  * This List of Objects cannot be safely converted to a ResponseModel, using {@link JsonListResponse#toModel(Class)} will always throw an exception.
  * This class is final, this means that it cannot be extended.
  */
-public final record JsonListResponse(@NotNull List<Object> data) implements Response {
-
+public final class JsonListResponse extends Response<List<Object>> {
+    public JsonListResponse(@NotNull String tag, @NotNull String description, @NotNull List<Object> content) {
+        super(tag, description, content);
+    }
 }

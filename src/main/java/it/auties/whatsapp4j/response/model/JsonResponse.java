@@ -1,9 +1,5 @@
 package it.auties.whatsapp4j.response.model;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.Map;
@@ -15,26 +11,9 @@ import java.util.Optional;
  * If a model is not available or necessary, many getters are available to query data.
  * This class is final, this means that it cannot be extended.
  */
-public final record JsonResponse(@NotNull Map<String, ?> data) implements Response {
-    /**
-     * An instance of Jackson used to deserialize JSON Strings
-     */
-    private static final ObjectMapper JACKSON = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-    /**
-     * Constructs a new instance of JsonResponse from a json string
-     *
-     * @param json the json string to parse
-     * @throws IllegalArgumentException if {@code json} cannot be parsed
-     * @return a new instance of JsonResponse with the above characteristics
-     */
-    public static @NotNull JsonResponse fromJson(@NotNull String json) {
-        try {
-            var index = json.indexOf("{");
-            return new JsonResponse(index == -1 ? Map.of() : JACKSON.readValue(json.substring(index), new TypeReference<>() {}));
-        }catch (JsonProcessingException ex){
-            throw new IllegalArgumentException("WhatsappAPI: Cannot deserialize %s into a JsonResponse".formatted(json));
-        }
+public final class JsonResponse extends Response<Map<String, ?>> {
+    public JsonResponse(@NotNull String tag, @NotNull String description, @NotNull Map<String, ?> content) {
+        super(tag, description, content);
     }
 
     /**
@@ -53,7 +32,7 @@ public final record JsonResponse(@NotNull Map<String, ?> data) implements Respon
      * @return true if the key is present
      */
     public boolean hasKey(@NotNull String key){
-        return data.containsKey(key);
+        return content.containsKey(key);
     }
 
     /**
@@ -96,7 +75,7 @@ public final record JsonResponse(@NotNull Map<String, ?> data) implements Respon
      * @return a non empty optional if the key is present, otherwise an empty optional
      */
     public <T> @NotNull Optional<T> getObject(@NotNull String key, @NotNull Class<T> clazz){
-        return Optional.ofNullable(data().get(key)).map(clazz::cast);
+        return Optional.ofNullable(content.get(key)).map(clazz::cast);
     }
 
     /**
@@ -108,6 +87,6 @@ public final record JsonResponse(@NotNull Map<String, ?> data) implements Respon
      */
     @Override
     public <T extends ResponseModel> @NotNull T toModel(@NotNull Class<T> clazz) {
-        return JACKSON.convertValue(data, clazz);
+        return JACKSON.convertValue(content, clazz);
     }
 }

@@ -7,10 +7,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.utils.CypherUtils;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.SneakyThrows;
+import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.util.Base64;
@@ -21,7 +18,7 @@ import java.util.prefs.Preferences;
  * This class is a data class used to hold the clientId, serverToken, clientToken, publicKey, privateKey, encryptionKey and macKey.
  * It can be serialized using Jackson and deserialized using the fromPreferences named constructor.
  */
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor
 @Data
 @Accessors(fluent = true, chain = true)
@@ -29,6 +26,8 @@ public class WhatsappKeysManager {
     private static final String PREFERENCES_PATH = WhatsappKeysManager.class.getName();
     private static final ObjectWriter JACKSON_WRITER = new ObjectMapper().writer();
     private static final ObjectReader JACKSON_READER = new ObjectMapper().reader();
+    private static final @Getter WhatsappKeysManager singletonInstance = buildInstance();
+
     @JsonProperty
     private @NotNull String clientId;
     @JsonProperty
@@ -38,14 +37,9 @@ public class WhatsappKeysManager {
     @JsonProperty
     private BinaryArray encKey, macKey;
 
-    /**
-     * Constructs a new WhatsappKeysManager from the saved preferences on this machine
-     *
-     * @return a new WhatsappKeysManager with the above characteristics
-     */
     @SneakyThrows
-    public static WhatsappKeysManager fromPreferences() {
-        final var preferences = Preferences.userRoot().get(PREFERENCES_PATH, null);
+    private static WhatsappKeysManager buildInstance() {
+        var preferences = Preferences.userRoot().get(PREFERENCES_PATH, null);
         if(preferences != null){
             return JACKSON_READER.readValue(preferences, WhatsappKeysManager.class);
         }

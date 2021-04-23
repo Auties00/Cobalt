@@ -7,6 +7,7 @@ import it.auties.whatsapp4j.model.WhatsappMediaMessage;
 import it.auties.whatsapp4j.model.WhatsappMediaMessageType;
 import it.auties.whatsapp4j.model.WhatsappMediaUpload;
 import it.auties.whatsapp4j.response.model.JsonResponse;
+import it.auties.whatsapp4j.response.model.Response;
 import jakarta.validation.constraints.NotNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
@@ -25,9 +26,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.security.MessageDigest;
 import java.util.Base64;
-import java.util.NoSuchElementException;
-
-import static it.auties.whatsapp4j.binary.BinaryArray.forArray;
 
 /**
  * This utility class provides helper functionality to easily encrypt and decrypt data
@@ -36,28 +34,26 @@ import static it.auties.whatsapp4j.binary.BinaryArray.forArray;
 @UtilityClass
 public class CypherUtils {
     private final HttpClient CLIENT = HttpClient.newHttpClient();
-    private final Curve25519 CURVE = Curve25519.getInstance(Curve25519.BEST);
+    private final Curve25519 CURVE_25519 = Curve25519.getInstance(Curve25519.JAVA);
     private final String HMAC_SHA256 = "HmacSHA256";
     private final String AES = "AES";
     private final String AES_ALGORITHM = "AES/CBC/PKCS5PADDING";
     private final String SHA256 = "SHA-256";
     private final int BLOCK_SIZE = 16;
 
-    @SneakyThrows
     public @NotNull Curve25519KeyPair calculateRandomKeyPair(){
-        return CURVE.generateKeyPair();
+        return CURVE_25519.generateKeyPair();
     }
 
-    @SneakyThrows
-    public @NotNull BinaryArray calculateSharedSecret(byte @NotNull [] publicKeyBytes, byte @NotNull [] privateKey){
-        return forArray(CURVE.calculateAgreement(publicKeyBytes, privateKey));
+    public @NotNull BinaryArray calculateSharedSecret(byte @NotNull [] publicKey, byte @NotNull [] privateKey){
+        return BinaryArray.forArray(CURVE_25519.calculateAgreement(publicKey, privateKey));
     }
 
     @SneakyThrows
     public @NotNull BinaryArray hmacSha256(@NotNull BinaryArray plain, @NotNull BinaryArray key) {
         final var localMac = Mac.getInstance(HMAC_SHA256);
         localMac.init(new SecretKeySpec(key.data(), HMAC_SHA256));
-        return forArray(localMac.doFinal(plain.data()));
+        return BinaryArray.forArray(localMac.doFinal(plain.data()));
     }
 
     @SneakyThrows
@@ -67,7 +63,7 @@ public class CypherUtils {
 
     @SneakyThrows
     public @NotNull BinaryArray hkdfExpand(@NotNull BinaryArray input, byte [] data, int size) {
-        return forArray(HKDF.fromHmacSha256().extractAndExpand(null, input.data(), data, size));
+        return BinaryArray.forArray(HKDF.fromHmacSha256().extractAndExpand(null, input.data(), data, size));
     }
 
     @SneakyThrows
@@ -80,7 +76,7 @@ public class CypherUtils {
         final var cipher = Cipher.getInstance(AES_ALGORITHM);
         final var keySpec = new SecretKeySpec(secretKey.data(), AES);
         cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(iv.data()));
-        return forArray(cipher.doFinal(encrypted.slice(BLOCK_SIZE).data()));
+        return BinaryArray.forArray(cipher.doFinal(encrypted.slice(BLOCK_SIZE).data()));
     }
 
     @SneakyThrows
@@ -94,7 +90,7 @@ public class CypherUtils {
         final var keySpec = new SecretKeySpec(encKey.data(), AES);
         cipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(iv.data()));
 
-        var result = forArray(cipher.doFinal(decrypted));
+        var result = BinaryArray.forArray(cipher.doFinal(decrypted));
         return withIv ? iv.merged(result) : result;
     }
 
@@ -110,7 +106,7 @@ public class CypherUtils {
         var url = WhatsappUtils.readMediaUrl(message);
         var data = WhatsappUtils.readEncryptedMedia(url).orElse(null);
         if(data == null){
-            return new byte[0];
+            return BinaryArray.empty().data();
         }
 
         var mediaKey = WhatsappUtils.readMediaKey(message);
@@ -123,7 +119,7 @@ public class CypherUtils {
         var mac = data.slice(-10);
 
         var hmacValidation = hmacSha256(iv.merged(file), macKey).cut(10);
-        Validate.isTrue(hmacValidation.equals(mac), "Cannot decode media message with id %s", mediaMessage.id(), SecurityException.class);
+        Validate.isTrue(hmacValidation.equals(mac), "Cannot login: Hmac validation failed!", SecurityException.class);
 
         return aesDecrypt(iv, file, cypherKey).data();
     }
@@ -143,7 +139,7 @@ public class CypherUtils {
 
         var fileSha256 = sha256(file);
         var fileEncSha256 = sha256(encFile);
-        var sidecar = type.isStreamable() ? new byte[0] : mediaSideCard(file, macKey);
+        var sidecar = type.isStreamable() ? new byte[0] : mediaSidecar(file, macKey);
 
         var token = Base64.getUrlEncoder().withoutPadding().encodeToString(fileEncSha256);
         var uri = URI.create("%s/%s?auth=%s&token=%s".formatted(type.url(), token, connection.auth(), token));
@@ -154,20 +150,20 @@ public class CypherUtils {
                 .build();
 
         var response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-        var body = JsonResponse.fromJson(response.body());
-        var encodedUrl = body.getString("url").orElseThrow(() -> new NoSuchElementException("WhatsappAPI: Cannot upload media, missing url response %s".formatted(body)));
-        var directPath = body.getString("direct_path").orElseThrow(() -> new NoSuchElementException("WhatsappAPI: Cannot upload media, missing direct path response %s".formatted(body)));
+        var body = (JsonResponse) Response.fromJson(response.body());
+        var encodedUrl = body.getString("url").orElseThrow(() -> new RuntimeException("WhatsappAPI: Cannot upload media, missing url response %s".formatted(body)));
+        var directPath = body.getString("direct_path").orElseThrow(() -> new RuntimeException("WhatsappAPI: Cannot upload media, missing direct path response %s".formatted(body)));
 
         return new WhatsappMediaUpload(encodedUrl, directPath, mediaKey, encFile, fileSha256, fileEncSha256, sidecar, type);
     }
 
     @SneakyThrows
-    public byte @NotNull [] mediaSideCard(byte @NotNull [] file, @NotNull BinaryArray macKey) {
+    public byte @NotNull [] mediaSidecar(byte @NotNull [] file, @NotNull BinaryArray macKey) {
         var input = new ByteArrayInputStream(file);
         var output = new ByteArrayOutputStream();
         var chunk = new byte[80];
         while (input.read(chunk) != -1) {
-            var sign = hmacSha256(forArray(chunk), macKey);
+            var sign = hmacSha256(BinaryArray.forArray(chunk), macKey);
             output.write(sign.cut(10).data());
         }
 

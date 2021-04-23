@@ -60,7 +60,7 @@ public class ProtobufUtils {
 
     }
 
-    public @NotNull WhatsappProtobuf.Message createMediaMessage( String caption, byte @NotNull [] media, @NotNull WhatsappMediaMessageType type){
+    public @NotNull WhatsappProtobuf.Message createMediaMessage(String caption, byte @NotNull [] media, @NotNull WhatsappMediaMessageType type){
         var upload = CypherUtils.mediaEncrypt(MANAGER.mediaConnection(), media, type);
         var message = WhatsappProtobuf.Message.newBuilder();
 

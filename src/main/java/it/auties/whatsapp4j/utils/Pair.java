@@ -2,8 +2,6 @@ package it.auties.whatsapp4j.utils;
 
 import jakarta.validation.constraints.NotNull;
 
-import java.util.Objects;
-
 /**
  * Specifies a generic pair
  *

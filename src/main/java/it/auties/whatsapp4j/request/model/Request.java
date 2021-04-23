@@ -8,12 +8,16 @@ import it.auties.whatsapp4j.model.WhatsappNode;
 import it.auties.whatsapp4j.response.model.JsonResponse;
 import it.auties.whatsapp4j.response.model.Response;
 import it.auties.whatsapp4j.response.model.ResponseModel;
+import it.auties.whatsapp4j.utils.Validate;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import jakarta.validation.constraints.NotNull;
+import jakarta.websocket.EncodeException;
+import jakarta.websocket.Session;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 
+import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
 import java.util.concurrent.CompletableFuture;
 
@@ -27,11 +31,12 @@ import java.util.concurrent.CompletableFuture;
  * <li>{@link BinaryRequest} - an aes encrypted {@link WhatsappNode}</li>
  * </ul>
  *
- * @param <M>
+ * @param <B> the type of the body
+ * @param <M> the type of the model
  */
 @RequiredArgsConstructor
-@Accessors(fluent = true)
-public sealed abstract class Request<M extends ResponseModel> permits BinaryRequest, JsonRequest {
+@Accessors(fluent = true, chain = true)
+public sealed abstract class Request<B, M extends ResponseModel> permits BinaryRequest, JsonRequest {
     /**
      * A singleton instance of WhatsappDataManager
      */
@@ -77,12 +82,20 @@ public sealed abstract class Request<M extends ResponseModel> permits BinaryRequ
 
     /**
      * Returns the body of this request
-     * For json requests, this should be a List of objects
-     * For binary requests, it should be a WhatsappNode
      *
      * @return an object to send to WhatsappWeb's WebSocket
      */
-    public abstract @NotNull Object buildBody();
+    public abstract @NotNull B buildBody();
+
+    /**
+     * Sends a request to the WebSocket linked to {@code session}.
+     *
+     * @param session the WhatsappWeb's WebSocket session
+     * @throws IOException if the message cannot be sent
+     * @throws EncodeException if the message cannot be encoded
+     * @return this request
+     */
+    public abstract CompletableFuture<M> send(@NotNull Session session) throws IOException, EncodeException;
 
     /**
      * Completes this request using {@code response}
@@ -91,12 +104,9 @@ public sealed abstract class Request<M extends ResponseModel> permits BinaryRequ
      * @throws IllegalArgumentException if this request isn't completable
      * @throws ClassCastException if the type parameter of this object is not a concrete type, the reason is explained here {@link Request#modelClass()}
      */
-    public void complete(@NotNull Response response){
+    public void complete(@NotNull Response<?> response){
         future.completeAsync(() -> {
-            if(response instanceof JsonResponse jsonResponse && !jsonResponse.isSuccessful()){
-                throw new IllegalStateException("Cannot complete request with response %s".formatted(response));
-            }
-
+            Validate.isTrue(!(response instanceof JsonResponse jsonResponse && !jsonResponse.isSuccessful()) , "Cannot complete request with response %s", response, IllegalStateException.class);
             return response.toModel(modelClass());
         });
     }

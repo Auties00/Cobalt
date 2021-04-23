@@ -51,9 +51,9 @@ public enum BinaryMetric {
      * @param tags the tags to convert
      * @return a new array of bytes
      */
-    public static byte @NotNull [] toArray(@NonNull BinaryMetric... tags){
+    public static @NotNull BinaryArray toArray(@NonNull BinaryMetric... tags){
         var data = new byte[tags.length];
         IntStream.range(0, tags.length).forEach(index -> data[index] = (byte) tags[index].data());
-        return data;
+        return BinaryArray.forArray(data);
     }
 }

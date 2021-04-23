@@ -2,7 +2,6 @@ package it.auties.whatsapp4j.response.model;
 
 import it.auties.whatsapp4j.model.WhatsappNode;
 import jakarta.validation.constraints.NotNull;
-import lombok.ToString;
 
 import java.util.Optional;
 
@@ -12,7 +11,6 @@ import java.util.Optional;
  * @param <T> the type of the data this object holds
  */
 public non-sealed abstract class BinaryResponseModel<T> implements ResponseModel {
-
     /**
      * The data that this response wraps
      */
@@ -34,12 +32,5 @@ public non-sealed abstract class BinaryResponseModel<T> implements ResponseModel
      */
     public Optional<T> data() {
         return Optional.ofNullable(data);
-    }
-
-    @Override
-    public String toString() {
-        return "BinaryResponseModel{" +
-                "data=" + data +
-                '}';
     }
 }

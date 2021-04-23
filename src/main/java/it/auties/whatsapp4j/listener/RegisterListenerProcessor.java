@@ -48,7 +48,7 @@ public class RegisterListenerProcessor {
 
     private @NotNull Optional<Class<?>> loadClassFromFile(@NotNull JavaFileObject file) {
         try {
-            return Optional.of(Class.forName(FILE_MANAGER.inferBinaryName(CLASS_LOCATION, file)));
+            return Optional.of(Class.forName(FILE_MANAGER.inferBinaryName(CLASS_LOCATION, file), false, CLASS_LOADER));
         }catch (ClassNotFoundException | NoClassDefFoundError error) {
             return Optional.empty();
         }

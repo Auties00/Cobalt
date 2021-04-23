@@ -1,6 +1,6 @@
 package it.auties.whatsapp4j.model;
 
-import it.auties.whatsapp4j.response.model.JsonResponse;
+import it.auties.whatsapp4j.response.model.Response;
 import it.auties.whatsapp4j.utils.Validate;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
@@ -26,8 +26,7 @@ public record WhatsappNode(@NotNull String description,
      * @return a non null list containing only objects from {@code list} of type WhatsappNode
      */
     @SuppressWarnings("unchecked")
-    public static @NotNull
-    WhatsappNode fromList(@NotNull List<?> list) {
+    public static @NotNull WhatsappNode fromList(@NotNull List<?> list) {
         Validate.isTrue(list.size() == 3, "WhatsappAPI: Cannot parse %s as a WhatsappNode", list);
         if (!(list.get(0) instanceof String description)) {
             throw new IllegalArgumentException("WhatsappAPI: Cannot parse %s as a WhatsappNode, no description found".formatted(list));
@@ -37,7 +36,7 @@ public record WhatsappNode(@NotNull String description,
             throw new IllegalArgumentException("WhatsappAPI: Cannot parse %s as a WhatsappNode, no attrs found".formatted(list));
         }
 
-        return new WhatsappNode(description, (Map<String, String>) JsonResponse.fromJson(attrs).data(), list.get(2));
+        return new WhatsappNode(description, (Map<String, String>) Response.fromJson(attrs).content(), list.get(2));
     }
 
     /**
@@ -46,8 +45,7 @@ public record WhatsappNode(@NotNull String description,
      * @param list the generic list to parse
      * @return a non null list containing only objects from {@code list} of type WhatsappNode
      */
-    public static @NotNull
-    List<WhatsappNode> fromGenericList(@NotNull List<?> list) {
+    public static @NotNull List<WhatsappNode> fromGenericList(@NotNull List<?> list) {
         return list.stream()
                 .filter(entry -> entry instanceof WhatsappNode)
                 .map(WhatsappNode.class::cast)
@@ -61,8 +59,7 @@ public record WhatsappNode(@NotNull String description,
      * @throws NullPointerException     if {@link WhatsappNode#content} is null
      * @throws IllegalArgumentException if {@link WhatsappNode#content} is not a List
      */
-    public @NotNull
-    List<WhatsappNode> childNodes() {
+    public @NotNull List<WhatsappNode> childNodes() {
         if (content == null) {
             return List.of();
         }
