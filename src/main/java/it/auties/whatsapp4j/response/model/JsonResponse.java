@@ -1,5 +1,7 @@
 package it.auties.whatsapp4j.response.model;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.Map;
@@ -14,6 +16,22 @@ import java.util.Optional;
 public final class JsonResponse extends Response<Map<String, ?>> {
     public JsonResponse(@NotNull String tag, @NotNull String description, @NotNull Map<String, ?> content) {
         super(tag, description, content);
+    }
+
+    /**
+     * Constructs a new instance of JsonResponse from a json string
+     *
+     * @param json the json string to parse
+     * @throws IllegalArgumentException if {@code json} cannot be parsed
+     * @return a new instance of JsonResponse with the above characteristics
+     */
+    public static @NotNull JsonResponse fromJson(@NotNull String json) {
+        try {
+            var index = json.indexOf("{");
+            return new JsonResponse("json", "json", index == -1 ? Map.of() : JACKSON.readValue(json.substring(index), new TypeReference<>() {}));
+        }catch (JsonProcessingException ex){
+            throw new IllegalArgumentException("WhatsappAPI: Cannot deserialize %s into a JsonResponse with error %s".formatted(json, ex.getMessage()));
+        }
     }
 
     /**

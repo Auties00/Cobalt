@@ -5,7 +5,7 @@ import it.auties.whatsapp4j.model.*;
 import it.auties.whatsapp4j.model.WhatsappProtobuf.WebMessageInfo;
 import it.auties.whatsapp4j.request.model.Request;
 import it.auties.whatsapp4j.response.impl.PhoneBatteryResponse;
-import it.auties.whatsapp4j.response.model.BinaryResponse;
+import it.auties.whatsapp4j.response.model.JsonResponse;
 import it.auties.whatsapp4j.response.model.Response;
 import it.auties.whatsapp4j.socket.WhatsappWebSocket;
 import it.auties.whatsapp4j.utils.WhatsappMessageFactory;
@@ -318,7 +318,7 @@ public class WhatsappDataManager {
             return;
         }
 
-        WhatsappNode.fromGenericList(content).forEach(childNode -> listeners.forEach(listener -> callOnListenerThread(() -> listener.onPhoneBatteryStatusUpdate(new BinaryResponse("", node).toModel(PhoneBatteryResponse.class)))));
+        WhatsappNode.fromGenericList(content).forEach(childNode -> listeners.forEach(listener -> callOnListenerThread(() -> listener.onPhoneBatteryStatusUpdate(new JsonResponse("", "", node.attrs()).toModel(PhoneBatteryResponse.class)))));
     }
 
     private void muteChat(@NotNull WhatsappNode node, @NotNull WhatsappChat chat) {

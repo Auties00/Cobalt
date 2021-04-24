@@ -198,9 +198,15 @@ public class WhatsappWebSocket {
 
   @SneakyThrows
   private void sendPing(){
-    session().getAsyncRemote().sendPing(ByteBuffer.allocate(0));
+    if(options.async()) {
+      session().getAsyncRemote().sendPing(ByteBuffer.allocate(0));
+      return;
+    }
+
+    session.getBasicRemote().sendPing(ByteBuffer.allocate(0));
   }
-  
+
+  @SneakyThrows
   private void handleChatCmd(@NotNull ChatCmdResponse cmdResponse){
     if(cmdResponse.cmd() == null){
       return;
@@ -213,7 +219,7 @@ public class WhatsappWebSocket {
 
     var chat = chatOpt.get();
     var node = WhatsappNode.fromList(cmdResponse.data());
-    var content = String.valueOf(Objects.requireNonNull(node.content(), "WhatsappAPI: Cannot parse a chat cmd with no content"));
+    var content = (String) node.content();
     
     switch (node.description()){
       case "restrict" -> notifyGroupSettingChange(chat, WhatsappGroupSetting.EDIT_GROUP_INFO, content);
@@ -226,12 +232,12 @@ public class WhatsappWebSocket {
   }
 
   private void notifyGroupDescriptionChange(@NotNull WhatsappChat chat, @NotNull String content) {
-    var response = Response.fromJson(content).toModel(DescriptionChangeResponse.class);
+    var response = JsonResponse.fromJson(content).toModel(DescriptionChangeResponse.class);
     whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onGroupDescriptionChange(chat, response.description(), response.descriptionId())));
   }
 
   private void updateAndNotifyGroupSubject(@NotNull WhatsappChat chat, @NotNull String content) {
-    var response = Response.fromJson(content).toModel(SubjectChangeResponse.class);
+    var response = JsonResponse.fromJson(content).toModel(SubjectChangeResponse.class);
     chat.name(response.subject());
     whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onGroupSubjectChange(chat)));
   }
@@ -243,7 +249,7 @@ public class WhatsappWebSocket {
   }
 
   private void notifyGroupAction(@NotNull WhatsappChat chat, @NotNull WhatsappNode node, @NotNull String content) {
-    Response.fromJson(content)
+    JsonResponse.fromJson(content)
             .toModel(GroupActionResponse.class)
             .participants()
             .stream()
@@ -297,7 +303,7 @@ public class WhatsappWebSocket {
     configureSelfContact(info);
     scheduleMediaConnection(0);
     loggedIn(true);
-    whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onLoggedIn(info, false)));
+    whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onLoggedIn(info)));
   }
 
   private void configureSelfContact(@NotNull UserInformationResponse info) {

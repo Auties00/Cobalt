@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 
 import java.util.HashMap;
@@ -39,30 +38,36 @@ public abstract sealed class Response<C> permits BinaryResponse, JsonResponse, J
      * @return a new instance of WhatsappResponse with the above characteristics
      * @throws IllegalArgumentException if {@code parse} cannot be parsed
      */
-    @SneakyThrows
-    public static @NotNull Response<?> fromJson(@NotNull String parse) {
-        var split = parse.split(",", 2);
-        if (split.length != 2 && parse.startsWith("!")) {
-            return new JsonResponse(parse, "pong", new HashMap<>());
-        }
+    public static @NotNull Response<?> fromTaggedResponse(@NotNull String parse) {
+        try {
+            var split = parse.split(",", 2);
+            if (split.length != 2 && parse.startsWith("!")) {
+                return new JsonResponse(parse, "pong", new HashMap<>());
+            }
 
-        var tag = split[0];
-        var content = parseContent(split[1], 0);
-        if (content.isEmpty()) {
-            return new JsonResponse(tag, null, new HashMap<>());
-        }
+            var tag = split[0];
+            var content = parseContent(split[1], 0);
+            if (content.isEmpty()) {
+                return new JsonResponse(tag, null, new HashMap<>());
+            }
 
-        var jsonNode = JACKSON.readTree(content);
-        if (!jsonNode.isArray()) {
-            return new JsonResponse(tag, null, JACKSON.readerFor(new TypeReference<>() {}).readValue(jsonNode));
-        }
+            var jsonNode = JACKSON.readTree(content);
+            if (!jsonNode.isArray()) {
+                return new JsonResponse(tag, null, JACKSON.readerFor(new TypeReference<>() {
+                }).readValue(jsonNode));
+            }
 
-        var possibleMap = Optional.ofNullable(jsonNode.get(1)).map(JsonNode::toString).orElse("");
-        if (!possibleMap.startsWith("{") || !possibleMap.endsWith("}")) {
-            return new JsonListResponse(tag, null, JACKSON.readerFor(new TypeReference<>() {}).readValue(jsonNode));
-        }
+            var possibleMap = Optional.ofNullable(jsonNode.get(1)).map(JsonNode::toString).orElse("");
+            if (!possibleMap.startsWith("{") || !possibleMap.endsWith("}")) {
+                return new JsonListResponse(tag, null, JACKSON.readerFor(new TypeReference<>() {
+                }).readValue(jsonNode));
+            }
 
-        return new JsonResponse(tag, jsonNode.get(0).textValue(), JACKSON.readerFor(new TypeReference<>() {}).readValue(possibleMap));
+            return new JsonResponse(tag, jsonNode.get(0).textValue(), JACKSON.readerFor(new TypeReference<>() {
+            }).readValue(possibleMap));
+        }catch (Exception e) {
+            throw new IllegalArgumentException("Cannot decode Response %s with error %s".formatted(parse, e.getMessage()));
+        }
     }
 
     private static @NotNull String parseContent(@NotNull String content, int index) {

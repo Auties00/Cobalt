@@ -8,7 +8,6 @@ import lombok.extern.java.Log;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -36,7 +35,7 @@ public class WhatsappTest implements WhatsappListener {
   }
 
   @Override
-  public void onLoggedIn(UserInformationResponse info, boolean firstLogin) {
+  public void onLoggedIn(UserInformationResponse info) {
     log.info("Connected!");
     whatsappAPI.disconnect();
     latch.countDown();

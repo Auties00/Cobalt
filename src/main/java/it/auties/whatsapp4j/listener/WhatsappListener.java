@@ -24,9 +24,8 @@ public interface WhatsappListener {
      * Instead, {@link WhatsappListener#onChatsReceived()} and {@link WhatsappListener#onContactsReceived()} should be used.
      *
      * @param info the information sent by WhatsappWeb's WebSocket about this session
-     * @param firstLogin whether this is the first time this session has been started or if the keys for this already existed
      */
-    default void onLoggedIn(@NotNull UserInformationResponse info, boolean firstLogin){ }
+    default void onLoggedIn(@NotNull UserInformationResponse info){ }
 
     /**
      * Called when {@link WhatsappWebSocket} successfully disconnects from WhatsappWeb's WebSocket.

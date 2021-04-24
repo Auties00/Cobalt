@@ -1,9 +1,12 @@
 package it.auties.whatsapp4j.model;
 
-import it.auties.whatsapp4j.response.model.Response;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.whatsapp4j.utils.Validate;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
+import lombok.SneakyThrows;
 
 import java.util.List;
 import java.util.Map;
@@ -19,13 +22,15 @@ import java.util.Map;
 @Builder
 public record WhatsappNode(@NotNull String description,
                            @NotNull Map<String, String> attrs, Object content) {
+    private static final ObjectMapper JACKSON = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
     /**
-     * Constructs a WhatsappNode from a list
+     * Constructs a WhatsappNode from a list where the content is always a JSON String
      *
      * @param list the generic list to parse
      * @return a non null list containing only objects from {@code list} of type WhatsappNode
      */
-    @SuppressWarnings("unchecked")
+    @SneakyThrows
     public static @NotNull WhatsappNode fromList(@NotNull List<?> list) {
         Validate.isTrue(list.size() == 3, "WhatsappAPI: Cannot parse %s as a WhatsappNode", list);
         if (!(list.get(0) instanceof String description)) {
@@ -36,7 +41,12 @@ public record WhatsappNode(@NotNull String description,
             throw new IllegalArgumentException("WhatsappAPI: Cannot parse %s as a WhatsappNode, no attrs found".formatted(list));
         }
 
-        return new WhatsappNode(description, (Map<String, String>) Response.fromJson(attrs).content(), list.get(2));
+        return new WhatsappNode(description, parseListAttrs(attrs), JACKSON.writeValueAsString(list.get(2)));
+    }
+
+    @SneakyThrows
+    private static @NotNull Map<String, String> parseListAttrs(String attrs){
+        return attrs == null ? Map.of() : attrs.startsWith("}") && attrs.endsWith("}") ? JACKSON.readValue(attrs, new TypeReference<>() {}) : Map.of("content", attrs);
     }
 
     /**

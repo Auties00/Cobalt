@@ -7,7 +7,6 @@ import it.auties.whatsapp4j.model.WhatsappMediaMessage;
 import it.auties.whatsapp4j.model.WhatsappMediaMessageType;
 import it.auties.whatsapp4j.model.WhatsappMediaUpload;
 import it.auties.whatsapp4j.response.model.JsonResponse;
-import it.auties.whatsapp4j.response.model.Response;
 import jakarta.validation.constraints.NotNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
@@ -150,7 +149,7 @@ public class CypherUtils {
                 .build();
 
         var response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-        var body = (JsonResponse) Response.fromJson(response.body());
+        var body = JsonResponse.fromJson(response.body());
         var encodedUrl = body.getString("url").orElseThrow(() -> new RuntimeException("WhatsappAPI: Cannot upload media, missing url response %s".formatted(body)));
         var directPath = body.getString("direct_path").orElseThrow(() -> new RuntimeException("WhatsappAPI: Cannot upload media, missing direct path response %s".formatted(body)));
 
