@@ -8,13 +8,11 @@ import jakarta.websocket.Decoder.Text;
 public class WhatsappJsonMessageDecoder implements Text<Response<?>> {
     @Override
     public Response<?> decode(@NotNull String msg) throws DecodeException {
-        System.out.println("Starting to decode: " + msg);
         return Response.fromTaggedResponse(msg);
     }
 
     @Override
     public boolean willDecode(@NotNull String str) {
-        System.out.println("OnMessage: " + str);
         return true;
     }
 }
