@@ -13,13 +13,11 @@ import java.util.Map;
 
 /**
  * An immutable model class that represents the primary unit used by WhatsappWeb's WebSocket to communicate with the client.
- * This class also offers a builder, accessible using {@link WhatsappNodeBuilder}.
  *
  * @param description a non null String that describes the data that this object holds in its {@code attrs} and {@code content}
  * @param attrs       a non null Map of strings that describe additional information related to the content of this object or an encoded object when sending a message a protobuf object is not optimal
  * @param content     a nullable object, usually a {@link WhatsappNode}, a {@link String} or a {@link WhatsappProtobuf}'s object
  */
-@Builder
 public record WhatsappNode(@NotNull String description,
                            @NotNull Map<String, String> attrs, Object content) {
     private static final ObjectMapper JACKSON = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
