@@ -54,18 +54,15 @@ public abstract sealed class Response<C> permits BinaryResponse, JsonResponse, J
 
             var jsonNode = JACKSON.readTree(content);
             if (!jsonNode.isArray()) {
-                return new JsonResponse(tag, null, JACKSON.readerFor(new TypeReference<>() {
-                }).readValue(jsonNode));
+                return new JsonResponse(tag, null, JACKSON.readerFor(new TypeReference<>() {}).readValue(jsonNode));
             }
 
             var possibleMap = Optional.ofNullable(jsonNode.get(1)).map(JsonNode::toString).orElse("");
             if (!possibleMap.startsWith("{") || !possibleMap.endsWith("}")) {
-                return new JsonListResponse(tag, null, JACKSON.readerFor(new TypeReference<>() {
-                }).readValue(jsonNode));
+                return new JsonListResponse(tag, null, JACKSON.readerFor(new TypeReference<>() {}).readValue(jsonNode));
             }
 
-            return new JsonResponse(tag, jsonNode.get(0).textValue(), JACKSON.readerFor(new TypeReference<>() {
-            }).readValue(possibleMap));
+            return new JsonResponse(tag, jsonNode.get(0).textValue(), JACKSON.readerFor(new TypeReference<>() {}).readValue(possibleMap));
         }catch (Exception e) {
             throw new IllegalArgumentException("Cannot decode Response %s with error %s".formatted(parse, e.getMessage()));
         }

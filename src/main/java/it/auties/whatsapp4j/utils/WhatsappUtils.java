@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * This utility class provides helper functionality to easily extract data out of Whatsapp models or raw protobuf messages
@@ -210,5 +211,27 @@ public class WhatsappUtils {
         }
         
         throw new IllegalArgumentException("WhatsappAPI: Cannot extract media url");
+    }
+
+    /**
+     * Returns a map of attributes
+     *
+     * @param entries the attributes
+     * @return a non null Map of attributes
+     */
+    @SafeVarargs
+    public @NotNull Map<String, String> attributes(@NotNull Map.Entry<String, String>... entries){
+        return Arrays.stream(entries).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    /**
+     * Returns a new attribute from a key and a value
+     *
+     * @param key the non null key
+     * @param value the non null value
+     * @return a non null Entry
+     */
+    public @NotNull Map.Entry<String, String> attr(@NotNull String key, @NotNull Object value){
+        return Map.entry(key, String.valueOf(value));
     }
 }

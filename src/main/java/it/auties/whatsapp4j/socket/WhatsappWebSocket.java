@@ -42,6 +42,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static it.auties.whatsapp4j.utils.CypherUtils.*;
+import static it.auties.whatsapp4j.utils.WhatsappUtils.attr;
+import static it.auties.whatsapp4j.utils.WhatsappUtils.attributes;
 
 /**
  * This class is an interface between this API and WhatsappWeb's WebClient.
@@ -390,11 +392,7 @@ public class WhatsappWebSocket {
   }
 
   public @NotNull CompletableFuture<ChatResponse> queryChat(@NotNull String jid) {
-    var node = WhatsappNode.builder()
-            .description("query")
-            .attrs(Map.of("type", "chat", "jid", jid))
-            .build();
-
+    var node = new WhatsappNode("query", attributes(attr("type", "chat"), attr("jid", jid)), null);
     return new BinaryRequest<ChatResponse>(options, node, BinaryFlag.IGNORE, BinaryMetric.QUERY_CHAT){}.send(session());
   }
 }
