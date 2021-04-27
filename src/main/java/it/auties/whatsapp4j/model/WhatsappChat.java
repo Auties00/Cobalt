@@ -60,7 +60,7 @@ public class WhatsappChat {
      * The nullable new unique jid for this WhatsappChat.
      * This field is not null when a contact changes phone number and connects their new phone number with Whatsapp.
      */
-    private final  String newJid;
+    private final String newJid;
 
     /**
      * The time in seconds since {@link java.time.Instant#EPOCH} for the latest message in {@link WhatsappChat#messages}
@@ -122,7 +122,7 @@ public class WhatsappChat {
     public static @NotNull WhatsappChat fromAttributes(@NotNull Map<String, String> attrs) {
         var jid = attrs.get("jid");
         return WhatsappChat.builder()
-                .timestamp(Long.parseLong(attrs.get("t")))
+                .timestamp(Optional.ofNullable(attrs.get("t")).map(Long::parseUnsignedLong).orElse(ZonedDateTime.now().toEpochSecond()))
                 .jid(jid)
                 .newJid(attrs.get("new_jid"))
                 .unreadMessages(Integer.parseInt(attrs.get("count")))
@@ -214,9 +214,27 @@ public class WhatsappChat {
      *
      * @return a non empty optional if {@link WhatsappChat#messages} isn't empty, otherwise an empty optional
      */
-    public @NotNull Optional<WhatsappUserMessage> lastMessage() {
+    public @NotNull Optional<WhatsappMessage> lastMessage() {
+        return messages.isEmpty() ? Optional.empty() : Optional.of(messages.get(messages.size() - 1));
+    }
+
+    /**
+     * Returns an optional value containing the latest user message in chronological terms for this chat
+     *
+     * @return a non empty optional if {@link WhatsappMessages#userMessages()} isn't empty, otherwise an empty optional
+     */
+    public @NotNull Optional<WhatsappUserMessage> lastUserMessage() {
         var userMessages = messages.userMessages().toList();
         return userMessages.isEmpty() ? Optional.empty() : Optional.of(userMessages.get(userMessages.size() - 1));
+    }
+
+    /**
+     * Returns an optional value containing the first message in chronological terms for this chat
+     *
+     * @return a non empty optional if {@link WhatsappChat#messages} isn't empty, otherwise an empty optional
+     */
+    public @NotNull Optional<WhatsappMessage> firstMessage() {
+        return messages.isEmpty() ? Optional.empty() : Optional.of(messages.get(0));
     }
 
     /**
@@ -224,7 +242,7 @@ public class WhatsappChat {
      *
      * @return a non empty optional if {@link WhatsappChat#messages} isn't empty, otherwise an empty optional
      */
-    public @NotNull Optional<WhatsappUserMessage> firstMessage() {
+    public @NotNull Optional<WhatsappUserMessage> firstUserMessage() {
         return messages.userMessages().findFirst();
     }
 }

@@ -25,7 +25,7 @@ public abstract sealed class WhatsappUserMessage extends WhatsappMessage permits
     /**
      * A nullable {@link WhatsappMessage} representing the message quoted by this message if in memory
      */
-    private final  WhatsappUserMessage quotedMessage;
+    private final WhatsappUserMessage quotedMessage;
 
     /**
      * A map that holds the read status of this message for each participant.
@@ -63,15 +63,6 @@ public abstract sealed class WhatsappUserMessage extends WhatsappMessage permits
         this.individualReadStatus = new HashMap<>();
         this.quotedMessage = null;
         this.isForwarded = false;
-    }
-
-    /**
-     * Returns whether this message was sent by yourself or not
-     *
-     * @return true if this message was sent by yourself
-     */
-    public boolean sentByMe() {
-        return info.getKey().getFromMe();
     }
 
     /**

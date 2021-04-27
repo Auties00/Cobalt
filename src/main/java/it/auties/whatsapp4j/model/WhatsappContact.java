@@ -36,18 +36,18 @@ public class WhatsappContact {
      * Theoretically, it should not be possible for this field to be null as its required when registering for Whatsapp.
      * Though it looks that it can be removed later, so its nullable.
      */
-    private final  String chosenName;
+    private final String chosenName;
 
     /**
      * The nullable name associated with this contact on the phone connected with Whatsapp
      */
-    private final  String name;
+    private final String name;
 
     /**
      * The nullable short name associated with this contact on the phone connected with Whatsapp
      * If a name is available, theoretically, also a short name should be
      */
-    private final  String shortName;
+    private final String shortName;
 
     /**
      * The nullable last known presence of this contact.

@@ -1,20 +1,32 @@
 package it.auties.whatsapp4j.builder;
 
-import it.auties.whatsapp4j.model.WhatsappCoordinates;
-import it.auties.whatsapp4j.model.WhatsappLocationMessage;
+import it.auties.whatsapp4j.model.*;
 import it.auties.whatsapp4j.utils.ProtobufUtils;
 import jakarta.validation.constraints.NotNull;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
 import java.util.Objects;
 
-@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @Accessors(fluent = true)
-public class WhatsappLocationMessageBuilder extends WhatsappMessageBuilder<WhatsappLocationMessage> {
+public class WhatsappLocationMessageBuilder implements WhatsappMessageBuilder<WhatsappLocationMessage> {
+    /**
+     * The chat where this message is stored
+     */
+    private @Setter WhatsappChat chat;
+
+    /**
+     * A nullable {@link WhatsappMessage} representing the message quoted by this message if in memory
+     */
+    private @Setter WhatsappUserMessage quotedMessage;
+
+    /**
+     * Whether this message was forwarded or not
+     */
+    private @Setter boolean forwarded;
+
     /**
      * The coordinates of the location wrapped by this object
      */
@@ -54,6 +66,6 @@ public class WhatsappLocationMessageBuilder extends WhatsappMessageBuilder<Whats
     public @NotNull WhatsappLocationMessage create() {
         Objects.requireNonNull(chat, "WhatsappAPI: Cannot create a WhatsappLocation with a null chat");
         Objects.requireNonNull(coordinates, "WhatsappAPI: Cannot create a WhatsappLocation with null coordinates");
-        return new WhatsappLocationMessage(ProtobufUtils.createMessageInfo(ProtobufUtils.createLocationMessage(coordinates, caption, thumbnail, live, accuracy, speed), chat.jid()));
+        return new WhatsappLocationMessage(ProtobufUtils.createMessageInfo(ProtobufUtils.createLocationMessage(coordinates, caption, thumbnail, live, accuracy, speed, quotedMessage, forwarded), chat.jid()));
     }
 }

@@ -29,8 +29,7 @@ public record WhatsappMute(long time) {
      *
      * @return a non null enum that describes the type of mute for this object
      */
-    public @NotNull
-    WhatsappMuteType type() {
+    public @NotNull WhatsappMuteType type() {
         return time == -1 ? WhatsappMuteType.MUTED_INDEFINITELY : time == 0 ? WhatsappMuteType.NOT_MUTED : WhatsappMuteType.MUTED_FOR_TIMEFRAME;
     }
 
@@ -39,8 +38,7 @@ public record WhatsappMute(long time) {
      *
      * @return a non empty optional date if {@link WhatsappMute#time} > 0
      */
-    public @NotNull
-    Optional<ZonedDateTime> muteEndDate() {
+    public @NotNull Optional<ZonedDateTime> muteEndDate() {
         return isMuted() ? Optional.of(ZonedDateTime.ofInstant(Instant.ofEpochSecond(time), ZoneId.systemDefault())) : Optional.empty();
     }
 }

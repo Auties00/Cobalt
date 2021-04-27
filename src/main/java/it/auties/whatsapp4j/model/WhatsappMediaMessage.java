@@ -39,7 +39,7 @@ public final class WhatsappMediaMessage extends WhatsappUserMessage {
     /**
      * The raw media that this message holds
      */
-    private final  String caption;
+    private final String caption;
 
     /**
      * Constructs a WhatsappMediaMessage from a raw protobuf object

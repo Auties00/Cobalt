@@ -1,19 +1,35 @@
 package it.auties.whatsapp4j.builder;
 
+import it.auties.whatsapp4j.model.WhatsappChat;
+import it.auties.whatsapp4j.model.WhatsappMessage;
 import it.auties.whatsapp4j.model.WhatsappTextMessage;
+import it.auties.whatsapp4j.model.WhatsappUserMessage;
 import it.auties.whatsapp4j.utils.ProtobufUtils;
 import jakarta.validation.constraints.NotNull;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
 import java.util.Objects;
 
-@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @Accessors(fluent = true)
-public class WhatsappTextMessageBuilder extends WhatsappMessageBuilder<WhatsappTextMessage> {
+public class WhatsappTextMessageBuilder implements WhatsappMessageBuilder<WhatsappTextMessage> {
+    /**
+     * The chat where this message is stored
+     */
+    private @Setter WhatsappChat chat;
+
+    /**
+     * A nullable {@link WhatsappMessage} representing the message quoted by this message if in memory
+     */
+    private @Setter WhatsappUserMessage quotedMessage;
+
+    /**
+     * Whether this message was forwarded or not
+     */
+    private @Setter boolean forwarded;
+
     /**
      * The text of this message
      */

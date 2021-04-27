@@ -392,7 +392,7 @@ public class WhatsappWebSocket {
   public @NotNull CompletableFuture<ChatResponse> queryChat(@NotNull String jid) {
     var node = WhatsappNode.builder()
             .description("query")
-            .attrs(Map.of("jid", jid, "epoch", String.valueOf(whatsappManager.tagAndIncrement()), "type", "chat"))
+            .attrs(Map.of("type", "chat", "jid", jid))
             .build();
 
     return new BinaryRequest<ChatResponse>(options, node, BinaryFlag.IGNORE, BinaryMetric.QUERY_CHAT){}.send(session());

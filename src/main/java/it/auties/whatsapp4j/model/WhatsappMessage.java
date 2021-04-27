@@ -88,6 +88,16 @@ public abstract class WhatsappMessage {
     public abstract @NotNull Optional<WhatsappProtobuf.ContextInfo> contextInfo();
 
     /**
+     * Returns whether this message was sent by yourself or not
+     *
+     * @return true if this message was sent by yourself
+     */
+    public boolean sentByMe() {
+        return info.getKey().getFromMe();
+    }
+
+
+    /**
      * Checks if this object and {@code other} are equal
      *
      * @return true if {@code other} is an instance of {@link WhatsappMessage} and if their unique ids({@link WhatsappMessage#id()}) are equal

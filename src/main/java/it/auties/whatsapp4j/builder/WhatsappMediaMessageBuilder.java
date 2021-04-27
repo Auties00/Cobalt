@@ -1,20 +1,32 @@
 package it.auties.whatsapp4j.builder;
 
-import it.auties.whatsapp4j.model.WhatsappMediaMessage;
-import it.auties.whatsapp4j.model.WhatsappMediaMessageType;
+import it.auties.whatsapp4j.model.*;
 import it.auties.whatsapp4j.utils.ProtobufUtils;
 import jakarta.validation.constraints.NotNull;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
 import java.util.Objects;
 
-@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @Accessors(fluent = true)
-public class WhatsappMediaMessageBuilder extends WhatsappMessageBuilder<WhatsappMediaMessage> {
+public class WhatsappMediaMessageBuilder implements WhatsappMessageBuilder<WhatsappMediaMessage> {
+    /**
+     * The chat where this message is stored
+     */
+    private @Setter WhatsappChat chat;
+
+    /**
+     * A nullable {@link WhatsappMessage} representing the message quoted by this message if in memory
+     */
+    private @Setter WhatsappUserMessage quotedMessage;
+
+    /**
+     * Whether this message was forwarded or not
+     */
+    private @Setter boolean forwarded;
+
     /**
      * The raw media that this message holds
      */
@@ -40,6 +52,6 @@ public class WhatsappMediaMessageBuilder extends WhatsappMessageBuilder<Whatsapp
         Objects.requireNonNull(chat, "WhatsappAPI: Cannot create a WhatsappText with a null chat");
         Objects.requireNonNull(media, "WhatsappAPI: Cannot create a WhatsappText with a null media");
         Objects.requireNonNull(type, "WhatsappAPI: Cannot create a WhatsappMediaMessage with a null type");
-        return new WhatsappMediaMessage(ProtobufUtils.createMessageInfo(ProtobufUtils.createMediaMessage(caption, media, type), chat.jid()));
+        return new WhatsappMediaMessage(ProtobufUtils.createMessageInfo(ProtobufUtils.createMediaMessage(caption, media, type, quotedMessage, forwarded), chat.jid()));
     }
 }

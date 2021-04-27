@@ -36,31 +36,21 @@ public class ProtobufUtils {
                 .build();
     }
 
-    public @NotNull WhatsappProtobuf.Message createTextMessage(@NotNull String text,  WhatsappUserMessage quotedMessage, boolean forwarded){
+    public @NotNull WhatsappProtobuf.Message createTextMessage(@NotNull String text, WhatsappUserMessage quotedMessage, boolean forwarded){
         if (!forwarded && quotedMessage == null) {
             return WhatsappProtobuf.Message.newBuilder().setConversation(text).build();
-        }
-
-        var context = WhatsappProtobuf.ContextInfo.newBuilder().setIsForwarded(true);
-        if(quotedMessage != null){
-            context
-                    .setQuotedMessage(quotedMessage.info().getMessage())
-                    .setParticipant(quotedMessage.senderJid())
-                    .setStanzaId(quotedMessage.info().getKey().getId())
-                    .setRemoteJid(quotedMessage.info().getKey().getRemoteJid())
-                    .setIsForwarded(forwarded);
         }
 
         return WhatsappProtobuf.Message.newBuilder()
                         .setExtendedTextMessage(WhatsappProtobuf.ExtendedTextMessage.newBuilder()
                                 .setText(text)
-                                .setContextInfo(context.build())
+                                .setContextInfo(createContextInfo(quotedMessage, forwarded))
                                 .build())
                         .build();
 
     }
 
-    public @NotNull WhatsappProtobuf.Message createMediaMessage(String caption, byte @NotNull [] media, @NotNull WhatsappMediaMessageType type){
+    public @NotNull WhatsappProtobuf.Message createMediaMessage(String caption, byte @NotNull [] media, @NotNull WhatsappMediaMessageType type, WhatsappUserMessage quotedMessage, boolean forwarded){
         var upload = CypherUtils.mediaEncrypt(MANAGER.mediaConnection(), media, type);
         var message = WhatsappProtobuf.Message.newBuilder();
 
@@ -71,6 +61,7 @@ public class ProtobufUtils {
                     .setMediaKey(ByteString.copyFrom(upload.mediaKey().data()))
                     .setMediaKeyTimestamp(ZonedDateTime.now().toEpochSecond())
                     .setUrl(upload.url())
+                    .setContextInfo(createContextInfo(quotedMessage, forwarded))
                     .setCaption(caption)
                     .setMimetype("image/jpeg")
                     .build());
@@ -83,6 +74,7 @@ public class ProtobufUtils {
                         .setMediaKey(ByteString.copyFrom(upload.mediaKey().data()))
                         .setMediaKeyTimestamp(ZonedDateTime.now().toEpochSecond())
                         .setUrl(upload.url())
+                        .setContextInfo(createContextInfo(quotedMessage, forwarded))
                         .setMimetype("application/pdf")
                         .build());
             }
@@ -95,6 +87,7 @@ public class ProtobufUtils {
                         .setMediaKey(ByteString.copyFrom(upload.mediaKey().data()))
                         .setMediaKeyTimestamp(ZonedDateTime.now().toEpochSecond())
                         .setUrl(upload.url())
+                        .setContextInfo(createContextInfo(quotedMessage, forwarded))
                         .setMimetype("audio/ogg; codecs=opus")
                         .setStreamingSidecar(ByteString.copyFrom(upload.sidecar()))
                         .build());
@@ -106,6 +99,7 @@ public class ProtobufUtils {
                     .setMediaKey(ByteString.copyFrom(upload.mediaKey().data()))
                     .setMediaKeyTimestamp(ZonedDateTime.now().toEpochSecond())
                     .setUrl(upload.url())
+                    .setContextInfo(createContextInfo(quotedMessage, forwarded))
                     .setCaption(caption)
                     .setMimetype("video/mp4")
                     .setStreamingSidecar(ByteString.copyFrom(upload.sidecar()))
@@ -119,6 +113,7 @@ public class ProtobufUtils {
                         .setMediaKey(ByteString.copyFrom(upload.mediaKey().data()))
                         .setMediaKeyTimestamp(ZonedDateTime.now().toEpochSecond())
                         .setUrl(upload.url())
+                        .setContextInfo(createContextInfo(quotedMessage, forwarded))
                         .setMimetype("image/webp")
                         .build());
             }
@@ -127,34 +122,11 @@ public class ProtobufUtils {
         return message.build();
     }
 
-    public @NotNull WhatsappProtobuf.Message createLocationMessage(@NotNull String text,  WhatsappUserMessage quotedMessage, boolean forwarded){
-        if (!forwarded && quotedMessage == null) {
-            return WhatsappProtobuf.Message.newBuilder().setConversation(text).build();
-        }
-
-        var context = WhatsappProtobuf.ContextInfo.newBuilder().setIsForwarded(true);
-        if(quotedMessage != null){
-            context
-                    .setQuotedMessage(quotedMessage.info().getMessage())
-                    .setParticipant(quotedMessage.senderJid())
-                    .setStanzaId(quotedMessage.info().getKey().getId())
-                    .setRemoteJid(quotedMessage.info().getKey().getRemoteJid())
-                    .setIsForwarded(forwarded);
-        }
-
-        return WhatsappProtobuf.Message.newBuilder()
-                .setExtendedTextMessage(WhatsappProtobuf.ExtendedTextMessage.newBuilder()
-                        .setText(text)
-                        .setContextInfo(context.build())
-                        .build())
-                .build();
-
-    }
-
-    public @NotNull WhatsappProtobuf.Message createLocationMessage(@NotNull WhatsappCoordinates coordinates,  String caption, byte  [] thumbnail, boolean live, int accuracy, float speed) {
+    public @NotNull WhatsappProtobuf.Message createLocationMessage(@NotNull WhatsappCoordinates coordinates,  String caption, byte  [] thumbnail, boolean live, int accuracy, float speed, WhatsappUserMessage quotedMessage, boolean forwarded) {
         var message = WhatsappProtobuf.Message.newBuilder();
         if(live){
             message.setLiveLocationMessage(WhatsappProtobuf.LiveLocationMessage.newBuilder()
+                    .setContextInfo(createContextInfo(quotedMessage, forwarded))
                     .setDegreesLatitude(coordinates.latitude())
                     .setDegreesLongitude(coordinates.longitude())
                     .setCaption(caption)
@@ -167,6 +139,7 @@ public class ProtobufUtils {
 
         Validate.isTrue(caption == null, "WhatsappAPI: Cannot create a LocationMessage with a caption");
         message.setLocationMessage(WhatsappProtobuf.LocationMessage.newBuilder()
+                .setContextInfo(createContextInfo(quotedMessage, forwarded))
                 .setDegreesLatitude(coordinates.latitude())
                 .setDegreesLongitude(coordinates.longitude())
                 .setAccuracyInMeters(accuracy)
@@ -176,8 +149,9 @@ public class ProtobufUtils {
         return message.build();
     }
 
-    public @NotNull WhatsappProtobuf.Message createGroupInviteMessage(@NotNull String jid, @NotNull String name,  String caption, @NotNull String code,  ByteBuffer thumbnail,  ZonedDateTime expiration) {
+    public @NotNull WhatsappProtobuf.Message createGroupInviteMessage(@NotNull String jid, @NotNull String name,  String caption, @NotNull String code,  ByteBuffer thumbnail,  ZonedDateTime expiration, WhatsappUserMessage quotedMessage, boolean forwarded) {
         var invite = WhatsappProtobuf.GroupInviteMessage.newBuilder()
+                .setContextInfo(createContextInfo(quotedMessage, forwarded))
                 .setGroupJid(jid)
                 .setGroupName(name)
                 .setCaption(caption)
@@ -209,6 +183,20 @@ public class ProtobufUtils {
     private @NotNull WhatsappProtobuf.ContactMessage toContactMessage(@NotNull VCard vCard){
         return WhatsappProtobuf.ContactMessage.newBuilder()
                 .setVcard(vCard.write())
+                .build();
+    }
+
+    private @NotNull WhatsappProtobuf.ContextInfo createContextInfo(WhatsappUserMessage quotedMessage, boolean forwarded){
+        var builder =  WhatsappProtobuf.ContextInfo.newBuilder().setIsForwarded(forwarded);
+        if(quotedMessage == null){
+            return builder.build();
+        }
+
+        return builder.setQuotedMessage(quotedMessage.info().getMessage())
+                .setParticipant(quotedMessage.senderJid())
+                .setStanzaId(quotedMessage.info().getKey().getId())
+                .setRemoteJid(quotedMessage.info().getKey().getRemoteJid())
+                .setIsForwarded(forwarded)
                 .build();
     }
 }

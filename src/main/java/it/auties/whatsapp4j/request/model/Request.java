@@ -5,10 +5,8 @@ import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.model.WhatsappNode;
-import it.auties.whatsapp4j.response.model.JsonResponse;
 import it.auties.whatsapp4j.response.model.Response;
 import it.auties.whatsapp4j.response.model.ResponseModel;
-import it.auties.whatsapp4j.utils.Validate;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import jakarta.validation.constraints.NotNull;
 import jakarta.websocket.EncodeException;
@@ -105,10 +103,7 @@ public sealed abstract class Request<B, M extends ResponseModel> permits BinaryR
      * @throws ClassCastException if the type parameter of this object is not a concrete type, the reason is explained here {@link Request#modelClass()}
      */
     public void complete(@NotNull Response<?> response){
-        future.completeAsync(() -> {
-            Validate.isTrue(!(response instanceof JsonResponse jsonResponse && !jsonResponse.isSuccessful()) , "Cannot complete request with response %s", response, IllegalStateException.class);
-            return response.toModel(modelClass());
-        });
+        future.completeAsync(() -> response.toModel(modelClass()));
     }
 
     /**

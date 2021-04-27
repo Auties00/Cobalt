@@ -37,6 +37,6 @@ public class WhatsappBinaryMessageDecoder implements Binary<BinaryResponse> {
 
     @Override
     public boolean willDecode(@NotNull ByteBuffer byteBuffer) {
-        return byteBuffer.hasArray();
+        return true;
     }
 }

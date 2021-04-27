@@ -27,6 +27,7 @@ import java.util.Optional;
 @Accessors(fluent = true, chain = true)
 public abstract sealed class Response<C> permits BinaryResponse, JsonResponse, JsonListResponse {
     protected static final ObjectMapper JACKSON = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
     protected @NotNull String tag;
     protected String description;
     protected @NotNull C content;
