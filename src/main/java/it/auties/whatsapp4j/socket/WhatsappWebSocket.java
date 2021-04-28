@@ -42,8 +42,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static it.auties.whatsapp4j.utils.CypherUtils.*;
-import static it.auties.whatsapp4j.utils.WhatsappUtils.attr;
-import static it.auties.whatsapp4j.utils.WhatsappUtils.attributes;
+import static it.auties.whatsapp4j.utils.WhatsappUtils.*;
 
 /**
  * This class is an interface between this API and WhatsappWeb's WebClient.
@@ -184,7 +183,7 @@ public class WhatsappWebSocket {
   }
 
   @SneakyThrows
-  public void disconnect(String reason, boolean logout, boolean reconnect){
+  public void disconnect(String reason, boolean logout, boolean reconnect) {
     Validate.isTrue(loggedIn, "WhatsappAPI: Cannot terminate the connection with whatsapp as it doesn't exist", IllegalStateException.class);
     whatsappManager.clear();
     if(logout) new LogOutRequest(options){}.send(session()).thenRun(whatsappKeys::deleteKeysFromMemory);
@@ -309,7 +308,7 @@ public class WhatsappWebSocket {
   }
 
   private void configureSelfContact(@NotNull UserInformationResponse info) {
-    var jid = WhatsappUtils.parseJid(info.wid());
+    var jid = parseJid(info.wid());
     whatsappManager.contacts().add(new WhatsappContact(jid, null, null, null, null, null));
     whatsappManager.phoneNumberJid(jid);
   }

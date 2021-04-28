@@ -74,11 +74,13 @@ public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends 
     public CompletableFuture<M> send(@NotNull Session session) {
         if (configuration.async()) {
             session.getAsyncRemote().sendObject(this, __ -> MANAGER.pendingRequests().add(this));
+            if(noResponse()) future.complete(null);
             return future;
         }
 
         session.getBasicRemote().sendObject(this);
         MANAGER.pendingRequests().add(this);
+        if(noResponse()) future.complete(null);
         return future;
     }
 }

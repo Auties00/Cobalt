@@ -12,5 +12,5 @@ import java.util.List;
  * @param modifications a list of modifications made to the participants of the group and their relative status
  */
 public record GroupModificationResponse(@JsonProperty("gid") String jid, int status,
-                                        @JsonProperty("participants") List<ModificationForParticipantStatus> modifications) implements JsonResponseModel {
+                                        @JsonProperty("participants") List<ModificationForParticipant> modifications) implements JsonResponseModel {
 }

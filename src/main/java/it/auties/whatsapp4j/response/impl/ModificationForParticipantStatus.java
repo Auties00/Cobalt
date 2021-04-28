@@ -1,20 +1,14 @@
 package it.auties.whatsapp4j.response.impl;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
 
-import java.util.ArrayList;
-import java.util.Map;
-
 /**
- * A json model that contains information about a modification made to a participant of a group
+ * A json model that contains information about the status of a modification made to a participant of a group
  *
- * @param jid    the jid of the participant
- * @param status the http status code for the original request
+ * @param code                  the http status code for the original request
+ * @param inviteCode            if {@code code != 200}, an invitation link to make the participant execute the action manually
+ * @param inviteCodeExpiration  if {@code code != 200}, the expiration for {@code inviteCode}
  */
-public record ModificationForParticipantStatus(@NotNull String jid, int status) {
-    @JsonCreator
-    public ModificationForParticipantStatus(@NotNull Map<String, Map<String, Integer>> json) {
-        this(new ArrayList<>(json.keySet()).get(0), json.get(new ArrayList<>(json.keySet()).get(0)).get("code"));
-    }
+public record ModificationForParticipantStatus(int code, @NotNull @JsonProperty("invite_code") String inviteCode, @JsonProperty("invite_code_exp") long inviteCodeExpiration) {
 }

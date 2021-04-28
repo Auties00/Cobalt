@@ -160,7 +160,7 @@ public class WhatsappDataManager {
 
     /**
      * Queries the first Request whose tag is equal to {@code messageTag} and, if any is found, resolves the request using {@code response}
-     * 
+     *
      * @param messageTag the tag to search
      * @param response the response to complete the request with
      * @return true if any request matching {@code messageTag} is found

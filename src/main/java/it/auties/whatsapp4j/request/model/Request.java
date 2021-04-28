@@ -5,6 +5,7 @@ import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.model.WhatsappNode;
+import it.auties.whatsapp4j.response.impl.DiscardResponse;
 import it.auties.whatsapp4j.response.model.Response;
 import it.auties.whatsapp4j.response.model.ResponseModel;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
@@ -13,6 +14,7 @@ import jakarta.websocket.EncodeException;
 import jakarta.websocket.Session;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 
 import java.io.IOException;
@@ -46,18 +48,20 @@ public sealed abstract class Request<B, M extends ResponseModel> permits BinaryR
      */
     protected final @NotNull @Getter String tag;
 
-
     /**
      * The configuration used for {@link WhatsappAPI}
      */
     protected final @NotNull WhatsappConfiguration configuration;
-
 
     /**
      * A future completed when Whatsapp sends a response
      */
     protected final @NotNull @Getter CompletableFuture<M> future;
 
+    /**
+     * Whether this request requires a response
+     */
+    protected @Getter @Setter boolean noResponse;
 
     /**
      * Constructs a new instance of a Request using a custom non null request tag
@@ -89,11 +93,9 @@ public sealed abstract class Request<B, M extends ResponseModel> permits BinaryR
      * Sends a request to the WebSocket linked to {@code session}.
      *
      * @param session the WhatsappWeb's WebSocket session
-     * @throws IOException if the message cannot be sent
-     * @throws EncodeException if the message cannot be encoded
      * @return this request
      */
-    public abstract CompletableFuture<M> send(@NotNull Session session) throws IOException, EncodeException;
+    public abstract CompletableFuture<M> send(@NotNull Session session);
 
     /**
      * Completes this request using {@code response}

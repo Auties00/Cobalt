@@ -96,6 +96,10 @@ public final class JsonResponse extends Response<Map<String, ?>> {
      */
     @Override
     public <T extends ResponseModel> @NotNull T toModel(@NotNull Class<T> clazz) {
-        return JACKSON.convertValue(content, clazz);
+        try {
+            return JACKSON.convertValue(content, clazz);
+        }catch (Exception e){
+            throw new IllegalArgumentException("Cannot decode %s to %s with error %s".formatted(content(), clazz.getName(), e.getMessage()));
+        }
     }
 }

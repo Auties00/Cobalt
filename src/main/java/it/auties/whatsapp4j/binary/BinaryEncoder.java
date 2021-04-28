@@ -16,7 +16,6 @@ import java.util.stream.IntStream;
  * To decode a message use instead {@link BinaryDecoder}.
  *
  * @param cache the message to encode
- *
  */
 public record BinaryEncoder(@NotNull List<Byte> cache) {
 

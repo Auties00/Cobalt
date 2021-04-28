@@ -55,7 +55,7 @@ public class WhatsappContact {
      * If, for example, this contact is composing, recording or paused in a group this field will not be affected.
      * Instead, {@link WhatsappChat#presences()} should be used.
      * By default, Whatsapp will not send updates about a contact's status unless they send a message or are in the recent contacts.
-     * To force Whatsapp to send updates, use {@link WhatsappAPI#subscribeToUserPresence(WhatsappContact)}.
+     * To force Whatsapp to send updates, use {@link WhatsappAPI#subscribeToContactPresence(WhatsappContact)}.
      */
     private  WhatsappContactStatus lastKnownPresence;
 
