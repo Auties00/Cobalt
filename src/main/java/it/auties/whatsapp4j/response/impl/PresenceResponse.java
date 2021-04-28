@@ -5,7 +5,6 @@ import it.auties.whatsapp4j.model.WhatsappContactStatus;
 import it.auties.whatsapp4j.response.model.JsonResponseModel;
 import jakarta.validation.constraints.NotNull;
 
-
 /**
  * A json model that contains information about an update regarding the presence of a contact in a chat
  *

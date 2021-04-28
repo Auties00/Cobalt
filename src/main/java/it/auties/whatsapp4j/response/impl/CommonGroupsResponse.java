@@ -11,7 +11,6 @@ import java.util.Optional;
 
 /**
  * A json model that contains information about the groups in common with a WhatsappContact
- *
  */
 public record CommonGroupsResponse(int status, List<WhatsappChat> groups) implements JsonResponseModel {
     @JsonCreator

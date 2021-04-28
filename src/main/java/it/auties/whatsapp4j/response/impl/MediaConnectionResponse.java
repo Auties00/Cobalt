@@ -8,9 +8,10 @@ import jakarta.validation.constraints.NotNull;
 /**
  * A json model that contains a {@link WhatsappMediaConnection}, used to decrypt media files
  *
- * @param status the http status code for the original request
+ * @param status     the http status code for the original request
  * @param connection an instance of the requested connection
  */
-public record MediaConnectionResponse(int status, @NotNull @JsonProperty("media_conn") WhatsappMediaConnection connection) implements JsonResponseModel {
+public record MediaConnectionResponse(int status,
+                                      @NotNull @JsonProperty("media_conn") WhatsappMediaConnection connection) implements JsonResponseModel {
 
 }

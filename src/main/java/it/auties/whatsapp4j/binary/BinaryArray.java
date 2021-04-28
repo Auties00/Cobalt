@@ -20,9 +20,10 @@ import java.util.stream.IntStream;
 public record BinaryArray(byte[] data) {
     /**
      * Constructs a new empty {@code BinaryArray}
+     *
      * @return a new {@code BinaryArray} wrapping an empty bytes array
      */
-    public static @NotNull BinaryArray empty(){
+    public static @NotNull BinaryArray empty() {
         return forArray(new byte[0]);
     }
 
@@ -32,7 +33,7 @@ public record BinaryArray(byte[] data) {
      * @param in the array of bytes to wrap
      * @return a new {@code BinaryArray} wrapping {@code in}
      */
-    public static @NotNull BinaryArray forArray(byte[] in){
+    public static @NotNull BinaryArray forArray(byte[] in) {
         return new BinaryArray(in);
     }
 
@@ -42,7 +43,7 @@ public record BinaryArray(byte[] data) {
      * @param in the byte to wrap
      * @return a new non empty {@code BinaryArray} wrapping a bytes array that only contains {@param in}
      */
-    public static @NotNull BinaryArray singleton(byte in){
+    public static @NotNull BinaryArray singleton(byte in) {
         return new BinaryArray(new byte[]{in});
     }
 
@@ -52,7 +53,7 @@ public record BinaryArray(byte[] data) {
      * @param in the String to wrap
      * @return a new {@code BinaryArray} wrapping {@param in}
      */
-    public static @NotNull BinaryArray forString(@NotNull String in){
+    public static @NotNull BinaryArray forString(@NotNull String in) {
         return forArray(in.getBytes());
     }
 
@@ -62,7 +63,7 @@ public record BinaryArray(byte[] data) {
      * @param input the Base64 encoded String to wrap
      * @return a new {@code BinaryArray} wrapping {@param input}
      */
-    public static @NotNull BinaryArray forBase64(@NotNull String input){
+    public static @NotNull BinaryArray forBase64(@NotNull String input) {
         return forArray(Base64.getDecoder().decode(input));
     }
 
@@ -72,7 +73,7 @@ public record BinaryArray(byte[] data) {
      * @param length the length of the array to generate and wrap
      * @return a new {@code BinaryArray} of length {@param length}
      */
-    public static @NotNull BinaryArray random(int length){
+    public static @NotNull BinaryArray random(int length) {
         final var result = new byte[length];
         new SecureRandom().nextBytes(result);
         return forArray(result);
@@ -86,7 +87,7 @@ public record BinaryArray(byte[] data) {
      * @param end the exclusive index used to slice this object's bytes array
      * @return a new {@code BinaryArray} with the above characteristics
      */
-    public @NotNull BinaryArray cut(int end){
+    public @NotNull BinaryArray cut(int end) {
         return slice(0, end);
     }
 
@@ -98,7 +99,7 @@ public record BinaryArray(byte[] data) {
      * @param start the inclusive index used to slice this object's bytes array
      * @return a new {@code BinaryArray} with the above characteristics
      */
-    public @NotNull BinaryArray slice(int start){
+    public @NotNull BinaryArray slice(int start) {
         return slice(start, data.length);
     }
 
@@ -108,7 +109,7 @@ public record BinaryArray(byte[] data) {
      * @param split the index to split this object's array
      * @return a Pair with the above characteristics
      */
-    public @NotNull Pair<BinaryArray, BinaryArray> split(int split){
+    public @NotNull Pair<BinaryArray, BinaryArray> split(int split) {
         return new Pair<>(cut(split), slice(split + 1));
     }
 
@@ -118,10 +119,10 @@ public record BinaryArray(byte[] data) {
      * {@param end}, exclusive
      *
      * @param start the inclusive starting index used to slice this object's bytes array
-     * @param end the exclusive ending index used to slice this object's bytes array
+     * @param end   the exclusive ending index used to slice this object's bytes array
      * @return a new {@code BinaryArray} with the above characteristics
      */
-    public @NotNull BinaryArray slice(int start, int end){
+    public @NotNull BinaryArray slice(int start, int end) {
         return forArray(Arrays.copyOfRange(data, start >= 0 ? start : size() + start, end >= 0 ? end : size() + end));
     }
 
@@ -131,7 +132,7 @@ public record BinaryArray(byte[] data) {
      * @param array the {@code BinaryArray} to concatenate
      * @return a new {@code BinaryArray} wrapping a bytes array obtained by concatenating this object's bytes array and {@param array}'s bytes array
      */
-    public @NotNull BinaryArray merged(@NotNull BinaryArray array){
+    public @NotNull BinaryArray merged(@NotNull BinaryArray array) {
         var result = Arrays.copyOf(data, size() + array.size());
         System.arraycopy(array.data, 0, result, size(), array.size());
         return forArray(result);
@@ -145,7 +146,7 @@ public record BinaryArray(byte[] data) {
      * @param character the character to search
      * @return an Optional wrapping an int with the above characteristics
      */
-    public @NotNull Optional<Integer> indexOf(char character){
+    public @NotNull Optional<Integer> indexOf(char character) {
         return IntStream.range(0, size()).filter(index -> data[index] == character).boxed().findFirst();
     }
 
@@ -155,7 +156,7 @@ public record BinaryArray(byte[] data) {
      * @param index the index, ranges from 0 to size() - 1
      * @return the byte at {@param index}
      */
-    public byte at(int index){
+    public byte at(int index) {
         return data[index];
     }
 
@@ -164,7 +165,7 @@ public record BinaryArray(byte[] data) {
      *
      * @return an unsigned int representing the size of the array of bytes that this object wraps
      */
-    public int size(){
+    public int size() {
         return data.length;
     }
 
@@ -182,7 +183,7 @@ public record BinaryArray(byte[] data) {
      *
      * @return a String with the above characteristics
      */
-    public @NotNull String toHex(){
+    public @NotNull String toHex() {
         return DatatypeConverter.printHexBinary(data);
     }
 

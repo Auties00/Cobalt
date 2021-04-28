@@ -22,7 +22,7 @@ public class MessagesResponse extends BinaryResponseModel<WhatsappMessages> {
      */
     public MessagesResponse(@NotNull WhatsappNode node) {
         super(node);
-        this.data =  node.childNodes()
+        this.data = node.childNodes()
                 .stream()
                 .filter(childNode -> childNode.description().equals("message"))
                 .map(WhatsappNode::content)

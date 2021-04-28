@@ -36,7 +36,7 @@ public class WhatsappUtils {
      * @param jid the input jid
      * @return a non null String
      */
-    public @NotNull String phoneNumberFromJid(@NotNull String jid){
+    public @NotNull String phoneNumberFromJid(@NotNull String jid) {
         return jid.split("@", 2)[0];
     }
 
@@ -46,7 +46,7 @@ public class WhatsappUtils {
      * @param jid the input jid
      * @return a non null String
      */
-    public @NotNull String parseJid(@NotNull String jid){
+    public @NotNull String parseJid(@NotNull String jid) {
         return jid.replaceAll("@c.us", "@s.whatsapp.net");
     }
 
@@ -55,7 +55,7 @@ public class WhatsappUtils {
      *
      * @return a non null ten character String
      */
-    public @NotNull String randomId(){
+    public @NotNull String randomId() {
         return BinaryArray.random(10).toHex();
     }
 
@@ -65,7 +65,7 @@ public class WhatsappUtils {
      * @param configuration the configuration to use to build the message
      * @return a non null String
      */
-    public @NotNull String buildRequestTag(@NotNull WhatsappConfiguration configuration){
+    public @NotNull String buildRequestTag(@NotNull WhatsappConfiguration configuration) {
         return "%s.--%s".formatted(configuration.requestTag(), MANAGER.tagAndIncrement());
     }
 
@@ -75,7 +75,7 @@ public class WhatsappUtils {
      * @param time the time in seconds since {@link Instant#EPOCH}
      * @return a non null empty optional if the {@code time} isn't 0
      */
-    public @NotNull Optional<ZonedDateTime> parseWhatsappTime(long time){
+    public @NotNull Optional<ZonedDateTime> parseWhatsappTime(long time) {
         return time == 0 ? Optional.empty() : Optional.of(ZonedDateTime.ofInstant(Instant.ofEpochSecond(time), ZoneId.systemDefault()));
     }
 
@@ -85,7 +85,7 @@ public class WhatsappUtils {
      * @param jid the input jid
      * @return true if {@code jid} is a group
      */
-    public boolean isGroup(@NotNull String jid){
+    public boolean isGroup(@NotNull String jid) {
         return jid.contains("-");
     }
 
@@ -93,10 +93,10 @@ public class WhatsappUtils {
      * Returns a List of WhatsappNodes that represent {@code contacts}
      *
      * @param contacts any number of contacts to convert
-     * @throws IllegalArgumentException if {@code contacts} is empty
      * @return a non null List of WhatsappNodes
+     * @throws IllegalArgumentException if {@code contacts} is empty
      */
-    public @NotNull List<WhatsappNode> jidsToParticipantNodes(@NotNull WhatsappContact... contacts){
+    public @NotNull List<WhatsappNode> jidsToParticipantNodes(@NotNull WhatsappContact... contacts) {
         return jidsToParticipantNodes(Arrays.stream(contacts).map(WhatsappContact::jid).toArray(String[]::new));
     }
 
@@ -104,13 +104,11 @@ public class WhatsappUtils {
      * Returns a List of WhatsappNodes that represent {@code jids}
      *
      * @param jids any number of jids to convert
-     * @throws IllegalArgumentException if {@code jids} is empty
      * @return a non null List of WhatsappNodes
+     * @throws IllegalArgumentException if {@code jids} is empty
      */
-    public @NotNull List<WhatsappNode> jidsToParticipantNodes(@NotNull String... jids){
-        return Arrays.stream(jids)
-                .map(jid -> new WhatsappNode("participant", Map.of("jid", jid), null))
-                .toList();
+    public @NotNull List<WhatsappNode> jidsToParticipantNodes(@NotNull String... jids) {
+        return Arrays.stream(jids).map(jid -> new WhatsappNode("participant", Map.of("jid", jid), null)).toList();
     }
 
     /**
@@ -122,7 +120,7 @@ public class WhatsappUtils {
     public @NotNull Optional<BinaryArray> readEncryptedMedia(@NotNull String url) {
         try {
             return Optional.of(BinaryArray.forArray(new URL(url).openStream().readAllBytes()));
-        }catch (Exception e){
+        } catch (Exception e) {
             return Optional.empty();
         }
     }
@@ -131,11 +129,11 @@ public class WhatsappUtils {
      * Returns the media url of a media message
      *
      * @param message the raw protobuf that holds a media
-     * @throws IllegalArgumentException if the input message is not a media file
      * @return a non null array of bytes
+     * @throws IllegalArgumentException if the input message is not a media file
      */
     public @NotNull Optional<String> readMediaCaption(WhatsappProtobuf.Message message) {
-        if (message.hasDocumentMessage() || message.hasStickerMessage() || message.hasAudioMessage()){
+        if (message.hasDocumentMessage() || message.hasStickerMessage() || message.hasAudioMessage()) {
             return Optional.empty();
         }
 
@@ -154,15 +152,15 @@ public class WhatsappUtils {
      * Returns the media key of a media message
      *
      * @param message the raw protobuf that holds a media
-     * @throws IllegalArgumentException if the input message is not a media file
      * @return a non null array of bytes
+     * @throws IllegalArgumentException if the input message is not a media file
      */
     public @NotNull BinaryArray readMediaKey(@NotNull WhatsappProtobuf.Message message) {
         if (message.hasImageMessage()) {
             return BinaryArray.forArray(message.getImageMessage().getMediaKey().toByteArray());
         }
 
-        if (message.hasDocumentMessage()){
+        if (message.hasDocumentMessage()) {
             return BinaryArray.forArray(message.getDocumentMessage().getMediaKey().toByteArray());
         }
 
@@ -174,7 +172,7 @@ public class WhatsappUtils {
             return BinaryArray.forArray(message.getStickerMessage().getMediaKey().toByteArray());
         }
 
-        if(message.hasAudioMessage()) {
+        if (message.hasAudioMessage()) {
             return BinaryArray.forArray(message.getAudioMessage().getMediaKey().toByteArray());
         }
 
@@ -185,15 +183,15 @@ public class WhatsappUtils {
      * Returns the media url of a media message
      *
      * @param message the raw protobuf that holds a media
-     * @throws IllegalArgumentException if the input message is not a media file
      * @return a non null array of bytes
+     * @throws IllegalArgumentException if the input message is not a media file
      */
     public @NotNull String readMediaUrl(@NotNull WhatsappProtobuf.Message message) {
         if (message.hasImageMessage()) {
             return message.getImageMessage().getUrl();
         }
 
-        if (message.hasDocumentMessage()){
+        if (message.hasDocumentMessage()) {
             return message.getDocumentMessage().getUrl();
         }
 
@@ -205,10 +203,10 @@ public class WhatsappUtils {
             return message.getStickerMessage().getUrl();
         }
 
-        if(message.hasAudioMessage()) {
+        if (message.hasAudioMessage()) {
             return message.getAudioMessage().getUrl();
         }
-        
+
         throw new IllegalArgumentException("WhatsappAPI: Cannot extract media url");
     }
 
@@ -219,18 +217,18 @@ public class WhatsappUtils {
      * @return a non null Map of attributes
      */
     @SafeVarargs
-    public @NotNull Map<String, String> attributes(@NotNull Map.Entry<String, String>... entries){
+    public @NotNull Map<String, String> attributes(@NotNull Map.Entry<String, String>... entries) {
         return Arrays.stream(entries).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     /**
      * Returns a new attribute from a key and a value
      *
-     * @param key the non null key
+     * @param key   the non null key
      * @param value the non null value
      * @return a non null Entry
      */
-    public @NotNull Map.Entry<String, String> attr(@NotNull String key, @NotNull Object value){
+    public @NotNull Map.Entry<String, String> attr(@NotNull String key, @NotNull Object value) {
         return Map.entry(key, String.valueOf(value));
     }
 }

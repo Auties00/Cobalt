@@ -40,7 +40,7 @@ public class WhatsappKeysManager {
     @SneakyThrows
     private static WhatsappKeysManager buildInstance() {
         var preferences = Preferences.userRoot().get(PREFERENCES_PATH, null);
-        if(preferences != null){
+        if (preferences != null) {
             return JACKSON_READER.readValue(preferences, WhatsappKeysManager.class);
         }
 
@@ -61,7 +61,7 @@ public class WhatsappKeysManager {
      * Initializes the serverToken, clientToken, encryptionKey and macKey with non null values
      */
     @SneakyThrows
-    public void initializeKeys(@NotNull String serverToken, @NotNull String clientToken, @NotNull BinaryArray encKey, @NotNull BinaryArray macKey){
+    public void initializeKeys(@NotNull String serverToken, @NotNull String clientToken, @NotNull BinaryArray encKey, @NotNull BinaryArray macKey) {
         Preferences.userRoot().put(PREFERENCES_PATH, JACKSON_WRITER.writeValueAsString(encKey(encKey).macKey(macKey).serverToken(serverToken).clientToken(clientToken)));
     }
 
@@ -70,7 +70,7 @@ public class WhatsappKeysManager {
      * This method doesn't clear this object's values.
      */
     @SneakyThrows
-    public void deleteKeysFromMemory(){
+    public void deleteKeysFromMemory() {
         Preferences.userRoot().clear();
     }
 }

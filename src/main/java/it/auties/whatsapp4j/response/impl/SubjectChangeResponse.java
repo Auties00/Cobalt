@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotNull;
 /**
  * A json model that contains information about a change in a WhatsappGroup's subject
  *
- * @param subject the new subject
+ * @param subject   the new subject
  * @param timestamp the timestamp in seconds since {@link java.time.Instant#EPOCH}
  * @param authorJid the jid of the participant that changed the subject
  */

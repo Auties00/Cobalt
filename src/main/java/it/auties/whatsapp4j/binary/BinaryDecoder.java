@@ -70,7 +70,7 @@ public class BinaryDecoder {
     private int readInt(int n) {
         checkEOS(n);
         var val = 0;
-        for(var i = 0; i < n; i++) {
+        for (var i = 0; i < n; i++) {
             var shift = n - 1 - i;
             val |= readUnsignedInt() << (shift * 8);
         }
@@ -90,7 +90,7 @@ public class BinaryDecoder {
         var startByte = readByte();
 
         final var value = new StringBuilder();
-        for(var i = 0; i < (startByte & 127); i++) {
+        for (var i = 0; i < (startByte & 127); i++) {
             var curByte = readByte();
             value.append(String.valueOf(Character.toChars(unpackByte(tag, ((curByte & 0xf0)) >> 4))));
             value.append(String.valueOf(Character.toChars(unpackByte(tag, (curByte & 0x0f)))));
@@ -111,7 +111,7 @@ public class BinaryDecoder {
         return buffer.at(index++);
     }
 
-    private int readUnsignedInt(){
+    private int readUnsignedInt() {
         return Byte.toUnsignedInt(readByte());
     }
 
@@ -124,7 +124,7 @@ public class BinaryDecoder {
     }
 
     private int readListSize(int data) {
-        return switch (BinaryTag.forData(data)){
+        return switch (BinaryTag.forData(data)) {
             case LIST_EMPTY -> 0;
             case LIST_8 -> readUnsignedInt();
             case LIST_16 -> readInt(2);

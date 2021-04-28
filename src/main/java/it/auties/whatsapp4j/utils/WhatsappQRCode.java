@@ -22,9 +22,9 @@ public class WhatsappQRCode {
     /**
      * Generates and prints the QR code to initialize the connection with WhatsappWeb's WebSocket
      *
-     * @param ref the ref to generate the qr code, might be null
+     * @param ref       the ref to generate the qr code, might be null
      * @param publicKey the non null publicKey
-     * @param clientId the non null client id
+     * @param clientId  the non null client id
      */
     @SneakyThrows
     public void generateAndPrint(String ref, byte @NotNull [] publicKey, @NotNull String clientId) {

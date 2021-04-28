@@ -9,6 +9,7 @@ import java.util.List;
 
 /**
  * A json model that contains information about the requested metadata of a Whatsapp group
+ *
  * @param jid                            the jid of the group
  * @param founderJid                     the jid of the user that created this group
  * @param foundationTimestamp            the time in seconds since {@link Instant#EPOCH} when the group was created
@@ -25,8 +26,7 @@ import java.util.List;
  */
 public record GroupMetadataResponse(@JsonProperty("id") @NotNull String jid,
                                     @JsonProperty("owner") @NotNull String founderJid,
-                                    @JsonProperty("creation") int foundationTimestamp,
-                                    @NotNull String subject,
+                                    @JsonProperty("creation") int foundationTimestamp, @NotNull String subject,
                                     @JsonProperty("subjectTime") Integer lastSubjectUpdateTimestamp,
                                     @JsonProperty("subjectOwner") String lastSubjectUpdateJid,
                                     @JsonProperty("restrict") boolean onlyAdminsCanChangeSettings,

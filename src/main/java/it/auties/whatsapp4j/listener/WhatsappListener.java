@@ -25,13 +25,15 @@ public interface WhatsappListener {
      *
      * @param info the information sent by WhatsappWeb's WebSocket about this session
      */
-    default void onLoggedIn(@NotNull UserInformationResponse info){ }
+    default void onLoggedIn(@NotNull UserInformationResponse info) {
+    }
 
     /**
      * Called when {@link WhatsappWebSocket} successfully disconnects from WhatsappWeb's WebSocket.
      * When this event is called, any data, including chats and contact, is guaranteed to not be available anymore.
      */
-    default void onDisconnected(){}
+    default void onDisconnected() {
+    }
 
     /**
      * Called when new information regarding this session is available.
@@ -39,7 +41,8 @@ public interface WhatsappListener {
      *
      * @param info the partial object used to represent the new data available for this session
      */
-    default void onInformationUpdate(@NotNull UserInformationResponse info){}
+    default void onInformationUpdate(@NotNull UserInformationResponse info) {
+    }
 
     /**
      * Called when {@link WhatsappWebSocket} receives a plain text list.
@@ -47,176 +50,193 @@ public interface WhatsappListener {
      *
      * @param response the list received as plain text by {@link WhatsappWebSocket}
      */
-    default void onListResponse(@NotNull JsonListResponse response){}
+    default void onListResponse(@NotNull JsonListResponse response) {
+    }
 
     /**
      * Called when {@link WhatsappWebSocket} receives all the contacts from WhatsappWeb's WebSocket.
      * To access this data use {@link WhatsappDataManager#contacts()}.
      */
-    default void onContactsReceived(){ }
+    default void onContactsReceived() {
+    }
 
     /**
      * Called when {@link WhatsappWebSocket} receives an update regarding a contact
      *
      * @param contact the updated contact
      */
-    default void onContactUpdate(@NotNull WhatsappContact contact){ }
+    default void onContactUpdate(@NotNull WhatsappContact contact) {
+    }
 
     /**
      * Called when {@link WhatsappWebSocket} receives a new contact
      *
      * @param contact the new contact
      */
-    default void onContactReceived(@NotNull WhatsappContact contact){ }
+    default void onContactReceived(@NotNull WhatsappContact contact) {
+    }
 
     /**
      * Called when {@link WhatsappWebSocket} receives an update regarding the presence of a contact.
      * If {@code chat} is a conversation with {@code contact}, the new presence is available by calling {@link WhatsappContact#lastKnownPresence()}.
      * Otherwise, it should be queried using {@link WhatsappChat#presences()}.
      *
-     * @param chat the chat that this update regards
+     * @param chat    the chat that this update regards
      * @param contact the contact that this update regards
      */
-    default void onContactPresenceUpdate(@NotNull WhatsappChat chat, @NotNull WhatsappContact contact){}
+    default void onContactPresenceUpdate(@NotNull WhatsappChat chat, @NotNull WhatsappContact contact) {
+    }
 
     /**
      * Called when {@link WhatsappWebSocket} receives all the chats from WhatsappWeb's WebSocket.
      * To access this data use {@link WhatsappDataManager#chats()}.
      */
-    default void onChatsReceived(){}
+    default void onChatsReceived() {
+    }
 
     /**
      * Called when {@link WhatsappWebSocket} receives a new chat
      *
      * @param chat the new chat
      */
-    default void onChatReceived(@NotNull WhatsappChat chat){}
+    default void onChatReceived(@NotNull WhatsappChat chat) {
+    }
 
     /**
      * Called when a chat is archived
      *
      * @param chat the chat that was archived
      */
-    default void onChatArchived(@NotNull WhatsappChat chat){}
+    default void onChatArchived(@NotNull WhatsappChat chat) {
+    }
 
     /**
      * Called when a chat is unarchived
      *
      * @param chat the chat that was unarchived
      */
-    default void onChatUnarchived(@NotNull WhatsappChat chat){}
+    default void onChatUnarchived(@NotNull WhatsappChat chat) {
+    }
 
     /**
      * Called when a chat's mute changes
      *
      * @param chat the chat whose mute changed
      */
-    default void onChatMuteChange(@NotNull WhatsappChat chat){}
+    default void onChatMuteChange(@NotNull WhatsappChat chat) {
+    }
 
     /**
      * Called when a chat's read status changes
      *
      * @param chat the chat whose read status changed
      */
-    default void onChatReadStatusChange(@NotNull WhatsappChat chat){}
+    default void onChatReadStatusChange(@NotNull WhatsappChat chat) {
+    }
 
     /**
      * Called when a chat's ephemeral status changes
      *
      * @param chat the chat whose ephemeral status changed
      */
-    default void onChatEphemeralStatusChange(@NotNull WhatsappChat chat){}
+    default void onChatEphemeralStatusChange(@NotNull WhatsappChat chat) {
+    }
 
     /**
      * Called when a group's subject changes
      *
      * @param group the group whose subject changed
      */
-    default void onGroupSubjectChange(@NotNull WhatsappChat group){}
+    default void onGroupSubjectChange(@NotNull WhatsappChat group) {
+    }
 
     /**
      * Called when a group's description changes
      *
-     * @param group the group whose description changed
-     * @param description the new description
+     * @param group         the group whose description changed
+     * @param description   the new description
      * @param descriptionId the id of the new description
      */
-    default void onGroupDescriptionChange(@NotNull WhatsappChat group, @NotNull String description, @NotNull String descriptionId){}
+    default void onGroupDescriptionChange(@NotNull WhatsappChat group, @NotNull String description, @NotNull String descriptionId) {
+    }
 
     /**
      * Called when a group's settings change
      *
-     * @param group the group whose settings changed
+     * @param group   the group whose settings changed
      * @param setting the setting that changed
-     * @param policy the new policy that was set
+     * @param policy  the new policy that was set
      */
-    default void onGroupSettingsChange(@NotNull WhatsappChat group, @NotNull WhatsappGroupSetting setting, @NotNull WhatsappGroupPolicy policy){}
+    default void onGroupSettingsChange(@NotNull WhatsappChat group, @NotNull WhatsappGroupSetting setting, @NotNull WhatsappGroupPolicy policy) {
+    }
 
     /**
      * Called when an action is executed on a group's participant
      *
-     * @param group the group where the action was executed
+     * @param group       the group where the action was executed
      * @param participant the target of the action that was executed
-     * @param action the type of the action that was executed
+     * @param action      the type of the action that was executed
      */
-    default void onGroupAction(@NotNull WhatsappChat group, @NotNull WhatsappContact participant, @NotNull WhatsappGroupAction action){ }
+    default void onGroupAction(@NotNull WhatsappChat group, @NotNull WhatsappContact participant, @NotNull WhatsappGroupAction action) {
+    }
 
     /**
      * Called when a new message is received in a chat
      *
-     * @param chat the chat where the message was sent
+     * @param chat    the chat where the message was sent
      * @param message the message that was sent
      */
-    default void onNewMessageReceived(@NotNull WhatsappChat chat, @NotNull WhatsappMessage message){ }
+    default void onNewMessageReceived(@NotNull WhatsappChat chat, @NotNull WhatsappMessage message) {
+    }
 
     /**
      * Called when the read status of a message changes.
      * If {@code chat} is a conversation with {@code contact}, the new read status can be considered valid for the message itself.
      * Otherwise, it should be considered valid only for {@code contact} without making assumptions about the status of the message for other participants of the group.
      *
-     * @param chat the chat where the message is
+     * @param chat    the chat where the message is
      * @param contact the contact that this update regards
      * @param message the message this update regards
-     *
      */
-    default void onMessageReadStatusUpdate(@NotNull WhatsappChat chat, @NotNull WhatsappContact contact, @NotNull WhatsappUserMessage message){}
+    default void onMessageReadStatusUpdate(@NotNull WhatsappChat chat, @NotNull WhatsappContact contact, @NotNull WhatsappUserMessage message) {
+    }
 
     /**
      * Called when the metadata or content of a message is updated
      *
-     * @param chat the chat where the message is
+     * @param chat    the chat where the message is
      * @param message the message this update regards
-     *
      */
-    default void onMessageUpdate(@NotNull WhatsappChat chat, @NotNull WhatsappMessage message){}
+    default void onMessageUpdate(@NotNull WhatsappChat chat, @NotNull WhatsappMessage message) {
+    }
 
     /**
      * Called when a message is deleted
      *
-     * @param chat the chat where the message is
-     * @param message the message that was deleted
+     * @param chat     the chat where the message is
+     * @param message  the message that was deleted
      * @param everyone whether this message was deleted by you only for yourself or whether the message was permanently removed
-     *
      */
-    default void onMessageDeleted(@NotNull WhatsappChat chat, @NotNull WhatsappUserMessage message, boolean everyone){}
+    default void onMessageDeleted(@NotNull WhatsappChat chat, @NotNull WhatsappUserMessage message, boolean everyone) {
+    }
 
     /**
      * Called when a message is starred
      *
-     * @param chat the chat where the message is
+     * @param chat    the chat where the message is
      * @param message the message that was starred
-     *
      */
-    default void onMessageStarred(@NotNull WhatsappChat chat, @NotNull WhatsappUserMessage message){}
+    default void onMessageStarred(@NotNull WhatsappChat chat, @NotNull WhatsappUserMessage message) {
+    }
 
     /**
      * Called when a message is unstarred
      *
-     * @param chat the chat where the message is
+     * @param chat    the chat where the message is
      * @param message the message that was unstarred
-     *
      */
-    default void onMessageUnstarred(@NotNull WhatsappChat chat, @NotNull WhatsappUserMessage message){}
+    default void onMessageUnstarred(@NotNull WhatsappChat chat, @NotNull WhatsappUserMessage message) {
+    }
 
     /**
      * Called when the global read status of a message changes.
@@ -224,20 +244,20 @@ public interface WhatsappListener {
      * If {@code chat} is a conversation, {@link WhatsappUserMessage#globalStatus()} is equal to the one stored in {@link WhatsappUserMessage#individualReadStatus()} for the corresponding contact.
      * Otherwise, it is guaranteed that each value stored in {@link WhatsappUserMessage#individualReadStatus()} for each participant of the chat is equal or higher hierarchically then {@link WhatsappUserMessage#globalStatus()}.
      *
-     * @param chat the chat where the message is
+     * @param chat    the chat where the message is
      * @param message the message that was unstarred
-     *
      */
-    default void onMessageGlobalReadStatusUpdate(@NotNull WhatsappChat chat, @NotNull WhatsappUserMessage message){}
+    default void onMessageGlobalReadStatusUpdate(@NotNull WhatsappChat chat, @NotNull WhatsappUserMessage message) {
+    }
 
     /**
      * Called when an updated blocklist is received.
      * This method is called both when a connection is established with WhatsappWeb and when a contact is added or removed from the blocklist.
      *
      * @param blocklist the updated blocklist
-     *
      */
-    default void onBlocklistUpdate(@NotNull BlocklistResponse blocklist){}
+    default void onBlocklistUpdate(@NotNull BlocklistResponse blocklist) {
+    }
 
     /**
      * Called when an updated list of properties is received.
@@ -245,15 +265,15 @@ public interface WhatsappListener {
      * In the latter case though, this object should be considered as partial and is guaranteed to contain only updated entries.
      *
      * @param props the updated list of properties
-     *
      */
-    default void onPropsUpdate(@NotNull PropsResponse props){}
+    default void onPropsUpdate(@NotNull PropsResponse props) {
+    }
 
     /**
      * Called when an updated object describing the status of the phone's associated with this session battery status changes
      *
      * @param battery the new battery status
-     *
      */
-    default void onPhoneBatteryStatusUpdate(@NotNull PhoneBatteryResponse battery){}
+    default void onPhoneBatteryStatusUpdate(@NotNull PhoneBatteryResponse battery) {
+    }
 }

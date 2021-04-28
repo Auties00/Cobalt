@@ -1,6 +1,5 @@
 package it.auties.whatsapp4j.response.impl;
 
-
 /**
  * A json model that contains information about the phone of the user associated with this session
  * This record should only be used by {@link UserInformationResponse}
@@ -13,7 +12,6 @@ package it.auties.whatsapp4j.response.impl;
  * @param deviceManufacturer a nullable String that represents the brand of the phone
  * @param deviceModel        a nullable String that represents the model of the phone
  */
-public record PhoneInformation(String waVersion, String mcc, String mnc,
-                               String osVersion, String osBuildNumber,
+public record PhoneInformation(String waVersion, String mcc, String mnc, String osVersion, String osBuildNumber,
                                String deviceManufacturer, String deviceModel) {
 }

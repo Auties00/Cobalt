@@ -14,7 +14,7 @@ import java.util.Optional;
 
 /**
  * An interface that can be implemented to signal that a class may represent a serialization technique used by WhatsappWeb's WebSocket when sending a request.
- * 
+ * <p>
  * This class only allows three types of implementations:
  * <ul>
  * <li>{@link BinaryResponse} - characterized by a WhatsappNode </li>
@@ -63,7 +63,7 @@ public abstract sealed class Response<C> permits BinaryResponse, JsonResponse, J
             }
 
             return new JsonResponse(tag, jsonNode.get(0).textValue(), JACKSON.readerFor(new TypeReference<>() {}).readValue(possibleMap));
-        }catch (Exception e) {
+        } catch (Exception e) {
             throw new IllegalArgumentException("Cannot decode Response %s with error %s".formatted(parse, e.getMessage()));
         }
     }
@@ -76,10 +76,10 @@ public abstract sealed class Response<C> permits BinaryResponse, JsonResponse, J
      * Converts this object to a ResponseModel
      *
      * @param clazz a Class that represents {@code <T>}
-     * @param <T> the specific raw type of the model
+     * @param <T>   the specific raw type of the model
      * @return an instance of the type of model requested
      */
-   public <T extends ResponseModel> @NotNull T toModel(@NotNull Class<T> clazz) {
-       throw new UnsupportedOperationException("To model is not supported on this object");
-   }
+    public <T extends ResponseModel> @NotNull T toModel(@NotNull Class<T> clazz) {
+        throw new UnsupportedOperationException("To model is not supported on this object");
+    }
 }

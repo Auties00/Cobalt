@@ -40,11 +40,11 @@ public class CypherUtils {
     private final String SHA256 = "SHA-256";
     private final int BLOCK_SIZE = 16;
 
-    public @NotNull Curve25519KeyPair calculateRandomKeyPair(){
+    public @NotNull Curve25519KeyPair calculateRandomKeyPair() {
         return CURVE_25519.generateKeyPair();
     }
 
-    public @NotNull BinaryArray calculateSharedSecret(byte @NotNull [] publicKey, byte @NotNull [] privateKey){
+    public @NotNull BinaryArray calculateSharedSecret(byte @NotNull [] publicKey, byte @NotNull [] privateKey) {
         return BinaryArray.forArray(CURVE_25519.calculateAgreement(publicKey, privateKey));
     }
 
@@ -61,7 +61,7 @@ public class CypherUtils {
     }
 
     @SneakyThrows
-    public @NotNull BinaryArray hkdfExpand(@NotNull BinaryArray input, byte [] data, int size) {
+    public @NotNull BinaryArray hkdfExpand(@NotNull BinaryArray input, byte[] data, int size) {
         return BinaryArray.forArray(HKDF.fromHmacSha256().extractAndExpand(null, input.data(), data, size));
     }
 
@@ -94,7 +94,7 @@ public class CypherUtils {
     }
 
     @SneakyThrows
-    public byte @NotNull [] sha256(byte @NotNull [] data){
+    public byte @NotNull [] sha256(byte @NotNull [] data) {
         final var digest = MessageDigest.getInstance(SHA256);
         return digest.digest(data);
     }
@@ -104,7 +104,7 @@ public class CypherUtils {
         var message = mediaMessage.info().getMessage();
         var url = WhatsappUtils.readMediaUrl(message);
         var data = WhatsappUtils.readEncryptedMedia(url).orElse(null);
-        if(data == null){
+        if (data == null) {
             return BinaryArray.empty().data();
         }
 
@@ -143,10 +143,7 @@ public class CypherUtils {
         var token = Base64.getUrlEncoder().withoutPadding().encodeToString(fileEncSha256);
         var uri = URI.create("%s/%s?auth=%s&token=%s".formatted(type.url(), token, connection.auth(), token));
 
-        var request = HttpRequest.newBuilder()
-                .uri(uri)
-                .POST(HttpRequest.BodyPublishers.ofByteArray(encFile))
-                .build();
+        var request = HttpRequest.newBuilder().uri(uri).POST(HttpRequest.BodyPublishers.ofByteArray(encFile)).build();
 
         var response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         var body = JsonResponse.fromJson(response.body());

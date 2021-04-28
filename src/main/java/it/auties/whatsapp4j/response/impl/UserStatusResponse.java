@@ -14,9 +14,10 @@ import java.util.Optional;
 public record UserStatusResponse(@JsonProperty("status") Object content) implements JsonResponseModel {
     /**
      * Returns the text status of a contact
+     *
      * @return a non null optional if the contact has a text status, otherwise an empty optional
      */
-    public @NotNull Optional<String> status(){
+    public @NotNull Optional<String> status() {
         return content instanceof Integer ? Optional.empty() : Optional.of((String) content);
     }
 }

@@ -32,7 +32,7 @@ public class WhatsappContactMessageBuilder implements WhatsappMessageBuilder<Wha
      */
     @Override
     public @NotNull WhatsappContactMessage create() {
-        Objects.requireNonNull(chat, "WhatsappAPI: Cannot create a WhatsappContactMessage with a null chat");    
+        Objects.requireNonNull(chat, "WhatsappAPI: Cannot create a WhatsappContactMessage with a null chat");
         Objects.requireNonNull(sharedContacts, "WhatsappAPI: Cannot create a WhatsappContactMessage with null sharedContacts");
         return new WhatsappContactMessage(ProtobufUtils.createMessageInfo(ProtobufUtils.createContactMessage(sharedContacts), chat.jid()));
     }

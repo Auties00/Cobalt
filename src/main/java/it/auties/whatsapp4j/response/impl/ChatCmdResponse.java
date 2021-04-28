@@ -8,6 +8,7 @@ import java.util.List;
 
 /**
  * A json model that contains information about an update about the metadata of a WhatsappChat
+ *
  * @param jid  the jid of the WhatsappChat this update regards
  * @param cmd  a nullable String used to describe the update
  * @param data a list of objects that represent the encoded update
