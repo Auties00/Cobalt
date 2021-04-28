@@ -24,7 +24,6 @@ import java.util.Optional;
 @Accessors(fluent = true)
 @ToString
 public abstract class WhatsappMessage {
-;
     /**
      * A singleton instance of {@link WhatsappDataManager}
      */
@@ -95,7 +94,6 @@ public abstract class WhatsappMessage {
     public boolean sentByMe() {
         return info.getKey().getFromMe();
     }
-
 
     /**
      * Checks if this object and {@code other} are equal
