@@ -8,6 +8,7 @@ import it.auties.whatsapp4j.response.impl.UserInformationResponse;
 import jakarta.validation.constraints.NotNull;
 import lombok.extern.java.Log;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.opentest4j.AssertionFailedError;
 
 import java.io.IOException;
@@ -24,15 +25,13 @@ import java.util.concurrent.ExecutionException;
  * A simple class to check that the library is working
  */
 @Log
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-
+@TestMethodOrder(OrderAnnotation.class)
 public class WhatsappTest implements WhatsappListener {
     private static @NotNull CountDownLatch latch;
     private static @NotNull WhatsappAPI whatsappAPI;
     private static @NotNull WhatsappContact contact;
     private static @NotNull WhatsappChat contactChat;
     private static @NotNull WhatsappChat group;
-    private static @NotNull boolean aBoolean;
 
     @BeforeAll
     public static void init(){
