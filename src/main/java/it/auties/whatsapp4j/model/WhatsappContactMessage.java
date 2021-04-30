@@ -1,8 +1,5 @@
 package it.auties.whatsapp4j.model;
 
-import ezvcard.Ezvcard;
-import ezvcard.VCard;
-import ezvcard.io.chain.ChainingTextStringParser;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.builder.WhatsappContactMessageBuilder;
 import jakarta.validation.constraints.NotNull;
@@ -11,7 +8,6 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,7 +24,7 @@ public final class WhatsappContactMessage extends WhatsappUserMessage {
     /**
      * A non null list of parsed VCards, one for each contact that the raw protobuf message used to build this object holds
      */
-    private final @NotNull List<VCard> sharedContacts;
+    private final @NotNull List<String> sharedContacts;
 
     /**
      * Constructs a WhatsappContactsMessage from a raw protobuf object if it holds an array of contacts
@@ -38,12 +34,7 @@ public final class WhatsappContactMessage extends WhatsappUserMessage {
     public WhatsappContactMessage(@NotNull WhatsappProtobuf.WebMessageInfo info) {
         super(info, info.getMessage().hasContactMessage() || info.getMessage().hasContactsArrayMessage());
         var contacts = info.getMessage().hasContactMessage() ? List.of(info.getMessage().getContactMessage()) : info.getMessage().getContactsArrayMessage().getContactsList();
-        this.sharedContacts = contacts.stream()
-                .map(WhatsappProtobuf.ContactMessage::getVcard)
-                .map(Ezvcard::parse)
-                .map(ChainingTextStringParser::all)
-                .flatMap(Collection::stream)
-                .toList();
+        this.sharedContacts = contacts.stream().map(WhatsappProtobuf.ContactMessage::getVcard).toList();
     }
 
 
