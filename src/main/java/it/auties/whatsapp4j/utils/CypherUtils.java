@@ -39,6 +39,7 @@ public class CypherUtils {
     private final String AES_ALGORITHM = "AES/CBC/PKCS5PADDING";
     private final String SHA256 = "SHA-256";
     private final String HKDF = "HKDF-Salt";
+    private final String HKDF_KEY = "TlsMasterSecret";
     private final int BLOCK_SIZE = 16;
 
     public @NotNull Curve25519KeyPair calculateRandomKeyPair() {
@@ -63,12 +64,12 @@ public class CypherUtils {
 
     @SneakyThrows
     public @NotNull BinaryArray hkdfExpand(@NotNull BinaryArray input, byte[] data, int size) {
-        var hmac = Mac.getInstance(SHA256);
+        var hmac = Mac.getInstance(HMAC_SHA256);
         var hmacLength = hmac.getMacLength();
 
         var salt = new SecretKeySpec(new byte[hmacLength], HKDF);
         hmac.init(salt);
-        var extracted = new SecretKeySpec(hmac.doFinal(input.data()), "TlsMasterSecret");
+        var extracted = new SecretKeySpec(hmac.doFinal(input.data()), HKDF_KEY);
 
         hmac.init(extracted);
         var rounds = (size + hmacLength - 1) / hmacLength;
