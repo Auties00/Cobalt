@@ -1,6 +1,5 @@
 package it.auties.whatsapp4j.utils;
 
-import at.favre.lib.crypto.HKDF;
 import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.model.WhatsappMediaConnection;
 import it.auties.whatsapp4j.model.WhatsappMediaMessage;
@@ -25,6 +24,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.security.MessageDigest;
 import java.util.Base64;
+import java.util.Optional;
 
 /**
  * This utility class provides helper functionality to easily encrypt and decrypt data
@@ -38,6 +38,7 @@ public class CypherUtils {
     private final String AES = "AES";
     private final String AES_ALGORITHM = "AES/CBC/PKCS5PADDING";
     private final String SHA256 = "SHA-256";
+    private final String HKDF = "HKDF-Salt";
     private final int BLOCK_SIZE = 16;
 
     public @NotNull Curve25519KeyPair calculateRandomKeyPair() {
@@ -62,7 +63,31 @@ public class CypherUtils {
 
     @SneakyThrows
     public @NotNull BinaryArray hkdfExpand(@NotNull BinaryArray input, byte[] data, int size) {
-        return BinaryArray.forArray(HKDF.fromHmacSha256().extractAndExpand(null, input.data(), data, size));
+        var hmac = Mac.getInstance(SHA256);
+        var hmacLength = hmac.getMacLength();
+
+        var salt = new SecretKeySpec(new byte[hmacLength], HKDF);
+        hmac.init(salt);
+        var extracted = new SecretKeySpec(hmac.doFinal(input.data()), "TlsMasterSecret");
+
+        hmac.init(extracted);
+        var rounds = (size + hmacLength - 1) / hmacLength;
+        var hkdfOutput = new byte[rounds * hmacLength];
+        var parsedData = Optional.ofNullable(data).orElse(new byte[0]);
+        var offset = 0;
+        var tLength = 0;
+
+        for (var i = 0; i < rounds ; i++) {
+            hmac.update(hkdfOutput, Math.max(0, offset - hmacLength), tLength);
+            hmac.update(parsedData);
+            hmac.update((byte)(i + 1));
+            hmac.doFinal(hkdfOutput, offset);
+
+            tLength = hmacLength;
+            offset += hmacLength;
+        }
+
+        return BinaryArray.forArray(hkdfOutput).cut(size);
     }
 
     @SneakyThrows
