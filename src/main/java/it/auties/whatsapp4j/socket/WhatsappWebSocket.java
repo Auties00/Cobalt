@@ -27,6 +27,8 @@ import lombok.experimental.Accessors;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.security.interfaces.XECPrivateKey;
+import java.security.interfaces.XECPublicKey;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -69,14 +71,12 @@ public class WhatsappWebSocket {
     @OnOpen
     public void onOpen(@NotNull Session session) {
         if (this.session == null || !this.session.isOpen()) session(session);
-        new InitialRequest<InitialResponse>(options, whatsappKeys) {
-        }.send(session).thenAccept(this::handleInitialMessage);
+        new InitialRequest<InitialResponse>(options, whatsappKeys) {}.send(session).thenAccept(this::handleInitialMessage);
     }
 
     private void handleInitialMessage(@NotNull InitialResponse response) {
         if (whatsappKeys.mayRestore()) {
-            new TakeOverRequest<TakeOverResponse>(options, whatsappKeys) {
-            }.send(session()).thenAccept(this::solveChallenge);
+            new TakeOverRequest<TakeOverResponse>(options, whatsappKeys) {}.send(session()).thenAccept(this::solveChallenge);
             return;
         }
 
@@ -88,7 +88,7 @@ public class WhatsappWebSocket {
         CompletableFuture.delayedExecutor(response.ttl(), TimeUnit.MILLISECONDS).execute(() -> generateQrCode(response));
 
         Validate.isTrue(response.ref() != null, "Cannot find ref for QR code generation");
-        qrCode.generateAndPrint(response.ref(), whatsappKeys.publicKey(), whatsappKeys.clientId());
+        qrCode.generateAndPrint(response.ref(), (XECPublicKey) whatsappKeys.keyPair().getPublic(), whatsappKeys.clientId());
     }
 
     private void solveChallenge(@NotNull TakeOverResponse response) {
@@ -110,8 +110,7 @@ public class WhatsappWebSocket {
         var challenge = BinaryArray.forBase64(challengeBase64);
         var signedChallenge = hmacSha256(challenge, Objects.requireNonNull(whatsappKeys.macKey()));
 
-        var request = new SolveChallengeRequest<SimpleStatusResponse>(options, whatsappKeys, signedChallenge) {
-        };
+        var request = new SolveChallengeRequest<SimpleStatusResponse>(options, whatsappKeys, signedChallenge) {};
         request.send(session()).thenAccept(result -> Validate.isTrue(result.status() == 200, "Could not solve whatsapp challenge for server and client token renewal: %s".formatted(result)));
     }
 
@@ -119,7 +118,7 @@ public class WhatsappWebSocket {
         var base64Secret = response.secret();
         var secret = BinaryArray.forBase64(base64Secret);
         var pubKey = secret.cut(32);
-        var sharedSecret = calculateSharedSecret(pubKey.data(), whatsappKeys.privateKey());
+        var sharedSecret = calculateSharedSecret(pubKey.data(), (XECPrivateKey) whatsappKeys.keyPair().getPrivate());
         var sharedSecretExpanded = hkdfExpand(sharedSecret, 80);
 
         var hmacValidation = hmacSha256(secret.cut(32).merged(secret.slice(64)), sharedSecretExpanded.slice(32, 64));

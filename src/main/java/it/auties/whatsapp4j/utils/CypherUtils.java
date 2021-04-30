@@ -10,20 +10,24 @@ import it.auties.whatsapp4j.response.model.JsonResponse;
 import jakarta.validation.constraints.NotNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
-import org.whispersystems.curve25519.Curve25519;
-import org.whispersystems.curve25519.Curve25519KeyPair;
 
 import javax.crypto.Cipher;
+import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.math.BigInteger;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.security.MessageDigest;
+import java.security.*;
+import java.security.interfaces.XECPrivateKey;
+import java.security.spec.NamedParameterSpec;
+import java.security.spec.XECPrivateKeySpec;
+import java.security.spec.XECPublicKeySpec;
 import java.util.Base64;
 
 /**
@@ -33,19 +37,31 @@ import java.util.Base64;
 @UtilityClass
 public class CypherUtils {
     private final HttpClient CLIENT = HttpClient.newHttpClient();
-    private final Curve25519 CURVE_25519 = Curve25519.getInstance(Curve25519.JAVA);
+    private final String XDH = "XDH";
+    private final String CURVE = "X25519";
     private final String HMAC_SHA256 = "HmacSHA256";
     private final String AES = "AES";
     private final String AES_ALGORITHM = "AES/CBC/PKCS5PADDING";
     private final String SHA256 = "SHA-256";
     private final int BLOCK_SIZE = 16;
 
-    public @NotNull Curve25519KeyPair calculateRandomKeyPair() {
-        return CURVE_25519.generateKeyPair();
+    @SneakyThrows
+    public @NotNull KeyPair calculateRandomKeyPair() {
+        return KeyPairGenerator.getInstance(CURVE).generateKeyPair();
     }
 
-    public @NotNull BinaryArray calculateSharedSecret(byte @NotNull [] publicKey, byte @NotNull [] privateKey) {
-        return BinaryArray.forArray(CURVE_25519.calculateAgreement(publicKey, privateKey));
+    @SneakyThrows
+    public @NotNull BinaryArray calculateSharedSecret(byte @NotNull [] publicKeyBytes, @NotNull XECPrivateKey privateKey) {
+        var paramSpec = new NamedParameterSpec(CURVE);
+        var keyFactory = KeyFactory.getInstance(XDH);
+
+        var publicKeySpec = new XECPublicKeySpec(paramSpec, new BigInteger(publicKeyBytes));
+        var publicKey = keyFactory.generatePublic(publicKeySpec);
+
+        var keyAgreement = KeyAgreement.getInstance(XDH);
+        keyAgreement.init(privateKey);
+        keyAgreement.doPhase(publicKey, true);
+        return BinaryArray.forArray(keyAgreement.generateSecret());
     }
 
     @SneakyThrows

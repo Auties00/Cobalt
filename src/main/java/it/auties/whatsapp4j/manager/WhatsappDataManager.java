@@ -34,8 +34,7 @@ import java.util.stream.Collectors;
 @Data
 @Accessors(fluent = true)
 public class WhatsappDataManager {
-    private static final @Getter
-    WhatsappDataManager singletonInstance = new WhatsappDataManager(Executors.newSingleThreadExecutor(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), Instant.now().getEpochSecond());
+    private static final @Getter WhatsappDataManager singletonInstance = new WhatsappDataManager(Executors.newSingleThreadExecutor(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), Instant.now().getEpochSecond());
     private final @NotNull ExecutorService requestsService;
     private final @NotNull List<WhatsappChat> chats;
     private final @NotNull List<WhatsappContact> contacts;
