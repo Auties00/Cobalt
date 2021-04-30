@@ -1,7 +1,6 @@
 package it.auties.whatsapp4j.utils;
 
 import com.google.protobuf.ByteString;
-import ezvcard.VCard;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.model.WhatsappCoordinates;
 import it.auties.whatsapp4j.model.WhatsappMediaMessageType;
@@ -163,7 +162,7 @@ public class ProtobufUtils {
         return WhatsappProtobuf.Message.newBuilder().setGroupInviteMessage(invite).build();
     }
 
-    public @NotNull WhatsappProtobuf.Message createContactMessage(@NotNull List<VCard> sharedContacts) {
+    public @NotNull WhatsappProtobuf.Message createContactMessage(@NotNull List<String> sharedContacts) {
         if(sharedContacts.size() == 1){
             return WhatsappProtobuf.Message.newBuilder()
                     .setContactMessage(toContactMessage(sharedContacts.get(0)))
@@ -180,9 +179,9 @@ public class ProtobufUtils {
                 .build();
     }
 
-    private @NotNull WhatsappProtobuf.ContactMessage toContactMessage(@NotNull VCard vCard){
+    private @NotNull WhatsappProtobuf.ContactMessage toContactMessage(@NotNull String vcard){
         return WhatsappProtobuf.ContactMessage.newBuilder()
-                .setVcard(vCard.write())
+                .setVcard(vcard)
                 .build();
     }
 

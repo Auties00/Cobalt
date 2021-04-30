@@ -1,6 +1,5 @@
 package it.auties.whatsapp4j.builder;
 
-import ezvcard.VCard;
 import it.auties.whatsapp4j.model.WhatsappChat;
 import it.auties.whatsapp4j.model.WhatsappContactMessage;
 import it.auties.whatsapp4j.utils.ProtobufUtils;
@@ -23,7 +22,7 @@ public class WhatsappContactMessageBuilder implements WhatsappMessageBuilder<Wha
     /**
      * A non null list of parsed VCards, one for each contact that the raw protobuf message used to build this object holds
      */
-    private @Setter List<VCard> sharedContacts;
+    private @Setter List<String> sharedContacts;
 
     /**
      * Builds a {@link WhatsappContactMessage} from the data provided
