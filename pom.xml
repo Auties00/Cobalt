@@ -82,7 +82,6 @@
         <maven.jmod.version>3.0.0-alpha-1</maven.jmod.version>
         <jackson-version>2.12.3</jackson-version>
         <curve25519-version>0.5.0</curve25519-version>
-        <hkdf-version>1.0.2</hkdf-version>
         <vcard-version>0.11.2</vcard-version>
         <ee.modules>1.1.1.8-jre16</ee.modules>
         <delombok-version>1.18.18.0</delombok-version>
@@ -280,11 +279,6 @@
     <dependencies>
         <!-- Cryptographic dependencies -->
         <dependency>
-            <groupId>at.favre.lib</groupId>
-            <artifactId>hkdf</artifactId>
-            <version>${hkdf-version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.whispersystems</groupId>
             <artifactId>curve25519-java</artifactId>
             <version>${curve25519-version}</version>
@@ -326,20 +320,13 @@
             <version>${ee.modules}</version>
         </dependency>
 
-        <!-- Contacts' Vcard parsing library -->
-        <dependency>
-            <groupId>com.googlecode.ez-vcard</groupId>
-            <artifactId>ez-vcard</artifactId>
-            <version>${vcard-version}</version>
-        </dependency>
-
+        <!-- Testing libraries -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>${junit-version}</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
