@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.Accessors;
 
+import java.security.KeyPair;
 import java.util.Base64;
 import java.util.Objects;
 import java.util.prefs.Preferences;
@@ -31,7 +32,7 @@ public class WhatsappKeysManager {
     @JsonProperty
     private @NotNull String clientId;
     @JsonProperty
-    private byte @NotNull [] publicKey, privateKey;
+    private @NotNull KeyPair keyPair;
     @JsonProperty
     private String serverToken, clientToken;
     @JsonProperty
@@ -44,8 +45,7 @@ public class WhatsappKeysManager {
             return JACKSON_READER.readValue(preferences, WhatsappKeysManager.class);
         }
 
-        var keyPair = CypherUtils.calculateRandomKeyPair();
-        return new WhatsappKeysManager(Base64.getEncoder().encodeToString(BinaryArray.random(16).data()), keyPair.getPublicKey(), keyPair.getPrivateKey(), null, null, null, null);
+        return new WhatsappKeysManager(Base64.getEncoder().encodeToString(BinaryArray.random(16).data()), CypherUtils.calculateRandomKeyPair(), null, null, null, null);
     }
 
     /**
