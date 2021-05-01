@@ -5,6 +5,7 @@ import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.model.*;
 import it.auties.whatsapp4j.response.impl.UserInformationResponse;
+import it.auties.whatsapp4j.utils.Validate;
 import jakarta.validation.constraints.NotNull;
 import lombok.SneakyThrows;
 import lombok.extern.java.Log;
@@ -12,16 +13,20 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.opentest4j.AssertionFailedError;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.prefs.Preferences;
 
 /**
  * A simple class to check that the library is working
@@ -29,18 +34,29 @@ import java.util.prefs.Preferences;
 @Log
 @TestMethodOrder(OrderAnnotation.class)
 public class WhatsappTest implements WhatsappListener {
-    private static @NotNull CountDownLatch latch;
     private static @NotNull WhatsappAPI whatsappAPI;
+    private static @NotNull CountDownLatch latch;
+    private static @NotNull String contactName;
     private static @NotNull WhatsappContact contact;
     private static @NotNull WhatsappChat contactChat;
     private static @NotNull WhatsappChat group;
 
     @BeforeAll
-    @SneakyThrows
-    public static void init(){
+    public static void init() {
+        loadContactName();
         log.info("Initializing api to start testing...");
         whatsappAPI = new WhatsappAPI();
         latch = new CountDownLatch(3);
+    }
+
+    @SneakyThrows
+    private static void loadContactName() {
+        log.info("Loading configuration file...");
+        var config = new File(Path.of(".").toRealPath().toFile(), "/.test/config.properties");
+        Validate.isTrue(config.exists(), "Before running any unit test please create a file at %s and specify the name of the contact used for testing like this: contact=name", config.getPath(), FileNotFoundException.class);
+        var props = new Properties();
+        props.load(new FileReader(config));
+        contactName = (String) props.get("contact");
     }
 
     @Test
@@ -73,7 +89,7 @@ public class WhatsappTest implements WhatsappListener {
     @Order(4)
     public void testContactLookup() {
         log.info("Looking up a contact...");
-        contact = whatsappAPI.manager().findContactByName("Carlo").orElseThrow(() -> new AssertionFailedError("Cannot lookup contact"));
+        contact = whatsappAPI.manager().findContactByName(contactName).orElseThrow(() -> new AssertionFailedError("Cannot lookup contact"));
         contactChat = whatsappAPI.manager().findChatByJid(contact.jid()).orElseThrow();
         log.info("Looked up: %s".formatted(contact));
     }

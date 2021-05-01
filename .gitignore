@@ -4,3 +4,4 @@ target/
 *.iml
 *.versionsBackup
 /dependency-reduced-pom.xml
+/.test/

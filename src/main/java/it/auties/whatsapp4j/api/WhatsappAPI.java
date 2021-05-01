@@ -636,7 +636,6 @@ public class WhatsappAPI {
     public @NotNull CompletableFuture<SimpleStatusResponse> markChat(@NotNull WhatsappChat chat, int flag) {
         var lastMessage = chat.lastMessage().orElseThrow();
         var node = new WhatsappNode("action", attributes(attr("epoch", manager.tagAndIncrement()), attr("type", "set")), List.of(new WhatsappNode("read", attributes(attr("owner", lastMessage.sentByMe()), attr("jid", chat.jid()), attr("count", flag), attr("index", lastMessage.id())), null)));
-        System.out.println(node);
         return new BinaryRequest<SimpleStatusResponse>(configuration, node, BinaryFlag.IGNORE, BinaryMetric.READ) {}.send(socket.session());
     }
 
