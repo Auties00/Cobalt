@@ -7,7 +7,6 @@ import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import jakarta.validation.constraints.NotNull;
 import lombok.SneakyThrows;
 
-import java.security.interfaces.XECPublicKey;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Objects;
@@ -24,13 +23,13 @@ public class WhatsappQRCode {
      * Generates and prints the QR code to initialize the connection with WhatsappWeb's WebSocket
      *
      * @param ref       the ref to generate the qr code, might be null
-     * @param publicKey the non null publicKey
+     * @param publicKey the non null raw publicKey
      * @param clientId  the non null client id
      */
     @SneakyThrows
-    public void generateAndPrint(String ref, @NotNull XECPublicKey publicKey, @NotNull String clientId) {
+    public void generateAndPrint(String ref,byte @NotNull [] publicKey, @NotNull String clientId) {
         this.ref = Objects.requireNonNullElse(ref, this.ref);
-        var qr = "%s,%s,%s".formatted(this.ref, Base64.getEncoder().encodeToString(publicKey.getU().toByteArray()), clientId);
+        var qr = "%s,%s,%s".formatted(this.ref, Base64.getEncoder().encodeToString(publicKey), clientId);
         System.out.println(WRITER.encode(qr, BarcodeFormat.QR_CODE, SIZE, SIZE, Map.of(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.L, EncodeHintType.MARGIN, 0)).toString("\033[40m  \033[0m", "\033[47m  \033[0m"));
     }
 }

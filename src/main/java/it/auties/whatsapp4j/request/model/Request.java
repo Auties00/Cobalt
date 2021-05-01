@@ -5,19 +5,16 @@ import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.model.WhatsappNode;
-import it.auties.whatsapp4j.response.impl.DiscardResponse;
 import it.auties.whatsapp4j.response.model.Response;
 import it.auties.whatsapp4j.response.model.ResponseModel;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import jakarta.validation.constraints.NotNull;
-import jakarta.websocket.EncodeException;
 import jakarta.websocket.Session;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
-import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
 import java.util.concurrent.CompletableFuture;
 

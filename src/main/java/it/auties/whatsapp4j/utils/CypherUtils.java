@@ -9,6 +9,11 @@ import it.auties.whatsapp4j.response.model.JsonResponse;
 import jakarta.validation.constraints.NotNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
+import org.bouncycastle.asn1.edec.EdECObjectIdentifiers;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.crypto.params.X25519PublicKeyParameters;
+import org.bouncycastle.crypto.util.PublicKeyFactory;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
@@ -17,16 +22,12 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.math.BigInteger;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.security.*;
-import java.security.interfaces.XECPrivateKey;
-import java.security.spec.NamedParameterSpec;
-import java.security.spec.XECPrivateKeySpec;
-import java.security.spec.XECPublicKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Optional;
 
@@ -52,17 +53,22 @@ public class CypherUtils {
     }
 
     @SneakyThrows
-    public @NotNull BinaryArray calculateSharedSecret(byte @NotNull [] publicKeyBytes, @NotNull XECPrivateKey privateKey) {
-        var paramSpec = new NamedParameterSpec(CURVE);
-        var keyFactory = KeyFactory.getInstance(XDH);
-
-        var publicKeySpec = new XECPublicKeySpec(paramSpec, new BigInteger(publicKeyBytes));
+    public @NotNull BinaryArray calculateSharedSecret(byte @NotNull [] rawPublicKey, @NotNull PrivateKey privateKey) {
+        var keyFactory = KeyFactory.getInstance(CURVE);
+        var publicKeyInfo = new SubjectPublicKeyInfo(new AlgorithmIdentifier(EdECObjectIdentifiers.id_X25519), rawPublicKey);
+        var publicKeySpec = new X509EncodedKeySpec(publicKeyInfo.getEncoded());
         var publicKey = keyFactory.generatePublic(publicKeySpec);
 
         var keyAgreement = KeyAgreement.getInstance(XDH);
         keyAgreement.init(privateKey);
         keyAgreement.doPhase(publicKey, true);
         return BinaryArray.forArray(keyAgreement.generateSecret());
+    }
+
+    @SneakyThrows
+    public byte @NotNull [] extractRawPublicKey(@NotNull PublicKey publicKey){
+        var x25519PublicKeyParameters = (X25519PublicKeyParameters) PublicKeyFactory.createKey(publicKey.getEncoded());
+        return x25519PublicKeyParameters.getEncoded();
     }
 
     @SneakyThrows

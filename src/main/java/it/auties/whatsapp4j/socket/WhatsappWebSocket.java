@@ -27,8 +27,6 @@ import lombok.experimental.Accessors;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.security.interfaces.XECPrivateKey;
-import java.security.interfaces.XECPublicKey;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -88,7 +86,7 @@ public class WhatsappWebSocket {
         CompletableFuture.delayedExecutor(response.ttl(), TimeUnit.MILLISECONDS).execute(() -> generateQrCode(response));
 
         Validate.isTrue(response.ref() != null, "Cannot find ref for QR code generation");
-        qrCode.generateAndPrint(response.ref(), (XECPublicKey) whatsappKeys.keyPair().getPublic(), whatsappKeys.clientId());
+        qrCode.generateAndPrint(response.ref(), extractRawPublicKey(whatsappKeys.keyPair().getPublic()), whatsappKeys.clientId());
     }
 
     private void solveChallenge(@NotNull TakeOverResponse response) {
@@ -118,7 +116,7 @@ public class WhatsappWebSocket {
         var base64Secret = response.secret();
         var secret = BinaryArray.forBase64(base64Secret);
         var pubKey = secret.cut(32);
-        var sharedSecret = calculateSharedSecret(pubKey.data(), (XECPrivateKey) whatsappKeys.keyPair().getPrivate());
+        var sharedSecret = calculateSharedSecret(pubKey.data(), whatsappKeys.keyPair().getPrivate());
         var sharedSecretExpanded = hkdfExpand(sharedSecret, 80);
 
         var hmacValidation = hmacSha256(secret.cut(32).merged(secret.slice(64)), sharedSecretExpanded.slice(32, 64));

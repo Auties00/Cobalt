@@ -76,17 +76,16 @@
         <maven-source-plugin-version>3.0.1</maven-source-plugin-version>
         <maven-javadoc-plugin-version>3.2.0</maven-javadoc-plugin-version>
         <maven-deploy-plugin-version>2.8.2</maven-deploy-plugin-version>
+        <delombok-plugin-version>1.18.18.0</delombok-plugin-version>
         <moditech-plugin-version>1.0.0.RC1</moditech-plugin-version>
         <nexus-staging-maven-plugin-version>1.6.7</nexus-staging-maven-plugin-version>
         <lombok-version>1.18.20</lombok-version>
         <maven.jmod.version>3.0.0-alpha-1</maven.jmod.version>
         <jackson-version>2.12.3</jackson-version>
-        <curve25519-version>0.5.0</curve25519-version>
-        <vcard-version>0.11.2</vcard-version>
-        <ee.modules>1.1.1.8-jre16</ee.modules>
-        <delombok-version>1.18.18.0</delombok-version>
-        <delombok.output>${project.build.directory}\delomboked-sources</delombok.output>
         <junit-version>5.6.3</junit-version>
+        <bouncy-castle-version>1.68</bouncy-castle-version>
+        <ee.modules>1.1.1.8-jre16</ee.modules>
+        <delombok.output>${project.build.directory}\delomboked-sources</delombok.output>
     </properties>
 
     <build>
@@ -96,7 +95,7 @@
                 <plugin>
                     <groupId>org.projectlombok</groupId>
                     <artifactId>lombok-maven-plugin</artifactId>
-                    <version>${delombok-version}</version>
+                    <version>${delombok-plugin-version}</version>
                     <dependencies>
                         <dependency>
                             <groupId>org.projectlombok</groupId>
@@ -279,21 +278,16 @@
     <dependencies>
         <!-- Cryptographic dependencies -->
         <dependency>
-            <groupId>org.whispersystems</groupId>
-            <artifactId>curve25519-java</artifactId>
-            <version>${curve25519-version}</version>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk15on</artifactId>
+            <version>${bouncy-castle-version}</version>
         </dependency>
 
-        <!-- Annotations & Reflection dependencies -->
+        <!-- Project lombok, used for annotations -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${lombok-version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson-version}</version>
         </dependency>
 
         <!-- Jakarta EE 9 Modular Libraries -->
@@ -318,6 +312,13 @@
             <groupId>com.guicedee.services</groupId>
             <artifactId>guava</artifactId>
             <version>${ee.modules}</version>
+        </dependency>
+
+        <!-- Jackson dependency, used for json operations -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson-version}</version>
         </dependency>
 
         <!-- Testing libraries -->

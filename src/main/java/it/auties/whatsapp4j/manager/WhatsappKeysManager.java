@@ -4,8 +4,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.utils.CypherUtils;
+import it.auties.whatsapp4j.utils.KeyPairDeserializer;
+import it.auties.whatsapp4j.utils.KeyPairSerializer;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -19,7 +23,7 @@ import java.util.prefs.Preferences;
  * This class is a data class used to hold the clientId, serverToken, clientToken, publicKey, privateKey, encryptionKey and macKey.
  * It can be serialized using Jackson and deserialized using the fromPreferences named constructor.
  */
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@AllArgsConstructor
 @NoArgsConstructor
 @Data
 @Accessors(fluent = true, chain = true)
@@ -32,6 +36,8 @@ public class WhatsappKeysManager {
     @JsonProperty
     private @NotNull String clientId;
     @JsonProperty
+    @JsonSerialize(using = KeyPairSerializer.class)
+    @JsonDeserialize(using = KeyPairDeserializer.class)
     private @NotNull KeyPair keyPair;
     @JsonProperty
     private String serverToken, clientToken;
@@ -41,11 +47,7 @@ public class WhatsappKeysManager {
     @SneakyThrows
     private static WhatsappKeysManager buildInstance() {
         var preferences = Preferences.userRoot().get(PREFERENCES_PATH, null);
-        if (preferences != null) {
-            return JACKSON_READER.readValue(preferences, WhatsappKeysManager.class);
-        }
-
-        return new WhatsappKeysManager(Base64.getEncoder().encodeToString(BinaryArray.random(16).data()), CypherUtils.calculateRandomKeyPair(), null, null, null, null);
+        return preferences != null ? JACKSON_READER.readValue(preferences, WhatsappKeysManager.class) : new WhatsappKeysManager(Base64.getEncoder().encodeToString(BinaryArray.random(16).data()), CypherUtils.calculateRandomKeyPair(), null, null, null, null);
     }
 
     /**

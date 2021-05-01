@@ -6,6 +6,7 @@ import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.model.*;
 import it.auties.whatsapp4j.response.impl.UserInformationResponse;
 import jakarta.validation.constraints.NotNull;
+import lombok.SneakyThrows;
 import lombok.extern.java.Log;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
@@ -20,6 +21,7 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.prefs.Preferences;
 
 /**
  * A simple class to check that the library is working
@@ -34,6 +36,7 @@ public class WhatsappTest implements WhatsappListener {
     private static @NotNull WhatsappChat group;
 
     @BeforeAll
+    @SneakyThrows
     public static void init(){
         log.info("Initializing api to start testing...");
         whatsappAPI = new WhatsappAPI();
