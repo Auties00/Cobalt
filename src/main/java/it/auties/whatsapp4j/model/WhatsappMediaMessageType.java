@@ -1,35 +1,40 @@
 package it.auties.whatsapp4j.model;
 
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.experimental.Accessors;
 
 /**
  * The constants of this enumerated type describe the various types of media type that a {@link WhatsappMediaMessage} can hold
  */
+@AllArgsConstructor
+@Accessors(fluent = true)
 public enum WhatsappMediaMessageType {
     /**
      * The message is an image
      */
-    IMAGE,
+    IMAGE("image/jpeg"),
 
     /**
      * The message is a document
      */
-    DOCUMENT,
+    DOCUMENT("application/octet-stream"),
 
     /**
      * The message is an audio
      */
-    AUDIO,
+    AUDIO("audio/mpeg"),
 
     /**
      * The message is a video
      */
-    VIDEO,
+    VIDEO("video/mp4"),
 
     /**
      * The message is a sticker
      */
-    STICKER;
+    STICKER("image/webp");
 
     /**
      * The URL used to build the media request
@@ -37,35 +42,10 @@ public enum WhatsappMediaMessageType {
     private static final String WHATSAPP_URL = "https://media-mxp1-1.cdn.whatsapp.net/mms/%s";
 
     /**
-     * Returns the type of media that a raw protobuf object holds
-     *
-     * @param message the message to analyze
-     * @throws IllegalArgumentException if the message to analyze doesn't hold a media file
-     * @return a non null enumerated type
+     * The default mime type for this enumerated type.
+     * Might be right, might be wrong, who knows.
      */
-    public static @NotNull WhatsappMediaMessageType fromMessage(@NotNull WhatsappProtobuf.Message message){
-        if (message.hasImageMessage()){
-            return IMAGE;
-        }
-
-        if (message.hasDocumentMessage()){
-            return DOCUMENT;
-        }
-
-        if (message.hasAudioMessage()){
-            return AUDIO;
-        }
-
-        if (message.hasVideoMessage()){
-            return VIDEO;
-        }
-
-        if (message.hasStickerMessage()){
-            return STICKER;
-        }
-
-        throw new IllegalArgumentException("WhatsappAPI: Cannot deduce type of WhatsappMediaMessage");
-    }
+    private final @NotNull @Getter String defaultMimeType;
 
     /**
      * Returns the key used to encrypt a media message
@@ -95,14 +75,5 @@ public enum WhatsappMediaMessageType {
      */
     public @NotNull String whatsappName(){
         return this == STICKER ? IMAGE.whatsappName() : this.name().toLowerCase();
-    }
-
-    /**
-     * Returns whether this enumerated type is streamable
-     *
-     * @return true if streamable
-     */
-    public boolean isStreamable(){
-        return this == AUDIO || this == VIDEO;
     }
 }

@@ -1,11 +1,14 @@
 package it.auties.whatsapp4j.test;
 
+import com.google.zxing.Result;
+import com.google.zxing.client.result.VCardResultParser;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.model.*;
 import it.auties.whatsapp4j.response.impl.UserInformationResponse;
 import it.auties.whatsapp4j.utils.Validate;
+import it.auties.whatsapp4j.utils.WhatsappUtils;
 import jakarta.validation.constraints.NotNull;
 import lombok.SneakyThrows;
 import lombok.extern.java.Log;
@@ -23,6 +26,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -111,7 +116,7 @@ public class WhatsappTest implements WhatsappListener {
         switch (picResponse.status()){
             case 200 -> {
                 var file = Files.createTempFile(UUID.randomUUID().toString(), ".jpg");
-                Files.write(file, new URL(picResponse.url()).openStream().readAllBytes(), StandardOpenOption.CREATE);
+                Files.write(file, readBytes(picResponse.url()), StandardOpenOption.CREATE);
                 log.info("Loaded picture: %s".formatted(file.toString()));
             }
             case 404 -> log.info("The contact doesn't have a pic");
@@ -369,28 +374,107 @@ public class WhatsappTest implements WhatsappListener {
     @Order(30)
     public void testTextMessage() throws ExecutionException, InterruptedException {
         log.info("Sending text...");
-        var textResponse = whatsappAPI.sendMessage(WhatsappTextMessage.newTextMessage(group, "Testing%nData: %s".formatted(Instant.now()))).get();
+        var message = WhatsappTextMessage.newTextMessage()
+                .chat(group)
+                .text("Testing%n%s".formatted(WhatsappUtils.phoneNumberFromJid(contact.jid())))
+                .mentions(Collections.singletonList(contact))
+                .create();
+        var textResponse = whatsappAPI.sendMessage(message).get();
         Assertions.assertEquals(200, textResponse.status(), "Cannot send text: %s".formatted(textResponse));
         log.info("Sent text");
     }
 
     @Test
     @Order(31)
-    public void testMediaMessage() throws ExecutionException, InterruptedException, IOException {
-        log.info("Sending media...");
-        var message = WhatsappMediaMessage.newMediaMessage()
+    public void testImageMessage() throws ExecutionException, InterruptedException, IOException {
+        log.info("Sending image...");
+        var message = WhatsappImageMessage.newImageMessage()
                 .chat(group)
-                .media(new URL("https://2.bp.blogspot.com/-DqXILvtoZFA/Wmmy7gRahnI/AAAAAAAAB0g/59c8l63QlJcqA0591t8-kWF739DiOQLcACEwYBhgL/s1600/pol-venere-botticelli-01.jpg").openStream().readAllBytes())
-                .caption("Media test")
-                .type(WhatsappMediaMessageType.IMAGE)
+                .media(readBytes("https://2.bp.blogspot.com/-DqXILvtoZFA/Wmmy7gRahnI/AAAAAAAAB0g/59c8l63QlJcqA0591t8-kWF739DiOQLcACEwYBhgL/s1600/pol-venere-botticelli-01.jpg"))
+                .caption("Image test")
                 .create();
         var textResponse = whatsappAPI.sendMessage(message).get();
-        Assertions.assertEquals(200, textResponse.status(), "Cannot send media: %s".formatted(textResponse));
-        log.info("Sent media");
+        Assertions.assertEquals(200, textResponse.status(), "Cannot send image: %s".formatted(textResponse));
+        log.info("Sent image");
     }
 
     @Test
     @Order(32)
+    public void testAudioMessage() throws ExecutionException, InterruptedException, IOException {
+        log.info("Sending audio...");
+        var message = WhatsappAudioMessage.newAudioMessage()
+                .chat(group)
+                .media(readBytes("https://www.kozco.com/tech/organfinale.mp3"))
+                .create();
+        var textResponse = whatsappAPI.sendMessage(message).get();
+        Assertions.assertEquals(200, textResponse.status(), "Cannot send audio: %s".formatted(textResponse));
+        log.info("Sent audio");
+    }
+
+    @Test
+    @Order(33)
+    public void testVideoMessage() throws ExecutionException, InterruptedException, IOException {
+        log.info("Sending video...");
+        var message = WhatsappVideoMessage.newVideoMessage()
+                .chat(group)
+                .media(readBytes("http://techslides.com/demos/sample-videos/small.mp4"))
+                .create();
+        var textResponse = whatsappAPI.sendMessage(message).get();
+        Assertions.assertEquals(200, textResponse.status(), "Cannot send video: %s".formatted(textResponse));
+        log.info("Sent video");
+    }
+
+    @Test
+    @Order(34)
+    public void testGifMessage() throws ExecutionException, InterruptedException, IOException {
+        log.info("Sending gif...");
+        var message = WhatsappGifMessage.newGifMessage()
+                .chat(group)
+                .media(readBytes("http://techslides.com/demos/sample-videos/small.mp4"))
+                .create();
+
+        var textResponse = whatsappAPI.sendMessage(message).get();
+        Assertions.assertEquals(200, textResponse.status(), "Cannot send gif: %s".formatted(textResponse));
+        log.info("Sent gif");
+    }
+
+    @Test
+    @Order(35)
+    public void testPdfMessage() throws ExecutionException, InterruptedException, IOException {
+        log.info("Sending pdf...");
+        var message = WhatsappDocumentMessage.newDocumentMessage()
+                .chat(group)
+                .media(readBytes("http://www.orimi.com/pdf-test.pdf"))
+                .mimeType("application/pdf")
+                .create();
+        var textResponse = whatsappAPI.sendMessage(message).get();
+        Assertions.assertEquals(200, textResponse.status(), "Cannot send pdf: %s".formatted(textResponse));
+        log.info("Sent pdf");
+    }
+
+    @Test
+    @Order(36)
+    public void testContactMessage() throws ExecutionException, InterruptedException {
+        log.info("Sending contact message...");
+        var message = WhatsappContactMessage.newContactMessage()
+                .chat(group)
+                .sharedContacts(List.of("""
+                        BEGIN:VCARD
+                        VERSION:3.0
+                        N:%s
+                        FN:%s
+                        TEL;type=CELL:+%s
+                        END:VCARD
+                        """.formatted(contact.shortName(), contact.name(), WhatsappUtils.phoneNumberFromJid(contact.jid()))))
+                .create();
+
+        var textResponse = whatsappAPI.sendMessage(message).get();
+        Assertions.assertEquals(200, textResponse.status(), "Cannot send contact message: %s".formatted(textResponse));
+        log.info("Sent contact message");
+    }
+    
+    @Test
+    @Order(37)
     public void testEnableEphemeralMessages() throws ExecutionException, InterruptedException {
         log.info("Enabling ephemeral messages...");
         var ephemeralResponse = whatsappAPI.enableEphemeralMessages(group).get();
@@ -399,7 +483,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(33)
+    @Order(38)
     public void testDisableEphemeralMessages() throws ExecutionException, InterruptedException {
         log.info("Disabling ephemeral messages...");
         var ephemeralResponse = whatsappAPI.disableEphemeralMessages(group).get();
@@ -408,7 +492,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(34)
+    @Order(39)
     public void testLeave() throws ExecutionException, InterruptedException {
         log.info("Leaving group...");
         var ephemeralResponse = whatsappAPI.leave(group).get();
@@ -432,5 +516,9 @@ public class WhatsappTest implements WhatsappListener {
     public void onContactsReceived() {
         log.info("Got contacts!");
         latch.countDown();
+    }
+
+    private byte[] readBytes(String url) throws IOException {
+        return new URL(url).openStream().readAllBytes();
     }
 }

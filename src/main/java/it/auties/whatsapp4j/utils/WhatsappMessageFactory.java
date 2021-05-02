@@ -34,8 +34,16 @@ public class WhatsappMessageFactory {
             return new WhatsappGroupInviteMessage(info);
         } else if (message.hasLiveLocationMessage() || message.hasLocationMessage()) {
             return new WhatsappLocationMessage(info);
-        } else if (message.hasImageMessage() || message.hasDocumentMessage() || message.hasVideoMessage() || message.hasStickerMessage() || message.hasAudioMessage()) {
-            return new WhatsappMediaMessage(info);
+        } else if (message.hasImageMessage()) {
+            return new WhatsappImageMessage(info);
+        }else if(message.hasDocumentMessage()) {
+            return new WhatsappDocumentMessage(info);
+        }else if(message.hasAudioMessage()) {
+            return new WhatsappAudioMessage(info);
+        }else if(message.hasVideoMessage()) {
+            return message.getVideoMessage().hasGifPlayback() ? new WhatsappGifMessage(info) : new WhatsappVideoMessage(info);
+        }else if(message.hasStickerMessage()){
+            return new WhatsappStickerMessage(info);
         } else if (message.hasConversation() || message.hasExtendedTextMessage()) {
             return new WhatsappTextMessage(info);
         } else {

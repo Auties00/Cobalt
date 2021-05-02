@@ -1,8 +1,9 @@
 package it.auties.whatsapp4j.model;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
-import it.auties.whatsapp4j.builder.WhatsappGroupInviteMessageBuilder;
+import it.auties.whatsapp4j.utils.ProtobufUtils;
 import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -12,6 +13,7 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -71,12 +73,22 @@ public final class WhatsappGroupInviteMessage extends WhatsappUserMessage {
     }
 
     /**
-     * Constructs a new {@link WhatsappGroupInviteMessageBuilder} to build a new message that can be later sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}
+     * Constructs a new builder to create a WhatsappGroupInviteMessage.
+     * The result can be later sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}
      *
-     * @return a non null WhatsappGroupInviteMessageBuilder
+     * @param chat             the non null chat to which the new message should belong
+     * @param groupJid         the non null jid of the group that this invite regards
+     * @param groupName        the non null name of the group that this invite regards
+     * @param inviteCode       the non null code of this invite
+     * @param inviteExpiration the expiration for this invite, by default three days after its creation
+     * @param inviteCaption    the caption for this invite, by default empty
+     * @param inviteThumbnail  the thumbnail for this invite, by default empty
+     * @param quotedMessage    the message that the new message should quote, by default empty
+     * @param forwarded        whether this message is forwarded or not, by default false
      */
-    public static @NotNull WhatsappGroupInviteMessageBuilder newGroupInviteMessage(){
-        return new WhatsappGroupInviteMessageBuilder();
+    @Builder(builderMethodName = "newGroupInviteMessage", buildMethodName = "create")
+    public WhatsappGroupInviteMessage(@NotNull WhatsappChat chat, @NotNull String groupJid, @NotNull String groupName, @NotNull String inviteCode, ZonedDateTime inviteExpiration, String inviteCaption, byte[] inviteThumbnail, WhatsappUserMessage quotedMessage, List<WhatsappContact> inviteCaptionMentions, boolean forwarded) {
+        this(ProtobufUtils.createMessageInfo(ProtobufUtils.createGroupInviteMessage(groupJid, groupName, inviteCode, inviteExpiration, inviteCaption, inviteThumbnail, quotedMessage, inviteCaptionMentions, forwarded), chat.jid()));
     }
 
     /**

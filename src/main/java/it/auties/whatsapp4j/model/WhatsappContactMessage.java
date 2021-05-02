@@ -1,8 +1,10 @@
 package it.auties.whatsapp4j.model;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
-import it.auties.whatsapp4j.builder.WhatsappContactMessageBuilder;
+import it.auties.whatsapp4j.utils.ProtobufUtils;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -22,7 +24,7 @@ import java.util.Optional;
 @ToString
 public final class WhatsappContactMessage extends WhatsappUserMessage {
     /**
-     * A non null list of parsed VCards, one for each contact that the raw protobuf message used to build this object holds
+     * A non null list of Vcards, one for each contact that this message holds
      */
     private final @NotNull List<String> sharedContacts;
 
@@ -37,14 +39,16 @@ public final class WhatsappContactMessage extends WhatsappUserMessage {
         this.sharedContacts = contacts.stream().map(WhatsappProtobuf.ContactMessage::getVcard).toList();
     }
 
-
     /**
-     * Constructs a new {@link WhatsappContactMessageBuilder} to build a new message that can be later sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}
+     * Constructs a new builder to create a WhatsappContactMessage.
+     * The result can be later sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}
      *
-     * @return a non null WhatsappContactMessageBuilder
+     * @param chat the chat to which the new message should belong
+     * @param sharedContacts a list of non parsed vcards, one for each contact that the new message should hold
      */
-    public static @NotNull WhatsappContactMessageBuilder newContactMessage(){
-        return new WhatsappContactMessageBuilder();
+    @Builder(builderMethodName = "newContactMessage", buildMethodName = "create")
+    public WhatsappContactMessage(@NotNull(message = "Cannot create a WhatsappContactMessage with no chat") WhatsappChat chat, @NotNull(message = "Cannot create a WhatsappContactMessage with no shared contacts") @Size(min = 1, message = "Cannot create a WhatsappContactMessage with no shared contacts") List<String> sharedContacts){
+        this(ProtobufUtils.createMessageInfo(ProtobufUtils.createContactMessage(sharedContacts), chat.jid()));
     }
 
     /**

@@ -1,14 +1,15 @@
 package it.auties.whatsapp4j.model;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
-import it.auties.whatsapp4j.builder.WhatsappTextMessageBuilder;
 import it.auties.whatsapp4j.utils.ProtobufUtils;
 import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -37,66 +38,16 @@ public final class WhatsappTextMessage extends WhatsappUserMessage {
     }
 
     /**
-     * Constructs a new {@link WhatsappTextMessageBuilder} to build a new message that can be later sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}
+     * Constructs a new builder to create a WhatsappMediaMessage that wraps an image.
+     * The result can be later sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}
      *
-     * @return a non null WhatsappTextMessageBuilder
+     * @param chat          the non null chat to which the new message should belong
+     * @param forwarded     whether this message is forwarded or not, by default false
      */
-    public static @NotNull WhatsappTextMessageBuilder newTextMessage(){
-        return new WhatsappTextMessageBuilder();
+    @Builder(builderMethodName = "newTextMessage", buildMethodName = "create")
+    public WhatsappTextMessage(@NotNull(message = "Cannot create a WhatsappTextMessage with no chat") WhatsappChat chat, @NotNull(message = "Cannot create a WhatsappTextMessage with no text") String text, List<WhatsappContact> mentions, WhatsappUserMessage quotedMessage, boolean forwarded) {
+        this(ProtobufUtils.createMessageInfo(ProtobufUtils.createTextMessage(text, quotedMessage, mentions, forwarded), chat.jid()));
     }
-
-    /**
-     * Constructs a WhatsappTextMessage from the metadata provided.
-     * This message can be sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}.
-     *
-     * @param chat the chat where for this message
-     * @param text the text of this message
-     * @return a non null WhatsappTextMessage
-     */
-    public static @NotNull WhatsappTextMessage newTextMessage(@NotNull WhatsappChat chat, @NotNull String text){
-        return new WhatsappTextMessage(ProtobufUtils.createMessageInfo(ProtobufUtils.createTextMessage(text, null, false), chat.jid()));
-    }
-
-    /**
-     * Constructs a WhatsappTextMessage from the metadata provided.
-     * This message can be sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}.
-     *
-     * @param chat the chat where for this message
-     * @param text the text of this message
-     * @param quotedMessage the message that this message quotes
-     * @return a non null WhatsappTextMessage
-     */
-    public static @NotNull WhatsappTextMessage newTextMessage(@NotNull WhatsappChat chat, @NotNull String text, @NotNull WhatsappUserMessage quotedMessage){
-        return new WhatsappTextMessage(ProtobufUtils.createMessageInfo(ProtobufUtils.createTextMessage(text, quotedMessage, false), chat.jid()));
-    }
-
-    /**
-     * Constructs a WhatsappTextMessage from the metadata provided.
-     * This message can be sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}.
-     *
-     * @param chat the chat where for this message
-     * @param text the text of this message
-     * @param forwarded whether this message should be marked as forwarded
-     * @return a non null WhatsappTextMessage
-     */
-    public static @NotNull WhatsappTextMessage newTextMessage(@NotNull WhatsappChat chat, @NotNull String text, boolean forwarded){
-        return new WhatsappTextMessage(ProtobufUtils.createMessageInfo(ProtobufUtils.createTextMessage(text, null, forwarded), chat.jid()));
-    }
-
-    /**
-     * Constructs a WhatsappTextMessage from the metadata provided.
-     * This message can be sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}.
-     *
-     * @param chat the chat where for this message
-     * @param text the text of this message
-     * @param quotedMessage the message that this message quotes, can be null
-     * @param forwarded whether this message should be marked as forwarded
-     * @return a non null WhatsappTextMessage
-     */
-    public static @NotNull WhatsappTextMessage newTextMessage(@NotNull WhatsappChat chat, @NotNull String text,  WhatsappUserMessage quotedMessage, boolean forwarded){
-        return new WhatsappTextMessage(ProtobufUtils.createMessageInfo(ProtobufUtils.createTextMessage(text, quotedMessage, forwarded), chat.jid()));
-    }
-
 
     /**
      * Returns the ContextInfo of this message if available

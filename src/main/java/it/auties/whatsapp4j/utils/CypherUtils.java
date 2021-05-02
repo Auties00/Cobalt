@@ -48,7 +48,8 @@ public class CypherUtils {
     private final int BLOCK_SIZE = 16;
 
     @SneakyThrows
-    public @NotNull KeyPair calculateRandomKeyPair() {
+    @NotNull
+    public KeyPair calculateRandomKeyPair() {
         return KeyPairGenerator.getInstance(CURVE).generateKeyPair();
     }
 
@@ -185,7 +186,7 @@ public class CypherUtils {
 
         var fileSha256 = sha256(file);
         var fileEncSha256 = sha256(encFile);
-        var sidecar = type.isStreamable() ? new byte[0] : mediaSidecar(file, macKey);
+        var sidecar = mediaSidecar(file, macKey);
 
         var token = Base64.getUrlEncoder().withoutPadding().encodeToString(fileEncSha256);
         var uri = URI.create("%s/%s?auth=%s&token=%s".formatted(type.url(), token, connection.auth(), token));

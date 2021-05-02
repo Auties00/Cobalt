@@ -1,13 +1,15 @@
 package it.auties.whatsapp4j.model;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
-import it.auties.whatsapp4j.builder.WhatsappLocationMessageBuilder;
+import it.auties.whatsapp4j.utils.ProtobufUtils;
 import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -28,12 +30,12 @@ public final class WhatsappLocationMessage extends WhatsappUserMessage {
     /**
      * The caption of the message wrapped by this object
      */
-    private final @NotNull String caption;
+    private final String caption;
 
     /**
      * The non encrypted thumbnail of the message wrapped by this object
      */
-    private final byte @NotNull [] thumbnail;
+    private final byte [] thumbnail;
 
     /**
      * Whether the location wrapped by this object is being updated in real time or not
@@ -69,12 +71,22 @@ public final class WhatsappLocationMessage extends WhatsappUserMessage {
     }
 
     /**
-     * Constructs a new {@link WhatsappLocationMessageBuilder} to build a new message that can be later sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}
+     * Constructs a new builder to create a WhatsappLocationMessage that wraps an image.
+     * The result can be later sent using {@link WhatsappAPI#sendMessage(WhatsappUserMessage)}
      *
-     * @return a non null WhatsappLocationMessageBuilder
+     * @param chat          the non null chat to which the new message should belong
+     * @param coordinates   the non null coordinates of the new message
+     * @param live          whether the new message is live or not, be default false
+     * @param speed         the speed in meters per second of the device that sent the new message, by default not defined
+     * @param accuracy      the accuracy in meters of the coordinates that the new message wraps, by default not defined
+     * @param caption       the caption of the new message, by default empty
+     * @param thumbnail     the thumbnail of the new message, by default empty
+     * @param quotedMessage the message that the new message should quote, by default empty
+     * @param forwarded     whether this message is forwarded or not, by default false
      */
-    public static @NotNull WhatsappLocationMessageBuilder newLocationMessage(){
-        return new WhatsappLocationMessageBuilder();
+    @Builder(builderMethodName = "newLocationMessage", buildMethodName = "create")
+    public WhatsappLocationMessage(@NotNull(message = "Cannot create a WhatsappLocationMessage with no chat") WhatsappChat chat, @NotNull(message = "Cannot create a WhatsappLocationMessage with no coordinates") WhatsappCoordinates coordinates, boolean live, Float speed, Integer accuracy, byte[] thumbnail, String caption, WhatsappUserMessage quotedMessage, List<WhatsappContact> captionMentions, boolean forwarded) {
+        this(ProtobufUtils.createMessageInfo(ProtobufUtils.createLocationMessage(coordinates, caption, thumbnail, live, accuracy, speed, quotedMessage, captionMentions, forwarded), chat.jid()));
     }
 
     /**
@@ -90,5 +102,41 @@ public final class WhatsappLocationMessage extends WhatsappUserMessage {
         }
 
         return message.getLocationMessage().hasContextInfo() ? Optional.of(message.getLocationMessage().getContextInfo()) : Optional.empty();
+    }
+
+    /**
+     * Returns an optional String representing the caption of this location message
+     *
+     * @return a non empty optional if this message has a caption
+     */
+    public @NotNull Optional<String> caption(){
+        return caption.isBlank() ? Optional.empty() : Optional.of(caption);
+    }
+
+    /**
+     * Returns an optional String representing the jpeg thumbnail of this location message
+     *
+     * @return a non empty optional if this message has a thumbnail
+     */
+    public @NotNull Optional<byte[]> thumbnail(){
+        return thumbnail.length == 0 ? Optional.empty() : Optional.of(thumbnail);
+    }
+
+    /**
+     * Returns an optional Integer representing the accuracy in meters of the coordinates of this location message
+     *
+     * @return a non empty optional if this message has an accuracy
+     */
+    public @NotNull Optional<Integer> accuracy(){
+        return accuracy == 0 ? Optional.empty() : Optional.of(accuracy);
+    }
+
+    /**
+     * Returns an optional Float representing the speed in meters per second of the device that sent this location message
+     *
+     * @return a non empty optional if this message has a speed
+     */
+    public @NotNull Optional<Float> speed(){
+        return speed == 0 ? Optional.empty() : Optional.of(speed);
     }
 }
