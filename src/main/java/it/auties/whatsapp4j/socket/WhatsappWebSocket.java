@@ -11,11 +11,12 @@ import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.model.*;
 import it.auties.whatsapp4j.request.impl.*;
 import it.auties.whatsapp4j.request.model.BinaryRequest;
-import it.auties.whatsapp4j.response.impl.*;
-import it.auties.whatsapp4j.response.model.BinaryResponse;
-import it.auties.whatsapp4j.response.model.JsonListResponse;
-import it.auties.whatsapp4j.response.model.JsonResponse;
-import it.auties.whatsapp4j.response.model.Response;
+import it.auties.whatsapp4j.response.impl.binary.ChatResponse;
+import it.auties.whatsapp4j.response.impl.json.*;
+import it.auties.whatsapp4j.response.model.binary.BinaryResponse;
+import it.auties.whatsapp4j.response.model.json.JsonListResponse;
+import it.auties.whatsapp4j.response.model.json.JsonResponse;
+import it.auties.whatsapp4j.response.model.common.Response;
 import it.auties.whatsapp4j.utils.Validate;
 import it.auties.whatsapp4j.utils.WhatsappQRCode;
 import jakarta.validation.constraints.NotNull;
@@ -373,7 +374,7 @@ public class WhatsappWebSocket {
     }
 
     private void handleList(@NotNull JsonListResponse response) {
-        whatsappManager.callOnListenerThread(() -> whatsappManager.listeners().forEach(whatsappListener -> whatsappListener.onListResponse(response)));
+        whatsappManager.callOnListenerThread(() -> whatsappManager.listeners().forEach(whatsappListener -> whatsappListener.onListResponse(response.content())));
     }
 
     public @NotNull Session session() {

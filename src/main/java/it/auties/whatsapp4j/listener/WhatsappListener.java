@@ -3,13 +3,14 @@ package it.auties.whatsapp4j.listener;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.model.*;
-import it.auties.whatsapp4j.response.impl.BlocklistResponse;
-import it.auties.whatsapp4j.response.impl.PhoneBatteryResponse;
-import it.auties.whatsapp4j.response.impl.PropsResponse;
-import it.auties.whatsapp4j.response.impl.UserInformationResponse;
-import it.auties.whatsapp4j.response.model.JsonListResponse;
+import it.auties.whatsapp4j.response.impl.json.BlocklistResponse;
+import it.auties.whatsapp4j.response.impl.json.PhoneBatteryResponse;
+import it.auties.whatsapp4j.response.impl.json.PropsResponse;
+import it.auties.whatsapp4j.response.impl.json.UserInformationResponse;
 import it.auties.whatsapp4j.socket.WhatsappWebSocket;
 import jakarta.validation.constraints.NotNull;
+
+import java.util.List;
 
 /**
  * This interface can be used to listen for events fired when new information is sent by WhatsappWeb's socket.
@@ -50,7 +51,7 @@ public interface WhatsappListener {
      *
      * @param response the list received as plain text by {@link WhatsappWebSocket}
      */
-    default void onListResponse(@NotNull JsonListResponse response) {
+    default void onListResponse(@NotNull List<Object> response) {
     }
 
     /**

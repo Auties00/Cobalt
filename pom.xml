@@ -77,7 +77,6 @@
         <maven-javadoc-plugin-version>3.2.0</maven-javadoc-plugin-version>
         <maven-deploy-plugin-version>2.8.2</maven-deploy-plugin-version>
         <delombok-plugin-version>1.18.18.0</delombok-plugin-version>
-        <moditech-plugin-version>1.0.0.RC1</moditech-plugin-version>
         <nexus-staging-maven-plugin-version>1.6.7</nexus-staging-maven-plugin-version>
         <lombok-version>1.18.20</lombok-version>
         <maven.jmod.version>3.0.0-alpha-1</maven.jmod.version>
@@ -197,28 +196,6 @@
                         <debug>true</debug>
                         <verbose>true</verbose>
                     </configuration>
-                </plugin>
-
-                <!-- Generate and attach a module info -->
-                <plugin>
-                    <groupId>org.moditect</groupId>
-                    <artifactId>moditect-maven-plugin</artifactId>
-                    <version>${moditech-plugin-version}</version>
-                    <executions>
-                        <execution>
-                            <id>add-module-infos</id>
-                            <phase>package</phase>
-                            <goals>
-                                <goal>add-module-info</goal>
-                            </goals>
-                            <configuration>
-                                <overwriteExistingFiles>true</overwriteExistingFiles>
-                                <module>
-                                    <moduleInfoFile>src/moditect/module-info.java</moduleInfoFile>
-                                </module>
-                            </configuration>
-                        </execution>
-                    </executions>
                 </plugin>
 
                 <!-- Deploy -->

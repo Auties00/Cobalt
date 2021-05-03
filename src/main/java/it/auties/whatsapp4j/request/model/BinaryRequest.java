@@ -5,7 +5,7 @@ import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.binary.BinaryFlag;
 import it.auties.whatsapp4j.binary.BinaryMetric;
 import it.auties.whatsapp4j.model.WhatsappNode;
-import it.auties.whatsapp4j.response.model.ResponseModel;
+import it.auties.whatsapp4j.response.model.common.ResponseModel;
 import jakarta.validation.constraints.NotNull;
 import jakarta.websocket.Session;
 import lombok.Getter;

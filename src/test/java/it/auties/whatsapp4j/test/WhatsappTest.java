@@ -1,12 +1,10 @@
 package it.auties.whatsapp4j.test;
 
-import com.google.zxing.Result;
-import com.google.zxing.client.result.VCardResultParser;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.model.*;
-import it.auties.whatsapp4j.response.impl.UserInformationResponse;
+import it.auties.whatsapp4j.response.impl.json.UserInformationResponse;
 import it.auties.whatsapp4j.utils.Validate;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import jakarta.validation.constraints.NotNull;
@@ -24,7 +22,6 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -139,8 +136,7 @@ public class WhatsappTest implements WhatsappListener {
     public void testFavouriteMessagesQuery() throws ExecutionException, InterruptedException {
         log.info("Loading 20 favourite messages...");
         var favouriteMessagesResponse = whatsappAPI.queryFavouriteMessagesInChat(contactChat, 20).get();
-        Assertions.assertTrue(favouriteMessagesResponse.data().isPresent(), "Cannot query favourite messages");
-        log.info("Loaded favourite messages: %s".formatted(favouriteMessagesResponse.data().get()));
+        log.info("Loaded favourite messages: %s".formatted(favouriteMessagesResponse.data()));
     }
 
     @Test
@@ -294,7 +290,7 @@ public class WhatsappTest implements WhatsappListener {
     @Order(22)
     public void testGroupQuery() throws InterruptedException, ExecutionException {
         log.info("Querying group %s...".formatted(group.jid()));
-        whatsappAPI.queryChat(group.jid()).get().data().orElseThrow(() -> new AssertionFailedError("Cannot query missing chat"));
+        whatsappAPI.queryChat(group.jid()).get();
         log.info("Queried group");
     }
 
@@ -428,7 +424,7 @@ public class WhatsappTest implements WhatsappListener {
     @Order(34)
     public void testGifMessage() throws ExecutionException, InterruptedException, IOException {
         log.info("Sending gif...");
-        var message = WhatsappGifMessage.newGifMessage()
+        var message = WhatsappVideoMessage.newGifMessage()
                 .chat(group)
                 .media(readBytes("http://techslides.com/demos/sample-videos/small.mp4"))
                 .create();

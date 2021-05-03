@@ -1,6 +1,6 @@
 package it.auties.whatsapp4j.socket;
 
-import it.auties.whatsapp4j.response.model.Response;
+import it.auties.whatsapp4j.response.model.common.Response;
 import jakarta.validation.constraints.NotNull;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.Decoder.Text;

@@ -5,7 +5,7 @@ import it.auties.whatsapp4j.model.WhatsappMediaConnection;
 import it.auties.whatsapp4j.model.WhatsappMediaMessage;
 import it.auties.whatsapp4j.model.WhatsappMediaMessageType;
 import it.auties.whatsapp4j.model.WhatsappMediaUpload;
-import it.auties.whatsapp4j.response.model.JsonResponse;
+import it.auties.whatsapp4j.response.model.json.JsonResponse;
 import jakarta.validation.constraints.NotNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;

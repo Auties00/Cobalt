@@ -3,7 +3,7 @@ package it.auties.whatsapp4j.socket;
 import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.binary.BinaryDecoder;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
-import it.auties.whatsapp4j.response.model.BinaryResponse;
+import it.auties.whatsapp4j.response.model.binary.BinaryResponse;
 import it.auties.whatsapp4j.utils.CypherUtils;
 import it.auties.whatsapp4j.utils.Validate;
 import jakarta.validation.constraints.NotNull;

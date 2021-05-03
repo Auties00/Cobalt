@@ -11,7 +11,8 @@ import it.auties.whatsapp4j.model.*;
 import it.auties.whatsapp4j.request.impl.SubscribeUserPresenceRequest;
 import it.auties.whatsapp4j.request.impl.UserQueryRequest;
 import it.auties.whatsapp4j.request.model.BinaryRequest;
-import it.auties.whatsapp4j.response.impl.*;
+import it.auties.whatsapp4j.response.impl.json.*;
+import it.auties.whatsapp4j.response.impl.binary.*;
 import it.auties.whatsapp4j.socket.WhatsappWebSocket;
 import it.auties.whatsapp4j.utils.Validate;
 import jakarta.validation.constraints.NotNull;
@@ -276,7 +277,7 @@ public class WhatsappAPI {
      */
     public @NotNull CompletableFuture<WhatsappChat> loadConversation(@NotNull WhatsappChat chat, int messageCount) {
         return chat.firstUserMessage().map(userMessage -> loadConversation(chat, userMessage, messageCount)).orElseGet(() -> queryChat(chat.jid()).thenApplyAsync(res -> {
-            chat.messages().addAll(res.data().orElseThrow().messages());
+            chat.messages().addAll(res.data().messages());
             return chat;
         }));
     }
@@ -292,7 +293,7 @@ public class WhatsappAPI {
     public @NotNull CompletableFuture<WhatsappChat> loadConversation(@NotNull WhatsappChat chat, @NotNull WhatsappUserMessage lastMessage, int messageCount) {
         var node = new WhatsappNode("query", attributes(attr("owner", lastMessage.sentByMe()), attr("index", lastMessage.id()), attr("type", "message"), attr("epoch", manager.tagAndIncrement()), attr("jid", chat.jid()), attr("kind", "before"), attr("count", messageCount)), null);
         return new BinaryRequest<MessagesResponse>(configuration, node, BinaryFlag.IGNORE, BinaryMetric.QUERY_MESSAGES) {}.send(socket.session()).thenApplyAsync(res -> {
-            chat.messages().addAll(res.data().orElseThrow());
+            chat.messages().addAll(res.data());
             return chat;
         });
     }

@@ -2,7 +2,7 @@ package it.auties.whatsapp4j.request.model;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
-import it.auties.whatsapp4j.response.model.JsonResponseModel;
+import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
 import jakarta.validation.constraints.NotNull;
 import jakarta.websocket.Session;
 import lombok.SneakyThrows;
