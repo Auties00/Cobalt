@@ -23,7 +23,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.ZonedDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
@@ -170,7 +169,7 @@ public class WhatsappTest implements WhatsappListener {
     @Order(12)
     public void testGroupCreation() throws InterruptedException, ExecutionException {
         log.info("Creating group...");
-        group = whatsappAPI.createGroup(BinaryArray.random(6).toHex(), contact).get();
+        group = whatsappAPI.createGroup("omega", contact).get();
         log.info("Created group: %s".formatted(group));
     }
 
@@ -189,7 +188,7 @@ public class WhatsappTest implements WhatsappListener {
     @Order(14)
     public void testChangeGroupName() throws InterruptedException, ExecutionException {
         log.info("Changing group name...");
-        var changeGroupResponse = whatsappAPI.changeGroupName(group, BinaryArray.random(6).toHex()).get();
+        var changeGroupResponse = whatsappAPI.changeGroupName(group, "omega").get();
         Assertions.assertEquals(200, changeGroupResponse.status(), "Cannot change group name: %s".formatted(changeGroupResponse));
         log.info("Changed group name");
     }
@@ -372,8 +371,8 @@ public class WhatsappTest implements WhatsappListener {
         log.info("Sending text...");
         var message = WhatsappTextMessage.newTextMessage()
                 .chat(group)
-                .text("Testing%n%s".formatted(WhatsappUtils.phoneNumberFromJid(contact.jid())))
-                .mentions(Collections.singletonList(contact))
+                .text("Testing%n@%s ".formatted(WhatsappUtils.phoneNumberFromJid(contact.bestName(WhatsappUtils.phoneNumberFromJid(contact.jid())))))
+                .mentions(List.of(contact))
                 .create();
         var textResponse = whatsappAPI.sendMessage(message).get();
         Assertions.assertEquals(200, textResponse.status(), "Cannot send text: %s".formatted(textResponse));

@@ -126,29 +126,6 @@ public class WhatsappUtils {
     }
 
     /**
-     * Returns the media url of a media message
-     *
-     * @param message the raw protobuf that holds a media
-     * @return a non null array of bytes
-     * @throws IllegalArgumentException if the input message is not a media file
-     */
-    public @NotNull Optional<String> readMediaCaption(WhatsappProtobuf.Message message) {
-        if (message.hasDocumentMessage() || message.hasStickerMessage() || message.hasAudioMessage()) {
-            return Optional.empty();
-        }
-
-        if (message.hasImageMessage()) {
-            return message.getImageMessage().hasCaption() ? Optional.of(message.getImageMessage().getCaption()) : Optional.empty();
-        }
-
-        if (message.hasVideoMessage()) {
-            return message.getVideoMessage().hasCaption() ? Optional.of(message.getVideoMessage().getCaption()) : Optional.empty();
-        }
-
-        throw new IllegalArgumentException("WhatsappAPI: Cannot extract media caption");
-    }
-
-    /**
      * Returns the media key of a media message
      *
      * @param message the raw protobuf that holds a media

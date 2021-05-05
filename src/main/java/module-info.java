@@ -18,9 +18,9 @@ module whatsapp4j {
     requires jakarta.validation;
     requires jakarta.xml.bind;
     requires jakarta.websocket.api;
+    requires org.bouncycastle.provider;
 
     requires static lombok;
-    requires org.bouncycastle.provider;
 
     opens it.auties.whatsapp4j.socket;
     opens it.auties.whatsapp4j.model;
