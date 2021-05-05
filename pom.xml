@@ -145,7 +145,7 @@
                 </executions>
             </plugin>
 
-            <!-- Delombok the project to prepare for javadocs generation -->
+            <!-- Delombok the project to prepare for javadoc generation -->
             <plugin>
                 <groupId>com.github.auties00</groupId>
                 <artifactId>delombok-plugin</artifactId>
