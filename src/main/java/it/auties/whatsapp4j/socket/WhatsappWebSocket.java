@@ -83,9 +83,12 @@ public class WhatsappWebSocket {
     }
 
     private void generateQrCode(@NotNull InitialResponse response) {
+        if(loggedIn){
+            return;
+        }
+
         Validate.isTrue(response.status() != 429, "Out of attempts to scan the QR code", IllegalStateException.class);
         CompletableFuture.delayedExecutor(response.ttl(), TimeUnit.MILLISECONDS).execute(() -> generateQrCode(response));
-
         Validate.isTrue(response.ref() != null, "Cannot find ref for QR code generation");
         qrCode.generateAndPrint(response.ref(), extractRawPublicKey(whatsappKeys.keyPair().getPublic()), whatsappKeys.clientId());
     }
@@ -309,8 +312,7 @@ public class WhatsappWebSocket {
 
     @SneakyThrows
     private void createMediaConnection() {
-        var connection = new MediaConnectionRequest<MediaConnectionResponse>(options) {
-        }.send(session()).get().connection();
+        var connection = new MediaConnectionRequest<MediaConnectionResponse>(options) {}.send(session()).get().connection();
         whatsappManager.mediaConnection(connection);
         scheduleMediaConnection(connection.ttl());
     }

@@ -41,6 +41,7 @@ public class WhatsappTest implements WhatsappListener {
     private static @NotNull WhatsappAPI whatsappAPI;
     private static @NotNull CountDownLatch latch;
     private static @NotNull String contactName;
+    private static boolean noKeys;
     private static @NotNull WhatsappContact contact;
     private static @NotNull WhatsappChat contactChat;
     private static @NotNull WhatsappChat group;
@@ -60,7 +61,8 @@ public class WhatsappTest implements WhatsappListener {
         Validate.isTrue(config.exists(), "Before running any unit test please create a file at %s and specify the name of the contact used for testing like this: contact=name", config.getPath(), FileNotFoundException.class);
         var props = new Properties();
         props.load(new FileReader(config));
-        contactName = (String) props.get("contact");
+        contactName = props.getProperty("contact");
+        noKeys = Boolean.parseBoolean(props.getProperty("no_keys"));
     }
 
     @Test
@@ -78,6 +80,17 @@ public class WhatsappTest implements WhatsappListener {
         whatsappAPI.connect();
         latch.await();
         log.info("Connected!");
+        deleteKeys();
+    }
+
+    private void deleteKeys() {
+        if (!noKeys) {
+            return;
+        }
+
+        log.info("Deleting keys from memory...");
+        whatsappAPI.keys().deleteKeysFromMemory();
+        log.info("Deleted keys from memory");
     }
 
     @Test
@@ -560,8 +573,11 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Override
+    @SneakyThrows
     public void onContactsReceived() {
         log.info("Got contacts!");
+        log.info("Creating group...");
+        log.info("Created group: %s".formatted(group));
         latch.countDown();
     }
 

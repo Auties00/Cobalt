@@ -1,4 +1,4 @@
-module whatsapp4j {
+open module whatsapp4j {
     exports it.auties.whatsapp4j.api;
     exports it.auties.whatsapp4j.listener;
     exports it.auties.whatsapp4j.response.impl.json;
@@ -21,15 +21,4 @@ module whatsapp4j {
     requires org.bouncycastle.provider;
 
     requires static lombok;
-
-    opens it.auties.whatsapp4j.socket;
-    opens it.auties.whatsapp4j.model;
-    opens it.auties.whatsapp4j.request.impl;
-    opens it.auties.whatsapp4j.request.model;
-    opens it.auties.whatsapp4j.binary;
-    opens it.auties.whatsapp4j.response.model.json;
-    opens it.auties.whatsapp4j.response.model.binary;
-    opens it.auties.whatsapp4j.response.model.common;
-    opens it.auties.whatsapp4j.response.impl.json;
-    opens it.auties.whatsapp4j.response.impl.binary;
 }
