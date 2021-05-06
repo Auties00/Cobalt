@@ -55,7 +55,7 @@ public final class WhatsappGenericMessage extends WhatsappUserMessage {
 
     private @NotNull List<Method> findCheckerMethods() {
         return Arrays.stream(info.getMessage().getClass().getMethods())
-                .filter(method -> Modifier.isPublic(method.getModifiers()) && method.getName().startsWith("has"))
+                .filter(method -> Modifier.isPublic(method.getModifiers()) && method.getName().startsWith("has") && boolean.class.isAssignableFrom(method.getReturnType()))
                 .toList();
     }
 

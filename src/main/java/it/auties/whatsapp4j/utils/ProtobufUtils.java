@@ -165,22 +165,7 @@ public class ProtobufUtils {
         return message.setStickerMessage(sticker).build();
     }
 
-    public @NotNull WhatsappProtobuf.Message createLocationMessage(@NotNull WhatsappCoordinates coordinates, String caption, byte[] thumbnail, boolean live, Integer accuracy, Float speed, WhatsappUserMessage quotedMessage, List<WhatsappContact> mentions, boolean forwarded) {
-        var message = WhatsappProtobuf.Message.newBuilder();
-        if(live){
-            var location = WhatsappProtobuf.LiveLocationMessage.newBuilder()
-                    .setContextInfo(createContextInfo(quotedMessage, mentions, forwarded))
-                    .setDegreesLatitude(coordinates.latitude())
-                    .setDegreesLongitude(coordinates.longitude());
-
-            if(caption != null) location.setCaption(caption);
-            if(thumbnail != null) location.setJpegThumbnail(ByteString.copyFrom(thumbnail));
-            if(accuracy != null) location.setAccuracyInMeters(accuracy);
-            if(speed != null) location.setSpeedInMps(speed);
-
-            return message.setLiveLocationMessage(location).build();
-        }
-
+    public @NotNull WhatsappProtobuf.Message createLocationMessage(@NotNull WhatsappCoordinates coordinates, String caption, byte[] thumbnail, Integer accuracy, Float speed, WhatsappUserMessage quotedMessage, List<WhatsappContact> mentions, boolean forwarded) {
         var location = WhatsappProtobuf.LocationMessage.newBuilder()
                 .setContextInfo(createContextInfo(quotedMessage, null, forwarded))
                 .setDegreesLatitude(coordinates.latitude())
@@ -190,7 +175,7 @@ public class ProtobufUtils {
         if(accuracy != null) location.setAccuracyInMeters(accuracy);
         if(speed != null) location.setSpeedInMps(speed);
 
-        return message.setLocationMessage(location).build();
+        return WhatsappProtobuf.Message.newBuilder().setLocationMessage(location).build();
     }
 
     public @NotNull WhatsappProtobuf.Message createGroupInviteMessage(@NotNull String jid, @NotNull String name, @NotNull String code, ZonedDateTime expiration, String caption, byte[] thumbnail, WhatsappUserMessage quotedMessage, List<WhatsappContact> mentions, boolean forwarded) {
@@ -198,11 +183,11 @@ public class ProtobufUtils {
                 .setContextInfo(createContextInfo(quotedMessage, mentions, forwarded))
                 .setGroupJid(jid)
                 .setGroupName(name)
-                .setCaption(Optional.ofNullable(caption).orElse(""))
-                .setInviteCode(code)
-                .setJpegThumbnail(Optional.ofNullable(thumbnail).map(ByteString::copyFrom).orElse(ByteString.EMPTY))
-                .setInviteExpiration(Optional.ofNullable(expiration).map(ChronoZonedDateTime::toEpochSecond).orElse(ZonedDateTime.now().plusDays(3).toEpochSecond()))
-                .build();
+                .setInviteCode(code);
+
+        if(thumbnail != null) invite.setJpegThumbnail(ByteString.copyFrom(thumbnail));
+        if(caption != null) invite.setCaption(caption);
+        if(expiration != null) invite.setInviteExpiration(expiration.toEpochSecond());
 
         return WhatsappProtobuf.Message.newBuilder().setGroupInviteMessage(invite).build();
     }

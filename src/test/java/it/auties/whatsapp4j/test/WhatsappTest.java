@@ -25,9 +25,12 @@ import java.nio.file.StandardOpenOption;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Properties;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * A simple class to check that the library is working
@@ -423,7 +426,7 @@ public class WhatsappTest implements WhatsappListener {
     @Order(34)
     public void testGifMessage() throws ExecutionException, InterruptedException, IOException {
         log.info("Sending gif...");
-        var message = WhatsappVideoMessage.newGifMessage()
+        var message = WhatsappGifMessage.newGifMessage()
                 .chat(group)
                 .media(readBytes("http://techslides.com/demos/sample-videos/small.mp4"))
                 .create();
@@ -467,9 +470,58 @@ public class WhatsappTest implements WhatsappListener {
         Assertions.assertEquals(200, textResponse.status(), "Cannot send contact message: %s".formatted(textResponse));
         log.info("Sent contact message");
     }
-    
+
     @Test
     @Order(37)
+    public void testLocationMessage() throws ExecutionException, InterruptedException {
+        log.info("Sending location message...");
+        var message = WhatsappLocationMessage.newLocationMessage()
+                .chat(group)
+                .coordinates(new WhatsappCoordinates(40.730610, 	-73.935242, 0))
+                .create();
+
+        var textResponse = whatsappAPI.sendMessage(message).get();
+        Assertions.assertEquals(200, textResponse.status(), "Cannot send location message: %s".formatted(textResponse));
+        log.info("Sent location message");
+    }
+
+    @Test
+    @Order(38)
+    public void testLiveLocationMessage() throws ExecutionException, InterruptedException {
+        log.info("Sending location message...");
+        var message = WhatsappLocationMessage.newLocationMessage()
+                .chat(group)
+                .coordinates(new WhatsappCoordinates(40.730610, 	-73.935242, 0))
+                .create();
+
+        var textResponse = whatsappAPI.sendMessage(message).get();
+        Assertions.assertEquals(200, textResponse.status(), "Cannot send location message: %s".formatted(textResponse));
+        log.info("Sent location message");
+    }
+
+    @Test
+    @Order(39)
+    public void testGroupInviteMessage() throws ExecutionException, InterruptedException {
+        log.info("Querying group invite code");
+        var code = whatsappAPI.queryGroupInviteCode(group).get().code();
+        log.info("Queried %s".formatted(code));
+
+        log.info("Sending group invite message...");
+        var message = WhatsappGroupInviteMessage.newGroupInviteMessage()
+                .chat(group)
+                .groupJid(group.jid())
+                .groupName(group.name())
+                .inviteCode(code)
+                .create();
+
+        System.out.println(message.info());
+        var textResponse = whatsappAPI.sendMessage(message).get();
+        Assertions.assertEquals(200, textResponse.status(), "Cannot send group invite message: %s".formatted(textResponse));
+        log.info("Sent group invite message");
+    }
+    
+    @Test
+    @Order(40)
     public void testEnableEphemeralMessages() throws ExecutionException, InterruptedException {
         log.info("Enabling ephemeral messages...");
         var ephemeralResponse = whatsappAPI.enableEphemeralMessages(group).get();
@@ -478,7 +530,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(38)
+    @Order(41)
     public void testDisableEphemeralMessages() throws ExecutionException, InterruptedException {
         log.info("Disabling ephemeral messages...");
         var ephemeralResponse = whatsappAPI.disableEphemeralMessages(group).get();
@@ -487,7 +539,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(39)
+    @Order(42)
     public void testLeave() throws ExecutionException, InterruptedException {
         log.info("Leaving group...");
         var ephemeralResponse = whatsappAPI.leave(group).get();

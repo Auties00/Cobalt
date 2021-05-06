@@ -41,7 +41,7 @@ public class WhatsappMessageFactory {
         }else if(message.hasAudioMessage()) {
             return new WhatsappAudioMessage(info);
         }else if(message.hasVideoMessage()) {
-            return new WhatsappVideoMessage(info);
+            return info.getMessage().getVideoMessage().hasGifPlayback() ? new WhatsappGifMessage(info) : new WhatsappVideoMessage(info);
         }else if(message.hasStickerMessage()){
             return new WhatsappStickerMessage(info);
         } else if (message.hasConversation() || message.hasExtendedTextMessage()) {

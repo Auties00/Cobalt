@@ -39,6 +39,7 @@ public abstract class UserQueryRequest<M extends JsonResponseModel> extends Json
         CHAT_PICTURE(List.of("ProfilePicThumb")),
         GROUP_METADATA(List.of("GroupMetadata")),
         USER_STATUS(List.of("Status")),
+        GROUP_INVITE_CODE(List.of("inviteCode")),
         GROUPS_IN_COMMON(List.of("group","common"));
 
         @Getter

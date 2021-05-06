@@ -76,7 +76,6 @@ public final class WhatsappLocationMessage extends WhatsappUserMessage {
      *
      * @param chat          the non null chat to which the new message should belong
      * @param coordinates   the non null coordinates of the new message
-     * @param live          whether the new message is live or not, be default false
      * @param speed         the speed in meters per second of the device that sent the new message, by default not defined
      * @param accuracy      the accuracy in meters of the coordinates that the new message wraps, by default not defined
      * @param caption       the caption of the new message, by default empty
@@ -85,8 +84,8 @@ public final class WhatsappLocationMessage extends WhatsappUserMessage {
      * @param forwarded     whether this message is forwarded or not, by default false
      */
     @Builder(builderMethodName = "newLocationMessage", buildMethodName = "create")
-    public WhatsappLocationMessage(@NotNull(message = "Cannot create a WhatsappLocationMessage with no chat") WhatsappChat chat, @NotNull(message = "Cannot create a WhatsappLocationMessage with no coordinates") WhatsappCoordinates coordinates, boolean live, Float speed, Integer accuracy, byte[] thumbnail, String caption, WhatsappUserMessage quotedMessage, List<WhatsappContact> captionMentions, boolean forwarded) {
-        this(ProtobufUtils.createMessageInfo(ProtobufUtils.createLocationMessage(coordinates, caption, thumbnail, live, accuracy, speed, quotedMessage, captionMentions, forwarded), chat.jid()));
+    public WhatsappLocationMessage(@NotNull(message = "Cannot create a WhatsappLocationMessage with no chat") WhatsappChat chat, @NotNull(message = "Cannot create a WhatsappLocationMessage with no coordinates") WhatsappCoordinates coordinates, Float speed, Integer accuracy, byte[] thumbnail, String caption, WhatsappUserMessage quotedMessage, List<WhatsappContact> captionMentions, boolean forwarded) {
+        this(ProtobufUtils.createMessageInfo(ProtobufUtils.createLocationMessage(coordinates, caption, thumbnail, accuracy, speed, quotedMessage, captionMentions, forwarded), chat.jid()));
     }
 
     /**

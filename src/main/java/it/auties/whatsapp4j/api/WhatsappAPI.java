@@ -215,6 +215,18 @@ public class WhatsappAPI {
     }
 
     /**
+     * Queries the invite code of a group
+     *
+     * @param chat the target group
+     * @return a CompletableFuture that resolves in a GroupInviteCodeResponse wrapping the status of the request and, if the status == 200, the requested data
+     * @throws IllegalArgumentException if the provided chat is not a group
+     */
+    public @NotNull CompletableFuture<GroupInviteCodeResponse> queryGroupInviteCode(@NotNull WhatsappChat chat) {
+        Validate.isTrue(chat.isGroup(), "WhatsappAPI: Cannot query invite code for %s as it's not a group", chat.jid());
+        return new UserQueryRequest<GroupInviteCodeResponse>(configuration, chat.jid(), UserQueryRequest.QueryType.GROUP_INVITE_CODE) {}.send(socket.session());
+    }
+
+    /**
      * Queries the groups in common with a contact
      *
      * @param contact the target contact
