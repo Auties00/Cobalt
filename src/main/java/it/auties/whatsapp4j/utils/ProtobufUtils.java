@@ -11,7 +11,6 @@ import java.io.ByteArrayInputStream;
 import java.net.URLConnection;
 import java.time.Instant;
 import java.time.ZonedDateTime;
-import java.time.chrono.ChronoZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -165,10 +164,11 @@ public class ProtobufUtils {
         return message.setStickerMessage(sticker).build();
     }
 
-    public @NotNull WhatsappProtobuf.Message createLocationMessage(@NotNull WhatsappCoordinates coordinates, String caption, byte[] thumbnail, Integer accuracy, Float speed, WhatsappUserMessage quotedMessage, List<WhatsappContact> mentions, boolean forwarded) {
+    public @NotNull WhatsappProtobuf.Message createLocationMessage(@NotNull WhatsappLocationCoordinates coordinates, String caption, byte[] thumbnail, Integer accuracy, Float speed, WhatsappUserMessage quotedMessage, List<WhatsappContact> mentions, boolean forwarded) {
         var location = WhatsappProtobuf.LocationMessage.newBuilder()
                 .setContextInfo(createContextInfo(quotedMessage, null, forwarded))
                 .setDegreesLatitude(coordinates.latitude())
+                .setComment(caption)
                 .setDegreesLongitude(coordinates.longitude());
 
         if(thumbnail != null) location.setJpegThumbnail(ByteString.copyFrom(thumbnail));

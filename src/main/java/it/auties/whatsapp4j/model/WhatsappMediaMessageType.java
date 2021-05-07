@@ -52,7 +52,7 @@ public enum WhatsappMediaMessageType {
      *
      * @return a non null array of bytes
      */
-    public byte @NotNull [] key(){
+    public byte @NotNull [] key() {
         var name = whatsappName();
         return "WhatsApp %s Keys".formatted(Character.toUpperCase(name.charAt(0)) + name.substring(1)).getBytes();
     }
@@ -63,7 +63,7 @@ public enum WhatsappMediaMessageType {
      *
      * @return a non null string
      */
-    public @NotNull String url(){
+    public @NotNull String url() {
         return WHATSAPP_URL.formatted(whatsappName());
     }
 
@@ -73,7 +73,7 @@ public enum WhatsappMediaMessageType {
      *
      * @return a non null string
      */
-    public @NotNull String whatsappName(){
+    public @NotNull String whatsappName() {
         return this == STICKER ? IMAGE.whatsappName() : this.name().toLowerCase();
     }
 }

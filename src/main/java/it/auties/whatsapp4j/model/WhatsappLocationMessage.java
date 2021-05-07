@@ -25,7 +25,7 @@ public final class WhatsappLocationMessage extends WhatsappUserMessage {
     /**
      * The coordinates of the location wrapped by this object
      */
-    private final @NotNull WhatsappCoordinates coordinates;
+    private final @NotNull WhatsappLocationCoordinates coordinates;
 
     /**
      * The caption of the message wrapped by this object
@@ -62,7 +62,7 @@ public final class WhatsappLocationMessage extends WhatsappUserMessage {
         var latitude = info.getMessage().hasLiveLocationMessage() ? info.getMessage().getLiveLocationMessage().getDegreesLatitude() : info.getMessage().getLocationMessage().getDegreesLatitude();
         var longitude = info.getMessage().hasLiveLocationMessage() ? info.getMessage().getLiveLocationMessage().getDegreesLongitude() : info.getMessage().getLocationMessage().getDegreesLongitude();
         var north = info.getMessage().hasLiveLocationMessage() ? info.getMessage().getLiveLocationMessage().getDegreesClockwiseFromMagneticNorth() : info.getMessage().getLocationMessage().getDegreesClockwiseFromMagneticNorth();
-        this.coordinates = new WhatsappCoordinates(latitude, longitude, north);
+        this.coordinates = new WhatsappLocationCoordinates(latitude, longitude, north);
         this.caption = info.getMessage().hasLiveLocationMessage() ? info.getMessage().getLiveLocationMessage().getCaption() : info.getMessage().getLocationMessage().getComment();
         this.thumbnail = info.getMessage().hasLiveLocationMessage() ? info.getMessage().getLiveLocationMessage().getJpegThumbnail().toByteArray() : info.getMessage().getLocationMessage().getJpegThumbnail().toByteArray();
         this.isLive = info.getMessage().hasLiveLocationMessage() || info.getMessage().getLocationMessage().getIsLive();
@@ -84,7 +84,7 @@ public final class WhatsappLocationMessage extends WhatsappUserMessage {
      * @param forwarded     whether this message is forwarded or not, by default false
      */
     @Builder(builderMethodName = "newLocationMessage", buildMethodName = "create")
-    public WhatsappLocationMessage(@NotNull(message = "Cannot create a WhatsappLocationMessage with no chat") WhatsappChat chat, @NotNull(message = "Cannot create a WhatsappLocationMessage with no coordinates") WhatsappCoordinates coordinates, Float speed, Integer accuracy, byte[] thumbnail, String caption, WhatsappUserMessage quotedMessage, List<WhatsappContact> captionMentions, boolean forwarded) {
+    public WhatsappLocationMessage(@NotNull(message = "Cannot create a WhatsappLocationMessage with no chat") WhatsappChat chat, @NotNull(message = "Cannot create a WhatsappLocationMessage with no coordinates") WhatsappLocationCoordinates coordinates, Float speed, Integer accuracy, byte[] thumbnail, String caption, WhatsappUserMessage quotedMessage, List<WhatsappContact> captionMentions, boolean forwarded) {
         this(ProtobufUtils.createMessageInfo(ProtobufUtils.createLocationMessage(coordinates, caption, thumbnail, accuracy, speed, quotedMessage, captionMentions, forwarded), chat.jid()));
     }
 

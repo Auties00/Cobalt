@@ -60,7 +60,7 @@ public final class WhatsappAudioMessage extends WhatsappMediaMessage {
      *
      * @return a non empty optional if this message has a length in seconds
      */
-    public @NotNull Optional<Long> title() {
+    public @NotNull Optional<Long> lengthInSeconds() {
         return lengthInSeconds == 0 ? Optional.empty() : Optional.of(lengthInSeconds);
     }
 

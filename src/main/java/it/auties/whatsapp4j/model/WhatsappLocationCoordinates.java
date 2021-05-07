@@ -5,5 +5,5 @@ package it.auties.whatsapp4j.model;
  * @param latitude  the latitude in degrees
  * @param longitude the longitude in degrees
  */
-public record WhatsappCoordinates(double latitude, double longitude, int degreesClockwiseFromMagneticNorth) {
+public record WhatsappLocationCoordinates(double latitude, double longitude, int degreesClockwiseFromMagneticNorth) {
 }

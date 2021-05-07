@@ -71,14 +71,13 @@ public abstract sealed class WhatsappUserMessage extends WhatsappMessage permits
      * @return a non empty optional {@link WhatsappContact} if this message wasn't sent by yourself
      */
     public @NotNull Optional<WhatsappContact> sender() {
-        var jid = senderJid();
-        return jid.isEmpty() ? Optional.empty() : MANAGER.findContactByJid(jid);
+        return MANAGER.findContactByJid(senderJid());
     }
 
     /**
      * Returns an optional String representing the {@link WhatsappContact#jid()} of the sender of this message
      *
-     * @return a non empty optional String
+     * @return a non empty String
      */
     public @NotNull String senderJid() {
         return info.hasParticipant() ? info.getParticipant() : info.getKey().hasParticipant() ? info.getKey().getParticipant() : info.getKey().getRemoteJid();

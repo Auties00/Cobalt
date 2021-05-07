@@ -25,12 +25,9 @@ import java.nio.file.StandardOpenOption;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Properties;
-import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * A simple class to check that the library is working
@@ -490,7 +487,7 @@ public class WhatsappTest implements WhatsappListener {
         log.info("Sending location message...");
         var message = WhatsappLocationMessage.newLocationMessage()
                 .chat(group)
-                .coordinates(new WhatsappCoordinates(40.730610, 	-73.935242, 0))
+                .coordinates(new WhatsappLocationCoordinates(40.730610, 	-73.935242, 0))
                 .create();
 
         var textResponse = whatsappAPI.sendMessage(message).get();
@@ -504,7 +501,7 @@ public class WhatsappTest implements WhatsappListener {
         log.info("Sending location message...");
         var message = WhatsappLocationMessage.newLocationMessage()
                 .chat(group)
-                .coordinates(new WhatsappCoordinates(40.730610, 	-73.935242, 0))
+                .coordinates(new WhatsappLocationCoordinates(40.730610, -73.935242, 0))
                 .create();
 
         var textResponse = whatsappAPI.sendMessage(message).get();
@@ -576,8 +573,6 @@ public class WhatsappTest implements WhatsappListener {
     @SneakyThrows
     public void onContactsReceived() {
         log.info("Got contacts!");
-        log.info("Creating group...");
-        log.info("Created group: %s".formatted(group));
         latch.countDown();
     }
 
