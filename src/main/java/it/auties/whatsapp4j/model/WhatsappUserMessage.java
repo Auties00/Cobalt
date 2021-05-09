@@ -1,6 +1,5 @@
 package it.auties.whatsapp4j.model;
 
-import it.auties.whatsapp4j.api.WhatsappAPI;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -15,7 +14,7 @@ import java.util.Optional;
 /**
  * A model class that represents a WhatsappMessage sent by a contact.
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
- * Instead, methods inside {@link WhatsappAPI} should be used.
+ * Instead, methods inside {@link it.auties.whatsapp4j.api.WhatsappAPI} should be used.
  */
 @EqualsAndHashCode(callSuper = true)
 @Accessors(fluent = true)

@@ -47,8 +47,8 @@ public final class WhatsappImageMessage extends WhatsappMediaMessage {
      * @param forwarded     whether this message is forwarded or not, by default false
      */
     @Builder(builderMethodName = "newImageMessage", buildMethodName = "create")
-    public WhatsappImageMessage(@NotNull(message = "Cannot create a WhatsappMediaMessage(Image) with no chat") WhatsappChat chat, byte @NotNull(message = "Cannot create a WhatsappMediaMessage(Image) with no image") [] media, String caption, String mimeType, WhatsappUserMessage quotedMessage, List<WhatsappContact> captionMentions, boolean forwarded) {
-        this(ProtobufUtils.createMessageInfo(ProtobufUtils.createImageMessage(media, mimeType, caption, quotedMessage, captionMentions, forwarded), chat.jid()));
+    public WhatsappImageMessage(@NotNull(message = "Cannot create a WhatsappMediaMessage(Image) with no chat") WhatsappChat chat, byte @NotNull(message = "Cannot create a WhatsappMediaMessage(Image) with no image") [] media, String caption, String mimeType, WhatsappUserMessage quotedMessage, boolean forwarded) {
+        this(ProtobufUtils.createMessageInfo(ProtobufUtils.createImageMessage(media, mimeType, caption, quotedMessage, forwarded), chat.jid()));
     }
 
     /**

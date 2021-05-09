@@ -31,7 +31,7 @@ import static it.auties.whatsapp4j.utils.WhatsappUtils.*;
 
 /**
  * A class used to interface a user to WhatsappWeb's WebSocket.
- * It provides various functionalities, including the possibility to query, set and modify data associated with the loaded session of whatsapp.
+ * It provides various functionalities, including the possibility to query, set and modify data associated with the loaded session of org.example.whatsapp.
  * It can be configured using a default configuration or a custom one.
  * Multiple instances of this class can be initialized, though it is not advisable as {@link WhatsappDataManager} is a singleton and cannot distinguish between the data associated with each session.
  */
@@ -183,7 +183,7 @@ public class WhatsappAPI {
     }
 
     /**
-     * Queries the written whatsapp status of a WhatsappContact
+     * Queries the written org.example.whatsapp status of a WhatsappContact
      *
      * @param contact the target contact
      * @return a CompletableFuture that resolves in a UserStatusResponse wrapping the text status of the target contact if the request was successful

@@ -97,7 +97,7 @@ public record BinaryEncoder(@NotNull List<Byte> cache) {
 
     private void writeString(@NotNull String token, boolean i) {
         var tokenIndex = BinaryTokens.SINGLE_BYTE.indexOf(token);
-        if (!i && token.equals("s.whatsapp.net")) {
+        if (!i && token.equals("s.org.example.whatsapp.net")) {
             writeToken(tokenIndex);
             return;
         }

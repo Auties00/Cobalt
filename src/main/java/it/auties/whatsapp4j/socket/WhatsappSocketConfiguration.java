@@ -15,7 +15,7 @@ public class WhatsappSocketConfiguration extends ClientEndpointConfig.Configurat
   public void beforeRequest(@NotNull Map<String, List<String>> headers) {
     headers.put("Origin", List.of("https://web.whatsapp.com"));
     headers.put("User-Agent", List.of("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36 Edg/90.0.818.51"));
-    headers.put("Host", List.of("web.whatsapp.com"));
+    headers.put("Host", List.of("web.org.example.whatsapp.com"));
     headers.put("Pragma", List.of("no-cache"));
     headers.put("Accept-Encoding", List.of("gzip, deflate, br"));
     headers.put("Accept-Language", List.of("en-US,en;q=0.9,hi;q=0.8"));

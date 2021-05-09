@@ -2,7 +2,7 @@
 
 ### What is WhatsappWeb4j
 
-WhatsappWeb4j is a standalone library built to interact with [WhatsappWeb](https://web.whatsapp.com/). This means that no browser, application or
+WhatsappWeb4j is a standalone library built to interact with [WhatsappWeb](https://web.org.example.whatsapp.com/). This means that no browser, application or
 any additional software is necessary to use this library. This library was built for [Java 16](https://openjdk.java.net/projects/jdk/16/) and [JakartaEE 9](https://jakarta.ee/release/9/). 
 Support for Java 11, the latest LTS as of this date, will come soon. Any help to this library is welcomed as long as the coding style of the project is respected. 
 
@@ -47,12 +47,12 @@ var api = new WhatsappAPI();
 Alternatively, you can provide a custom [WhatsappConfiguration](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/api/WhatsappConfiguration.html):
 ```java
 var configuration = WhatsappConfiguration.builder()
-        .whatsappUrl("wss://web.whatsapp.com/ws") // WhatsappWeb's WebSocket URL
+        .whatsappUrl("wss://web.org.example.whatsapp.com/ws") // WhatsappWeb's WebSocket URL
         .requestTag("requestTag") // The tag used for requests made to WhatsappWeb's WebSocket
         .description("Whatsapp4j") // The description provided to Whatsapp during the authentication process
         .shortDescription("W4J") // An acronym for the description
         .reconnectWhenDisconnected((reason) -> true) // Determines whether the connection should be reclaimed
-        .async(true) // Determines whether requests sent to whatsapp should be asyncronous or not
+        .async(true) // Determines whether requests sent to org.example.whatsapp should be asyncronous or not
         .build(); // Builds an instance of WhatsappConfiguration
 
 var api = new WhatsappAPI(configuration);

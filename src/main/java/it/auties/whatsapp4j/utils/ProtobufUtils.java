@@ -35,7 +35,7 @@ public class ProtobufUtils {
                 .build();
     }
 
-    public @NotNull WhatsappProtobuf.Message createTextMessage(@NotNull String text, WhatsappUserMessage quotedMessage, List<WhatsappContact> mentions, boolean forwarded){
+    public @NotNull WhatsappProtobuf.Message createTextMessage(@NotNull String text, WhatsappUserMessage quotedMessage, boolean forwarded){
         if (!forwarded && quotedMessage == null) {
             return WhatsappProtobuf.Message.newBuilder().setConversation(text).build();
         }
@@ -43,13 +43,13 @@ public class ProtobufUtils {
         return WhatsappProtobuf.Message.newBuilder()
                         .setExtendedTextMessage(WhatsappProtobuf.ExtendedTextMessage.newBuilder()
                                 .setText(text)
-                                .setContextInfo(createContextInfo(quotedMessage, mentions, forwarded))
+                                .setContextInfo(createContextInfo(quotedMessage, forwarded))
                                 .build())
                         .build();
 
     }
 
-    public @NotNull WhatsappProtobuf.Message createImageMessage(byte @NotNull [] media, String rawMimeType, String caption, WhatsappUserMessage quotedMessage, List<WhatsappContact> mentions, boolean forwarded){
+    public @NotNull WhatsappProtobuf.Message createImageMessage(byte @NotNull [] media, String rawMimeType, String caption, WhatsappUserMessage quotedMessage, boolean forwarded){
         var upload = CypherUtils.mediaEncrypt(MANAGER.mediaConnection(), media, WhatsappMediaMessageType.IMAGE);
         var message = WhatsappProtobuf.Message.newBuilder();
         var mimeType = Optional.ofNullable(rawMimeType).orElse(WhatsappMediaMessageType.IMAGE.defaultMimeType());
@@ -62,7 +62,7 @@ public class ProtobufUtils {
                 .setUrl(upload.url())
                 .setDirectPath(upload.directPath())
                 .setFileLength(media.length)
-                .setContextInfo(createContextInfo(quotedMessage, mentions, forwarded))
+                .setContextInfo(createContextInfo(quotedMessage, forwarded))
                 .setMimetype(mimeType)
                 .setScansSidecar(ByteString.copyFrom(upload.sidecar()))
                 .setJpegThumbnail(ByteString.copyFrom(media));
@@ -86,7 +86,7 @@ public class ProtobufUtils {
                 .setUrl(upload.url())
                 .setDirectPath(upload.directPath())
                 .setFileLength(media.length)
-                .setContextInfo(createContextInfo(quotedMessage, null, forwarded))
+                .setContextInfo(createContextInfo(quotedMessage, forwarded))
                 .setMimetype(mimeType)
                 .setTitle(title)
                 .setFileName(title);
@@ -109,7 +109,7 @@ public class ProtobufUtils {
                 .setUrl(upload.url())
                 .setDirectPath(upload.directPath())
                 .setFileLength(media.length)
-                .setContextInfo(createContextInfo(quotedMessage, null, forwarded))
+                .setContextInfo(createContextInfo(quotedMessage, forwarded))
                 .setMimetype(mimeType)
                 .setStreamingSidecar(ByteString.copyFrom(upload.sidecar()))
                 .setPtt(voiceMessage);
@@ -118,7 +118,7 @@ public class ProtobufUtils {
     }
 
     @SneakyThrows
-    public @NotNull WhatsappProtobuf.Message createVideoMessage(byte @NotNull [] media, String rawMimeType, WhatsappProtobuf.VideoMessage.VideoMessageAttribution attribution, String caption, WhatsappUserMessage quotedMessage, List<WhatsappContact> mentions, boolean forwarded){
+    public @NotNull WhatsappProtobuf.Message createVideoMessage(byte @NotNull [] media, String rawMimeType, WhatsappProtobuf.VideoMessage.VideoMessageAttribution attribution, String caption, WhatsappUserMessage quotedMessage, boolean forwarded){
         var upload = CypherUtils.mediaEncrypt(MANAGER.mediaConnection(), media, WhatsappMediaMessageType.VIDEO);
         var message = WhatsappProtobuf.Message.newBuilder();
         var mimeType = Optional.ofNullable(rawMimeType).orElse(WhatsappMediaMessageType.VIDEO.defaultMimeType());
@@ -131,13 +131,13 @@ public class ProtobufUtils {
                 .setUrl(upload.url())
                 .setDirectPath(upload.directPath())
                 .setFileLength(media.length)
-                .setContextInfo(createContextInfo(quotedMessage, mentions, forwarded))
+                .setContextInfo(createContextInfo(quotedMessage, forwarded))
                 .setMimetype(mimeType)
                 .setStreamingSidecar(ByteString.copyFrom(upload.sidecar()));
 
         if(caption != null) video.setCaption(caption);
         if(attribution != null){
-            Validate.isTrue(Optional.ofNullable(URLConnection.guessContentTypeFromStream(new ByteArrayInputStream(media))).map(guess -> !guess.equals("image/gif")).orElse(true) && !mimeType.equals("image/gif"), "Cannot create a WhatsappGifMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
+            Validate.isTrue(Optional.ofNullable(URLConnection.guessContentTypeFromStream(new ByteArrayInputStream(media))).map(guess -> !guess.equals("image/gif")).orElse(true) && !mimeType.equals("image/gif"), "Cannot create a WhatsappGifMessage with mime type image/gif: gif messages on org.example.whatsapp are videos played as gifs");
             video.setGifAttribution(attribution);
             video.setGifPlayback(true);
         }
@@ -157,16 +157,16 @@ public class ProtobufUtils {
                 .setUrl(upload.url())
                 .setDirectPath(upload.directPath())
                 .setFileLength(media.length)
-                .setContextInfo(createContextInfo(quotedMessage, null, forwarded))
+                .setContextInfo(createContextInfo(quotedMessage, forwarded))
                 .setFirstFrameSidecar(ByteString.copyFrom(upload.sidecar()))
                 .setFirstFrameLength(upload.sidecar().length);
 
         return message.setStickerMessage(sticker).build();
     }
 
-    public @NotNull WhatsappProtobuf.Message createLocationMessage(@NotNull WhatsappLocationCoordinates coordinates, String caption, byte[] thumbnail, Integer accuracy, Float speed, WhatsappUserMessage quotedMessage, List<WhatsappContact> mentions, boolean forwarded) {
+    public @NotNull WhatsappProtobuf.Message createLocationMessage(@NotNull WhatsappLocationCoordinates coordinates, String caption, byte[] thumbnail, Integer accuracy, Float speed, WhatsappUserMessage quotedMessage, boolean forwarded) {
         var location = WhatsappProtobuf.LocationMessage.newBuilder()
-                .setContextInfo(createContextInfo(quotedMessage, null, forwarded))
+                .setContextInfo(createContextInfo(quotedMessage, forwarded))
                 .setDegreesLatitude(coordinates.latitude())
                 .setComment(caption)
                 .setDegreesLongitude(coordinates.longitude());
@@ -178,9 +178,9 @@ public class ProtobufUtils {
         return WhatsappProtobuf.Message.newBuilder().setLocationMessage(location).build();
     }
 
-    public @NotNull WhatsappProtobuf.Message createGroupInviteMessage(@NotNull String jid, @NotNull String name, @NotNull String code, ZonedDateTime expiration, String caption, byte[] thumbnail, WhatsappUserMessage quotedMessage, List<WhatsappContact> mentions, boolean forwarded) {
+    public @NotNull WhatsappProtobuf.Message createGroupInviteMessage(@NotNull String jid, @NotNull String name, @NotNull String code, ZonedDateTime expiration, String caption, byte[] thumbnail, WhatsappUserMessage quotedMessage, boolean forwarded) {
         var invite = WhatsappProtobuf.GroupInviteMessage.newBuilder()
-                .setContextInfo(createContextInfo(quotedMessage, mentions, forwarded))
+                .setContextInfo(createContextInfo(quotedMessage, forwarded))
                 .setGroupJid(jid)
                 .setGroupName(name)
                 .setInviteCode(code);
@@ -215,10 +215,8 @@ public class ProtobufUtils {
                 .build();
     }
 
-    private @NotNull WhatsappProtobuf.ContextInfo createContextInfo(WhatsappUserMessage quotedMessage, List<WhatsappContact> mentions, boolean forwarded){
+    private @NotNull WhatsappProtobuf.ContextInfo createContextInfo(WhatsappUserMessage quotedMessage, boolean forwarded){
         var builder =  WhatsappProtobuf.ContextInfo.newBuilder().setIsForwarded(forwarded);
-        if(mentions != null) builder.addAllMentionedJid(mentions.stream().map(WhatsappContact::jid).toList());
-
         if(quotedMessage == null){
             return builder.build();
         }

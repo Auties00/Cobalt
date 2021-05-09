@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- TODO: Change the group id to match yours, for example it.auties -->
+    <groupId>org.example</groupId>
+    <artifactId>code-tester-bot</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <!-- Sets the version of the project to JDK 16 -->
+    <properties>
+        <maven.compiler.source>16</maven.compiler.source>
+        <maven.compiler.target>16</maven.compiler.target>
+        <whatsapp4j-version>2.0-SNAPSHOT</whatsapp4j-version>
+    </properties>
+
+    <dependencies>
+        <!-- Adds WhatsappWeb4j as a dependency-->
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>whatsappweb4j</artifactId>
+            <version>${whatsapp4j-version}</version>
+        </dependency>
+    </dependencies>
+</project>

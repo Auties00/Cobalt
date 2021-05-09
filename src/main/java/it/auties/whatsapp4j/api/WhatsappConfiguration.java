@@ -25,7 +25,7 @@ public class WhatsappConfiguration {
      * This may change based on the region this API is being used in
      */
     @Default
-    private final @NotNull String whatsappUrl = "wss://web.whatsapp.com/ws";
+    private final @NotNull String whatsappUrl = "wss://web.org.example.whatsapp.com/ws";
 
     /**
      * The tag used to send messages to WhatsappWeb's WebSocket

@@ -41,13 +41,13 @@ public class WhatsappUtils {
     }
 
     /**
-     * Parses c.us jids to standard whatsapp jids
+     * Parses c.us jids to standard org.example.whatsapp jids
      *
      * @param jid the input jid
      * @return a non null String
      */
     public @NotNull String parseJid(@NotNull String jid) {
-        return jid.replaceAll("@c.us", "@s.whatsapp.net");
+        return jid.replaceAll("@c.us", "@s.org.example.whatsapp.net");
     }
 
     /**

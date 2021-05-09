@@ -58,8 +58,8 @@ public sealed class WhatsappVideoMessage extends WhatsappMediaMessage permits Wh
      * @param forwarded     whether this message is forwarded or not, by default false
      */
     @Builder(builderMethodName = "newVideoMessage", buildMethodName = "create")
-    public WhatsappVideoMessage(@NotNull(message = "Cannot create a WhatsappMediaMessage(Video) with no chat") WhatsappChat chat, byte @NotNull(message = "Cannot create a WhatsappMediaMessage(Video) with no video") [] media, String caption, String mimeType, WhatsappUserMessage quotedMessage, List<WhatsappContact> captionMentions, boolean forwarded) {
-        this(ProtobufUtils.createMessageInfo(ProtobufUtils.createVideoMessage(media, mimeType, null, caption, quotedMessage, captionMentions, forwarded), chat.jid()));
+    public WhatsappVideoMessage(@NotNull(message = "Cannot create a WhatsappMediaMessage(Video) with no chat") WhatsappChat chat, byte @NotNull(message = "Cannot create a WhatsappMediaMessage(Video) with no video") [] media, String caption, String mimeType, WhatsappUserMessage quotedMessage, boolean forwarded) {
+        this(ProtobufUtils.createMessageInfo(ProtobufUtils.createVideoMessage(media, mimeType, null, caption, quotedMessage, forwarded), chat.jid()));
     }
 
     /**

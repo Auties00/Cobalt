@@ -84,8 +84,8 @@ public final class WhatsappLocationMessage extends WhatsappUserMessage {
      * @param forwarded     whether this message is forwarded or not, by default false
      */
     @Builder(builderMethodName = "newLocationMessage", buildMethodName = "create")
-    public WhatsappLocationMessage(@NotNull(message = "Cannot create a WhatsappLocationMessage with no chat") WhatsappChat chat, @NotNull(message = "Cannot create a WhatsappLocationMessage with no coordinates") WhatsappLocationCoordinates coordinates, Float speed, Integer accuracy, byte[] thumbnail, String caption, WhatsappUserMessage quotedMessage, List<WhatsappContact> captionMentions, boolean forwarded) {
-        this(ProtobufUtils.createMessageInfo(ProtobufUtils.createLocationMessage(coordinates, caption, thumbnail, accuracy, speed, quotedMessage, captionMentions, forwarded), chat.jid()));
+    public WhatsappLocationMessage(@NotNull(message = "Cannot create a WhatsappLocationMessage with no chat") WhatsappChat chat, @NotNull(message = "Cannot create a WhatsappLocationMessage with no coordinates") WhatsappLocationCoordinates coordinates, Float speed, Integer accuracy, byte[] thumbnail, String caption, WhatsappUserMessage quotedMessage, boolean forwarded) {
+        this(ProtobufUtils.createMessageInfo(ProtobufUtils.createLocationMessage(coordinates, caption, thumbnail, accuracy, speed, quotedMessage, forwarded), chat.jid()));
     }
 
     /**

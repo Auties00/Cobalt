@@ -50,7 +50,7 @@ public final class WhatsappGifMessage extends WhatsappVideoMessage {
      * @throws IllegalArgumentException if {@code mimeType} == image/gif or if the media is detected to be a gif file
      */
     @Builder(builderMethodName = "newGifMessage", buildMethodName = "create")
-    public WhatsappGifMessage(@NotNull(message = "Cannot create a WhatsappMediaMessage(Gif) with no chat") WhatsappChat chat, byte @NotNull(message = "Cannot create a WhatsappMediaMessage(Gif) with no image") [] media, String mimeType, VideoMessageAttribution attribution, String caption, WhatsappUserMessage quotedMessage, List<WhatsappContact> captionMentions, boolean forwarded) {
-        this(ProtobufUtils.createMessageInfo(ProtobufUtils.createVideoMessage(media, mimeType, Optional.ofNullable(attribution).orElse(VideoMessageAttribution.NONE), caption, quotedMessage, captionMentions, forwarded), chat.jid()));
+    public WhatsappGifMessage(@NotNull(message = "Cannot create a WhatsappMediaMessage(Gif) with no chat") WhatsappChat chat, byte @NotNull(message = "Cannot create a WhatsappMediaMessage(Gif) with no image") [] media, String mimeType, VideoMessageAttribution attribution, String caption, WhatsappUserMessage quotedMessage, boolean forwarded) {
+        this(ProtobufUtils.createMessageInfo(ProtobufUtils.createVideoMessage(media, mimeType, Optional.ofNullable(attribution).orElse(VideoMessageAttribution.NONE), caption, quotedMessage, forwarded), chat.jid()));
     }
 }

@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * A model class that represents a WhatsappMessage sent by a contact and that holds a whatsapp group invite inside.
+ * A model class that represents a WhatsappMessage sent by a contact and that holds a org.example.whatsapp group invite inside.
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
  * Instead, methods inside {@link WhatsappAPI} should be used.
  */
@@ -58,7 +58,7 @@ public final class WhatsappGroupInviteMessage extends WhatsappUserMessage {
     private final @NotNull ZonedDateTime expiration;
     
     /**
-     * Constructs a WhatsappUserMessage from a raw protobuf object if it holds an invitation for a whatsapp group
+     * Constructs a WhatsappUserMessage from a raw protobuf object if it holds an invitation for a org.example.whatsapp group
      *
      * @param info the raw protobuf to wrap
      */
@@ -88,8 +88,8 @@ public final class WhatsappGroupInviteMessage extends WhatsappUserMessage {
      * @param forwarded        whether this message is forwarded or not, by default false
      */
     @Builder(builderMethodName = "newGroupInviteMessage", buildMethodName = "create")
-    public WhatsappGroupInviteMessage(@NotNull(message = "Cannot create a WhatsappGroupInviteMessage with no chat") WhatsappChat chat, @NotNull(message = "Cannot create a WhatsappGroupInviteMessage with no group jid")  String groupJid, @NotNull(message = "Cannot create a WhatsappGroupInviteMessage with no group name")  String groupName, @NotNull(message = "Cannot create a WhatsappGroupInviteMessage with no invite code, please check WhatsappAPI#queryGroupInviteCode")  String inviteCode, ZonedDateTime inviteExpiration, String inviteCaption, byte[] inviteThumbnail, WhatsappUserMessage quotedMessage, List<WhatsappContact> inviteCaptionMentions, boolean forwarded) {
-        this(ProtobufUtils.createMessageInfo(ProtobufUtils.createGroupInviteMessage(groupJid, groupName, inviteCode, inviteExpiration, inviteCaption, inviteThumbnail, quotedMessage, inviteCaptionMentions, forwarded), chat.jid()));
+    public WhatsappGroupInviteMessage(@NotNull(message = "Cannot create a WhatsappGroupInviteMessage with no chat") WhatsappChat chat, @NotNull(message = "Cannot create a WhatsappGroupInviteMessage with no group jid")  String groupJid, @NotNull(message = "Cannot create a WhatsappGroupInviteMessage with no group name")  String groupName, @NotNull(message = "Cannot create a WhatsappGroupInviteMessage with no invite code, please check WhatsappAPI#queryGroupInviteCode")  String inviteCode, ZonedDateTime inviteExpiration, String inviteCaption, byte[] inviteThumbnail, WhatsappUserMessage quotedMessage, boolean forwarded) {
+        this(ProtobufUtils.createMessageInfo(ProtobufUtils.createGroupInviteMessage(groupJid, groupName, inviteCode, inviteExpiration, inviteCaption, inviteThumbnail, quotedMessage, forwarded), chat.jid()));
     }
 
     /**

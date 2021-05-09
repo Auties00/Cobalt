@@ -32,19 +32,20 @@ import java.util.concurrent.ExecutionException;
 /**
  * A simple class to check that the library is working
  */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Log
 @TestMethodOrder(OrderAnnotation.class)
 public class WhatsappTest implements WhatsappListener {
-    private static @NotNull WhatsappAPI whatsappAPI;
-    private static @NotNull CountDownLatch latch;
-    private static @NotNull String contactName;
-    private static boolean noKeys;
-    private static @NotNull WhatsappContact contact;
-    private static @NotNull WhatsappChat contactChat;
-    private static @NotNull WhatsappChat group;
+    private @NotNull WhatsappAPI whatsappAPI;
+    private @NotNull CountDownLatch latch;
+    private @NotNull String contactName;
+    private boolean noKeys;
+    private @NotNull WhatsappContact contact;
+    private @NotNull WhatsappChat contactChat;
+    private @NotNull WhatsappChat group;
 
     @BeforeAll
-    public static void init() {
+    public void init() {
         loadContactName();
         log.info("Initializing api to start testing...");
         whatsappAPI = new WhatsappAPI();
@@ -52,14 +53,19 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @SneakyThrows
-    private static void loadContactName() {
+    private void loadContactName() {
         log.info("Loading configuration file...");
+
         var config = new File(Path.of(".").toRealPath().toFile(), "/.test/config.properties");
         Validate.isTrue(config.exists(), "Before running any unit test please create a file at %s and specify the name of the contact used for testing like this: contact=name", config.getPath(), FileNotFoundException.class);
+
         var props = new Properties();
         props.load(new FileReader(config));
-        contactName = props.getProperty("contact");
-        noKeys = Boolean.parseBoolean(props.getProperty("no_keys"));
+
+        this.contactName = props.getProperty("contact");
+        this.noKeys = Boolean.parseBoolean(props.getProperty("no_keys"));
+
+        log.info("Loaded configuration file");
     }
 
     @Test
@@ -385,7 +391,6 @@ public class WhatsappTest implements WhatsappListener {
         var message = WhatsappTextMessage.newTextMessage()
                 .chat(group)
                 .text("Testing%n@%s ".formatted(WhatsappUtils.phoneNumberFromJid(contact.bestName(WhatsappUtils.phoneNumberFromJid(contact.jid())))))
-                .mentions(List.of(contact))
                 .create();
         var textResponse = whatsappAPI.sendMessage(message).get();
         Assertions.assertEquals(200, textResponse.status(), "Cannot send text: %s".formatted(textResponse));
