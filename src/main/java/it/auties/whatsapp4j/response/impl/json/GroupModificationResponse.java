@@ -1,7 +1,6 @@
 package it.auties.whatsapp4j.response.impl.json;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.whatsapp4j.response.impl.json.ModificationForParticipant;
 import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
 
 import java.util.List;

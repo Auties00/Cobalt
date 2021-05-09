@@ -1,10 +1,6 @@
 package it.auties.whatsapp4j.response.impl.json;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
-import jakarta.validation.constraints.NotNull;
-
-import java.util.Optional;
 
 /**
  * A json model that contains information about the invite code of a group

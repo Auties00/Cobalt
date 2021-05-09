@@ -2,7 +2,10 @@ package it.auties.whatsapp4j.utils;
 
 import com.google.protobuf.ByteString;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
-import it.auties.whatsapp4j.model.*;
+import it.auties.whatsapp4j.model.WhatsappLocationCoordinates;
+import it.auties.whatsapp4j.model.WhatsappMediaMessageType;
+import it.auties.whatsapp4j.model.WhatsappProtobuf;
+import it.auties.whatsapp4j.model.WhatsappUserMessage;
 import jakarta.validation.constraints.NotNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;

@@ -1,7 +1,5 @@
 package it.auties.whatsapp4j.response.impl.json;
 
-import it.auties.whatsapp4j.response.impl.json.UserInformationResponse;
-
 /**
  * A json model that contains information about the features available to the user linked with this session
  * This record should only be used by {@link UserInformationResponse}

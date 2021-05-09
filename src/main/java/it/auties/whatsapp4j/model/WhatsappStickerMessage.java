@@ -5,7 +5,6 @@ import it.auties.whatsapp4j.utils.ProtobufUtils;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 

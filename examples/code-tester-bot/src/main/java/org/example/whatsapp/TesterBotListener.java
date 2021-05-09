@@ -4,17 +4,16 @@ import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.listener.RegisterListener;
 import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.model.WhatsappChat;
-import it.auties.whatsapp4j.model.WhatsappContact;
 import it.auties.whatsapp4j.model.WhatsappMessage;
 import it.auties.whatsapp4j.model.WhatsappTextMessage;
-import it.auties.whatsapp4j.response.impl.json.ModificationForParticipant;
-import jakarta.validation.constraints.NotNull;
 
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
-import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 

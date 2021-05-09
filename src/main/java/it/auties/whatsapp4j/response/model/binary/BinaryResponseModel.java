@@ -8,8 +8,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
-import java.util.Optional;
-
 /**
  * An abstract class to represent a class that may represent a WhatsappNode sent by WhatsappWeb's WebSocket
  *
