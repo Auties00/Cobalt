@@ -39,8 +39,7 @@ public class RegisterListenerProcessor {
 
     @SneakyThrows
     private @NotNull Stream<Class<?>> findClassesInPackage(@NotNull Package pack){
-        return StreamSupport
-                .stream(FILE_MANAGER.list(CLASS_LOCATION, pack.getName(), Set.of(JavaFileObject.Kind.CLASS), true).spliterator(), true)
+        return StreamSupport.stream(FILE_MANAGER.list(CLASS_LOCATION, pack.getName(), Set.of(JavaFileObject.Kind.CLASS), true).spliterator(), true)
                 .map(RegisterListenerProcessor::loadClassFromFile)
                 .filter(Optional::isPresent)
                 .map(Optional::get);
@@ -55,26 +54,22 @@ public class RegisterListenerProcessor {
     }
 
     private boolean isListener(@NotNull Class<?> clazz) {
-        return clazz.isAnnotationPresent(RegisterListener.class) && WhatsappListener.class.isAssignableFrom(clazz);
+        return clazz.isAnnotationPresent(RegisterListener.class);
     }
 
     private @NotNull Class<? extends WhatsappListener> cast(@NotNull Class<?> clazz){
         try{
             return clazz.asSubclass(WhatsappListener.class);
         }catch (ClassCastException ex){
-            throw new RuntimeException("WhatsappAPI: Cannot initialize class %s, classes annotated with @RegisterListener should implement WhatsappListener(how did this even get through?)".formatted(clazz.getName()));
+            throw new RuntimeException("WhatsappAPI: Cannot initialize class %s, classes annotated with @RegisterListener should implement WhatsappListener".formatted(clazz.getName()));
         }
     }
 
     private @NotNull WhatsappListener newInstance(@NotNull Class<? extends WhatsappListener> clazz){
         try {
             return clazz.getDeclaredConstructor().newInstance();
-        }catch (IllegalAccessException | InstantiationException | InvocationTargetException | NoSuchMethodException e) {
-            throw new RuntimeException("WhatsappAPI: Cannot initialize class %s%s".formatted(clazz.getName(), parseError(e)));
+        } catch (IllegalAccessException | InstantiationException | InvocationTargetException | NoSuchMethodException operationException) {
+            throw new RuntimeException("WhatsappAPI: Cannot initialize class %s".formatted(clazz.getName()), operationException);
         }
-    }
-
-    private @NotNull String parseError(@NotNull ReflectiveOperationException e) {
-        return Optional.ofNullable(e.getMessage()).map(" with error %s"::formatted).orElse("");
     }
 }

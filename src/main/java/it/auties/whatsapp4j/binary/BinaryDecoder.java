@@ -6,9 +6,10 @@ import it.auties.whatsapp4j.utils.Validate;
 import jakarta.validation.constraints.NotNull;
 import lombok.SneakyThrows;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 

@@ -19,7 +19,7 @@ public class WhatsappBinaryMessageDecoder implements Binary<BinaryResponse> {
 
     @Override
     public BinaryResponse decode(@NotNull ByteBuffer msg) throws DecodeException {
-        Validate.isTrue(msg.get(0) != '!', "Server pong from org.example.whatsapp, why did this get through?");
+        Validate.isTrue(msg.get(0) != '!', "Server pong from whatsapp, why did this get through?");
 
         var binaryMessage = BinaryArray.forArray(msg.array());
         var tagAndMessagePair = binaryMessage.indexOf(',').map(binaryMessage::split).orElseThrow();

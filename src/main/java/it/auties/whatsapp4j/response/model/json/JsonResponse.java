@@ -32,7 +32,7 @@ public final class JsonResponse extends Response<Map<String, ?>> {
             var index = json.indexOf("{");
             return new JsonResponse("json", "json", index == -1 ? Map.of() : JACKSON.readValue(json.substring(index), new TypeReference<>() {}));
         } catch (JsonProcessingException ex) {
-            throw new IllegalArgumentException("WhatsappAPI: Cannot deserialize %s into a JsonResponse with error %s".formatted(json, ex.getMessage()));
+            throw new IllegalArgumentException("WhatsappAPI: Cannot deserialize %s into a JsonResponse".formatted(json), ex);
         }
     }
 
@@ -102,7 +102,7 @@ public final class JsonResponse extends Response<Map<String, ?>> {
         try {
             return JACKSON.convertValue(content, clazz);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Cannot decode %s to %s with error %s".formatted(content(), clazz.getName(), e.getMessage()));
+            throw new IllegalArgumentException("Cannot convert JsonResponse with content %s to %s".formatted(content(), clazz.getName()), e);
         }
     }
 }

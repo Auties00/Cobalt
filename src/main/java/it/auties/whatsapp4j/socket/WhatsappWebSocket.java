@@ -25,6 +25,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
+import lombok.extern.java.Log;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -52,6 +53,7 @@ import static it.auties.whatsapp4j.utils.WhatsappUtils.*;
 @RequiredArgsConstructor
 @Data
 @Accessors(fluent = true)
+@Log
 public class WhatsappWebSocket {
     private Session session;
     private boolean loggedIn;
@@ -113,7 +115,7 @@ public class WhatsappWebSocket {
         var signedChallenge = hmacSha256(challenge, Objects.requireNonNull(whatsappKeys.macKey()));
 
         var request = new SolveChallengeRequest<SimpleStatusResponse>(options, whatsappKeys, signedChallenge) {};
-        request.send(session()).thenAccept(result -> Validate.isTrue(result.status() == 200, "Could not solve org.example.whatsapp challenge for server and client token renewal: %s".formatted(result)));
+        request.send(session()).thenAccept(result -> Validate.isTrue(result.status() == 200, "Could not solve whatsapp challenge for server and client token renewal: %s".formatted(result)));
     }
 
     private void login(@NotNull UserInformationResponse response) {
@@ -135,6 +137,7 @@ public class WhatsappWebSocket {
 
     @OnMessage
     public void onMessage(@NotNull Response<?> response) {
+        log.info(response.toString());
         if (response instanceof JsonListResponse listResponse) {
             handleList(listResponse);
             return;
@@ -179,14 +182,14 @@ public class WhatsappWebSocket {
     }
 
     public void connect() {
-        Validate.isTrue(!loggedIn, "WhatsappAPI: Cannot establish a connection with org.example.whatsapp as one already exists", IllegalStateException.class);
+        Validate.isTrue(!loggedIn, "WhatsappAPI: Cannot establish a connection with whatsapp as one already exists", IllegalStateException.class);
         openConnection();
         pingService.scheduleAtFixedRate(this::sendPing, 0, 1, TimeUnit.MINUTES);
     }
 
     @SneakyThrows
     public void disconnect(String reason, boolean logout, boolean reconnect) {
-        Validate.isTrue(loggedIn, "WhatsappAPI: Cannot terminate the connection with org.example.whatsapp as it doesn't exist", IllegalStateException.class);
+        Validate.isTrue(loggedIn, "WhatsappAPI: Cannot terminate the connection with whatsapp as it doesn't exist", IllegalStateException.class);
         whatsappManager.clear();
         if (logout) new LogOutRequest(options) {
         }.send(session()).thenRun(whatsappKeys::deleteKeysFromMemory);

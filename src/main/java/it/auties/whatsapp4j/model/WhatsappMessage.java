@@ -71,7 +71,7 @@ public abstract class WhatsappMessage {
     }
 
     /**
-     * Returns whether this message was sent by a user or by org.example.whatsapp
+     * Returns whether this message was sent by a user or by whatsapp
      *
      * @return true if the message was sent by a user
      */

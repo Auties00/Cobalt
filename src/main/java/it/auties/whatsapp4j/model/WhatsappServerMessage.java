@@ -34,7 +34,7 @@ public final class WhatsappServerMessage extends WhatsappMessage {
     }
 
     /**
-     * Returns always an empty optional as a message sent by org.example.whatsapp cannot have context
+     * Returns always an empty optional as a message sent by whatsapp cannot have context
      *
      * @return an empty optional
      */

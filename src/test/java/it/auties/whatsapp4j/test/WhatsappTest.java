@@ -575,7 +575,6 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Override
-    @SneakyThrows
     public void onContactsReceived() {
         log.info("Got contacts!");
         latch.countDown();

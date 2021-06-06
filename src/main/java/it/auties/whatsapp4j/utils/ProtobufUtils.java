@@ -140,7 +140,7 @@ public class ProtobufUtils {
 
         if(caption != null) video.setCaption(caption);
         if(attribution != null){
-            Validate.isTrue(Optional.ofNullable(URLConnection.guessContentTypeFromStream(new ByteArrayInputStream(media))).map(guess -> !guess.equals("image/gif")).orElse(true) && !mimeType.equals("image/gif"), "Cannot create a WhatsappGifMessage with mime type image/gif: gif messages on org.example.whatsapp are videos played as gifs");
+            Validate.isTrue(Optional.ofNullable(URLConnection.guessContentTypeFromStream(new ByteArrayInputStream(media))).map(guess -> !guess.equals("image/gif")).orElse(true) && !mimeType.equals("image/gif"), "Cannot create a WhatsappGifMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
             video.setGifAttribution(attribution);
             video.setGifPlayback(true);
         }

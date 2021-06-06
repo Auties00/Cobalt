@@ -17,7 +17,7 @@ import java.time.ZonedDateTime;
 import java.util.Optional;
 
 /**
- * A model class that represents a WhatsappMessage sent by a contact and that holds a org.example.whatsapp group invite inside.
+ * A model class that represents a WhatsappMessage sent by a contact and that holds a whatsapp group invite inside.
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
  * Instead, methods inside {@link WhatsappAPI} should be used.
  */
@@ -57,7 +57,7 @@ public final class WhatsappGroupInviteMessage extends WhatsappUserMessage {
     private final @NotNull ZonedDateTime expiration;
     
     /**
-     * Constructs a WhatsappUserMessage from a raw protobuf object if it holds an invitation for a org.example.whatsapp group
+     * Constructs a WhatsappUserMessage from a raw protobuf object if it holds an invitation for a whatsapp group
      *
      * @param info the raw protobuf to wrap
      */

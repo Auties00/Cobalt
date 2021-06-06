@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * A utility class used to generate QR codes to authenticate with org.example.whatsapp
+ * A utility class used to generate QR codes to authenticate with whatsapp
  */
 public class WhatsappQRCode {
     private String ref;
