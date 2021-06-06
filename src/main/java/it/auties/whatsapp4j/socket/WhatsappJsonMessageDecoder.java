@@ -7,7 +7,7 @@ import jakarta.websocket.Decoder.Text;
 
 public class WhatsappJsonMessageDecoder implements Text<Response<?>> {
     @Override
-    public Response<?> decode(@NotNull String msg) throws DecodeException {
+    public Response<?> decode(@NotNull String msg) {
         return Response.fromTaggedResponse(msg);
     }
 

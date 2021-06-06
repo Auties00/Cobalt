@@ -13,5 +13,4 @@ import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
  * </ul>
  */
 public sealed interface ResponseModel permits BinaryResponseModel, JsonResponseModel {
-
 }

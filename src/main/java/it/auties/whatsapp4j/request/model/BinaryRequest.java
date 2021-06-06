@@ -4,7 +4,7 @@ import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.binary.BinaryFlag;
 import it.auties.whatsapp4j.binary.BinaryMetric;
-import it.auties.whatsapp4j.model.WhatsappNode;
+import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.response.model.common.ResponseModel;
 import jakarta.validation.constraints.NotNull;
 import jakarta.websocket.Session;
@@ -20,8 +20,9 @@ import java.util.concurrent.CompletableFuture;
  * @param <M> the type of the model
  */
 @Accessors(fluent = true, chain = true)
-public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends Request<WhatsappNode, M>{
-    private final @NotNull @Getter WhatsappNode node;
+public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends Request<Node, M>{
+    private final @NotNull @Getter
+    Node node;
     private final @NotNull @Getter BinaryFlag flag;
     private final @NotNull @Getter BinaryMetric[] tags;
 
@@ -33,7 +34,7 @@ public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends 
      * @param flag the flag of this request
      * @param tags the tags for this request
      */
-    protected BinaryRequest(@NotNull WhatsappConfiguration configuration, @NotNull String tag, @NotNull WhatsappNode node, @NotNull BinaryFlag flag, @NotNull BinaryMetric... tags) {
+    protected BinaryRequest(@NotNull WhatsappConfiguration configuration, @NotNull String tag, @NotNull Node node, @NotNull BinaryFlag flag, @NotNull BinaryMetric... tags) {
         super(tag, configuration);
         this.node = node;
         this.flag = flag;
@@ -47,7 +48,7 @@ public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends 
      * @param flag the flag of this request
      * @param tags the tags for this request
      */
-    protected BinaryRequest(@NotNull WhatsappConfiguration configuration, @NotNull WhatsappNode node, @NotNull BinaryFlag flag, @NotNull BinaryMetric... tags) {
+    protected BinaryRequest(@NotNull WhatsappConfiguration configuration, @NotNull Node node, @NotNull BinaryFlag flag, @NotNull BinaryMetric... tags) {
         super(configuration);
         this.node = node;
         this.flag = flag;
@@ -60,7 +61,7 @@ public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends 
      * @return an object to send to WhatsappWeb's WebSocket
      */
     @Override
-    public WhatsappNode buildBody() {
+    public Node buildBody() {
         return node;
     }
 

@@ -1,14 +1,12 @@
 package it.auties.whatsapp4j.binary;
 
-import it.auties.whatsapp4j.model.WhatsappNode;
-import it.auties.whatsapp4j.model.WhatsappProtobuf;
+import it.auties.protobuf.decoder.ProtobufDecoder;
+import it.auties.whatsapp4j.protobuf.model.Node;
+import it.auties.whatsapp4j.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.utils.Validate;
 import jakarta.validation.constraints.NotNull;
 import lombok.SneakyThrows;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -35,13 +33,13 @@ public class BinaryDecoder {
     private int index;
 
     /**
-     * Decodes {@code buffer} as a new {@link WhatsappNode}
+     * Decodes {@code buffer} as a new {@link Node}
      * This method should not be used by multiple concurrent threads on the same instance
      *
      * @param buffer the BinaryArray to decrypt
-     * @return a new {@link WhatsappNode} containing all the information that was decrypted
+     * @return a new {@link Node} containing all the information that was decrypted
      */
-    public @NotNull WhatsappNode decodeDecryptedMessage(@NotNull BinaryArray buffer) {
+    public @NotNull Node decodeDecryptedMessage(@NotNull BinaryArray buffer) {
         this.buffer = buffer;
         this.index = 0;
         return readNode();
@@ -169,7 +167,7 @@ public class BinaryDecoder {
     }
 
     @SneakyThrows
-    private @NotNull WhatsappNode readNode() {
+    private @NotNull Node readNode() {
         var listSize = readListSize(readUnsignedInt());
         Validate.isTrue(listSize != 0, "List size is empty");
 
@@ -179,11 +177,11 @@ public class BinaryDecoder {
         var description = readString(descriptionTag);
         var attrs = readAttributes((listSize - 1) >> 1);
         if (listSize % 2 != 0) {
-            return new WhatsappNode(description, attrs, null);
+            return new Node(description, attrs, null);
         }
 
         var tag = readUnsignedInt();
-        return new WhatsappNode(description, attrs, isListTag(tag) ? readList(tag) : isBinaryTag(tag) ? parseMessage(description, tag) : readString(tag));
+        return new Node(description, attrs, isListTag(tag) ? readList(tag) : isBinaryTag(tag) ? parseMessage(description, tag) : readString(tag));
     }
 
     @SneakyThrows
@@ -195,10 +193,10 @@ public class BinaryDecoder {
             default -> throw new IllegalStateException("BinaryReader#readNode: unexpected tag: " + tag);
         };
 
-        return description.equals("message") ? WhatsappProtobuf.WebMessageInfo.parseFrom(data.data()) : data.toString();
+        return description.equals("message") ? ProtobufDecoder.forType(MessageInfo.class).decode(data.data()) : data.toString();
     }
 
-    private @NotNull List<WhatsappNode> readList(int tag) {
+    private @NotNull List<Node> readList(int tag) {
         return IntStream.range(0, readListSize(tag)).mapToObj(e -> readNode()).toList();
     }
 

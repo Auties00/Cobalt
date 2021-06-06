@@ -8,7 +8,14 @@ import it.auties.whatsapp4j.binary.BinaryMetric;
 import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
-import it.auties.whatsapp4j.model.*;
+import it.auties.whatsapp4j.protobuf.chat.Chat;
+import it.auties.whatsapp4j.protobuf.chat.GroupPolicy;
+import it.auties.whatsapp4j.protobuf.chat.GroupSetting;
+import it.auties.whatsapp4j.protobuf.chat.GroupAction;
+import it.auties.whatsapp4j.protobuf.contact.Contact;
+import it.auties.whatsapp4j.protobuf.contact.ContactStatus;
+import it.auties.whatsapp4j.protobuf.info.MessageInfo;
+import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.request.impl.*;
 import it.auties.whatsapp4j.request.model.BinaryRequest;
 import it.auties.whatsapp4j.response.impl.binary.ChatResponse;
@@ -191,8 +198,7 @@ public class WhatsappWebSocket {
     public void disconnect(String reason, boolean logout, boolean reconnect) {
         Validate.isTrue(loggedIn, "WhatsappAPI: Cannot terminate the connection with whatsapp as it doesn't exist", IllegalStateException.class);
         whatsappManager.clear();
-        if (logout) new LogOutRequest(options) {
-        }.send(session()).thenRun(whatsappKeys::deleteKeysFromMemory);
+        if (logout) new LogOutRequest(options) {}.send(session()).thenRun(whatsappKeys::deleteKeysFromMemory);
         session().close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, reason));
         whatsappManager.listeners().forEach(WhatsappListener::onDisconnected);
         if (reconnect) openConnection();
@@ -225,12 +231,12 @@ public class WhatsappWebSocket {
         }
 
         var chat = chatOpt.get();
-        var node = WhatsappNode.fromList(cmdResponse.data());
+        var node = Node.fromList(cmdResponse.data());
         var content = (String) node.content();
 
         switch (node.description()) {
-            case "restrict" -> notifyGroupSettingChange(chat, WhatsappGroupSetting.EDIT_GROUP_INFO, content);
-            case "announce" -> notifyGroupSettingChange(chat, WhatsappGroupSetting.SEND_MESSAGES, content);
+            case "restrict" -> notifyGroupSettingChange(chat, GroupSetting.EDIT_GROUP_INFO, content);
+            case "announce" -> notifyGroupSettingChange(chat, GroupSetting.SEND_MESSAGES, content);
             case "add", "remove", "promote", "demote" -> notifyGroupAction(chat, node, content);
             case "ephemeral" -> updateAndNotifyEphemeralStatus(chat, content);
             case "desc_add" -> notifyGroupDescriptionChange(chat, content);
@@ -238,29 +244,35 @@ public class WhatsappWebSocket {
         }
     }
 
-    private void notifyGroupDescriptionChange(@NotNull WhatsappChat chat, @NotNull String content) {
+    private void notifyGroupDescriptionChange(@NotNull Chat chat, @NotNull String content) {
         var response = JsonResponse.fromJson(content).toModel(DescriptionChangeResponse.class);
         whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onGroupDescriptionChange(chat, response.description(), response.descriptionId())));
     }
 
-    private void updateAndNotifyGroupSubject(@NotNull WhatsappChat chat, @NotNull String content) {
+    private void updateAndNotifyGroupSubject(@NotNull Chat chat, @NotNull String content) {
         var response = JsonResponse.fromJson(content).toModel(SubjectChangeResponse.class);
-        chat.name(response.subject());
+        chat.displayName(response.subject());
         whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onGroupSubjectChange(chat)));
     }
 
-    private void updateAndNotifyEphemeralStatus(@NotNull WhatsappChat chat, @NotNull String content) {
+    private void updateAndNotifyEphemeralStatus(@NotNull Chat chat, @NotNull String content) {
         chat.ephemeralMessageDuration(Long.parseLong(content));
         chat.ephemeralMessagesToggleTime(ZonedDateTime.now().toEpochSecond());
         whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onChatEphemeralStatusChange(chat)));
     }
 
-    private void notifyGroupAction(@NotNull WhatsappChat chat, @NotNull WhatsappNode node, @NotNull String content) {
-        JsonResponse.fromJson(content).toModel(GroupActionResponse.class).participants().stream().map(whatsappManager::findContactByJid).map(Optional::orElseThrow).forEach(contact -> whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onGroupAction(chat, contact, WhatsappGroupAction.valueOf(node.description().toUpperCase())))));
+    private void notifyGroupAction(@NotNull Chat chat, @NotNull Node node, @NotNull String content) {
+        JsonResponse.fromJson(content)
+                .toModel(GroupActionResponse.class)
+                .participants()
+                .stream()
+                .map(whatsappManager::findContactByJid)
+                .map(Optional::orElseThrow)
+                .forEach(contact -> whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onGroupAction(chat, contact, GroupAction.valueOf(node.description().toUpperCase())))));
     }
 
-    private void notifyGroupSettingChange(@NotNull WhatsappChat chat, @NotNull WhatsappGroupSetting setting, @NotNull String content) {
-        whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onGroupSettingsChange(chat, setting, WhatsappGroupPolicy.forData(Boolean.parseBoolean(content)))));
+    private void notifyGroupSettingChange(@NotNull Chat chat, @NotNull GroupSetting setting, @NotNull String content) {
+        whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onGroupSettingsChange(chat, setting, GroupPolicy.forData(Boolean.parseBoolean(content)))));
     }
 
     private void handleMessageInfo(@NotNull AckResponse ackResponse) {
@@ -278,11 +290,15 @@ public class WhatsappWebSocket {
             return;
         }
 
-        Arrays.stream(ackResponse.ids()).map(id -> whatsappManager.findUserMessageById(chat.get(), id)).filter(Optional::isPresent).map(Optional::get).forEach(message -> updateAndNotifyMessageReadStatusChange(ackResponse, to.get(), chat.get(), message));
+        Arrays.stream(ackResponse.ids())
+                .map(id -> whatsappManager.findMessageById(chat.get(), id))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .forEach(message -> updateAndNotifyMessageReadStatusChange(ackResponse, to.get(), chat.get(), message));
     }
 
-    private void updateAndNotifyMessageReadStatusChange(@NotNull AckResponse ackResponse, @NotNull WhatsappContact to, @NotNull WhatsappChat chat, WhatsappUserMessage message) {
-        message.individualReadStatus().put(to, WhatsappProtobuf.WebMessageInfo.WebMessageInfoStatus.forNumber(ackResponse.ack()));
+    private void updateAndNotifyMessageReadStatusChange(@NotNull AckResponse ackResponse, @NotNull Contact to, @NotNull Chat chat, MessageInfo message) {
+        message.individualReadStatus().put(to, MessageInfo.WebMessageInfoStatus.forIndex(ackResponse.ack()));
         whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onMessageReadStatusUpdate(chat, to, message)));
     }
 
@@ -305,7 +321,7 @@ public class WhatsappWebSocket {
 
     private void configureSelfContact(@NotNull UserInformationResponse info) {
         var jid = parseJid(info.wid());
-        whatsappManager.contacts().add(new WhatsappContact(jid, null, null, null, null, null));
+        whatsappManager.contacts().add(new Contact(jid, null, null, null, null, null));
         whatsappManager.phoneNumberJid(jid);
     }
 
@@ -369,7 +385,7 @@ public class WhatsappWebSocket {
         if (res.offsetFromLastSeen() != null) {
             var instant = Instant.ofEpochSecond(res.offsetFromLastSeen() + contact.lastSeen().map(e -> e.toInstant().getEpochSecond()).orElse(0L));
             contact.lastSeen(ZonedDateTime.ofInstant(instant, ZoneId.systemDefault()));
-        } else if (res.presence() == WhatsappContactStatus.UNAVAILABLE && contact.lastKnownPresence().isPresent() && (contact.lastKnownPresence().get() == WhatsappContactStatus.AVAILABLE || contact.lastKnownPresence().get() == WhatsappContactStatus.COMPOSING)) {
+        } else if (res.presence() == ContactStatus.UNAVAILABLE && contact.lastKnownPresence().isPresent() && (contact.lastKnownPresence().get() == ContactStatus.AVAILABLE || contact.lastKnownPresence().get() == ContactStatus.COMPOSING)) {
             contact.lastSeen(ZonedDateTime.ofInstant(Instant.now(), ZoneId.systemDefault()));
         }
 
@@ -387,7 +403,7 @@ public class WhatsappWebSocket {
     }
 
     public @NotNull CompletableFuture<ChatResponse> queryChat(@NotNull String jid) {
-        var node = new WhatsappNode("query", attributes(attr("type", "chat"), attr("jid", jid)), null);
+        var node = new Node("query", attributes(attr("type", "chat"), attr("jid", jid)), null);
         return new BinaryRequest<ChatResponse>(options, node, BinaryFlag.IGNORE, BinaryMetric.QUERY_CHAT) {}.send(session());
     }
 }

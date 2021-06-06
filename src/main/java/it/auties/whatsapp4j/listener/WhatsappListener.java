@@ -2,7 +2,12 @@ package it.auties.whatsapp4j.listener;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
-import it.auties.whatsapp4j.model.*;
+import it.auties.whatsapp4j.protobuf.chat.Chat;
+import it.auties.whatsapp4j.protobuf.chat.GroupAction;
+import it.auties.whatsapp4j.protobuf.chat.GroupPolicy;
+import it.auties.whatsapp4j.protobuf.chat.GroupSetting;
+import it.auties.whatsapp4j.protobuf.contact.Contact;
+import it.auties.whatsapp4j.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.response.impl.json.BlocklistResponse;
 import it.auties.whatsapp4j.response.impl.json.PhoneBatteryResponse;
 import it.auties.whatsapp4j.response.impl.json.PropsResponse;
@@ -66,7 +71,7 @@ public interface WhatsappListener {
      *
      * @param contact the updated contact
      */
-    default void onContactUpdate(@NotNull WhatsappContact contact) {
+    default void onContactUpdate(@NotNull Contact contact) {
     }
 
     /**
@@ -74,18 +79,18 @@ public interface WhatsappListener {
      *
      * @param contact the new contact
      */
-    default void onContactReceived(@NotNull WhatsappContact contact) {
+    default void onContactReceived(@NotNull Contact contact) {
     }
 
     /**
      * Called when {@link WhatsappWebSocket} receives an update regarding the presence of a contact.
-     * If {@code chat} is a conversation with {@code contact}, the new presence is available by calling {@link WhatsappContact#lastKnownPresence()}.
-     * Otherwise, it should be queried using {@link WhatsappChat#presences()}.
+     * If {@code chat} is a conversation with {@code contact}, the new presence is available by calling {@link Contact#lastKnownPresence()}.
+     * Otherwise, it should be queried using {@link Chat#presences()}.
      *
      * @param chat    the chat that this update regards
      * @param contact the contact that this update regards
      */
-    default void onContactPresenceUpdate(@NotNull WhatsappChat chat, @NotNull WhatsappContact contact) {
+    default void onContactPresenceUpdate(@NotNull Chat chat, @NotNull Contact contact) {
     }
 
     /**
@@ -100,7 +105,7 @@ public interface WhatsappListener {
      *
      * @param chat the new chat
      */
-    default void onChatReceived(@NotNull WhatsappChat chat) {
+    default void onChatReceived(@NotNull Chat chat) {
     }
 
     /**
@@ -108,7 +113,7 @@ public interface WhatsappListener {
      *
      * @param chat the chat that was archived
      */
-    default void onChatArchived(@NotNull WhatsappChat chat) {
+    default void onChatArchived(@NotNull Chat chat) {
     }
 
     /**
@@ -116,7 +121,7 @@ public interface WhatsappListener {
      *
      * @param chat the chat that was unarchived
      */
-    default void onChatUnarchived(@NotNull WhatsappChat chat) {
+    default void onChatUnarchived(@NotNull Chat chat) {
     }
 
     /**
@@ -124,7 +129,7 @@ public interface WhatsappListener {
      *
      * @param chat the chat whose mute changed
      */
-    default void onChatMuteChange(@NotNull WhatsappChat chat) {
+    default void onChatMuteChange(@NotNull Chat chat) {
     }
 
     /**
@@ -132,7 +137,7 @@ public interface WhatsappListener {
      *
      * @param chat the chat whose read status changed
      */
-    default void onChatReadStatusChange(@NotNull WhatsappChat chat) {
+    default void onChatReadStatusChange(@NotNull Chat chat) {
     }
 
     /**
@@ -140,7 +145,7 @@ public interface WhatsappListener {
      *
      * @param chat the chat whose ephemeral status changed
      */
-    default void onChatEphemeralStatusChange(@NotNull WhatsappChat chat) {
+    default void onChatEphemeralStatusChange(@NotNull Chat chat) {
     }
 
     /**
@@ -148,7 +153,7 @@ public interface WhatsappListener {
      *
      * @param group the group whose subject changed
      */
-    default void onGroupSubjectChange(@NotNull WhatsappChat group) {
+    default void onGroupSubjectChange(@NotNull Chat group) {
     }
 
     /**
@@ -158,7 +163,7 @@ public interface WhatsappListener {
      * @param description   the new description
      * @param descriptionId the id of the new description
      */
-    default void onGroupDescriptionChange(@NotNull WhatsappChat group, @NotNull String description, @NotNull String descriptionId) {
+    default void onGroupDescriptionChange(@NotNull Chat group, @NotNull String description, @NotNull String descriptionId) {
     }
 
     /**
@@ -168,7 +173,7 @@ public interface WhatsappListener {
      * @param setting the setting that changed
      * @param policy  the new policy that was set
      */
-    default void onGroupSettingsChange(@NotNull WhatsappChat group, @NotNull WhatsappGroupSetting setting, @NotNull WhatsappGroupPolicy policy) {
+    default void onGroupSettingsChange(@NotNull Chat group, @NotNull GroupSetting setting, @NotNull GroupPolicy policy) {
     }
 
     /**
@@ -178,7 +183,7 @@ public interface WhatsappListener {
      * @param participant the target of the action that was executed
      * @param action      the type of the action that was executed
      */
-    default void onGroupAction(@NotNull WhatsappChat group, @NotNull WhatsappContact participant, @NotNull WhatsappGroupAction action) {
+    default void onGroupAction(@NotNull Chat group, @NotNull Contact participant, @NotNull GroupAction action) {
     }
 
     /**
@@ -187,7 +192,7 @@ public interface WhatsappListener {
      * @param chat    the chat where the message was sent
      * @param message the message that was sent
      */
-    default void onNewMessageReceived(@NotNull WhatsappChat chat, @NotNull WhatsappMessage message) {
+    default void onNewMessageReceived(@NotNull Chat chat, @NotNull MessageInfo message) {
     }
 
     /**
@@ -199,7 +204,7 @@ public interface WhatsappListener {
      * @param contact the contact that this update regards
      * @param message the message this update regards
      */
-    default void onMessageReadStatusUpdate(@NotNull WhatsappChat chat, @NotNull WhatsappContact contact, @NotNull WhatsappUserMessage message) {
+    default void onMessageReadStatusUpdate(@NotNull Chat chat, @NotNull Contact contact, @NotNull MessageInfo message) {
     }
 
     /**
@@ -208,7 +213,7 @@ public interface WhatsappListener {
      * @param chat    the chat where the message is
      * @param message the message this update regards
      */
-    default void onMessageUpdate(@NotNull WhatsappChat chat, @NotNull WhatsappMessage message) {
+    default void onMessageUpdate(@NotNull Chat chat, @NotNull MessageInfo message) {
     }
 
     /**
@@ -218,7 +223,7 @@ public interface WhatsappListener {
      * @param message  the message that was deleted
      * @param everyone whether this message was deleted by you only for yourself or whether the message was permanently removed
      */
-    default void onMessageDeleted(@NotNull WhatsappChat chat, @NotNull WhatsappUserMessage message, boolean everyone) {
+    default void onMessageDeleted(@NotNull Chat chat, @NotNull MessageInfo message, boolean everyone) {
     }
 
     /**
@@ -227,7 +232,7 @@ public interface WhatsappListener {
      * @param chat    the chat where the message is
      * @param message the message that was starred
      */
-    default void onMessageStarred(@NotNull WhatsappChat chat, @NotNull WhatsappUserMessage message) {
+    default void onMessageStarred(@NotNull Chat chat, @NotNull MessageInfo message) {
     }
 
     /**
@@ -236,19 +241,19 @@ public interface WhatsappListener {
      * @param chat    the chat where the message is
      * @param message the message that was unstarred
      */
-    default void onMessageUnstarred(@NotNull WhatsappChat chat, @NotNull WhatsappUserMessage message) {
+    default void onMessageUnstarred(@NotNull Chat chat, @NotNull MessageInfo message) {
     }
 
     /**
      * Called when the global read status of a message changes.
-     * This status can be accessed calling {@link WhatsappUserMessage#globalStatus()}.
-     * If {@code chat} is a conversation, {@link WhatsappUserMessage#globalStatus()} is equal to the one stored in {@link WhatsappUserMessage#individualReadStatus()} for the corresponding contact.
-     * Otherwise, it is guaranteed that each value stored in {@link WhatsappUserMessage#individualReadStatus()} for each participant of the chat is equal or higher hierarchically then {@link WhatsappUserMessage#globalStatus()}.
+     * This status can be accessed calling {@link MessageInfo#globalStatus()}.
+     * If {@code chat} is a conversation, {@link MessageInfo#globalStatus()} is equal to the one stored in {@link MessageInfo#individualReadStatus()} for the corresponding contact.
+     * Otherwise, it is guaranteed that each value stored in {@link MessageInfo#individualReadStatus()} for each participant of the chat is equal or higher hierarchically then {@link MessageInfo#globalStatus()}.
      *
      * @param chat    the chat where the message is
      * @param message the message that was unstarred
      */
-    default void onMessageGlobalReadStatusUpdate(@NotNull WhatsappChat chat, @NotNull WhatsappUserMessage message) {
+    default void onMessageGlobalReadStatusUpdate(@NotNull Chat chat, @NotNull MessageInfo message) {
     }
 
     /**

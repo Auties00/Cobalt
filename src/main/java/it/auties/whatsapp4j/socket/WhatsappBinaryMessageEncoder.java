@@ -18,7 +18,7 @@ public class WhatsappBinaryMessageEncoder implements Binary<BinaryRequest<?>> {
     private static final BinaryEncoder ENCODER = new BinaryEncoder();
 
     @Override
-    public @NotNull ByteBuffer encode(@NotNull BinaryRequest<?> request) throws EncodeException {
+    public @NotNull ByteBuffer encode(@NotNull BinaryRequest<?> request) {
         var messageTag = BinaryArray.forString("%s,".formatted(request.tag()));
         var encodedMessage = ENCODER.encodeMessage(request.buildBody());
         var encrypted = CypherUtils.aesEncrypt(encodedMessage, Objects.requireNonNull(KEYS_MANAGER.encKey()));

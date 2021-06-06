@@ -3,9 +3,8 @@ package it.auties.whatsapp4j.utils;
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
-import it.auties.whatsapp4j.model.WhatsappContact;
-import it.auties.whatsapp4j.model.WhatsappNode;
-import it.auties.whatsapp4j.model.WhatsappProtobuf;
+import it.auties.whatsapp4j.protobuf.contact.Contact;
+import it.auties.whatsapp4j.protobuf.model.Node;
 import jakarta.validation.constraints.NotNull;
 import lombok.experimental.UtilityClass;
 
@@ -96,8 +95,8 @@ public class WhatsappUtils {
      * @return a non null List of WhatsappNodes
      * @throws IllegalArgumentException if {@code contacts} is empty
      */
-    public @NotNull List<WhatsappNode> jidsToParticipantNodes(@NotNull WhatsappContact... contacts) {
-        return jidsToParticipantNodes(Arrays.stream(contacts).map(WhatsappContact::jid).toArray(String[]::new));
+    public @NotNull List<Node> jidsToParticipantNodes(@NotNull Contact... contacts) {
+        return jidsToParticipantNodes(Arrays.stream(contacts).map(Contact::jid).toArray(String[]::new));
     }
 
     /**
@@ -107,8 +106,8 @@ public class WhatsappUtils {
      * @return a non null List of WhatsappNodes
      * @throws IllegalArgumentException if {@code jids} is empty
      */
-    public @NotNull List<WhatsappNode> jidsToParticipantNodes(@NotNull String... jids) {
-        return Arrays.stream(jids).map(jid -> new WhatsappNode("participant", Map.of("jid", jid), null)).toList();
+    public @NotNull List<Node> jidsToParticipantNodes(@NotNull String... jids) {
+        return Arrays.stream(jids).map(jid -> new Node("participant", Map.of("jid", jid), null)).toList();
     }
 
     /**
@@ -124,69 +123,7 @@ public class WhatsappUtils {
             return Optional.empty();
         }
     }
-
-    /**
-     * Returns the media key of a media message
-     *
-     * @param message the raw protobuf that holds a media
-     * @return a non null array of bytes
-     * @throws IllegalArgumentException if the input message is not a media file
-     */
-    public @NotNull BinaryArray readMediaKey(@NotNull WhatsappProtobuf.Message message) {
-        if (message.hasImageMessage()) {
-            return BinaryArray.forArray(message.getImageMessage().getMediaKey().toByteArray());
-        }
-
-        if (message.hasDocumentMessage()) {
-            return BinaryArray.forArray(message.getDocumentMessage().getMediaKey().toByteArray());
-        }
-
-        if (message.hasVideoMessage()) {
-            return BinaryArray.forArray(message.getVideoMessage().getMediaKey().toByteArray());
-        }
-
-        if (message.hasStickerMessage()) {
-            return BinaryArray.forArray(message.getStickerMessage().getMediaKey().toByteArray());
-        }
-
-        if (message.hasAudioMessage()) {
-            return BinaryArray.forArray(message.getAudioMessage().getMediaKey().toByteArray());
-        }
-
-        throw new IllegalArgumentException("WhatsappAPI: Cannot extract media key");
-    }
-
-    /**
-     * Returns the media url of a media message
-     *
-     * @param message the raw protobuf that holds a media
-     * @return a non null array of bytes
-     * @throws IllegalArgumentException if the input message is not a media file
-     */
-    public @NotNull String readMediaUrl(@NotNull WhatsappProtobuf.Message message) {
-        if (message.hasImageMessage()) {
-            return message.getImageMessage().getUrl();
-        }
-
-        if (message.hasDocumentMessage()) {
-            return message.getDocumentMessage().getUrl();
-        }
-
-        if (message.hasVideoMessage()) {
-            return message.getVideoMessage().getUrl();
-        }
-
-        if (message.hasStickerMessage()) {
-            return message.getStickerMessage().getUrl();
-        }
-
-        if (message.hasAudioMessage()) {
-            return message.getAudioMessage().getUrl();
-        }
-
-        throw new IllegalArgumentException("WhatsappAPI: Cannot extract media url");
-    }
-
+    
     /**
      * Returns a map of attributes
      *

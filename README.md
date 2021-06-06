@@ -122,17 +122,17 @@ var number = manager.phoneNumberJid(); // Get your phone number as a jid
 
 This class also exposes various methods to query data as explained in the [javadocs](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/manager/WhatsappDataManager.html):
 ```java
-Optional<WhatsappContact> findContactByJid(String jid);
-Optional<WhatsappContact> findContactByName(String name);
-Set<WhatsappContact> findContactsByName(String name);
+Optional<Contact> findContactByJid(String jid);
+Optional<Contact> findContactByName(String name);
+Set<Contact> findContactsByName(String name);
 
-Optional<WhatsappChat> findChatByJid(String jid);
-Optional<WhatsappChat> findChatByName(String name);
-Set<WhatsappChat> findChatsByName(String name);
-Optional<WhatsappChat> findChatByMessage(WhatsappMessage message);
+Optional<Chat> findChatByJid(String jid);
+Optional<Chat> findChatByName(String name);
+Set<Chat> findChatsByName(String name);
+Optional<Chat> findChatByMessage(WhatsappMessage message);
 
-Optional<WhatsappMessage> findMessageById(WhatsappChat chat, String id);
-Optional<WhatsappMessage> findQuotedMessageInChatByContext(WhatsappChat chat, ContextInfo context);        
+Optional<WhatsappMessage> findMessageById(Chat chat, String id);
+Optional<WhatsappMessage> findQuotedMessageInChatByContext(Chat chat, ContextInfo context);        
 ```
 
 The keys linked to an active session can be accessed using [WhatsappKeysManager](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/manager/WhatsappKeysManager.html).
@@ -192,13 +192,13 @@ var invite = WhatsappGroupInviteMessage.newGroupInviteMessage()
 
 ##### Create a Contact(s) Message
 ```java
-var contacts = WhatsappContactMessage.newContactMessage()
+var contacts = ContactMessage.newContactMessage()
         .sharedContacts(List.of(contactVCard, anotherVCard))
         .create();
 ```
 
 ##### Create a raw message
-If the options above don't satisfy your needs, open an issue and request the feature you need. In the meanwhile though, you can use you can create your own [WebMessageInfo](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/model/WhatsappProtobuf.WebMessageInfo.html), the raw Protobuf object for a message, even though it's not recommended as it's not very developer friendly.
+If the options above don't satisfy your needs, open an issue and request the feature you need. In the meanwhile though, you can use you can create your own [WebMessageInfo](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/model/WebMessageInfo.html), the raw Protobuf object for a message, even though it's not recommended as it's not very developer friendly.
 Here is an example on how to create a raw text message:
 ```java
 var key = WhatsappProtobuf.MessageKey.newBuilder()
@@ -211,11 +211,11 @@ var conversation = WhatsappProtobuf.Message.newBuilder()
         .setConversation(text)
         .build();
 
-var text = WhatsappProtobuf.WebMessageInfo.newBuilder()
+var text = WebMessageInfo.newBuilder()
         .setMessage(conversation)
         .setKey(key)
         .setMessageTimestamp(Instant.now().getEpochSecond())
-        .setStatus(WhatsappProtobuf.WebMessageInfo.WebMessageInfoStatus.PENDING)
+        .setStatus(it.auties.whatsapp4j.protobuf.info.MessageInfo.WebMessageInfoStatus.PENDING)
         .build();
 
 var context = WhatsappProtobuf.ContextInfo.newBuilder()
@@ -233,11 +233,11 @@ var extendedTextMessage = WhatsappProtobuf.Message.newBuilder()
             .build())
         .build();
 
-var quotedText = WhatsappProtobuf.WebMessageInfo.newBuilder()
+var quotedText = WebMessageInfo.newBuilder()
         .setMessage(extendedTextMessage)
         .setKey(key)
         .setMessageTimestamp(Instant.now().getEpochSecond())
-        .setStatus(WhatsappProtobuf.WebMessageInfo.WebMessageInfoStatus.PENDING)
+        .setStatus(it.auties.whatsapp4j.protobuf.info.MessageInfo.WebMessageInfoStatus.PENDING)
         .build();
 ```
 
@@ -248,17 +248,17 @@ api.sendMessage(message);
 
 ### Online status
 
-To change your global [WhatsappContactStatus](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/model/WhatsappContactStatus.html):
+To change your global [ContactStatus](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/model/ContactStatus.html):
 ``` java
 api.changePresence(status);
 ```
 
-To change your [WhatsappContactStatus](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/model/WhatsappContactStatus.html) for a specific [WhatsappChat](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/model/WhatsappChat.html):
+To change your [ContactStatus](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/model/ContactStatus.html) for a specific [Chat](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/model/Chat.html):
 ``` java
 api.changePresence(status, chat);
 ```
 
-To query the last known status of a [WhatsappContact](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/model/WhatsappContact.html)::
+To query the last known status of a [Contact](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/model/Contact.html)::
 ``` java
 var lastKnownPresenceOptional = contact.lastKnownPresence();
 ```

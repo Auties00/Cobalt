@@ -1,14 +1,13 @@
 package org.example.whatsapp.command;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
-import it.auties.whatsapp4j.model.WhatsappChat;
 import it.auties.whatsapp4j.model.WhatsappTextMessage;
 
 import java.util.Set;
 
 public class HelloCommand implements Command{
     @Override
-    public void onCommand(WhatsappAPI api, WhatsappChat chat, WhatsappTextMessage message) {
+    public void onCommand(WhatsappAPI api, Chat chat, WhatsappTextMessage message) {
         api.sendMessage(WhatsappTextMessage.newTextMessage(chat, "Hello :)", message));
     }
 

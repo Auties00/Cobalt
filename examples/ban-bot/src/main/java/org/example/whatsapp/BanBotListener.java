@@ -3,8 +3,6 @@ package org.example.whatsapp;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.listener.RegisterListener;
 import it.auties.whatsapp4j.listener.WhatsappListener;
-import it.auties.whatsapp4j.model.WhatsappChat;
-import it.auties.whatsapp4j.model.WhatsappContact;
 import it.auties.whatsapp4j.model.WhatsappMessage;
 import it.auties.whatsapp4j.model.WhatsappTextMessage;
 import it.auties.whatsapp4j.response.impl.json.ModificationForParticipant;
@@ -12,7 +10,7 @@ import it.auties.whatsapp4j.response.impl.json.ModificationForParticipant;
 @RegisterListener
 public record BanBotListener(WhatsappAPI api) implements WhatsappListener {
     @Override
-    public void onNewMessageReceived(WhatsappChat chat, WhatsappMessage message) {
+    public void onNewMessageReceived(Chat chat, WhatsappMessage message) {
         if(!(message instanceof WhatsappTextMessage textMessage)){
             return;
         }
@@ -39,7 +37,7 @@ public record BanBotListener(WhatsappAPI api) implements WhatsappListener {
         }
 
         api.remove(chat, victim).thenAcceptAsync(result -> {
-            var victimName = quoted.sender().flatMap(WhatsappContact::bestName).orElse(quoted.senderJid());
+            var victimName = quoted.sender().flatMap(Contact::bestName).orElse(quoted.senderJid());
             if(result.status() != 200 && result.status() != 207){
                 return;
             }

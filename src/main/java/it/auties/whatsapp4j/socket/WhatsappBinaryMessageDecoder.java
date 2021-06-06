@@ -18,7 +18,7 @@ public class WhatsappBinaryMessageDecoder implements Binary<BinaryResponse> {
     private static final BinaryDecoder DECODER = new BinaryDecoder();
 
     @Override
-    public BinaryResponse decode(@NotNull ByteBuffer msg) throws DecodeException {
+    public BinaryResponse decode(@NotNull ByteBuffer msg) {
         Validate.isTrue(msg.get(0) != '!', "Server pong from whatsapp, why did this get through?");
 
         var binaryMessage = BinaryArray.forArray(msg.array());

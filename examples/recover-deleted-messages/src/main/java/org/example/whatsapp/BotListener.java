@@ -2,8 +2,6 @@ package org.example.whatsapp;
 
 import it.auties.whatsapp4j.listener.RegisterListener;
 import it.auties.whatsapp4j.listener.WhatsappListener;
-import it.auties.whatsapp4j.model.WhatsappChat;
-import it.auties.whatsapp4j.model.WhatsappContact;
 import it.auties.whatsapp4j.model.WhatsappUserMessage;
 import it.auties.whatsapp4j.response.impl.json.UserInformationResponse;
 
@@ -19,14 +17,14 @@ public class BotListener implements WhatsappListener {
 
     // Called when anyone deleted a message
     @Override
-    public void onMessageDeleted(WhatsappChat chat, WhatsappUserMessage message, boolean everyone) {
+    public void onMessageDeleted(Chat chat, WhatsappUserMessage message, boolean everyone) {
         // Get the name of the chat where the message was cancelled
         var chatName = chat.name();
 
         // Check if the message was deleted for everyone or only for yourself
         if(everyone) {
             // If the message was deleted for everyone it's not guaranteed that you have sent said message, so we get the name of the original sender
-            var sender = message.sender().flatMap(WhatsappContact::bestName).orElse(message.senderJid());
+            var sender = message.sender().flatMap(Contact::bestName).orElse(message.senderJid());
 
             // Print a message to confirm that the event was caught
             System.out.printf("%s deleted a message from %s for everyone%n", sender, chatName);

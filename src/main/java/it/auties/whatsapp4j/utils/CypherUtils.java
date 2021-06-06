@@ -1,10 +1,10 @@
 package it.auties.whatsapp4j.utils;
 
 import it.auties.whatsapp4j.binary.BinaryArray;
-import it.auties.whatsapp4j.model.WhatsappMediaConnection;
-import it.auties.whatsapp4j.model.WhatsappMediaMessage;
-import it.auties.whatsapp4j.model.WhatsappMediaMessageType;
-import it.auties.whatsapp4j.model.WhatsappMediaUpload;
+import it.auties.whatsapp4j.media.MediaConnection;
+import it.auties.whatsapp4j.media.MediaUpload;
+import it.auties.whatsapp4j.protobuf.message.MediaMessage;
+import it.auties.whatsapp4j.protobuf.message.MediaMessageType;
 import it.auties.whatsapp4j.response.model.json.JsonResponse;
 import jakarta.validation.constraints.NotNull;
 import lombok.SneakyThrows;
@@ -148,16 +148,14 @@ public class CypherUtils {
     }
 
     @SneakyThrows
-    public byte @NotNull [] mediaDecrypt(@NotNull WhatsappMediaMessage mediaMessage) {
-        var message = mediaMessage.info().getMessage();
-        var url = WhatsappUtils.readMediaUrl(message);
-        var data = WhatsappUtils.readEncryptedMedia(url).orElse(null);
-        if (data == null) {
-            return BinaryArray.empty().data();
-        }
+    public byte @NotNull [] mediaDecrypt(@NotNull MediaMessage mediaMessage) {
+        return WhatsappUtils.readEncryptedMedia(mediaMessage.url())
+                .map(data -> mediaDecrypt(mediaMessage, data))
+                .orElse(new byte[0]);
+    }
 
-        var mediaKey = WhatsappUtils.readMediaKey(message);
-        var expandedMediaKey = hkdfExpand(mediaKey, mediaMessage.type().key(), 112);
+    private byte @NotNull [] mediaDecrypt(@NotNull MediaMessage mediaMessage, @NotNull BinaryArray data){
+        var expandedMediaKey = hkdfExpand(BinaryArray.forArray(mediaMessage.mediaKey()), mediaMessage.type().key(), 112);
         var iv = expandedMediaKey.slice(0, BLOCK_SIZE);
         var cypherKey = expandedMediaKey.slice(BLOCK_SIZE, 48);
         var macKey = expandedMediaKey.slice(48, 80);
@@ -172,7 +170,7 @@ public class CypherUtils {
     }
 
     @SneakyThrows
-    public @NotNull WhatsappMediaUpload mediaEncrypt(@NotNull WhatsappMediaConnection connection, byte @NotNull [] file, @NotNull WhatsappMediaMessageType type) {
+    public @NotNull MediaUpload mediaEncrypt(@NotNull MediaConnection connection, byte @NotNull [] file, @NotNull MediaMessageType type) {
         var mediaKey = BinaryArray.random(32);
         var expandedMediaKey = hkdfExpand(mediaKey, type.key(), 112);
 
@@ -198,7 +196,7 @@ public class CypherUtils {
         var encodedUrl = body.getString("url").orElseThrow(() -> new RuntimeException("WhatsappAPI: Cannot upload media, missing url response %s".formatted(body)));
         var directPath = body.getString("direct_path").orElseThrow(() -> new RuntimeException("WhatsappAPI: Cannot upload media, missing direct path response %s".formatted(body)));
 
-        return new WhatsappMediaUpload(encodedUrl, directPath, mediaKey, encFile, fileSha256, fileEncSha256, sidecar, type);
+        return new MediaUpload(encodedUrl, directPath, mediaKey, encFile, fileSha256, fileEncSha256, sidecar, type);
     }
 
     @SneakyThrows

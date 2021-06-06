@@ -9,5 +9,4 @@ import jakarta.validation.constraints.NotNull;
  * @param <V> Value
  */
 public record Pair<K, V>(@NotNull K key, @NotNull V value) {
-
 }

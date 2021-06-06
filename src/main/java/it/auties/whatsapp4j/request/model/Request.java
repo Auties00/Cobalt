@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
-import it.auties.whatsapp4j.model.WhatsappNode;
+import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.response.model.common.Response;
 import it.auties.whatsapp4j.response.model.common.ResponseModel;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
@@ -25,7 +25,7 @@ import java.util.concurrent.CompletableFuture;
  * This class only allows two types of requests:
  * <ul>
  * <li>{@link JsonRequest} - a json encoded response made from a List of Objects</li>
- * <li>{@link BinaryRequest} - an aes encrypted {@link WhatsappNode}</li>
+ * <li>{@link BinaryRequest} - an aes encrypted {@link Node}</li>
  * </ul>
  *
  * @param <B> the type of the body

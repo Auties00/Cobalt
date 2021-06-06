@@ -258,6 +258,11 @@
             <artifactId>guava</artifactId>
             <version>${ee.modules}</version>
         </dependency>
+        <dependency>
+            <groupId>it.auties</groupId>
+            <artifactId>protoc-api</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
 
         <!-- Jackson dependency, used for json operations -->
         <dependency>

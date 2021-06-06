@@ -1,9 +1,12 @@
 package it.auties.whatsapp4j.binary;
 
-import it.auties.whatsapp4j.model.WhatsappNode;
-import it.auties.whatsapp4j.model.WhatsappProtobuf;
+import com.google.protobuf.CodedOutputStream;
+import it.auties.protobuf.encoder.ProtobufEncoder;
+import it.auties.whatsapp4j.protobuf.model.Node;
+import it.auties.whatsapp4j.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.utils.Validate;
 import jakarta.validation.constraints.NotNull;
+import lombok.SneakyThrows;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,7 +21,6 @@ import java.util.stream.IntStream;
  * @param cache the message to encode
  */
 public record BinaryEncoder(@NotNull List<Byte> cache) {
-
     /**
      * Constructs a new empty {@link BinaryEncoder}
      */
@@ -31,12 +33,12 @@ public record BinaryEncoder(@NotNull List<Byte> cache) {
      *
      * @return a new array of bytes
      */
-    public byte @NotNull [] encodeMessage(@NotNull WhatsappNode node) {
+    public byte @NotNull [] encodeMessage(@NotNull Node node) {
         cache.clear();
         return writeNode(node);
     }
 
-    private byte @NotNull [] writeNode(@NotNull WhatsappNode node) {
+    private byte @NotNull [] writeNode(@NotNull Node node) {
         writeListStart(2 * node.attrs().size() + 1 + (node.content() != null ? 1 : 0));
         writeString(node.description(), false);
         writeAttributes(node.attrs());
@@ -138,6 +140,7 @@ public record BinaryEncoder(@NotNull List<Byte> cache) {
         pushUnsignedInts(tag.data(), listSize);
     }
 
+    @SneakyThrows
     private void writeContent(Object content) {
         if (content == null) {
             return;
@@ -151,12 +154,12 @@ public record BinaryEncoder(@NotNull List<Byte> cache) {
         if (content instanceof List<?> contentAsList) {
             Validate.isTrue(validateList(contentAsList), "Cannot encode content(%s): expected List<WhatsappNode>, got %s<?>", content, contentAsList.getClass().getTypeName());
             writeListStart(contentAsList.size());
-            WhatsappNode.fromGenericList(contentAsList).forEach(this::writeNode);
+            Node.fromGenericList(contentAsList).forEach(this::writeNode);
             return;
         }
 
-        if (content instanceof WhatsappProtobuf.WebMessageInfo contentAsMessage) {
-            var data = contentAsMessage.toByteArray();
+        if (content instanceof MessageInfo contentAsMessage) {
+            var data = ProtobufEncoder.encode(contentAsMessage);
             writeByteLength(data.length);
             pushUnsignedInts(toUnsignedIntArray(data));
             return;
@@ -166,7 +169,7 @@ public record BinaryEncoder(@NotNull List<Byte> cache) {
     }
 
     private boolean validateList(@NotNull List<?> list) {
-        return list.stream().map(Object::getClass).allMatch(WhatsappNode.class::isAssignableFrom);
+        return list.stream().map(Object::getClass).allMatch(Node.class::isAssignableFrom);
     }
 
     private byte @NotNull [] toByteArray() {

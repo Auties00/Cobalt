@@ -3,7 +3,6 @@ package org.example.whatsapp;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.listener.RegisterListener;
 import it.auties.whatsapp4j.listener.WhatsappListener;
-import it.auties.whatsapp4j.model.WhatsappChat;
 import it.auties.whatsapp4j.model.WhatsappMessage;
 import it.auties.whatsapp4j.model.WhatsappTextMessage;
 
@@ -38,7 +37,7 @@ public record TesterBotListener(WhatsappAPI api) implements WhatsappListener {
     private static final JavaCompiler COMPILER = ToolProvider.getSystemJavaCompiler();
 
     @Override
-    public void onNewMessageReceived(WhatsappChat chat, WhatsappMessage message) {
+    public void onNewMessageReceived(Chat chat, WhatsappMessage message) {
         if(!(message instanceof WhatsappTextMessage textMessage)){
             return;
         }

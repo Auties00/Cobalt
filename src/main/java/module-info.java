@@ -5,10 +5,15 @@ open module whatsapp4j {
     exports it.auties.whatsapp4j.response.impl.binary;
     exports it.auties.whatsapp4j.utils;
     exports it.auties.whatsapp4j.manager;
-    exports it.auties.whatsapp4j.model;
     exports it.auties.whatsapp4j.binary;
-    exports it.auties.whatsapp4j.request.model;
     exports it.auties.whatsapp4j.response.model.common;
+    exports it.auties.whatsapp4j.protobuf.chat;
+    exports it.auties.whatsapp4j.protobuf.contact;
+    exports it.auties.whatsapp4j.protobuf.info;
+    exports it.auties.whatsapp4j.protobuf.message;
+    exports it.auties.whatsapp4j.protobuf.model;
+    exports it.auties.whatsapp4j.protobuf.button;
+    exports it.auties.whatsapp4j.protobuf.miscellanous;
 
     requires com.fasterxml.jackson.databind;
     requires com.google.common;
@@ -19,6 +24,7 @@ open module whatsapp4j {
     requires jakarta.xml.bind;
     requires jakarta.websocket.api;
     requires org.bouncycastle.provider;
+    requires it.auties.protoc.api;
 
     requires static lombok;
 }
