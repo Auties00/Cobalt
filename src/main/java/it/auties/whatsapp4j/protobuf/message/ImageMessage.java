@@ -8,6 +8,7 @@ import it.auties.whatsapp4j.protobuf.info.ContextInfo;
 import it.auties.whatsapp4j.protobuf.model.InteractiveAnnotation;
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.experimental.SuperBuilder;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds an image inside.
@@ -18,7 +19,7 @@ import lombok.experimental.Accessors;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@Builder
+@SuperBuilder
 @Accessors(fluent = true)
 public final class ImageMessage extends MediaMessage {
   @JsonProperty(value = "24")

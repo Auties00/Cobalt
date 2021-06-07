@@ -3,17 +3,23 @@ package it.auties.whatsapp4j.protobuf.message;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.utils.internal.CypherUtils;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds media inside.
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
  * Instead, methods inside {@link WhatsappAPI} should be used.
  */
-public abstract sealed class MediaMessage implements ContextualMessage permits AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoMessage {
+@AllArgsConstructor
+@NoArgsConstructor
+@SuperBuilder
+public abstract sealed class MediaMessage extends ContextualMessage permits AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoMessage {
     /**
      * The cached decoded media, by default null
      */
-    private byte[] cached;
+    private byte[] decodedMedia;
 
     /**
      * Returns the cached decoded media wrapped by this object if available.
@@ -22,11 +28,11 @@ public abstract sealed class MediaMessage implements ContextualMessage permits A
      * @return a non null array of bytes
      */
     public byte @NotNull [] decodedMedia(){
-        if(cached == null){
-            this.cached = CypherUtils.mediaDecrypt(this);
+        if(decodedMedia == null){
+            this.decodedMedia = CypherUtils.mediaDecrypt(this);
         }
 
-        return cached;
+        return decodedMedia;
     }
 
     /**
@@ -35,7 +41,7 @@ public abstract sealed class MediaMessage implements ContextualMessage permits A
      * @return a non null array of bytes
      */
     public byte @NotNull [] refreshMedia(){
-        return this.cached = CypherUtils.mediaDecrypt(this);
+        return this.decodedMedia = CypherUtils.mediaDecrypt(this);
     }
 
     /**

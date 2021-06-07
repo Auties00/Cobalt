@@ -7,6 +7,7 @@ import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.info.ContextInfo;
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.experimental.SuperBuilder;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds text inside.
@@ -16,9 +17,10 @@ import lombok.experimental.Accessors;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Builder
+@EqualsAndHashCode(callSuper = true)
+@SuperBuilder
 @Accessors(fluent = true)
-public final class ExtendedTextMessage implements ContextualMessage {
+public final class ExtendedTextMessage extends ContextualMessage {
   @JsonProperty(value = "18")
   private boolean doNotPlayInline;
 

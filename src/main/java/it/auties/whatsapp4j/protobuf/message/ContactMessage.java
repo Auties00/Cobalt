@@ -1,11 +1,11 @@
 package it.auties.whatsapp4j.protobuf.message;
 
-import com.fasterxml.jackson.annotation.*;
-
+import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.info.ContextInfo;
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.experimental.SuperBuilder;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds a contact inside.
@@ -14,16 +14,40 @@ import lombok.experimental.Accessors;
  */
 @AllArgsConstructor
 @NoArgsConstructor
+@SuperBuilder
 @Data
-@Builder
+@EqualsAndHashCode(callSuper = true)
 @Accessors(fluent = true)
-public final class ContactMessage implements ContextualMessage {
-  @JsonProperty(value = "17")
-  private ContextInfo contextInfo;
-
+public final class ContactMessage extends ContextualMessage {
+  /**
+   * The info about the contact that this message wraps encoded as a vcard
+   */
   @JsonProperty(value = "16")
   private String vcard;
 
+  /**
+   * The name of the contact that this message wraps
+   */
   @JsonProperty(value = "1")
   private String displayName;
+
+
+  /**
+   * Constructs a new builder to create a ContactMessage.
+   * The result can be later sent using {@link WhatsappAPI#sendMessage(it.auties.whatsapp4j.protobuf.info.MessageInfo)}
+   *
+   * @param displayName the display name of the contact that the new message wraps
+   * @param vcard       the info about the contact that the new message wraps encoded as a vcard
+   * @param contextInfo the context info that the new message wraps
+   *
+   * @return a non null new message
+   */
+  @Builder(builderClassName = "NewContactMessageBuilder", builderMethodName = "newContactMessage", buildMethodName = "create")
+  public ContactMessage newContactMessage(String displayName, String vcard, ContextInfo contextInfo) {
+    return ContactMessage.builder()
+            .vcard(vcard)
+            .displayName(displayName)
+            .contextInfo(contextInfo)
+            .build();
+  }
 }

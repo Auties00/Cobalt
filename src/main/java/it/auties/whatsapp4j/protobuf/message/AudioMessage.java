@@ -8,6 +8,7 @@ import it.auties.whatsapp4j.utils.internal.CypherUtils;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.experimental.SuperBuilder;
 
 import java.time.ZonedDateTime;
 import java.util.Optional;
@@ -21,7 +22,7 @@ import java.util.Optional;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@Builder
+@SuperBuilder
 @Accessors(fluent = true)
 public final class AudioMessage extends MediaMessage {
   /**
@@ -31,12 +32,6 @@ public final class AudioMessage extends MediaMessage {
    */
   @JsonProperty(value = "18")
   private byte[] streamingSidecar;
-
-  /**
-   * The context info of this message
-   */
-  @JsonProperty(value = "17")
-  private ContextInfo contextInfo;
 
   /**
    * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link AudioMessage#mediaKey()}
@@ -106,11 +101,13 @@ public final class AudioMessage extends MediaMessage {
    *
    * @param media         the non null image that the new message holds
    * @param mimeType      the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
-   * @param contextInfo   the non null context info for this message
+   * @param contextInfo   the context info that the new message wraps
    * @param voiceMessage  whether the new message should be considered as a voice message or as a normal audio, by default the latter is used
+   *
+   * @return a non null new message
    */
   @Builder(builderClassName= "NewAudioMessageBuilder", builderMethodName = "newAudioMessage", buildMethodName = "create")
-  public AudioMessage newAudioMessage(byte @NotNull [] media, @NotNull String mimeType, @NotNull ContextInfo contextInfo, boolean voiceMessage) {
+  public AudioMessage newAudioMessage(byte @NotNull [] media, ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.AUDIO);
     return AudioMessage.builder()
             .fileSha256(upload.fileSha256())
@@ -130,7 +127,7 @@ public final class AudioMessage extends MediaMessage {
   /**
    * Returns the media type of the audio that this object wraps
    *
-   * @return a non null {@link MediaMessageType}
+   * @return {@link MediaMessageType#AUDIO}
    */
   @Override
   public @NotNull MediaMessageType type() {
