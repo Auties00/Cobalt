@@ -17,7 +17,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class ContactMessage implements ContextualMessage {
+public final class ContactMessage implements ContextualMessage {
   @JsonProperty(value = "17")
   private ContextInfo contextInfo;
 

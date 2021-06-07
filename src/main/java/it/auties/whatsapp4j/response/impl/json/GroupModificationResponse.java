@@ -12,6 +12,6 @@ import java.util.List;
  * @param status        the http status code for the original request
  * @param modifications a list of modifications made to the participants of the group and their relative status
  */
-public final record GroupModificationResponse(@JsonProperty("gid") String jid, int status,
+public record GroupModificationResponse(@JsonProperty("gid") String jid, int status,
                                               @JsonProperty("participants") List<ModificationForParticipant> modifications) implements JsonResponseModel {
 }

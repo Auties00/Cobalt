@@ -24,8 +24,12 @@ import it.auties.whatsapp4j.response.model.binary.BinaryResponse;
 import it.auties.whatsapp4j.response.model.common.Response;
 import it.auties.whatsapp4j.response.model.json.JsonListResponse;
 import it.auties.whatsapp4j.response.model.json.JsonResponse;
-import it.auties.whatsapp4j.utils.Validate;
-import it.auties.whatsapp4j.utils.WhatsappQRCode;
+import it.auties.whatsapp4j.serialization.BinaryMessageDecoder;
+import it.auties.whatsapp4j.serialization.BinaryMessageEncoder;
+import it.auties.whatsapp4j.serialization.JsonMessageDecoder;
+import it.auties.whatsapp4j.serialization.JsonMessageEncoder;
+import it.auties.whatsapp4j.utils.internal.Validate;
+import it.auties.whatsapp4j.utils.internal.WhatsappQRCode;
 import jakarta.validation.constraints.NotNull;
 import jakarta.websocket.*;
 import lombok.Data;
@@ -48,7 +52,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static it.auties.whatsapp4j.utils.CypherUtils.*;
+import static it.auties.whatsapp4j.utils.internal.CypherUtils.*;
 import static it.auties.whatsapp4j.utils.WhatsappUtils.*;
 
 /**
@@ -56,7 +60,7 @@ import static it.auties.whatsapp4j.utils.WhatsappUtils.*;
  * This methods should not be used by any project, excluding obviously WhatsappWeb4j.
  * Instead, {@link WhatsappAPI} should be used.
  */
-@ClientEndpoint(configurator = WhatsappSocketConfiguration.class, decoders = {WhatsappJsonMessageDecoder.class, WhatsappBinaryMessageDecoder.class}, encoders = {WhatsappJsonMessageEncoder.class, WhatsappBinaryMessageEncoder.class})
+@ClientEndpoint(configurator = WhatsappWebSocketConfiguration.class, decoders = {JsonMessageDecoder.class, BinaryMessageDecoder.class}, encoders = {JsonMessageEncoder.class, BinaryMessageEncoder.class})
 @RequiredArgsConstructor
 @Data
 @Accessors(fluent = true)

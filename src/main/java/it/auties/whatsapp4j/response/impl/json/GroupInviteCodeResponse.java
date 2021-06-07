@@ -8,5 +8,5 @@ import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
  * @param status the http status code for the original request
  * @param code if code == 200, the requested invite code
  */
-public final record GroupInviteCodeResponse(int status, String code) implements JsonResponseModel {
+public record GroupInviteCodeResponse(int status, String code) implements JsonResponseModel {
 }

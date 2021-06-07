@@ -12,7 +12,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class HighlyStructuredMessage implements Message {
+public final class HighlyStructuredMessage implements Message {
   @JsonProperty(value = "9")
   private TemplateMessage hydratedHsm;
 

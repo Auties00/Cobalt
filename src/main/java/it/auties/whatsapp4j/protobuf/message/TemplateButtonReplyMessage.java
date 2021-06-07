@@ -11,7 +11,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class TemplateButtonReplyMessage implements Message {
+public final class TemplateButtonReplyMessage implements Message {
   @JsonProperty(value = "4")
   private int selectedIndex;
 

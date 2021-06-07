@@ -19,8 +19,19 @@ import java.util.stream.StreamSupport;
  */
 @UtilityClass
 public class RegisterListenerProcessor {
+    /**
+     * An instance of the class loader, used to query all candidate classes
+     */
     private final ClassLoader CLASS_LOADER = ClassLoader.getSystemClassLoader();
+
+    /**
+     * An instance of Java's File Manager, used to load all the candidate classes and validate them
+     */
     private final StandardJavaFileManager FILE_MANAGER = ToolProvider.getSystemJavaCompiler().getStandardFileManager(null, Locale.getDefault(), StandardCharsets.UTF_8);
+
+    /**
+     * The target location for Java's File Manager
+     */
     private final StandardLocation CLASS_LOCATION = StandardLocation.CLASS_PATH;
 
     /**

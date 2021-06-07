@@ -11,5 +11,5 @@ import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
  * @param challenge a token sent by Whatsapp to verify ownership of the credentials, null if status != 0
  * @param ttl       time to live in seconds for the ref, 0 if status != 200
  */
-public final record TakeOverResponse(int status, String ref, String challenge, int ttl) implements JsonResponseModel {
+public record TakeOverResponse(int status, String ref, String challenge, int ttl) implements JsonResponseModel {
 }

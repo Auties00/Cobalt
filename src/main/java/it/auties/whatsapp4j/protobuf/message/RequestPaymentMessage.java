@@ -10,7 +10,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class RequestPaymentMessage implements Message {
+public final class RequestPaymentMessage implements Message {
   @JsonProperty(value = "5")
   private long expiryTimestamp;
 

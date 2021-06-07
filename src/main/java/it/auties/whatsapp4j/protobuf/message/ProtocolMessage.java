@@ -12,7 +12,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class ProtocolMessage implements Message {
+public final class ProtocolMessage implements Message {
   @JsonProperty(value = "6")
   private HistorySyncNotification historySyncNotification;
 

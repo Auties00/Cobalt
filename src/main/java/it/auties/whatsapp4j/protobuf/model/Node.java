@@ -3,7 +3,7 @@ package it.auties.whatsapp4j.protobuf.model;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.auties.whatsapp4j.utils.Validate;
+import it.auties.whatsapp4j.utils.internal.Validate;
 import jakarta.validation.constraints.NotNull;
 import lombok.SneakyThrows;
 

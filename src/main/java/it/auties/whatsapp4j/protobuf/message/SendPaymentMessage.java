@@ -10,7 +10,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class SendPaymentMessage implements Message {
+public final class SendPaymentMessage implements Message {
   @JsonProperty(value = "3")
   private MessageKey requestMessageKey;
 

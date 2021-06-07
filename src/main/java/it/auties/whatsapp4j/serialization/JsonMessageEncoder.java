@@ -1,4 +1,4 @@
-package it.auties.whatsapp4j.socket;
+package it.auties.whatsapp4j.serialization;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.websocket.EncodeException;
 import jakarta.websocket.Encoder.Text;
 
-public class WhatsappJsonMessageEncoder implements Text<JsonRequest<?>> {
+public class JsonMessageEncoder implements Text<JsonRequest<?>> {
     private static final ObjectWriter JACKSON = new ObjectMapper().writerWithDefaultPrettyPrinter();
 
     @Override

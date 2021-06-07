@@ -10,7 +10,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class DeviceSentMessage implements Message {
+public final class DeviceSentMessage implements Message {
   @JsonProperty(value = "2")
   private MessageContainer message;
 

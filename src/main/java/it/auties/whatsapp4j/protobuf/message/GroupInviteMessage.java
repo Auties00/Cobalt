@@ -17,7 +17,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class GroupInviteMessage implements ContextualMessage {
+public final class GroupInviteMessage implements ContextualMessage {
   @JsonProperty(value = "7")
   private ContextInfo contextInfo;
 

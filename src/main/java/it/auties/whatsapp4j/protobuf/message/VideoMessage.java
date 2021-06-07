@@ -24,7 +24,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Builder
 @Accessors(fluent = true)
-public class VideoMessage extends MediaMessage {
+public final class VideoMessage extends MediaMessage {
   @JsonProperty(value = "19")
   private VideoMessageAttribution gifAttribution;
 

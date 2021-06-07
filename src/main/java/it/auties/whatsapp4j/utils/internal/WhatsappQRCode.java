@@ -1,4 +1,4 @@
-package it.auties.whatsapp4j.utils;
+package it.auties.whatsapp4j.utils.internal;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;

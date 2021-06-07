@@ -11,6 +11,6 @@ import jakarta.validation.constraints.NotNull;
  * @param timestamp the timestamp in seconds since {@link java.time.Instant#EPOCH}
  * @param authorJid the jid of the participant that changed the subject
  */
-public final record SubjectChangeResponse(@NotNull String subject, @JsonProperty("s_t") long timestamp,
+public record SubjectChangeResponse(@NotNull String subject, @JsonProperty("s_t") long timestamp,
                                           @JsonProperty("s_o") @NotNull String authorJid) implements JsonResponseModel {
 }

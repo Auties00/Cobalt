@@ -13,6 +13,6 @@ import java.util.List;
  * @param cmd  a nullable String used to describe the update
  * @param data a list of objects that represent the encoded update
  */
-public final record ChatCmdResponse(@JsonProperty("id") @NotNull String jid, String cmd,
+public record ChatCmdResponse(@JsonProperty("id") @NotNull String jid, String cmd,
                                     @NotNull List<Object> data) implements JsonResponseModel {
 }

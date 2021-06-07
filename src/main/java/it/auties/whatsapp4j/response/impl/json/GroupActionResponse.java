@@ -10,5 +10,5 @@ import java.util.List;
  *
  * @param participants the jids of the participants on which the action was executed
  */
-public final record GroupActionResponse(@NotNull List<String> participants) implements JsonResponseModel {
+public record GroupActionResponse(@NotNull List<String> participants) implements JsonResponseModel {
 }

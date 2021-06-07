@@ -1,8 +1,13 @@
 package it.auties.whatsapp4j.protobuf.message;
+
 /**
- * A model interface that represents a WhatsappMessage.
- * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
- * Instead, methods inside {@link it.auties.whatsapp4j.api.WhatsappAPI} should be used.
+ * A model interface that represents a WhatsappMessage sent by a contact or by Whatsapp.
+ *
+ * This interface is sealed to prepare for <a href="https://openjdk.java.net/jeps/406">pattern matching for instanceof in switch statements</a>, set to be released in Java 17.
  */
-public interface Message {
+public sealed interface Message permits CancelPaymentRequestMessage,
+        ContextualMessage, DeclinePaymentRequestMessage, DeviceSentMessage,
+        DeviceSyncMessage, HighlyStructuredMessage, ProductMessage,
+        ProtocolMessage, RequestPaymentMessage, SendPaymentMessage,
+        SenderKeyDistributionMessage, TemplateButtonReplyMessage, TemplateMessage {
 }

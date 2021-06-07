@@ -24,7 +24,7 @@ import java.util.List;
  * @param lastDescriptionUpdateTimestamp the nullable time in seconds since {@link Instant#EPOCH} when the group's description was last updated
  * @param participants                   a non null list of all the participants of the group
  */
-public final record GroupMetadataResponse(@JsonProperty("id") @NotNull String jid,
+public record GroupMetadataResponse(@JsonProperty("id") @NotNull String jid,
                                           @JsonProperty("owner") @NotNull String founderJid,
                                           @JsonProperty("creation") int foundationTimestamp, @NotNull String subject,
                                           @JsonProperty("subjectTime") Integer lastSubjectUpdateTimestamp,

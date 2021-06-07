@@ -21,7 +21,8 @@ public record ChatMute(long time) {
     public static final ChatMute UNKNOWN = new ChatMute(Integer.MIN_VALUE);
 
     /**
-     * Returns whether the chat associated with this object is muted or not
+     * Returns whether the chat associated with this object is muted or not.
+     * If the mute status is unknown({@link ChatMute#type()} == {@link ChatMuteType#UNKNOWN}), false is returned.
      *
      * @return true if the chat associated with this object is muted
      */

@@ -10,7 +10,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class DeviceSyncMessage implements Message {
+public final class DeviceSyncMessage implements Message {
   @JsonProperty(value = "1")
   private byte[] serializedXmlBytes;
 }

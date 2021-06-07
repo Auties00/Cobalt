@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import it.auties.whatsapp4j.binary.BinaryArray;
-import it.auties.whatsapp4j.utils.CypherUtils;
+import it.auties.whatsapp4j.utils.internal.CypherUtils;
 import it.auties.whatsapp4j.serialization.KeyPairDeserializer;
 import it.auties.whatsapp4j.serialization.KeyPairSerializer;
 import jakarta.validation.constraints.NotNull;
@@ -23,14 +23,29 @@ import java.util.prefs.Preferences;
  * This class is a data class used to hold the clientId, serverToken, clientToken, publicKey, privateKey, encryptionKey and macKey.
  * It can be serialized using Jackson and deserialized using the fromPreferences named constructor.
  */
-@AllArgsConstructor
-@NoArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Data
 @Accessors(fluent = true, chain = true)
 public class WhatsappKeysManager {
+    /**
+     * The path used to serialize and deserialize this object
+     */
     private static final String PREFERENCES_PATH = WhatsappKeysManager.class.getName();
+
+    /**
+     * An instance of Jackson's writer to serialize this object
+     */
     private static final ObjectWriter JACKSON_WRITER = new ObjectMapper().writer();
+
+    /**
+     * An instance of Jackson's reader to serialize this object
+     */
     private static final ObjectReader JACKSON_READER = new ObjectMapper().reader();
+
+    /**
+     * Returns a singleton instance of this object
+     */
     private static final @Getter WhatsappKeysManager singletonInstance = buildInstance();
 
     @JsonProperty
@@ -44,10 +59,23 @@ public class WhatsappKeysManager {
     @JsonProperty
     private BinaryArray encKey, macKey;
 
+    /**
+     * Constructs a singleton instance of {@link WhatsappKeysManager} using:
+     * <ul>
+     *     <li>The serialized object, saved in the Preferences linked to this machine at {@link WhatsappKeysManager#PREFERENCES_PATH}</li>
+     *     <li>A new instance constructed using random keys if the previous could not be deserialized</li>
+     * </ul>
+     *
+     * @return a non null {@link WhatsappKeysManager}
+     */
     @SneakyThrows
     private static WhatsappKeysManager buildInstance() {
         var preferences = Preferences.userRoot().get(PREFERENCES_PATH, null);
-        return preferences != null ? JACKSON_READER.readValue(preferences, WhatsappKeysManager.class) : new WhatsappKeysManager(Base64.getEncoder().encodeToString(BinaryArray.random(16).data()), CypherUtils.calculateRandomKeyPair(), null, null, null, null);
+        if (preferences != null) {
+            return JACKSON_READER.readValue(preferences, WhatsappKeysManager.class);
+        }
+
+        return new WhatsappKeysManager(Base64.getEncoder().encodeToString(BinaryArray.random(16).data()), CypherUtils.calculateRandomKeyPair(), null, null, null, null);
     }
 
     /**

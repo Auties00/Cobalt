@@ -1,11 +1,13 @@
-package it.auties.whatsapp4j.utils;
+package it.auties.whatsapp4j.utils.internal;
 
 import it.auties.whatsapp4j.binary.BinaryArray;
+import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.media.MediaConnection;
 import it.auties.whatsapp4j.media.MediaUpload;
 import it.auties.whatsapp4j.protobuf.message.MediaMessage;
 import it.auties.whatsapp4j.protobuf.message.MediaMessageType;
 import it.auties.whatsapp4j.response.model.json.JsonResponse;
+import it.auties.whatsapp4j.utils.WhatsappUtils;
 import jakarta.validation.constraints.NotNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
@@ -170,7 +172,8 @@ public class CypherUtils {
     }
 
     @SneakyThrows
-    public @NotNull MediaUpload mediaEncrypt(@NotNull MediaConnection connection, byte @NotNull [] file, @NotNull MediaMessageType type) {
+    public @NotNull MediaUpload mediaEncrypt(byte @NotNull [] file, @NotNull MediaMessageType type) {
+        var connection = WhatsappDataManager.singletonInstance().mediaConnection();
         var mediaKey = BinaryArray.random(32);
         var expandedMediaKey = hkdfExpand(mediaKey, type.key(), 112);
 

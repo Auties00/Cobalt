@@ -10,7 +10,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class CancelPaymentRequestMessage implements Message {
+public final class CancelPaymentRequestMessage implements Message {
   @JsonProperty(value = "1")
   private MessageKey key;
 }

@@ -10,6 +10,6 @@ import jakarta.validation.constraints.NotNull;
  * @param description   the new description
  * @param descriptionId the id of the new description
  */
-public final record DescriptionChangeResponse(@JsonProperty("desc") @NotNull String description,
+public record DescriptionChangeResponse(@JsonProperty("desc") @NotNull String description,
                                               @JsonProperty("descId") String descriptionId) implements JsonResponseModel {
 }

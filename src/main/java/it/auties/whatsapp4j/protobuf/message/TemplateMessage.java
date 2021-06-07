@@ -14,7 +14,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class TemplateMessage implements Message {
+public final class TemplateMessage implements Message {
   @JsonProperty(value = "2")
   private HydratedFourRowTemplate hydratedFourRowTemplate;
 

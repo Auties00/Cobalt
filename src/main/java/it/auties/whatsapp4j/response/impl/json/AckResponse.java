@@ -18,7 +18,7 @@ import java.time.Instant;
  * @param timestamp   the time in seconds since {@link Instant#EPOCH} when the update was dispatched by the server
  * @param participant if {@code to} is a group, the participant that this update regards
  */
-public final record AckResponse(String cmd,
+public record AckResponse(String cmd,
                                 @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) @JsonProperty("id") String[] ids,
                                 int ack, @NotNull String from, @NotNull String to, @JsonProperty("t") int timestamp,
                                 String participant) implements JsonResponseModel {

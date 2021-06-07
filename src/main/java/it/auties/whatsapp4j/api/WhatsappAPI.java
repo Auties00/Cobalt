@@ -20,7 +20,7 @@ import it.auties.whatsapp4j.response.impl.binary.ChatResponse;
 import it.auties.whatsapp4j.response.impl.binary.MessagesResponse;
 import it.auties.whatsapp4j.response.impl.json.*;
 import it.auties.whatsapp4j.socket.WhatsappWebSocket;
-import it.auties.whatsapp4j.utils.Validate;
+import it.auties.whatsapp4j.utils.internal.Validate;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.experimental.Accessors;

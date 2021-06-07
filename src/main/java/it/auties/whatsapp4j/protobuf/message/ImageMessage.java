@@ -20,7 +20,7 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode(callSuper = true)
 @Builder
 @Accessors(fluent = true)
-public class ImageMessage extends MediaMessage {
+public final class ImageMessage extends MediaMessage {
   @JsonProperty(value = "24")
   private byte[] midQualityFileEncSha256;
 

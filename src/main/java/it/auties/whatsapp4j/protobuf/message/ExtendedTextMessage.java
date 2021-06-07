@@ -18,7 +18,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class ExtendedTextMessage implements ContextualMessage {
+public final class ExtendedTextMessage implements ContextualMessage {
   @JsonProperty(value = "18")
   private boolean doNotPlayInline;
 

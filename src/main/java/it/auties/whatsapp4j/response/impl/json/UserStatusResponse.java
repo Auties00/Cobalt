@@ -11,7 +11,7 @@ import java.util.Optional;
  *
  * @param content if the contact has a status a non null String, otherwise an unsigned int representing the http status code for the original request
  */
-public final record UserStatusResponse(@JsonProperty("status") Object content) implements JsonResponseModel {
+public record UserStatusResponse(@JsonProperty("status") Object content) implements JsonResponseModel {
     /**
      * Returns the text status of a contact
      *

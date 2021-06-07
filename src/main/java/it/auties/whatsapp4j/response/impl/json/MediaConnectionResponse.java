@@ -11,6 +11,6 @@ import jakarta.validation.constraints.NotNull;
  * @param status     the http status code for the original request
  * @param connection an instance of the requested connection
  */
-public final record MediaConnectionResponse(int status,
+public record MediaConnectionResponse(int status,
                                             @NotNull @JsonProperty("media_conn") MediaConnection connection) implements JsonResponseModel {
 }

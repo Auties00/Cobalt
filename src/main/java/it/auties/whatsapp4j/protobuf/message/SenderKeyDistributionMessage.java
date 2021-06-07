@@ -10,7 +10,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class SenderKeyDistributionMessage implements Message {
+public final class SenderKeyDistributionMessage implements Message {
   @JsonProperty(value = "2")
   private byte[] axolotlSenderKeyDistributionMessage;
 

@@ -1,19 +1,18 @@
-package it.auties.whatsapp4j.socket;
+package it.auties.whatsapp4j.serialization;
 
 import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.binary.BinaryDecoder;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.response.model.binary.BinaryResponse;
-import it.auties.whatsapp4j.utils.CypherUtils;
-import it.auties.whatsapp4j.utils.Validate;
+import it.auties.whatsapp4j.utils.internal.CypherUtils;
+import it.auties.whatsapp4j.utils.internal.Validate;
 import jakarta.validation.constraints.NotNull;
-import jakarta.websocket.DecodeException;
 import jakarta.websocket.Decoder.Binary;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public class WhatsappBinaryMessageDecoder implements Binary<BinaryResponse> {
+public class BinaryMessageDecoder implements Binary<BinaryResponse> {
     private static final WhatsappKeysManager KEYS_MANAGER = WhatsappKeysManager.singletonInstance();
     private static final BinaryDecoder DECODER = new BinaryDecoder();
 

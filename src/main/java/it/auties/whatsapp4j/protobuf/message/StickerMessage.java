@@ -18,7 +18,7 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode(callSuper = true)
 @Builder
 @Accessors(fluent = true)
-public class StickerMessage extends MediaMessage {
+public final class StickerMessage extends MediaMessage {
   @JsonProperty(value = "17")
   private ContextInfo contextInfo;
 

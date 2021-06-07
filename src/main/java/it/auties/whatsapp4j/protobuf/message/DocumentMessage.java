@@ -19,7 +19,7 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode(callSuper = true)
 @Builder
 @Accessors(fluent = true)
-public class DocumentMessage extends MediaMessage {
+public final class DocumentMessage extends MediaMessage {
   @JsonProperty(value = "17")
   private ContextInfo contextInfo;
 
