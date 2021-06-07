@@ -1,6 +1,5 @@
 package it.auties.whatsapp4j.binary;
 
-import com.google.protobuf.CodedOutputStream;
 import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
