@@ -7,7 +7,6 @@ package it.auties.whatsapp4j.protobuf.message;
  */
 public sealed interface Message permits CancelPaymentRequestMessage,
         ContextualMessage, DeclinePaymentRequestMessage, DeviceSentMessage,
-        DeviceSyncMessage, HighlyStructuredMessage, ProductMessage,
-        ProtocolMessage, RequestPaymentMessage, SendPaymentMessage,
-        SenderKeyDistributionMessage, TemplateButtonReplyMessage, TemplateMessage {
+        DeviceSyncMessage, HighlyStructuredMessage, SenderKeyDistributionMessage,
+        ProtocolMessage, RequestPaymentMessage, SendPaymentMessage {
 }

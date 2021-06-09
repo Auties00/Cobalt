@@ -77,9 +77,9 @@ public abstract sealed class MediaMessage extends ContextualMessage permits Audi
     /**
      * Returns the timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link MediaMessage#mediaKey()}
      *
-     * @return an unsigned int
+     * @return an unsigned long
      */
-    public abstract int mediaKeyTimestamp();
+    public abstract long mediaKeyTimestamp();
 
 
     /**

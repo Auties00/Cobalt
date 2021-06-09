@@ -118,7 +118,7 @@ public class WhatsappDataManager {
      * @return a non empty Optional containing the result if it is found otherwise an empty Optional empty
      */
     public @NotNull Optional<Chat> findChatByMessage(@NotNull MessageInfo message) {
-        return findChatByJid(message.key().remoteJid());
+        return findChatByJid(message.key().chatJid());
     }
 
     /**
@@ -475,7 +475,7 @@ public class WhatsappDataManager {
     }
 
     private void processMessage(@NotNull WhatsappWebSocket socket, @NotNull MessageInfo message) {
-        var jid = message.key().remoteJid();
+        var jid = message.key().chatJid();
         var chat = findChatByJid(jid).orElseGet(() -> queryMissingChat(socket, jid));
         var protocol = message.messageContainer() != null && message.messageContainer().protocolMessage() != null;
         if (protocol) {
