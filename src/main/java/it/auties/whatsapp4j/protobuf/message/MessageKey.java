@@ -7,6 +7,9 @@ import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.protobuf.chat.Chat;
 import it.auties.whatsapp4j.protobuf.contact.Contact;
+import it.auties.whatsapp4j.utils.WhatsappUtils;
+import it.auties.whatsapp4j.utils.internal.Validate;
+import jakarta.validation.Validation;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -18,14 +21,15 @@ import lombok.experimental.Accessors;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Builder
+@Builder(builderMethodName = "newMessageKey", buildMethodName = "create")
 @Accessors(fluent = true)
 public class MessageKey {
   /**
    * The id of the message
    */
   @JsonProperty(value = "3")
-  private String id;
+  @Builder.Default
+  private String id = WhatsappUtils.randomId();
 
   /**
    * The jid of the contact or group that sent the message.
@@ -46,13 +50,38 @@ public class MessageKey {
   @JsonProperty(value = "2")
   private boolean fromMe;
 
+  public MessageKey(Chat chat){
+    this(chat, false);
+  }
+
+  //TODO: Done for today
+  public MessageKey(Chat chat, boolean fromMe){
+    this(WhatsappUtils.randomId(), chat.jid(), null, fromMe);
+  }
+
+  public MessageKey(Chat chat, Contact contact){
+    this(chat, contact, false);
+  }
+
+  public MessageKey(Chat chat, Contact contact, boolean fromMe){
+    this(chat, contact.jid(), fromMe);
+  }
+
+  public MessageKey(Chat chat, String contactJid){
+    this(chat, contactJid, false);
+  }
+
+  public MessageKey(Chat chat, String contactJid, boolean fromMe){
+    this(WhatsappUtils.randomId(), chat.jid(), contactJid, fromMe);
+  }
+
   /**
    * Returns the chat where the message was sent
    *
    * @return an optional wrapping a {@link Chat}
    */
   public Optional<Chat> chat(){
-    return WhatsappDataManager.singletonInstance().findChatByJid(senderJid);
+    return WhatsappDataManager.singletonInstance().findChatByJid(chatJid);
   }
 
   /**
@@ -61,6 +90,6 @@ public class MessageKey {
    * @return an optional wrapping a {@link Contact}
    */
   public Optional<Contact> sender(){
-    return WhatsappDataManager.singletonInstance().findContactByJid(senderJid);
+    return WhatsappDataManager.singletonInstance().findContactByJid(Optional.ofNullable(senderJid).orElse(chatJid));
   }
 }

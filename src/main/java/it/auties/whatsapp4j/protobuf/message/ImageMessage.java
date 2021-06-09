@@ -1,15 +1,19 @@
 package it.auties.whatsapp4j.protobuf.message;
 
-import com.fasterxml.jackson.annotation.*;
-import java.util.*;
-
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.info.ContextInfo;
 import it.auties.whatsapp4j.protobuf.model.InteractiveAnnotation;
 import it.auties.whatsapp4j.utils.internal.CypherUtils;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
+
+import java.time.ZonedDateTime;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds an image inside.
@@ -20,7 +24,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder
+@SuperBuilder(builderMethodName = "newRawImageMessage", buildMethodName = "create")
 @Accessors(fluent = true)
 public final class ImageMessage extends MediaMessage {
   /**
@@ -146,6 +150,37 @@ public final class ImageMessage extends MediaMessage {
    */
   @JsonProperty(value = "1")
   private String url;
+
+  /**
+   * Constructs a new builder to create a ImageMessage.
+   * The result can be later sent using {@link WhatsappAPI#sendMessage(it.auties.whatsapp4j.protobuf.info.MessageInfo)}
+   *
+   * @param media       the non null document that the new message wraps
+   * @param mimeType    the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
+   * @param caption     the caption of the new message
+   * @param width       the width of the image that the new message wraps
+   * @param height      the height of the image that the new message wraps
+   * @param contextInfo the context info that the new message wraps
+   * @return a non null new message
+   */
+  @Builder(builderClassName = "NewImageMessageBuilder", builderMethodName = "newImageMessage", buildMethodName = "create")
+  private static ImageMessage simpleBuilder(byte @NotNull [] media, String mimeType, String caption, int width, int height, ContextInfo contextInfo) {
+    var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.IMAGE);
+    return ImageMessage.newRawImageMessage()
+            .fileSha256(upload.fileSha256())
+            .fileEncSha256(upload.fileEncSha256())
+            .mediaKey(upload.mediaKey().data())
+            .mediaKeyTimestamp(ZonedDateTime.now().toEpochSecond())
+            .url(upload.url())
+            .directPath(upload.directPath())
+            .fileLength(media.length)
+            .mimetype(Optional.ofNullable(mimeType).orElse(MediaMessageType.IMAGE.defaultMimeType()))
+            .caption(caption)
+            .width(width)
+            .height(height)
+            .contextInfo(contextInfo)
+            .build();
+  }
 
   /**
    * Returns the media type of the image that this object wraps

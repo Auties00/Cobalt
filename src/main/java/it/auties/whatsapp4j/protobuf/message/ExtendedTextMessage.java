@@ -19,11 +19,11 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder
+@SuperBuilder(builderMethodName = "newTextMessage", buildMethodName = "create")
 @Accessors(fluent = true)
 public final class ExtendedTextMessage extends ContextualMessage {
   /**
-   *
+   * Determines whether the preview can be played inline
    */
   @JsonProperty(value = "18")
   private boolean doNotPlayInline;

@@ -79,15 +79,6 @@ public class MessageInfo {
   @JsonProperty(value = "4")
   private WebMessageInfoStatus globalStatus;
 
-  @JsonProperty(value = "3")
-  private long messageTimestamp;
-
-  @JsonProperty(value = "2")
-  private MessageContainer messageContainer;
-
-  @JsonProperty(value = "1", required = true)
-  private MessageKey key;
-
   /**
    * A map that holds the read status of this message for each participant.
    * If the chat associated with this chat is not a group, this map's size will always be 1.
@@ -97,6 +88,15 @@ public class MessageInfo {
    * It is important to remember that it is guaranteed that every participant will be present as a key.
    */
   private @NotNull Map<Contact, WebMessageInfoStatus> individualReadStatus;
+
+  @JsonProperty(value = "3")
+  private long messageTimestamp;
+
+  @JsonProperty(value = "2")
+  private MessageContainer messageContainer;
+
+  @JsonProperty(value = "1", required = true)
+  private MessageKey key;
 
   @Accessors(fluent = true)
   public enum WebMessageInfoStatus {

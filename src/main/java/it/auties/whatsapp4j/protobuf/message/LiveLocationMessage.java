@@ -17,7 +17,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder
+@SuperBuilder(builderMethodName = "newLiveLocationMessage", buildMethodName = "create")
 @Accessors(fluent = true)
 public final class LiveLocationMessage extends ContextualMessage {
   /**

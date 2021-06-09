@@ -42,11 +42,15 @@ public final class ContactMessage extends ContextualMessage {
    * @return a non null new message
    */
   @Builder(builderClassName = "NewContactMessageBuilder", builderMethodName = "newContactMessage", buildMethodName = "create")
-  public ContactMessage newContactMessage(String displayName, String vcard, ContextInfo contextInfo) {
+  private static ContactMessage builder(String displayName, String vcard, ContextInfo contextInfo) {
     return ContactMessage.builder()
             .vcard(vcard)
             .displayName(displayName)
             .contextInfo(contextInfo)
             .build();
+  }
+
+  private static ContactMessageBuilder<?, ?> builder() {
+    return new ContactMessageBuilderImpl();
   }
 }

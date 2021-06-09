@@ -8,6 +8,9 @@ import it.auties.whatsapp4j.protobuf.chat.GroupPolicy;
 import it.auties.whatsapp4j.protobuf.chat.GroupSetting;
 import it.auties.whatsapp4j.protobuf.contact.Contact;
 import it.auties.whatsapp4j.protobuf.contact.ContactStatus;
+import it.auties.whatsapp4j.protobuf.info.MessageInfo;
+import it.auties.whatsapp4j.protobuf.message.TemplateMessage;
+import it.auties.whatsapp4j.protobuf.miscellanous.FourRowTemplate;
 import it.auties.whatsapp4j.response.impl.json.UserInformationResponse;
 import it.auties.whatsapp4j.utils.internal.Validate;
 import jakarta.validation.constraints.NotNull;
@@ -539,6 +542,25 @@ public class WhatsappTest implements WhatsappListener {
     }
 
      */
+
+    @Test
+    @Order(39)
+    public void testGroupInviteMessage() throws ExecutionException, InterruptedException {
+        log.info("Querying group invite code");
+        var code = whatsappAPI.queryGroupInviteCode(group).get().code();
+        log.info("Queried %s".formatted(code));
+
+        log.info("Sending group invite message...");
+        var message = TemplateMessage.builder()
+                .fourRowTemplate(new FourRowTemplate())
+                .build();
+
+        var textResponse = whatsappAPI.sendMessage(new MessageInfo(me)).get();
+        Assertions.assertEquals(200, textResponse.status(), "Cannot send group invite message: %s".formatted(textResponse));
+        log.info("Sent group invite message");
+    }
+
+
     @Test
     @Order(40)
     public void testEnableEphemeralMessages() throws ExecutionException, InterruptedException {

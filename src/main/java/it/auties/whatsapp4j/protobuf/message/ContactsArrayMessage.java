@@ -18,7 +18,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder
+@SuperBuilder(builderMethodName = "newContactsArrayMessage", buildMethodName = "create")
 @Accessors(fluent = true)
 public final class ContactsArrayMessage extends ContextualMessage {
   /**
@@ -33,23 +33,4 @@ public final class ContactsArrayMessage extends ContextualMessage {
    */
   @JsonProperty(value = "1")
   private String displayName;
-
-  /**
-   * Constructs a new builder to create a ContactsArrayMessage.
-   * The result can be later sent using {@link WhatsappAPI#sendMessage(it.auties.whatsapp4j.protobuf.info.MessageInfo)}
-   *
-   * @param displayName the display name of the first contact that the new message wraps
-   * @param contacts    the list of contacts that the new message wraps
-   * @param contextInfo the context info that the new message wraps
-   *
-   * @return a non null new message
-   */
-  @Builder(builderClassName = "NewContactsArrayMessageBuilder", builderMethodName = "newContactMessage", buildMethodName = "create")
-  public ContactsArrayMessage newContactMessage(String displayName, List<ContactMessage> contacts, ContextInfo contextInfo) {
-    return ContactsArrayMessage.builder()
-            .contacts(contacts)
-            .displayName(displayName)
-            .contextInfo(contextInfo)
-            .build();
-  }
 }

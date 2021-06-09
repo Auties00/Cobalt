@@ -17,7 +17,7 @@ import lombok.experimental.Accessors;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Builder
+@Builder(builderClassName = "newHighlyStructuredMessage", buildMethodName = "create")
 @Accessors(fluent = true)
 public final class HighlyStructuredMessage implements Message {
   /**

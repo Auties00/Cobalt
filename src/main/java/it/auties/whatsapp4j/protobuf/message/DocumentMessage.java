@@ -1,7 +1,6 @@
 package it.auties.whatsapp4j.protobuf.message;
 
-import com.fasterxml.jackson.annotation.*;
-
+import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.info.ContextInfo;
 import it.auties.whatsapp4j.utils.internal.CypherUtils;
@@ -9,6 +8,9 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
+
+import java.time.ZonedDateTime;
+import java.util.Optional;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds a document inside.
@@ -95,6 +97,42 @@ public final class DocumentMessage extends MediaMessage {
    */
   @JsonProperty(value = "1")
   private String url;
+
+  /**
+   * Constructs a new builder to create a DocumentMessage.
+   * The result can be later sent using {@link WhatsappAPI#sendMessage(it.auties.whatsapp4j.protobuf.info.MessageInfo)}
+   *
+   * @param media         the non null document that the new message wraps
+   * @param mimeType      the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
+   * @param title         the title of the document that the new message wraps
+   * @param pageCount     the number of pages of the document that the new message wraps
+   * @param fileName      the name of the document that the new message wraps
+   * @param jpegThumbnail the thumbnail of the document that the new message wraps
+   * @param contextInfo   the context info that the new message wraps
+   * @return a non null new message
+   */
+  @Builder(builderClassName = "NewDocumentMessageBuilder", builderMethodName = "newDocumentMessage", buildMethodName = "create")
+  private static DocumentMessage builder(byte @NotNull [] media, String mimeType, String title, int pageCount, String fileName, byte[] jpegThumbnail, ContextInfo contextInfo) {
+    var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.DOCUMENT);
+    return DocumentMessage.builder()
+            .fileSha256(upload.fileSha256())
+            .fileEncSha256(upload.fileEncSha256())
+            .mediaKey(upload.mediaKey().data())
+            .mediaKeyTimestamp(ZonedDateTime.now().toEpochSecond())
+            .url(upload.url())
+            .directPath(upload.directPath())
+            .fileLength(media.length)
+            .mimetype(Optional.ofNullable(mimeType).orElse(MediaMessageType.DOCUMENT.defaultMimeType()))
+            .fileName(fileName)
+            .pageCount(pageCount)
+            .jpegThumbnail(jpegThumbnail)
+            .contextInfo(contextInfo)
+            .build();
+  }
+
+  private static DocumentMessageBuilder<?, ?> builder(){
+    return new DocumentMessageBuilderImpl();
+  }
 
   /**
    * Returns the media type of the document that this object wraps

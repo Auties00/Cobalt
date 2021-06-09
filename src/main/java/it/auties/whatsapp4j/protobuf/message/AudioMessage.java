@@ -96,7 +96,7 @@ public final class AudioMessage extends MediaMessage {
   private String url;
 
   /**
-   * Constructs a new builder to create a WhatsappMediaMessage that wraps an audio or a voice message.
+   * Constructs a new builder to create a AudioMessage.
    * The result can be later sent using {@link WhatsappAPI#sendMessage(it.auties.whatsapp4j.protobuf.info.MessageInfo)}
    *
    * @param media         the non null image that the new message holds
@@ -107,7 +107,7 @@ public final class AudioMessage extends MediaMessage {
    * @return a non null new message
    */
   @Builder(builderClassName= "NewAudioMessageBuilder", builderMethodName = "newAudioMessage", buildMethodName = "create")
-  public AudioMessage newAudioMessage(byte @NotNull [] media, ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
+  private static AudioMessage builder(byte @NotNull [] media, ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.AUDIO);
     return AudioMessage.builder()
             .fileSha256(upload.fileSha256())
@@ -122,6 +122,10 @@ public final class AudioMessage extends MediaMessage {
             .streamingSidecar(upload.sidecar())
             .voiceMessage(voiceMessage)
             .build();
+  }
+
+  private static AudioMessageBuilder<?, ?> builder() {
+    return new AudioMessageBuilderImpl();
   }
 
   /**

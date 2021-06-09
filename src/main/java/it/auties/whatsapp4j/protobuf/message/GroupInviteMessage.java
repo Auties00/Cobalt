@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.*;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.info.ContextInfo;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
@@ -13,11 +14,11 @@ import lombok.experimental.SuperBuilder;
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
  * Instead, methods inside {@link WhatsappAPI} should be used.
  */
-@AllArgsConstructor
+@AllArgsConstructor(staticName = "newGroupInviteMessage")
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder
+@SuperBuilder(builderMethodName = "newGroupInviteMessage", buildMethodName = "create")
 @Accessors(fluent = true)
 public final class GroupInviteMessage extends ContextualMessage {
   /**

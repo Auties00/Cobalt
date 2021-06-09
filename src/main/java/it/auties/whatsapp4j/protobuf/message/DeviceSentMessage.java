@@ -11,7 +11,7 @@ import lombok.experimental.Accessors;
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
  * Instead, methods inside {@link WhatsappAPI} should be used.
  */
-@AllArgsConstructor
+@AllArgsConstructor(staticName = "newDeviceSentMessage")
 @NoArgsConstructor
 @Data
 @Builder

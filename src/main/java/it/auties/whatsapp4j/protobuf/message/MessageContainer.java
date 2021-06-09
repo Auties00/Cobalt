@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.*;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.chat.Chat;
 import it.auties.whatsapp4j.protobuf.model.Call;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -190,4 +191,38 @@ public class MessageContainer {
    */
   @JsonProperty(value = "1")
   private String textMessage;
+
+  /**
+   * Constructs a new MessageContainer from a message of any type
+   * 
+   * @param message the message that the new container should wrap
+   * @param <T> the type of the message
+   */
+  // When Java 17 comes out this will be simplified to an elegant switch statement, for now this is what we've got
+  public <T extends Message> MessageContainer(@NotNull T message){
+    if(message instanceof SenderKeyDistributionMessage senderKeyDistributionMessage) this.senderKeyDistributionMessage = senderKeyDistributionMessage;
+    if(message instanceof ImageMessage imageMessage) this.imageMessage = imageMessage;
+    if(message instanceof ContactMessage contactMessage) this.contactMessage = contactMessage;
+    if(message instanceof LocationMessage locationMessage) this.locationMessage = locationMessage;
+    if(message instanceof ExtendedTextMessage extendedTextMessage) this.extendedTextMessage = extendedTextMessage;
+    if(message instanceof DocumentMessage documentMessage) this.documentMessage = documentMessage;
+    if(message instanceof AudioMessage audioMessage) this.audioMessage = audioMessage;
+    if(message instanceof VideoMessage videoMessage) this.videoMessage = videoMessage;
+    if(message instanceof ProtocolMessage protocolMessage) this.protocolMessage = protocolMessage;
+    if(message instanceof ContactsArrayMessage contactsArrayMessage) this.contactsArrayMessage = contactsArrayMessage;
+    if(message instanceof HighlyStructuredMessage highlyStructuredMessage) this.highlyStructuredMessage = highlyStructuredMessage;
+    if(message instanceof SendPaymentMessage sendPaymentMessage) this.sendPaymentMessage = sendPaymentMessage;
+    if(message instanceof LiveLocationMessage liveLocationMessage) this.liveLocationMessage = liveLocationMessage;
+    if(message instanceof RequestPaymentMessage requestPaymentMessage) this.requestPaymentMessage = requestPaymentMessage;
+    if(message instanceof DeclinePaymentRequestMessage declinePaymentRequestMessage) this.declinePaymentRequestMessage = declinePaymentRequestMessage;
+    if(message instanceof CancelPaymentRequestMessage cancelPaymentRequestMessage) this.cancelPaymentRequestMessage = cancelPaymentRequestMessage;
+    if(message instanceof TemplateMessage templateMessage) this.templateMessage = templateMessage;
+    if(message instanceof StickerMessage stickerMessage) this.stickerMessage = stickerMessage;
+    if(message instanceof GroupInviteMessage groupInviteMessage) this.groupInviteMessage = groupInviteMessage;
+    if(message instanceof TemplateButtonReplyMessage templateButtonReplyMessage) this.templateButtonReplyMessage = templateButtonReplyMessage;
+    if(message instanceof ProductMessage productMessage) this.productMessage = productMessage;
+    if(message instanceof DeviceSentMessage deviceSentMessage) this.deviceSentMessage = deviceSentMessage;
+    if(message instanceof DeviceSyncMessage deviceSyncMessage) this.deviceSyncMessage = deviceSyncMessage;
+    throw new IllegalArgumentException("Cannot create a new instance of MessageContainer from %s: Message is a sealed class, how did this even get through?".formatted(message.getClass().getName()));
+  }
 }
