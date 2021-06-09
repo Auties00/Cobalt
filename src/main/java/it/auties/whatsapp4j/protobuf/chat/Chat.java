@@ -6,7 +6,7 @@ import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.protobuf.contact.Contact;
 import it.auties.whatsapp4j.protobuf.contact.ContactStatus;
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
-import it.auties.whatsapp4j.protobuf.message.MessagesContainer;
+import it.auties.whatsapp4j.protobuf.model.Messages;
 import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import jakarta.validation.constraints.NotNull;
@@ -52,7 +52,7 @@ public class Chat {
    * A non null arrayList of messages in this chat sorted chronologically
    */
   @Builder.Default
-  private @NotNull MessagesContainer messages = new MessagesContainer();
+  private @NotNull Messages messages = new Messages();
 
   /**
    * A map that holds the status of each participant, excluding yourself, for this chat.

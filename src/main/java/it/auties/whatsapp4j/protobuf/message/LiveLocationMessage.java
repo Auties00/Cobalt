@@ -20,33 +20,58 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @Accessors(fluent = true)
 public final class LiveLocationMessage extends ContextualMessage {
-  @JsonProperty(value = "17")
-  private ContextInfo contextInfo;
-
+  /**
+   * The thumbnail for this live location message encoded as jpeg in an array of bytes
+   */
   @JsonProperty(value = "16")
   private byte[] jpegThumbnail;
 
+  /**
+   * This offset probably refers to the time since the last update to this live location message.
+   * In addition, it is measured in seconds since {@link java.time.Instant#EPOCH}.
+   */
   @JsonProperty(value = "8")
   private int timeOffset;
 
+  /**
+   * This property probably refers to the number of updates that this live location message.
+   */
   @JsonProperty(value = "7")
   private long sequenceNumber;
 
+  /**
+   * The caption of this message
+   */
   @JsonProperty(value = "6")
   private String caption;
 
+  /**
+   * Degrees Clockwise from Magnetic North
+   */
   @JsonProperty(value = "5")
   private int degreesClockwiseFromMagneticNorth;
 
+  /**
+   * The speed in meters per second of the device that sent this live location message
+   */
   @JsonProperty(value = "4")
   private float speedInMps;
 
+  /**
+   * The accuracy in meters of the location that this message wraps
+   */
   @JsonProperty(value = "3")
   private int accuracyInMeters;
 
+  /**
+   * The longitude of the location that this message wraps
+   */
   @JsonProperty(value = "2")
   private double degreesLongitude;
 
+  /**
+   * The latitude of the location that this message wraps
+   */
   @JsonProperty(value = "1")
   private double degreesLatitude;
 }

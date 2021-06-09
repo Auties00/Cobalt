@@ -6,6 +6,7 @@ import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.info.ContextInfo;
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.experimental.SuperBuilder;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds a whatsapp group invite inside.
@@ -16,27 +17,48 @@ import lombok.experimental.Accessors;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@Builder
+@SuperBuilder
 @Accessors(fluent = true)
 public final class GroupInviteMessage extends ContextualMessage {
+  /**
+   * The context info of this message
+   */
   @JsonProperty(value = "7")
-  private ContextInfo contextInfo;
+  private ContextInfo contextInfo; // Overrides ContextualMessage's context info
 
+  /**
+   * The caption of this invite
+   */
   @JsonProperty(value = "6")
   private String caption;
 
+  /**
+   * The thumbnail of the group that this invite regards encoded as jpeg in an array of bytes
+   */
   @JsonProperty(value = "5")
   private byte[] jpegThumbnail;
 
+  /**
+   * The name of the group that this invite regards
+   */
   @JsonProperty(value = "4")
   private String groupName;
 
+  /**
+   * The expiration of this invite in seconds since {@link java.time.Instant#EPOCH}
+   */
   @JsonProperty(value = "3")
   private long inviteExpiration;
 
+  /**
+   * The invite code of this message
+   */
   @JsonProperty(value = "2")
   private String inviteCode;
 
+  /**
+   * The jid of the group that this invite regards
+   */
   @JsonProperty(value = "1")
   private String groupJid;
 }

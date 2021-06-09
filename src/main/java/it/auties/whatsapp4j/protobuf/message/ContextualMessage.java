@@ -20,9 +20,10 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @Data
 @Accessors(fluent = true)
-public sealed abstract class ContextualMessage implements Message permits ContactMessage,
+public sealed abstract class ContextualMessage implements Message permits
+        ContactMessage, ProductMessage, TemplateButtonReplyMessage,
         ContactsArrayMessage, ExtendedTextMessage, GroupInviteMessage,
-        LiveLocationMessage, LocationMessage, MediaMessage {
+        LiveLocationMessage, LocationMessage, MediaMessage, TemplateMessage {
 
     /**
      * The context info of this message

@@ -31,7 +31,6 @@ public final class ContactMessage extends ContextualMessage {
   @JsonProperty(value = "1")
   private String displayName;
 
-
   /**
    * Constructs a new builder to create a ContactMessage.
    * The result can be later sent using {@link WhatsappAPI#sendMessage(it.auties.whatsapp4j.protobuf.info.MessageInfo)}

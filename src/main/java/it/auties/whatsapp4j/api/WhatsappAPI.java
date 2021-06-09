@@ -11,7 +11,7 @@ import it.auties.whatsapp4j.protobuf.chat.*;
 import it.auties.whatsapp4j.protobuf.contact.Contact;
 import it.auties.whatsapp4j.protobuf.contact.ContactStatus;
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
-import it.auties.whatsapp4j.protobuf.message.MessagesContainer;
+import it.auties.whatsapp4j.protobuf.model.Messages;
 import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.request.impl.SubscribeUserPresenceRequest;
 import it.auties.whatsapp4j.request.impl.UserQueryRequest;
@@ -738,7 +738,7 @@ public class WhatsappAPI {
                     .jid(res.jid())
                     .mute(new ChatMute(0))
                     .displayName(subject)
-                    .messages(new MessagesContainer())
+                    .messages(new Messages())
                     .presences(new HashMap<>())
                     .build();
             manager.chats().add(group);

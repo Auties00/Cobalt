@@ -1,6 +1,7 @@
-package it.auties.whatsapp4j.protobuf.message;
+package it.auties.whatsapp4j.protobuf.model;
 
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
+import it.auties.whatsapp4j.protobuf.message.Message;
 import jakarta.validation.constraints.NotNull;
 import lombok.NoArgsConstructor;
 
@@ -15,7 +16,7 @@ import java.util.Comparator;
  * This contract can be technically broken using reflection to access the array associated with this collection, though, obviously, it's not advisable.
  */
 @NoArgsConstructor
-public class MessagesContainer extends ArrayList<MessageInfo> {
+public class Messages extends ArrayList<MessageInfo> {
     /**
      * The default comparator used to sort the entries in this collection
      */
@@ -26,7 +27,7 @@ public class MessagesContainer extends ArrayList<MessageInfo> {
      *
      * @param message the first non null entry to add to this collection
      */
-    public MessagesContainer(@NotNull MessageInfo message) {
+    public Messages(@NotNull MessageInfo message) {
         add(message);
     }
 
