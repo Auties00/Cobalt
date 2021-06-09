@@ -3,7 +3,6 @@ package it.auties.whatsapp4j.protobuf.chat;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import jakarta.validation.constraints.NotNull;
 
-
 /**
  * The constants of this enumerated type describe the various actions that can be executed on a {@link it.auties.whatsapp4j.protobuf.contact.Contact} in a {@link Chat}.
  * Said chat should be a group: {@link Chat#isGroup()}.
