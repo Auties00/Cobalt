@@ -21,7 +21,7 @@ import java.util.Optional;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder
+@SuperBuilder(buildMethodName = "create")
 @Accessors(fluent = true)
 public final class DocumentMessage extends MediaMessage {
   /**
@@ -109,6 +109,7 @@ public final class DocumentMessage extends MediaMessage {
    * @param fileName      the name of the document that the new message wraps
    * @param jpegThumbnail the thumbnail of the document that the new message wraps
    * @param contextInfo   the context info that the new message wraps
+   *
    * @return a non null new message
    */
   @Builder(builderClassName = "NewDocumentMessageBuilder", builderMethodName = "newDocumentMessage", buildMethodName = "create")
@@ -127,7 +128,7 @@ public final class DocumentMessage extends MediaMessage {
             .pageCount(pageCount)
             .jpegThumbnail(jpegThumbnail)
             .contextInfo(contextInfo)
-            .build();
+            .create();
   }
 
   private static DocumentMessageBuilder<?, ?> builder(){

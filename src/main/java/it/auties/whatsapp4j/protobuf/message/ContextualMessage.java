@@ -17,7 +17,7 @@ import lombok.experimental.SuperBuilder;
  */
 @AllArgsConstructor
 @NoArgsConstructor
-@SuperBuilder
+@SuperBuilder(buildMethodName = "create")
 @Data
 @Accessors(fluent = true)
 public sealed abstract class ContextualMessage implements Message permits

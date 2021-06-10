@@ -1,7 +1,8 @@
-package it.auties.whatsapp4j.protobuf.button;
+package it.auties.whatsapp4j.protobuf.model;
 
 import com.fasterxml.jackson.annotation.*;
-import java.util.*;
+
+import it.auties.whatsapp4j.protobuf.message.HighlyStructuredMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -10,10 +11,10 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class HydratedQuickReplyButton {
+public class URLButton {
   @JsonProperty(value = "2")
-  private String id;
+  private HighlyStructuredMessage url;
 
   @JsonProperty(value = "1")
-  private String displayText;
+  private HighlyStructuredMessage displayText;
 }

@@ -18,8 +18,10 @@ public class Point {
   private double x;
 
   @JsonProperty(value = "2")
+  @Deprecated
   private int yDeprecated;
 
   @JsonProperty(value = "1")
+  @Deprecated
   private int xDeprecated;
 }

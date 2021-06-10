@@ -20,7 +20,7 @@ public class Messages extends ArrayList<MessageInfo> {
     /**
      * The default comparator used to sort the entries in this collection
      */
-    private static final Comparator<MessageInfo> ENTRY_COMPARATOR = Comparator.comparingLong(MessageInfo::messageTimestamp);
+    private static final Comparator<MessageInfo> ENTRY_COMPARATOR = Comparator.comparingLong(MessageInfo::timestamp);
 
     /**
      * Constructs a new instance of WebMessageInfos from a WebMessageInfo

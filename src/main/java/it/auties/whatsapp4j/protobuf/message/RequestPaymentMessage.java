@@ -14,7 +14,7 @@ import lombok.experimental.Accessors;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Builder
+@Builder(builderMethodName = "newRequestPaymentMessage", buildMethodName = "create")
 @Accessors(fluent = true)
 public final class RequestPaymentMessage implements Message {
   /**

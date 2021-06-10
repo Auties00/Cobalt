@@ -155,12 +155,13 @@ public final class ImageMessage extends MediaMessage {
    * Constructs a new builder to create a ImageMessage.
    * The result can be later sent using {@link WhatsappAPI#sendMessage(it.auties.whatsapp4j.protobuf.info.MessageInfo)}
    *
-   * @param media       the non null document that the new message wraps
+   * @param media       the non null image that the new message wraps
    * @param mimeType    the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
    * @param caption     the caption of the new message
    * @param width       the width of the image that the new message wraps
    * @param height      the height of the image that the new message wraps
    * @param contextInfo the context info that the new message wraps
+   *
    * @return a non null new message
    */
   @Builder(builderClassName = "NewImageMessageBuilder", builderMethodName = "newImageMessage", buildMethodName = "create")
@@ -179,7 +180,7 @@ public final class ImageMessage extends MediaMessage {
             .width(width)
             .height(height)
             .contextInfo(contextInfo)
-            .build();
+            .create();
   }
 
   /**

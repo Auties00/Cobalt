@@ -2,9 +2,15 @@ package it.auties.whatsapp4j.protobuf.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.api.WhatsappAPI;
+import it.auties.whatsapp4j.protobuf.info.ContextInfo;
+import it.auties.whatsapp4j.utils.internal.CypherUtils;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
+
+import java.time.ZonedDateTime;
+import java.util.Optional;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds a sticker inside.
@@ -15,7 +21,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder
+@SuperBuilder(buildMethodName = "create")
 @Accessors(fluent = true)
 public final class StickerMessage extends MediaMessage {
   /**
@@ -80,7 +86,8 @@ public final class StickerMessage extends MediaMessage {
   private String mimetype;
 
   /**
-   * The 
+   * The media key of the sticker that this object wraps.
+   * This key is used to decrypt the encoded media by {@link CypherUtils#mediaDecrypt(MediaMessage)}
    */
   @JsonProperty(value = "4")
   private byte[] mediaKey;
@@ -103,6 +110,47 @@ public final class StickerMessage extends MediaMessage {
   @JsonProperty(value = "1")
   private String url;
 
+  /**
+   * Constructs a new builder to create a StickerMessage.
+   * The result can be later sent using {@link WhatsappAPI#sendMessage(it.auties.whatsapp4j.protobuf.info.MessageInfo)}
+   *
+   * @param media        the non null sticker that the new message wraps
+   * @param mimeType     the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
+   * @param pngThumbnail the thumbnail of the sticker that the new message wraps as a png
+   * @param isAnimated   whether the sticker that the new message wraps is animated
+   * @param contextInfo  the context info that the new message wraps
+   *
+   * @return a non null new message
+   */
+  @Builder(builderClassName = "NewStickerMessageBuilder", builderMethodName = "newStickerMessage", buildMethodName = "create")
+  private static StickerMessage builder(byte @NotNull [] media, String mimeType, byte[] pngThumbnail, boolean isAnimated, ContextInfo contextInfo) {
+    var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.STICKER);
+    return StickerMessage.builder()
+            .fileSha256(upload.fileSha256())
+            .fileEncSha256(upload.fileEncSha256())
+            .mediaKey(upload.mediaKey().data())
+            .mediaKeyTimestamp(ZonedDateTime.now().toEpochSecond())
+            .url(upload.url())
+            .directPath(upload.directPath())
+            .fileLength(media.length)
+            .mimetype(Optional.ofNullable(mimeType).orElse(MediaMessageType.STICKER.defaultMimeType()))
+            .firstFrameSidecar(upload.sidecar())
+            .firstFrameLength(upload.sidecar().length)
+            .isAnimated(isAnimated)
+            .pngThumbnail(pngThumbnail)
+            .contextInfo(contextInfo)
+            .create();
+  }
+
+  private static StickerMessageBuilder<?, ?> builder(){
+    return new StickerMessageBuilderImpl();
+  }
+  
+  /**
+   * Returns the media type of the sticker that this object wraps
+   *
+   * @return {@link MediaMessageType#STICKER}
+   */
   @Override
   public MediaMessageType type() {
     return MediaMessageType.STICKER;

@@ -14,7 +14,7 @@ import lombok.experimental.SuperBuilder;
  */
 @AllArgsConstructor
 @NoArgsConstructor
-@SuperBuilder
+@SuperBuilder(buildMethodName = "create")
 public abstract sealed class MediaMessage extends ContextualMessage permits AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoMessage {
     /**
      * The cached decoded media, by default null

@@ -1,14 +1,13 @@
 package it.auties.whatsapp4j.protobuf.message;
 
-import com.fasterxml.jackson.annotation.*;
-import java.util.*;
-
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.api.WhatsappAPI;
-import it.auties.whatsapp4j.protobuf.chat.ChatMute;
-import it.auties.whatsapp4j.protobuf.info.ContextInfo;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
+
+import java.util.Arrays;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds text inside.

@@ -1,12 +1,13 @@
 package it.auties.whatsapp4j.protobuf.message;
 
-import com.fasterxml.jackson.annotation.*;
-
+import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.api.WhatsappAPI;
-import it.auties.whatsapp4j.protobuf.chat.Chat;
 import it.auties.whatsapp4j.protobuf.model.Call;
 import jakarta.validation.constraints.NotNull;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
 /**
@@ -223,6 +224,15 @@ public class MessageContainer {
     if(message instanceof ProductMessage productMessage) this.productMessage = productMessage;
     if(message instanceof DeviceSentMessage deviceSentMessage) this.deviceSentMessage = deviceSentMessage;
     if(message instanceof DeviceSyncMessage deviceSyncMessage) this.deviceSyncMessage = deviceSyncMessage;
-    throw new IllegalArgumentException("Cannot create a new instance of MessageContainer from %s: Message is a sealed class, how did this even get through?".formatted(message.getClass().getName()));
+  }
+
+
+  /**
+   * Constructs a new MessageContainer from a simple text message
+   *
+   * @param textMessage the text message that the new container should wrap
+   */
+  public MessageContainer(String textMessage){
+    this.textMessage = textMessage;
   }
 }

@@ -1,8 +1,9 @@
 package it.auties.whatsapp4j.protobuf.info;
 
-import com.fasterxml.jackson.annotation.*;
-import java.util.*;
-
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.contact.Contact;
 import it.auties.whatsapp4j.protobuf.message.LiveLocationMessage;
 import it.auties.whatsapp4j.protobuf.message.MessageContainer;
@@ -11,71 +12,139 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.Accessors;
 
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * A model class that holds the information related to a {@link it.auties.whatsapp4j.protobuf.message.Message}.
+ * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
+ * Instead, methods inside {@link WhatsappAPI} should be used.
+ */
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Builder
+@Builder(builderMethodName = "newMessageInfo", buildMethodName = "create")
 @Accessors(fluent = true)
 public class MessageInfo {
+  /**
+   * Ephemeral duration
+   */
   @JsonProperty(value = "33")
   private int ephemeralDuration;
 
+  /**
+   * Ephemeral start timestamp
+   */
   @JsonProperty(value = "32")
   private long ephemeralStartTimestamp;
 
+  /**
+   * Quoted payment info
+   */
   @JsonProperty(value = "31")
   private PaymentInfo quotedPaymentInfo;
 
+  /**
+   * Final live location
+   */
   @JsonProperty(value = "30")
   private LiveLocationMessage finalLiveLocation;
 
+  /**
+   * PaymentInfo
+   */
   @JsonProperty(value = "29")
   private PaymentInfo paymentInfo;
 
+  /**
+   * Labels
+   */
   @JsonProperty(value = "28")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<String> labels;
 
+  /**
+   * Duration
+   */
   @JsonProperty(value = "27")
   private int duration;
 
+  /**
+   * Message stub parameters
+   */
   @JsonProperty(value = "26")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<String> messageStubParameters;
 
+  /**
+   * Clear media
+   */
   @JsonProperty(value = "25")
   private boolean clearMedia;
 
+  /**
+   * The stub type of this message.
+   * This property is populated only if the message that {@link MessageInfo#container} wraps is a {@link it.auties.whatsapp4j.protobuf.message.ProtocolMessage}.
+   */
   @JsonProperty(value = "24")
   private WebMessageInfoStubType messageStubType;
 
+  /**
+   * Url number
+   */
   @JsonProperty(value = "23")
   private boolean urlNumber;
 
+  /**
+   * Url text
+   */
   @JsonProperty(value = "22")
   private boolean urlText;
 
+  /**
+   * Multicast
+   */
   @JsonProperty(value = "21")
   private boolean multicast;
 
+  /**
+   * Media Cipher Text SHA256
+   */
   @JsonProperty(value = "20")
   private byte[] mediaCiphertextSha256;
 
+  /**
+   * Push name
+   */
   @JsonProperty(value = "19")
   private String pushName;
 
+  /**
+   * Whether this message was sent using a broadcast list
+   */
   @JsonProperty(value = "18")
   private boolean broadcast;
 
+  /**
+   * Whether this message is starred
+   */
   @JsonProperty(value = "17")
   private boolean starred;
 
+  /**
+   * Whether this message should be ignored or counted as an unread message
+   */
   @JsonProperty(value = "16")
   private boolean ignore;
 
-  @JsonProperty(value = "5")
-  private String participant;
-
+  /**
+   * The global status of this message.
+   * If the chat associated with this message is a group it is guaranteed that this field is equal or lower hierarchically then every value stored by {@link MessageInfo#individualReadStatus()}.
+   * Otherwise, this field is guaranteed to be equal to the single value stored by {@link MessageInfo#individualReadStatus()} for the contact associated with the chat associated with this message.
+   */
   @JsonProperty(value = "4")
   private WebMessageInfoStatus globalStatus;
 
@@ -83,20 +152,43 @@ public class MessageInfo {
    * A map that holds the read status of this message for each participant.
    * If the chat associated with this chat is not a group, this map's size will always be 1.
    * In this case it is guaranteed that the value stored in this map for the contact associated with this chat equals {@link MessageInfo#globalStatus()}.
-   * Otherwise, it is guaranteed to be participants - 1.
+   * Otherwise, it is guaranteed to have a size of participants - 1.
    * In this case it is guaranteed that every value stored in this map for each participant of this chat is equal or higher hierarchically then {@link MessageInfo#globalStatus()}.
    * It is important to remember that it is guaranteed that every participant will be present as a key.
    */
-  private @NotNull Map<Contact, WebMessageInfoStatus> individualReadStatus;
+  @Builder.Default
+  private @NotNull Map<Contact, WebMessageInfoStatus> individualReadStatus = new HashMap<>();
 
+  /**
+   * The timestamp, that is the seconds since {@link java.time.Instant#EPOCH}, when this message was sent
+   */
   @JsonProperty(value = "3")
-  private long messageTimestamp;
+  private long timestamp;
 
+  /**
+   * The container of this message
+   */
   @JsonProperty(value = "2")
-  private MessageContainer messageContainer;
+  private MessageContainer container;
 
+  /**
+   * The MessageKey of this message
+   */
   @JsonProperty(value = "1", required = true)
   private MessageKey key;
+
+  /**
+   * Constructs a new MessageInfo from a MessageKey and a MessageContainer
+   *
+   * @param key       the key of the message
+   * @param container the container of the message
+   */
+  public MessageInfo(MessageKey key, MessageContainer container) {
+    this.key = key;
+    this.timestamp = Instant.now().getEpochSecond();
+    this.globalStatus = WebMessageInfoStatus.PENDING;
+    this.container = container;
+  }
 
   @Accessors(fluent = true)
   public enum WebMessageInfoStatus {

@@ -1,17 +1,20 @@
 package it.auties.whatsapp4j.protobuf.message;
 
-import com.fasterxml.jackson.annotation.*;
-import java.util.*;
-
+import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.protobuf.chat.Chat;
 import it.auties.whatsapp4j.protobuf.contact.Contact;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import it.auties.whatsapp4j.utils.internal.Validate;
-import jakarta.validation.Validation;
-import lombok.*;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+
+import java.util.Optional;
 
 /**
  * A container for unique identifiers and metadata linked to a {@link Message} and contained in {@link it.auties.whatsapp4j.protobuf.info.MessageInfo}.
@@ -50,29 +53,13 @@ public class MessageKey {
   @JsonProperty(value = "2")
   private boolean fromMe;
 
-  public MessageKey(Chat chat){
-    this(chat, false);
-  }
-
-  //TODO: Done for today
-  public MessageKey(Chat chat, boolean fromMe){
-    this(WhatsappUtils.randomId(), chat.jid(), null, fromMe);
-  }
-
-  public MessageKey(Chat chat, Contact contact){
-    this(chat, contact, false);
-  }
-
-  public MessageKey(Chat chat, Contact contact, boolean fromMe){
-    this(chat, contact.jid(), fromMe);
-  }
-
-  public MessageKey(Chat chat, String contactJid){
-    this(chat, contactJid, false);
-  }
-
-  public MessageKey(Chat chat, String contactJid, boolean fromMe){
-    this(WhatsappUtils.randomId(), chat.jid(), contactJid, fromMe);
+  /**
+   * Constructs a MessageKey for a message with a random id, sent by someone that isn't yourself and a provided chat
+   *
+   * @param chat the message's chat
+   */
+  public MessageKey(@NotNull Chat chat) {
+    this(WhatsappUtils.randomId(), chat.jid(),  null, true);
   }
 
   /**

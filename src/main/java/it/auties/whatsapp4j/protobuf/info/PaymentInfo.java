@@ -3,49 +3,97 @@ package it.auties.whatsapp4j.protobuf.info;
 import com.fasterxml.jackson.annotation.*;
 import java.util.*;
 
+import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.message.MessageKey;
 import lombok.*;
 import lombok.experimental.Accessors;
 
+/**
+ * A model class that holds the information related to a payment.
+ * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
+ * Instead, methods inside {@link WhatsappAPI} should be used.
+ */
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
 @Builder
 @Accessors(fluent = true)
 public class PaymentInfo {
+  /**
+   * The status of this transaction
+   */
   @JsonProperty(value = "10")
-  private PaymentInfoTxnStatus txnStatus;
+  private PaymentInfoTxnStatus transactionStatus;
 
+  /**
+   * The currency of this transaction
+   */
   @JsonProperty(value = "9")
   private String currency;
 
+  /**
+   * Future proofed
+   */
   @JsonProperty(value = "8")
   private boolean futureproofed;
 
+  /**
+   * The date of expiration of this transaction
+   */
   @JsonProperty(value = "7")
   private long expiryTimestamp;
 
+  /**
+   * The MessageKey of the {@link it.auties.whatsapp4j.protobuf.message.RequestPaymentMessage} that originated this transaction
+   */
   @JsonProperty(value = "6")
   private MessageKey requestMessageKey;
 
+  /**
+   * The timestamp, that is the seconds since {@link java.time.Instant#EPOCH}, when the {@link it.auties.whatsapp4j.protobuf.message.RequestPaymentMessage} that originated this transaction was sent
+   */
   @JsonProperty(value = "5")
   private long transactionTimestamp;
 
+  /**
+   * The status of this payment
+   */
   @JsonProperty(value = "4")
   private PaymentInfoStatus status;
 
+  /**
+   * The jid of the beneficiary of this transaction
+   */
   @JsonProperty(value = "3")
   private String receiverJid;
 
+  /**
+   * The amount of money involved in this transaction
+   */
   @JsonProperty(value = "2")
   private long amount1000;
 
+  /**
+   * The currency of this transaction
+   */
+  @Deprecated
   @JsonProperty(value = "1")
   private PaymentInfoCurrency currencyDeprecated;
 
+  /**
+   * The constants of this enumerated type describe the currencies supported for a transaction described by a {@link PaymentInfo}
+   */
   @Accessors(fluent = true)
+  @Deprecated
   public enum PaymentInfoCurrency {
+    /**
+     * Unknown currency
+     */
     UNKNOWN_CURRENCY(0),
+
+    /**
+     * Indian rupees
+     */
     INR(1);
 
     private final @Getter int index;
@@ -63,19 +111,69 @@ public class PaymentInfo {
     }
   }
 
+  /**
+   * The constants of this enumerated type describe the status of a payment described by a {@link PaymentInfo}
+   */
   @Accessors(fluent = true)
   public enum PaymentInfoStatus {
+    /**
+     * Unknown status
+     */
     UNKNOWN_STATUS(0),
+
+    /**
+     * Processing
+     */
     PROCESSING(1),
+
+    /**
+     * Sent
+     */
     SENT(2),
+
+    /**
+     * Need to accept
+     */
     NEED_TO_ACCEPT(3),
+
+    /**
+     * Complete
+     */
     COMPLETE(4),
+
+    /**
+     * Could not complete
+     */
     COULD_NOT_COMPLETE(5),
+
+    /**
+     * Refunded
+     */
     REFUNDED(6),
+
+    /**
+     * Expired
+     */
     EXPIRED(7),
+
+    /**
+     * Rejected
+     */
     REJECTED(8),
+
+    /**
+     * Cancelled
+     */
     CANCELLED(9),
+
+    /**
+     * Waiting for payer
+     */
     WAITING_FOR_PAYER(10),
+
+    /**
+     * Waiting
+     */
     WAITING(11);
 
     private final @Getter int index;

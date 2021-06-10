@@ -34,7 +34,9 @@ public record BinaryEncoder(@NotNull List<Byte> cache) {
      */
     public byte @NotNull [] encodeMessage(@NotNull Node node) {
         cache.clear();
-        return writeNode(node);
+        var result = writeNode(node);
+        System.out.println(Arrays.toString(result));
+        return result;
     }
 
     private byte @NotNull [] writeNode(@NotNull Node node) {

@@ -5,8 +5,8 @@ import java.util.*;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.info.ContextInfo;
-import it.auties.whatsapp4j.protobuf.miscellanous.FourRowTemplate;
-import it.auties.whatsapp4j.protobuf.miscellanous.HydratedFourRowTemplate;
+import it.auties.whatsapp4j.protobuf.model.FourRowTemplate;
+import it.auties.whatsapp4j.protobuf.model.HydratedFourRowTemplate;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
@@ -20,7 +20,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder
+@SuperBuilder(builderMethodName = "newTemplateMessage", buildMethodName = "create")
 @Accessors(fluent = true)
 public final class TemplateMessage extends ContextualMessage {
   /**

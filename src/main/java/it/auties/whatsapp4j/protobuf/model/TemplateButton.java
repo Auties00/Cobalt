@@ -1,4 +1,4 @@
-package it.auties.whatsapp4j.protobuf.button;
+package it.auties.whatsapp4j.protobuf.model;
 
 import com.fasterxml.jackson.annotation.*;
 import java.util.*;
@@ -11,28 +11,28 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class HydratedTemplateButton {
+public class TemplateButton {
   @JsonProperty(value = "3")
-  private HydratedCallButton callButton;
+  private CallButton callButton;
 
   @JsonProperty(value = "2")
-  private HydratedURLButton urlButton;
+  private URLButton urlButton;
 
   @JsonProperty(value = "1")
-  private HydratedQuickReplyButton quickReplyButton;
+  private QuickReplyButton quickReplyButton;
 
   @JsonProperty(value = "4")
   private int index;
 
-  public HydratedButton hydratedButtonCase() {
-    if (quickReplyButton != null) return HydratedButton.QUICK_REPLY_BUTTON;
-    if (urlButton != null) return HydratedButton.URL_BUTTON;
-    if (callButton != null) return HydratedButton.CALL_BUTTON;
-    return HydratedButton.UNKNOWN;
+  public Button buttonCase() {
+    if (quickReplyButton != null) return Button.QUICK_REPLY_BUTTON;
+    if (urlButton != null) return Button.URL_BUTTON;
+    if (callButton != null) return Button.CALL_BUTTON;
+    return Button.UNKNOWN;
   }
 
   @Accessors(fluent = true)
-  public enum HydratedButton {
+  public enum Button {
     UNKNOWN(0),
     QUICK_REPLY_BUTTON(1),
     URL_BUTTON(2),
@@ -40,16 +40,16 @@ public class HydratedTemplateButton {
 
     private final @Getter int index;
 
-    HydratedButton(int index) {
+    Button(int index) {
       this.index = index;
     }
 
     @JsonCreator
-    public static HydratedButton forIndex(int index) {
+    public static Button forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
           .findFirst()
-          .orElse(HydratedButton.UNKNOWN);
+          .orElse(Button.UNKNOWN);
     }
   }
 }

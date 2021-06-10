@@ -14,7 +14,7 @@ import lombok.experimental.SuperBuilder;
  */
 @AllArgsConstructor
 @NoArgsConstructor
-@SuperBuilder
+@SuperBuilder(buildMethodName = "create")
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Accessors(fluent = true)
@@ -47,7 +47,7 @@ public final class ContactMessage extends ContextualMessage {
             .vcard(vcard)
             .displayName(displayName)
             .contextInfo(contextInfo)
-            .build();
+            .create();
   }
 
   private static ContactMessageBuilder<?, ?> builder() {

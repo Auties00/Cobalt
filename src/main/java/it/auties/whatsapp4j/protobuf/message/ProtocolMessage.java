@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.*;
 import java.util.*;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
-import it.auties.whatsapp4j.protobuf.miscellanous.HistorySyncNotification;
+import it.auties.whatsapp4j.protobuf.model.HistorySyncNotification;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -16,7 +16,7 @@ import lombok.experimental.Accessors;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Builder
+@Builder(builderMethodName = "newProtocolMessage", buildMethodName = "create")
 @Accessors(fluent = true)
 public final class ProtocolMessage implements Message {
   /**

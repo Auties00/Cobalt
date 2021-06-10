@@ -22,7 +22,7 @@ import java.util.Optional;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder
+@SuperBuilder(buildMethodName = "create")
 @Accessors(fluent = true)
 public final class AudioMessage extends MediaMessage {
   /**
@@ -121,7 +121,7 @@ public final class AudioMessage extends MediaMessage {
             .mimetype(Optional.ofNullable(mimeType).orElse(MediaMessageType.AUDIO.defaultMimeType()))
             .streamingSidecar(upload.sidecar())
             .voiceMessage(voiceMessage)
-            .build();
+            .create();
   }
 
   private static AudioMessageBuilder<?, ?> builder() {

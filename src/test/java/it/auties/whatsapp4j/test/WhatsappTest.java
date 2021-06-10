@@ -9,9 +9,9 @@ import it.auties.whatsapp4j.protobuf.chat.GroupSetting;
 import it.auties.whatsapp4j.protobuf.contact.Contact;
 import it.auties.whatsapp4j.protobuf.contact.ContactStatus;
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
-import it.auties.whatsapp4j.protobuf.message.TemplateMessage;
-import it.auties.whatsapp4j.protobuf.miscellanous.FourRowTemplate;
+import it.auties.whatsapp4j.protobuf.message.*;
 import it.auties.whatsapp4j.response.impl.json.UserInformationResponse;
+import it.auties.whatsapp4j.utils.WhatsappUtils;
 import it.auties.whatsapp4j.utils.internal.Validate;
 import jakarta.validation.constraints.NotNull;
 import lombok.SneakyThrows;
@@ -193,7 +193,7 @@ public class WhatsappTest implements WhatsappListener {
     @Order(12)
     public void testGroupCreation() throws InterruptedException, ExecutionException {
         log.info("Creating group...");
-        group = whatsappAPI.createGroup("omega", contact).get();
+        group = whatsappAPI.createGroup(BinaryArray.random(5).toHex(), contact).get();
         log.info("Created group: %s".formatted(group));
     }
 
@@ -389,16 +389,14 @@ public class WhatsappTest implements WhatsappListener {
         log.info("Unpinned chat");
     }
 
-    /*
-       @Test
+    @Test
     @Order(30)
     public void testTextMessage() throws ExecutionException, InterruptedException {
         log.info("Sending text...");
-        var message = WhatsappTextMessage.newTextMessage()
-                .chat(group)
-                .text("Testing%n@%s ".formatted(WhatsappUtils.phoneNumberFromJid(contact.bestName(WhatsappUtils.phoneNumberFromJid(contact.jid())))))
-                .create();
-        var textResponse = whatsappAPI.sendMessage(message).get();
+        var key = new MessageKey(group);
+        var message = new MessageContainer("Test");
+        var info = new MessageInfo(key, message);
+        var textResponse = whatsappAPI.sendMessage(info).get();
         Assertions.assertEquals(200, textResponse.status(), "Cannot send text: %s".formatted(textResponse));
         log.info("Sent text");
     }
@@ -407,12 +405,14 @@ public class WhatsappTest implements WhatsappListener {
     @Order(31)
     public void testImageMessage() throws ExecutionException, InterruptedException, IOException {
         log.info("Sending image...");
-        var message = WhatsappImageMessage.newImageMessage()
-                .chat(group)
+        var key = new MessageKey(group);
+        var image = ImageMessage.newImageMessage()
                 .media(readBytes("https://2.bp.blogspot.com/-DqXILvtoZFA/Wmmy7gRahnI/AAAAAAAAB0g/59c8l63QlJcqA0591t8-kWF739DiOQLcACEwYBhgL/s1600/pol-venere-botticelli-01.jpg"))
                 .caption("Image test")
                 .create();
-        var textResponse = whatsappAPI.sendMessage(message).get();
+        var message = new MessageContainer(image);
+        var info = new MessageInfo(key, message);
+        var textResponse = whatsappAPI.sendMessage(info).get();
         Assertions.assertEquals(200, textResponse.status(), "Cannot send image: %s".formatted(textResponse));
         log.info("Sent image");
     }
@@ -421,11 +421,13 @@ public class WhatsappTest implements WhatsappListener {
     @Order(32)
     public void testAudioMessage() throws ExecutionException, InterruptedException, IOException {
         log.info("Sending audio...");
-        var message = WhatsappAudioMessage.newAudioMessage()
-                .chat(group)
+        var key = new MessageKey(group);
+        var audio = AudioMessage.newAudioMessage()
                 .media(readBytes("https://www.kozco.com/tech/organfinale.mp3"))
                 .create();
-        var textResponse = whatsappAPI.sendMessage(message).get();
+        var message = new MessageContainer(audio);
+        var info = new MessageInfo(key, message);
+        var textResponse = whatsappAPI.sendMessage(info).get();
         Assertions.assertEquals(200, textResponse.status(), "Cannot send audio: %s".formatted(textResponse));
         log.info("Sent audio");
     }
@@ -434,11 +436,14 @@ public class WhatsappTest implements WhatsappListener {
     @Order(33)
     public void testVideoMessage() throws ExecutionException, InterruptedException, IOException {
         log.info("Sending video...");
-        var message = WhatsappVideoMessage.newVideoMessage()
-                .chat(group)
+        var key = new MessageKey(group);
+        var video = VideoMessage.newVideoMessage()
                 .media(readBytes("http://techslides.com/demos/sample-videos/small.mp4"))
+                .caption("Video")
                 .create();
-        var textResponse = whatsappAPI.sendMessage(message).get();
+        var message = new MessageContainer(video);
+        var info = new MessageInfo(key, message);
+        var textResponse = whatsappAPI.sendMessage(info).get();
         Assertions.assertEquals(200, textResponse.status(), "Cannot send video: %s".formatted(textResponse));
         log.info("Sent video");
     }
@@ -447,12 +452,14 @@ public class WhatsappTest implements WhatsappListener {
     @Order(34)
     public void testGifMessage() throws ExecutionException, InterruptedException, IOException {
         log.info("Sending gif...");
-        var message = WhatsappGifMessage.newGifMessage()
-                .chat(group)
+        var key = new MessageKey(group);
+        var video = VideoMessage.newGifMessage()
                 .media(readBytes("http://techslides.com/demos/sample-videos/small.mp4"))
+                .caption("Gif")
                 .create();
-
-        var textResponse = whatsappAPI.sendMessage(message).get();
+        var message = new MessageContainer(video);
+        var info = new MessageInfo(key, message);
+        var textResponse = whatsappAPI.sendMessage(info).get();
         Assertions.assertEquals(200, textResponse.status(), "Cannot send gif: %s".formatted(textResponse));
         log.info("Sent gif");
     }
@@ -461,12 +468,16 @@ public class WhatsappTest implements WhatsappListener {
     @Order(35)
     public void testPdfMessage() throws ExecutionException, InterruptedException, IOException {
         log.info("Sending pdf...");
-        var message = WhatsappDocumentMessage.newDocumentMessage()
-                .chat(group)
+        var key = new MessageKey(group);
+        var document = DocumentMessage.newDocumentMessage()
                 .media(readBytes("http://www.orimi.com/pdf-test.pdf"))
-                .mimeType("application/pdf")
+                .title("Pdf test")
+                .fileName("pdf-test.pdf")
+                .pageCount(1)
                 .create();
-        var textResponse = whatsappAPI.sendMessage(message).get();
+        var message = new MessageContainer(document);
+        var info = new MessageInfo(key, message);
+        var textResponse = whatsappAPI.sendMessage(info).get();
         Assertions.assertEquals(200, textResponse.status(), "Cannot send pdf: %s".formatted(textResponse));
         log.info("Sent pdf");
     }
@@ -475,94 +486,70 @@ public class WhatsappTest implements WhatsappListener {
     @Order(36)
     public void testContactMessage() throws ExecutionException, InterruptedException {
         log.info("Sending contact message...");
-        var message = ContactMessage.newContactMessage()
-                .chat(group)
-                .sharedContacts(List.of("""
-                        BEGIN:VCARD
-                        VERSION:3.0
-                        N:%s
-                        FN:%s
-                        TEL;type=CELL:+%s
-                        END:VCARD
-                        """.formatted(contact.shortName(), contact.name(), WhatsappUtils.phoneNumberFromJid(contact.jid()))))
+        var key = new MessageKey(group);
+        var vcard = buildVcard();
+        var document = ContactMessage.newContactMessage()
+                .displayName("Carletto")
+                .vcard(vcard)
                 .create();
-
-        var textResponse = whatsappAPI.sendMessage(message).get();
+        var message = new MessageContainer(document);
+        var info = new MessageInfo(key, message);
+        var textResponse = whatsappAPI.sendMessage(info).get();
         Assertions.assertEquals(200, textResponse.status(), "Cannot send contact message: %s".formatted(textResponse));
         log.info("Sent contact message");
+    }
+
+    private String buildVcard() {
+        return """
+                BEGIN:VCARD
+                VERSION:3.0
+                N:%s
+                FN:%s
+                TEL;type=CELL:+%s
+                END:VCARD
+                """.formatted(contact.shortName(), contact.name(), WhatsappUtils.phoneNumberFromJid(contact.jid()));
     }
 
     @Test
     @Order(37)
     public void testLocationMessage() throws ExecutionException, InterruptedException {
         log.info("Sending location message...");
-        var message = WhatsappLocationMessage.newLocationMessage()
-                .chat(group)
-                .coordinates(new WhatsappLocationCoordinates(40.730610, 	-73.935242, 0))
+        var key = new MessageKey(group);
+        var location = LocationMessage.newLocationMessage()
+                .degreesLatitude(40.730610)
+                .degreesLongitude(-73.935242)
+                .degreesClockwiseFromMagneticNorth(0)
                 .create();
-
-        var textResponse = whatsappAPI.sendMessage(message).get();
+        var message = new MessageContainer(location);
+        var info = new MessageInfo(key, message);
+        var textResponse = whatsappAPI.sendMessage(info).get();
         Assertions.assertEquals(200, textResponse.status(), "Cannot send location message: %s".formatted(textResponse));
         log.info("Sent location message");
     }
 
     @Test
     @Order(38)
-    public void testLiveLocationMessage() throws ExecutionException, InterruptedException {
-        log.info("Sending location message...");
-        var message = WhatsappLocationMessage.newLocationMessage()
-                .chat(group)
-                .coordinates(new WhatsappLocationCoordinates(40.730610, -73.935242, 0))
-                .create();
-
-        var textResponse = whatsappAPI.sendMessage(message).get();
-        Assertions.assertEquals(200, textResponse.status(), "Cannot send location message: %s".formatted(textResponse));
-        log.info("Sent location message");
-    }
-
-    @Test
-    @Order(39)
     public void testGroupInviteMessage() throws ExecutionException, InterruptedException {
         log.info("Querying group invite code");
         var code = whatsappAPI.queryGroupInviteCode(group).get().code();
         log.info("Queried %s".formatted(code));
-
         log.info("Sending group invite message...");
-        var message = WhatsappGroupInviteMessage.newGroupInviteMessage()
-                .chat(group)
+        var key = new MessageKey(group);
+        var invite = GroupInviteMessage.newGroupInviteMessage()
                 .groupJid(group.jid())
-                .groupName(group.name())
+                .groupName(group.displayName())
                 .inviteCode(code)
                 .create();
-
-        System.out.println(message.info());
-        var textResponse = whatsappAPI.sendMessage(message).get();
+        var message = new MessageContainer(invite);
+        var info = new MessageInfo(key, message);
+        var textResponse = whatsappAPI.sendMessage(info).get();
         Assertions.assertEquals(200, textResponse.status(), "Cannot send group invite message: %s".formatted(textResponse));
         log.info("Sent group invite message");
     }
 
-     */
 
     @Test
     @Order(39)
-    public void testGroupInviteMessage() throws ExecutionException, InterruptedException {
-        log.info("Querying group invite code");
-        var code = whatsappAPI.queryGroupInviteCode(group).get().code();
-        log.info("Queried %s".formatted(code));
-
-        log.info("Sending group invite message...");
-        var message = TemplateMessage.builder()
-                .fourRowTemplate(new FourRowTemplate())
-                .build();
-
-        var textResponse = whatsappAPI.sendMessage(new MessageInfo(me)).get();
-        Assertions.assertEquals(200, textResponse.status(), "Cannot send group invite message: %s".formatted(textResponse));
-        log.info("Sent group invite message");
-    }
-
-
-    @Test
-    @Order(40)
     public void testEnableEphemeralMessages() throws ExecutionException, InterruptedException {
         log.info("Enabling ephemeral messages...");
         var ephemeralResponse = whatsappAPI.enableEphemeralMessages(group).get();
@@ -571,7 +558,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(41)
+    @Order(40)
     public void testDisableEphemeralMessages() throws ExecutionException, InterruptedException {
         log.info("Disabling ephemeral messages...");
         var ephemeralResponse = whatsappAPI.disableEphemeralMessages(group).get();
@@ -580,7 +567,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(42)
+    @Order(41)
     public void testLeave() throws ExecutionException, InterruptedException {
         log.info("Leaving group...");
         var ephemeralResponse = whatsappAPI.leave(group).get();

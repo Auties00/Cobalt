@@ -1,4 +1,4 @@
-package it.auties.whatsapp4j.protobuf.button;
+package it.auties.whatsapp4j.protobuf.model;
 
 import com.fasterxml.jackson.annotation.*;
 

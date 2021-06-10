@@ -108,7 +108,7 @@ public class WhatsappDataManager {
      * @return a non empty Optional containing the result if it is found otherwise an empty Optional empty
      */
     public @NotNull Optional<MessageInfo> findQuotedMessageInChatByContext(@NotNull Chat chat, @NotNull ContextInfo context) {
-        return chat.messages().stream().filter(e -> Objects.equals(context.stanzaId(), e.key().id())).findAny();
+        return chat.messages().stream().filter(e -> Objects.equals(context.quotedMessageId(), e.key().id())).findAny();
     }
 
     /**
@@ -477,10 +477,10 @@ public class WhatsappDataManager {
     private void processMessage(@NotNull WhatsappWebSocket socket, @NotNull MessageInfo message) {
         var jid = message.key().chatJid();
         var chat = findChatByJid(jid).orElseGet(() -> queryMissingChat(socket, jid));
-        var protocol = message.messageContainer() != null && message.messageContainer().protocolMessage() != null;
+        var protocol = message.container() != null && message.container().protocolMessage() != null;
         if (protocol) {
             //TODO: This message could also be an history sync, handle this
-            findMessageById(chat, message.messageContainer().protocolMessage().key().id()).ifPresent(oldMessage -> {
+            findMessageById(chat, message.container().protocolMessage().key().id()).ifPresent(oldMessage -> {
                 chat.messages().remove(oldMessage);
                 listeners.forEach(listener -> callOnListenerThread(() -> listener.onMessageDeleted(chat, oldMessage, true)));
             });
@@ -490,7 +490,7 @@ public class WhatsappDataManager {
             listeners.forEach(listener -> callOnListenerThread(() -> listener.onMessageUpdate(chat, message)));
         }
 
-        if (initializationTimeStamp > message.messageTimestamp()) {
+        if (initializationTimeStamp > message.timestamp()) {
             return;
         }
 

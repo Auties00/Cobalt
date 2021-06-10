@@ -12,8 +12,6 @@ open module whatsapp4j {
     exports it.auties.whatsapp4j.protobuf.info;
     exports it.auties.whatsapp4j.protobuf.message;
     exports it.auties.whatsapp4j.protobuf.model;
-    exports it.auties.whatsapp4j.protobuf.button;
-    exports it.auties.whatsapp4j.protobuf.miscellanous;
 
     requires com.fasterxml.jackson.databind;
     requires com.google.common;

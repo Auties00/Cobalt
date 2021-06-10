@@ -7,13 +7,20 @@ import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.info.ContextInfo;
 import it.auties.whatsapp4j.protobuf.model.InteractiveAnnotation;
 import it.auties.whatsapp4j.utils.internal.CypherUtils;
+import it.auties.whatsapp4j.utils.internal.Validate;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.net.URLConnection;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds a video inside.
@@ -24,7 +31,7 @@ import java.util.List;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder
+@SuperBuilder(buildMethodName = "create")
 @Accessors(fluent = true)
 public final class VideoMessage extends MediaMessage {
   /**
@@ -132,6 +139,94 @@ public final class VideoMessage extends MediaMessage {
    */
   @JsonProperty(value = "1")
   private String url;
+
+  /**
+   * Constructs a new builder to create a VideoMessage that wraps a video.
+   * The result can be later sent using {@link WhatsappAPI#sendMessage(it.auties.whatsapp4j.protobuf.info.MessageInfo)}
+   *
+   * @param media       the non null video that the new message wraps
+   * @param mimeType    the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
+   * @param caption     the caption of the new message
+   * @param width       the width of the video that the new message wraps
+   * @param height      the height of the video that the new message wraps
+   * @param seconds     the length in seconds of the video that the new message wraps
+   * @param contextInfo the context info that the new message wraps
+   *
+   * @return a non null new message
+   */
+  @Builder(builderClassName = "NewVideoMessageBuilder", builderMethodName = "newVideoMessage", buildMethodName = "create")
+  private static VideoMessage videoBuilder(byte @NotNull [] media, String mimeType, String caption, int width, int height, int seconds, ContextInfo contextInfo) {
+    var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.VIDEO);
+    return VideoMessage.builder()
+            .fileSha256(upload.fileSha256())
+            .fileEncSha256(upload.fileEncSha256())
+            .mediaKey(upload.mediaKey().data())
+            .mediaKeyTimestamp(ZonedDateTime.now().toEpochSecond())
+            .url(upload.url())
+            .directPath(upload.directPath())
+            .fileLength(media.length)
+            .mimetype(Optional.ofNullable(mimeType).orElse(MediaMessageType.VIDEO.defaultMimeType()))
+            .caption(caption)
+            .width(width)
+            .height(height)
+            .seconds(seconds)
+            .contextInfo(contextInfo)
+            .create();
+  }
+
+  /**
+   * Constructs a new builder to create a VideoMessage that wraps a video that will be played as a gif.
+   * Wrapping a gif file instead of a video will result in an exception if detected or in an unplayable message.
+   * This is because Whatsapp doesn't support standard gifs.
+   * The result can be later sent using {@link WhatsappAPI#sendMessage(it.auties.whatsapp4j.protobuf.info.MessageInfo)}
+   *
+   * @param media       the non null video that the new message wraps
+   * @param mimeType    the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
+   * @param caption     the caption of the new message
+   * @param width       the width of the video that the new message wraps
+   * @param height      the height of the video that the new message wraps
+   * @param gifAttribution     the length in seconds of the video that the new message wraps
+   * @param contextInfo the context info that the new message wraps
+   *
+   * @return a non null new message
+   */
+  @Builder(builderClassName = "NewGifMessageBuilder", builderMethodName = "newGifMessage", buildMethodName = "create")
+  private static VideoMessage gifBuilder(byte @NotNull [] media, String mimeType, String caption, int width, int height, VideoMessageAttribution gifAttribution, ContextInfo contextInfo) {
+    Validate.isTrue(!Objects.equals(guessMimeType(media), "image/gif") && !mimeType.equals("image/gif"), "Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
+    var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.VIDEO);
+    return VideoMessage.builder()
+            .fileSha256(upload.fileSha256())
+            .fileEncSha256(upload.fileEncSha256())
+            .mediaKey(upload.mediaKey().data())
+            .mediaKeyTimestamp(ZonedDateTime.now().toEpochSecond())
+            .url(upload.url())
+            .directPath(upload.directPath())
+            .fileLength(media.length)
+            .mimetype(Optional.ofNullable(mimeType).orElse(MediaMessageType.VIDEO.defaultMimeType()))
+            .caption(caption)
+            .width(width)
+            .height(height)
+            .gifPlayback(true)
+            .gifAttribution(Optional.ofNullable(gifAttribution).orElse(VideoMessageAttribution.NONE))
+            .caption(caption)
+            .contextInfo(contextInfo)
+            .create();
+  }
+
+  private static @NotNull String guessMimeType(byte[] media) {
+    var result = "";
+    try {
+      result = URLConnection.guessContentTypeFromStream(new ByteArrayInputStream(media));
+    } catch (IOException ignored) {
+
+    }
+
+    return Optional.ofNullable(result).orElse("application/octet-stream");
+  }
+
+  private static VideoMessageBuilder<?, ?> builder(){
+    return new VideoMessageBuilderImpl();
+  }
 
   /**
    * Returns the media type of the video that this object wraps

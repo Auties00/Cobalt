@@ -16,7 +16,7 @@ import lombok.experimental.Accessors;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Builder
+@Builder(builderMethodName = "newSenderKeyDistributionMessage", buildMethodName = "create")
 @Accessors(fluent = true)
 public final class SenderKeyDistributionMessage implements Message {
   /**
