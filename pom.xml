@@ -252,12 +252,14 @@
             <version>${ee.modules}</version>
         </dependency>
 
-        <!-- Google commons contains zxing and protobuf -->
+        <!-- Zxing -->
         <dependency>
             <groupId>com.guicedee.services</groupId>
             <artifactId>guava</artifactId>
             <version>${ee.modules}</version>
         </dependency>
+
+        <!-- ModernProtoc - Protobuf -->
         <dependency>
             <groupId>com.github.auties00</groupId>
             <artifactId>protoc-api</artifactId>
