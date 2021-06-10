@@ -24,5 +24,5 @@ open module whatsapp4j {
     requires jakarta.xml.bind;
     requires jakarta.websocket.api;
 
-    requires static lombok;
+    requires lombok;
 }

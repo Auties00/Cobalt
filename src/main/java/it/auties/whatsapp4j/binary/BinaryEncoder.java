@@ -1,5 +1,6 @@
 package it.auties.whatsapp4j.binary;
 
+import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
@@ -34,9 +35,7 @@ public record BinaryEncoder(@NotNull List<Byte> cache) {
      */
     public byte @NotNull [] encodeMessage(@NotNull Node node) {
         cache.clear();
-        var result = writeNode(node);
-        System.out.println(Arrays.toString(result));
-        return result;
+        return writeNode(node);
     }
 
     private byte @NotNull [] writeNode(@NotNull Node node) {

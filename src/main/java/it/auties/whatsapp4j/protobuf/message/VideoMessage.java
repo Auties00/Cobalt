@@ -192,7 +192,7 @@ public final class VideoMessage extends MediaMessage {
    */
   @Builder(builderClassName = "NewGifMessageBuilder", builderMethodName = "newGifMessage", buildMethodName = "create")
   private static VideoMessage gifBuilder(byte @NotNull [] media, String mimeType, String caption, int width, int height, VideoMessageAttribution gifAttribution, ContextInfo contextInfo) {
-    Validate.isTrue(!Objects.equals(guessMimeType(media), "image/gif") && !mimeType.equals("image/gif"), "Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
+    Validate.isTrue(!Objects.equals(guessMimeType(media), "image/gif") && !Objects.equals(mimeType, "image/gif"), "Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.VIDEO);
     return VideoMessage.builder()
             .fileSha256(upload.fileSha256())
