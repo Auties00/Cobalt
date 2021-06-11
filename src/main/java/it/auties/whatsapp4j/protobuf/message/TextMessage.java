@@ -89,7 +89,6 @@ public final class TextMessage extends ContextualMessage {
   @JsonProperty(value = "1")
   private String text;
 
-
   /**
    * Constructs a TextMessage from a text
    *

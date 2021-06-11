@@ -99,17 +99,6 @@ public class WhatsappDataManager {
     public @NotNull Optional<MessageInfo> findMessageById(@NotNull Chat chat, @NotNull String id) {
         return chat.messages().stream().filter(e -> Objects.equals(e.key().id(), id)).findAny();
     }
-    
-    /**
-     * Queries the quoted message in {@code chat} using {@code context}
-     *
-     * @param chat    the chat to search in
-     * @param context the context to use
-     * @return a non empty Optional containing the result if it is found otherwise an empty Optional empty
-     */
-    public @NotNull Optional<MessageInfo> findQuotedMessageInChatByContext(@NotNull Chat chat, @NotNull ContextInfo context) {
-        return chat.messages().stream().filter(e -> Objects.equals(context.quotedMessageId(), e.key().id())).findAny();
-    }
 
     /**
      * Queries the chat associated with {@code message}

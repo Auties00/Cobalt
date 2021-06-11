@@ -14,14 +14,14 @@ Add this dependency to your dependencies in the pom:
 <dependency>
     <groupId>com.github.auties00</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>1.2</version>
+    <version>2.0</version>
 </dependency>
 ```
 
 #### Gradle
 Add this dependency to your build.gradle:
 ```groovy
-implementation 'com.github.auties00:whatsappweb4j:1.2'
+implementation 'com.github.auties00:whatsappweb4j:2.0'
 ```
 
 ### Javadocs
@@ -129,122 +129,213 @@ Set<Contact> findContactsByName(String name);
 Optional<Chat> findChatByJid(String jid);
 Optional<Chat> findChatByName(String name);
 Set<Chat> findChatsByName(String name);
-Optional<Chat> findChatByMessage(WhatsappMessage message);
+Optional<Chat> findChatByMessage(MessageInfo message);
 
-Optional<WhatsappMessage> findMessageById(Chat chat, String id);
-Optional<WhatsappMessage> findQuotedMessageInChatByContext(Chat chat, ContextInfo context);        
+Optional<MessageInfo> findMessageById(Chat chat, String id);
 ```
 
 The keys linked to an active session can be accessed using [WhatsappKeysManager](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/manager/WhatsappKeysManager.html).
-### Create and send a message
+### Send a message
 
-##### Create a Text Message
+##### Simple text message
 ```java
 var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
-        
-var text = WhatsappTextMessage.newTextMessage(chat, "Hello my friend :)"); // Create a new text message
-var quotedText = WhatsappTextMessage.newTextMessage(chat, "Hello my friend ;)", anotherMessage); // Create a new text message that quotes another message
-        
-var textWithBuilder = WhatsappTextMessage.newTextMessage() // Create a new WhatsappTextMessageBuilder
-        .chat(chat) // Set the chat for this message
-        .text(text) // Set the text for this message
-        .forwarded(true) // Set whether this message is forwarded or not
-        .quotedMessage(someMessage) // Set the message that this message quotes
-        .create();
+api.sendMessage(chat, "Hello my friend :)"); // Send the text message
 ```
 
-##### Create a Media Message
+##### Rich text message
 ```java
+var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
+var message = TextMessage.newTextMessage() // Create a new text message builder
+        .text("Check this video out: https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the text to "A nice and complex message"
+        .canonicalUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the url
+        .matchedText("https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the matched text for the url in the message
+        .title("A nice suprise") // Set the title of the url
+        .description("Check me out") // Set the description of the url
+        .create(); // Create the message
+api.sendMessage(chat, message); // Send the rich text message
+```
+
+##### Image message
+```java
+var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
+
 // Read the file you want to send as an array of bytes, here are two common examples
-var fileMedia = Files.readAllBytes(file.toPath());
-var urlMedia = url.openStream().readAllBytes();
+var fileMedia = Files.readAllBytes(file.toPath()); // Read a media from a file 
+var urlMedia = new URL(url).openStream().readAllBytes(); // Read a media from an url 
 
-var media = WhatsappMediaMessage.newMediaMessage() // Create a new media message
-        .caption("Look at this!") // Set the caption of the message, that is the text below the file. Only available for images and videos
-        .media(file) // Set the media as an array of bytes
-        .type(WhatsappMediaMessageType.IMAGE) // Set the type of media you want to send
-        .create();
+var image = ImageMessage.newImageMessage() // Create a new image message builder
+        .media(urlMedia) // Set the image of this message
+        .caption("A nice image") // Set the caption of this message
+        .create(); // Create the message
+api.sendMessage(chat, image); // Send the image message
 ```
 
-##### Create a Location Message
+##### Audio message
 ```java
-var location = WhatsappLocationMessage.newLocationMessage() // Create a new location message
+var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
+
+// Read the file you want to send as an array of bytes, here are two common examples
+var fileMedia = Files.readAllBytes(file.toPath()); // Read a media from a file 
+var urlMedia = new URL(url).openStream().readAllBytes(); // Read a media from an url 
+
+var audio = AudioMessage.newAudioMessage() // Create a new audio message builder
+        .media(urlMedia) // Set the audio of this message
+        .voiceMessage(false) // Set whether this message is a voice message or a standard audio message
+        .create(); // Create the message
+api.sendMessage(chat, audio); // Send the audio message
+```
+
+##### Video message
+```java
+var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
+
+// Read the file you want to send as an array of bytes, here are two common examples
+var fileMedia = Files.readAllBytes(file.toPath()); // Read a media from a file 
+var urlMedia = new URL(url).openStream().readAllBytes(); // Read a media from an url 
+
+var video = VideoMessage.newVideoMessage() // Create a new video message builder
+        .media(urlMedia) // Set the video of this message
+        .caption("A nice video") // Set the caption of this message
+        .width(100) // Set the width of the video
+        .height(100) // Set the height of the video
+        .create(); // Create the message
+api.sendMessage(chat, video); // Send the video message
+```
+
+##### Gif message
+```java
+var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
+
+// Read the file you want to send as an array of bytes, here are two common examples
+var fileMedia = Files.readAllBytes(file.toPath()); // Read a media from a file 
+var urlMedia = new URL(url).openStream().readAllBytes(); // Read a media from an url 
+
+var gif = VideoMessage.newGifMessage() // Create a new gif message builder
+        .media(urlMedia) // Set the gif of this message
+        .caption("A nice video") // Set the caption of this message
+        .gifAttribution(VideoMessageAttribution.TENOR) // Set the source of the gif
+        .create(); // Create the message
+api.sendMessage(chat, gif); // Send the gif message
+```
+
+> **_IMPORTANT:_** Whatsapp doesn't support conventional gifs. Instead, videos can be played as gifs if particular attributes are set. This is the reason why the gif builder is under the VideoMessage class. Sending a conventional gif will result in an exception if detected or in undefined behaviour.
+
+##### Document message
+```java
+var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
+
+// Read the file you want to send as an array of bytes, here are two common examples
+var fileMedia = Files.readAllBytes(file.toPath()); // Read a media from a file 
+var urlMedia = new URL(url).openStream().readAllBytes(); // Read a media from an url 
+
+var document = DocumentMessage.newDocumentMessage() // Create a new document message builder
+        .media(urlMedia) // Set the document of this message
+        .title("A nice pdf") // Set the title of the document
+        .fileName("pdf-test.pdf") // Set the name of the document
+        .pageCount(1) // Set the number of pages of the document
+        .create(); // Create the message
+api.sendMessage(chat, document); // Send the docuemnt message
+```
+
+##### Location message
+```java
+var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
+var location = LocationMessage.newLocationMessage() // Create a new location message
         .caption("Look at this!") // Set the caption of the message, that is the text below the file. Not available if this message is live
-        .coordinates(new WhatsappCoordinates(138.9193, 1183.1389, 10)) // Set the coordinates of the location to share
-        .accuracy(10) // Set the accuracy in meters of the coordinates to share
-        .live(false) // Set whether this message is live or not
-        .speed(19) // Set the speed of the device in meters per second
-        .thumbnail(thumbnail) // Set the thumbnail of this message
-        .create();
+        .degreesLatitude(38.9193) // Set the longitude of the location to share
+        .degreesLongitude(1183.1389) // Set the latitude of the location to share
+        .live(false) // Set whether this location is live or not
+        .create(); // Create the message
+api.sendMessage(chat, location); // Send the location message
 ```
 
-##### Create a Group Invite Message
+##### Live location message
 ```java
-var invite = WhatsappGroupInviteMessage.newGroupInviteMessage()
+var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
+var location = LiveLocationMessage.newLiveLocationMessage() // Create a new live location message
+        .caption("Look at this!") // Set the caption of the message, that is the text below the file. Not available if this message is live
+        .degreesLatitude(38.9193) // Set the longitude of the location to share
+        .degreesLongitude(1183.1389) // Set the latitude of the location to share
+        .accuracyInMeters(10) // Set the accuracy of the location in meters
+        .speedInMps(12) // Set the speed of the device sharing the location in meter per seconds
+        .create(); // Create the message
+api.sendMessage(chat, location); // Send the location message
+```
+> **_IMPORTANT:_** Updating the position of a live location message is not supported as of now out of the box. The tools to do so are in the API though so, if you'd like to write a developer friendly method to do so, know that all contributions are welcomed!
+
+##### Group invite message
+```java
+var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
+var group = api.findChatByName("Fellow Programmers 1.0"").orElseThrow(); // Query a group
+
+var groupCode = api.queryGroupInviteCode(group).get().code(); // Query the invitation code of the group
+var groupInvite = GroupInviteMessage.newGroupInviteMessage() // Create a new group invite message
         .caption("Come join my group of fellow programmers") // Set the caption of this message
-        .name("Fellow Programmers 1.0") // Set the name of the group
-        .thumbnail(thumbnail) // Set the thumbnail of the group
-        .expiration(ZonedDateTime.now().plusDays(90)) // Set the date of expiration for this invite
-        .jid("jid@g.us") // Set the jid of the group
-        .code("1931130") // Set the code of the group
-        .create();
+        .groupName(group.displayName()) // Set the name of the group
+        .groupJid(group.jid())) // Set the jid of the group
+        .inviteExpiration(ZonedDateTime.now().plusDays(3).toInstant().toEpochMilli()) // Set the expiration of this invite
+        .inviteCode(code) // Set the code of the group, this can be obtained also when a contact cannot be added as a member to a group
+        .create(); // Create the message
+api.sendMessage(chat, groupInvite); // Send the invite message
 ```
 
-##### Create a Contact(s) Message
+##### Contact message
 ```java
-var contacts = ContactMessage.newContactMessage()
-        .sharedContacts(List.of(contactVCard, anotherVCard))
-        .create();
+var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
+var contactMessage = ContactMessage.newContactMessage()  // Create a new contact message
+        .displayName("A nice friend") // Set the display name of the contact
+        .vcard(vcard) // Set the vcard(https://en.wikipedia.org/wiki/VCard) of the contact
+        .create(); // Create the message
+api.sendMessage(chat, groupInvite); // Send the contact message
 ```
 
-##### Create a raw message
-If the options above don't satisfy your needs, open an issue and request the feature you need. In the meanwhile though, you can use you can create your own [WebMessageInfo](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/model/WebMessageInfo.html), the raw Protobuf object for a message, even though it's not recommended as it's not very developer friendly.
-Here is an example on how to create a raw text message:
+##### Contacts array message
 ```java
-var key = WhatsappProtobuf.MessageKey.newBuilder()
-        .setFromMe(true)
-        .setRemoteJid(recipient)
-        .setId(WhatsappUtils.randomId())
-        .build();
-
-var conversation = WhatsappProtobuf.Message.newBuilder()
-        .setConversation(text)
-        .build();
-
-var text = WebMessageInfo.newBuilder()
-        .setMessage(conversation)
-        .setKey(key)
-        .setMessageTimestamp(Instant.now().getEpochSecond())
-        .setStatus(it.auties.whatsapp4j.protobuf.info.MessageInfo.WebMessageInfoStatus.PENDING)
-        .build();
-
-var context = WhatsappProtobuf.ContextInfo.newBuilder()
-        .setQuotedMessage(quotedMessage)
-        .setParticipant(quotedMessageSenderJid)
-        .setStanzaId(quotedMessageId)
-        .setRemoteJid(quotedMessageRemoteJid)
-        .setIsForwarded(forwarded)
-        .build();
-
-var extendedTextMessage = WhatsappProtobuf.Message.newBuilder()
-        .setExtendedTextMessage(WhatsappProtobuf.ExtendedTextMessage.newBuilder()
-            .setText(text)
-            .setContextInfo(context)
-            .build())
-        .build();
-
-var quotedText = WebMessageInfo.newBuilder()
-        .setMessage(extendedTextMessage)
-        .setKey(key)
-        .setMessageTimestamp(Instant.now().getEpochSecond())
-        .setStatus(it.auties.whatsapp4j.protobuf.info.MessageInfo.WebMessageInfoStatus.PENDING)
-        .build();
+var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
+var contactsMessage = ContactsArrayMessage.newContactsArrayMessage()  // Create a new contacts array message
+        .displayName("A nice friend") // Set the display name of the first contact that this message contains
+        .contacts(contactMessages) // Set a list of contact messages that this message wraps
+        .create(); // Create the message
+api.sendMessage(chat, contactsMessage); // Send the contacts array message
 ```
 
-##### Send a message
-```java
-api.sendMessage(message);
-```
+##### Other messages
+
+Whatsapp uses many types of messages, the ones above are only the most common. Here is a complete list divided in categories:
+1. Device sent messages:
+   - DeviceSentMessage
+   - DeviceSyncMessage
+   
+2. Server messages:
+   - ProtocolMessage
+   
+3. Security messages:
+   - SenderKeyDistributionMessage
+
+3. Whatsapp Business messages:
+   - Payment messages:
+      - RequestPaymentMessage
+      - CancelPaymentRequestMessage
+      - DeclinePaymentRequestMessage
+      - SendPaymentMessage
+   - ProductMessage
+   - TemplateButtonReplyMessage
+   - TemplateMessage
+   - HighlyStructuredMessage
+   
+4. User messages:
+   - TextMessage
+   - ContactMessage
+   - ContactsArrayMessage
+   - GroupInviteMessage
+   - LocationMessage
+   - LiveLocationMessage
+   - Media messages:
+      - ImageMessage
+      - AudioMessage
+      - DocumentMessage
+      - StickerMessage
 
 ### Online status
 
@@ -258,7 +349,7 @@ To change your [ContactStatus](https://www.javadoc.io/doc/com.github.auties00/wh
 api.changePresence(status, chat);
 ```
 
-To query the last known status of a [Contact](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/model/Contact.html)::
+To query the last known status of a [Contact](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/model/Contact.html):
 ``` java
 var lastKnownPresenceOptional = contact.lastKnownPresence();
 ```
@@ -462,10 +553,6 @@ var future = api.changeWhoCanEditGroupInfo(group, policy);  // A future for the 
 var response = future.get(); // Wait for the future to complete
 ```
 
-##### Change the icon/picture of a group
-
-> **_IMPORTANT:_**  This method is in the API marked as Beta but is not yet implemented
-
 ##### Remove the icon/picture of a group 
 ``` java
 var future = api.removeGroupPicture(group);  // A future for the request
@@ -482,6 +569,12 @@ var response = future.get(); // Wait for the future to complete
 ##### Leave a group
 ``` java
 var future = api.leave(group);  // A future for the request
+var response = future.get(); // Wait for the future to complete
+```
+
+##### Get group's invite code
+``` java
+var future = api.queryGroupInviteCode(group);  // A future for the request
 var response = future.get(); // Wait for the future to complete
 ```
 

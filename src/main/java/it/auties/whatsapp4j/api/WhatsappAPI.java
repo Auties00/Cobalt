@@ -194,14 +194,26 @@ public class WhatsappAPI {
      * @return a CompletableFuture that resolves in a MessageResponse wrapping the status of the message request and, if the status == 200, the time in seconds the message was registered on the server
      */
     public @NotNull CompletableFuture<MessageResponse> sendMessage(@NotNull Chat chat, @NotNull ContextualMessage message, @NotNull MessageInfo quotedMessage) {
-        var key = new MessageKey(chat);
         var messageContext = Optional.ofNullable(message.contextInfo())
                 .orElse(new ContextInfo(quotedMessage))
                 .quotedMessageContainer(quotedMessage.container())
                 .quotedMessageId(quotedMessage.key().id())
                 .quotedMessageChatJid(quotedMessage.key().chatJid())
                 .quotedMessageSenderJid(quotedMessage.key().senderJid());
-        var messageContainer = new MessageContainer(message.contextInfo(messageContext));
+        return sendMessage(chat,  message, messageContext);
+    }
+
+    /**
+     * Builds and sends a {@link MessageInfo} from a chat, a message and a context
+     *
+     * @param chat        the chat where the message should be sent
+     * @param message     the message to send
+     * @param contextInfo the context of the message to send
+     * @return a CompletableFuture that resolves in a MessageResponse wrapping the status of the message request and, if the status == 200, the time in seconds the message was registered on the server
+     */
+    public @NotNull CompletableFuture<MessageResponse> sendMessage(@NotNull Chat chat, @NotNull ContextualMessage message, @NotNull ContextInfo contextInfo) {
+        var key = new MessageKey(chat);
+        var messageContainer = new MessageContainer(message.contextInfo(contextInfo));
         return sendMessage(new MessageInfo(key, messageContainer));
     }
 
