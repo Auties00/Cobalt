@@ -46,7 +46,7 @@ public final class GroupInviteMessage extends ContextualMessage {
   private String groupName;
 
   /**
-   * The expiration of this invite in seconds since {@link java.time.Instant#EPOCH}
+   * The expiration of this invite in milliseconds since {@link java.time.Instant#EPOCH}
    */
   @JsonProperty(value = "3")
   private long inviteExpiration;

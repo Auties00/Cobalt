@@ -538,6 +538,7 @@ public class WhatsappTest implements WhatsappListener {
         var invite = GroupInviteMessage.newGroupInviteMessage()
                 .groupJid(group.jid())
                 .groupName(group.displayName())
+                .inviteExpiration(ZonedDateTime.now().plusDays(3).toInstant().toEpochMilli())
                 .inviteCode(code)
                 .create();
         var message = new MessageContainer(invite);

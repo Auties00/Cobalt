@@ -7,6 +7,7 @@ import it.auties.whatsapp4j.utils.internal.Validate;
 import jakarta.validation.constraints.NotNull;
 import lombok.SneakyThrows;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -193,7 +194,15 @@ public class BinaryDecoder {
             default -> throw new IllegalStateException("BinaryReader#readNode: unexpected tag: " + tag);
         };
 
-        return description.equals("message") ? ProtobufDecoder.forType(MessageInfo.class).decode(data.data()) : data.toString();
+        return description.equals("message") ? decodeMessage(data) : data.toString();
+    }
+
+    private MessageInfo decodeMessage(BinaryArray data) throws IOException {
+        try {
+            return ProtobufDecoder.forType(MessageInfo.class).decode(data.data());
+        } catch (RuntimeException ex){
+            throw new IllegalArgumentException("Cannot deserialize JSON %s: internal error".formatted(ProtobufDecoder.forType(MessageInfo.class).decodeAsJson(data.data())));
+        }
     }
 
     private @NotNull List<Node> readList(int tag) {

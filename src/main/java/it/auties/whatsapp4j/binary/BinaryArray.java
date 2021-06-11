@@ -2,7 +2,7 @@ package it.auties.whatsapp4j.binary;
 
 import it.auties.whatsapp4j.utils.internal.Pair;
 import jakarta.validation.constraints.NotNull;
-import jakarta.xml.bind.DatatypeConverter;
+import org.bouncycastle.util.encoders.Hex;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -184,7 +184,7 @@ public record BinaryArray(byte[] data) {
      * @return a String with the above characteristics
      */
     public @NotNull String toHex() {
-        return DatatypeConverter.printHexBinary(data);
+        return Hex.toHexString(data);
     }
 
     /**

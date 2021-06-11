@@ -568,7 +568,8 @@ public class WhatsappAPI {
      * @return a CompletableFuture that resolves in a SimpleStatusResponse wrapping the status of the request
      */
     public @NotNull CompletableFuture<SimpleStatusResponse> unmute(@NotNull Chat chat) {
-        var node = new Node("action", attributes(attr("epoch", manager.tagAndIncrement()), attr("type", "set")), List.of(new Node("chat", attributes(attr("jid", chat.jid()), attr("previous", chat.mute().muteEndDate().map(ChronoZonedDateTime::toEpochSecond).map(String::valueOf).orElseThrow()), attr("type", "mute")), null)));
+        var previousMute = chat.mute().muteEndDate().map(ChronoZonedDateTime::toEpochSecond).map(String::valueOf).orElse("0");
+        var node = new Node("action", attributes(attr("epoch", manager.tagAndIncrement()), attr("type", "set")), List.of(new Node("chat", attributes(attr("jid", chat.jid()), attr("previous", previousMute), attr("type", "mute")), null)));
         return new BinaryRequest<SimpleStatusResponse>(configuration, node, BinaryFlag.IGNORE, BinaryMetric.CHAT) {}.send(socket.session()).thenApplyAsync(res -> {
             if (res.status() == 200) chat.mute(new ChatMute(0));
             return res;
@@ -647,9 +648,11 @@ public class WhatsappAPI {
      * @return a CompletableFuture that resolves in a SimpleStatusResponse wrapping the status of the request
      */
     public @NotNull CompletableFuture<SimpleStatusResponse> markChat(@NotNull Chat chat, int flag) {
-        var lastMessage = chat.lastMessage().orElseThrow();
-        var node = new Node("action", attributes(attr("epoch", manager.tagAndIncrement()), attr("type", "set")), List.of(new Node("read", attributes(attr("owner", lastMessage.key().fromMe()), attr("jid", chat.jid()), attr("count", flag), attr("index", lastMessage.key().id())), null)));
-        return new BinaryRequest<SimpleStatusResponse>(configuration, node, BinaryFlag.IGNORE, BinaryMetric.READ) {}.send(socket.session());
+        return loadChatHistory(chat).thenComposeAsync(__ -> {
+            var lastMessage = chat.lastMessage().orElseThrow(() -> new IllegalArgumentException("Cannot mark chat: the chat's history is empty"));
+            var node = new Node("action", attributes(attr("epoch", manager.tagAndIncrement()), attr("type", "set")), List.of(new Node("read", attributes(attr("owner", lastMessage.key().fromMe()), attr("jid", chat.jid()), attr("count", flag), attr("index", lastMessage.key().id())), null)));
+            return new BinaryRequest<SimpleStatusResponse>(configuration, node, BinaryFlag.IGNORE, BinaryMetric.READ) {}.send(socket.session());
+        });
     }
 
     /**
@@ -689,16 +692,19 @@ public class WhatsappAPI {
      * @return a CompletableFuture that resolves in a SimpleStatusResponse wrapping the status of the request
      */
     public @NotNull CompletableFuture<SimpleStatusResponse> archive(@NotNull Chat chat) {
-        var lastMessage = chat.lastMessage().orElseThrow();
-        var node = new Node("action", attributes(attr("epoch", manager.tagAndIncrement()), attr("type", "set")), List.of(new Node("chat", attributes(attr("owner", lastMessage.key().fromMe()), attr("jid", chat.jid()), attr("index", lastMessage.key().id()), attr("type", "archive")), null)));
-        return new BinaryRequest<SimpleStatusResponse>(configuration, node, BinaryFlag.IGNORE, BinaryMetric.CHAT) {}.send(socket.session()).thenApplyAsync(res -> {
-            if (res.status() == 200) {
-                chat.pinned(0);
-                chat.isArchived(true);
-            }
+        return loadChatHistory(chat).thenComposeAsync(__ -> {
+            var lastMessage = chat.lastMessage().orElseThrow(() -> new IllegalArgumentException("Cannot archive chat: the chat's history is empty"));
+            var node = new Node("action", attributes(attr("epoch", manager.tagAndIncrement()), attr("type", "set")), List.of(new Node("chat", attributes(attr("owner", lastMessage.key().fromMe()), attr("jid", chat.jid()), attr("index", lastMessage.key().id()), attr("type", "archive")), null)));
+            return new BinaryRequest<SimpleStatusResponse>(configuration, node, BinaryFlag.IGNORE, BinaryMetric.CHAT) {}.send(socket.session()).thenApplyAsync(res -> {
+                if (res.status() == 200) {
+                    chat.pinned(0);
+                    chat.isArchived(true);
+                }
 
-            return res;
+                return res;
+            });
         });
+
     }
 
     /**
@@ -708,11 +714,15 @@ public class WhatsappAPI {
      * @return a CompletableFuture that resolves in a SimpleStatusResponse wrapping the status of the request
      */
     public @NotNull CompletableFuture<SimpleStatusResponse> unarchive(@NotNull Chat chat) {
-        var lastMessage = chat.lastMessage().orElseThrow();
-        var node = new Node("action", attributes(attr("epoch", manager.tagAndIncrement()), attr("type", "set")), List.of(new Node("chat", attributes(attr("owner", lastMessage.key().fromMe()), attr("jid", chat.jid()), attr("index", lastMessage.key().id()), attr("type", "unarchive")), null)));
-        return new BinaryRequest<SimpleStatusResponse>(configuration, node, BinaryFlag.IGNORE, BinaryMetric.CHAT) {}.send(socket.session()).thenApplyAsync(res -> {
-            if (res.status() == 200) chat.isArchived(false);
-            return res;
+        return loadChatHistory(chat).thenComposeAsync(__ -> {
+            var lastMessage = chat.lastMessage().orElseThrow(() -> new IllegalArgumentException("Cannot unarchive chat: the chat's history is empty"));
+            var node = new Node("action", attributes(attr("epoch", manager.tagAndIncrement()), attr("type", "set")), List.of(new Node("chat", attributes(attr("owner", lastMessage.key().fromMe()), attr("jid", chat.jid()), attr("index", lastMessage.key().id()), attr("type", "unarchive")), null)));
+            return new BinaryRequest<SimpleStatusResponse>(configuration, node, BinaryFlag.IGNORE, BinaryMetric.CHAT) {}
+                    .send(socket.session())
+                    .thenApplyAsync(res -> {
+                        if (res.status() == 200) chat.isArchived(false);
+                        return res;
+                    });
         });
     }
 
