@@ -64,7 +64,6 @@ import static it.auties.whatsapp4j.utils.WhatsappUtils.*;
 @RequiredArgsConstructor
 @Data
 @Accessors(fluent = true)
-@Log
 public class WhatsappWebSocket {
     private Session session;
     private boolean loggedIn;
@@ -148,7 +147,6 @@ public class WhatsappWebSocket {
 
     @OnMessage
     public void onMessage(@NotNull Response<?> response) {
-        log.info(response.toString());
         if (response instanceof JsonListResponse listResponse) {
             handleList(listResponse);
             return;

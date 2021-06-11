@@ -27,7 +27,7 @@ public interface WhatsappListener {
     /**
      * Called when {@link WhatsappWebSocket} successfully establishes a connection and logs in into an account.
      * When this event is called, any data, including chats and contact, is not guaranteed to be already in memory.
-     * Instead, {@link WhatsappListener#onChatsReceived()} and {@link WhatsappListener#onContactsReceived()} should be used.
+     * Instead, {@link WhatsappListener#onChats()} and {@link WhatsappListener#onContacts()} should be used.
      *
      * @param info the information sent by WhatsappWeb's WebSocket about this session
      */
@@ -63,7 +63,7 @@ public interface WhatsappListener {
      * Called when {@link WhatsappWebSocket} receives all the contacts from WhatsappWeb's WebSocket.
      * To access this data use {@link WhatsappDataManager#contacts()}.
      */
-    default void onContactsReceived() {
+    default void onContacts() {
     }
 
     /**
@@ -79,7 +79,7 @@ public interface WhatsappListener {
      *
      * @param contact the new contact
      */
-    default void onContactReceived(@NotNull Contact contact) {
+    default void onNewContact(@NotNull Contact contact) {
     }
 
     /**
@@ -95,17 +95,26 @@ public interface WhatsappListener {
 
     /**
      * Called when {@link WhatsappWebSocket} receives all the chats from WhatsappWeb's WebSocket.
+     * When this event is fired, it is guaranteed that all metadata excluding messages will be present.
      * To access this data use {@link WhatsappDataManager#chats()}.
+     * If you also need the messages to be loaded, please refer to {@link WhatsappListener#onChatRecentMessages(Chat)}.
      */
-    default void onChatsReceived() {
+    default void onChats() {
     }
 
+    /**
+     * Called when {@link WhatsappWebSocket} receives the recent message for a chat already in memory.
+     * When this event is fired, it is guaranteed that all metadata excluding messages will be present.
+     */
+    default void onChatRecentMessages(@NotNull Chat chat) {
+    }
+    
     /**
      * Called when {@link WhatsappWebSocket} receives a new chat
      *
      * @param chat the new chat
      */
-    default void onChatReceived(@NotNull Chat chat) {
+    default void onNewChat(@NotNull Chat chat) {
     }
 
     /**
@@ -192,7 +201,7 @@ public interface WhatsappListener {
      * @param chat    the chat where the message was sent
      * @param message the message that was sent
      */
-    default void onNewMessageReceived(@NotNull Chat chat, @NotNull MessageInfo message) {
+    default void onNewMessage(@NotNull Chat chat, @NotNull MessageInfo message) {
     }
 
     /**

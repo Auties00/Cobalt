@@ -99,15 +99,14 @@
                     <target>${java-version}</target>
                     <release>${java-version}</release>
                     <annotationProcessorPaths>
-                        <path>
+                        <annotationProcessorPath>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                             <version>${lombok-version}</version>
-                        </path>
+                        </annotationProcessorPath>
                     </annotationProcessorPaths>
                     <compilerArgs>
                         <compilerArg>--enable-preview</compilerArg>
-                        <arg>-J--illegal-access=permit</arg>
                     </compilerArgs>
                     <failOnError>true</failOnError>
                 </configuration>
@@ -155,7 +154,6 @@
                     <outputDirectory>${delombok.output}</outputDirectory>
                     <excludedFiles>
                         <excludedFile>module-info.java</excludedFile>
-                        <excludedFile>WhatsappProtobuf.java</excludedFile>
                     </excludedFiles>
                 </configuration>
                 <executions>

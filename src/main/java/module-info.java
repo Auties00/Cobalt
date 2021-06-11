@@ -3,7 +3,6 @@ open module whatsapp4j {
     exports it.auties.whatsapp4j.listener;
     exports it.auties.whatsapp4j.utils;
     exports it.auties.whatsapp4j.manager;
-    exports it.auties.whatsapp4j.binary;
     exports it.auties.whatsapp4j.response.impl.json;
     exports it.auties.whatsapp4j.response.impl.binary;
     exports it.auties.whatsapp4j.response.model.common;

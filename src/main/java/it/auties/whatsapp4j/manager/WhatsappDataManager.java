@@ -255,7 +255,8 @@ public class WhatsappDataManager {
             case "battery" -> parseBattery(node);
             case "read" -> parseReadStatus(firstChildNode);
             case "received" -> parseReceivedStatus(firstChildNode);
-            default -> processMessages(socket, node, nodes);
+            case "contacts", "broadcast" -> {} // Recent contacts and broadcast lists
+            case "message" -> processMessages(socket, node, nodes);
         }
     }
 
@@ -303,7 +304,7 @@ public class WhatsappDataManager {
         }
 
         contacts.add(contact);
-        listeners.forEach(listener -> callOnListenerThread(() -> listener.onContactReceived(contact)));
+        listeners.forEach(listener -> callOnListenerThread(() -> listener.onNewContact(contact)));
     }
 
     private void parseBattery(@NotNull Node node) {
@@ -401,18 +402,24 @@ public class WhatsappDataManager {
 
         switch (type) {
             case "contacts" -> parseContacts(listeners, nodes);
-            case "chat" -> parseChats(listeners, nodes);
+            case "chat" -> parseChats(nodes);
             case "message" -> processMessagesFromNodes(socket, nodes);
         }
     }
 
     private void processMessages(@NotNull WhatsappWebSocket socket, @NotNull Node node, List<Node> nodes) {
-        var action = node.attrs().get("add");
-        if (action == null) {
+        var action = node.attrs().getOrDefault("add", "unknown");
+        if(action.equals("unknown")){
+            System.out.println(nodes);
+        }
+
+        var last = Boolean.parseBoolean(node.attrs().getOrDefault("last", "false"));
+        var chat = processMessagesFromNodes(socket, nodes);
+        if (!action.equals("last") && !last) {
             return;
         }
 
-        processMessagesFromNodes(socket, nodes);
+        listeners.forEach(listener -> callOnListenerThread(() -> listener.onChatRecentMessages(chat)));
     }
 
     private void parseReceivedStatus(@NotNull Node firstChildNode) {
@@ -460,23 +467,31 @@ public class WhatsappDataManager {
         listeners.forEach(listener -> callOnListenerThread(() -> listener.onChatReadStatusChange(chat)));
     }
 
-    private void parseChats(@NotNull List<WhatsappListener> listeners, @NotNull List<Node> nodes) {
-        nodes.stream().map(Node::attrs).map(Chat::fromAttributes).forEach(chats::add);
-        listeners.forEach(listener -> callOnListenerThread(listener::onChatsReceived));
+    private void parseChats(@NotNull List<Node> nodes) {
+        nodes.stream()
+                .map(Node::attrs)
+                .map(Chat::fromAttributes)
+                .forEach(chats::add);
+        listeners.forEach(listener -> callOnListenerThread(listener::onChats));
     }
 
     private void parseContacts(@NotNull List<WhatsappListener> listeners, @NotNull List<Node> nodes) {
         nodes.stream().map(Node::attrs).map(Contact::fromAttributes).forEach(contacts::add);
-        listeners.forEach(listener -> callOnListenerThread(listener::onContactsReceived));
+        listeners.forEach(listener -> callOnListenerThread(listener::onContacts));
     }
 
-    private void processMessagesFromNodes(@NotNull WhatsappWebSocket socket, @NotNull List<Node> nodes) {
-        nodes.stream().map(Node::content).map(MessageInfo.class::cast).filter(Objects::nonNull).forEach(message -> processMessage(socket, message));
-    }
-
-    private void processMessage(@NotNull WhatsappWebSocket socket, @NotNull MessageInfo message) {
-        var jid = message.key().chatJid();
+    private Chat processMessagesFromNodes(@NotNull WhatsappWebSocket socket, @NotNull List<Node> nodes) {
+        var jid = firstMessageInfo(nodes).key().chatJid();
         var chat = findChatByJid(jid).orElseGet(() -> queryMissingChat(socket, jid));
+        nodes.stream().map(Node::content).map(MessageInfo.class::cast).filter(Objects::nonNull).forEach(message -> processMessage(chat, message));
+        return chat;
+    }
+
+    private MessageInfo firstMessageInfo(List<Node> nodes) {
+        return (MessageInfo) nodes.get(0).content();
+    }
+
+    private void processMessage(@NotNull Chat chat, @NotNull MessageInfo message) {
         var protocol = message.container() != null && message.container().protocolMessage() != null;
         if (protocol) {
             //TODO: This message could also be an history sync, handle this
@@ -494,10 +509,8 @@ public class WhatsappDataManager {
             return;
         }
 
-        if (!protocol) {
-            updateUnreadMessages(message, chat);
-            listeners.forEach(listener -> callOnListenerThread(() -> listener.onNewMessageReceived(chat, message)));
-        }
+        updateUnreadMessages(message, chat);
+        listeners.forEach(listener -> callOnListenerThread(() -> listener.onNewMessage(chat, message)));
     }
 
     private void updateUnreadMessages(@NotNull MessageInfo message, Chat chat) {
@@ -512,7 +525,7 @@ public class WhatsappDataManager {
         try {
             var chatTemp = socket.queryChat(jid).get().data();
             chats.add(chatTemp);
-            listeners.forEach(listener -> callOnListenerThread(() -> listener.onChatReceived(chatTemp)));
+            listeners.forEach(listener -> callOnListenerThread(() -> listener.onNewChat(chatTemp)));
             return chatTemp;
         } catch (InterruptedException | ExecutionException ex) {
             throw new RuntimeException("WhatsappAPI: Cannot query chat to build unknown chat with jid %s".formatted(jid));

@@ -321,7 +321,7 @@ public class WhatsappTest implements WhatsappListener {
     @Order(23)
     public void testLoadConversation() throws InterruptedException, ExecutionException {
         log.info("Loading conversation(%s)...".formatted(group.messages().size()));
-        whatsappAPI.loadConversation(group).get();
+        whatsappAPI.loadChatHistory(group).get();
         log.info("Loaded conversation(%s)!".formatted(group.messages().size()));
     }
 
@@ -534,7 +534,7 @@ public class WhatsappTest implements WhatsappListener {
         var code = whatsappAPI.queryGroupInviteCode(group).get().code();
         log.info("Queried %s".formatted(code));
         log.info("Sending group invite message...");
-        var key = new MessageKey(group);
+        var key = new MessageKey(contactChat);
         var invite = GroupInviteMessage.newGroupInviteMessage()
                 .groupJid(group.jid())
                 .groupName(group.displayName())
@@ -582,13 +582,13 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Override
-    public void onChatsReceived() {
+    public void onChats() {
         log.info("Got chats!");
         latch.countDown();
     }
 
     @Override
-    public void onContactsReceived() {
+    public void onContacts() {
         log.info("Got contacts!");
         latch.countDown();
     }

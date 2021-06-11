@@ -272,8 +272,8 @@ public class WhatsappAPI {
      * @param chat the target chat
      * @return a CompletableFuture that resolves in said chat, using {@code chat} is the same thing
      */
-    public @NotNull CompletableFuture<Chat> loadConversation(@NotNull Chat chat) {
-        return loadConversation(chat, 20);
+    public @NotNull CompletableFuture<Chat> loadChatHistory(@NotNull Chat chat) {
+        return loadChatHistory(chat, 20);
     }
 
     /**
@@ -283,11 +283,13 @@ public class WhatsappAPI {
      * @param messageCount the number of messages to load
      * @return a CompletableFuture that resolves in said chat, using {@code chat} is the same thing
      */
-    public @NotNull CompletableFuture<Chat> loadConversation(@NotNull Chat chat, int messageCount) {
-        return chat.firstMessage().map(userMessage -> loadConversation(chat, userMessage, messageCount)).orElseGet(() -> queryChat(chat.jid()).thenApplyAsync(res -> {
-            chat.messages().addAll(res.data().messages());
-            return chat;
-        }));
+    public @NotNull CompletableFuture<Chat> loadChatHistory(@NotNull Chat chat, int messageCount) {
+        return chat.firstMessage()
+                .map(userMessage -> loadChatHistory(chat, userMessage, messageCount))
+                .orElseGet(() -> queryChat(chat.jid()).thenApplyAsync(res -> {
+                    chat.messages().addAll(res.data().messages());
+                    return chat;
+                }));
     }
 
     /**
@@ -298,12 +300,14 @@ public class WhatsappAPI {
      * @param messageCount the amount of messages to load
      * @return a CompletableFuture that resolves in said chat, using {@code chat} is the same thing
      */
-    public @NotNull CompletableFuture<Chat> loadConversation(@NotNull Chat chat, @NotNull MessageInfo lastMessage, int messageCount) {
+    public @NotNull CompletableFuture<Chat> loadChatHistory(@NotNull Chat chat, @NotNull MessageInfo lastMessage, int messageCount) {
         var node = new Node("query", attributes(attr("owner", lastMessage.key().fromMe()), attr("index", lastMessage.key().id()), attr("type", "message"), attr("epoch", manager.tagAndIncrement()), attr("jid", chat.jid()), attr("kind", "before"), attr("count", messageCount)), null);
-        return new BinaryRequest<MessagesResponse>(configuration, node, BinaryFlag.IGNORE, BinaryMetric.QUERY_MESSAGES) {}.send(socket.session()).thenApplyAsync(res -> {
-            chat.messages().addAll(res.data());
-            return chat;
-        });
+        return new BinaryRequest<MessagesResponse>(configuration, node, BinaryFlag.IGNORE, BinaryMetric.QUERY_MESSAGES) {}
+                .send(socket.session())
+                .thenApplyAsync(res -> {
+                    chat.messages().addAll(res.data());
+                    return chat;
+                });
     }
 
     /**
@@ -743,7 +747,7 @@ public class WhatsappAPI {
                     .build();
             manager.chats().add(group);
             return group;
-        }).thenComposeAsync(this::loadConversation);
+        }).thenComposeAsync(this::loadChatHistory);
     }
 
     /**
