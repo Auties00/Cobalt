@@ -201,7 +201,7 @@ public class BinaryDecoder {
         try {
             return ProtobufDecoder.forType(MessageInfo.class).decode(data.data());
         } catch (RuntimeException ex){
-            throw new IllegalArgumentException("Cannot deserialize JSON %s: internal error".formatted(ProtobufDecoder.forType(MessageInfo.class).decodeAsJson(data.data())));
+            throw new IllegalArgumentException("Cannot deserialize %s".formatted(ProtobufDecoder.forType(MessageInfo.class).decodeAsJson(data.data())), ex);
         }
     }
 

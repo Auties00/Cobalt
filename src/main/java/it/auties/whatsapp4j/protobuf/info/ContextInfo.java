@@ -4,9 +4,11 @@ import com.fasterxml.jackson.annotation.*;
 import java.util.*;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
+import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.protobuf.message.MessageContainer;
 import it.auties.whatsapp4j.protobuf.message.MessageKey;
 import it.auties.whatsapp4j.protobuf.message.ProtocolMessage;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -88,7 +90,7 @@ public class ContextInfo {
    * The message that this ContextualMessage quotes
    */
   @JsonProperty(value = "3")
-  private MessageContainer quotedMessage;
+  private MessageContainer quotedMessageContainer;
 
   /**
    * The jid of the chat where the message that this ContextualMessage quotes was sent
@@ -107,4 +109,26 @@ public class ContextInfo {
    */
   @JsonProperty(value = "1")
   private String quotedMessageId;
+
+  /**
+   * Constructs a ContextInfo from a quoted message
+   *
+   * @param quotedMessage the message to quote
+   */
+  public ContextInfo(@NotNull MessageInfo quotedMessage){
+    this.quotedMessageContainer = quotedMessage.container();
+    this.quotedMessageId = quotedMessage.key().id();
+    this.quotedMessageSenderJid = quotedMessage.key().chatJid();
+    this.quotedMessageSenderJid = quotedMessage.key().senderJid();
+  }
+
+  /**
+   * Returns an optional {@link MessageInfo} representing the message quoted by this message if said message is in memory
+   *
+   * @return a non empty optional {@link MessageInfo} if this message quotes a message in memory
+   */
+  public Optional<MessageInfo> quotedMessage(){
+    var manager = WhatsappDataManager.singletonInstance();
+    return manager.findMessageById(manager.findChatByJid(quotedMessageChatJid).orElseThrow(), quotedMessageId);
+  }
 }

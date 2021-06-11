@@ -175,7 +175,9 @@ public class WhatsappTest implements WhatsappListener {
     @Order(10)
     public void testMarkChatAsUnread() throws ExecutionException, InterruptedException {
         log.info("Marking chat as unread...");
+        System.out.println(contactChat);
         var markStatus = whatsappAPI.markAsUnread(contactChat).get();
+        System.out.println(contactChat);
         Assertions.assertEquals(200, markStatus.status(), "Cannot mark chat as unread: %s".formatted(markStatus));
         log.info("Marked chat as unread");
     }
@@ -393,7 +395,7 @@ public class WhatsappTest implements WhatsappListener {
     @Order(30)
     public void testTextMessage() throws ExecutionException, InterruptedException {
         log.info("Sending text...");
-        var key = new MessageKey(group);
+        var key = new MessageKey(contactChat);
         var message = new MessageContainer("Test");
         var info = new MessageInfo(key, message);
         var textResponse = whatsappAPI.sendMessage(info).get();

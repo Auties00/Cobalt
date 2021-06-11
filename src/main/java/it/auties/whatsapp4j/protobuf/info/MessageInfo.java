@@ -90,7 +90,7 @@ public class MessageInfo {
    * This property is populated only if the message that {@link MessageInfo#container} wraps is a {@link it.auties.whatsapp4j.protobuf.message.ProtocolMessage}.
    */
   @JsonProperty(value = "24")
-  private WebMessageInfoStubType messageStubType;
+  private MessageInfoStubType messageStubType;
 
   /**
    * Url number
@@ -146,7 +146,7 @@ public class MessageInfo {
    * Otherwise, this field is guaranteed to be equal to the single value stored by {@link MessageInfo#individualReadStatus()} for the contact associated with the chat associated with this message.
    */
   @JsonProperty(value = "4")
-  private WebMessageInfoStatus globalStatus;
+  private MessageInfoStatus globalStatus;
 
   /**
    * A map that holds the read status of this message for each participant.
@@ -157,7 +157,7 @@ public class MessageInfo {
    * It is important to remember that it is guaranteed that every participant will be present as a key.
    */
   @Builder.Default
-  private @NotNull Map<Contact, WebMessageInfoStatus> individualReadStatus = new HashMap<>();
+  private @NotNull Map<Contact, MessageInfoStatus> individualReadStatus = new HashMap<>();
 
   /**
    * The timestamp, that is the seconds since {@link java.time.Instant#EPOCH}, when this message was sent
@@ -186,27 +186,53 @@ public class MessageInfo {
   public MessageInfo(MessageKey key, MessageContainer container) {
     this.key = key;
     this.timestamp = Instant.now().getEpochSecond();
-    this.globalStatus = WebMessageInfoStatus.PENDING;
+    this.globalStatus = MessageInfoStatus.PENDING;
     this.container = container;
   }
 
+  /**
+   * The constants of this enumerated type describe the various types of status of a {@link MessageInfo}
+   */
   @Accessors(fluent = true)
-  public enum WebMessageInfoStatus {
+  public enum MessageInfoStatus {
+    /**
+     * Error
+     */
     ERROR(0),
+
+    /**
+     * Pending
+     */
     PENDING(1),
+
+    /**
+     * Acknowledged by the server
+     */
     SERVER_ACK(2),
+
+    /**
+     * Delivered
+     */
     DELIVERY_ACK(3),
+
+    /**
+     * Read
+     */
     READ(4),
+
+    /**
+     * Played
+     */
     PLAYED(5);
 
     private final @Getter int index;
 
-    WebMessageInfoStatus(int index) {
+    MessageInfoStatus(int index) {
       this.index = index;
     }
 
     @JsonCreator
-    public static WebMessageInfoStatus forIndex(int index) {
+    public static MessageInfoStatus forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
           .findFirst()
@@ -214,8 +240,11 @@ public class MessageInfo {
     }
   }
 
+  /**
+   * The constants of this enumerated type describe the various types of server message that a {@link MessageInfo} can describe
+   */
   @Accessors(fluent = true)
-  public enum WebMessageInfoStubType {
+  public enum MessageInfoStubType {
     UNKNOWN(0),
     REVOKE(1),
     CIPHERTEXT(2),
@@ -292,12 +321,12 @@ public class MessageInfo {
 
     private final @Getter int index;
 
-    WebMessageInfoStubType(int index) {
+    MessageInfoStubType(int index) {
       this.index = index;
     }
 
     @JsonCreator
-    public static WebMessageInfoStubType forIndex(int index) {
+    public static MessageInfoStubType forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
           .findFirst()

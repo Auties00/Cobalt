@@ -20,7 +20,7 @@ import java.util.Arrays;
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(builderMethodName = "newTextMessage", buildMethodName = "create")
 @Accessors(fluent = true)
-public final class ExtendedTextMessage extends ContextualMessage {
+public final class TextMessage extends ContextualMessage {
   /**
    * Determines whether the preview can be played inline
    */
@@ -78,7 +78,7 @@ public final class ExtendedTextMessage extends ContextualMessage {
   private String canonicalUrl;
 
   /**
-   * The substring of this text message that links to {@link ExtendedTextMessage#canonicalUrl}, if available
+   * The substring of this text message that links to {@link TextMessage#canonicalUrl}, if available
    */
   @JsonProperty(value = "2")
   private String matchedText;
@@ -89,8 +89,18 @@ public final class ExtendedTextMessage extends ContextualMessage {
   @JsonProperty(value = "1")
   private String text;
 
+
   /**
-   * The constants of this enumerated type describe the various types of fonts that a {@link ExtendedTextMessage} supports.
+   * Constructs a TextMessage from a text
+   *
+   * @param text the text to wrap
+   */
+  public TextMessage(String text){
+    this.text = text;
+  }
+
+  /**
+   * The constants of this enumerated type describe the various types of fonts that a {@link TextMessage} supports.
    * Not all clients currently display all fonts correctly.
    */
   @Accessors(fluent = true)
@@ -141,7 +151,7 @@ public final class ExtendedTextMessage extends ContextualMessage {
   }
 
   /**
-   * The constants of this enumerated type describe the various types of previuew that a {@link ExtendedTextMessage} can provide.
+   * The constants of this enumerated type describe the various types of previuew that a {@link TextMessage} can provide.
    */
   @Accessors(fluent = true)
   public enum ExtendedTextMessagePreviewType {

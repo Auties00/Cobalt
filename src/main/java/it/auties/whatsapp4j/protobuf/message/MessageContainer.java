@@ -1,5 +1,6 @@
 package it.auties.whatsapp4j.protobuf.message;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.model.Call;
@@ -162,11 +163,10 @@ public class MessageContainer {
   private DocumentMessage documentMessage;
 
   /**
-   * Text message with context.
-   * For text messages with no context refer to {@link MessageContainer#textMessage}
+   * Text message
    */
   @JsonProperty(value = "6")
-  private ExtendedTextMessage extendedTextMessage;
+  private TextMessage textMessage;
 
   /**
    * Location message
@@ -187,11 +187,31 @@ public class MessageContainer {
   private ImageMessage imageMessage;
 
   /**
-   * Text message with no context.
-   * For text messages with context refer to {@link MessageContainer#extendedTextMessage}
+   * This property should NOT be used.
+   * The Protobuf used by whatsapp has two fields for text messages: one with context and one without.
+   * From a developer perspective though, it's kind of hell to use so I joined them into one.
    */
   @JsonProperty(value = "1")
-  private String textMessage;
+  private String rawText;
+
+  /**
+   * Json accessor to delegate the property rawText to textMessage
+   *
+   * @param rawText the text to delegate
+   */
+  @JsonProperty(value = "1")
+  private void rawText(String rawText){
+    this.textMessage = new TextMessage(rawText);
+  }
+
+  /**
+   * This accessor should not be used and is provided only as a string utility.
+   *
+   * @return the raw text
+   */
+  private String rawText(){
+    return rawText;
+  }
 
   /**
    * Constructs a new MessageContainer from a message of any type
@@ -205,7 +225,7 @@ public class MessageContainer {
     if(message instanceof ImageMessage imageMessage) this.imageMessage = imageMessage;
     if(message instanceof ContactMessage contactMessage) this.contactMessage = contactMessage;
     if(message instanceof LocationMessage locationMessage) this.locationMessage = locationMessage;
-    if(message instanceof ExtendedTextMessage extendedTextMessage) this.extendedTextMessage = extendedTextMessage;
+    if(message instanceof TextMessage extendedTextMessage) this.textMessage = extendedTextMessage;
     if(message instanceof DocumentMessage documentMessage) this.documentMessage = documentMessage;
     if(message instanceof AudioMessage audioMessage) this.audioMessage = audioMessage;
     if(message instanceof VideoMessage videoMessage) this.videoMessage = videoMessage;
@@ -226,13 +246,13 @@ public class MessageContainer {
     if(message instanceof DeviceSyncMessage deviceSyncMessage) this.deviceSyncMessage = deviceSyncMessage;
   }
 
-
   /**
    * Constructs a new MessageContainer from a simple text message
    *
    * @param textMessage the text message that the new container should wrap
    */
+  @JsonCreator
   public MessageContainer(String textMessage){
-    this.textMessage = textMessage;
+    this.textMessage = new TextMessage(textMessage);
   }
 }

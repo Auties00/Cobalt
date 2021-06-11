@@ -2,6 +2,7 @@ package it.auties.whatsapp4j.response.impl.json;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import it.auties.whatsapp4j.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
 import jakarta.validation.constraints.NotNull;
 
@@ -12,7 +13,7 @@ import java.time.Instant;
  *
  * @param cmd         a nullable identifier for the request
  * @param ids         a non null array of message ids that this update regards
- * @param ack         an unsigned int representing {@link it.auties.whatsapp4j.protobuf.info.MessageInfo.WebMessageInfoStatus}
+ * @param ack         an unsigned int representing {@link MessageInfo.MessageInfoStatus}
  * @param from        the sender of the messages that this update regards
  * @param to          chat of the messages that this update regards
  * @param timestamp   the time in seconds since {@link Instant#EPOCH} when the update was dispatched by the server

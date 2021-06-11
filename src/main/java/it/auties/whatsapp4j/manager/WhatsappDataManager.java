@@ -436,13 +436,13 @@ public class WhatsappDataManager {
 
         var message = messageOpt.get();
         var status = switch (firstChildNode.attrs().get("type")) {
-            case "read" -> MessageInfo.WebMessageInfoStatus.READ;
-            case "message" -> MessageInfo.WebMessageInfoStatus.DELIVERY_ACK;
-            case "error" -> MessageInfo.WebMessageInfoStatus.ERROR;
+            case "read" -> MessageInfo.MessageInfoStatus.READ;
+            case "message" -> MessageInfo.MessageInfoStatus.DELIVERY_ACK;
+            case "error" -> MessageInfo.MessageInfoStatus.ERROR;
             default -> throw new IllegalStateException("Unexpected value");
         };
 
-        if (status.index() <= message.globalStatus().index() && status != MessageInfo.WebMessageInfoStatus.ERROR) {
+        if (status.index() <= message.globalStatus().index() && status != MessageInfo.MessageInfoStatus.ERROR) {
             return;
         }
 
@@ -514,7 +514,7 @@ public class WhatsappDataManager {
     }
 
     private void updateUnreadMessages(@NotNull MessageInfo message, Chat chat) {
-        if (message.key().fromMe() || message.globalStatus() == MessageInfo.WebMessageInfoStatus.READ || message.ignore()) {
+        if (message.key().fromMe() || message.globalStatus() == MessageInfo.MessageInfoStatus.READ || message.ignore()) {
             return;
         }
 

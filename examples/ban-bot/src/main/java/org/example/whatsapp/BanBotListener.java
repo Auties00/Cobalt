@@ -3,15 +3,20 @@ package org.example.whatsapp;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.listener.RegisterListener;
 import it.auties.whatsapp4j.listener.WhatsappListener;
-import it.auties.whatsapp4j.model.WhatsappMessage;
-import it.auties.whatsapp4j.model.WhatsappTextMessage;
+import it.auties.whatsapp4j.protobuf.chat.Chat;
+import it.auties.whatsapp4j.protobuf.info.ContextInfo;
+import it.auties.whatsapp4j.protobuf.info.MessageInfo;
+import it.auties.whatsapp4j.protobuf.message.TextMessage;
+import it.auties.whatsapp4j.protobuf.message.MessageContainer;
+import it.auties.whatsapp4j.protobuf.message.MessageKey;
 import it.auties.whatsapp4j.response.impl.json.ModificationForParticipant;
 
 @RegisterListener
 public record BanBotListener(WhatsappAPI api) implements WhatsappListener {
     @Override
-    public void onNewMessageReceived(Chat chat, WhatsappMessage message) {
-        if(!(message instanceof WhatsappTextMessage textMessage)){
+    public void onNewMessage(Chat chat, MessageInfo info) {
+        var textMessage = info.container().textMessage();
+        if(textMessage == null){
             return;
         }
 
@@ -20,35 +25,47 @@ public record BanBotListener(WhatsappAPI api) implements WhatsappListener {
         }
 
         if(chat.isGroup()){
-            api.sendMessage(WhatsappTextMessage.newTextMessage(chat, "[WhatsappBot] This command is only supported in groups", textMessage));
+            sendResponseText(chat, info, "[WhatsappBot] This command is only supported in groups");
             return;
         }
 
-        var quoted = textMessage.quotedMessage().orElse(null);
-        if(quoted == null){
-            api.sendMessage(WhatsappTextMessage.newTextMessage(chat, "[WhatsappBot] Please quote a message sent by the person that you want to ban", textMessage));
+        var quoted = textMessage.contextInfo().quotedMessage();
+        if(quoted.isEmpty()){
+            sendResponseText(chat, info, "[WhatsappBot] Please quote a message sent by the person that you want to ban");
             return;
         }
 
-        var victim = quoted.sender().orElse(null);
+        var victim = quoted.get().key().sender().orElse(null);
         if(victim == null){
-            api.sendMessage(WhatsappTextMessage.newTextMessage(chat, "[WhatsappBot] Missing contact, cannot ban target", textMessage));
+            sendResponseText(chat, info, "[WhatsappBot] Missing contact, cannot ban target");
             return;
         }
 
         api.remove(chat, victim).thenAcceptAsync(result -> {
-            var victimName = quoted.sender().flatMap(Contact::bestName).orElse(quoted.senderJid());
+            var victimName = victim.bestName().orElse(victim.jid());
             if(result.status() != 200 && result.status() != 207){
+                sendResponseText(chat, info, "[WhatsappBot] Could not ban %s, status code: %s".formatted(victimName, result.status()));
                 return;
             }
 
             var success = result.modifications().stream().map(ModificationForParticipant::status).allMatch(e -> e.code() == 200);
             if(!success) {
-                api.sendMessage(WhatsappTextMessage.newTextMessage(chat, "[WhatsappBot] Could not ban %s, status code: %s".formatted(victimName, result.status()), textMessage));
+                sendResponseText(chat, info, "[WhatsappBot] Could not ban %s, status code: %s".formatted(victimName, result.status()));
                 return;
             }
 
-            api.sendMessage(WhatsappTextMessage.newTextMessage(chat, "[WhatsappBot] Banned %s", textMessage));
+            sendResponseText(chat, info, "[WhatsappBot] Banned %s".formatted(victimName));
         });
+    }
+
+    private void sendResponseText(Chat chat, MessageInfo info, String text) {
+        var key = new MessageKey(chat);
+        var responseText = TextMessage.newTextMessage()
+                .text(text)
+                .contextInfo(new ContextInfo(info))
+                .create();
+        var responseMessage = new MessageContainer(responseText);
+        var responseMessageInfo = new MessageInfo(key, responseMessage);
+        api.sendMessage(responseMessageInfo);
     }
 }

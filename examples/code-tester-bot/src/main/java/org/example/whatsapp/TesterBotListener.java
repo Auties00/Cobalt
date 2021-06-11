@@ -3,8 +3,12 @@ package org.example.whatsapp;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.listener.RegisterListener;
 import it.auties.whatsapp4j.listener.WhatsappListener;
-import it.auties.whatsapp4j.model.WhatsappMessage;
-import it.auties.whatsapp4j.model.WhatsappTextMessage;
+import it.auties.whatsapp4j.protobuf.chat.Chat;
+import it.auties.whatsapp4j.protobuf.info.ContextInfo;
+import it.auties.whatsapp4j.protobuf.info.MessageInfo;
+import it.auties.whatsapp4j.protobuf.message.MessageContainer;
+import it.auties.whatsapp4j.protobuf.message.MessageKey;
+import it.auties.whatsapp4j.protobuf.message.TextMessage;
 
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
@@ -37,12 +41,9 @@ public record TesterBotListener(WhatsappAPI api) implements WhatsappListener {
     private static final JavaCompiler COMPILER = ToolProvider.getSystemJavaCompiler();
 
     @Override
-    public void onNewMessageReceived(Chat chat, WhatsappMessage message) {
-        if(!(message instanceof WhatsappTextMessage textMessage)){
-            return;
-        }
-
-        if(!textMessage.text().contains("/java")){
+    public void onNewMessage(Chat chat, MessageInfo info) {
+        var textMessage = info.container().textMessage();
+        if(textMessage == null || !textMessage.text().contains("/java")){
             return;
         }
 
@@ -57,15 +58,26 @@ public record TesterBotListener(WhatsappAPI api) implements WhatsappListener {
             var errorStream = new ByteArrayOutputStream(4096);
             var compilationResult = COMPILER.run(null, null, errorStream, "-d", directory.toString(), file.toString());
             if (compilationResult != 0) {
-                api.sendMessage(WhatsappTextMessage.newTextMessage(chat, "The code provided contains errors: %s".formatted(errorStream.toString()), textMessage));
+                sendResponseText(chat, info, "The provided code contains errors: %s".formatted(errorStream.toString()));
                 return;
             }
 
             var process = Runtime.getRuntime().exec(new String[]{"java", "-cp", directory.toString(), "Test"});
             var result = new BufferedReader(new InputStreamReader(process.getInputStream())).lines().collect(Collectors.joining("\n"));
-            api.sendMessage(WhatsappTextMessage.newTextMessage(chat, "Code compiled successfully: %n%s".formatted(result), textMessage));
+            sendResponseText(chat, info, "Code compiled successfully: %n%s".formatted(result));
         }catch (IOException ex){
-            api.sendMessage(WhatsappTextMessage.newTextMessage(chat, "An IOException occurred while running the provided code: %n%s".formatted(ex.getMessage()), textMessage));
+            sendResponseText(chat, info, "An IOException occurred while running the provided code: %n%s".formatted(ex.getMessage()));
         }
+    }
+
+    private void sendResponseText(Chat chat, MessageInfo info, String text) {
+        var key = new MessageKey(chat);
+        var responseText = TextMessage.newTextMessage()
+                .text(text)
+                .contextInfo(new ContextInfo(info))
+                .create();
+        var responseMessage = new MessageContainer(responseText);
+        var responseMessageInfo = new MessageInfo(key, responseMessage);
+        api.sendMessage(responseMessageInfo);
     }
 }

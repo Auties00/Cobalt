@@ -36,7 +36,6 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
-import lombok.extern.java.Log;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -300,7 +299,7 @@ public class WhatsappWebSocket {
     }
 
     private void updateAndNotifyMessageReadStatusChange(@NotNull AckResponse ackResponse, @NotNull Contact to, @NotNull Chat chat, MessageInfo message) {
-        message.individualReadStatus().put(to, MessageInfo.WebMessageInfoStatus.forIndex(ackResponse.ack()));
+        message.individualReadStatus().put(to, MessageInfo.MessageInfoStatus.forIndex(ackResponse.ack()));
         whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onMessageReadStatusUpdate(chat, to, message)));
     }
 

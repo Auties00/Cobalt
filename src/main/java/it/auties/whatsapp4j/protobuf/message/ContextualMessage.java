@@ -2,7 +2,6 @@ package it.auties.whatsapp4j.protobuf.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.protobuf.info.ContextInfo;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,7 +21,7 @@ import lombok.experimental.SuperBuilder;
 @Accessors(fluent = true)
 public sealed abstract class ContextualMessage implements Message permits
         ContactMessage, ProductMessage, TemplateButtonReplyMessage,
-        ContactsArrayMessage, ExtendedTextMessage, GroupInviteMessage,
+        ContactsArrayMessage, TextMessage, GroupInviteMessage,
         LiveLocationMessage, LocationMessage, MediaMessage, TemplateMessage {
 
     /**
