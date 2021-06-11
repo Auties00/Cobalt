@@ -118,7 +118,7 @@ public class ContextInfo {
   public ContextInfo(@NotNull MessageInfo quotedMessage){
     this.quotedMessageContainer = quotedMessage.container();
     this.quotedMessageId = quotedMessage.key().id();
-    this.quotedMessageSenderJid = quotedMessage.key().chatJid();
+    this.quotedMessageChatJid = quotedMessage.key().chatJid();
     this.quotedMessageSenderJid = quotedMessage.key().senderJid();
   }
 

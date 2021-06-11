@@ -10,7 +10,12 @@ import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.protobuf.chat.*;
 import it.auties.whatsapp4j.protobuf.contact.Contact;
 import it.auties.whatsapp4j.protobuf.contact.ContactStatus;
+import it.auties.whatsapp4j.protobuf.info.ContextInfo;
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
+import it.auties.whatsapp4j.protobuf.message.ContextualMessage;
+import it.auties.whatsapp4j.protobuf.message.Message;
+import it.auties.whatsapp4j.protobuf.message.MessageContainer;
+import it.auties.whatsapp4j.protobuf.message.MessageKey;
 import it.auties.whatsapp4j.protobuf.model.Messages;
 import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.request.impl.SubscribeUserPresenceRequest;
@@ -168,7 +173,40 @@ public class WhatsappAPI {
     }
 
     /**
-     * Sends a message to a chat
+     * Builds and sends a {@link MessageInfo} from a chat and a message
+     *
+     * @param chat    the chat where the message should be sent
+     * @param message the message to send
+     * @return a CompletableFuture that resolves in a MessageResponse wrapping the status of the message request and, if the status == 200, the time in seconds the message was registered on the server
+     */
+    public @NotNull CompletableFuture<MessageResponse> sendMessage(@NotNull Chat chat, @NotNull Message message) {
+        var key = new MessageKey(chat);
+        var messageContainer = new MessageContainer(message);
+        return sendMessage(new MessageInfo(key, messageContainer));
+    }
+
+    /**
+     * Builds and sends a {@link MessageInfo} from a chat, a message and a quoted message
+     *
+     * @param chat          the chat where the message should be sent
+     * @param message       the message to send
+     * @param quotedMessage the message that {@code message} should quote
+     * @return a CompletableFuture that resolves in a MessageResponse wrapping the status of the message request and, if the status == 200, the time in seconds the message was registered on the server
+     */
+    public @NotNull CompletableFuture<MessageResponse> sendMessage(@NotNull Chat chat, @NotNull ContextualMessage message, @NotNull MessageInfo quotedMessage) {
+        var key = new MessageKey(chat);
+        var messageContext = Optional.ofNullable(message.contextInfo())
+                .orElse(new ContextInfo(quotedMessage))
+                .quotedMessageContainer(quotedMessage.container())
+                .quotedMessageId(quotedMessage.key().id())
+                .quotedMessageChatJid(quotedMessage.key().chatJid())
+                .quotedMessageSenderJid(quotedMessage.key().senderJid());
+        var messageContainer = new MessageContainer(message.contextInfo(messageContext));
+        return sendMessage(new MessageInfo(key, messageContainer));
+    }
+
+    /**
+     * Sends a message info to a chat
      *
      * @param message the message to send
      * @return a CompletableFuture that resolves in a MessageResponse wrapping the status of the message request and, if the status == 200, the time in seconds the message was registered on the server

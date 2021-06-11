@@ -4,10 +4,7 @@ import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.listener.RegisterListener;
 import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.protobuf.chat.Chat;
-import it.auties.whatsapp4j.protobuf.info.ContextInfo;
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
-import it.auties.whatsapp4j.protobuf.message.MessageContainer;
-import it.auties.whatsapp4j.protobuf.message.MessageKey;
 import it.auties.whatsapp4j.protobuf.message.TextMessage;
 
 import javax.tools.JavaCompiler;
@@ -58,26 +55,15 @@ public record TesterBotListener(WhatsappAPI api) implements WhatsappListener {
             var errorStream = new ByteArrayOutputStream(4096);
             var compilationResult = COMPILER.run(null, null, errorStream, "-d", directory.toString(), file.toString());
             if (compilationResult != 0) {
-                sendResponseText(chat, info, "The provided code contains errors: %s".formatted(errorStream.toString()));
+                api.sendMessage(chat, new TextMessage("The provided code contains errors: %s".formatted(errorStream.toString())), info);
                 return;
             }
 
             var process = Runtime.getRuntime().exec(new String[]{"java", "-cp", directory.toString(), "Test"});
             var result = new BufferedReader(new InputStreamReader(process.getInputStream())).lines().collect(Collectors.joining("\n"));
-            sendResponseText(chat, info, "Code compiled successfully: %n%s".formatted(result));
+            api.sendMessage(chat, new TextMessage("Code compiled successfully: %n%s".formatted(result)), info);
         }catch (IOException ex){
-            sendResponseText(chat, info, "An IOException occurred while running the provided code: %n%s".formatted(ex.getMessage()));
+            api.sendMessage(chat, new TextMessage("An IOException occurred while running the provided code: %n%s".formatted(ex.getMessage())), info);
         }
-    }
-
-    private void sendResponseText(Chat chat, MessageInfo info, String text) {
-        var key = new MessageKey(chat);
-        var responseText = TextMessage.newTextMessage()
-                .text(text)
-                .contextInfo(new ContextInfo(info))
-                .create();
-        var responseMessage = new MessageContainer(responseText);
-        var responseMessageInfo = new MessageInfo(key, responseMessage);
-        api.sendMessage(responseMessageInfo);
     }
 }

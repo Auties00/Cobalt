@@ -35,17 +35,17 @@ public final class TextMessage extends ContextualMessage {
 
   /**
    * The type of preview that this text message provides.
-   * If said message contains a link, this value will probably be {@link ExtendedTextMessagePreviewType#VIDEO}.
+   * If said message contains a link, this value will probably be {@link TextMessagePreviewType#VIDEO}.
    * Not all links, though, produce a preview.
    */
   @JsonProperty(value = "10")
-  private ExtendedTextMessagePreviewType previewType;
+  private TextMessagePreviewType previewType;
 
   /**
    * The type of font used for the this text message.
    */
   @JsonProperty(value = "9")
-  private ExtendedTextMessageFontType font;
+  private TextMessageFontType font;
 
   /**
    * The background color of this text message encoded as ARGB
@@ -104,7 +104,7 @@ public final class TextMessage extends ContextualMessage {
    * Not all clients currently display all fonts correctly.
    */
   @Accessors(fluent = true)
-  public enum ExtendedTextMessageFontType {
+  public enum TextMessageFontType {
     /**
      * Sans Serif
      */
@@ -137,12 +137,12 @@ public final class TextMessage extends ContextualMessage {
 
     private final @Getter int index;
 
-    ExtendedTextMessageFontType(int index) {
+    TextMessageFontType(int index) {
       this.index = index;
     }
 
     @JsonCreator
-    public static ExtendedTextMessageFontType forIndex(int index) {
+    public static TextMessageFontType forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
           .findFirst()
@@ -154,7 +154,7 @@ public final class TextMessage extends ContextualMessage {
    * The constants of this enumerated type describe the various types of previuew that a {@link TextMessage} can provide.
    */
   @Accessors(fluent = true)
-  public enum ExtendedTextMessagePreviewType {
+  public enum TextMessagePreviewType {
     /**
      * No preview
      */
@@ -168,12 +168,12 @@ public final class TextMessage extends ContextualMessage {
 
     private final @Getter int index;
 
-    ExtendedTextMessagePreviewType(int index) {
+    TextMessagePreviewType(int index) {
       this.index = index;
     }
 
     @JsonCreator
-    public static ExtendedTextMessagePreviewType forIndex(int index) {
+    public static TextMessagePreviewType forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
           .findFirst()
