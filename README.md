@@ -24,6 +24,11 @@ Add this dependency to your build.gradle:
 implementation 'com.github.auties00:whatsappweb4j:2.0'
 ```
 
+### Examples
+
+If you need some examples to get started, check the [examples' directory](https://github.com/Auties00/WhatsappWeb4j/tree/master/examples) in this project. There are several easy
+and documented projects and more will come.
+
 ### Javadocs
 Javadocs for WhatsappWeb4j are available [here](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/index.html), all contributions are welcomed!
 
@@ -359,17 +364,17 @@ As shown in the [previous section](#send-a-message), crafting a message in this 
 
 ### Online status
 
-To change your global [ContactStatus](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/model/ContactStatus.html):
+To change your global [ContactStatus](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/contact/ContactStatus.html):
 ``` java
 api.changePresence(status);
 ```
 
-To change your [ContactStatus](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/model/ContactStatus.html) for a specific [Chat](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/model/Chat.html):
+To change your [ContactStatus](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/contact/ContactStatus.html) for a specific [Chat](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/chat/Chat.html):
 ``` java
 api.changePresence(status, chat);
 ```
 
-To query the last known status of a [Contact](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/model/Contact.html):
+To query the last known status of a [Contact](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/contact/Contact.html):
 ``` java
 var lastKnownPresenceOptional = contact.lastKnownPresence();
 ```
@@ -428,8 +433,8 @@ var jidChat = api.queryChat(chatJid); // Loads a chat assiosiated with a jid
 
 If the chat is already in memory, to load more messages:
 ``` java
-api.loadConversation(chat); // Loads the twenty messages that came chronologically before the oldest one
-api.loadConversation(chat, message, numOfMessages); // Loads the numOfMessages that came chronologically before the specified message
+api.queryChatHistory(chat); // Loads the twenty messages that came chronologically before the oldest one
+api.queryChatHistory(chat, message, numOfMessages); // Loads the numOfMessages that came chronologically before the specified message
 ```
 
 ### Search messages
