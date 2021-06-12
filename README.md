@@ -25,7 +25,7 @@ implementation 'com.github.auties00:whatsappweb4j:2.0'
 ```
 
 ### Javadocs
-Javadocs for WhatsappWeb4j are available [here](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/index.html), all contributions are welcomed!
+Javadocs for WhatsappWeb4j are available [here](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/index.html), all contributions are welcomed!
 
 ### How to contribute
 
@@ -44,7 +44,7 @@ To use this library, start by initializing an instance of WhatsappAPI:
 ```java
 var api = new WhatsappAPI();
 ```
-Alternatively, you can provide a custom [WhatsappConfiguration](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/api/WhatsappConfiguration.html):
+Alternatively, you can provide a custom [WhatsappConfiguration](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/api/WhatsappConfiguration.html):
 ```java
 var configuration = WhatsappConfiguration.builder()
         .whatsappUrl("wss://web.org.example.whatsapp.com/ws") // WhatsappWeb's WebSocket URL
@@ -58,7 +58,7 @@ var configuration = WhatsappConfiguration.builder()
 var api = new WhatsappAPI(configuration);
 ```
 
-Now create a [WhatsappListener](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/listener/WhatsappListener.html), remember to implement only the methods that you need:
+Now create a [WhatsappListener](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/listener/WhatsappListener.html), remember to implement only the methods that you need:
 ```java
 public class YourAwesomeListener implements WhatsappListener {
     public void onLoggedIn(UserInformationResponse info, boolean firstLogin) {
@@ -81,7 +81,7 @@ There are two ways to register listeners:
 2. Automatically
     > **_IMPORTANT:_**  Only listeners that provide a no arguments' constructor can be discovered automatically
 
-    Annotate your listener using [@RegisterListener](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/listener/RegisterListener.html):
+    Annotate your listener using [@RegisterListener](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/listener/RegisterListener.html):
     ```java
     import it.auties.whatsapp4j.listener.RegisterListener;
     import it.auties.whatsapp4j.listener.WhatsappListener;
@@ -111,7 +111,7 @@ api.logout();
 ```
 ### In memory data
 
-All the messages, chats and contacts stored in memory can be accessed using the singleton [WhatsappDataManager](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/manager/WhatsappDataManager.html):
+All the messages, chats and contacts stored in memory can be accessed using the singleton [WhatsappDataManager](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/manager/WhatsappDataManager.html):
 ```java
 var manager = api.manager(); // Get an instance of WhatsappDataManager
 var chats = manager.chats(); // Get all the chats in memory
@@ -120,7 +120,7 @@ var number = manager.phoneNumberJid(); // Get your phone number as a jid
 ```
 > **_IMPORTANT:_** When your program first starts up, these fields will be empty. To be notified when they are populated, implement the corresponding method in a WhatsappListener
 
-This class also exposes various methods to query data as explained in the [javadocs](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/manager/WhatsappDataManager.html):
+This class also exposes various methods to query data as explained in the [javadocs](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/manager/WhatsappDataManager.html):
 ```java
 Optional<Contact> findContactByJid(String jid);
 Optional<Contact> findContactByName(String name);
@@ -132,9 +132,10 @@ Set<Chat> findChatsByName(String name);
 Optional<Chat> findChatByMessage(MessageInfo message);
 
 Optional<MessageInfo> findMessageById(Chat chat, String id);
-```
+``` 
 
-The keys linked to an active session can be accessed using [WhatsappKeysManager](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/manager/WhatsappKeysManager.html).
+The keys linked to an active session can be accessed using [WhatsappKeysManager](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/manager/WhatsappKeysManager.html).
+
 ### Send a message
 
 ##### Simple text message
@@ -300,56 +301,75 @@ var contactsMessage = ContactsArrayMessage.newContactsArrayMessage()  // Create 
 api.sendMessage(chat, contactsMessage); // Send the contacts array message
 ```
 
-##### Other messages
+### Advanced message structure
 
-Whatsapp uses many types of messages, the ones above are only the most common. Here is a complete list divided in categories:
-1. Device sent messages:
-   - DeviceSentMessage
-   - DeviceSyncMessage
-   
-2. Server messages:
-   - ProtocolMessage
-   
-3. Security messages:
-   - SenderKeyDistributionMessage
+Whatsapp Web defines several types of messages:
+1. Standard messages(most common)
+    - TextMessage
+    - ContactMessage
+    - ContactsArrayMessage
+    - GroupInviteMessage
+    - LocationMessage
+    - LiveLocationMessage
+    - Media messages
+        - ImageMessage
+        - AudioMessage
+        - DocumentMessage
+        - StickerMessage
+2. Whatsapp Business messages
+    - Payment messages
+        - RequestPaymentMessage
+        - CancelPaymentRequestMessage
+        - DeclinePaymentRequestMessage
+        - SendPaymentMessage
+    - ProductMessage
+    - TemplateButtonReplyMessage
+    - TemplateMessage
+    - HighlyStructuredMessage
+3. Server messages
+    - ProtocolMessage
+4. Security messages(Signal's Protocol)
+    - SenderKeyDistributionMessage
+5. Device sent messages:
+    - DeviceSentMessage
+    - DeviceSyncMessage
 
-3. Whatsapp Business messages:
-   - Payment messages:
-      - RequestPaymentMessage
-      - CancelPaymentRequestMessage
-      - DeclinePaymentRequestMessage
-      - SendPaymentMessage
-   - ProductMessage
-   - TemplateButtonReplyMessage
-   - TemplateMessage
-   - HighlyStructuredMessage
-   
-4. User messages:
-   - TextMessage
-   - ContactMessage
-   - ContactsArrayMessage
-   - GroupInviteMessage
-   - LocationMessage
-   - LiveLocationMessage
-   - Media messages:
-      - ImageMessage
-      - AudioMessage
-      - DocumentMessage
-      - StickerMessage
+All of these messages implement the [Message](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/message/Message.html) interface.
+All standard messages and some Whatsapp business messages extend the [ContextualMessage](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/message/ContextualMessage.html) class which provides a [ContextInfo](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/info/ContextInfo.html) property.
+Only ContextualMessages can quote another message or be marked as forwarded. This property also exposes other useful properties for Whatsapp Business, though they are irrelevant for most use cases.
+All messages provide an all arguments' constructor, and a builder class.
+Messages are wrapped in a [MessageContainer](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/message/MessageContainer.html), a container class which can be initialized through a constructor a one argument constructor which takes any type of message, or a builder class.
+Finally, a MessageContainer is wrapped by a [MessageInfo](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/info/MessageInfo.html).
+This class provides several properties, though, for most use cases, the container, key and timestamp are enough.
+The container property has already been mentioned and explained.
+The key property is of type [MessageKey](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/message/MessageKey.html) and defines the id of the message, and the chat where it is located. It can be initialized using a single argument constructor which takes said chat as an argument or using a builder class.
+The timestamp property indicates the time when the message was sent in seconds since the epoch.
+If any of the properties above are not initialized, Whatsapp will refuse to send the message.
+At this point the message can be sent using the method sendMessage in [WhatsappAPI](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/api/WhatsappAPI.html).
+Here is a handy example:
+```java
+var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
+var key = new MessageKey(chat); // Create a message key
+var textMessage = new TextMessage("Hello :)"); // Create a text message        
+var message = new MessageContainer(textMessage); // Create a message container that wraps the textMessage
+var info = new MessageInfo(key, message); // Create a message info that wraps the key and info property
+var textResponse = whatsappAPI.sendMessage(info).get(); // Send the message
+```
+As shown in the [previous section](#send-a-message), crafting a message in this verbose way is not necessary for most use cases.
 
 ### Online status
 
-To change your global [ContactStatus](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/model/ContactStatus.html):
+To change your global [ContactStatus](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/model/ContactStatus.html):
 ``` java
 api.changePresence(status);
 ```
 
-To change your [ContactStatus](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/model/ContactStatus.html) for a specific [Chat](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/model/Chat.html):
+To change your [ContactStatus](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/model/ContactStatus.html) for a specific [Chat](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/model/Chat.html):
 ``` java
 api.changePresence(status, chat);
 ```
 
-To query the last known status of a [Contact](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/it/auties/whatsapp4j/model/Contact.html):
+To query the last known status of a [Contact](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/model/Contact.html):
 ``` java
 var lastKnownPresenceOptional = contact.lastKnownPresence();
 ```
