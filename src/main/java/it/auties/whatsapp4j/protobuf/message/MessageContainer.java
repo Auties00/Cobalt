@@ -11,6 +11,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
+import java.util.Optional;
+
 /**
  * A container for all types of messages known currently to WhatsappWeb.
  *
@@ -254,5 +256,60 @@ public class MessageContainer {
   @JsonCreator
   public MessageContainer(String textMessage){
     this.textMessage = new TextMessage(textMessage);
+  }
+
+  /**
+   * Returns the first populated message inside this container
+   *
+   * @return a non null Optional Message
+   */
+  public Optional<Message> populatedMessage(){
+    if(this.senderKeyDistributionMessage != null) return Optional.of(senderKeyDistributionMessage);
+    if(this.imageMessage != null) return Optional.of(imageMessage);
+    if(this.contactMessage != null) return Optional.of( contactMessage);
+    if(this.locationMessage != null) return Optional.of(locationMessage);
+    if(this.textMessage  != null) return Optional.of(textMessage);
+    if(this.documentMessage != null) return Optional.of(documentMessage);
+    if(this.audioMessage != null) return Optional.of( audioMessage);
+    if(this.videoMessage != null) return Optional.of(videoMessage);
+    if(this.protocolMessage != null) return Optional.of(protocolMessage);
+    if(this.contactsArrayMessage != null) return Optional.of(contactsArrayMessage);
+    if(this.highlyStructuredMessage != null) return Optional.of(highlyStructuredMessage);
+    if(this.sendPaymentMessage != null) return Optional.of(sendPaymentMessage);
+    if(this.liveLocationMessage != null) return Optional.of(liveLocationMessage);
+    if(this.requestPaymentMessage != null) return Optional.of(requestPaymentMessage);
+    if(this.declinePaymentRequestMessage != null) return Optional.of(declinePaymentRequestMessage);
+    if(this.cancelPaymentRequestMessage != null) return Optional.of(cancelPaymentRequestMessage);
+    if(this.templateMessage != null) return Optional.of(templateMessage);
+    if(this.stickerMessage != null) return Optional.of(stickerMessage);
+    if(this.groupInviteMessage != null) return Optional.of(groupInviteMessage);
+    if(this.templateButtonReplyMessage != null) return Optional.of(templateButtonReplyMessage);
+    if(this.productMessage != null) return Optional.of(productMessage);
+    if(this.deviceSentMessage != null) return Optional.of(deviceSentMessage);
+    if(this.deviceSyncMessage != null) return Optional.of(deviceSyncMessage);
+    return Optional.empty();
+  }
+
+  /**
+   * Returns the first populated contextual message inside this container
+   *
+   * @return a non null Optional ContextualMessage
+   */
+  public Optional<ContextualMessage> populatedContextualMessage(){
+    if(this.imageMessage != null) return Optional.of(imageMessage);
+    if(this.contactMessage != null) return Optional.of( contactMessage);
+    if(this.locationMessage != null) return Optional.of(locationMessage);
+    if(this.textMessage  != null) return Optional.of(textMessage);
+    if(this.documentMessage != null) return Optional.of(documentMessage);
+    if(this.audioMessage != null) return Optional.of( audioMessage);
+    if(this.videoMessage != null) return Optional.of(videoMessage);
+    if(this.contactsArrayMessage != null) return Optional.of(contactsArrayMessage);
+    if(this.liveLocationMessage != null) return Optional.of(liveLocationMessage);
+    if(this.templateMessage != null) return Optional.of(templateMessage);
+    if(this.stickerMessage != null) return Optional.of(stickerMessage);
+    if(this.groupInviteMessage != null) return Optional.of(groupInviteMessage);
+    if(this.templateButtonReplyMessage != null) return Optional.of(templateButtonReplyMessage);
+    if(this.productMessage != null) return Optional.of(productMessage);
+    return Optional.empty();
   }
 }

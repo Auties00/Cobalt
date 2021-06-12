@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.api.WhatsappAPI;
+import it.auties.whatsapp4j.manager.WhatsappDataManager;
+import it.auties.whatsapp4j.protobuf.chat.Chat;
 import it.auties.whatsapp4j.protobuf.contact.Contact;
+import it.auties.whatsapp4j.protobuf.message.ContextualMessage;
 import it.auties.whatsapp4j.protobuf.message.LiveLocationMessage;
 import it.auties.whatsapp4j.protobuf.message.MessageContainer;
 import it.auties.whatsapp4j.protobuf.message.MessageKey;
@@ -13,10 +16,7 @@ import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A model class that holds the information related to a {@link it.auties.whatsapp4j.protobuf.message.Message}.
@@ -29,6 +29,11 @@ import java.util.Map;
 @Builder(builderMethodName = "newMessageInfo", buildMethodName = "create")
 @Accessors(fluent = true)
 public class MessageInfo {
+  /**
+   * A singleton instance of WhatsappDataManager
+   */
+  private static final WhatsappDataManager MANAGER = WhatsappDataManager.singletonInstance();
+
   /**
    * Ephemeral duration
    */
@@ -141,6 +146,13 @@ public class MessageInfo {
   private boolean ignore;
 
   /**
+   * The jid of the participant that sent the message in a group.
+   * This property is only populated if {@link MessageInfo#chat()} refers to a group.
+   */
+  @JsonProperty(value = "5")
+  private String senderJid;
+
+  /**
    * The global status of this message.
    * If the chat associated with this message is a group it is guaranteed that this field is equal or lower hierarchically then every value stored by {@link MessageInfo#individualReadStatus()}.
    * Otherwise, this field is guaranteed to be equal to the single value stored by {@link MessageInfo#individualReadStatus()} for the contact associated with the chat associated with this message.
@@ -188,6 +200,56 @@ public class MessageInfo {
     this.timestamp = Instant.now().getEpochSecond();
     this.globalStatus = MessageInfoStatus.PENDING;
     this.container = container;
+    this.individualReadStatus = new HashMap<>();
+  }
+
+
+  /**
+   * Returns the jid of the chat where the message was sent
+   *
+   * @return a non null string
+   */
+  public String chatJid(){
+    return key().chatJid();
+  }
+
+  /**
+   * Returns the chat where the message was sent
+   *
+   * @return an optional wrapping a {@link Chat}
+   */
+  public Optional<Chat> chat() {
+    return key().chat();
+  }
+
+  /**
+   * Returns the jid of the contact that sent the message
+   *
+   * @return a non null string
+   */
+  public String senderJid(){
+    return key.fromMe() ? MANAGER.phoneNumberJid() : Optional.ofNullable(senderJid).orElse(key.chatJid());
+  }
+
+  /**
+   * Returns the contact that sent the message
+   *
+   * @return an optional wrapping a {@link Contact}
+   */
+  public Optional<Contact> sender(){
+    return MANAGER.findContactByJid(senderJid());
+  }
+
+  /**
+   * Returns an optional {@link MessageInfo} representing the message quoted by this message if said message is in memory
+   *
+   * @return a non empty optional {@link MessageInfo} if this message quotes a message in memory
+   */
+  public Optional<MessageInfo> quotedMessage(){
+    return Optional.ofNullable(container)
+            .flatMap(MessageContainer::populatedContextualMessage)
+            .map(ContextualMessage::contextInfo)
+            .flatMap(contextualMessage -> MANAGER.findMessageById(key.chat().orElseThrow(), contextualMessage.quotedMessageId()));
   }
 
   /**

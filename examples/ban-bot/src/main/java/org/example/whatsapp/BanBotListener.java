@@ -26,13 +26,13 @@ public record BanBotListener(WhatsappAPI api) implements WhatsappListener {
             return;
         }
 
-        var quoted = textMessage.contextInfo().quotedMessage();
+        var quoted = info.quotedMessage();
         if(quoted.isEmpty()){
             api.sendMessage(chat, new TextMessage("[WhatsappBot] Please quote a message sent by the person that you want to ban"), info);
             return;
         }
 
-        var victim = quoted.get().key().sender().orElse(null);
+        var victim = quoted.get().sender().orElse(null);
         if(victim == null){
             api.sendMessage(chat, new TextMessage("[WhatsappBot] Missing contact, cannot ban target"), info);
             return;

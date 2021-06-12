@@ -93,12 +93,6 @@ public class ContextInfo {
   private MessageContainer quotedMessageContainer;
 
   /**
-   * The jid of the chat where the message that this ContextualMessage quotes was sent
-   */
-  @JsonProperty(value = "4")
-  private String quotedMessageChatJid;
-
-  /**
    * The jid of the contact that sent the message that this ContextualMessage quotes
    */
   @JsonProperty(value = "2")
@@ -118,17 +112,6 @@ public class ContextInfo {
   public ContextInfo(@NotNull MessageInfo quotedMessage){
     this.quotedMessageContainer = quotedMessage.container();
     this.quotedMessageId = quotedMessage.key().id();
-    this.quotedMessageChatJid = quotedMessage.key().chatJid();
-    this.quotedMessageSenderJid = quotedMessage.key().senderJid();
-  }
-
-  /**
-   * Returns an optional {@link MessageInfo} representing the message quoted by this message if said message is in memory
-   *
-   * @return a non empty optional {@link MessageInfo} if this message quotes a message in memory
-   */
-  public Optional<MessageInfo> quotedMessage(){
-    var manager = WhatsappDataManager.singletonInstance();
-    return manager.findMessageById(manager.findChatByJid(quotedMessageChatJid).orElseThrow(), quotedMessageId);
+    this.quotedMessageSenderJid = quotedMessage.senderJid();
   }
 }

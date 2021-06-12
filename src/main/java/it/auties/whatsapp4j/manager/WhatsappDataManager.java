@@ -483,7 +483,7 @@ public class WhatsappDataManager {
     private void processMessage(@NotNull Chat chat, @NotNull MessageInfo message) {
         var protocol = message.container() != null && message.container().protocolMessage() != null;
         if (protocol) {
-            //TODO: This message could also be an history sync, handle this
+            // TODO: This message could also be an history sync, handle this
             findMessageById(chat, message.container().protocolMessage().key().id()).ifPresent(oldMessage -> {
                 chat.messages().remove(oldMessage);
                 listeners.forEach(listener -> callOnListenerThread(() -> listener.onMessageDeleted(chat, oldMessage, true)));
@@ -503,7 +503,7 @@ public class WhatsappDataManager {
     }
 
     private void updateUnreadMessages(@NotNull MessageInfo message, Chat chat) {
-        if (message.key().fromMe() || message.globalStatus() == MessageInfo.MessageInfoStatus.READ || message.ignore()) {
+        if (message.key().fromMe() || (message.globalStatus() != null && message.globalStatus() == MessageInfo.MessageInfoStatus.READ) || message.ignore()) {
             return;
         }
 

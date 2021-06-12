@@ -25,7 +25,7 @@ public class BotListener implements WhatsappListener {
         // Check if the message was deleted for everyone or only for yourself
         if(everyone) {
             // If the message was deleted for everyone it's not guaranteed that you have sent said message, so we get the name of the original sender
-            var sender = info.key().sender().flatMap(Contact::bestName).orElse(info.key().senderJid());
+            var sender = info.sender().flatMap(Contact::bestName).orElse(info.senderJid());
 
             // Print a message to confirm that the event was caught
             System.out.printf("%s deleted a message from %s for everyone%n", sender, chatName);

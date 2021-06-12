@@ -41,13 +41,6 @@ public class MessageKey {
   private String chatJid;
 
   /**
-   * The jid of the participant that sent the message in a group.
-   * This property is only populated if {@link MessageKey#chatJid} refers to a group.
-   */
-  @JsonProperty(value = "4")
-  private String senderJid;
-
-  /**
    * Determines whether the message was sent by you or by someone else
    */
   @JsonProperty(value = "2")
@@ -59,7 +52,7 @@ public class MessageKey {
    * @param chat the message's chat
    */
   public MessageKey(@NotNull Chat chat) {
-    this(WhatsappUtils.randomId(), chat.jid(),  null, true);
+    this(WhatsappUtils.randomId(), chat.jid(), true);
   }
 
   /**
@@ -69,14 +62,5 @@ public class MessageKey {
    */
   public Optional<Chat> chat(){
     return WhatsappDataManager.singletonInstance().findChatByJid(chatJid);
-  }
-
-  /**
-   * Returns the contact that sent the message
-   *
-   * @return an optional wrapping a {@link Contact}
-   */
-  public Optional<Contact> sender(){
-    return WhatsappDataManager.singletonInstance().findContactByJid(Optional.ofNullable(senderJid).orElse(chatJid));
   }
 }

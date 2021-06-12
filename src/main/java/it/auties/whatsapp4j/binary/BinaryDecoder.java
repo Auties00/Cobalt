@@ -197,7 +197,7 @@ public class BinaryDecoder {
         return description.equals("message") ? decodeMessage(data) : data.toString();
     }
 
-    private MessageInfo decodeMessage(BinaryArray data) throws IOException {
+    private @NotNull MessageInfo decodeMessage(@NotNull BinaryArray data) throws IOException {
         try {
             return ProtobufDecoder.forType(MessageInfo.class).decode(data.data());
         } catch (RuntimeException ex){

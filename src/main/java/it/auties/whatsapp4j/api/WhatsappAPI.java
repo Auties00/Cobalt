@@ -198,8 +198,7 @@ public class WhatsappAPI {
                 .orElse(new ContextInfo(quotedMessage))
                 .quotedMessageContainer(quotedMessage.container())
                 .quotedMessageId(quotedMessage.key().id())
-                .quotedMessageChatJid(quotedMessage.key().chatJid())
-                .quotedMessageSenderJid(quotedMessage.key().senderJid());
+                .quotedMessageSenderJid(quotedMessage.senderJid());
         return sendMessage(chat,  message, messageContext);
     }
 
@@ -225,7 +224,15 @@ public class WhatsappAPI {
      */
     public @NotNull CompletableFuture<MessageResponse> sendMessage(@NotNull MessageInfo message) {
         var node = new Node("action", attributes(attr("type", "relay"), attr("epoch", manager.tagAndIncrement())), List.of(new Node("message", attributes(), message)));
-        return new BinaryRequest<MessageResponse>(configuration, message.key().id(), node, BinaryFlag.IGNORE, BinaryMetric.MESSAGE) {}.send(socket.session());
+        return new BinaryRequest<MessageResponse>(configuration, message.key().id(), node, BinaryFlag.IGNORE, BinaryMetric.MESSAGE) {}
+                .send(socket.session())
+                .thenApplyAsync(messageRes -> {
+                    if(messageRes.status() == 200){
+                        message.key().chat().ifPresent(chat -> chat.messages().add(message));
+                    }
+
+                    return messageRes;
+                });
     }
 
     /**
@@ -315,6 +322,25 @@ public class WhatsappAPI {
         var node = new Node("query", attributes(attr("chat", chat.jid()), attr("count", count), attr("epoch", manager.tagAndIncrement()), attr("type", "star")), null);
         return new BinaryRequest<MessagesResponse>(configuration, node, BinaryFlag.IGNORE, BinaryMetric.QUERY_MESSAGES) {}.send(socket.session());
     }
+
+    /**
+     * Tries to load in chat the entire chat history for a chat
+     *
+     * @param chat the target chat
+     * @return a CompletableFuture that resolves in said chat, using {@code chat} is the same thing
+     */
+    public @NotNull CompletableFuture<Chat> loadEntireChatHistory(@NotNull Chat chat) {
+        var last = chat.messages().size();
+        return loadChatHistory(chat, 1).thenComposeAsync(__ -> {
+            if(chat.messages().isEmpty() || chat.messages().size() == last){
+                return CompletableFuture.completedFuture(chat);
+            }
+
+            loadChatHistory(chat, chat.lastMessage().orElseThrow(), 1000);
+            return loadEntireChatHistory(chat);
+        });
+    }
+
 
     /**
      * Loads in memory twenty messages before the last message in memory for a chat in chronological terms
