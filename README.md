@@ -273,7 +273,7 @@ api.sendMessage(chat, location); // Send the location message
 ##### Group invite message
 ```java
 var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
-var group = api.findChatByName("Fellow Programmers 1.0"").orElseThrow(); // Query a group
+var group = api.findChatByName("Fellow Programmers 1.0").orElseThrow(); // Query a group
 
 var groupCode = api.queryGroupInviteCode(group).get().code(); // Query the invitation code of the group
 var groupInvite = GroupInviteMessage.newGroupInviteMessage() // Create a new group invite message
@@ -431,10 +431,15 @@ var jidChat = api.queryChat(chatJid); // Loads a chat assiosiated with a jid
 > **_IMPORTANT:_**  This method does not save the queried chat in memory
 
 
-If the chat is already in memory, to load more messages:
+If the chat is already in memory, or you are not sure:
 ``` java
-api.loadChatHistory(chat); // Loads the twenty messages that came chronologically before the oldest one
-api.loadChatHistory(chat, message, numOfMessages); // Loads the numOfMessages that came chronologically before the specified message
+api.loadChatHistory(chat).get(); // Loads the twenty messages that came chronologically before the oldest one
+api.loadChatHistory(chat, message, numOfMessages).get(); // Loads the numOfMessages that came chronologically before the specified message
+```
+
+If you want to load all the messages in a chat:
+``` java
+api.loadEntireChatHistory(chat).get(); // Loads the entire chat in memory, might take several minutes if the chat has thousands of messages
 ```
 
 ### Search messages
@@ -444,7 +449,7 @@ To access messages in memory:
 var messages = chat.messages();
 ```
 
-To search messages globally on Whatsapp's servers:
+To search messages in any chat on Whatsapp's servers:
 ``` java
 var future = api.search(stringToSearch, numOfMessages, page);  // A future for the request
 var response = future.get(); // Wait for the future to complete

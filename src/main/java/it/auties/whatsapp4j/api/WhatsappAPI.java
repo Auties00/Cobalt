@@ -324,21 +324,15 @@ public class WhatsappAPI {
     }
 
     /**
-     * Tries to load in chat the entire chat history for a chat
+     * Tries to load in chat the entire chat history for a chat.
+     * This process might take several minutes for chats that contain thousands of messages.
      *
      * @param chat the target chat
      * @return a CompletableFuture that resolves in said chat, using {@code chat} is the same thing
      */
     public @NotNull CompletableFuture<Chat> loadEntireChatHistory(@NotNull Chat chat) {
         var last = chat.messages().size();
-        return loadChatHistory(chat, 1).thenComposeAsync(__ -> {
-            if(chat.messages().isEmpty() || chat.messages().size() == last){
-                return CompletableFuture.completedFuture(chat);
-            }
-
-            loadChatHistory(chat, chat.lastMessage().orElseThrow(), 1000);
-            return loadEntireChatHistory(chat);
-        });
+        return loadChatHistory(chat).thenComposeAsync(__ -> chat.messages().isEmpty() || chat.messages().size() == last ? CompletableFuture.completedFuture(chat) : loadEntireChatHistory(chat));
     }
 
 
