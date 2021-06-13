@@ -300,7 +300,7 @@ public class WhatsappDataManager {
             return;
         }
 
-        Node.fromGenericList(content).forEach(childNode -> listeners.forEach(listener -> callOnListenerThread(() -> listener.onPhoneBatteryStatusUpdate(new JsonResponse("", "", node.attrs()).toModel(PhoneBatteryResponse.class)))));
+        Node.fromGenericList(content).forEach(childNode -> listeners.forEach(listener -> callOnListenerThread(() -> listener.onPhoneBatteryStatusUpdate(new JsonResponse("", "", childNode.attrs()).toModel(PhoneBatteryResponse.class)))));
     }
 
     private void muteChat(@NotNull Node node, @NotNull Chat chat) {
