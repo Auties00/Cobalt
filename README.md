@@ -39,7 +39,7 @@ As of today, no additional configuration is needed to edit this project. I recom
 1. [Fork this project](https://docs.github.com/en/github/getting-started-with-github/fork-a-repo)
 2. [Clone the new repo](https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/cloning-a-repository)
 3. [Create a new branch](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/managing-branches#creating-a-branch)
-3. Once you are implementing the new feature, [create a new merge request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request)
+3. Once you have implemented the new feature, [create a new merge request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request)
 
 If you are trying to implement a feature that is present on WhatsappWeb's WebClient, for example audio or video calls, consider using [WhatsappWeb4jRequestAnalyzer](https://github.com/Auties00/whatsappweb4j-request-analyzer),
 a tool I built for this exact purpose.
