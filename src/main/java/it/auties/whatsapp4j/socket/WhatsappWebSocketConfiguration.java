@@ -1,6 +1,6 @@
 package it.auties.whatsapp4j.socket;
 
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import jakarta.websocket.ClientEndpointConfig;
 
 import java.util.List;
@@ -12,7 +12,7 @@ import java.util.Map;
  */
 public class WhatsappWebSocketConfiguration extends ClientEndpointConfig.Configurator{
   @Override
-  public void beforeRequest(@NotNull Map<String, List<String>> headers) {
+  public void beforeRequest(@NonNull Map<String, List<String>> headers) {
     headers.put("Origin", List.of("https://web.whatsapp.com"));
     headers.put("Host", List.of("web.whatsapp.com"));
     headers.put("Pragma", List.of("no-cache"));

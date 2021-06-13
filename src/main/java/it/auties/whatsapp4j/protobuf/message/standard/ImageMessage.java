@@ -8,7 +8,7 @@ import it.auties.whatsapp4j.protobuf.message.model.MediaMessage;
 import it.auties.whatsapp4j.protobuf.message.model.MediaMessageType;
 import it.auties.whatsapp4j.protobuf.model.InteractiveAnnotation;
 import it.auties.whatsapp4j.utils.internal.CypherUtils;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
@@ -167,7 +167,7 @@ public final class ImageMessage extends MediaMessage {
    * @return a non null new message
    */
   @Builder(builderClassName = "NewImageMessageBuilder", builderMethodName = "newImageMessage", buildMethodName = "create")
-  private static ImageMessage simpleBuilder(byte @NotNull [] media, String mimeType, String caption, int width, int height, ContextInfo contextInfo) {
+  private static ImageMessage simpleBuilder(byte @NonNull [] media, String mimeType, String caption, int width, int height, ContextInfo contextInfo) {
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.IMAGE);
     return ImageMessage.newRawImageMessage()
             .fileSha256(upload.fileSha256())
@@ -191,7 +191,7 @@ public final class ImageMessage extends MediaMessage {
    * @return {@link MediaMessageType#IMAGE}
    */
   @Override
-  public MediaMessageType type() {
+  public @NonNull MediaMessageType type() {
     return MediaMessageType.IMAGE;
   }
 }

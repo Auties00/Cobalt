@@ -5,7 +5,7 @@ import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.request.model.JsonRequest;
 import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 
 import java.util.Base64;
 import java.util.List;
@@ -17,17 +17,17 @@ import java.util.Objects;
  * This doesn't happen everytime after the first login, but it's important to handle this case.
  */
 public abstract class SolveChallengeRequest<M extends JsonResponseModel> extends JsonRequest<M> {
-    private final @NotNull WhatsappKeysManager whatsappKeys;
-    private final @NotNull BinaryArray challenge;
+    private final @NonNull WhatsappKeysManager whatsappKeys;
+    private final @NonNull BinaryArray challenge;
 
-    public SolveChallengeRequest(@NotNull WhatsappConfiguration configuration, @NotNull WhatsappKeysManager whatsappKeys, @NotNull BinaryArray challenge) {
+    public SolveChallengeRequest(@NonNull WhatsappConfiguration configuration, @NonNull WhatsappKeysManager whatsappKeys, @NonNull BinaryArray challenge) {
         super(configuration);
         this.whatsappKeys = whatsappKeys;
         this.challenge = challenge;
     }
 
     @Override
-    public @NotNull List<Object> buildBody() {
+    public @NonNull List<Object> buildBody() {
         return List.of("admin", "challenge", Base64.getEncoder().encodeToString(challenge.data()), Objects.requireNonNull(whatsappKeys.serverToken()), whatsappKeys.clientId());
     }
 }

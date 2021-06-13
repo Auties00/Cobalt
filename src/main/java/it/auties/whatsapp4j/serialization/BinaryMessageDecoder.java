@@ -6,7 +6,7 @@ import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.response.model.binary.BinaryResponse;
 import it.auties.whatsapp4j.utils.internal.CypherUtils;
 import it.auties.whatsapp4j.utils.internal.Validate;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import jakarta.websocket.Decoder.Binary;
 
 import java.nio.ByteBuffer;
@@ -17,7 +17,7 @@ public class BinaryMessageDecoder implements Binary<BinaryResponse> {
     private static final BinaryDecoder DECODER = new BinaryDecoder();
 
     @Override
-    public BinaryResponse decode(@NotNull ByteBuffer msg) {
+    public BinaryResponse decode(@NonNull ByteBuffer msg) {
         Validate.isTrue(msg.get(0) != '!', "Server pong from whatsapp, why did this get through?");
 
         var binaryMessage = BinaryArray.forArray(msg.array());
@@ -35,7 +35,7 @@ public class BinaryMessageDecoder implements Binary<BinaryResponse> {
     }
 
     @Override
-    public boolean willDecode(@NotNull ByteBuffer byteBuffer) {
+    public boolean willDecode(@NonNull ByteBuffer byteBuffer) {
         return true;
     }
 }

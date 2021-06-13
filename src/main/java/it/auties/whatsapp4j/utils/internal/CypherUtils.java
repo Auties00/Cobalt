@@ -7,7 +7,7 @@ import it.auties.whatsapp4j.protobuf.message.model.MediaMessage;
 import it.auties.whatsapp4j.protobuf.message.model.MediaMessageType;
 import it.auties.whatsapp4j.response.model.json.JsonResponse;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import org.bouncycastle.asn1.edec.EdECObjectIdentifiers;
@@ -49,13 +49,13 @@ public class CypherUtils {
     private final int BLOCK_SIZE = 16;
 
     @SneakyThrows
-    @NotNull
+    @NonNull
     public KeyPair calculateRandomKeyPair() {
         return KeyPairGenerator.getInstance(CURVE).generateKeyPair();
     }
 
     @SneakyThrows
-    public @NotNull BinaryArray calculateSharedSecret(byte @NotNull [] rawPublicKey, @NotNull PrivateKey privateKey) {
+    public @NonNull BinaryArray calculateSharedSecret(byte @NonNull [] rawPublicKey, @NonNull PrivateKey privateKey) {
         var keyFactory = KeyFactory.getInstance(CURVE);
         var publicKeyInfo = new SubjectPublicKeyInfo(new AlgorithmIdentifier(EdECObjectIdentifiers.id_X25519), rawPublicKey);
         var publicKeySpec = new X509EncodedKeySpec(publicKeyInfo.getEncoded());
@@ -68,25 +68,25 @@ public class CypherUtils {
     }
 
     @SneakyThrows
-    public byte @NotNull [] extractRawPublicKey(@NotNull PublicKey publicKey){
+    public byte @NonNull [] extractRawPublicKey(@NonNull PublicKey publicKey){
         var x25519PublicKeyParameters = (X25519PublicKeyParameters) PublicKeyFactory.createKey(publicKey.getEncoded());
         return x25519PublicKeyParameters.getEncoded();
     }
 
     @SneakyThrows
-    public @NotNull BinaryArray hmacSha256(@NotNull BinaryArray plain, @NotNull BinaryArray key) {
+    public @NonNull BinaryArray hmacSha256(@NonNull BinaryArray plain, @NonNull BinaryArray key) {
         final var localMac = Mac.getInstance(HMAC_SHA256);
         localMac.init(new SecretKeySpec(key.data(), HMAC_SHA256));
         return BinaryArray.forArray(localMac.doFinal(plain.data()));
     }
 
     @SneakyThrows
-    public @NotNull BinaryArray hkdfExpand(@NotNull BinaryArray input, int size) {
+    public @NonNull BinaryArray hkdfExpand(@NonNull BinaryArray input, int size) {
         return hkdfExpand(input, null, size);
     }
 
     @SneakyThrows
-    public @NotNull BinaryArray hkdfExpand(@NotNull BinaryArray input, byte[] data, int size) {
+    public @NonNull BinaryArray hkdfExpand(@NonNull BinaryArray input, byte[] data, int size) {
         var hmac = Mac.getInstance(HMAC_SHA256);
         var hmacLength = hmac.getMacLength();
 
@@ -115,12 +115,12 @@ public class CypherUtils {
     }
 
     @SneakyThrows
-    public @NotNull BinaryArray aesDecrypt(@NotNull BinaryArray encrypted, @NotNull BinaryArray secretKey) {
+    public @NonNull BinaryArray aesDecrypt(@NonNull BinaryArray encrypted, @NonNull BinaryArray secretKey) {
         return aesDecrypt(encrypted.cut(BLOCK_SIZE), encrypted, secretKey);
     }
 
     @SneakyThrows
-    public @NotNull BinaryArray aesDecrypt(@NotNull BinaryArray iv, @NotNull BinaryArray encrypted, @NotNull BinaryArray secretKey) {
+    public @NonNull BinaryArray aesDecrypt(@NonNull BinaryArray iv, @NonNull BinaryArray encrypted, @NonNull BinaryArray secretKey) {
         final var cipher = Cipher.getInstance(AES_ALGORITHM);
         final var keySpec = new SecretKeySpec(secretKey.data(), AES);
         cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(iv.data()));
@@ -128,12 +128,12 @@ public class CypherUtils {
     }
 
     @SneakyThrows
-    public @NotNull BinaryArray aesEncrypt(byte @NotNull [] decrypted, @NotNull BinaryArray encKey) {
+    public @NonNull BinaryArray aesEncrypt(byte @NonNull [] decrypted, @NonNull BinaryArray encKey) {
         return aesEncrypt(BinaryArray.random(BLOCK_SIZE), decrypted, encKey, true);
     }
 
     @SneakyThrows
-    public @NotNull BinaryArray aesEncrypt(@NotNull BinaryArray iv, byte @NotNull [] decrypted, @NotNull BinaryArray encKey, boolean withIv) {
+    public @NonNull BinaryArray aesEncrypt(@NonNull BinaryArray iv, byte @NonNull [] decrypted, @NonNull BinaryArray encKey, boolean withIv) {
         final var cipher = Cipher.getInstance(AES_ALGORITHM);
         final var keySpec = new SecretKeySpec(encKey.data(), AES);
         cipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(iv.data()));
@@ -143,19 +143,19 @@ public class CypherUtils {
     }
 
     @SneakyThrows
-    public byte @NotNull [] sha256(byte @NotNull [] data) {
+    public byte @NonNull [] sha256(byte @NonNull [] data) {
         final var digest = MessageDigest.getInstance(SHA256);
         return digest.digest(data);
     }
 
     @SneakyThrows
-    public byte @NotNull [] mediaDecrypt(@NotNull MediaMessage mediaMessage) {
+    public byte @NonNull [] mediaDecrypt(@NonNull MediaMessage mediaMessage) {
         return WhatsappUtils.readEncryptedMedia(mediaMessage.url())
                 .map(data -> mediaDecrypt(mediaMessage, data))
                 .orElse(new byte[0]);
     }
 
-    private byte @NotNull [] mediaDecrypt(@NotNull MediaMessage mediaMessage, @NotNull BinaryArray data){
+    private byte @NonNull [] mediaDecrypt(@NonNull MediaMessage mediaMessage, @NonNull BinaryArray data){
         var expandedMediaKey = hkdfExpand(BinaryArray.forArray(mediaMessage.mediaKey()), mediaMessage.type().key(), 112);
         var iv = expandedMediaKey.slice(0, BLOCK_SIZE);
         var cypherKey = expandedMediaKey.slice(BLOCK_SIZE, 48);
@@ -171,7 +171,7 @@ public class CypherUtils {
     }
 
     @SneakyThrows
-    public @NotNull MediaUpload mediaEncrypt(byte @NotNull [] file, @NotNull MediaMessageType type) {
+    public @NonNull MediaUpload mediaEncrypt(byte @NonNull [] file, @NonNull MediaMessageType type) {
         var connection = WhatsappDataManager.singletonInstance().mediaConnection();
         var mediaKey = BinaryArray.random(32);
         var expandedMediaKey = hkdfExpand(mediaKey, type.key(), 112);
@@ -202,7 +202,7 @@ public class CypherUtils {
     }
 
     @SneakyThrows
-    public byte @NotNull [] mediaSidecar(byte @NotNull [] file, @NotNull BinaryArray macKey) {
+    public byte @NonNull [] mediaSidecar(byte @NonNull [] file, @NonNull BinaryArray macKey) {
         var input = new ByteArrayInputStream(file);
         var output = new ByteArrayOutputStream();
         var chunk = new byte[80];

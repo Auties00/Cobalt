@@ -1,6 +1,6 @@
 package it.auties.whatsapp4j.listener;
 
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
@@ -39,7 +39,7 @@ public class RegisterListenerProcessor {
      *
      * @return a list of {@link WhatsappListener}
      */
-    public @NotNull List<WhatsappListener> queryAllListeners() {
+    public @NonNull List<WhatsappListener> queryAllListeners() {
         return Arrays.stream(CLASS_LOADER.getDefinedPackages())
                 .flatMap(RegisterListenerProcessor::findClassesInPackage)
                 .filter(RegisterListenerProcessor::isListener)
@@ -49,14 +49,14 @@ public class RegisterListenerProcessor {
     }
 
     @SneakyThrows
-    private @NotNull Stream<Class<?>> findClassesInPackage(@NotNull Package pack){
+    private @NonNull Stream<Class<?>> findClassesInPackage(@NonNull Package pack){
         return StreamSupport.stream(FILE_MANAGER.list(CLASS_LOCATION, pack.getName(), Set.of(JavaFileObject.Kind.CLASS), true).spliterator(), true)
                 .map(RegisterListenerProcessor::loadClassFromFile)
                 .filter(Optional::isPresent)
                 .map(Optional::get);
     }
 
-    private @NotNull Optional<Class<?>> loadClassFromFile(@NotNull JavaFileObject file) {
+    private @NonNull Optional<Class<?>> loadClassFromFile(@NonNull JavaFileObject file) {
         try {
             return Optional.of(Class.forName(FILE_MANAGER.inferBinaryName(CLASS_LOCATION, file), false, CLASS_LOADER));
         }catch (ClassNotFoundException | NoClassDefFoundError error) {
@@ -64,11 +64,11 @@ public class RegisterListenerProcessor {
         }
     }
 
-    private boolean isListener(@NotNull Class<?> clazz) {
+    private boolean isListener(@NonNull Class<?> clazz) {
         return clazz.isAnnotationPresent(RegisterListener.class);
     }
 
-    private @NotNull Class<? extends WhatsappListener> cast(@NotNull Class<?> clazz){
+    private @NonNull Class<? extends WhatsappListener> cast(@NonNull Class<?> clazz){
         try{
             return clazz.asSubclass(WhatsappListener.class);
         }catch (ClassCastException ex){
@@ -76,7 +76,7 @@ public class RegisterListenerProcessor {
         }
     }
 
-    private @NotNull WhatsappListener newInstance(@NotNull Class<? extends WhatsappListener> clazz){
+    private @NonNull WhatsappListener newInstance(@NonNull Class<? extends WhatsappListener> clazz){
         try {
             return clazz.getDeclaredConstructor().newInstance();
         } catch (IllegalAccessException | InstantiationException | InvocationTargetException | NoSuchMethodException operationException) {

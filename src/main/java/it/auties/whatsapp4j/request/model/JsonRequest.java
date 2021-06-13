@@ -3,7 +3,7 @@ package it.auties.whatsapp4j.request.model;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import jakarta.websocket.Session;
 import lombok.SneakyThrows;
 
@@ -22,7 +22,7 @@ public abstract non-sealed class JsonRequest<M extends JsonResponseModel> extend
      * @param tag the custom non null tag to assign to this request
      * @param configuration the configuration used for {@link WhatsappAPI}
      */
-    protected JsonRequest(@NotNull String tag, @NotNull WhatsappConfiguration configuration) {
+    protected JsonRequest(@NonNull String tag, @NonNull WhatsappConfiguration configuration) {
         super(tag, configuration);
     }
 
@@ -31,7 +31,7 @@ public abstract non-sealed class JsonRequest<M extends JsonResponseModel> extend
      *
      * @param configuration the configuration used for {@link WhatsappAPI}
      */
-    protected JsonRequest(@NotNull WhatsappConfiguration configuration) {
+    protected JsonRequest(@NonNull WhatsappConfiguration configuration) {
         super(configuration);
     }
 
@@ -42,7 +42,7 @@ public abstract non-sealed class JsonRequest<M extends JsonResponseModel> extend
      * @return this request
      **/
     @SneakyThrows
-    public CompletableFuture<M> send(@NotNull Session session) {
+    public CompletableFuture<M> send(@NonNull Session session) {
         if (configuration.async()) {
             session.getAsyncRemote().sendObject(this, __ -> MANAGER.pendingRequests().add(this));
             if(noResponse()) future.complete(null);

@@ -6,7 +6,7 @@ import it.auties.whatsapp4j.protobuf.info.ContextInfo;
 import it.auties.whatsapp4j.protobuf.message.model.MediaMessage;
 import it.auties.whatsapp4j.protobuf.message.model.MediaMessageType;
 import it.auties.whatsapp4j.utils.internal.CypherUtils;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
@@ -115,7 +115,7 @@ public final class DocumentMessage extends MediaMessage {
    * @return a non null new message
    */
   @Builder(builderClassName = "NewDocumentMessageBuilder", builderMethodName = "newDocumentMessage", buildMethodName = "create")
-  private static DocumentMessage builder(byte @NotNull [] media, String mimeType, String title, int pageCount, String fileName, byte[] jpegThumbnail, ContextInfo contextInfo) {
+  private static DocumentMessage builder(byte @NonNull [] media, String mimeType, String title, int pageCount, String fileName, byte[] jpegThumbnail, ContextInfo contextInfo) {
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.DOCUMENT);
     return DocumentMessage.builder()
             .fileSha256(upload.fileSha256())
@@ -143,7 +143,7 @@ public final class DocumentMessage extends MediaMessage {
    * @return {@link MediaMessageType#DOCUMENT}
    */
   @Override
-  public @NotNull MediaMessageType type() {
+  public @NonNull MediaMessageType type() {
     return MediaMessageType.DOCUMENT;
   }
 }

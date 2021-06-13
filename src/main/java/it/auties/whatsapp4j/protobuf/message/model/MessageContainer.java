@@ -17,7 +17,7 @@ import it.auties.whatsapp4j.protobuf.message.security.SenderKeyDistributionMessa
 import it.auties.whatsapp4j.protobuf.message.server.ProtocolMessage;
 import it.auties.whatsapp4j.protobuf.message.standard.*;
 import it.auties.whatsapp4j.protobuf.model.Call;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -235,7 +235,7 @@ public class MessageContainer {
    * @param <T> the type of the message
    */
   // When Java 17 comes out this will be simplified to an elegant switch statement, for now this is what we've got
-  public <T extends Message> MessageContainer(@NotNull T message){
+  public <T extends Message> MessageContainer(@NonNull T message){
     if(message instanceof SenderKeyDistributionMessage senderKeyDistributionMessage) this.senderKeyDistributionMessage = senderKeyDistributionMessage;
     if(message instanceof ImageMessage imageMessage) this.imageMessage = imageMessage;
     if(message instanceof ContactMessage contactMessage) this.contactMessage = contactMessage;
@@ -331,7 +331,7 @@ public class MessageContainer {
    *
    * @return a non null enumerated type
    */
-  public @NotNull MessageContainerContentType type(){
+  public @NonNull MessageContainerContentType type(){
     var message = populatedMessage().orElse(null);
     if(message == null){
       return MessageContainerContentType.EMPTY;

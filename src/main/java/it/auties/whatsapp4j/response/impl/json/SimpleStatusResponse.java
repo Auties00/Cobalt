@@ -7,5 +7,5 @@ import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
  *
  * @param status the http status code for the original request
  */
-public record SimpleStatusResponse(int status) implements JsonResponseModel {
+public final record SimpleStatusResponse(int status) implements JsonResponseModel {
 }

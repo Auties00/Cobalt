@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.whatsapp4j.response.model.common.Response;
 import it.auties.whatsapp4j.response.model.common.ResponseModel;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 
 import java.util.Map;
 import java.util.Optional;
@@ -16,7 +16,7 @@ import java.util.Optional;
  * This class is final, this means that it cannot be extended.
  */
 public final class JsonResponse extends Response<Map<String, ?>> {
-    public JsonResponse(@NotNull String tag, @NotNull String description, @NotNull Map<String, ?> content) {
+    public JsonResponse(@NonNull String tag, String description, @NonNull Map<String, ?> content) {
         super(tag, description, content);
     }
 
@@ -27,7 +27,7 @@ public final class JsonResponse extends Response<Map<String, ?>> {
      * @return a new instance of JsonResponse with the above characteristics
      * @throws IllegalArgumentException if {@code json} cannot be parsed
      */
-    public static @NotNull JsonResponse fromJson(@NotNull String json) {
+    public static @NonNull JsonResponse fromJson(@NonNull String json) {
         try {
             var index = json.indexOf("{");
             return new JsonResponse("json", "json", index == -1 ? Map.of() : JACKSON.readValue(json.substring(index), new TypeReference<>() {}));
@@ -42,7 +42,7 @@ public final class JsonResponse extends Response<Map<String, ?>> {
      * @param key the key to search
      * @return true if the key is present
      */
-    public boolean hasKey(@NotNull String key) {
+    public boolean hasKey(@NonNull String key) {
         return content.containsKey(key);
     }
 
@@ -52,7 +52,7 @@ public final class JsonResponse extends Response<Map<String, ?>> {
      * @param key the key to search
      * @return a non empty optional if the key is present, otherwise an empty optional
      */
-    public @NotNull Optional<String> getString(@NotNull String key) {
+    public @NonNull Optional<String> getString(@NonNull String key) {
         return getObject(key, String.class);
     }
 
@@ -62,7 +62,7 @@ public final class JsonResponse extends Response<Map<String, ?>> {
      * @param key the key to search
      * @return a non empty optional if the key is present, otherwise an empty optional
      */
-    public @NotNull Optional<Integer> getInteger(@NotNull String key) {
+    public @NonNull Optional<Integer> getInteger(@NonNull String key) {
         return getObject(key, Integer.class);
     }
 
@@ -73,7 +73,7 @@ public final class JsonResponse extends Response<Map<String, ?>> {
      * @return an Integer representing the value for the input key
      * @throws java.util.NoSuchElementException if {@code key} isn't found
      */
-    public int getInt(@NotNull String key) {
+    public int getInt(@NonNull String key) {
         return getObject(key, Integer.class).orElseThrow();
     }
 
@@ -85,7 +85,7 @@ public final class JsonResponse extends Response<Map<String, ?>> {
      * @param <T>   the type of the result
      * @return a non empty optional if the key is present, otherwise an empty optional
      */
-    public <T> @NotNull Optional<T> getObject(@NotNull String key, @NotNull Class<T> clazz) {
+    public <T> @NonNull Optional<T> getObject(@NonNull String key, @NonNull Class<T> clazz) {
         return Optional.ofNullable(content.get(key)).map(clazz::cast);
     }
 
@@ -98,7 +98,7 @@ public final class JsonResponse extends Response<Map<String, ?>> {
      * @throws IllegalArgumentException if the content that this object wraps cannot be converted to the specified class
      */
     @Override
-    public <T extends ResponseModel> @NotNull T toModel(@NotNull Class<T> clazz) {
+    public <T extends ResponseModel> @NonNull T toModel(@NonNull Class<T> clazz) {
         try {
             return JACKSON.convertValue(content, clazz);
         } catch (Exception e) {

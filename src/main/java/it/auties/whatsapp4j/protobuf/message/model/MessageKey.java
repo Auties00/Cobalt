@@ -6,7 +6,7 @@ import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.protobuf.chat.Chat;
 import it.auties.whatsapp4j.protobuf.message.model.Message;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -50,7 +50,7 @@ public class MessageKey {
    *
    * @param chat the message's chat
    */
-  public MessageKey(@NotNull Chat chat) {
+  public MessageKey(@NonNull Chat chat) {
     this(WhatsappUtils.randomId(), chat.jid(), true);
   }
 

@@ -10,7 +10,7 @@ import it.auties.whatsapp4j.protobuf.message.model.MediaMessageType;
 import it.auties.whatsapp4j.protobuf.model.InteractiveAnnotation;
 import it.auties.whatsapp4j.utils.internal.CypherUtils;
 import it.auties.whatsapp4j.utils.internal.Validate;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
@@ -157,7 +157,7 @@ public final class VideoMessage extends MediaMessage {
    * @return a non null new message
    */
   @Builder(builderClassName = "NewVideoMessageBuilder", builderMethodName = "newVideoMessage", buildMethodName = "create")
-  private static VideoMessage videoBuilder(byte @NotNull [] media, String mimeType, String caption, int width, int height, int seconds, ContextInfo contextInfo) {
+  private static VideoMessage videoBuilder(byte @NonNull [] media, String mimeType, String caption, int width, int height, int seconds, ContextInfo contextInfo) {
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.VIDEO);
     return VideoMessage.builder()
             .fileSha256(upload.fileSha256())
@@ -193,7 +193,7 @@ public final class VideoMessage extends MediaMessage {
    * @return a non null new message
    */
   @Builder(builderClassName = "NewGifMessageBuilder", builderMethodName = "newGifMessage", buildMethodName = "create")
-  private static VideoMessage gifBuilder(byte @NotNull [] media, String mimeType, String caption, int width, int height, VideoMessageAttribution gifAttribution, ContextInfo contextInfo) {
+  private static VideoMessage gifBuilder(byte @NonNull [] media, String mimeType, String caption, int width, int height, VideoMessageAttribution gifAttribution, ContextInfo contextInfo) {
     Validate.isTrue(!Objects.equals(guessMimeType(media), "image/gif") && !Objects.equals(mimeType, "image/gif"), "Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.VIDEO);
     return VideoMessage.builder()
@@ -215,7 +215,7 @@ public final class VideoMessage extends MediaMessage {
             .create();
   }
 
-  private static @NotNull String guessMimeType(byte[] media) {
+  private static @NonNull String guessMimeType(byte[] media) {
     var result = "";
     try {
       result = URLConnection.guessContentTypeFromStream(new ByteArrayInputStream(media));
@@ -236,7 +236,7 @@ public final class VideoMessage extends MediaMessage {
    * @return {@link MediaMessageType#VIDEO}
    */
   @Override
-  public @NotNull MediaMessageType type() {
+  public @NonNull MediaMessageType type() {
     return MediaMessageType.VIDEO;
   }
 

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 
 import java.time.Instant;
 
@@ -19,8 +19,8 @@ import java.time.Instant;
  * @param timestamp   the time in seconds since {@link Instant#EPOCH} when the update was dispatched by the server
  * @param participant if {@code to} is a group, the participant that this update regards
  */
-public record AckResponse(String cmd,
+public final record AckResponse(String cmd,
                                 @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) @JsonProperty("id") String[] ids,
-                                int ack, @NotNull String from, @NotNull String to, @JsonProperty("t") int timestamp,
+                                int ack, @NonNull String from, @NonNull String to, @JsonProperty("t") int timestamp,
                                 String participant) implements JsonResponseModel {
 }

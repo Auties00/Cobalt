@@ -30,7 +30,7 @@ import it.auties.whatsapp4j.serialization.JsonMessageDecoder;
 import it.auties.whatsapp4j.serialization.JsonMessageEncoder;
 import it.auties.whatsapp4j.utils.internal.Validate;
 import it.auties.whatsapp4j.utils.internal.WhatsappQRCode;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import jakarta.websocket.*;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -66,25 +66,25 @@ import static it.auties.whatsapp4j.utils.internal.CypherUtils.*;
 public class WhatsappWebSocket {
     private Session session;
     private boolean loggedIn;
-    private final @NotNull ScheduledExecutorService pingService;
-    private final @NotNull WebSocketContainer webSocketContainer;
-    private final @NotNull WhatsappDataManager whatsappManager;
-    private final @NotNull WhatsappKeysManager whatsappKeys;
-    private final @NotNull WhatsappConfiguration options;
-    private final @NotNull WhatsappQRCode qrCode;
+    private final @NonNull ScheduledExecutorService pingService;
+    private final @NonNull WebSocketContainer webSocketContainer;
+    private final @NonNull WhatsappDataManager whatsappManager;
+    private final @NonNull WhatsappKeysManager whatsappKeys;
+    private final @NonNull WhatsappConfiguration options;
+    private final @NonNull WhatsappQRCode qrCode;
 
-    public WhatsappWebSocket(@NotNull WhatsappConfiguration options) {
+    public WhatsappWebSocket(@NonNull WhatsappConfiguration options) {
         this(Executors.newSingleThreadScheduledExecutor(), ContainerProvider.getWebSocketContainer(), WhatsappDataManager.singletonInstance(), WhatsappKeysManager.singletonInstance(), options, new WhatsappQRCode());
         webSocketContainer.setDefaultMaxSessionIdleTimeout(Duration.ofDays(30).toMillis());
     }
 
     @OnOpen
-    public void onOpen(@NotNull Session session) {
+    public void onOpen(@NonNull Session session) {
         if (this.session == null || !this.session.isOpen()) session(session);
         new InitialRequest<InitialResponse>(options, whatsappKeys) {}.send(session).thenAccept(this::handleInitialMessage);
     }
 
-    private void handleInitialMessage(@NotNull InitialResponse response) {
+    private void handleInitialMessage(@NonNull InitialResponse response) {
         if (whatsappKeys.mayRestore()) {
             new TakeOverRequest<TakeOverResponse>(options, whatsappKeys) {}.send(session()).thenAccept(this::solveChallenge);
             return;
@@ -93,7 +93,7 @@ public class WhatsappWebSocket {
         generateQrCode(response);
     }
 
-    private void generateQrCode(@NotNull InitialResponse response) {
+    private void generateQrCode(@NonNull InitialResponse response) {
         if(loggedIn){
             return;
         }
@@ -104,7 +104,7 @@ public class WhatsappWebSocket {
         qrCode.generateAndPrint(response.ref(), extractRawPublicKey(whatsappKeys.keyPair().getPublic()), whatsappKeys.clientId());
     }
 
-    private void solveChallenge(@NotNull TakeOverResponse response) {
+    private void solveChallenge(@NonNull TakeOverResponse response) {
         if (response.status() >= 400) {
             whatsappKeys.deleteKeysFromMemory();
             disconnect(null, false, true);
@@ -114,7 +114,7 @@ public class WhatsappWebSocket {
         sendChallenge(response);
     }
 
-    private void sendChallenge(@NotNull TakeOverResponse response) {
+    private void sendChallenge(@NonNull TakeOverResponse response) {
         var challengeBase64 = response.challenge();
         if (challengeBase64 == null) {
             return;
@@ -127,7 +127,7 @@ public class WhatsappWebSocket {
         request.send(session()).thenAccept(result -> Validate.isTrue(result.status() == 200, "Could not solve whatsapp challenge for server and client token renewal: %s".formatted(result)));
     }
 
-    private void login(@NotNull UserInformationResponse response) {
+    private void login(@NonNull UserInformationResponse response) {
         var base64Secret = response.secret();
         var secret = BinaryArray.forBase64(base64Secret);
         var pubKey = secret.cut(32);
@@ -145,7 +145,7 @@ public class WhatsappWebSocket {
     }
 
     @OnMessage
-    public void onMessage(@NotNull Response<?> response) {
+    public void onMessage(@NonNull Response<?> response) {
         if (response instanceof JsonListResponse listResponse) {
             handleList(listResponse);
             return;
@@ -176,7 +176,7 @@ public class WhatsappWebSocket {
     }
 
     @OnMessage
-    public void onBinaryMessage(@NotNull BinaryResponse response) {
+    public void onBinaryMessage(@NonNull BinaryResponse response) {
         if (whatsappManager.resolvePendingRequest(response.tag(), response)) {
             return;
         }
@@ -185,7 +185,7 @@ public class WhatsappWebSocket {
     }
 
     @OnError
-    public void onError(@NotNull Throwable throwable) {
+    public void onError(@NonNull Throwable throwable) {
         throwable.printStackTrace();
     }
 
@@ -221,7 +221,7 @@ public class WhatsappWebSocket {
     }
 
     @SneakyThrows
-    private void handleChatCmd(@NotNull ChatCmdResponse cmdResponse) {
+    private void handleChatCmd(@NonNull ChatCmdResponse cmdResponse) {
         if (cmdResponse.cmd() == null) {
             return;
         }
@@ -245,24 +245,24 @@ public class WhatsappWebSocket {
         }
     }
 
-    private void notifyGroupDescriptionChange(@NotNull Chat chat, @NotNull String content) {
+    private void notifyGroupDescriptionChange(@NonNull Chat chat, @NonNull String content) {
         var response = JsonResponse.fromJson(content).toModel(DescriptionChangeResponse.class);
         whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onGroupDescriptionChange(chat, response.description(), response.descriptionId())));
     }
 
-    private void updateAndNotifyGroupSubject(@NotNull Chat chat, @NotNull String content) {
+    private void updateAndNotifyGroupSubject(@NonNull Chat chat, @NonNull String content) {
         var response = JsonResponse.fromJson(content).toModel(SubjectChangeResponse.class);
         chat.displayName(response.subject());
         whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onGroupSubjectChange(chat)));
     }
 
-    private void updateAndNotifyEphemeralStatus(@NotNull Chat chat, @NotNull String content) {
+    private void updateAndNotifyEphemeralStatus(@NonNull Chat chat, @NonNull String content) {
         chat.ephemeralMessageDuration(Long.parseLong(content));
         chat.ephemeralMessagesToggleTime(ZonedDateTime.now().toEpochSecond());
         whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onChatEphemeralStatusChange(chat)));
     }
 
-    private void notifyGroupAction(@NotNull Chat chat, @NotNull Node node, @NotNull String content) {
+    private void notifyGroupAction(@NonNull Chat chat, @NonNull Node node, @NonNull String content) {
         JsonResponse.fromJson(content)
                 .toModel(GroupActionResponse.class)
                 .participants()
@@ -272,11 +272,11 @@ public class WhatsappWebSocket {
                 .forEach(contact -> whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onGroupAction(chat, contact, GroupAction.valueOf(node.description().toUpperCase())))));
     }
 
-    private void notifyGroupSettingChange(@NotNull Chat chat, @NotNull GroupSetting setting, @NotNull String content) {
+    private void notifyGroupSettingChange(@NonNull Chat chat, @NonNull GroupSetting setting, @NonNull String content) {
         whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onGroupSettingsChange(chat, setting, GroupPolicy.forData(Boolean.parseBoolean(content)))));
     }
 
-    private void handleMessageInfo(@NotNull AckResponse ackResponse) {
+    private void handleMessageInfo(@NonNull AckResponse ackResponse) {
         if (ackResponse.cmd() == null) {
             return;
         }
@@ -298,12 +298,12 @@ public class WhatsappWebSocket {
                 .forEach(message -> updateAndNotifyMessageReadStatusChange(ackResponse, to.get(), chat.get(), message));
     }
 
-    private void updateAndNotifyMessageReadStatusChange(@NotNull AckResponse ackResponse, @NotNull Contact to, @NotNull Chat chat, MessageInfo message) {
+    private void updateAndNotifyMessageReadStatusChange(@NonNull AckResponse ackResponse, @NonNull Contact to, @NonNull Chat chat, MessageInfo message) {
         message.individualReadStatus().put(to, MessageInfo.MessageInfoStatus.forIndex(ackResponse.ack()));
         whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onMessageReadStatusUpdate(chat, to, message)));
     }
 
-    private void handleUserInformation(@NotNull UserInformationResponse info) {
+    private void handleUserInformation(@NonNull UserInformationResponse info) {
         if (info.ref() == null) {
             whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onInformationUpdate(info)));
             return;
@@ -320,7 +320,7 @@ public class WhatsappWebSocket {
         whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onLoggedIn(info)));
     }
 
-    private void configureSelfContact(@NotNull UserInformationResponse info) {
+    private void configureSelfContact(@NonNull UserInformationResponse info) {
         var jid = parseJid(info.wid());
         whatsappManager.contacts().add(new Contact(jid, null, null, null, null, null));
         whatsappManager.phoneNumberJid(jid);
@@ -337,15 +337,15 @@ public class WhatsappWebSocket {
         scheduleMediaConnection(connection.ttl());
     }
 
-    private void handleBlocklist(@NotNull BlocklistResponse blocklist) {
+    private void handleBlocklist(@NonNull BlocklistResponse blocklist) {
         whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onBlocklistUpdate(blocklist)));
     }
 
-    private void handleProps(@NotNull PropsResponse props) {
+    private void handleProps(@NonNull PropsResponse props) {
         whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onPropsUpdate(props)));
     }
 
-    private void handleCmd(@NotNull JsonResponse res) {
+    private void handleCmd(@NonNull JsonResponse res) {
         if (!res.hasKey("type") || !res.hasKey("kind")) {
             return;
         }
@@ -354,7 +354,7 @@ public class WhatsappWebSocket {
         disconnect(kind, false, options.reconnectWhenDisconnected().apply(kind));
     }
 
-    private void handlePresence(@NotNull PresenceResponse res) {
+    private void handlePresence(@NonNull PresenceResponse res) {
         var chatOpt = whatsappManager.findChatByJid(res.jid());
         if (chatOpt.isEmpty()) {
             return;
@@ -395,15 +395,15 @@ public class WhatsappWebSocket {
         whatsappManager.listeners().forEach(listener -> whatsappManager.callOnListenerThread(() -> listener.onContactPresenceUpdate(chat, contact)));
     }
 
-    private void handleList(@NotNull JsonListResponse response) {
+    private void handleList(@NonNull JsonListResponse response) {
         whatsappManager.callOnListenerThread(() -> whatsappManager.listeners().forEach(whatsappListener -> whatsappListener.onListResponse(response.content())));
     }
 
-    public @NotNull Session session() {
+    public @NonNull Session session() {
         return Objects.requireNonNull(session, "WhatsappAPI: The session linked to the WebSocket is null");
     }
 
-    public @NotNull CompletableFuture<ChatResponse> queryChat(@NotNull String jid) {
+    public @NonNull CompletableFuture<ChatResponse> queryChat(@NonNull String jid) {
         var node = new Node("query", attributes(attr("type", "chat"), attr("jid", jid)), null);
         return new BinaryRequest<ChatResponse>(options, node, BinaryFlag.IGNORE, BinaryMetric.QUERY_CHAT) {}.send(session());
     }

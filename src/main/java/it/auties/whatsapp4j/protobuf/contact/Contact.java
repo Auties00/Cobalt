@@ -3,7 +3,7 @@ package it.auties.whatsapp4j.protobuf.contact;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -30,7 +30,7 @@ public class Contact {
     /**
      * The non null unique jid used to identify this contact
      */
-    private final @NotNull String jid;
+    private final @NonNull String jid;
 
     /**
      * The nullable name specified by this contact when he created a Whatsapp account.
@@ -72,7 +72,7 @@ public class Contact {
      *
      * @return a new instance of Contact.
      */
-    public static @NotNull Contact fromAttributes(@NotNull Map<String, String> attrs) {
+    public static @NonNull Contact fromAttributes(@NonNull Map<String, String> attrs) {
         return Contact.builder()
                 .jid(attrs.get("jid"))
                 .name(attrs.get("name"))
@@ -89,7 +89,7 @@ public class Contact {
      *
      * @return an optional String
      */
-    public @NotNull Optional<String> bestName() {
+    public @NonNull Optional<String> bestName() {
         return Optional.ofNullable(name != null ? name : chosenName);
     }
 
@@ -101,7 +101,7 @@ public class Contact {
      * @param orElse a non null String returned if no valid name is present for this contact
      * @return a non null String
      */
-    public @NotNull String bestName(@NotNull String orElse) {
+    public @NonNull String bestName(@NonNull String orElse) {
         return bestName().orElse(orElse);
     }
 
@@ -112,7 +112,7 @@ public class Contact {
      *
      * @return an optional object wrapping this contact's last known presence
      */
-    public @NotNull Optional<ContactStatus> lastKnownPresence() {
+    public @NonNull Optional<ContactStatus> lastKnownPresence() {
         return Optional.ofNullable(lastKnownPresence);
     }
 
@@ -122,7 +122,7 @@ public class Contact {
      *
      * @return an optional object wrapping the last time this contact was seen available
      */
-    public @NotNull Optional<ZonedDateTime> lastSeen() {
+    public @NonNull Optional<ZonedDateTime> lastSeen() {
         return Optional.ofNullable(lastSeen);
     }
 }

@@ -2,7 +2,7 @@ package it.auties.whatsapp4j.media;
 
 import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.protobuf.message.model.MediaMessageType;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 
 /**
  * An immutable model class that represents an upload request
@@ -16,8 +16,8 @@ import jakarta.validation.constraints.NotNull;
  * @param sidecar the sidecar of the uploaded file
  * @param mediaType the type of media
  */
-public record MediaUpload(@NotNull String url, @NotNull String directPath,
-                          @NotNull BinaryArray mediaKey, byte[] file,
+public record MediaUpload(@NonNull String url, @NonNull String directPath,
+                          @NonNull BinaryArray mediaKey, byte[] file,
                           byte[] fileSha256, byte[] fileEncSha256, byte[] sidecar,
-                          @NotNull MediaMessageType mediaType) {
+                          @NonNull MediaMessageType mediaType) {
 }

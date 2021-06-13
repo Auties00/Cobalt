@@ -2,7 +2,7 @@ package it.auties.whatsapp4j.protobuf.contact;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.whatsapp4j.binary.BinaryFlag;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -48,12 +48,12 @@ public enum ContactStatus {
      *
      * @return a lowercase non null String
      */
-    public @NotNull String data() {
+    public @NonNull String data() {
         return name().toLowerCase();
     }
 
     @JsonCreator
-    public static ContactStatus forValue(@NotNull String jsonValue) {
+    public static ContactStatus forValue(@NonNull String jsonValue) {
         return Arrays.stream(values()).filter(entry -> entry.name().equalsIgnoreCase(jsonValue)).findFirst().orElseThrow();
     }
 }

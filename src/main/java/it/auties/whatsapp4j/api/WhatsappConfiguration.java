@@ -1,7 +1,7 @@
 package it.auties.whatsapp4j.api;
 
 import it.auties.whatsapp4j.binary.BinaryArray;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Data;
@@ -25,7 +25,7 @@ public class WhatsappConfiguration {
      * This may change based on the region this API is being used in
      */
     @Default
-    private final @NotNull String whatsappUrl = "wss://web.whatsapp.com/ws";
+    private final @NonNull String whatsappUrl = "wss://web.whatsapp.com/ws";
 
     /**
      * The tag used to send messages to WhatsappWeb's WebSocket
@@ -33,21 +33,21 @@ public class WhatsappConfiguration {
      * It is important to use a pseudo random string as using the same tag two times in a binary request, even in different sessions, will make the request fail
      */
     @Default
-    private final @NotNull String requestTag = BinaryArray.random(12).toHex();
+    private final @NonNull String requestTag = BinaryArray.random(12).toHex();
 
     /**
      * The description provided to Whatsapp during the authentication process
      * This should be, for example, the name of your service
      */
     @Default
-    private final @NotNull String description = "Whatsapp4j";
+    private final @NonNull String description = "Whatsapp4j";
 
     /**
      * The short description provided to Whatsapp during the authentication process
      * This should be, for example, an acronym for your service
      */
     @Default
-    private final @NotNull String shortDescription = "W4J";
+    private final @NonNull String shortDescription = "W4J";
 
     /**
      * When someone logs into WhatsappWeb from another location, this function is used to determine if the connection should be reclaimed
@@ -56,7 +56,7 @@ public class WhatsappConfiguration {
      * By default, WhatsappWeb4j will reclaim connection
      */
     @Default
-    private final @NotNull Function<String, Boolean> reconnectWhenDisconnected = (reason) -> true;
+    private final @NonNull Function<String, Boolean> reconnectWhenDisconnected = (reason) -> true;
 
     /**
      * This property determines whether the requests sent to WhatsappWeb's WebSocket should be sent asynchronously or not
@@ -70,7 +70,7 @@ public class WhatsappConfiguration {
      *
      * @return a new instance of WhatsappConfiguration with the above characteristics
      */
-    public static @NotNull WhatsappConfiguration defaultOptions() {
+    public static @NonNull WhatsappConfiguration defaultOptions() {
         return WhatsappConfiguration.builder().build();
     }
 }

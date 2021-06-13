@@ -4,7 +4,7 @@ import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.request.model.JsonRequest;
 import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 
 import java.util.List;
 
@@ -13,15 +13,15 @@ import java.util.List;
  * After this message, the status can be fetched by listening to {@link WhatsappListener#onContactPresenceUpdate(it.auties.whatsapp4j.protobuf.chat.Chat, it.auties.whatsapp4j.protobuf.contact.Contact)} or {@link it.auties.whatsapp4j.protobuf.contact.Contact#lastKnownPresence()}.
  */
 public abstract class SubscribeUserPresenceRequest<M extends JsonResponseModel> extends JsonRequest<M> {
-    private final @NotNull String jid;
+    private final @NonNull String jid;
 
-    public SubscribeUserPresenceRequest(@NotNull WhatsappConfiguration configuration, @NotNull String jid) {
+    public SubscribeUserPresenceRequest(@NonNull WhatsappConfiguration configuration, @NonNull String jid) {
         super(configuration);
         this.jid = jid;
     }
 
     @Override
-    public @NotNull List<Object> buildBody() {
+    public @NonNull List<Object> buildBody() {
         return List.of("action", "presence", "subscribe", jid);
     }
 }

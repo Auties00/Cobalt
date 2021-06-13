@@ -2,7 +2,7 @@ package it.auties.whatsapp4j.protobuf.model;
 
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.protobuf.message.model.Message;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
@@ -27,7 +27,7 @@ public class Messages extends ArrayList<MessageInfo> {
      *
      * @param message the first non null entry to add to this collection
      */
-    public Messages(@NotNull MessageInfo message) {
+    public Messages(@NonNull MessageInfo message) {
         add(message);
     }
 
@@ -38,7 +38,7 @@ public class Messages extends ArrayList<MessageInfo> {
      * @return true if {@code message} was added successfully
      */
     @Override
-    public boolean add(@NotNull MessageInfo message) {
+    public boolean add(@NonNull MessageInfo message) {
         var initialSize = size();
         var insertionPoint = Collections.binarySearch(this, message, ENTRY_COMPARATOR);
         super.add(insertionPoint > -1 ? insertionPoint : -insertionPoint - 1, message);
@@ -52,7 +52,7 @@ public class Messages extends ArrayList<MessageInfo> {
      * @param message the non null message to add to this collection
      * @return true if {@code message} was replaced
      */
-    public boolean addOrReplace(@NotNull MessageInfo message) {
+    public boolean addOrReplace(@NonNull MessageInfo message) {
         var result = remove(message);
         add(message);
         return result;

@@ -3,7 +3,7 @@ package it.auties.whatsapp4j.response.impl.binary;
 import it.auties.whatsapp4j.protobuf.chat.Chat;
 import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.response.model.binary.BinaryResponseModel;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 
 /**
  * A binary model to represent a WhatsappNode that contains {@link Chat}
@@ -16,7 +16,7 @@ public final class ChatResponse extends BinaryResponseModel<Chat> {
      *
      * @param node the WhatsappNode to parse
      */
-    public ChatResponse(@NotNull Node node) {
+    public ChatResponse(@NonNull Node node) {
         super(node);
     }
 
@@ -26,7 +26,7 @@ public final class ChatResponse extends BinaryResponseModel<Chat> {
      * @param node the node to parse
      */
     @Override
-    protected @NotNull Chat parseResponse(@NotNull Node node) {
+    protected @NonNull Chat parseResponse(@NonNull Node node) {
         return node.childNodes()
                 .stream()
                 .findFirst()

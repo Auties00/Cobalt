@@ -6,7 +6,7 @@ import it.auties.whatsapp4j.binary.BinaryMetric;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.request.model.BinaryRequest;
 import it.auties.whatsapp4j.utils.internal.CypherUtils;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import jakarta.websocket.Encoder.Binary;
 
 import java.nio.ByteBuffer;
@@ -17,7 +17,7 @@ public class BinaryMessageEncoder implements Binary<BinaryRequest<?>> {
     private static final BinaryEncoder ENCODER = new BinaryEncoder();
 
     @Override
-    public @NotNull ByteBuffer encode(@NotNull BinaryRequest<?> request) {
+    public @NonNull ByteBuffer encode(@NonNull BinaryRequest<?> request) {
         var messageTag = BinaryArray.forString("%s,".formatted(request.tag()));
         var encodedMessage = ENCODER.encodeMessage(request.buildBody());
         var encrypted = CypherUtils.aesEncrypt(encodedMessage, Objects.requireNonNull(KEYS_MANAGER.encKey()));

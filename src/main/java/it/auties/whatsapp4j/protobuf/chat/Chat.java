@@ -9,7 +9,7 @@ import it.auties.whatsapp4j.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.protobuf.model.Messages;
 import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -40,19 +40,19 @@ public class Chat {
    * The non null unique jid used to identify this chat
    */
   @JsonProperty(value = "2")
-  private @NotNull String jid;
+  private @NonNull String jid;
   
   /**
    * The non null display name of this chat
    */
   @JsonProperty(value = "1")
-  private @NotNull String displayName;
+  private @NonNull String displayName;
 
   /**
    * A non null arrayList of messages in this chat sorted chronologically
    */
   @Builder.Default
-  private @NotNull Messages messages = new Messages();
+  private @NonNull Messages messages = new Messages();
 
   /**
    * A map that holds the status of each participant, excluding yourself, for this chat.
@@ -66,13 +66,13 @@ public class Chat {
    * This is because a contact can be online on Whatsapp and composing, recording or paused in a specific chat.
    */
   @Builder.Default
-  private @NotNull Map<Contact, ContactStatus> presences = new HashMap<>();
+  private @NonNull Map<Contact, ContactStatus> presences = new HashMap<>();
 
   /**
    * The non null mute of this chat
    */
   @Builder.Default
-  private @NotNull ChatMute mute = ChatMute.UNKNOWN;
+  private @NonNull ChatMute mute = ChatMute.UNKNOWN;
 
   /**
    * The nullable new unique jid for this Chat.
@@ -132,7 +132,7 @@ public class Chat {
    *
    * @return a new instance of Chat
    */
-  public static @NotNull Chat fromAttributes(@NotNull Map<String, String> attrs) {
+  public static @NonNull Chat fromAttributes(@NonNull Map<String, String> attrs) {
     var jid = attrs.get("jid");
     return Chat.builder()
             .displayName(attrs.getOrDefault("name", WhatsappUtils.phoneNumberFromJid(jid)))
@@ -189,7 +189,7 @@ public class Chat {
    *
    * @return a non empty optional if the new jid is not null, otherwise an empty optional
    */
-  public @NotNull Optional<String> newJid() {
+  public @NonNull Optional<String> newJid() {
     return Optional.ofNullable(newJid);
   }
 
@@ -198,7 +198,7 @@ public class Chat {
    *
    * @return a non empty optional if the chat is pinned, otherwise an empty optional
    */
-  public @NotNull Optional<ZonedDateTime> pinned() {
+  public @NonNull Optional<ZonedDateTime> pinned() {
     return WhatsappUtils.parseWhatsappTime(pinned);
   }
 
@@ -207,7 +207,7 @@ public class Chat {
    *
    * @return a non empty optional if ephemeral messages are enabled for this chat, otherwise an empty optional
    */
-  public @NotNull Optional<ZonedDateTime> ephemeralMessageDuration() {
+  public @NonNull Optional<ZonedDateTime> ephemeralMessageDuration() {
     return WhatsappUtils.parseWhatsappTime(ephemeralMessageDuration);
   }
 
@@ -216,7 +216,7 @@ public class Chat {
    *
    * @return a non empty optional if ephemeral messages are enabled for this chat, otherwise an empty optional
    */
-  public @NotNull Optional<ZonedDateTime> ephemeralMessagesToggleTime() {
+  public @NonNull Optional<ZonedDateTime> ephemeralMessagesToggleTime() {
     return WhatsappUtils.parseWhatsappTime(ephemeralMessagesToggleTime);
   }
 
@@ -225,7 +225,7 @@ public class Chat {
    *
    * @return a non empty optional if {@link Chat#messages} isn't empty, otherwise an empty optional
    */
-  public @NotNull Optional<MessageInfo> lastMessage() {
+  public @NonNull Optional<MessageInfo> lastMessage() {
     return messages.isEmpty() ? Optional.empty() : Optional.of(messages.get(messages.size() - 1));
   }
 
@@ -234,7 +234,7 @@ public class Chat {
    *
    * @return a non empty optional if {@link Chat#messages} isn't empty, otherwise an empty optional
    */
-  public @NotNull Optional<MessageInfo> firstMessage() {
+  public @NonNull Optional<MessageInfo> firstMessage() {
     return messages.isEmpty() ? Optional.empty() : Optional.of(messages.get(0));
   }
 }

@@ -1,7 +1,7 @@
 package it.auties.whatsapp4j.response.impl.json;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -12,9 +12,9 @@ import java.util.Map;
  * @param jid    the jid of the participant
  * @param status the status of the modification
  */
-public record ModificationForParticipant(@NotNull String jid, @NotNull ModificationForParticipantStatus status) {
+public record ModificationForParticipant(@NonNull String jid, @NonNull ModificationForParticipantStatus status) {
     @JsonCreator
-    public ModificationForParticipant(@NotNull Map<String, ModificationForParticipantStatus> json) {
+    public ModificationForParticipant(@NonNull Map<String, ModificationForParticipantStatus> json) {
         this(new ArrayList<>(json.keySet()).get(0), json.get(new ArrayList<>(json.keySet()).get(0)));
     }
 }

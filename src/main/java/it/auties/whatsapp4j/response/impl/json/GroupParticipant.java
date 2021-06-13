@@ -1,7 +1,7 @@
 package it.auties.whatsapp4j.response.impl.json;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 
 /**
  * A json model that contains information about the participant of a group
@@ -11,5 +11,5 @@ import jakarta.validation.constraints.NotNull;
  * @param isAdmin      a flag to determine whether the participant is an admin
  * @param isSuperAdmin a flag to determine whether the participant is a super admin
  */
-public record GroupParticipant(@JsonProperty("id") @NotNull String jid, boolean isAdmin, boolean isSuperAdmin) {
+public record GroupParticipant(@JsonProperty("id") @NonNull String jid, boolean isAdmin, boolean isSuperAdmin) {
 }

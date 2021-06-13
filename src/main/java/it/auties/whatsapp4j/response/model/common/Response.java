@@ -8,7 +8,7 @@ import it.auties.whatsapp4j.response.model.binary.BinaryResponse;
 import it.auties.whatsapp4j.response.model.json.JsonListResponse;
 import it.auties.whatsapp4j.response.model.json.JsonResponse;
 import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -32,9 +32,9 @@ import java.util.Optional;
 public abstract sealed class Response<C> permits BinaryResponse, JsonResponse, JsonListResponse {
     protected static final ObjectMapper JACKSON = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-    protected @NotNull String tag;
+    protected @NonNull String tag;
     protected String description;
-    protected @NotNull C content;
+    protected @NonNull C content;
 
     /**
      * Constructs a new instance of WhatsappResponse from a json string
@@ -43,7 +43,7 @@ public abstract sealed class Response<C> permits BinaryResponse, JsonResponse, J
      * @return a new instance of WhatsappResponse with the above characteristics
      * @throws IllegalArgumentException if {@code parse} cannot be parsed
      */
-    public static @NotNull Response<?> fromTaggedResponse(@NotNull String parse) {
+    public static @NonNull Response<?> fromTaggedResponse(@NonNull String parse) {
         try {
             var split = parse.split(",", 2);
             if (split.length != 2 && parse.startsWith("!")) {
@@ -72,7 +72,7 @@ public abstract sealed class Response<C> permits BinaryResponse, JsonResponse, J
         }
     }
 
-    private static @NotNull String parseContent(@NotNull String content, int index) {
+    private static @NonNull String parseContent(@NonNull String content, int index) {
         return content.length() > index && content.charAt(index) == ',' ? parseContent(content, index + 1) : content.substring(index);
     }
 
@@ -83,7 +83,7 @@ public abstract sealed class Response<C> permits BinaryResponse, JsonResponse, J
      * @param <T>   the specific raw type of the model
      * @return an instance of the type of model requested
      */
-    public <T extends ResponseModel> @NotNull T toModel(@NotNull Class<T> clazz) {
+    public <T extends ResponseModel> @NonNull T toModel(@NonNull Class<T> clazz) {
         throw new UnsupportedOperationException("To model is not supported on this object");
     }
 }

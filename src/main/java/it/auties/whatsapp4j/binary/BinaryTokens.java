@@ -1,6 +1,6 @@
 package it.auties.whatsapp4j.binary;
 
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 
 import java.util.Arrays;
@@ -15,7 +15,7 @@ public class BinaryTokens {
     /**
      * Double byte tokens
      */
-    public final @NotNull List<String> DOUBLE_BYTE = List.of();
+    public final @NonNull List<String> DOUBLE_BYTE = List.of();
 
 
     /**

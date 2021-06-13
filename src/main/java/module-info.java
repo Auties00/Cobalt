@@ -24,7 +24,6 @@ open module whatsapp4j {
     requires java.prefs;
     requires java.net.http;
     requires java.compiler;
-    requires jakarta.validation;
     requires jakarta.websocket.api;
 
     requires static lombok;

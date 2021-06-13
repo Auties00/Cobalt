@@ -4,7 +4,7 @@ import it.auties.whatsapp4j.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.protobuf.model.Messages;
 import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.response.model.binary.BinaryResponseModel;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 
 import java.util.stream.Collectors;
 
@@ -19,7 +19,7 @@ public final class MessagesResponse extends BinaryResponseModel<Messages> {
      *
      * @param node the WhatsappNode to parse
      */
-    public MessagesResponse(@NotNull Node node) {
+    public MessagesResponse(@NonNull Node node) {
         super(node);
     }
 
@@ -29,7 +29,7 @@ public final class MessagesResponse extends BinaryResponseModel<Messages> {
      * @param node the node to parse
      */
     @Override
-    protected @NotNull Messages parseResponse(@NotNull Node node) {
+    protected @NonNull Messages parseResponse(@NonNull Node node) {
         return node.childNodes()
                 .stream()
                 .filter(childNode -> childNode.description().equals("message"))

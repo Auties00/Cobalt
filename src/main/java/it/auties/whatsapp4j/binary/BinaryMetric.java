@@ -1,6 +1,6 @@
 package it.auties.whatsapp4j.binary;
 
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
@@ -51,7 +51,7 @@ public enum BinaryMetric {
      * @param tags the tags to convert
      * @return a new array of bytes
      */
-    public static @NotNull BinaryArray toArray(@NonNull BinaryMetric... tags){
+    public static @NonNull BinaryArray toArray(@NonNull BinaryMetric... tags){
         var data = new byte[tags.length];
         IntStream.range(0, tags.length).forEach(index -> data[index] = (byte) tags[index].data());
         return BinaryArray.forArray(data);

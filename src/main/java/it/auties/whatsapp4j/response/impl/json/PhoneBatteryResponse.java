@@ -10,5 +10,5 @@ import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
  * @param charging  a flag to determine whether this update is charging
  * @param powerSave a flag to determine whether the phone is on battery save mode or not
  */
-public record PhoneBatteryResponse(int value, @JsonProperty("live") boolean charging, boolean powerSave) implements JsonResponseModel {
+public final record PhoneBatteryResponse(int value, @JsonProperty("live") boolean charging, boolean powerSave) implements JsonResponseModel {
 }

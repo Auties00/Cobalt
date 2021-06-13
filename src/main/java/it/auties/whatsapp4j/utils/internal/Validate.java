@@ -1,6 +1,6 @@
 package it.auties.whatsapp4j.utils.internal;
 
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
@@ -20,7 +20,7 @@ public class Validate {
      * @param message   the message of the exception to throw if {@code value} isn't true
      * @param args      the arguments used to format the exception thrown if {@code value} isn't true
      */
-    public <T> T isValid(T object, boolean condition, @NotNull String message, @NotNull Object... args) {
+    public <T> T isValid(T object, boolean condition, @NonNull String message, @NonNull Object... args) {
         isTrue(condition, message, IllegalArgumentException.class, args);
         return object;
     }
@@ -32,7 +32,7 @@ public class Validate {
      * @param message the message of the exception to throw if {@code value} isn't true
      * @param args    the arguments used to format the exception thrown if {@code value} isn't true
      */
-    public void isTrue(boolean value, @NotNull String message, @NotNull Object... args) {
+    public void isTrue(boolean value, @NonNull String message, @NonNull Object... args) {
         isTrue(value, message, IllegalArgumentException.class, args);
     }
 
@@ -45,7 +45,7 @@ public class Validate {
      * @param args      the arguments used to format the exception thrown if {@code value} isn't true
      */
     @SneakyThrows
-    public void isTrue(boolean value, @NotNull String message, @NotNull Class<? extends Exception> exception, @NotNull Object... args) {
+    public void isTrue(boolean value, @NonNull String message, @NonNull Class<? extends Exception> exception, @NonNull Object... args) {
         if (!value) throw exception.getConstructor(String.class).newInstance(message.formatted(args));
     }
 }

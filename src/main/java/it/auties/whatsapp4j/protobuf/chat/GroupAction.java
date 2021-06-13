@@ -1,7 +1,7 @@
 package it.auties.whatsapp4j.protobuf.chat;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 
 /**
  * The constants of this enumerated type describe the various actions that can be executed on a {@link it.auties.whatsapp4j.protobuf.contact.Contact} in a {@link Chat}.
@@ -34,7 +34,7 @@ public enum GroupAction {
      *
      * @return a lowercase non null String
      */
-    public @NotNull String data() {
+    public @NonNull String data() {
         return name().toLowerCase();
     }
 }

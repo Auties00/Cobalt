@@ -4,7 +4,7 @@ import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.utils.internal.Validate;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.SneakyThrows;
 
 import java.util.ArrayList;
@@ -19,7 +19,7 @@ import java.util.stream.IntStream;
  *
  * @param cache the message to encode
  */
-public record BinaryEncoder(@NotNull List<Byte> cache) {
+public record BinaryEncoder(@NonNull List<Byte> cache) {
     /**
      * Constructs a new empty {@link BinaryEncoder}
      */
@@ -32,12 +32,12 @@ public record BinaryEncoder(@NotNull List<Byte> cache) {
      *
      * @return a new array of bytes
      */
-    public byte @NotNull [] encodeMessage(@NotNull Node node) {
+    public byte @NonNull [] encodeMessage(@NonNull Node node) {
         cache.clear();
         return writeNode(node);
     }
 
-    private byte @NotNull [] writeNode(@NotNull Node node) {
+    private byte @NonNull [] writeNode(@NonNull Node node) {
         writeListStart(2 * node.attrs().size() + 1 + (node.content() != null ? 1 : 0));
         writeString(node.description(), false);
         writeAttributes(node.attrs());
@@ -57,11 +57,11 @@ public record BinaryEncoder(@NotNull List<Byte> cache) {
         pushUnsignedInts(((value >> 16) & 0x0f), ((value >> 8) & 0xff), (value & 0xff));
     }
 
-    private void pushUnsignedInts(int @NotNull ... ints) {
+    private void pushUnsignedInts(int @NonNull ... ints) {
         Arrays.stream(ints).mapToObj(entry -> (byte) entry).forEachOrdered(cache::add);
     }
 
-    private void pushString(@NotNull String str) {
+    private void pushString(@NonNull String str) {
         pushUnsignedInts(toUnsignedIntArray(str.getBytes()));
     }
 
@@ -75,12 +75,12 @@ public record BinaryEncoder(@NotNull List<Byte> cache) {
         }
     }
 
-    private void writeStringRaw(@NotNull String string) {
+    private void writeStringRaw(@NonNull String string) {
         writeByteLength(string.length());
         pushString(string);
     }
 
-    private void writeJid(String left, @NotNull String right) {
+    private void writeJid(String left, @NonNull String right) {
         pushUnsignedInt(BinaryTag.JID_PAIR.data());
         if (left != null && left.length() > 0) {
             writeStrings(left, right);
@@ -96,7 +96,7 @@ public record BinaryEncoder(@NotNull List<Byte> cache) {
         pushUnsignedInt(token);
     }
 
-    private void writeString(@NotNull String token, boolean i) {
+    private void writeString(@NonNull String token, boolean i) {
         var tokenIndex = BinaryTokens.SINGLE_BYTE.indexOf(token);
         if (!i && token.equals("s.whatsapp.net")) {
             writeToken(tokenIndex);
@@ -126,11 +126,11 @@ public record BinaryEncoder(@NotNull List<Byte> cache) {
         writeJid(token.substring(0, jidSepIndex), token.substring(jidSepIndex + 1));
     }
 
-    private void writeStrings(@NotNull String... tokens) {
+    private void writeStrings(@NonNull String... tokens) {
         Arrays.stream(tokens).forEach(token -> writeString(token, false));
     }
 
-    private void writeAttributes(@NotNull Map<String, String> attrs) {
+    private void writeAttributes(@NonNull Map<String, String> attrs) {
         attrs.forEach(this::writeStrings);
     }
 
@@ -167,17 +167,17 @@ public record BinaryEncoder(@NotNull List<Byte> cache) {
         throw new IllegalArgumentException("Cannot encode content " + content);
     }
 
-    private boolean validateList(@NotNull List<?> list) {
+    private boolean validateList(@NonNull List<?> list) {
         return list.stream().map(Object::getClass).allMatch(Node.class::isAssignableFrom);
     }
 
-    private byte @NotNull [] toByteArray() {
+    private byte @NonNull [] toByteArray() {
         var array = new byte[cache.size()];
         IntStream.range(0, cache.size()).forEachOrdered(x -> array[x] = cache.get(x));
         return array;
     }
 
-    private int @NotNull [] toUnsignedIntArray(byte @NotNull [] input) {
+    private int @NonNull [] toUnsignedIntArray(byte @NonNull [] input) {
         return IntStream.range(0, input.length).map(x -> Byte.toUnsignedInt(input[x])).toArray();
     }
 }

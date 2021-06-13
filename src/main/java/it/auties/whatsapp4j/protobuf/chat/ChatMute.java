@@ -1,7 +1,7 @@
 package it.auties.whatsapp4j.protobuf.chat;
 
 import it.auties.whatsapp4j.api.WhatsappAPI;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -35,7 +35,7 @@ public record ChatMute(long time) {
      *
      * @return a non null enum that describes the type of mute for this object
      */
-    public @NotNull ChatMuteType type() {
+    public @NonNull ChatMuteType type() {
         if (this == UNKNOWN) return ChatMuteType.UNKNOWN;
         if (time == -1) return ChatMuteType.MUTED_INDEFINITELY;
         if (time == 0) return ChatMuteType.NOT_MUTED;
@@ -47,7 +47,7 @@ public record ChatMute(long time) {
      *
      * @return a non empty optional date if {@link ChatMute#time} > 0
      */
-    public @NotNull Optional<ZonedDateTime> muteEndDate() {
+    public @NonNull Optional<ZonedDateTime> muteEndDate() {
         return isMuted() ? Optional.of(ZonedDateTime.ofInstant(Instant.ofEpochSecond(time), ZoneId.systemDefault())) : Optional.empty();
     }
 }

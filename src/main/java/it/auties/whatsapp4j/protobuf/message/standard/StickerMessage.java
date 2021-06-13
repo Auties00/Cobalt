@@ -6,7 +6,7 @@ import it.auties.whatsapp4j.protobuf.info.ContextInfo;
 import it.auties.whatsapp4j.protobuf.message.model.MediaMessage;
 import it.auties.whatsapp4j.protobuf.message.model.MediaMessageType;
 import it.auties.whatsapp4j.utils.internal.CypherUtils;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
@@ -125,7 +125,7 @@ public final class StickerMessage extends MediaMessage {
    * @return a non null new message
    */
   @Builder(builderClassName = "NewStickerMessageBuilder", builderMethodName = "newStickerMessage", buildMethodName = "create")
-  private static StickerMessage builder(byte @NotNull [] media, String mimeType, byte[] pngThumbnail, boolean isAnimated, ContextInfo contextInfo) {
+  private static StickerMessage builder(byte @NonNull [] media, String mimeType, byte[] pngThumbnail, boolean isAnimated, ContextInfo contextInfo) {
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.STICKER);
     return StickerMessage.builder()
             .fileSha256(upload.fileSha256())
@@ -154,7 +154,7 @@ public final class StickerMessage extends MediaMessage {
    * @return {@link MediaMessageType#STICKER}
    */
   @Override
-  public MediaMessageType type() {
+  public @NonNull MediaMessageType type() {
     return MediaMessageType.STICKER;
   }
 }

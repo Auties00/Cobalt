@@ -7,11 +7,12 @@ import it.auties.whatsapp4j.protobuf.chat.Chat;
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.protobuf.message.standard.TextMessage;
 import it.auties.whatsapp4j.response.impl.json.ModificationForParticipant;
+import lombok.NonNull;
 
 @RegisterListener
 public record BanBotListener(WhatsappAPI api) implements WhatsappListener {
     @Override
-    public void onNewMessage(Chat chat, MessageInfo info) {
+    public void onNewMessage(@NonNull Chat chat, @NonNull MessageInfo info) {
         var textMessage = info.container().textMessage();
         if(textMessage == null){
             return;

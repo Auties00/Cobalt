@@ -240,11 +240,6 @@
             <artifactId>undertow-websockets-jsr</artifactId>
             <version>${ee.modules}</version>
         </dependency>
-        <dependency>
-            <groupId>com.guicedee.services</groupId>
-            <artifactId>hibernate-validator</artifactId>
-            <version>${ee.modules}</version>
-        </dependency>
 
         <!-- Zxing -->
         <dependency>

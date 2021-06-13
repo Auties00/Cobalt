@@ -8,7 +8,7 @@ import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.response.model.common.Response;
 import it.auties.whatsapp4j.response.model.common.ResponseModel;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import jakarta.websocket.Session;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -43,17 +43,17 @@ public sealed abstract class Request<B, M extends ResponseModel> permits BinaryR
      * The non null tag of this request.
      * This tag must be unique even amongst different sessions linked to the same encryption keys after the login process has been completed.
      */
-    protected final @NotNull @Getter String tag;
+    protected final @NonNull @Getter String tag;
 
     /**
      * The configuration used for {@link WhatsappAPI}
      */
-    protected final @NotNull WhatsappConfiguration configuration;
+    protected final @NonNull WhatsappConfiguration configuration;
 
     /**
      * A future completed when Whatsapp sends a response
      */
-    protected final @NotNull @Getter CompletableFuture<M> future;
+    protected final @NonNull @Getter CompletableFuture<M> future;
 
     /**
      * Whether this request requires a response
@@ -66,7 +66,7 @@ public sealed abstract class Request<B, M extends ResponseModel> permits BinaryR
      * @param tag the custom non null tag to assign to this request
      * @param configuration the configuration used for {@link WhatsappAPI}
      */
-    protected Request(@NotNull String tag, @NotNull WhatsappConfiguration configuration){
+    protected Request(@NonNull String tag, @NonNull WhatsappConfiguration configuration){
         this(tag, configuration, new CompletableFuture<>());
     }
 
@@ -75,7 +75,7 @@ public sealed abstract class Request<B, M extends ResponseModel> permits BinaryR
      *
      * @param configuration the configuration used for {@link WhatsappAPI}
      */
-    protected Request(@NotNull WhatsappConfiguration configuration){
+    protected Request(@NonNull WhatsappConfiguration configuration){
         this(WhatsappUtils.buildRequestTag(configuration), configuration);
     }
 
@@ -84,7 +84,7 @@ public sealed abstract class Request<B, M extends ResponseModel> permits BinaryR
      *
      * @return an object to send to WhatsappWeb's WebSocket
      */
-    public abstract @NotNull B buildBody();
+    public abstract @NonNull B buildBody();
 
     /**
      * Sends a request to the WebSocket linked to {@code session}.
@@ -92,7 +92,7 @@ public sealed abstract class Request<B, M extends ResponseModel> permits BinaryR
      * @param session the WhatsappWeb's WebSocket session
      * @return this request
      */
-    public abstract CompletableFuture<M> send(@NotNull Session session);
+    public abstract CompletableFuture<M> send(@NonNull Session session);
 
     /**
      * Completes this request using {@code response}
@@ -101,7 +101,7 @@ public sealed abstract class Request<B, M extends ResponseModel> permits BinaryR
      * @throws IllegalArgumentException if this request isn't completable
      * @throws ClassCastException if the type parameter of this object is not a concrete type, the reason is explained here {@link Request#modelClass()}
      */
-    public void complete(@NotNull Response<?> response){
+    public void complete(@NonNull Response<?> response){
         future.completeAsync(() -> response.toModel(modelClass()));
     }
 
@@ -115,7 +115,7 @@ public sealed abstract class Request<B, M extends ResponseModel> permits BinaryR
      * @return a class representing the type parameter of this object
      */
     @SuppressWarnings("unchecked")
-    private @NotNull Class<M> modelClass() throws ClassCastException{
+    private @NonNull Class<M> modelClass() throws ClassCastException{
         return (Class<M>) ((ParameterizedType) this.getClass().getGenericSuperclass()).getActualTypeArguments()[0];
     }
 }

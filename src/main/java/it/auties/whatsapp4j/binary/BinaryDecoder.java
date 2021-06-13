@@ -4,7 +4,7 @@ import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.utils.internal.Validate;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.SneakyThrows;
 
 import java.io.IOException;
@@ -42,7 +42,7 @@ public class BinaryDecoder {
      * @param buffer the BinaryArray to decrypt
      * @return a new {@link Node} containing all the information that was decrypted
      */
-    public @NotNull Node decodeDecryptedMessage(@NotNull BinaryArray buffer) {
+    public @NonNull Node decodeDecryptedMessage(@NonNull BinaryArray buffer) {
         this.buffer = buffer;
         this.index = 0;
         return readNode();
@@ -88,7 +88,7 @@ public class BinaryDecoder {
         return ((a & 15) << 16) + (b << 8) + c;
     }
 
-    private @NotNull String readPacked8(int tag) {
+    private @NonNull String readPacked8(int tag) {
         var startByte = readByte();
 
         final var value = new StringBuilder();
@@ -101,7 +101,7 @@ public class BinaryDecoder {
         return startByte >> 7 != 0 ? value.substring(0, value.length() - 1) : value.toString();
     }
 
-    private @NotNull BinaryArray readBytes(int n) {
+    private @NonNull BinaryArray readBytes(int n) {
         checkEOS(n);
         var byteArray = buffer.slice(index, index + n);
         index += n;
@@ -134,7 +134,7 @@ public class BinaryDecoder {
         };
     }
 
-    private @NotNull String readStringFromCharacters(int length) {
+    private @NonNull String readStringFromCharacters(int length) {
         checkEOS(length);
         var value = buffer.slice(index, index + length);
         index += length;
@@ -152,7 +152,7 @@ public class BinaryDecoder {
         return BinaryTokens.DOUBLE_BYTE.get(n);
     }
 
-    private @NotNull String readString(int data) {
+    private @NonNull String readString(int data) {
         return data >= 3 && data <= 235 ? getToken(data) : switch (BinaryTag.forData(data)) {
             case DICTIONARY_0, DICTIONARY_1, DICTIONARY_2, DICTIONARY_3 -> getDoubleToken(data - BinaryTag.DICTIONARY_0.data(), readByte());
             case BINARY_8 -> readStringFromCharacters(readByte());
@@ -170,7 +170,7 @@ public class BinaryDecoder {
     }
 
     @SneakyThrows
-    private @NotNull Node readNode() {
+    private @NonNull Node readNode() {
         var listSize = readListSize(readUnsignedInt());
         Validate.isTrue(listSize != 0, "List size is empty");
 
@@ -188,7 +188,7 @@ public class BinaryDecoder {
     }
 
     @SneakyThrows
-    private @NotNull Object parseMessage(@NotNull String description, int tag) {
+    private @NonNull Object parseMessage(@NonNull String description, int tag) {
         var data = switch (BinaryTag.forData(tag)) {
             case BINARY_8 -> readBytes(readUnsignedInt());
             case BINARY_20 -> readBytes(readInt20());
@@ -199,7 +199,7 @@ public class BinaryDecoder {
         return description.equals("message") ? decodeMessage(data) : data.toString();
     }
 
-    private @NotNull MessageInfo decodeMessage(@NotNull BinaryArray data) throws IOException {
+    private @NonNull MessageInfo decodeMessage(@NonNull BinaryArray data) throws IOException {
         try {
             return ProtobufDecoder.forType(MessageInfo.class).decode(data.data());
         } catch (RuntimeException ex){
@@ -207,7 +207,7 @@ public class BinaryDecoder {
         }
     }
 
-    private @NotNull List<Node> readList(int tag) {
+    private @NonNull List<Node> readList(int tag) {
         return IntStream.range(0, readListSize(tag)).mapToObj(e -> readNode()).toList();
     }
 

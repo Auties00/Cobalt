@@ -6,7 +6,7 @@ import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.message.model.ContextualMessage;
 import it.auties.whatsapp4j.protobuf.message.model.MessageContainer;
 import it.auties.whatsapp4j.protobuf.message.model.MessageKey;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -112,7 +112,7 @@ public class ContextInfo {
    *
    * @param quotedMessage the message to quote
    */
-  public ContextInfo(@NotNull MessageInfo quotedMessage){
+  public ContextInfo(@NonNull MessageInfo quotedMessage){
     this.quotedMessageContainer = quotedMessage.container();
     this.quotedMessageId = quotedMessage.key().id();
     this.quotedMessageSenderJid = quotedMessage.senderJid();

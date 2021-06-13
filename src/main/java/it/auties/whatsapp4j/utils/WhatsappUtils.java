@@ -5,7 +5,7 @@ import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.protobuf.contact.Contact;
 import it.auties.whatsapp4j.protobuf.model.Node;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 
 import java.net.URL;
@@ -35,7 +35,7 @@ public class WhatsappUtils {
      * @param jid the input jid
      * @return a non null String
      */
-    public @NotNull String phoneNumberFromJid(@NotNull String jid) {
+    public @NonNull String phoneNumberFromJid(@NonNull String jid) {
         return jid.split("@", 2)[0];
     }
 
@@ -45,7 +45,7 @@ public class WhatsappUtils {
      * @param jid the input jid
      * @return a non null String
      */
-    public @NotNull String parseJid(@NotNull String jid) {
+    public @NonNull String parseJid(@NonNull String jid) {
         return jid.replaceAll("@c.us", "@s.whatsapp.net");
     }
 
@@ -54,7 +54,7 @@ public class WhatsappUtils {
      *
      * @return a non null ten character String
      */
-    public @NotNull String randomId() {
+    public @NonNull String randomId() {
         return BinaryArray.random(10).toHex();
     }
 
@@ -64,7 +64,7 @@ public class WhatsappUtils {
      * @param configuration the configuration to use to build the message
      * @return a non null String
      */
-    public @NotNull String buildRequestTag(@NotNull WhatsappConfiguration configuration) {
+    public @NonNull String buildRequestTag(@NonNull WhatsappConfiguration configuration) {
         return "%s.--%s".formatted(configuration.requestTag(), MANAGER.tagAndIncrement());
     }
 
@@ -74,7 +74,7 @@ public class WhatsappUtils {
      * @param time the time in seconds since {@link Instant#EPOCH}
      * @return a non null empty optional if the {@code time} isn't 0
      */
-    public @NotNull Optional<ZonedDateTime> parseWhatsappTime(long time) {
+    public @NonNull Optional<ZonedDateTime> parseWhatsappTime(long time) {
         return time == 0 ? Optional.empty() : Optional.of(ZonedDateTime.ofInstant(Instant.ofEpochSecond(time), ZoneId.systemDefault()));
     }
 
@@ -84,7 +84,7 @@ public class WhatsappUtils {
      * @param jid the input jid
      * @return true if {@code jid} is a group
      */
-    public boolean isGroup(@NotNull String jid) {
+    public boolean isGroup(@NonNull String jid) {
         return jid.contains("-");
     }
 
@@ -95,7 +95,7 @@ public class WhatsappUtils {
      * @return a non null List of WhatsappNodes
      * @throws IllegalArgumentException if {@code contacts} is empty
      */
-    public @NotNull List<Node> jidsToParticipantNodes(@NotNull Contact... contacts) {
+    public @NonNull List<Node> jidsToParticipantNodes(@NonNull Contact... contacts) {
         return jidsToParticipantNodes(Arrays.stream(contacts).map(Contact::jid).toArray(String[]::new));
     }
 
@@ -106,7 +106,7 @@ public class WhatsappUtils {
      * @return a non null List of WhatsappNodes
      * @throws IllegalArgumentException if {@code jids} is empty
      */
-    public @NotNull List<Node> jidsToParticipantNodes(@NotNull String... jids) {
+    public @NonNull List<Node> jidsToParticipantNodes(@NonNull String... jids) {
         return Arrays.stream(jids).map(jid -> new Node("participant", Map.of("jid", jid), null)).toList();
     }
 
@@ -116,7 +116,7 @@ public class WhatsappUtils {
      * @param url the url of the encrypted media to download
      * @return a non empty optional if the media is available
      */
-    public @NotNull Optional<BinaryArray> readEncryptedMedia(@NotNull String url) {
+    public @NonNull Optional<BinaryArray> readEncryptedMedia(@NonNull String url) {
         try {
             return Optional.of(BinaryArray.forArray(new URL(url).openStream().readAllBytes()));
         } catch (Exception e) {
@@ -131,7 +131,7 @@ public class WhatsappUtils {
      * @return a non null Map of attributes
      */
     @SafeVarargs
-    public @NotNull Map<String, String> attributes(@NotNull Map.Entry<String, String>... entries) {
+    public @NonNull Map<String, String> attributes(@NonNull Map.Entry<String, String>... entries) {
         return Arrays.stream(entries).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
@@ -142,7 +142,7 @@ public class WhatsappUtils {
      * @param value the non null value
      * @return a non null Entry
      */
-    public @NotNull Map.Entry<String, String> attr(@NotNull String key, @NotNull Object value) {
+    public @NonNull Map.Entry<String, String> attr(@NonNull String key, @NonNull Object value) {
         return Map.entry(key, String.valueOf(value));
     }
 }

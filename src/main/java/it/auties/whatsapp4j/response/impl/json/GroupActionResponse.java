@@ -1,7 +1,7 @@
 package it.auties.whatsapp4j.response.impl.json;
 
 import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 
 import java.util.List;
 
@@ -10,5 +10,5 @@ import java.util.List;
  *
  * @param participants the jids of the participants on which the action was executed
  */
-public record GroupActionResponse(@NotNull List<String> participants) implements JsonResponseModel {
+public final record GroupActionResponse(@NonNull List<String> participants) implements JsonResponseModel {
 }

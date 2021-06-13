@@ -10,7 +10,7 @@ import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.serialization.KeyPairDeserializer;
 import it.auties.whatsapp4j.serialization.KeyPairSerializer;
 import it.auties.whatsapp4j.utils.internal.CypherUtils;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -49,11 +49,11 @@ public class WhatsappKeysManager {
     private static final @Getter WhatsappKeysManager singletonInstance = buildInstance();
 
     @JsonProperty
-    private @NotNull String clientId;
+    private @NonNull String clientId;
     @JsonProperty
     @JsonSerialize(using = KeyPairSerializer.class)
     @JsonDeserialize(using = KeyPairDeserializer.class)
-    private @NotNull KeyPair keyPair;
+    private @NonNull KeyPair keyPair;
     @JsonProperty
     private String serverToken, clientToken;
     @JsonProperty
@@ -91,7 +91,7 @@ public class WhatsappKeysManager {
      * Initializes the serverToken, clientToken, encryptionKey and macKey with non null values
      */
     @SneakyThrows
-    public void initializeKeys(@NotNull String serverToken, @NotNull String clientToken, @NotNull BinaryArray encKey, @NotNull BinaryArray macKey) {
+    public void initializeKeys(@NonNull String serverToken, @NonNull String clientToken, @NonNull BinaryArray encKey, @NonNull BinaryArray macKey) {
         Preferences.userRoot().put(PREFERENCES_PATH, JACKSON_WRITER.writeValueAsString(encKey(encKey).macKey(macKey).serverToken(serverToken).clientToken(clientToken)));
     }
 

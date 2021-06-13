@@ -6,7 +6,7 @@ import it.auties.whatsapp4j.protobuf.info.ContextInfo;
 import it.auties.whatsapp4j.protobuf.message.model.MediaMessage;
 import it.auties.whatsapp4j.protobuf.message.model.MediaMessageType;
 import it.auties.whatsapp4j.utils.internal.CypherUtils;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
@@ -108,7 +108,7 @@ public final class AudioMessage extends MediaMessage {
    * @return a non null new message
    */
   @Builder(builderClassName= "NewAudioMessageBuilder", builderMethodName = "newAudioMessage", buildMethodName = "create")
-  private static AudioMessage builder(byte @NotNull [] media, ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
+  private static AudioMessage builder(byte @NonNull [] media, ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.AUDIO);
     return AudioMessage.builder()
             .fileSha256(upload.fileSha256())
@@ -135,7 +135,7 @@ public final class AudioMessage extends MediaMessage {
    * @return {@link MediaMessageType#AUDIO}
    */
   @Override
-  public @NotNull MediaMessageType type() {
+  public @NonNull MediaMessageType type() {
     return MediaMessageType.AUDIO;
   }
 }

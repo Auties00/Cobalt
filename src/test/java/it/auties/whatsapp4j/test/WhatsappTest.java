@@ -15,7 +15,7 @@ import it.auties.whatsapp4j.protobuf.message.standard.*;
 import it.auties.whatsapp4j.response.impl.json.UserInformationResponse;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import it.auties.whatsapp4j.utils.internal.Validate;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.extern.java.Log;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
@@ -42,13 +42,13 @@ import java.util.concurrent.ExecutionException;
 @Log
 @TestMethodOrder(OrderAnnotation.class)
 public class WhatsappTest implements WhatsappListener {
-    private @NotNull WhatsappAPI whatsappAPI;
-    private @NotNull CountDownLatch latch;
-    private @NotNull String contactName;
+    private WhatsappAPI whatsappAPI;
+    private CountDownLatch latch;
+    private String contactName;
     private boolean noKeys;
-    private @NotNull Contact contact;
-    private @NotNull Chat contactChat;
-    private @NotNull Chat group;
+    private Contact contact;
+    private Chat contactChat;
+    private Chat group;
 
     @BeforeAll
     public void init() throws IOException {
@@ -579,7 +579,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Override
-    public void onLoggedIn(UserInformationResponse info) {
+    public void onLoggedIn(@NonNull UserInformationResponse info) {
         log.info("Logged in!");
         latch.countDown();
     }

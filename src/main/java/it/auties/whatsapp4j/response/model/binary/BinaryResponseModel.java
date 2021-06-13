@@ -4,7 +4,7 @@ import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.response.impl.binary.ChatResponse;
 import it.auties.whatsapp4j.response.impl.binary.MessagesResponse;
 import it.auties.whatsapp4j.response.model.common.ResponseModel;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -19,14 +19,14 @@ public sealed abstract class BinaryResponseModel<T> implements ResponseModel per
     /**
      * The data that this response wraps
      */
-    protected @NotNull T data;
+    protected @NonNull T data;
 
     /**
      * Constructs a new BinaryResponseModel from {@code node}
      *
      * @param node the node to parse
      */
-    protected BinaryResponseModel(@NotNull Node node) {
+    protected BinaryResponseModel(@NonNull Node node) {
         this.data = parseResponse(node);
     }
 
@@ -35,5 +35,5 @@ public sealed abstract class BinaryResponseModel<T> implements ResponseModel per
      *
      * @param node the node to parse
      */
-    protected abstract @NotNull T parseResponse(@NotNull Node node);
+    protected abstract @NonNull T parseResponse(@NonNull Node node);
 }

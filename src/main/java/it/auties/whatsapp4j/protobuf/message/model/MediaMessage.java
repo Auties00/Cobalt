@@ -3,7 +3,7 @@ package it.auties.whatsapp4j.protobuf.message.model;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.message.standard.*;
 import it.auties.whatsapp4j.utils.internal.CypherUtils;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -28,7 +28,7 @@ public abstract sealed class MediaMessage extends ContextualMessage permits Audi
      *
      * @return a non null array of bytes
      */
-    public byte @NotNull [] decodedMedia(){
+    public byte @NonNull [] decodedMedia(){
         if(decodedMedia == null){
             this.decodedMedia = CypherUtils.mediaDecrypt(this);
         }
@@ -41,7 +41,7 @@ public abstract sealed class MediaMessage extends ContextualMessage permits Audi
      *
      * @return a non null array of bytes
      */
-    public byte @NotNull [] refreshMedia(){
+    public byte @NonNull [] refreshMedia(){
         return this.decodedMedia = CypherUtils.mediaDecrypt(this);
     }
 
@@ -50,14 +50,14 @@ public abstract sealed class MediaMessage extends ContextualMessage permits Audi
      *
      * @return a non null string
      */
-    public abstract @NotNull String url();
+    public abstract @NonNull String url();
 
     /**
      * Returns the direct path to the encoded media that this object wraps
      *
      * @return a non null string
      */
-    public abstract @NotNull String directPath();
+    public abstract @NonNull String directPath();
 
 
     /**
@@ -65,7 +65,7 @@ public abstract sealed class MediaMessage extends ContextualMessage permits Audi
      *
      * @return a non null {@link MediaMessageType}
      */
-    public abstract @NotNull MediaMessageType type();
+    public abstract @NonNull MediaMessageType type();
 
 
     /**
@@ -73,7 +73,7 @@ public abstract sealed class MediaMessage extends ContextualMessage permits Audi
      *
      * @return a non null array of bytes
      */
-    public abstract byte @NotNull [] mediaKey();
+    public abstract byte @NonNull [] mediaKey();
 
     /**
      * Returns the timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link MediaMessage#mediaKey()}
@@ -88,7 +88,7 @@ public abstract sealed class MediaMessage extends ContextualMessage permits Audi
      *
      * @return a non null array of bytes
      */
-    public abstract byte @NotNull [] fileSha256();
+    public abstract byte @NonNull [] fileSha256();
 
 
     /**
@@ -96,7 +96,7 @@ public abstract sealed class MediaMessage extends ContextualMessage permits Audi
      *
      * @return a non null array of bytes
      */
-    public abstract byte @NotNull [] fileEncSha256();
+    public abstract byte @NonNull [] fileEncSha256();
 
 
     /**

@@ -11,5 +11,5 @@ import java.time.Instant;
  * @param status    the http status code for the original request
  * @param timeStamp the time in seconds since {@link Instant#EPOCH} when the message was received by the server, null if the request wasn't successfully
  */
-public record MessageResponse(int status, @JsonProperty("t") Long timeStamp) implements JsonResponseModel {
+public final record MessageResponse(int status, @JsonProperty("t") Long timeStamp) implements JsonResponseModel {
 }

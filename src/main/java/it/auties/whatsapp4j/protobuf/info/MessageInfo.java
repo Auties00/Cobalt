@@ -13,7 +13,7 @@ import it.auties.whatsapp4j.protobuf.message.standard.LiveLocationMessage;
 import it.auties.whatsapp4j.protobuf.message.model.MessageContainer;
 import it.auties.whatsapp4j.protobuf.message.model.MessageKey;
 import it.auties.whatsapp4j.protobuf.message.model.Message;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -171,7 +171,7 @@ public class MessageInfo {
    * It is important to remember that it is guaranteed that every participant will be present as a key.
    */
   @Builder.Default
-  private @NotNull Map<Contact, MessageInfoStatus> individualReadStatus = new HashMap<>();
+  private @NonNull Map<Contact, MessageInfoStatus> individualReadStatus = new HashMap<>();
 
   /**
    * The timestamp, that is the seconds since {@link java.time.Instant#EPOCH}, when this message was sent
@@ -184,13 +184,13 @@ public class MessageInfo {
    */
   @JsonProperty(value = "2")
   @Builder.Default
-  private @NotNull MessageContainer container = new MessageContainer();
+  private @NonNull MessageContainer container = new MessageContainer();
 
   /**
    * The MessageKey of this message
    */
   @JsonProperty(value = "1", required = true)
-  private @NotNull MessageKey key;
+  private @NonNull MessageKey key;
 
   /**
    * Constructs a new MessageInfo from a MessageKey and a MessageContainer
@@ -198,7 +198,7 @@ public class MessageInfo {
    * @param key       the key of the message
    * @param container the container of the message
    */
-  public MessageInfo(MessageKey key, MessageContainer container) {
+  public MessageInfo(@NonNull MessageKey key, @NonNull MessageContainer container) {
     this.key = key;
     this.timestamp = Instant.now().getEpochSecond();
     this.globalStatus = MessageInfoStatus.PENDING;
@@ -213,7 +213,7 @@ public class MessageInfo {
    *
    * @return a non null string
    */
-  public @NotNull String chatJid(){
+  public @NonNull String chatJid(){
     return key().chatJid();
   }
 
@@ -222,7 +222,7 @@ public class MessageInfo {
    *
    * @return an optional wrapping a {@link Chat}
    */
-  public @NotNull Optional<Chat> chat() {
+  public @NonNull Optional<Chat> chat() {
     return key().chat();
   }
 
@@ -231,7 +231,7 @@ public class MessageInfo {
    *
    * @return a non null string
    */
-  public @NotNull String senderJid(){
+  public @NonNull String senderJid(){
     return key.fromMe() ? MANAGER.phoneNumberJid() : Optional.ofNullable(senderJid).orElse(key.chatJid());
   }
 
@@ -240,7 +240,7 @@ public class MessageInfo {
    *
    * @return an optional wrapping a {@link Contact}
    */
-  public @NotNull Optional<Contact> sender(){
+  public @NonNull Optional<Contact> sender(){
     return MANAGER.findContactByJid(senderJid());
   }
 
@@ -249,8 +249,8 @@ public class MessageInfo {
    *
    * @return a non empty optional {@link MessageInfo} if this message quotes a message in memory
    */
-  public @NotNull Optional<MessageInfo> quotedMessage(){
-    return Optional.ofNullable(container)
+  public @NonNull Optional<MessageInfo> quotedMessage(){
+    return Optional.of(container)
             .flatMap(MessageContainer::populatedContextualMessage)
             .map(ContextualMessage::contextInfo)
             .flatMap(contextualMessage -> MANAGER.findMessageById(key.chat().orElseThrow(), contextualMessage.quotedMessageId()));

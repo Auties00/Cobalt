@@ -3,7 +3,7 @@ package it.auties.whatsapp4j.response.model.binary;
 import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.response.model.common.Response;
 import it.auties.whatsapp4j.response.model.common.ResponseModel;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 
 import java.lang.reflect.InvocationTargetException;
 
@@ -13,7 +13,7 @@ import java.lang.reflect.InvocationTargetException;
  * This class is final, this means that it cannot be extended.
  */
 public final class BinaryResponse extends Response<Node> {
-    public BinaryResponse(@NotNull String tag, @NotNull Node content) {
+    public BinaryResponse(@NonNull String tag, @NonNull Node content) {
         super(tag, null, content);
     }
 
@@ -26,7 +26,7 @@ public final class BinaryResponse extends Response<Node> {
      * @throws IllegalArgumentException if the node that message wraps cannot be converted to the specified class
      */
     @Override
-    public <T extends ResponseModel> @NotNull T toModel(@NotNull Class<T> clazz) {
+    public <T extends ResponseModel> @NonNull T toModel(@NonNull Class<T> clazz) {
         try {
             return clazz.getConstructor(Node.class).newInstance(content);
         } catch (InvocationTargetException | InstantiationException e) {

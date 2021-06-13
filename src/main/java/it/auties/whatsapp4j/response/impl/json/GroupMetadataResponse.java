@@ -2,7 +2,7 @@ package it.auties.whatsapp4j.response.impl.json;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 
 import java.time.Instant;
 import java.util.List;
@@ -24,9 +24,9 @@ import java.util.List;
  * @param lastDescriptionUpdateTimestamp the nullable time in seconds since {@link Instant#EPOCH} when the group's description was last updated
  * @param participants                   a non null list of all the participants of the group
  */
-public record GroupMetadataResponse(@JsonProperty("id") @NotNull String jid,
-                                          @JsonProperty("owner") @NotNull String founderJid,
-                                          @JsonProperty("creation") int foundationTimestamp, @NotNull String subject,
+public final record GroupMetadataResponse(@JsonProperty("id") @NonNull String jid,
+                                          @JsonProperty("owner") @NonNull String founderJid,
+                                          @JsonProperty("creation") int foundationTimestamp, @NonNull String subject,
                                           @JsonProperty("subjectTime") Integer lastSubjectUpdateTimestamp,
                                           @JsonProperty("subjectOwner") String lastSubjectUpdateJid,
                                           @JsonProperty("restrict") boolean onlyAdminsCanChangeSettings,
@@ -35,5 +35,5 @@ public record GroupMetadataResponse(@JsonProperty("id") @NotNull String jid,
                                           @JsonProperty("descId") String descriptionMessageId,
                                           @JsonProperty("descOwner") String lastDescriptionUpdateJid,
                                           @JsonProperty("descTime") Integer lastDescriptionUpdateTimestamp,
-                                          @NotNull List<GroupParticipant> participants) implements JsonResponseModel {
+                                          @NonNull List<GroupParticipant> participants) implements JsonResponseModel {
 }

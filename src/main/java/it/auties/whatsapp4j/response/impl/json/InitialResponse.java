@@ -10,5 +10,5 @@ import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
  * @param ref    a token sent by Whatsapp to login, might be null
  * @param ttl    time to live in seconds for the ref
  */
-public record InitialResponse(int status, String ref, int ttl) implements JsonResponseModel {
+public final record InitialResponse(int status, String ref, int ttl) implements JsonResponseModel {
 }

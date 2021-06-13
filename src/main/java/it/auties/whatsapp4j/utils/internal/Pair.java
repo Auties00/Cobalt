@@ -1,6 +1,6 @@
 package it.auties.whatsapp4j.utils.internal;
 
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 
 /**
  * Specifies a generic pair
@@ -8,5 +8,5 @@ import jakarta.validation.constraints.NotNull;
  * @param <K> Key
  * @param <V> Value
  */
-public record Pair<K, V>(@NotNull K key, @NotNull V value) {
+public record Pair<K, V>(@NonNull K key, @NonNull V value) {
 }

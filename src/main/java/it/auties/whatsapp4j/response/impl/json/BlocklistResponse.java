@@ -2,7 +2,7 @@ package it.auties.whatsapp4j.response.impl.json;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
-import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 
 import java.util.List;
 
@@ -12,6 +12,6 @@ import java.util.List;
  * @param id          an unsigned unique identifier for this request
  * @param blockedJids a non null List of blocked contacts for a session, might be empty
  */
-public record BlocklistResponse(int id,
-                                      @JsonProperty("blocklist") @NotNull List<String> blockedJids) implements JsonResponseModel {
+public final record BlocklistResponse(int id,
+                                      @JsonProperty("blocklist") @NonNull List<String> blockedJids) implements JsonResponseModel {
 }
