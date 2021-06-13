@@ -5,12 +5,13 @@ import it.auties.whatsapp4j.listener.RegisterListener;
 import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.protobuf.chat.Chat;
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
+import lombok.NonNull;
 import org.example.whatsapp.command.CommandManager;
 
 @RegisterListener
 public record WhatsappBotListener(WhatsappAPI api, CommandManager manager) implements WhatsappListener {
     @Override
-    public void onNewMessage(Chat chat, MessageInfo info) {
+    public void onNewMessage(@NonNull Chat chat, @NonNull MessageInfo info) {
         var textMessage = info.container().textMessage();
         if(textMessage == null){
             return;

@@ -6,6 +6,7 @@ import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.protobuf.chat.Chat;
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.protobuf.message.standard.TextMessage;
+import lombok.NonNull;
 
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
@@ -38,7 +39,7 @@ public record TesterBotListener(WhatsappAPI api) implements WhatsappListener {
     private static final JavaCompiler COMPILER = ToolProvider.getSystemJavaCompiler();
 
     @Override
-    public void onNewMessage(Chat chat, MessageInfo info) {
+    public void onNewMessage(@NonNull Chat chat, @NonNull MessageInfo info) {
         var textMessage = info.container().textMessage();
         if(textMessage == null || !textMessage.text().contains("/java")){
             return;

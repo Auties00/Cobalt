@@ -6,19 +6,20 @@ import it.auties.whatsapp4j.protobuf.chat.Chat;
 import it.auties.whatsapp4j.protobuf.contact.Contact;
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.response.impl.json.UserInformationResponse;
+import lombok.NonNull;
 
 // A listener that will be automatically detected, used to listen to the deletion of messages
 @RegisterListener
 public class BotListener implements WhatsappListener {
     // Called when we successfully log into org.example.whatsapp
     @Override
-    public void onLoggedIn(UserInformationResponse info) {
+    public void onLoggedIn(@NonNull UserInformationResponse info) {
         System.out.println("Hello :)");
     }
 
     // Called when anyone deleted a message
     @Override
-    public void onMessageDeleted(Chat chat, MessageInfo info, boolean everyone) {
+    public void onMessageDeleted(@NonNull Chat chat, @NonNull MessageInfo info, boolean everyone) {
         // Get the name of the chat where the message was cancelled
         var chatName = chat.displayName();
 
