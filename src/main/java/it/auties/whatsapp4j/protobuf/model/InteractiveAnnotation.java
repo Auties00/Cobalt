@@ -1,12 +1,13 @@
 package it.auties.whatsapp4j.protobuf.model;
 
-import com.fasterxml.jackson.annotation.*;
-import java.util.*;
-
-import it.auties.whatsapp4j.protobuf.model.Location;
-import it.auties.whatsapp4j.protobuf.model.Point;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
+
+import java.util.Arrays;
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor

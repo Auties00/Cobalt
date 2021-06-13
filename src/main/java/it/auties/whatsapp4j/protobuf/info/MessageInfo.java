@@ -7,10 +7,12 @@ import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.protobuf.chat.Chat;
 import it.auties.whatsapp4j.protobuf.contact.Contact;
-import it.auties.whatsapp4j.protobuf.message.ContextualMessage;
-import it.auties.whatsapp4j.protobuf.message.LiveLocationMessage;
-import it.auties.whatsapp4j.protobuf.message.MessageContainer;
-import it.auties.whatsapp4j.protobuf.message.MessageKey;
+import it.auties.whatsapp4j.protobuf.message.model.ContextualMessage;
+import it.auties.whatsapp4j.protobuf.message.server.ProtocolMessage;
+import it.auties.whatsapp4j.protobuf.message.standard.LiveLocationMessage;
+import it.auties.whatsapp4j.protobuf.message.model.MessageContainer;
+import it.auties.whatsapp4j.protobuf.message.model.MessageKey;
+import it.auties.whatsapp4j.protobuf.message.model.Message;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -19,7 +21,7 @@ import java.time.Instant;
 import java.util.*;
 
 /**
- * A model class that holds the information related to a {@link it.auties.whatsapp4j.protobuf.message.Message}.
+ * A model class that holds the information related to a {@link Message}.
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
  * Instead, methods inside {@link WhatsappAPI} should be used.
  */
@@ -92,7 +94,7 @@ public class MessageInfo {
 
   /**
    * The stub type of this message.
-   * This property is populated only if the message that {@link MessageInfo#container} wraps is a {@link it.auties.whatsapp4j.protobuf.message.ProtocolMessage}.
+   * This property is populated only if the message that {@link MessageInfo#container} wraps is a {@link ProtocolMessage}.
    */
   @JsonProperty(value = "24")
   private MessageInfoStubType messageStubType;
@@ -181,13 +183,14 @@ public class MessageInfo {
    * The container of this message
    */
   @JsonProperty(value = "2")
-  private MessageContainer container;
+  @Builder.Default
+  private @NotNull MessageContainer container = new MessageContainer();
 
   /**
    * The MessageKey of this message
    */
   @JsonProperty(value = "1", required = true)
-  private MessageKey key;
+  private @NotNull MessageKey key;
 
   /**
    * Constructs a new MessageInfo from a MessageKey and a MessageContainer
@@ -201,6 +204,7 @@ public class MessageInfo {
     this.globalStatus = MessageInfoStatus.PENDING;
     this.container = container;
     this.individualReadStatus = new HashMap<>();
+    this.container = new MessageContainer();
   }
 
 
@@ -209,7 +213,7 @@ public class MessageInfo {
    *
    * @return a non null string
    */
-  public String chatJid(){
+  public @NotNull String chatJid(){
     return key().chatJid();
   }
 
@@ -218,7 +222,7 @@ public class MessageInfo {
    *
    * @return an optional wrapping a {@link Chat}
    */
-  public Optional<Chat> chat() {
+  public @NotNull Optional<Chat> chat() {
     return key().chat();
   }
 
@@ -227,7 +231,7 @@ public class MessageInfo {
    *
    * @return a non null string
    */
-  public String senderJid(){
+  public @NotNull String senderJid(){
     return key.fromMe() ? MANAGER.phoneNumberJid() : Optional.ofNullable(senderJid).orElse(key.chatJid());
   }
 
@@ -236,7 +240,7 @@ public class MessageInfo {
    *
    * @return an optional wrapping a {@link Contact}
    */
-  public Optional<Contact> sender(){
+  public @NotNull Optional<Contact> sender(){
     return MANAGER.findContactByJid(senderJid());
   }
 
@@ -245,7 +249,7 @@ public class MessageInfo {
    *
    * @return a non empty optional {@link MessageInfo} if this message quotes a message in memory
    */
-  public Optional<MessageInfo> quotedMessage(){
+  public @NotNull Optional<MessageInfo> quotedMessage(){
     return Optional.ofNullable(container)
             .flatMap(MessageContainer::populatedContextualMessage)
             .map(ContextualMessage::contextInfo)

@@ -1,11 +1,18 @@
 package it.auties.whatsapp4j.protobuf.model;
 
-import com.fasterxml.jackson.annotation.*;
-import java.util.*;
-
-import it.auties.whatsapp4j.protobuf.message.*;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import it.auties.whatsapp4j.protobuf.message.business.HighlyStructuredMessage;
+import it.auties.whatsapp4j.protobuf.message.standard.DocumentMessage;
+import it.auties.whatsapp4j.protobuf.message.standard.ImageMessage;
+import it.auties.whatsapp4j.protobuf.message.standard.LocationMessage;
+import it.auties.whatsapp4j.protobuf.message.standard.VideoMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
+
+import java.util.Arrays;
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor

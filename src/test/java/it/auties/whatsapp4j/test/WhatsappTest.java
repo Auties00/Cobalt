@@ -9,12 +9,13 @@ import it.auties.whatsapp4j.protobuf.chat.GroupSetting;
 import it.auties.whatsapp4j.protobuf.contact.Contact;
 import it.auties.whatsapp4j.protobuf.contact.ContactStatus;
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
-import it.auties.whatsapp4j.protobuf.message.*;
+import it.auties.whatsapp4j.protobuf.message.model.MessageContainer;
+import it.auties.whatsapp4j.protobuf.message.model.MessageKey;
+import it.auties.whatsapp4j.protobuf.message.standard.*;
 import it.auties.whatsapp4j.response.impl.json.UserInformationResponse;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import it.auties.whatsapp4j.utils.internal.Validate;
 import jakarta.validation.constraints.NotNull;
-import lombok.SneakyThrows;
 import lombok.extern.java.Log;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
@@ -50,15 +51,14 @@ public class WhatsappTest implements WhatsappListener {
     private @NotNull Chat group;
 
     @BeforeAll
-    public void init() {
+    public void init() throws IOException {
         loadContactName();
         log.info("Initializing api to start testing...");
         whatsappAPI = new WhatsappAPI();
         latch = new CountDownLatch(3);
     }
 
-    @SneakyThrows
-    private void loadContactName() {
+    private void loadContactName() throws IOException {
         log.info("Loading configuration file...");
 
         var config = new File(Path.of(".").toRealPath().toFile(), "/.test/config.properties");

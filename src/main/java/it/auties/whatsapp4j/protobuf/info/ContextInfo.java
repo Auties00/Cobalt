@@ -1,19 +1,22 @@
 package it.auties.whatsapp4j.protobuf.info;
 
-import com.fasterxml.jackson.annotation.*;
-import java.util.*;
-
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.api.WhatsappAPI;
-import it.auties.whatsapp4j.manager.WhatsappDataManager;
-import it.auties.whatsapp4j.protobuf.message.MessageContainer;
-import it.auties.whatsapp4j.protobuf.message.MessageKey;
-import it.auties.whatsapp4j.protobuf.message.ProtocolMessage;
+import it.auties.whatsapp4j.protobuf.message.model.ContextualMessage;
+import it.auties.whatsapp4j.protobuf.message.model.MessageContainer;
+import it.auties.whatsapp4j.protobuf.message.model.MessageKey;
 import jakarta.validation.constraints.NotNull;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
+import java.util.List;
+
 /**
- * A model class that holds the information related to a {@link it.auties.whatsapp4j.protobuf.message.ContextualMessage}.
+ * A model class that holds the information related to a {@link ContextualMessage}.
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
  * Instead, methods inside {@link WhatsappAPI} should be used.
  */

@@ -1,7 +1,7 @@
 package it.auties.whatsapp4j.protobuf.model;
 
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
-import it.auties.whatsapp4j.protobuf.message.Message;
+import it.auties.whatsapp4j.protobuf.message.model.Message;
 import jakarta.validation.constraints.NotNull;
 import lombok.NoArgsConstructor;
 

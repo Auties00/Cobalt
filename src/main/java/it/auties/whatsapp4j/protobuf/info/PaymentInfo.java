@@ -1,12 +1,14 @@
 package it.auties.whatsapp4j.protobuf.info;
 
-import com.fasterxml.jackson.annotation.*;
-import java.util.*;
-
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.api.WhatsappAPI;
-import it.auties.whatsapp4j.protobuf.message.MessageKey;
+import it.auties.whatsapp4j.protobuf.message.model.MessageKey;
+import it.auties.whatsapp4j.protobuf.message.business.RequestPaymentMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
+
+import java.util.Arrays;
 
 /**
  * A model class that holds the information related to a payment.
@@ -44,13 +46,13 @@ public class PaymentInfo {
   private long expiryTimestamp;
 
   /**
-   * The MessageKey of the {@link it.auties.whatsapp4j.protobuf.message.RequestPaymentMessage} that originated this transaction
+   * The MessageKey of the {@link RequestPaymentMessage} that originated this transaction
    */
   @JsonProperty(value = "6")
   private MessageKey requestMessageKey;
 
   /**
-   * The timestamp, that is the seconds since {@link java.time.Instant#EPOCH}, when the {@link it.auties.whatsapp4j.protobuf.message.RequestPaymentMessage} that originated this transaction was sent
+   * The timestamp, that is the seconds since {@link java.time.Instant#EPOCH}, when the {@link RequestPaymentMessage} that originated this transaction was sent
    */
   @JsonProperty(value = "5")
   private long transactionTimestamp;

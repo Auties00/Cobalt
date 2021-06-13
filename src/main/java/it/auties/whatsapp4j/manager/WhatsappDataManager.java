@@ -5,7 +5,6 @@ import it.auties.whatsapp4j.media.MediaConnection;
 import it.auties.whatsapp4j.protobuf.chat.Chat;
 import it.auties.whatsapp4j.protobuf.chat.ChatMute;
 import it.auties.whatsapp4j.protobuf.contact.Contact;
-import it.auties.whatsapp4j.protobuf.info.ContextInfo;
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.request.model.Request;
@@ -481,8 +480,7 @@ public class WhatsappDataManager {
     }
 
     private void processMessage(@NotNull Chat chat, @NotNull MessageInfo message) {
-        var protocol = message.container() != null && message.container().protocolMessage() != null;
-        if (protocol) {
+        if (message.container().isServerMessage()) {
             // TODO: This message could also be an history sync, handle this
             findMessageById(chat, message.container().protocolMessage().key().id()).ifPresent(oldMessage -> {
                 chat.messages().remove(oldMessage);

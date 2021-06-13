@@ -9,9 +9,9 @@ import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.protobuf.chat.Chat;
+import it.auties.whatsapp4j.protobuf.chat.GroupAction;
 import it.auties.whatsapp4j.protobuf.chat.GroupPolicy;
 import it.auties.whatsapp4j.protobuf.chat.GroupSetting;
-import it.auties.whatsapp4j.protobuf.chat.GroupAction;
 import it.auties.whatsapp4j.protobuf.contact.Contact;
 import it.auties.whatsapp4j.protobuf.contact.ContactStatus;
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
@@ -51,8 +51,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static it.auties.whatsapp4j.utils.internal.CypherUtils.*;
 import static it.auties.whatsapp4j.utils.WhatsappUtils.*;
+import static it.auties.whatsapp4j.utils.internal.CypherUtils.*;
 
 /**
  * This class is an interface between this API and WhatsappWeb's WebClient.

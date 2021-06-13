@@ -1,7 +1,7 @@
 package it.auties.whatsapp4j.media;
 
 import it.auties.whatsapp4j.binary.BinaryArray;
-import it.auties.whatsapp4j.protobuf.message.MediaMessageType;
+import it.auties.whatsapp4j.protobuf.message.model.MediaMessageType;
 import jakarta.validation.constraints.NotNull;
 
 /**

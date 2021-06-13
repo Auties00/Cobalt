@@ -1,10 +1,11 @@
 package it.auties.whatsapp4j.protobuf.model;
 
-import com.fasterxml.jackson.annotation.*;
-import java.util.*;
-
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
+
+import java.util.Arrays;
 
 @AllArgsConstructor
 @NoArgsConstructor

@@ -1,12 +1,12 @@
 package it.auties.whatsapp4j.protobuf.info;
 
-import com.fasterxml.jackson.annotation.*;
-import java.util.*;
-
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.api.WhatsappAPI;
-import it.auties.whatsapp4j.protobuf.contact.Contact;
 import lombok.*;
 import lombok.experimental.Accessors;
+
+import java.util.Arrays;
 
 /**
  * A model class that holds the information related to an ad reply.

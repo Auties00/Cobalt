@@ -1,14 +1,16 @@
 package it.auties.whatsapp4j.binary;
 
 import it.auties.protobuf.decoder.ProtobufDecoder;
-import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
+import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.utils.internal.Validate;
 import jakarta.validation.constraints.NotNull;
 import lombok.SneakyThrows;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 

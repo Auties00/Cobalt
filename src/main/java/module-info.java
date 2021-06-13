@@ -9,8 +9,13 @@ open module whatsapp4j {
     exports it.auties.whatsapp4j.protobuf.chat;
     exports it.auties.whatsapp4j.protobuf.contact;
     exports it.auties.whatsapp4j.protobuf.info;
-    exports it.auties.whatsapp4j.protobuf.message;
     exports it.auties.whatsapp4j.protobuf.model;
+    exports it.auties.whatsapp4j.protobuf.message.model;
+    exports it.auties.whatsapp4j.protobuf.message.standard;
+    exports it.auties.whatsapp4j.protobuf.message.device;
+    exports it.auties.whatsapp4j.protobuf.message.business;
+    exports it.auties.whatsapp4j.protobuf.message.server;
+    exports it.auties.whatsapp4j.protobuf.message.security;
 
     requires com.fasterxml.jackson.databind;
     requires com.google.common;
@@ -22,5 +27,5 @@ open module whatsapp4j {
     requires jakarta.validation;
     requires jakarta.websocket.api;
 
-    requires lombok;
+    requires static lombok;
 }

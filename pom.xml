@@ -219,18 +219,19 @@
     </build>
 
     <dependencies>
-        <!-- Cryptographic dependencies -->
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk15on</artifactId>
-            <version>${bouncy.castle.version}</version>
-        </dependency>
-
         <!-- Project lombok, used for annotations -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- Cryptographic dependencies -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk15on</artifactId>
+            <version>${bouncy.castle.version}</version>
         </dependency>
 
         <!-- Jakarta EE 9 Modular Libraries -->
@@ -252,7 +253,7 @@
             <version>${ee.modules}</version>
         </dependency>
 
-        <!-- ModernProtoc - Protobuf -->
+        <!-- ModernProtoc, used to decode and encode protobuf objects -->
         <dependency>
             <groupId>com.github.auties00</groupId>
             <artifactId>protoc-api</artifactId>

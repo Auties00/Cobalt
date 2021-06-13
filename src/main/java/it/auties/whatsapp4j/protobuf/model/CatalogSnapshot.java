@@ -1,9 +1,11 @@
 package it.auties.whatsapp4j.protobuf.model;
 
-import com.fasterxml.jackson.annotation.*;
-
-import it.auties.whatsapp4j.protobuf.message.ImageMessage;
-import lombok.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import it.auties.whatsapp4j.protobuf.message.standard.ImageMessage;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
 @AllArgsConstructor
