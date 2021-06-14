@@ -1,6 +1,6 @@
 package org.example.whatsapp;
 
-import it.auties.whatsapp4j.api.WhatsappAPI;
+import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
 
 // This is the main class of our bot
 public class WhatsappBot {

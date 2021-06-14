@@ -1,4 +1,4 @@
-package it.auties.whatsapp4j.api;
+package it.auties.whatsapp4j.whatsapp;
 
 import it.auties.whatsapp4j.binary.BinaryArray;
 import lombok.NonNull;
@@ -10,7 +10,7 @@ import lombok.experimental.Accessors;
 import java.util.function.Function;
 
 /**
- * A configuration class used to specify the behaviour of {@link it.auties.whatsapp4j.api.WhatsappAPI}.
+ * A configuration class used to specify the behaviour of {@link it.auties.whatsapp4j.whatsapp.WhatsappAPI}.
  * Each field is immutable, this means that once this class has been initialized, cannot be changed.
  * If reflection is used, it is not guaranteed that the settings will effectively change.
  * This class should be configured using its builder, accessible using {@link WhatsappConfiguration#builder()}.

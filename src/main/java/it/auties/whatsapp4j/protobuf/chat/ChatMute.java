@@ -1,6 +1,6 @@
 package it.auties.whatsapp4j.protobuf.chat;
 
-import it.auties.whatsapp4j.api.WhatsappAPI;
+import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
 import lombok.NonNull;
 
 import java.time.Instant;

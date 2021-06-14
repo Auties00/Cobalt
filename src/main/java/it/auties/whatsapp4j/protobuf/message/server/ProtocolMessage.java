@@ -2,8 +2,7 @@ package it.auties.whatsapp4j.protobuf.message.server;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.whatsapp4j.api.WhatsappAPI;
-import it.auties.whatsapp4j.protobuf.message.model.Message;
+import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.message.model.MessageKey;
 import it.auties.whatsapp4j.protobuf.message.model.ServerMessage;
 import it.auties.whatsapp4j.protobuf.model.HistorySyncNotification;

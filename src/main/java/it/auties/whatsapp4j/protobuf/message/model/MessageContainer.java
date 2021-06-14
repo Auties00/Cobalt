@@ -2,7 +2,7 @@ package it.auties.whatsapp4j.protobuf.message.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.whatsapp4j.api.WhatsappAPI;
+import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.message.business.HighlyStructuredMessage;
 import it.auties.whatsapp4j.protobuf.message.business.ProductMessage;
 import it.auties.whatsapp4j.protobuf.message.business.TemplateButtonReplyMessage;
