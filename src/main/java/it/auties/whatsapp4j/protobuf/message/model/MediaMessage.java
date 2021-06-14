@@ -1,6 +1,6 @@
 package it.auties.whatsapp4j.protobuf.message.model;
 
-import it.auties.whatsapp4j.api.WhatsappAPI;
+import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.message.standard.*;
 import it.auties.whatsapp4j.utils.internal.CypherUtils;
 import lombok.NonNull;

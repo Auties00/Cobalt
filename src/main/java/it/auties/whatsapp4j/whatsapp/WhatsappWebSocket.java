@@ -1,8 +1,7 @@
-package it.auties.whatsapp4j.socket;
+package it.auties.whatsapp4j.whatsapp;
 
-import it.auties.whatsapp4j.api.WhatsappAPI;
-import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.binary.BinaryArray;
+import it.auties.whatsapp4j.binary.BinaryDecoder;
 import it.auties.whatsapp4j.binary.BinaryFlag;
 import it.auties.whatsapp4j.binary.BinaryMetric;
 import it.auties.whatsapp4j.listener.WhatsappListener;
@@ -24,32 +23,28 @@ import it.auties.whatsapp4j.response.model.binary.BinaryResponse;
 import it.auties.whatsapp4j.response.model.common.Response;
 import it.auties.whatsapp4j.response.model.json.JsonListResponse;
 import it.auties.whatsapp4j.response.model.json.JsonResponse;
-import it.auties.whatsapp4j.serialization.BinaryMessageDecoder;
-import it.auties.whatsapp4j.serialization.BinaryMessageEncoder;
-import it.auties.whatsapp4j.serialization.JsonMessageDecoder;
-import it.auties.whatsapp4j.serialization.JsonMessageEncoder;
+import it.auties.whatsapp4j.utils.internal.CypherUtils;
 import it.auties.whatsapp4j.utils.internal.Validate;
 import it.auties.whatsapp4j.utils.internal.WhatsappQRCode;
 import lombok.NonNull;
-import jakarta.websocket.*;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static it.auties.whatsapp4j.utils.WhatsappUtils.*;
 import static it.auties.whatsapp4j.utils.internal.CypherUtils.*;
@@ -59,38 +54,43 @@ import static it.auties.whatsapp4j.utils.internal.CypherUtils.*;
  * This methods should not be used by any project, excluding obviously WhatsappWeb4j.
  * Instead, {@link WhatsappAPI} should be used.
  */
-@ClientEndpoint(configurator = WhatsappWebSocketConfiguration.class, decoders = {JsonMessageDecoder.class, BinaryMessageDecoder.class}, encoders = {JsonMessageEncoder.class, BinaryMessageEncoder.class})
 @RequiredArgsConstructor
 @Data
 @Accessors(fluent = true)
-public class WhatsappWebSocket {
-    private Session session;
+public class WhatsappWebSocket implements WebSocket.Listener {
+    private WebSocket socket;
     private boolean loggedIn;
     private final @NonNull ScheduledExecutorService pingService;
-    private final @NonNull WebSocketContainer webSocketContainer;
     private final @NonNull WhatsappDataManager whatsappManager;
     private final @NonNull WhatsappKeysManager whatsappKeys;
     private final @NonNull WhatsappConfiguration options;
     private final @NonNull WhatsappQRCode qrCode;
+    private final @NonNull BinaryDecoder decoder;
 
     public WhatsappWebSocket(@NonNull WhatsappConfiguration options) {
-        this(Executors.newSingleThreadScheduledExecutor(), ContainerProvider.getWebSocketContainer(), WhatsappDataManager.singletonInstance(), WhatsappKeysManager.singletonInstance(), options, new WhatsappQRCode());
-        webSocketContainer.setDefaultMaxSessionIdleTimeout(Duration.ofDays(30).toMillis());
+        this(Executors.newSingleThreadScheduledExecutor(), WhatsappDataManager.singletonInstance(), WhatsappKeysManager.singletonInstance(), options, new WhatsappQRCode(), new BinaryDecoder());
     }
 
-    @OnOpen
-    public void onOpen(@NonNull Session session) {
-        if (this.session == null || !this.session.isOpen()) session(session);
-        new InitialRequest<InitialResponse>(options, whatsappKeys) {}.send(session).thenAccept(this::handleInitialMessage);
+    @Override
+    public void onOpen(WebSocket socket) {
+        System.out.println(socket);
+        if (this.socket == null) {
+            socket(socket);
+        }
+
+        new InitialRequest<InitialResponse>(options, whatsappKeys) {}
+                .send(socket())
+                .thenAccept(this::handleInitialMessage);
     }
 
     private void handleInitialMessage(@NonNull InitialResponse response) {
-        if (whatsappKeys.mayRestore()) {
-            new TakeOverRequest<TakeOverResponse>(options, whatsappKeys) {}.send(session()).thenAccept(this::solveChallenge);
-            return;
+        if (!whatsappKeys.mayRestore()) {
+            generateQrCode(response);
         }
 
-        generateQrCode(response);
+        new TakeOverRequest<TakeOverResponse>(options, whatsappKeys) {}
+                .send(socket())
+                .thenAccept(this::solveChallenge);
     }
 
     private void generateQrCode(@NonNull InitialResponse response) {
@@ -124,7 +124,7 @@ public class WhatsappWebSocket {
         var signedChallenge = hmacSha256(challenge, Objects.requireNonNull(whatsappKeys.macKey()));
 
         var request = new SolveChallengeRequest<SimpleStatusResponse>(options, whatsappKeys, signedChallenge) {};
-        request.send(session()).thenAccept(result -> Validate.isTrue(result.status() == 200, "Could not solve whatsapp challenge for server and client token renewal: %s".formatted(result)));
+        request.send(socket()).thenAccept(result -> Validate.isTrue(result.status() == 200, "Could not solve whatsapp challenge for server and client token renewal: %s".formatted(result)));
     }
 
     private void login(@NonNull UserInformationResponse response) {
@@ -144,8 +144,14 @@ public class WhatsappWebSocket {
         whatsappKeys.initializeKeys(response.serverToken(), response.clientToken(), keysDecrypted.cut(32), keysDecrypted.slice(32, 64));
     }
 
-    @OnMessage
-    public void onMessage(@NonNull Response<?> response) {
+    @Override
+    public CompletionStage<?> onText(WebSocket webSocket, @NonNull CharSequence data, boolean last) {
+        handleTextMessage(data);
+        return null;
+    }
+
+    private void handleTextMessage(@NonNull CharSequence data) {
+        var response = Response.fromTaggedResponse(String.valueOf(data));
         if (response instanceof JsonListResponse listResponse) {
             handleList(listResponse);
             return;
@@ -175,22 +181,38 @@ public class WhatsappWebSocket {
         }
     }
 
-    @OnMessage
-    public void onBinaryMessage(@NonNull BinaryResponse response) {
+    @Override
+    public CompletionStage<?> onBinary(WebSocket webSocket, @NonNull ByteBuffer msg, boolean last) {
+        Validate.isTrue(msg.get(0) != '!', "Server pong from whatsapp, why did this get through?");
+
+        var binaryMessage = BinaryArray.forArray(msg.array());
+        var tagAndMessagePair = binaryMessage.indexOf(',').map(binaryMessage::split).orElseThrow();
+
+        var messageTag = tagAndMessagePair.key().toString();
+        var messageContent = tagAndMessagePair.value();
+
+        var message = messageContent.slice(32);
+        var hmacValidation = CypherUtils.hmacSha256(message, Objects.requireNonNull(whatsappKeys.macKey()));
+        Validate.isTrue(hmacValidation.equals(messageContent.cut(32)), "Cannot read message: Hmac validation failed!", SecurityException.class);
+
+        var decryptedMessage = CypherUtils.aesDecrypt(message, Objects.requireNonNull(whatsappKeys.encKey()));
+        var response = new BinaryResponse(messageTag, decoder.decodeDecryptedMessage(decryptedMessage));
         if (whatsappManager.resolvePendingRequest(response.tag(), response)) {
-            return;
+            return null;
         }
 
         whatsappManager.digestWhatsappNode(this, response.content());
+        return null;
     }
 
-    @OnError
-    public void onError(@NonNull Throwable throwable) {
-        throwable.printStackTrace();
+    @Override
+    public void onError(WebSocket webSocket, @NonNull Throwable error) {
+        error.printStackTrace();
     }
 
     public void connect() {
         Validate.isTrue(!loggedIn, "WhatsappAPI: Cannot establish a connection with whatsapp as one already exists", IllegalStateException.class);
+        System.out.println("Connect");
         openConnection();
         pingService.scheduleAtFixedRate(this::sendPing, 0, 1, TimeUnit.MINUTES);
     }
@@ -199,25 +221,36 @@ public class WhatsappWebSocket {
     public void disconnect(String reason, boolean logout, boolean reconnect) {
         Validate.isTrue(loggedIn, "WhatsappAPI: Cannot terminate the connection with whatsapp as it doesn't exist", IllegalStateException.class);
         whatsappManager.clear();
-        if (logout) new LogOutRequest(options) {}.send(session()).thenRun(whatsappKeys::deleteKeysFromMemory);
-        session().close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, reason));
+        if (logout) new LogOutRequest(options) {}.send(socket()).thenRun(whatsappKeys::deleteKeysFromMemory);
+        socket().sendClose(WebSocket.NORMAL_CLOSURE, reason);
+        socket(null);
         whatsappManager.listeners().forEach(WhatsappListener::onDisconnected);
         if (reconnect) openConnection();
     }
 
     @SneakyThrows
     private void openConnection() {
-        webSocketContainer.connectToServer(this, URI.create(options.whatsappUrl()));
+        HttpClient.newHttpClient()
+                .newWebSocketBuilder()
+                .header("Origin", "https://web.whatsapp.com")
+                .header("Host", "web.whatsapp.com")
+                .connectTimeout(Duration.of(30, ChronoUnit.SECONDS))
+                .buildAsync(URI.create(options.whatsappUrl()), this)
+                .exceptionallyAsync(this::handleConnectionError);
+    }
+
+    private WebSocket handleConnectionError(Throwable ex) {
+        throw new RuntimeException("Cannot open connection with WhatsappWeb", ex);
     }
 
     @SneakyThrows
     private void sendPing() {
+        var request = socket.sendPing(ByteBuffer.allocate(0));
         if (options.async()) {
-            session().getAsyncRemote().sendPing(ByteBuffer.allocate(0));
             return;
         }
 
-        session.getBasicRemote().sendPing(ByteBuffer.allocate(0));
+        request.get();
     }
 
     @SneakyThrows
@@ -332,7 +365,7 @@ public class WhatsappWebSocket {
 
     @SneakyThrows
     private void createMediaConnection() {
-        var connection = new MediaConnectionRequest<MediaConnectionResponse>(options) {}.send(session()).get().connection();
+        var connection = new MediaConnectionRequest<MediaConnectionResponse>(options) {}.send(socket()).get().connection();
         whatsappManager.mediaConnection(connection);
         scheduleMediaConnection(connection.ttl());
     }
@@ -399,12 +432,12 @@ public class WhatsappWebSocket {
         whatsappManager.callOnListenerThread(() -> whatsappManager.listeners().forEach(whatsappListener -> whatsappListener.onListResponse(response.content())));
     }
 
-    public @NonNull Session session() {
-        return Objects.requireNonNull(session, "WhatsappAPI: The session linked to the WebSocket is null");
+    public @NonNull WebSocket socket() {
+        return Objects.requireNonNull(socket, "WhatsappAPI: The session linked to the WebSocket is null");
     }
 
     public @NonNull CompletableFuture<ChatResponse> queryChat(@NonNull String jid) {
         var node = new Node("query", attributes(attr("type", "chat"), attr("jid", jid)), null);
-        return new BinaryRequest<ChatResponse>(options, node, BinaryFlag.IGNORE, BinaryMetric.QUERY_CHAT) {}.send(session());
+        return new BinaryRequest<ChatResponse>(options, node, BinaryFlag.IGNORE, BinaryMetric.QUERY_CHAT) {}.send(socket());
     }
 }

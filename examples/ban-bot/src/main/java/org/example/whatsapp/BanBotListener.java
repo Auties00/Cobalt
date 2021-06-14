@@ -1,6 +1,6 @@
 package org.example.whatsapp;
 
-import it.auties.whatsapp4j.api.WhatsappAPI;
+import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
 import it.auties.whatsapp4j.listener.RegisterListener;
 import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.protobuf.chat.Chat;

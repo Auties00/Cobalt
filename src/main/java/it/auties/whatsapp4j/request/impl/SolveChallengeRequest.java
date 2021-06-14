@@ -1,6 +1,6 @@
 package it.auties.whatsapp4j.request.impl;
 
-import it.auties.whatsapp4j.api.WhatsappConfiguration;
+import it.auties.whatsapp4j.whatsapp.WhatsappConfiguration;
 import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.request.model.JsonRequest;

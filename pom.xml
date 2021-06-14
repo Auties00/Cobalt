@@ -99,11 +99,11 @@
                     <target>${java.version}</target>
                     <release>${java.version}</release>
                     <annotationProcessorPaths>
-                        <annotationProcessorPath>
+                        <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                             <version>${lombok.version}</version>
-                        </annotationProcessorPath>
+                        </path>
                     </annotationProcessorPaths>
                     <compilerArgs>
                         <compilerArg>--enable-preview</compilerArg>
@@ -232,13 +232,6 @@
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk15on</artifactId>
             <version>${bouncy.castle.version}</version>
-        </dependency>
-
-        <!-- Jakarta EE 9 Modular Libraries -->
-        <dependency>
-            <groupId>com.guicedee.services</groupId>
-            <artifactId>undertow-websockets-jsr</artifactId>
-            <version>${ee.modules}</version>
         </dependency>
 
         <!-- Zxing -->

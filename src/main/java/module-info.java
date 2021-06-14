@@ -1,5 +1,5 @@
 open module whatsapp4j {
-    exports it.auties.whatsapp4j.api;
+    exports it.auties.whatsapp4j.whatsapp;
     exports it.auties.whatsapp4j.listener;
     exports it.auties.whatsapp4j.utils;
     exports it.auties.whatsapp4j.manager;
@@ -24,7 +24,6 @@ open module whatsapp4j {
     requires java.prefs;
     requires java.net.http;
     requires java.compiler;
-    requires jakarta.websocket.api;
 
     requires static lombok;
 }

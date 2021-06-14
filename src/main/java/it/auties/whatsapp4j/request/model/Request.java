@@ -1,21 +1,21 @@
 package it.auties.whatsapp4j.request.model;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import it.auties.whatsapp4j.api.WhatsappAPI;
-import it.auties.whatsapp4j.api.WhatsappConfiguration;
+import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
+import it.auties.whatsapp4j.whatsapp.WhatsappConfiguration;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.response.model.common.Response;
 import it.auties.whatsapp4j.response.model.common.ResponseModel;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import lombok.NonNull;
-import jakarta.websocket.Session;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
 import java.lang.reflect.ParameterizedType;
+import java.net.http.WebSocket;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -30,10 +30,11 @@ import java.util.concurrent.CompletableFuture;
  *
  * @param <B> the type of the body
  * @param <M> the type of the model
+ * @param <E> the type of the encoded message
  */
 @RequiredArgsConstructor
 @Accessors(fluent = true, chain = true)
-public sealed abstract class Request<B, M extends ResponseModel> permits BinaryRequest, JsonRequest {
+public sealed abstract class Request<B, M extends ResponseModel, E> permits BinaryRequest, JsonRequest {
     /**
      * A singleton instance of WhatsappDataManager
      */
@@ -92,7 +93,14 @@ public sealed abstract class Request<B, M extends ResponseModel> permits BinaryR
      * @param session the WhatsappWeb's WebSocket session
      * @return this request
      */
-    public abstract CompletableFuture<M> send(@NonNull Session session);
+    public abstract @NonNull CompletableFuture<M> send(@NonNull WebSocket session);
+
+    /**
+     * Encodes and returns this message
+     *
+     * @return an object to send to WhatsappWeb's WebSocket
+     */
+    public abstract @NonNull E encode();
 
     /**
      * Completes this request using {@code response}
