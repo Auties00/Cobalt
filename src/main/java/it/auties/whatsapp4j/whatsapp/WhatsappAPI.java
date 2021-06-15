@@ -16,6 +16,7 @@ import it.auties.whatsapp4j.protobuf.message.model.ContextualMessage;
 import it.auties.whatsapp4j.protobuf.message.model.Message;
 import it.auties.whatsapp4j.protobuf.message.model.MessageContainer;
 import it.auties.whatsapp4j.protobuf.message.model.MessageKey;
+import it.auties.whatsapp4j.protobuf.message.standard.TextMessage;
 import it.auties.whatsapp4j.protobuf.model.Messages;
 import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.request.impl.SubscribeUserPresenceRequest;
@@ -169,6 +170,32 @@ public class WhatsappAPI {
      */
     public @NonNull CompletableFuture<SimpleStatusResponse> subscribeToContactPresence(@NonNull Contact contact) {
         return new SubscribeUserPresenceRequest<SimpleStatusResponse>(configuration, contact.jid()) {}.send(socket.socket());
+    }
+
+    /**
+     * Builds and sends a {@link MessageInfo} from a chat and a message
+     *
+     * @param chat    the chat where the message should be sent
+     * @param message the message to send
+     * @return a CompletableFuture that resolves in a MessageResponse wrapping the status of the message request and, if the status == 200, the time in seconds the message was registered on the server
+     */
+    public @NonNull CompletableFuture<MessageResponse> sendMessage(@NonNull Chat chat, @NonNull String message) {
+        var key = new MessageKey(chat);
+        var messageContainer = new MessageContainer(message);
+        return sendMessage(new MessageInfo(key, messageContainer));
+    }
+
+    /**
+     * Builds and sends a {@link MessageInfo} from a chat, a message and a quoted message
+     *
+     * @param chat          the chat where the message should be sent
+     * @param message       the message to send
+     * @param quotedMessage the message that {@code message} should quote
+     * @return a CompletableFuture that resolves in a MessageResponse wrapping the status of the message request and, if the status == 200, the time in seconds the message was registered on the server
+     */
+    public @NonNull CompletableFuture<MessageResponse> sendMessage(@NonNull Chat chat, @NonNull String message, @NonNull MessageInfo quotedMessage) {
+        var messageContext = new ContextInfo(quotedMessage);
+        return sendMessage(chat, new TextMessage(message), messageContext);
     }
 
     /**
