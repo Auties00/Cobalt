@@ -18,7 +18,7 @@ open module whatsapp4j {
     exports it.auties.whatsapp4j.protobuf.message.security;
 
     requires com.fasterxml.jackson.databind;
-    requires com.google.common;
+    requires com.google.zxing;
     requires it.auties.protoc.api;
     requires org.bouncycastle.provider;
     requires java.prefs;

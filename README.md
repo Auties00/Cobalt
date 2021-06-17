@@ -3,7 +3,7 @@
 ### What is WhatsappWeb4j
 
 WhatsappWeb4j is a standalone library built to interact with [WhatsappWeb](https://web.whatsapp.com/). This means that no browser, application or
-any additional software is necessary to use this library. This library was built for [Java 16](https://openjdk.java.net/projects/jdk/16/) and [JakartaEE 9](https://jakarta.ee/release/9/). 
+any additional software is necessary to use this library. This library was built for [Java 16](https://openjdk.java.net/projects/jdk/16/). 
 Support for Java 11, the latest LTS as of this date, will come soon. Any help to this library is welcomed as long as the coding style of the project is respected. 
 
 ### How to install 
@@ -64,15 +64,16 @@ var api = new WhatsappAPI(configuration);
 ```
 
 Now create a [WhatsappListener](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/listener/WhatsappListener.html), remember to implement only the methods that you need:
+
 ```java
 public class YourAwesomeListener implements WhatsappListener {
-    public void onLoggedIn(UserInformationResponse info, boolean firstLogin) {
-       System.out.println("Connected :)");
-    }
-    
-    public void onDisconnected() {
-       System.out.println("Disconnected :(");
-    }
+   public void onLoggedIn(@NonNull UserInformationResponse info) {
+      System.out.println("Connected :)");
+   }
+
+   public void onDisconnected() {
+      System.out.println("Disconnected :(");
+   }
 }
 ```
 
@@ -602,7 +603,7 @@ var future = api.leave(group);  // A future for the request
 var response = future.get(); // Wait for the future to complete
 ```
 
-##### Get group's invite code
+##### Query a group's invite code
 ``` java
 var future = api.queryGroupInviteCode(group);  // A future for the request
 var response = future.get(); // Wait for the future to complete
