@@ -11,7 +11,7 @@ import it.auties.whatsapp4j.request.model.Request;
 import it.auties.whatsapp4j.response.impl.json.PhoneBatteryResponse;
 import it.auties.whatsapp4j.response.model.common.Response;
 import it.auties.whatsapp4j.response.model.json.JsonResponse;
-import it.auties.whatsapp4j.whatsapp.WhatsappWebSocket;
+import it.auties.whatsapp4j.whatsapp.internal.WhatsappWebSocket;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import lombok.NonNull;
 import lombok.AccessLevel;
@@ -41,7 +41,7 @@ public class WhatsappDataManager {
     private final @NonNull ExecutorService requestsService;
     private final @NonNull List<Chat> chats;
     private final @NonNull List<Contact> contacts;
-    private final @NonNull List<Request<?, ?, ?>> pendingRequests;
+    private final @NonNull List<Request<?, ?>> pendingRequests;
     private final @NonNull List<WhatsappListener> listeners;
     private final long initializationTimeStamp;
     private String phoneNumberJid;
@@ -135,7 +135,7 @@ public class WhatsappDataManager {
      * @param tag the tag to search
      * @return a non empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
-    public @NonNull Optional<Request<?, ?, ?>> findPendingRequest(@NonNull String tag) {
+    public @NonNull Optional<Request<?, ?>> findPendingRequest(@NonNull String tag) {
         return pendingRequests.stream().filter(req -> req.tag().equals(tag)).findAny();
     }
 

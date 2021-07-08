@@ -12,7 +12,7 @@ import it.auties.whatsapp4j.response.impl.json.BlocklistResponse;
 import it.auties.whatsapp4j.response.impl.json.PhoneBatteryResponse;
 import it.auties.whatsapp4j.response.impl.json.PropsResponse;
 import it.auties.whatsapp4j.response.impl.json.UserInformationResponse;
-import it.auties.whatsapp4j.whatsapp.WhatsappWebSocket;
+import it.auties.whatsapp4j.whatsapp.internal.WhatsappWebSocket;
 import lombok.NonNull;
 
 import java.util.List;

@@ -20,7 +20,7 @@ public abstract class InitialRequest<M extends JsonResponseModel> extends JsonRe
 
     @Override
     public @NonNull List<Object> buildBody() {
-        final var version = List.of(2, 2049, 10);
+        final var version = List.of(2, 2123, 8);
         final var description = List.of(configuration.description(), configuration.shortDescription());
         return List.of("admin", "init", version, description, whatsappKeys.clientId(), true);
     }

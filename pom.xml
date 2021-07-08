@@ -84,6 +84,7 @@
         <bouncy.castle.version>1.68</bouncy.castle.version>
         <zxing.version>3.4.1</zxing.version>
         <protoc.version>1.3</protoc.version>
+        <tyrus.version>2.0.0</tyrus.version>
         <delombok.output>${project.build.directory}\delomboked-sources</delombok.output>
     </properties>
 
@@ -219,6 +220,13 @@
     </build>
 
     <dependencies>
+        <!-- WebSocket client, TOOD: Replace with native implementation when bug fix is found -->
+        <dependency>
+            <groupId>org.glassfish.tyrus</groupId>
+            <artifactId>tyrus-server</artifactId>
+            <version>${tyrus.version}</version>
+        </dependency>
+
         <!-- Project lombok, used for annotations -->
         <dependency>
             <groupId>org.projectlombok</groupId>

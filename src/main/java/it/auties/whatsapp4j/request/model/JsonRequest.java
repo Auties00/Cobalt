@@ -6,8 +6,11 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
 import it.auties.whatsapp4j.whatsapp.WhatsappConfiguration;
 import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
+import jakarta.websocket.EncodeException;
+import jakarta.websocket.Session;
 import lombok.NonNull;
 
+import java.io.IOException;
 import java.net.http.WebSocket;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -20,7 +23,7 @@ import java.util.concurrent.TimeoutException;
  *
  * @param <M> the type of the model
  */
-public abstract non-sealed class JsonRequest<M extends JsonResponseModel> extends Request<List<Object>, M, CharSequence> {
+public abstract non-sealed class JsonRequest<M extends JsonResponseModel> extends Request<List<Object>, M> {
     /**
      * An instance of Jackson's writer
      */
@@ -51,37 +54,24 @@ public abstract non-sealed class JsonRequest<M extends JsonResponseModel> extend
      * @param session the WhatsappWeb's WebSocket session
      * @return this request
      **/
-    public @NonNull CompletableFuture<M> send(@NonNull WebSocket session) {
-        var request = session.sendText(encode(), true);
-        if (configuration.async()) {
-            request.whenCompleteAsync((res, ex) -> {
-                if(ex != null){
-                    throw new RuntimeException("An exception occurred while sending a JSON message to Whatsapp", ex);
-                }
-
-                MANAGER.pendingRequests().add(this);
-                if(noResponse()) future.complete(null);
-            });
-
-            return future();
-        }
-
-        try {
-            request.get(30, TimeUnit.SECONDS);
-            MANAGER.pendingRequests().add(this);
-            if(noResponse()) future.complete(null);
-            return future();
-        } catch (ExecutionException | InterruptedException | TimeoutException ex) {
-            throw new RuntimeException("An exception occurred while sending a JSON message to Whatsapp", ex);
-        }
-    }
-
     @Override
-    public @NonNull CharSequence encode() {
+    public @NonNull CompletableFuture<M> send(@NonNull Session session) {
         try {
-            return "%s,%s".formatted(tag(), JACKSON.writeValueAsString(buildBody()));
-        }catch (JsonProcessingException ex){
-            throw new RuntimeException("An exception occurred while encoding a JSON message", ex);
+            var body = buildBody();
+            var json = JACKSON.writeValueAsString(body);
+            var request = "%s,%s".formatted(tag, json);
+            if (configuration.async()) {
+                session.getAsyncRemote().sendObject(request, __ -> MANAGER.pendingRequests().add(this));
+                return future();
+            }
+
+            session.getBasicRemote().sendObject(request);
+            MANAGER.pendingRequests().add(this);
+            return future();
+        }catch (IOException exception){
+            throw new RuntimeException("An exception occurred while sending a JSON message", exception);
+        }catch (EncodeException exception){
+            throw new RuntimeException("An exception occurred while encoding a JSON message", exception);
         }
     }
 }

@@ -17,6 +17,7 @@ open module whatsapp4j {
     exports it.auties.whatsapp4j.protobuf.message.server;
     exports it.auties.whatsapp4j.protobuf.message.security;
 
+    requires jakarta.websocket;
     requires com.fasterxml.jackson.databind;
     requires com.google.zxing;
     requires it.auties.protoc.api;
@@ -25,5 +26,6 @@ open module whatsapp4j {
     requires java.net.http;
     requires java.compiler;
 
+    requires transitive java.logging;
     requires static lombok;
 }

@@ -10,12 +10,14 @@ import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.response.model.common.ResponseModel;
 import it.auties.whatsapp4j.utils.internal.CypherUtils;
+import jakarta.websocket.EncodeException;
+import jakarta.websocket.Session;
 import lombok.NonNull;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 
-import java.net.http.WebSocket;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -29,7 +31,7 @@ import java.util.concurrent.TimeoutException;
  * @param <M> the type of the model
  */
 @Accessors(fluent = true, chain = true)
-public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends Request<Node, M, ByteBuffer>{
+public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends Request<Node, M>{
     private static final WhatsappKeysManager KEYS_MANAGER = WhatsappKeysManager.singletonInstance();
     private static final BinaryEncoder ENCODER = new BinaryEncoder();
     
@@ -78,37 +80,27 @@ public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends 
 
     /**
      * Sends a binary request to the WebSocket linked to {@code session}.
+     * This message is encoded using {@link BinaryRequest#ENCODER} and then encrypted using {@code whatsappKeys}.
      *
      * @param session the WhatsappWeb's WebSocket session
      * @return this request
      */
-    @SneakyThrows
-    public @NonNull CompletableFuture<M> send(@NonNull WebSocket session) {
-        var request = session.sendBinary(encode(), true);
-        if (configuration.async()) {
-            request.whenCompleteAsync((res, ex) -> {
-                if(ex != null){
-                    throw new RuntimeException("An exception occurred while sending a JSON message to Whatsapp", ex);
-                }
+    public CompletableFuture<M> send(@NonNull Session session) {
+        try{
+            var binaryMessage = encode();
+            if (configuration.async()) {
+                session.getAsyncRemote().sendBinary(binaryMessage, __ -> MANAGER.pendingRequests().add(this));
+                return future;
+            }
 
-                MANAGER.pendingRequests().add(this);
-                if(noResponse()) future.complete(null);
-            });
-
-            return future();
-        }
-
-        try {
-            request.get(30, TimeUnit.SECONDS);
+            session.getBasicRemote().sendBinary(binaryMessage);
             MANAGER.pendingRequests().add(this);
-            if(noResponse()) future.complete(null);
-            return future();
-        } catch (ExecutionException | InterruptedException | TimeoutException ex) {
-            throw new RuntimeException("An exception occurred while sending a JSON message to Whatsapp", ex);
+            return future;
+        }catch (IOException exception){
+            throw new RuntimeException("An exception occurred while sending a binary message", exception);
         }
     }
 
-    @Override
     public @NonNull ByteBuffer encode() {
         var messageTag = BinaryArray.forString("%s,".formatted(tag()));
         var encodedMessage = ENCODER.encodeMessage(buildBody());
@@ -120,4 +112,5 @@ public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends 
                 .merged(encrypted)
                 .toBuffer();
     }
+
 }

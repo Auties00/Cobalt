@@ -8,6 +8,7 @@ import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.response.model.common.Response;
 import it.auties.whatsapp4j.response.model.common.ResponseModel;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
+import jakarta.websocket.Session;
 import lombok.NonNull;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -30,11 +31,10 @@ import java.util.concurrent.CompletableFuture;
  *
  * @param <B> the type of the body
  * @param <M> the type of the model
- * @param <E> the type of the encoded message
  */
 @RequiredArgsConstructor
 @Accessors(fluent = true, chain = true)
-public sealed abstract class Request<B, M extends ResponseModel, E> permits BinaryRequest, JsonRequest {
+public sealed abstract class Request<B, M extends ResponseModel> permits BinaryRequest, JsonRequest {
     /**
      * A singleton instance of WhatsappDataManager
      */
@@ -93,14 +93,7 @@ public sealed abstract class Request<B, M extends ResponseModel, E> permits Bina
      * @param session the WhatsappWeb's WebSocket session
      * @return this request
      */
-    public abstract @NonNull CompletableFuture<M> send(@NonNull WebSocket session);
-
-    /**
-     * Encodes and returns this message
-     *
-     * @return an object to send to WhatsappWeb's WebSocket
-     */
-    public abstract @NonNull E encode();
+    public abstract @NonNull CompletableFuture<M> send(@NonNull Session session);
 
     /**
      * Completes this request using {@code response}
