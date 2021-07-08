@@ -21,7 +21,7 @@ Add this dependency to your dependencies in the pom:
 #### Gradle
 Add this dependency to your build.gradle:
 ```groovy
-implementation 'com.github.auties00:whatsappweb4j:2.1.1'
+implementation 'com.github.auties00:whatsappweb4j:2.1.1java -version'
 ```
 
 ### Examples

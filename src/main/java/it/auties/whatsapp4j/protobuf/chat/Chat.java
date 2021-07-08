@@ -1,6 +1,7 @@
 package it.auties.whatsapp4j.protobuf.chat;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import it.auties.whatsapp4j.response.model.json.JsonResponse;
 import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
 import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.protobuf.contact.Contact;
@@ -133,18 +134,20 @@ public class Chat {
    * @return a new instance of Chat
    */
   public static @NonNull Chat fromAttributes(@NonNull Map<String, String> attrs) {
-    var jid = attrs.get("jid");
+    var json = JsonResponse.fromMap(attrs);
+    var jid = json.getString("jid")
+            .orElseThrow(() -> new IllegalArgumentException("Cannot parse chat(%s): missing attribute jid".formatted(json)));
     return Chat.builder()
-            .displayName(attrs.getOrDefault("name", WhatsappUtils.phoneNumberFromJid(jid)))
+            .displayName(json.getString("name").orElse(WhatsappUtils.phoneNumberFromJid(jid)))
             .jid(jid)
-            .timestamp(Optional.ofNullable(attrs.get("t")).map(Long::parseUnsignedLong).orElse(ZonedDateTime.now().toEpochSecond()))
-            .newJid(attrs.get("new_jid"))
-            .unreadMessages(Integer.parseInt(attrs.get("count")))
-            .mute(new ChatMute(Integer.parseInt(attrs.get("mute"))))
-            .isSpam(Boolean.parseBoolean(attrs.get("spam")))
-            .isArchived(Boolean.parseBoolean(attrs.get("archive")))
-            .isReadOnly(Boolean.parseBoolean(attrs.get("read_only")))
-            .pinned(Long.parseLong(attrs.getOrDefault("pin", "0")))
+            .timestamp(json.getLong("t").orElse(ZonedDateTime.now().toEpochSecond()))
+            .newJid(json.getString("new_jid").orElse(null))
+            .unreadMessages(json.getInteger("count").orElse(0))
+            .mute(json.getInteger("mute").map(ChatMute::new).orElse(ChatMute.UNKNOWN))
+            .isSpam(json.getBoolean("spam"))
+            .isArchived(json.getBoolean(("archive")))
+            .isReadOnly(json.getBoolean(("read_only")))
+            .pinned(json.getLong("pin").orElse(0L))
             .build();
   }
 

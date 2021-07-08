@@ -37,6 +37,16 @@ public final class JsonResponse extends Response<Map<String, ?>> {
     }
 
     /**
+     * Constructs a new instance of JsonResponse from a Map
+     *
+     * @param json the map to wrap
+     * @return a new instance of JsonResponse with the above characteristics
+     */
+    public static @NonNull JsonResponse fromMap(@NonNull Map<String, ?> json) {
+        return new JsonResponse("json", "json", json);
+    }
+
+    /**
      * Returns if a key is present in the json that this object wraps
      *
      * @param key the key to search
@@ -63,18 +73,27 @@ public final class JsonResponse extends Response<Map<String, ?>> {
      * @return a non empty optional if the key is present, otherwise an empty optional
      */
     public @NonNull Optional<Integer> getInteger(@NonNull String key) {
-        return getObject(key, Integer.class);
+        return getString(key).map(Integer::parseInt);
     }
 
     /**
-     * Returns an Integer representing the value for the input key
+     * Returns an optional Long representing the value for the input key
      *
      * @param key the key to search
-     * @return an Integer representing the value for the input key
-     * @throws java.util.NoSuchElementException if {@code key} isn't found
+     * @return a non empty optional if the key is present, otherwise an empty optional
      */
-    public int getInt(@NonNull String key) {
-        return getObject(key, Integer.class).orElseThrow();
+    public @NonNull Optional<Long> getLong(@NonNull String key) {
+        return getString(key).map(Long::parseLong);
+    }
+
+    /**
+     * Returns a boolean representing the value for the input key
+     *
+     * @param key the key to search
+     * @return true if the key is present and true, otherwise false
+     */
+    public @NonNull boolean getBoolean(@NonNull String key) {
+        return getString(key).map(Boolean::parseBoolean).orElse(false);
     }
 
     /**
