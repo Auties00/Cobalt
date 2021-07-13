@@ -21,7 +21,7 @@ Add this dependency to your dependencies in the pom:
 #### Gradle
 Add this dependency to your build.gradle:
 ```groovy
-implementation 'com.github.auties00:whatsappweb4j:2.1.1java -version'
+implementation 'com.github.auties00:whatsappweb4j:2.1.1'
 ```
 
 ### Examples
@@ -340,11 +340,11 @@ Whatsapp Web defines several types of messages:
     - DeviceSentMessage
     - DeviceSyncMessage
 
-All of these messages implement the [Message](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/message/Message.html) interface.
+All messages implement the [Message](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/message/Message.html) interface.
 All standard messages and some Whatsapp business messages extend the [ContextualMessage](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/message/ContextualMessage.html) class which provides a [ContextInfo](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/info/ContextInfo.html) property.
 Only ContextualMessages can quote another message or be marked as forwarded. This property also exposes other useful properties for Whatsapp Business, though they are irrelevant for most use cases.
 All messages provide an all arguments' constructor, and a builder class.
-Messages are wrapped in a [MessageContainer](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/message/MessageContainer.html), a container class which can be initialized through a constructor a one argument constructor which takes any type of message, or a builder class.
+Messages are wrapped in a [MessageContainer](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/message/MessageContainer.html), a container class which can be initialized through a one argument constructor that takes any type of message, or a builder class.
 Finally, a MessageContainer is wrapped by a [MessageInfo](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/info/MessageInfo.html).
 This class provides several properties, though, for most use cases, the container, key and timestamp are enough.
 The container property has already been mentioned and explained.

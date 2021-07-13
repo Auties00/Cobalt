@@ -1,5 +1,8 @@
 package it.auties.whatsapp4j.whatsapp;
 
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.EncodeHintType;
+import com.google.zxing.common.BitMatrix;
 import it.auties.whatsapp4j.binary.BinaryArray;
 import lombok.NonNull;
 import lombok.Builder;
@@ -7,6 +10,8 @@ import lombok.Builder.Default;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -57,6 +62,14 @@ public class WhatsappConfiguration {
      */
     @Default
     private final @NonNull Function<String, Boolean> reconnectWhenDisconnected = (reason) -> true;
+
+    /**
+     * When a connection is established with WhatsappWeb's WebSocket with new secrets, a QR code is generated.
+     * This function is used to consume said QR code.
+     * By default, the QR code is printed on the terminal.
+     */
+    @Default
+    private final @NonNull Consumer<BitMatrix> qrCodeHandler = (qr) -> System.out.println(qr.toString("\033[40m  \033[0m", "\033[47m  \033[0m"));
 
     /**
      * This property determines whether the requests sent to WhatsappWeb's WebSocket should be sent asynchronously or not

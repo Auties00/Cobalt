@@ -110,7 +110,8 @@ public class WhatsappWebSocket {
         Validate.isTrue(response.status() != 429, "Out of attempts to scan the QR code", IllegalStateException.class);
         CompletableFuture.delayedExecutor(response.ttl(), TimeUnit.MILLISECONDS).execute(() -> generateQrCode(response));
         Validate.isTrue(response.ref() != null, "Cannot find ref for QR code generation, the version code is probably outdated");
-        qrCode.generateAndPrint(response.ref(), extractRawPublicKey(whatsappKeys.keyPair().getPublic()), whatsappKeys.clientId());
+        var matrix = qrCode.generate(response.ref(), extractRawPublicKey(whatsappKeys.keyPair().getPublic()), whatsappKeys.clientId());
+        options.qrCodeHandler().accept(matrix);
     }
 
     private void solveChallenge(@NonNull TakeOverResponse response) {

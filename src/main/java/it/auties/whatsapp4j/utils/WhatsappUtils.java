@@ -145,4 +145,8 @@ public class WhatsappUtils {
     public @NonNull Map.Entry<String, String> attr(@NonNull String key, @NonNull Object value) {
         return Map.entry(key, String.valueOf(value));
     }
+
+    public void isOnWhatsapp(){
+
+    }
 }

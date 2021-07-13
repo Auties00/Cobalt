@@ -263,6 +263,19 @@ public class WhatsappAPI {
     }
 
     /**
+     * Executes a query to determine whether a Whatsapp account linked
+     * to the supplied phone number exists.
+     *
+     * @param phoneNumber the phone number to check
+     * @return a CompletableFuture that resolves in a boolean that indicates the result of the query
+     */
+    public @NonNull CompletableFuture<Boolean> hasWhatsapp(@NonNull String phoneNumber) {
+        return new UserQueryRequest<SimpleStatusResponse>(configuration, phoneNumber, UserQueryRequest.QueryType.EXISTS) {}
+                .send(socket.session())
+                .thenApplyAsync(status -> status.status() == 200);
+    }
+
+    /**
      * Queries the written whatsapp status of a Contact
      *
      * @param contact the target contact

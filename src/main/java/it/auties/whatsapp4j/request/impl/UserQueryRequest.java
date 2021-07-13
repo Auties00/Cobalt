@@ -40,7 +40,8 @@ public abstract class UserQueryRequest<M extends JsonResponseModel> extends Json
         GROUP_METADATA(List.of("GroupMetadata")),
         USER_STATUS(List.of("Status")),
         GROUP_INVITE_CODE(List.of("inviteCode")),
-        GROUPS_IN_COMMON(List.of("group","common"));
+        GROUPS_IN_COMMON(List.of("group","common")),
+        EXISTS(List.of("exist"));
 
         @Getter
         private final List<String> data;
