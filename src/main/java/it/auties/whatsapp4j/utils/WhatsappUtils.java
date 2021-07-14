@@ -1,10 +1,10 @@
 package it.auties.whatsapp4j.utils;
 
-import it.auties.whatsapp4j.whatsapp.WhatsappConfiguration;
 import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.protobuf.contact.Contact;
 import it.auties.whatsapp4j.protobuf.model.Node;
+import it.auties.whatsapp4j.whatsapp.WhatsappConfiguration;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 

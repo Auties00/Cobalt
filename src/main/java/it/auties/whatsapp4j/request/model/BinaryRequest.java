@@ -1,7 +1,5 @@
 package it.auties.whatsapp4j.request.model;
 
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
-import it.auties.whatsapp4j.whatsapp.WhatsappConfiguration;
 import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.binary.BinaryEncoder;
 import it.auties.whatsapp4j.binary.BinaryFlag;
@@ -10,20 +8,17 @@ import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.response.model.common.ResponseModel;
 import it.auties.whatsapp4j.utils.internal.CypherUtils;
-import jakarta.websocket.EncodeException;
+import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
+import it.auties.whatsapp4j.whatsapp.WhatsappConfiguration;
 import jakarta.websocket.Session;
-import lombok.NonNull;
 import lombok.Getter;
-import lombok.SneakyThrows;
+import lombok.NonNull;
 import lombok.experimental.Accessors;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * An abstract model class that represents a binary request made from the client to the server
@@ -89,19 +84,24 @@ public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends 
         try{
             var binaryMessage = encode();
             if (configuration.async()) {
-                session.getAsyncRemote().sendBinary(binaryMessage, __ -> MANAGER.pendingRequests().add(this));
+                session.getAsyncRemote().sendBinary(binaryMessage, __ -> addRequest());
                 return future;
             }
 
             session.getBasicRemote().sendBinary(binaryMessage);
-            MANAGER.pendingRequests().add(this);
+            addRequest();
             return future;
         }catch (IOException exception){
             throw new RuntimeException("An exception occurred while sending a binary message", exception);
         }
     }
 
-    public @NonNull ByteBuffer encode() {
+    /**
+     * Encodes this message as a binary message readable by whatsapp web
+     *
+     * @return a non null byte buffer
+     */
+    private @NonNull ByteBuffer encode() {
         var messageTag = BinaryArray.forString("%s,".formatted(tag()));
         var encodedMessage = ENCODER.encodeMessage(buildBody());
         var encrypted = CypherUtils.aesEncrypt(encodedMessage, Objects.requireNonNull(KEYS_MANAGER.encKey()));

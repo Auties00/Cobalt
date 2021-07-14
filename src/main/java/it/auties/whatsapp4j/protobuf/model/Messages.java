@@ -2,8 +2,8 @@ package it.auties.whatsapp4j.protobuf.model;
 
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.protobuf.message.model.Message;
-import lombok.NonNull;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 
 import java.util.ArrayList;
 import java.util.Collection;

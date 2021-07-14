@@ -1,13 +1,9 @@
 package it.auties.whatsapp4j.protobuf.contact;
 
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
-import lombok.NonNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.ToString;
+import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
+import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.time.ZonedDateTime;

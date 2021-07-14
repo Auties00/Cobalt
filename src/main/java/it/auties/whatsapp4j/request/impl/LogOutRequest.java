@@ -1,8 +1,8 @@
 package it.auties.whatsapp4j.request.impl;
 
-import it.auties.whatsapp4j.whatsapp.WhatsappConfiguration;
 import it.auties.whatsapp4j.request.model.JsonRequest;
 import it.auties.whatsapp4j.response.impl.json.DiscardResponse;
+import it.auties.whatsapp4j.whatsapp.WhatsappConfiguration;
 import lombok.NonNull;
 
 import java.util.List;

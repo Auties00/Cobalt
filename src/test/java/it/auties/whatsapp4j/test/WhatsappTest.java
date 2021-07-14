@@ -1,6 +1,7 @@
 package it.auties.whatsapp4j.test;
 
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
 import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.protobuf.chat.Chat;
@@ -15,7 +16,10 @@ import it.auties.whatsapp4j.protobuf.message.standard.*;
 import it.auties.whatsapp4j.response.impl.json.UserInformationResponse;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import it.auties.whatsapp4j.utils.internal.Validate;
+import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
+import it.auties.whatsapp4j.whatsapp.WhatsappConfiguration;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import lombok.extern.java.Log;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
@@ -43,6 +47,7 @@ import java.util.concurrent.ExecutionException;
 @TestMethodOrder(OrderAnnotation.class)
 public class WhatsappTest implements WhatsappListener {
     private WhatsappAPI whatsappAPI;
+    private Path qrCode;
     private CountDownLatch latch;
     private String contactName;
     private boolean noKeys;
@@ -54,8 +59,18 @@ public class WhatsappTest implements WhatsappListener {
     public void init() throws IOException {
         loadContactName();
         log.info("Initializing api to start testing...");
-        whatsappAPI = new WhatsappAPI();
+        this.qrCode = Files.createTempFile(UUID.randomUUID().toString(), ".png");
+        log.info("QR code: " + qrCode);
+        var config = WhatsappConfiguration.builder()
+                .qrCodeHandler(this::writeToPath)
+                .build();
+        whatsappAPI = new WhatsappAPI(config);
         latch = new CountDownLatch(3);
+    }
+
+    @SneakyThrows
+    private void writeToPath(BitMatrix bitMatrix){
+        MatrixToImageWriter.writeToPath(bitMatrix, "PNG", qrCode);
     }
 
     private void loadContactName() throws IOException {

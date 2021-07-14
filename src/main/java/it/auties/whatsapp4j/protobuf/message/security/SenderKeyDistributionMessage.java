@@ -1,8 +1,8 @@
 package it.auties.whatsapp4j.protobuf.message.security;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.message.model.SecurityMessage;
+import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

@@ -1,22 +1,17 @@
 package it.auties.whatsapp4j.request.model;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
 import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
 import it.auties.whatsapp4j.whatsapp.WhatsappConfiguration;
-import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
 import jakarta.websocket.EncodeException;
 import jakarta.websocket.Session;
 import lombok.NonNull;
 
 import java.io.IOException;
-import java.net.http.WebSocket;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * An abstract model class that represents a json request made from the client to the server
@@ -61,12 +56,12 @@ public abstract non-sealed class JsonRequest<M extends JsonResponseModel> extend
             var json = JACKSON.writeValueAsString(body);
             var request = "%s,%s".formatted(tag, json);
             if (configuration.async()) {
-                session.getAsyncRemote().sendObject(request, __ -> MANAGER.pendingRequests().add(this));
+                session.getAsyncRemote().sendObject(request, __ -> addRequest());
                 return future();
             }
 
             session.getBasicRemote().sendObject(request);
-            MANAGER.pendingRequests().add(this);
+            addRequest();
             return future();
         }catch (IOException exception){
             throw new RuntimeException("An exception occurred while sending a JSON message", exception);

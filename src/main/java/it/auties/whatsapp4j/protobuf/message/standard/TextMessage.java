@@ -2,8 +2,8 @@ package it.auties.whatsapp4j.protobuf.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.message.model.ContextualMessage;
+import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;

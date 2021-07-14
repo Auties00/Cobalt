@@ -1,12 +1,12 @@
 package it.auties.whatsapp4j.request.impl;
 
 
-import it.auties.whatsapp4j.whatsapp.WhatsappConfiguration;
 import it.auties.whatsapp4j.request.model.JsonRequest;
 import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
-import lombok.NonNull;
+import it.auties.whatsapp4j.whatsapp.WhatsappConfiguration;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.experimental.Accessors;
 
 import java.util.ArrayList;

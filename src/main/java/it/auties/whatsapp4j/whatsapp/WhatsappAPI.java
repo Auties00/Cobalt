@@ -27,8 +27,8 @@ import it.auties.whatsapp4j.response.impl.binary.MessagesResponse;
 import it.auties.whatsapp4j.response.impl.json.*;
 import it.auties.whatsapp4j.utils.internal.Validate;
 import it.auties.whatsapp4j.whatsapp.internal.WhatsappWebSocket;
-import lombok.NonNull;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.experimental.Accessors;
 
 import java.time.ZonedDateTime;

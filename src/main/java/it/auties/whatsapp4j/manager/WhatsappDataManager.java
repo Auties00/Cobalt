@@ -11,13 +11,9 @@ import it.auties.whatsapp4j.request.model.Request;
 import it.auties.whatsapp4j.response.impl.json.PhoneBatteryResponse;
 import it.auties.whatsapp4j.response.model.common.Response;
 import it.auties.whatsapp4j.response.model.json.JsonResponse;
-import it.auties.whatsapp4j.whatsapp.internal.WhatsappWebSocket;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
-import lombok.NonNull;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import it.auties.whatsapp4j.whatsapp.internal.WhatsappWebSocket;
+import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.time.Instant;

@@ -10,7 +10,6 @@ import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.serialization.KeyPairDeserializer;
 import it.auties.whatsapp4j.serialization.KeyPairSerializer;
 import it.auties.whatsapp4j.utils.internal.CypherUtils;
-import lombok.NonNull;
 import lombok.*;
 import lombok.experimental.Accessors;
 

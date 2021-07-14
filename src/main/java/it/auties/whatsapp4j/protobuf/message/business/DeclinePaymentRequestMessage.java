@@ -1,9 +1,9 @@
 package it.auties.whatsapp4j.protobuf.message.business;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.message.model.MessageKey;
 import it.auties.whatsapp4j.protobuf.message.model.PaymentMessage;
+import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

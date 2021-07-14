@@ -1,22 +1,21 @@
 package it.auties.whatsapp4j.request.model;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
-import it.auties.whatsapp4j.whatsapp.WhatsappConfiguration;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.response.model.common.Response;
 import it.auties.whatsapp4j.response.model.common.ResponseModel;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
+import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
+import it.auties.whatsapp4j.whatsapp.WhatsappConfiguration;
 import jakarta.websocket.Session;
-import lombok.NonNull;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
 import java.lang.reflect.ParameterizedType;
-import java.net.http.WebSocket;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -118,5 +117,18 @@ public sealed abstract class Request<B, M extends ResponseModel> permits BinaryR
     @SuppressWarnings("unchecked")
     private @NonNull Class<M> modelClass() throws ClassCastException{
         return (Class<M>) ((ParameterizedType) this.getClass().getGenericSuperclass()).getActualTypeArguments()[0];
+    }
+
+    /**
+     * Adds this request to {@link WhatsappDataManager#pendingRequests()} if {@link Request#noResponse()} is false
+     * Otherwise the future associated with this request is immediately resolved
+     */
+    protected void addRequest() {
+        if(noResponse()){
+            future.complete(null);
+            return;
+        }
+
+        MANAGER.pendingRequests().add(this);
     }
 }

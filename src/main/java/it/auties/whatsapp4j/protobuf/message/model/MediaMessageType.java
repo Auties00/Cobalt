@@ -1,8 +1,8 @@
 package it.auties.whatsapp4j.protobuf.message.model;
 
-import lombok.NonNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.experimental.Accessors;
 
 /**

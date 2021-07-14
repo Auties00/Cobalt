@@ -8,9 +8,9 @@ import it.auties.whatsapp4j.response.model.binary.BinaryResponse;
 import it.auties.whatsapp4j.response.model.json.JsonListResponse;
 import it.auties.whatsapp4j.response.model.json.JsonResponse;
 import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
-import lombok.NonNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NonNull;
 import lombok.experimental.Accessors;
 
 import java.util.HashMap;

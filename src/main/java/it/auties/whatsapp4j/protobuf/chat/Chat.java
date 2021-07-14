@@ -1,20 +1,16 @@
 package it.auties.whatsapp4j.protobuf.chat;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.whatsapp4j.response.model.json.JsonResponse;
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
 import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.protobuf.contact.Contact;
 import it.auties.whatsapp4j.protobuf.contact.ContactStatus;
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.protobuf.model.Messages;
 import it.auties.whatsapp4j.protobuf.model.Node;
+import it.auties.whatsapp4j.response.model.json.JsonResponse;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
-import lombok.NonNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
+import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.time.ZonedDateTime;

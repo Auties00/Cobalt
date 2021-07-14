@@ -3,17 +3,16 @@ package it.auties.whatsapp4j.protobuf.info;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.protobuf.chat.Chat;
 import it.auties.whatsapp4j.protobuf.contact.Contact;
 import it.auties.whatsapp4j.protobuf.message.model.ContextualMessage;
-import it.auties.whatsapp4j.protobuf.message.server.ProtocolMessage;
-import it.auties.whatsapp4j.protobuf.message.standard.LiveLocationMessage;
+import it.auties.whatsapp4j.protobuf.message.model.Message;
 import it.auties.whatsapp4j.protobuf.message.model.MessageContainer;
 import it.auties.whatsapp4j.protobuf.message.model.MessageKey;
-import it.auties.whatsapp4j.protobuf.message.model.Message;
-import lombok.NonNull;
+import it.auties.whatsapp4j.protobuf.message.server.ProtocolMessage;
+import it.auties.whatsapp4j.protobuf.message.standard.LiveLocationMessage;
+import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -204,7 +203,6 @@ public class MessageInfo {
     this.globalStatus = MessageInfoStatus.PENDING;
     this.container = container;
     this.individualReadStatus = new HashMap<>();
-    this.container = new MessageContainer();
   }
 
 

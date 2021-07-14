@@ -1,6 +1,5 @@
 package it.auties.whatsapp4j.binary;
 
-import lombok.NonNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;

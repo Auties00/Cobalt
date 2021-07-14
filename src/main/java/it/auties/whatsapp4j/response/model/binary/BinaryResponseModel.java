@@ -4,8 +4,8 @@ import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.response.impl.binary.ChatResponse;
 import it.auties.whatsapp4j.response.impl.binary.MessagesResponse;
 import it.auties.whatsapp4j.response.model.common.ResponseModel;
-import lombok.NonNull;
 import lombok.Data;
+import lombok.NonNull;
 import lombok.experimental.Accessors;
 
 /**

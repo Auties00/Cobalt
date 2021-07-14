@@ -1,12 +1,11 @@
 package it.auties.whatsapp4j.protobuf.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.info.ContextInfo;
 import it.auties.whatsapp4j.protobuf.message.model.MediaMessage;
 import it.auties.whatsapp4j.protobuf.message.model.MediaMessageType;
 import it.auties.whatsapp4j.utils.internal.CypherUtils;
-import lombok.NonNull;
+import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;

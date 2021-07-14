@@ -1,16 +1,13 @@
 package it.auties.whatsapp4j.whatsapp;
 
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.EncodeHintType;
 import com.google.zxing.common.BitMatrix;
 import it.auties.whatsapp4j.binary.BinaryArray;
-import lombok.NonNull;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Data;
+import lombok.NonNull;
 import lombok.experimental.Accessors;
 
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 

@@ -2,12 +2,12 @@ package it.auties.whatsapp4j.protobuf.message.business;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.info.ContextInfo;
 import it.auties.whatsapp4j.protobuf.message.model.BusinessMessage;
 import it.auties.whatsapp4j.protobuf.message.model.ContextualMessage;
 import it.auties.whatsapp4j.protobuf.model.FourRowTemplate;
 import it.auties.whatsapp4j.protobuf.model.HydratedFourRowTemplate;
+import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
