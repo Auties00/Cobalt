@@ -12,10 +12,11 @@ import it.auties.whatsapp4j.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.protobuf.message.model.MessageContainer;
 import it.auties.whatsapp4j.protobuf.message.model.MessageKey;
 import it.auties.whatsapp4j.protobuf.message.standard.*;
-import it.auties.whatsapp4j.response.impl.json.SimpleStatusResponse;
 import it.auties.whatsapp4j.response.impl.json.UserInformationResponse;
 import it.auties.whatsapp4j.test.github.GithubActions;
 import it.auties.whatsapp4j.test.utils.ConfigUtils;
+import it.auties.whatsapp4j.test.utils.MediaUtils;
+import it.auties.whatsapp4j.test.utils.StatusUtils;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import it.auties.whatsapp4j.utils.internal.Validate;
 import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
@@ -26,7 +27,6 @@ import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.opentest4j.AssertionFailedError;
 
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.time.ZonedDateTime;
@@ -129,7 +129,7 @@ public class WhatsappTest implements WhatsappListener {
     public void testChangeGlobalPresence() throws ExecutionException, InterruptedException {
         log.info("Changing global presence...");
         var response = whatsappAPI.changePresence(ContactStatus.AVAILABLE).get();
-        checkStatusCode(response, "Cannot change individual presence, %s");
+        StatusUtils.checkStatusCode(response, "Cannot change individual presence, %s");
         log.info("Changed global presence...");
     }
 
@@ -147,7 +147,7 @@ public class WhatsappTest implements WhatsappListener {
     public void testUserPresenceSubscription() throws ExecutionException, InterruptedException {
         log.info("Subscribing to user presence...");
         var userPresenceResponse = whatsappAPI.subscribeToContactPresence(contact).get();
-        checkStatusCode(userPresenceResponse, "Cannot subscribe to user presence: %s");
+        StatusUtils.checkStatusCode(userPresenceResponse, "Cannot subscribe to user presence: %s");
         log.info("Subscribed to user presence: %s".formatted(userPresenceResponse));
     }
 
@@ -159,9 +159,10 @@ public class WhatsappTest implements WhatsappListener {
         switch (picResponse.status()){
             case 200 -> {
                 var file = Files.createTempFile(UUID.randomUUID().toString(), ".jpg");
-                Files.write(file, readBytes(picResponse.url()), StandardOpenOption.CREATE);
+                Files.write(file, MediaUtils.readBytes(picResponse.url()), StandardOpenOption.CREATE);
                 log.info("Loaded picture: %s".formatted(file.toString()));
             }
+            case 401 -> log.info("Cannot query pic because the contact blocked you");
             case 404 -> log.info("The contact doesn't have a pic");
             default -> throw new AssertionFailedError("Cannot query pic: %s".formatted(picResponse));
         }
@@ -201,7 +202,7 @@ public class WhatsappTest implements WhatsappListener {
         System.out.println(contactChat);
         var markStatus = whatsappAPI.markAsUnread(contactChat).get();
         System.out.println(contactChat);
-        checkStatusCode(markStatus, "Cannot mark chat as unread: %s");
+        StatusUtils.checkStatusCode(markStatus, "Cannot mark chat as unread: %s");
         log.info("Marked chat as unread");
     }
 
@@ -210,7 +211,7 @@ public class WhatsappTest implements WhatsappListener {
     public void testMarkChatAsRead() throws ExecutionException, InterruptedException {
         log.info("Marking chat as read...");
         var markStatus = whatsappAPI.markAsRead(contactChat).get();
-        checkStatusCode(markStatus, "Cannot mark chat as read: %s");
+        StatusUtils.checkStatusCode(markStatus, "Cannot mark chat as read: %s");
         log.info("Marked chat as read");
     }
 
@@ -228,7 +229,7 @@ public class WhatsappTest implements WhatsappListener {
         for(var presence : ContactStatus.values()) {
             log.info("Changing individual presence to %s...".formatted(presence.name()));
             var response = whatsappAPI.changePresence(group, presence).get();
-            checkStatusCode(response, "Cannot change individual presence, %s");
+            StatusUtils.checkStatusCode(response, "Cannot change individual presence, %s");
             log.info("Changed individual presence...");
         }
     }
@@ -238,7 +239,7 @@ public class WhatsappTest implements WhatsappListener {
     public void testChangeGroupName() throws InterruptedException, ExecutionException {
         log.info("Changing group name...");
         var changeGroupResponse = whatsappAPI.changeGroupName(group, "omega").get();
-        checkStatusCode(changeGroupResponse, "Cannot change group name: %s");
+        StatusUtils.checkStatusCode(changeGroupResponse, "Cannot change group name: %s");
         log.info("Changed group name");
     }
 
@@ -247,7 +248,7 @@ public class WhatsappTest implements WhatsappListener {
     public void testChangeGroupDescription() throws InterruptedException, ExecutionException {
         log.info("Changing group description...");
         var changeGroupResponse = whatsappAPI.changeGroupDescription(group, BinaryArray.random(12).toHex()).get();
-        checkStatusCode(changeGroupResponse, "Cannot change group description: %s");
+        StatusUtils.checkStatusCode(changeGroupResponse, "Cannot change group description: %s");
         log.info("Changed group description");
     }
 
@@ -259,7 +260,7 @@ public class WhatsappTest implements WhatsappListener {
         switch (changeGroupResponse.status()){
             case 200 -> log.info("Cannot remove %s: %s".formatted(contact.bestName(), changeGroupResponse));
             case 207 -> {
-                Assertions.assertTrue(changeGroupResponse.modifications().stream().allMatch(modification -> modification.status().code() == 200), "Cannot remove %s: %s".formatted(contact.bestName(), changeGroupResponse));
+                Assertions.assertTrue(StatusUtils.checkStatusCode(changeGroupResponse), "Cannot remove %s: %s".formatted(contact.bestName(), changeGroupResponse));
                 log.info("Removed %s".formatted(contact.bestName()));
             }
 
@@ -275,7 +276,7 @@ public class WhatsappTest implements WhatsappListener {
         switch (changeGroupResponse.status()){
             case 200 -> log.info("Cannot add %s: %s".formatted(contact.bestName(), changeGroupResponse));
             case 207 -> {
-                Assertions.assertTrue(changeGroupResponse.modifications().stream().allMatch(modification -> modification.status().code() == 200), "Cannot add %s: %s".formatted(contact.bestName(), changeGroupResponse));
+                Assertions.assertTrue(StatusUtils.checkStatusCode(changeGroupResponse), "Cannot add %s: %s".formatted(contact.bestName(), changeGroupResponse));
                 log.info("Added %s".formatted(contact.bestName()));
             }
 
@@ -291,7 +292,7 @@ public class WhatsappTest implements WhatsappListener {
         switch (changeGroupResponse.status()){
             case 200 -> log.info("Promoted %s".formatted(contact.bestName()));
             case 207 -> {
-                Assertions.assertTrue(changeGroupResponse.modifications().stream().allMatch(modification -> modification.status().code() == 200), "Cannot promote %s: %s".formatted(contact.bestName(), changeGroupResponse));
+                Assertions.assertTrue(StatusUtils.checkStatusCode(changeGroupResponse), "Cannot promote %s: %s".formatted(contact.bestName(), changeGroupResponse));
                 log.info("Promoted %s".formatted(contact.bestName()));
             }
 
@@ -307,7 +308,7 @@ public class WhatsappTest implements WhatsappListener {
         switch (changeGroupResponse.status()){
             case 200 -> log.info("Promoted %s".formatted(contact.bestName()));
             case 207 -> {
-                Assertions.assertTrue(changeGroupResponse.modifications().stream().allMatch(modification -> modification.status().code() == 200), "Cannot demote %s: %s".formatted(contact.bestName(), changeGroupResponse));
+                Assertions.assertTrue(StatusUtils.checkStatusCode(changeGroupResponse), "Cannot demote %s: %s".formatted(contact.bestName(), changeGroupResponse));
                 log.info("Demoted %s".formatted(contact.bestName()));
             }
 
@@ -355,7 +356,7 @@ public class WhatsappTest implements WhatsappListener {
     public void testMute() throws ExecutionException, InterruptedException {
         log.info("Muting chat...");
         var muteResponse = whatsappAPI.mute(group, ZonedDateTime.now().plusDays(14)).get();
-        checkStatusCode(muteResponse, "Cannot mute chat: %s");
+        StatusUtils.checkStatusCode(muteResponse, "Cannot mute chat: %s");
         log.info("Muted chat");
     }
 
@@ -364,7 +365,7 @@ public class WhatsappTest implements WhatsappListener {
     public void testUnmute() throws ExecutionException, InterruptedException {
         log.info("Unmuting chat...");
         var unmuteResponse = whatsappAPI.unmute(group).get();
-        checkStatusCode(unmuteResponse, "Cannot unmute chat: %s");
+        StatusUtils.checkStatusCode(unmuteResponse, "Cannot unmute chat: %s");
         log.info("Unmuted chat");
     }
 
@@ -373,7 +374,7 @@ public class WhatsappTest implements WhatsappListener {
     public void testArchive() throws ExecutionException, InterruptedException {
         log.info("Archiving chat...");
         var archiveResponse = whatsappAPI.archive(group).get();
-        checkStatusCode(archiveResponse, "Cannot archive chat: %s");
+        StatusUtils.checkStatusCode(archiveResponse, "Cannot archive chat: %s");
         log.info("Archived chat");
     }
 
@@ -382,7 +383,7 @@ public class WhatsappTest implements WhatsappListener {
     public void testUnarchive() throws ExecutionException, InterruptedException {
         log.info("Unarchiving chat...");
         var unarchiveResponse = whatsappAPI.unarchive(group).get();
-        checkStatusCode(unarchiveResponse, "Cannot unarchive chat: %s");
+        StatusUtils.checkStatusCode(unarchiveResponse, "Cannot unarchive chat: %s");
         log.info("Unarchived chat");
     }
 
@@ -396,7 +397,7 @@ public class WhatsappTest implements WhatsappListener {
 
         log.info("Pinning chat...");
         var pinResponse = whatsappAPI.pin(group).get();
-        checkStatusCode(pinResponse, "Cannot pin chat: %s");
+        StatusUtils.checkStatusCode(pinResponse, "Cannot pin chat: %s");
         log.info("Pinned chat");
     }
 
@@ -410,7 +411,7 @@ public class WhatsappTest implements WhatsappListener {
 
         log.info("Unpinning chat...");
         var unpinResponse = whatsappAPI.unpin(group).get();
-        checkStatusCode(unpinResponse, "Cannot unpin chat: %s");
+        StatusUtils.checkStatusCode(unpinResponse, "Cannot unpin chat: %s");
         log.info("Unpinned chat");
     }
 
@@ -432,7 +433,7 @@ public class WhatsappTest implements WhatsappListener {
         log.info("Sending image...");
         var key = new MessageKey(group);
         var image = ImageMessage.newImageMessage()
-                .media(readBytes("https://2.bp.blogspot.com/-DqXILvtoZFA/Wmmy7gRahnI/AAAAAAAAB0g/59c8l63QlJcqA0591t8-kWF739DiOQLcACEwYBhgL/s1600/pol-venere-botticelli-01.jpg"))
+                .media(MediaUtils.readBytes("https://2.bp.blogspot.com/-DqXILvtoZFA/Wmmy7gRahnI/AAAAAAAAB0g/59c8l63QlJcqA0591t8-kWF739DiOQLcACEwYBhgL/s1600/pol-venere-botticelli-01.jpg"))
                 .caption("Image test")
                 .create();
         var message = new MessageContainer(image);
@@ -448,7 +449,7 @@ public class WhatsappTest implements WhatsappListener {
         log.info("Sending audio...");
         var key = new MessageKey(group);
         var audio = AudioMessage.newAudioMessage()
-                .media(readBytes("https://www.kozco.com/tech/organfinale.mp3"))
+                .media(MediaUtils.readBytes("https://www.kozco.com/tech/organfinale.mp3"))
                 .create();
         var message = new MessageContainer(audio);
         var info = new MessageInfo(key, message);
@@ -463,7 +464,7 @@ public class WhatsappTest implements WhatsappListener {
         log.info("Sending video...");
         var key = new MessageKey(group);
         var video = VideoMessage.newVideoMessage()
-                .media(readBytes("http://techslides.com/demos/sample-videos/small.mp4"))
+                .media(MediaUtils.readBytes("http://techslides.com/demos/sample-videos/small.mp4"))
                 .caption("Video")
                 .create();
         var message = new MessageContainer(video);
@@ -479,7 +480,7 @@ public class WhatsappTest implements WhatsappListener {
         log.info("Sending gif...");
         var key = new MessageKey(group);
         var video = VideoMessage.newGifMessage()
-                .media(readBytes("http://techslides.com/demos/sample-videos/small.mp4"))
+                .media(MediaUtils.readBytes("http://techslides.com/demos/sample-videos/small.mp4"))
                 .caption("Gif")
                 .create();
         var message = new MessageContainer(video);
@@ -495,7 +496,7 @@ public class WhatsappTest implements WhatsappListener {
         log.info("Sending pdf...");
         var key = new MessageKey(group);
         var document = DocumentMessage.newDocumentMessage()
-                .media(readBytes("http://www.orimi.com/pdf-test.pdf"))
+                .media(MediaUtils.readBytes("http://www.orimi.com/pdf-test.pdf"))
                 .title("Pdf test")
                 .fileName("pdf-test.pdf")
                 .pageCount(1)
@@ -579,7 +580,7 @@ public class WhatsappTest implements WhatsappListener {
     public void testEnableEphemeralMessages() throws ExecutionException, InterruptedException {
         log.info("Enabling ephemeral messages...");
         var ephemeralResponse = whatsappAPI.enableEphemeralMessages(group).get();
-        checkStatusCode(ephemeralResponse, "Cannot enable ephemeral messages: %s");
+        StatusUtils.checkStatusCode(ephemeralResponse, "Cannot enable ephemeral messages: %s");
         log.info("Enabled ephemeral messages");
     }
 
@@ -588,7 +589,7 @@ public class WhatsappTest implements WhatsappListener {
     public void testDisableEphemeralMessages() throws ExecutionException, InterruptedException {
         log.info("Disabling ephemeral messages...");
         var ephemeralResponse = whatsappAPI.disableEphemeralMessages(group).get();
-        checkStatusCode(ephemeralResponse, "Cannot disable ephemeral messages: %s");
+        StatusUtils.checkStatusCode(ephemeralResponse, "Cannot disable ephemeral messages: %s");
         log.info("Disabled ephemeral messages");
     }
 
@@ -597,7 +598,7 @@ public class WhatsappTest implements WhatsappListener {
     public void testLeave() throws ExecutionException, InterruptedException {
         log.info("Leaving group...");
         var ephemeralResponse = whatsappAPI.leave(group).get();
-        checkStatusCode(ephemeralResponse, "Cannot leave group: %s");
+        StatusUtils.checkStatusCode(ephemeralResponse, "Cannot leave group: %s");
         log.info("Left group");
     }
 
@@ -617,18 +618,5 @@ public class WhatsappTest implements WhatsappListener {
     public void onContacts() {
         log.info("Got contacts!");
         latch.countDown();
-    }
-
-    private byte[] readBytes(String url) throws IOException {
-        return new URL(url).openStream().readAllBytes();
-    }
-
-    private void checkStatusCode(SimpleStatusResponse userPresenceResponse, String message) {
-        if(userPresenceResponse.status() == 401){
-            log.info("Successful but unauthorized request");
-            return;
-        }
-
-        Assertions.assertEquals(200, userPresenceResponse.status(), message.formatted(userPresenceResponse));
     }
 }
