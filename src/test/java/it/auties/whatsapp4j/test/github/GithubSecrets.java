@@ -10,7 +10,6 @@ import lombok.experimental.UtilityClass;
 import lombok.extern.java.Log;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -27,7 +26,7 @@ import static java.net.http.HttpRequest.BodyPublishers.ofString;
 public class GithubSecrets {
     private final String REQUEST_PATH = "https://api.github.com/repos/Auties00/WhatsappWeb4j";
     private final String PUBLIC_KEY_PATH = "actions/secrets/public-key";
-    private final String UPDATE_SECRET_PATH = "actions/secrets/%s".formatted(GithubVariables.CREDENTIALS_NAME);
+    private final String UPDATE_SECRET_PATH = "actions/secrets/%s".formatted(GithubActions.CREDENTIALS_NAME);
 
     private final Sodium SODIUM = SodiumUtils.loadLibrary();
     private final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
