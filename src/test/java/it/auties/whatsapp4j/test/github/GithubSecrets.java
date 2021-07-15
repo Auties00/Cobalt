@@ -28,7 +28,6 @@ public class GithubSecrets {
     private final String PUBLIC_KEY_PATH = "actions/secrets/public-key";
     private final String UPDATE_SECRET_PATH = "actions/secrets/%s".formatted(GithubActions.CREDENTIALS_NAME);
 
-    private final Sodium SODIUM = SodiumUtils.loadLibrary();
     private final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
     private final Preferences PREFERENCES = Preferences.userRoot();
     private final ObjectMapper JACKSON = new ObjectMapper();
@@ -51,7 +50,7 @@ public class GithubSecrets {
         var messageBytes = credentials.getBytes();
         var cypher = new byte[messageBytes.length + 48];
 
-        var result = SODIUM.crypto_box_seal(cypher, messageBytes, messageBytes.length, publicKeyBytes);
+        var result = SodiumUtils.loadLibrary().crypto_box_seal(cypher, messageBytes, messageBytes.length, publicKeyBytes);
         Validate.isTrue(result == 0, "crypto_box_seal failed");
 
         return Base64.getEncoder().encodeToString(cypher);

@@ -6,7 +6,6 @@ import it.auties.whatsapp4j.test.sodium.Sodium;
 import it.auties.whatsapp4j.utils.internal.Validate;
 import lombok.experimental.UtilityClass;
 
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.Objects;
 
@@ -16,22 +15,27 @@ public class SodiumUtils {
     private final String SODIUM_WIN32 = "sodium/windows/libsodium.dll";
     private final String SODIUM_WIN64 = "sodium/windows64/libsodium.dll";
     private final String SODIUM_LINUX = "sodium/linux64/libsodium.so";
+    private Sodium sodium;
 
     public Sodium loadLibrary() {
-        try {
+        if(sodium == null){
             var library = setupJavaProperty();
-            return Native.load(library, Sodium.class);
-        }catch (Exception exception){
-            throw new RuntimeException("Cannot load sodium", exception);
+            sodium = Native.load(library, Sodium.class);
         }
+
+        return sodium;
     }
 
-    private String setupJavaProperty() throws URISyntaxException {
-        var path = getSodiumPath();
-        var directory = SodiumUtils.class.getClassLoader().getResource(path);
-        var filePath = Path.of(Objects.requireNonNull(directory).toURI());
-        System.setProperty(LIBRARY_PROPERTY, filePath.toString());
-        return filePath.getFileName().toString();
+    private String setupJavaProperty() {
+        try {
+            var path = getSodiumPath();
+            var directory = SodiumUtils.class.getClassLoader().getResource(path);
+            var filePath = Path.of(Objects.requireNonNull(directory).toURI());
+            System.setProperty(LIBRARY_PROPERTY, filePath.toString());
+            return filePath.getFileName().toString();
+        }catch (Exception exception){
+            throw new RuntimeException("Cannot setup sodium", exception);
+        }
     }
 
     private String getSodiumPath(){
