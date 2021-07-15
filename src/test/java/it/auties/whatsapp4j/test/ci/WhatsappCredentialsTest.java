@@ -1,5 +1,6 @@
 package it.auties.whatsapp4j.test.ci;
 
+import it.auties.whatsapp4j.test.github.GithubActions;
 import it.auties.whatsapp4j.test.github.GithubSecrets;
 import lombok.extern.java.Log;
 import org.junit.jupiter.api.Test;
@@ -11,6 +12,11 @@ public class WhatsappCredentialsTest {
     @Test
     public void updateCredentials() throws IOException, InterruptedException {
         log.info("Updating credentials...");
+        if(GithubActions.isActionsEnvironment()){
+            log.info("Skipping credentials update: detected non local environment");
+            return;
+        }
+
         GithubSecrets.updateCredentials();
         log.info("Updated credentials!");
     }

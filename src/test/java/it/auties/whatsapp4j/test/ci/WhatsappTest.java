@@ -13,12 +13,11 @@ import it.auties.whatsapp4j.protobuf.message.model.MessageContainer;
 import it.auties.whatsapp4j.protobuf.message.model.MessageKey;
 import it.auties.whatsapp4j.protobuf.message.standard.*;
 import it.auties.whatsapp4j.response.impl.json.UserInformationResponse;
-import it.auties.whatsapp4j.test.github.GithubVariables;
+import it.auties.whatsapp4j.test.github.GithubActions;
 import it.auties.whatsapp4j.test.utils.ConfigUtils;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import it.auties.whatsapp4j.utils.internal.Validate;
 import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
-import it.auties.whatsapp4j.whatsapp.WhatsappConfiguration;
 import lombok.NonNull;
 import lombok.extern.java.Log;
 import org.junit.jupiter.api.*;
@@ -52,15 +51,14 @@ public class WhatsappTest implements WhatsappListener {
 
     @BeforeAll
     public void init() throws IOException {
-        var ci = Boolean.parseBoolean(System.getProperty(GithubVariables.GITHUB_ACTIONS));
-        createApi(ci);
-        loadConfig(ci);
+        createApi();
+        loadConfig();
         createLatch();
     }
 
-    private void createApi(boolean ci) {
+    private void createApi() {
         log.info("Initializing api to start testing...");
-        if(ci){
+        if(GithubActions.isActionsEnvironment()){
             whatsappAPI = new WhatsappAPI(loadGithubKeys());
             return;
         }
@@ -69,10 +67,10 @@ public class WhatsappTest implements WhatsappListener {
         whatsappAPI = new WhatsappAPI();
     }
 
-    private void loadConfig(boolean ci) throws IOException {
-        if(ci) {
+    private void loadConfig() throws IOException {
+        if(GithubActions.isActionsEnvironment()) {
             log.info("Loading environment variables...");
-            this.contactName = System.getProperty(GithubVariables.CONTACT_NAME);
+            this.contactName = System.getProperty(GithubActions.CONTACT_NAME);
             this.noKeys = false;
             log.info("Loaded environment variables...");
             return;
@@ -87,7 +85,7 @@ public class WhatsappTest implements WhatsappListener {
 
     private WhatsappKeysManager loadGithubKeys(){
         log.info("Detected github actions environment");
-        var keysJson = System.getProperty(GithubVariables.CREDENTIALS_NAME);
+        var keysJson = System.getProperty(GithubActions.CREDENTIALS_NAME);
         var keys = WhatsappKeysManager.fromJson(keysJson);
         return Validate.isValid(keys, keys.mayRestore(), "WhatsappTest: Cannot start CI as credentials are incomplete");
     }
