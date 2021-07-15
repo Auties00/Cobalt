@@ -24,4 +24,4 @@ jobs:
       env:
         GITHUB_ACTIONS: true
         WHATSAPP_KEYS: ${{ secrets.WHATSAPP_KEYS }}
-        CONTACT_NAME: ${{ secrets.CONTACT_NAME }}
+        WHATSAPP_CONTACT: ${{ secrets.WHATSAPP_CONTACT }}
