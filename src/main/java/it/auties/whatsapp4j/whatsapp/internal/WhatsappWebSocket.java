@@ -72,17 +72,18 @@ public class WhatsappWebSocket {
     private final @NonNull WhatsappQRCode qrCode;
     private final @NonNull BinaryDecoder decoder;
 
-    public WhatsappWebSocket(@NonNull WhatsappConfiguration options) {
+    public WhatsappWebSocket(@NonNull WhatsappConfiguration options, @NonNull WhatsappKeysManager manager) {
         this(
                 ContainerProvider.getWebSocketContainer(),
                 Executors.newSingleThreadScheduledExecutor(),
                 WhatsappDataManager.singletonInstance(),
-                WhatsappKeysManager.singletonInstance(),
+                manager,
                 options,
                 new WhatsappQRCode(),
                 new BinaryDecoder()
         );
     }
+
 
     @OnOpen
     public void onOpen(@NonNull Session session) {
@@ -427,6 +428,6 @@ public class WhatsappWebSocket {
 
     public @NonNull CompletableFuture<ChatResponse> queryChat(@NonNull String jid) {
         var node = new Node("query", attributes(attr("type", "chat"), attr("jid", jid)), null);
-        return new BinaryRequest<ChatResponse>(options, node, BinaryFlag.IGNORE, BinaryMetric.QUERY_CHAT) {}.send(session());
+        return new BinaryRequest<ChatResponse>(options, whatsappKeys, node, BinaryFlag.IGNORE, BinaryMetric.QUERY_CHAT) {}.send(session());
     }
 }

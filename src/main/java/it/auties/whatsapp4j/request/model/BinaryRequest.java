@@ -27,23 +27,28 @@ import java.util.concurrent.CompletableFuture;
  */
 @Accessors(fluent = true, chain = true)
 public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends Request<Node, M>{
-    private static final WhatsappKeysManager KEYS_MANAGER = WhatsappKeysManager.singletonInstance();
+    /**
+     * An instance of the binary encoder
+     */
     private static final BinaryEncoder ENCODER = new BinaryEncoder();
     
     private final @NonNull @Getter Node node;
+    private final @NonNull WhatsappKeysManager keys;
     private final @NonNull @Getter BinaryFlag flag;
     private final @NonNull @Getter BinaryMetric[] tags;
 
     /**
      * Constructs a new instance of a BinaryRequest using a custom non null request tag
      *
-     * @param tag the custom non null tag to assign to this request
      * @param configuration the configuration used for {@link WhatsappAPI}
+     * @param keys the keys used to cypher this message
+     * @param tag the custom non null tag to assign to this request
      * @param flag the flag of this request
      * @param tags the tags for this request
      */
-    protected BinaryRequest(@NonNull WhatsappConfiguration configuration, @NonNull String tag, @NonNull Node node, @NonNull BinaryFlag flag, @NonNull BinaryMetric... tags) {
+    protected BinaryRequest(@NonNull WhatsappConfiguration configuration, @NonNull WhatsappKeysManager keys, @NonNull String tag, @NonNull Node node, @NonNull BinaryFlag flag, @NonNull BinaryMetric... tags) {
         super(tag, configuration);
+        this.keys = keys;
         this.node = node;
         this.flag = flag;
         this.tags = tags;
@@ -53,11 +58,13 @@ public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends 
      * Constructs a new instance of a BinaryRequest using the default request tag built using {@code configuration}
      *
      * @param configuration the configuration used for {@link WhatsappAPI}
+     * @param keys the keys used to cypher this message
      * @param flag the flag of this request
      * @param tags the tags for this request
      */
-    protected BinaryRequest(@NonNull WhatsappConfiguration configuration, @NonNull Node node, @NonNull BinaryFlag flag, @NonNull BinaryMetric... tags) {
+    protected BinaryRequest(@NonNull WhatsappConfiguration configuration, @NonNull WhatsappKeysManager keys, @NonNull Node node, @NonNull BinaryFlag flag, @NonNull BinaryMetric... tags) {
         super(configuration);
+        this.keys = keys;
         this.node = node;
         this.flag = flag;
         this.tags = tags;
@@ -104,8 +111,8 @@ public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends 
     private @NonNull ByteBuffer encode() {
         var messageTag = BinaryArray.forString("%s,".formatted(tag()));
         var encodedMessage = ENCODER.encodeMessage(buildBody());
-        var encrypted = CypherUtils.aesEncrypt(encodedMessage, Objects.requireNonNull(KEYS_MANAGER.encKey()));
-        var hmacSign = CypherUtils.hmacSha256(encrypted, Objects.requireNonNull(KEYS_MANAGER.macKey()));
+        var encrypted = CypherUtils.aesEncrypt(encodedMessage, Objects.requireNonNull(keys.encKey()));
+        var hmacSign = CypherUtils.hmacSha256(encrypted, Objects.requireNonNull(keys.macKey()));
         return messageTag.merged(BinaryMetric.toArray(tags())
                 .merged(BinaryArray.singleton(flag().data())))
                 .merged(hmacSign)

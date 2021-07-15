@@ -1,9 +1,8 @@
-package it.auties.whatsapp4j.test;
+package it.auties.whatsapp4j.test.ci;
 
-import com.google.zxing.client.j2se.MatrixToImageWriter;
-import com.google.zxing.common.BitMatrix;
 import it.auties.whatsapp4j.binary.BinaryArray;
 import it.auties.whatsapp4j.listener.WhatsappListener;
+import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.protobuf.chat.Chat;
 import it.auties.whatsapp4j.protobuf.chat.GroupPolicy;
 import it.auties.whatsapp4j.protobuf.chat.GroupSetting;
@@ -14,27 +13,23 @@ import it.auties.whatsapp4j.protobuf.message.model.MessageContainer;
 import it.auties.whatsapp4j.protobuf.message.model.MessageKey;
 import it.auties.whatsapp4j.protobuf.message.standard.*;
 import it.auties.whatsapp4j.response.impl.json.UserInformationResponse;
+import it.auties.whatsapp4j.test.github.GithubVariables;
+import it.auties.whatsapp4j.test.utils.ConfigUtils;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import it.auties.whatsapp4j.utils.internal.Validate;
 import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
-import it.auties.whatsapp4j.whatsapp.WhatsappConfiguration;
 import lombok.NonNull;
-import lombok.SneakyThrows;
 import lombok.extern.java.Log;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.opentest4j.AssertionFailedError;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.ZonedDateTime;
-import java.util.Properties;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -47,7 +42,6 @@ import java.util.concurrent.ExecutionException;
 @TestMethodOrder(OrderAnnotation.class)
 public class WhatsappTest implements WhatsappListener {
     private WhatsappAPI whatsappAPI;
-    private Path qrCode;
     private CountDownLatch latch;
     private String contactName;
     private boolean noKeys;
@@ -57,35 +51,48 @@ public class WhatsappTest implements WhatsappListener {
 
     @BeforeAll
     public void init() throws IOException {
-        loadContactName();
+        var ci = Boolean.parseBoolean(System.getProperty(GithubVariables.GITHUB_ACTIONS));
+        createApi(ci);
+        loadConfig(ci);
+        createLatch();
+    }
+
+    private void createApi(boolean ci) {
         log.info("Initializing api to start testing...");
-        this.qrCode = Files.createTempFile(UUID.randomUUID().toString(), ".png");
-        log.info("QR code: " + qrCode);
-        var config = WhatsappConfiguration.builder()
-                .qrCodeHandler(this::writeToPath)
-                .build();
-        whatsappAPI = new WhatsappAPI(config);
+        if(ci){
+            whatsappAPI = new WhatsappAPI(loadGithubKeys());
+            return;
+        }
+
+        log.info("Detected local environment");
+        whatsappAPI = new WhatsappAPI();
+    }
+
+    private void loadConfig(boolean ci) throws IOException {
+        if(ci) {
+            log.info("Loading configuration file...");
+            var props = ConfigUtils.loadConfiguration();
+            this.contactName = Objects.requireNonNull(props.getProperty("contact"), "Missing contact property in config");
+            this.noKeys = Boolean.parseBoolean(props.getProperty("no_keys", "false"));
+            log.info("Loaded configuration file");
+            return;
+        }
+
+        log.info("Loading environment variables...");
+        this.contactName = System.getProperty(GithubVariables.CONTACT_NAME);
+        this.noKeys = false;
+        log.info("Loaded environment variables...");
+    }
+
+    private WhatsappKeysManager loadGithubKeys(){
+        log.info("Detected github actions environment");
+        var keysJson = System.getProperty(GithubVariables.CREDENTIALS_NAME);
+        var keys = WhatsappKeysManager.fromJson(keysJson);
+        return Validate.isValid(keys, keys.mayRestore(), "WhatsappTest: Cannot start CI as credentials are incomplete");
+    }
+
+    private void createLatch() {
         latch = new CountDownLatch(3);
-    }
-
-    @SneakyThrows
-    private void writeToPath(BitMatrix bitMatrix){
-        MatrixToImageWriter.writeToPath(bitMatrix, "PNG", qrCode);
-    }
-
-    private void loadContactName() throws IOException {
-        log.info("Loading configuration file...");
-
-        var config = new File(Path.of(".").toRealPath().toFile(), "/.test/config.properties");
-        Validate.isTrue(config.exists(), "Before running any unit test please create a file at %s and specify the name of the contact used for testing like this: contact=name", config.getPath(), FileNotFoundException.class);
-
-        var props = new Properties();
-        props.load(new FileReader(config));
-
-        this.contactName = props.getProperty("contact");
-        this.noKeys = Boolean.parseBoolean(props.getProperty("no_keys"));
-
-        log.info("Loaded configuration file");
     }
 
     @Test

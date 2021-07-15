@@ -1,6 +1,7 @@
 package it.auties.whatsapp4j.manager;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -13,6 +14,7 @@ import it.auties.whatsapp4j.utils.internal.CypherUtils;
 import lombok.*;
 import lombok.experimental.Accessors;
 
+import java.io.IOException;
 import java.security.KeyPair;
 import java.util.Base64;
 import java.util.Objects;
@@ -30,7 +32,7 @@ public class WhatsappKeysManager {
     /**
      * The path used to serialize and deserialize this object
      */
-    private static final String PREFERENCES_PATH = WhatsappKeysManager.class.getName();
+    public static final String PREFERENCES_PATH = WhatsappKeysManager.class.getName();
 
     /**
      * An instance of Jackson's writer to serialize this object
@@ -41,11 +43,6 @@ public class WhatsappKeysManager {
      * An instance of Jackson's reader to serialize this object
      */
     private static final ObjectReader JACKSON_READER = new ObjectMapper().reader();
-
-    /**
-     * Returns a singleton instance of this object
-     */
-    private static final @Getter WhatsappKeysManager singletonInstance = buildInstance();
 
     @JsonProperty
     private @NonNull String clientId;
@@ -59,7 +56,21 @@ public class WhatsappKeysManager {
     private BinaryArray encKey, macKey;
 
     /**
-     * Constructs a singleton instance of {@link WhatsappKeysManager} using:
+     * Constructs an instance of {@link WhatsappKeysManager} using a json value
+     *
+     * @param json the encoded json
+     * @return a non null {@link WhatsappKeysManager}
+     */
+    public static WhatsappKeysManager fromJson(String json) {
+        try {
+            return JACKSON_READER.readValue(json, WhatsappKeysManager.class);
+        }catch (IOException exception){
+            throw new RuntimeException("WhatsappAPI: Cannot deserialize WhatsappKeysManager from JSON", exception);
+        }
+    }
+
+    /**
+     * Constructs an instance of {@link WhatsappKeysManager} using:
      * <ul>
      *     <li>The serialized object, saved in the Preferences linked to this machine at {@link WhatsappKeysManager#PREFERENCES_PATH}</li>
      *     <li>A new instance constructed using random keys if the previous could not be deserialized</li>
@@ -67,11 +78,10 @@ public class WhatsappKeysManager {
      *
      * @return a non null {@link WhatsappKeysManager}
      */
-    @SneakyThrows
-    private static WhatsappKeysManager buildInstance() {
+    public static WhatsappKeysManager fromPreferences() {
         var preferences = Preferences.userRoot().get(PREFERENCES_PATH, null);
         if (preferences != null) {
-            return JACKSON_READER.readValue(preferences, WhatsappKeysManager.class);
+            return fromJson(preferences);
         }
 
         return new WhatsappKeysManager(Base64.getEncoder().encodeToString(BinaryArray.random(16).data()), CypherUtils.calculateRandomKeyPair(), null, null, null, null);
@@ -89,9 +99,20 @@ public class WhatsappKeysManager {
     /**
      * Initializes the serverToken, clientToken, encryptionKey and macKey with non null values
      */
-    @SneakyThrows
     public void initializeKeys(@NonNull String serverToken, @NonNull String clientToken, @NonNull BinaryArray encKey, @NonNull BinaryArray macKey) {
-        Preferences.userRoot().put(PREFERENCES_PATH, JACKSON_WRITER.writeValueAsString(encKey(encKey).macKey(macKey).serverToken(serverToken).clientToken(clientToken)));
+        this.encKey(encKey)
+                .macKey(macKey)
+                .serverToken(serverToken)
+                .clientToken(clientToken);
+        serialize();
+    }
+
+    public void serialize(){
+        try {
+            Preferences.userRoot().put(PREFERENCES_PATH, JACKSON_WRITER.writeValueAsString(this));
+        } catch (JsonProcessingException exception) {
+            throw new RuntimeException("WhatsappAPI: Cannot serialize WhatsappKeysManager to JSON", exception);
+        }
     }
 
     /**
