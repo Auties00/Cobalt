@@ -11,12 +11,12 @@ import java.io.IOException;
 public class WhatsappCredentialsTest {
     @Test
     public void updateCredentials() throws IOException, InterruptedException {
-        log.info("Updating credentials...");
         if(GithubActions.isActionsEnvironment()){
             log.info("Skipping credentials update: detected non local environment");
             return;
         }
 
+        log.info("Updating credentials...");
         GithubSecrets.updateCredentials();
         log.info("Updated credentials!");
     }
