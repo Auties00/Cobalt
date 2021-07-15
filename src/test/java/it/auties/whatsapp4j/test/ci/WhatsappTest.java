@@ -70,7 +70,7 @@ public class WhatsappTest implements WhatsappListener {
     private void loadConfig() throws IOException {
         if(GithubActions.isActionsEnvironment()) {
             log.info("Loading environment variables...");
-            this.contactName = System.getProperty(GithubActions.CONTACT_NAME);
+            this.contactName = System.getenv(GithubActions.CONTACT_NAME);
             this.noKeys = false;
             log.info("Loaded environment variables...");
             return;
@@ -85,7 +85,7 @@ public class WhatsappTest implements WhatsappListener {
 
     private WhatsappKeysManager loadGithubKeys(){
         log.info("Detected github actions environment");
-        var keysJson = System.getProperty(GithubActions.CREDENTIALS_NAME);
+        var keysJson = System.getenv(GithubActions.CREDENTIALS_NAME);
         var keys = WhatsappKeysManager.fromJson(keysJson);
         return Validate.isValid(keys, keys.mayRestore(), "WhatsappTest: Cannot start CI as credentials are incomplete");
     }

@@ -10,8 +10,7 @@ public class GithubActions {
     public final String CREDENTIALS_NAME = "WHATSAPP_KEYS";
     private final String GITHUB_ACTIONS = "GITHUB_ACTIONS";
 
-    public boolean isActionsEnvironment(){
-        log.info("Env: " + System.getProperty(GITHUB_ACTIONS) + " " + Boolean.parseBoolean(System.getProperty(GITHUB_ACTIONS)));
-        return Boolean.parseBoolean(System.getProperty(GITHUB_ACTIONS));
+    public boolean isActionsEnvironment(){ 
+        return Boolean.parseBoolean(System.getenv(GITHUB_ACTIONS));
     }
 }
