@@ -18,6 +18,7 @@ import it.auties.whatsapp4j.test.utils.ConfigUtils;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import it.auties.whatsapp4j.utils.internal.Validate;
 import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
+import it.auties.whatsapp4j.whatsapp.WhatsappConfiguration;
 import lombok.NonNull;
 import lombok.extern.java.Log;
 import org.junit.jupiter.api.*;
@@ -70,18 +71,18 @@ public class WhatsappTest implements WhatsappListener {
 
     private void loadConfig(boolean ci) throws IOException {
         if(ci) {
-            log.info("Loading configuration file...");
-            var props = ConfigUtils.loadConfiguration();
-            this.contactName = Objects.requireNonNull(props.getProperty("contact"), "Missing contact property in config");
-            this.noKeys = Boolean.parseBoolean(props.getProperty("no_keys", "false"));
-            log.info("Loaded configuration file");
+            log.info("Loading environment variables...");
+            this.contactName = System.getProperty(GithubVariables.CONTACT_NAME);
+            this.noKeys = false;
+            log.info("Loaded environment variables...");
             return;
         }
 
-        log.info("Loading environment variables...");
-        this.contactName = System.getProperty(GithubVariables.CONTACT_NAME);
-        this.noKeys = false;
-        log.info("Loaded environment variables...");
+        log.info("Loading configuration file...");
+        var props = ConfigUtils.loadConfiguration();
+        this.contactName = Objects.requireNonNull(props.getProperty("contact"), "Missing contact property in config");
+        this.noKeys = Boolean.parseBoolean(props.getProperty("no_keys", "false"));
+        log.info("Loaded configuration file");
     }
 
     private WhatsappKeysManager loadGithubKeys(){
