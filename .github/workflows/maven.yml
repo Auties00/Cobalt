@@ -26,3 +26,4 @@ jobs:
       env:
         CREDENTIALS_NAME: ${{ secrets.CREDENTIALS_NAME }}
         CONTACT_NAME: ${{ secrets.CONTACT_NAME }}
+        GITHUB_ACTIONS: true
