@@ -11,9 +11,7 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v2
     - name: Set up JDK 16
@@ -24,6 +22,6 @@ jobs:
     - name: Build with Maven
       run: mvn -B package --file pom.xml
       env:
-        CREDENTIALS_NAME: ${{ secrets.CREDENTIALS_NAME }}
-        CONTACT_NAME: ${{ secrets.CONTACT_NAME }}
         GITHUB_ACTIONS: true
+        WHATSAPP_KEYS: ${{ secrets.WHATSAPP_KEYS }}
+        CONTACT_NAME: ${{ secrets.CONTACT_NAME }}
