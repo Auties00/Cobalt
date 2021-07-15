@@ -29,6 +29,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.time.ZonedDateTime;
+import java.util.Base64;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -85,7 +86,7 @@ public class WhatsappTest implements WhatsappListener {
 
     private WhatsappKeysManager loadGithubKeys(){
         log.info("Detected github actions environment");
-        var keysJson = System.getenv(GithubActions.CREDENTIALS_NAME);
+        var keysJson = Base64.getDecoder().decode(System.getenv(GithubActions.CREDENTIALS_NAME));
         var keys = WhatsappKeysManager.fromJson(keysJson);
         return Validate.isValid(keys, keys.mayRestore(), "WhatsappTest: Cannot start CI as credentials are incomplete");
     }

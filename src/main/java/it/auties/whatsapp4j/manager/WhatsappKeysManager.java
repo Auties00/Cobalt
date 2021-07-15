@@ -15,6 +15,7 @@ import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.util.Base64;
 import java.util.Objects;
@@ -61,12 +62,22 @@ public class WhatsappKeysManager {
      * @param json the encoded json
      * @return a non null {@link WhatsappKeysManager}
      */
-    public static WhatsappKeysManager fromJson(String json) {
+    public static WhatsappKeysManager fromJson(byte[] json) {
         try {
             return JACKSON_READER.readValue(json, WhatsappKeysManager.class);
         }catch (IOException exception){
             throw new RuntimeException("WhatsappAPI: Cannot deserialize WhatsappKeysManager from JSON", exception);
         }
+    }
+
+    /**
+     * Constructs an instance of {@link WhatsappKeysManager} using a json value
+     *
+     * @param json the encoded json
+     * @return a non null {@link WhatsappKeysManager}
+     */
+    public static WhatsappKeysManager fromJson(String json) {
+        return fromJson(json.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
