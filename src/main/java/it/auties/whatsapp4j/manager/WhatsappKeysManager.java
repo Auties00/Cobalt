@@ -66,7 +66,7 @@ public class WhatsappKeysManager {
         try {
             return JACKSON_READER.readValue(json, WhatsappKeysManager.class);
         }catch (IOException exception){
-            throw new RuntimeException("WhatsappAPI: Cannot deserialize WhatsappKeysManager from JSON", exception);
+            throw new RuntimeException("WhatsappAPI: Cannot deserialize WhatsappKeysManager from %s".formatted(new String(json)), exception);
         }
     }
 
