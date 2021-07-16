@@ -197,26 +197,34 @@ public class WhatsappTest implements WhatsappListener {
 
     @Test
     @Order(10)
-    public void testMarkChatAsUnread() throws ExecutionException, InterruptedException {
+    public void testMarkChat() throws ExecutionException, InterruptedException {
+        if(contactChat.hasUnreadMessages()){
+            markAsRead();
+            markAsUnread();
+            return;
+        }
+
+        markAsUnread();
+        markAsRead();
+    }
+
+    private void markAsUnread() throws ExecutionException, InterruptedException {
         log.info("Marking chat as unread...");
-        System.out.println(contactChat);
         var markStatus = whatsappAPI.markAsUnread(contactChat).get();
-        System.out.println(contactChat);
         StatusUtils.checkStatusCode(markStatus, "Cannot mark chat as unread: %s");
         log.info("Marked chat as unread");
     }
 
-    @Test
-    @Order(11)
-    public void testMarkChatAsRead() throws ExecutionException, InterruptedException {
+    private void markAsRead() throws ExecutionException, InterruptedException {
         log.info("Marking chat as read...");
         var markStatus = whatsappAPI.markAsRead(contactChat).get();
         StatusUtils.checkStatusCode(markStatus, "Cannot mark chat as read: %s");
         log.info("Marked chat as read");
     }
 
+
     @Test
-    @Order(12)
+    @Order(11)
     public void testGroupCreation() throws InterruptedException, ExecutionException {
         log.info("Creating group...");
         group = whatsappAPI.createGroup(BinaryArray.random(5).toHex(), contact).get();
@@ -224,7 +232,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(13)
+    @Order(12)
     public void testChangeIndividualPresence() throws ExecutionException, InterruptedException {
         for(var presence : ContactStatus.values()) {
             log.info("Changing individual presence to %s...".formatted(presence.name()));
@@ -235,7 +243,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(14)
+    @Order(13)
     public void testChangeGroupName() throws InterruptedException, ExecutionException {
         log.info("Changing group name...");
         var changeGroupResponse = whatsappAPI.changeGroupName(group, "omega").get();
@@ -244,7 +252,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @RepeatedTest(2)
-    @Order(15)
+    @Order(14)
     public void testChangeGroupDescription() throws InterruptedException, ExecutionException {
         log.info("Changing group description...");
         var changeGroupResponse = whatsappAPI.changeGroupDescription(group, BinaryArray.random(12).toHex()).get();
@@ -253,7 +261,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(16)
+    @Order(15)
     public void testRemoveGroupParticipant() throws InterruptedException, ExecutionException {
         log.info("Removing %s...".formatted(contact.bestName()));
         var changeGroupResponse = whatsappAPI.remove(group, contact).get();
@@ -269,7 +277,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(17)
+    @Order(16)
     public void testAddGroupParticipant() throws InterruptedException, ExecutionException {
         log.info("Adding %s...".formatted(contact.bestName()));
         var changeGroupResponse = whatsappAPI.add(group, contact).get();
@@ -285,7 +293,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(18)
+    @Order(17)
     public void testPromotion() throws InterruptedException, ExecutionException {
         log.info("Promoting %s...".formatted(contact.bestName()));
         var changeGroupResponse = whatsappAPI.promote(group, contact).get();
@@ -301,7 +309,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(19)
+    @Order(18)
     public void testDemotion() throws InterruptedException, ExecutionException {
         log.info("Demoting %s...".formatted(contact.bestName()));
         var changeGroupResponse = whatsappAPI.demote(group, contact).get();
@@ -317,7 +325,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(20)
+    @Order(19)
     public void testChangeAllGroupSettings() throws InterruptedException, ExecutionException {
         for (var setting : GroupSetting.values()) {
             for (var policy : GroupPolicy.values()) {
@@ -330,13 +338,13 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(21)
+    @Order(20)
     public void testChangeAndRemoveGroupPicture() {
         log.warning("Not implemented");
     }
 
     @Test
-    @Order(22)
+    @Order(21)
     public void testGroupQuery() throws InterruptedException, ExecutionException {
         log.info("Querying group %s...".formatted(group.jid()));
         whatsappAPI.queryChat(group.jid()).get();
@@ -344,7 +352,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(23)
+    @Order(22)
     public void testLoadConversation() throws InterruptedException, ExecutionException {
         log.info("Loading conversation(%s)...".formatted(group.messages().size()));
         whatsappAPI.loadChatHistory(group).get();
@@ -352,7 +360,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(24)
+    @Order(23)
     public void testMute() throws ExecutionException, InterruptedException {
         log.info("Muting chat...");
         var muteResponse = whatsappAPI.mute(group, ZonedDateTime.now().plusDays(14)).get();
@@ -361,7 +369,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(25)
+    @Order(24)
     public void testUnmute() throws ExecutionException, InterruptedException {
         log.info("Unmuting chat...");
         var unmuteResponse = whatsappAPI.unmute(group).get();
@@ -370,7 +378,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(26)
+    @Order(25)
     public void testArchive() throws ExecutionException, InterruptedException {
         log.info("Archiving chat...");
         var archiveResponse = whatsappAPI.archive(group).get();
@@ -379,7 +387,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(27)
+    @Order(26)
     public void testUnarchive() throws ExecutionException, InterruptedException {
         log.info("Unarchiving chat...");
         var unarchiveResponse = whatsappAPI.unarchive(group).get();
@@ -388,7 +396,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(28)
+    @Order(27)
     public void testPin() throws ExecutionException, InterruptedException {
         if(whatsappAPI.manager().chats().stream().filter(Chat::isPinned).count() >= 3){
             log.info("Skipping chat pinning as there are already three chats pinned...");
@@ -402,7 +410,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(29)
+    @Order(28)
     public void testUnpin() throws ExecutionException, InterruptedException {
         if(whatsappAPI.manager().chats().stream().filter(Chat::isPinned).count() >= 3){
             log.info("Skipping chat unpinning as there are already three chats pinned...");
@@ -416,7 +424,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(30)
+    @Order(29)
     public void testTextMessage() throws ExecutionException, InterruptedException {
         log.info("Sending text...");
         var key = new MessageKey(contactChat);
@@ -428,7 +436,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(31)
+    @Order(30)
     public void testImageMessage() throws ExecutionException, InterruptedException, IOException {
         log.info("Sending image...");
         var key = new MessageKey(group);
@@ -444,7 +452,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(32)
+    @Order(31)
     public void testAudioMessage() throws ExecutionException, InterruptedException, IOException {
         log.info("Sending audio...");
         var key = new MessageKey(group);
@@ -459,7 +467,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(33)
+    @Order(32)
     public void testVideoMessage() throws ExecutionException, InterruptedException, IOException {
         log.info("Sending video...");
         var key = new MessageKey(group);
@@ -475,7 +483,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(34)
+    @Order(33)
     public void testGifMessage() throws ExecutionException, InterruptedException, IOException {
         log.info("Sending gif...");
         var key = new MessageKey(group);
@@ -491,7 +499,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(35)
+    @Order(34)
     public void testPdfMessage() throws ExecutionException, InterruptedException, IOException {
         log.info("Sending pdf...");
         var key = new MessageKey(group);
@@ -509,7 +517,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(36)
+    @Order(35)
     public void testContactMessage() throws ExecutionException, InterruptedException {
         log.info("Sending contact message...");
         var key = new MessageKey(group);
@@ -537,7 +545,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(37)
+    @Order(36)
     public void testLocationMessage() throws ExecutionException, InterruptedException {
         log.info("Sending location message...");
         var key = new MessageKey(group);
@@ -554,7 +562,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(38)
+    @Order(37)
     public void testGroupInviteMessage() throws ExecutionException, InterruptedException {
         log.info("Querying group invite code");
         var code = whatsappAPI.queryGroupInviteCode(group).get().code();
@@ -576,7 +584,7 @@ public class WhatsappTest implements WhatsappListener {
 
 
     @Test
-    @Order(39)
+    @Order(38)
     public void testEnableEphemeralMessages() throws ExecutionException, InterruptedException {
         log.info("Enabling ephemeral messages...");
         var ephemeralResponse = whatsappAPI.enableEphemeralMessages(group).get();
@@ -585,7 +593,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(40)
+    @Order(39)
     public void testDisableEphemeralMessages() throws ExecutionException, InterruptedException {
         log.info("Disabling ephemeral messages...");
         var ephemeralResponse = whatsappAPI.disableEphemeralMessages(group).get();
@@ -594,7 +602,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     @Test
-    @Order(41)
+    @Order(40)
     public void testLeave() throws ExecutionException, InterruptedException {
         log.info("Leaving group...");
         var ephemeralResponse = whatsappAPI.leave(group).get();

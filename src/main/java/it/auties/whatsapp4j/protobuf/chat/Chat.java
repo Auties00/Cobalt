@@ -175,12 +175,21 @@ public class Chat {
   }
 
   /**
-   * Returns a boolean to represent whether this chat has a new ji
+   * Returns a boolean to represent whether this chat has a new jid
    *
    * @return true if this chat has a new jid
    */
   public boolean hasNewJid() {
     return newJid != null;
+  }
+
+  /**
+   * Returns a boolean to represent whether this chat has unread messages
+   *
+   * @return true if this chat has unread messages
+   */
+  public boolean hasUnreadMessages() {
+    return unreadMessages > 0;
   }
 
   /**

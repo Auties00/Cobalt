@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Assertions;
 public class StatusUtils {
     public void checkStatusCode(SimpleStatusResponse userPresenceResponse, String message) {
         if(userPresenceResponse.status() == 401){
-            log.info("Successful but unauthorized request");
+            log.info("The request was successful, but the contact blocked you");
             return;
         }
 
@@ -24,7 +24,19 @@ public class StatusUtils {
                 .allMatch(modification -> checkStatusCode(modification.status().code()));
     }
 
+    // This method assumes that we are in a group scope
+    // These checks are to handle a test contact that blocked you
     private boolean checkStatusCode(int statusCode) {
-        return statusCode == 200 || statusCode == 404;
+        if(statusCode == 401){
+            log.info("The request was successful, but the contact blocked you");
+            return true;
+        }
+
+        if(statusCode == 404){
+            log.info("The request had no effect because the contact blocked you");
+            return true;
+        }
+
+        return statusCode == 200;
     }
 }
