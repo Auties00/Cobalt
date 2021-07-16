@@ -684,10 +684,12 @@ public class WhatsappAPI {
      */
     public @NonNull CompletableFuture<SimpleStatusResponse> mute(@NonNull Chat chat, long untilInSeconds) {
         var node = new Node("action", attributes(attr("epoch", manager.tagAndIncrement()), attr("type", "set")), List.of(new Node("chat", attributes(attr("jid", chat.jid()), attr("mute", untilInSeconds), attr("type", "mute")), null)));
-        return new BinaryRequest<SimpleStatusResponse>(configuration, keys(), node, BinaryFlag.IGNORE, BinaryMetric.CHAT) {}.send(socket.session()).thenApplyAsync(res -> {
-            if (res.status() == 200) chat.mute(new ChatMute(untilInSeconds));
-            return res;
-        });
+        return new BinaryRequest<SimpleStatusResponse>(configuration, keys(), node, BinaryFlag.IGNORE, BinaryMetric.CHAT) {}
+                .send(socket.session())
+                .thenApplyAsync(res -> {
+                    if (res.status() == 200) chat.mute(new ChatMute(untilInSeconds));
+                    return res;
+                });
     }
 
     /**
@@ -699,10 +701,12 @@ public class WhatsappAPI {
     public @NonNull CompletableFuture<SimpleStatusResponse> unmute(@NonNull Chat chat) {
         var previousMute = chat.mute().muteEndDate().map(ChronoZonedDateTime::toEpochSecond).map(String::valueOf).orElse("0");
         var node = new Node("action", attributes(attr("epoch", manager.tagAndIncrement()), attr("type", "set")), List.of(new Node("chat", attributes(attr("jid", chat.jid()), attr("previous", previousMute), attr("type", "mute")), null)));
-        return new BinaryRequest<SimpleStatusResponse>(configuration, keys(), node, BinaryFlag.IGNORE, BinaryMetric.CHAT) {}.send(socket.session()).thenApplyAsync(res -> {
-            if (res.status() == 200) chat.mute(new ChatMute(0));
-            return res;
-        });
+        return new BinaryRequest<SimpleStatusResponse>(configuration, keys(), node, BinaryFlag.IGNORE, BinaryMetric.CHAT) {}
+                .send(socket.session())
+                .thenApplyAsync(res -> {
+                    if (res.status() == 200) chat.mute(new ChatMute(0));
+                    return res;
+                });
     }
 
     /**
@@ -771,6 +775,8 @@ public class WhatsappAPI {
 
     /**
      * Marks a chat with a flag represented by an integer.
+     * If this chat has no history, an attempt to load the chat's history is made.
+     * If no messages can be found after said attempt, the request will fail automatically.
      * If the request is successful, sets the number of unread messages to {@code newFlag}.
      *
      * @param chat    the target chat
@@ -779,16 +785,41 @@ public class WhatsappAPI {
      * @return a CompletableFuture that resolves in a SimpleStatusResponse wrapping the status of the request
      */
     public @NonNull CompletableFuture<SimpleStatusResponse> markChat(@NonNull Chat chat, int flag, int newFlag) {
-        return loadChatHistory(chat).thenComposeAsync(__ -> {
-            var lastMessage = chat.lastMessage().orElseThrow(() -> new IllegalArgumentException("Cannot mark chat: the chat's history is empty"));
-            var node = new Node("action", attributes(attr("epoch", manager.tagAndIncrement()), attr("type", "set")), List.of(new Node("read", attributes(attr("owner", lastMessage.key().fromMe()), attr("jid", chat.jid()), attr("count", flag), attr("index", lastMessage.key().id())), null)));
-            return new BinaryRequest<SimpleStatusResponse>(configuration, keys(), node, BinaryFlag.IGNORE, BinaryMetric.READ) {}
-                    .send(socket.session())
-                    .thenApplyAsync(response -> {
-                        if(response.status() == 200) chat.unreadMessages(newFlag);
-                        return response;
-                    });
-        });
+        return chat.lastMessage()
+                .map(lastMessage -> markChat(chat, lastMessage, flag, newFlag))
+                .orElse(loadAndMarkChat(chat, flag, newFlag));
+    }
+
+    private CompletableFuture<SimpleStatusResponse> loadAndMarkChat(@NonNull Chat chat, int flag, int newFlag) {
+        return loadChatHistory(chat)
+                .thenApplyAsync(Chat::lastMessage)
+                .thenComposeAsync(message -> loadAndMarkChat(chat, message.orElse(null), flag, newFlag));
+    }
+
+    private CompletableFuture<SimpleStatusResponse> loadAndMarkChat(@NonNull Chat chat, @NonNull MessageInfo info, int flag, int newFlag) {
+        return Optional.ofNullable(info)
+                .map(message -> markChat(chat, message, flag, newFlag))
+                .orElse(CompletableFuture.completedFuture(new SimpleStatusResponse(409)));
+    }
+
+    /**
+     * Marks a chat with a flag represented by an integer.
+     * If the request is successful, sets the number of unread messages to {@code newFlag}.
+     *
+     * @param chat        the target chat
+     * @param lastMessage the real last message in this chat
+     * @param flag        the flag represented by an int
+     * @param newFlag     the new flag represented by an int
+     * @return a CompletableFuture that resolves in a SimpleStatusResponse wrapping the status of the request
+     */
+    public CompletableFuture<SimpleStatusResponse> markChat(@NonNull Chat chat, @NonNull MessageInfo lastMessage, int flag, int newFlag) {
+        var node = new Node("action", attributes(attr("epoch", manager.tagAndIncrement()), attr("type", "set")), List.of(new Node("read", attributes(attr("owner", lastMessage.key().fromMe()), attr("jid", chat.jid()), attr("count", flag), attr("index", lastMessage.key().id())), null)));
+        return new BinaryRequest<SimpleStatusResponse>(configuration, keys(), node, BinaryFlag.IGNORE, BinaryMetric.READ) {}
+                .send(socket.session())
+                .thenApplyAsync(response -> {
+                    if (response.status() == 200) chat.unreadMessages(newFlag);
+                    return response;
+                });
     }
 
     /**
@@ -800,10 +831,12 @@ public class WhatsappAPI {
     public @NonNull CompletableFuture<SimpleStatusResponse> pin(@NonNull Chat chat) {
         var now = ZonedDateTime.now().toEpochSecond();
         var node = new Node("action", attributes(attr("epoch", manager.tagAndIncrement()), attr("type", "set")), List.of(new Node("chat", attributes(attr("jid", chat.jid()), attr("pin", String.valueOf(now)), attr("type", "pin")), null)));
-        return new BinaryRequest<SimpleStatusResponse>(configuration, keys(), node, BinaryFlag.IGNORE, BinaryMetric.CHAT) {}.send(socket.session()).thenApplyAsync(res -> {
-            if (res.status() == 200) chat.pinned(now);
-            return res;
-        });
+        return new BinaryRequest<SimpleStatusResponse>(configuration, keys(), node, BinaryFlag.IGNORE, BinaryMetric.CHAT) {}
+                .send(socket.session())
+                .thenApplyAsync(res -> {
+                    if (res.status() == 200) chat.pinned(now);
+                    return res;
+                });
     }
 
     /**
@@ -814,10 +847,12 @@ public class WhatsappAPI {
      */
     public @NonNull CompletableFuture<SimpleStatusResponse> unpin(@NonNull Chat chat) {
         var node = new Node("action", attributes(attr("epoch", manager.tagAndIncrement()), attr("type", "set")), List.of(new Node("chat", attributes(attr("jid", chat.jid()), attr("previous", chat.pinned().map(ChronoZonedDateTime::toEpochSecond).map(String::valueOf).orElse("")), attr("type", "pin")), null)));
-        return new BinaryRequest<SimpleStatusResponse>(configuration, keys(), node, BinaryFlag.IGNORE, BinaryMetric.CHAT) {}.send(socket.session()).thenApplyAsync(res -> {
-            if (res.status() == 200) chat.pinned(0);
-            return res;
-        });
+        return new BinaryRequest<SimpleStatusResponse>(configuration, keys(), node, BinaryFlag.IGNORE, BinaryMetric.CHAT) {}
+                .send(socket.session())
+                .thenApplyAsync(res -> {
+                    if (res.status() == 200) chat.pinned(0);
+                    return res;
+                });
     }
 
     /**
@@ -831,16 +866,17 @@ public class WhatsappAPI {
         return loadChatHistory(chat).thenComposeAsync(__ -> {
             var lastMessage = chat.lastMessage().orElseThrow(() -> new IllegalArgumentException("Cannot archive chat: the chat's history is empty"));
             var node = new Node("action", attributes(attr("epoch", manager.tagAndIncrement()), attr("type", "set")), List.of(new Node("chat", attributes(attr("owner", lastMessage.key().fromMe()), attr("jid", chat.jid()), attr("index", lastMessage.key().id()), attr("type", "archive")), null)));
-            return new BinaryRequest<SimpleStatusResponse>(configuration, keys(), node, BinaryFlag.IGNORE, BinaryMetric.CHAT) {}.send(socket.session()).thenApplyAsync(res -> {
-                if (res.status() == 200) {
-                    chat.pinned(0);
-                    chat.isArchived(true);
-                }
+            return new BinaryRequest<SimpleStatusResponse>(configuration, keys(), node, BinaryFlag.IGNORE, BinaryMetric.CHAT) {}
+                    .send(socket.session())
+                    .thenApplyAsync(res -> {
+                        if (res.status() == 200) {
+                            chat.pinned(0);
+                            chat.isArchived(true);
+                        }
 
-                return res;
-            });
+                        return res;
+                    });
         });
-
     }
 
     /**
@@ -881,19 +917,23 @@ public class WhatsappAPI {
 
         var tag = buildRequestTag(configuration);
         var node = new Node("action", attributes(attr("epoch", manager.tagAndIncrement()), attr("type", "set")), List.of(new Node("group", attributes(attr("subject", subject), attr("author", manager.phoneNumberJid()), attr("id", tag), attr("type", "create")), jidsToParticipantNodes(contacts))));
-        return new BinaryRequest<GroupModificationResponse>(configuration, keys(), tag, node, BinaryFlag.IGNORE, BinaryMetric.GROUP) {}.send(socket.session()).thenApplyAsync(res -> {
-            Validate.isTrue(res.status() == 200, "WhatsappAPI: Cannot create group with name %s, error code %s", subject, res.status(), IllegalStateException.class);
-            var group = Chat.builder()
-                    .timestamp(ZonedDateTime.now().toEpochSecond())
-                    .jid(res.jid())
-                    .mute(new ChatMute(0))
-                    .displayName(subject)
-                    .messages(new Messages())
-                    .presences(new HashMap<>())
-                    .build();
-            manager.chats().add(group);
-            return group;
-        }).thenComposeAsync(this::loadChatHistory);
+        return new BinaryRequest<GroupModificationResponse>(configuration, keys(), tag, node, BinaryFlag.IGNORE, BinaryMetric.GROUP) {}
+                .send(socket.session())
+                .thenApplyAsync(res -> createGroup(subject, res)).thenComposeAsync(this::loadChatHistory);
+    }
+
+    private Chat createGroup(@NonNull String subject, @NonNull GroupModificationResponse res) {
+        Validate.isTrue(res.status() == 200, "WhatsappAPI: Cannot create group with name %s, error code %s", subject, res.status(), IllegalStateException.class);
+        var group = Chat.builder()
+                .timestamp(ZonedDateTime.now().toEpochSecond())
+                .jid(res.jid())
+                .mute(new ChatMute(0))
+                .displayName(subject)
+                .messages(new Messages())
+                .presences(new HashMap<>())
+                .build();
+        manager.chats().add(group);
+        return group;
     }
 
     /**
