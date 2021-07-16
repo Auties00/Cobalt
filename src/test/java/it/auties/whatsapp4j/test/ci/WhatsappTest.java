@@ -37,8 +37,6 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
-import static it.auties.whatsapp4j.test.github.GithubActions.isActionsEnvironment;
-
 /**
  * A simple class to check that the library is working
  */
@@ -63,7 +61,7 @@ public class WhatsappTest implements WhatsappListener {
 
     private void createApi() {
         log.info("Initializing api to start testing...");
-        if(isActionsEnvironment()){
+        if(GithubActions.isActionsEnvironment()){
             whatsappAPI = new WhatsappAPI(loadGithubKeys());
             return;
         }
@@ -73,7 +71,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     private void loadConfig() throws IOException {
-        if(isActionsEnvironment()) {
+        if(GithubActions.isActionsEnvironment()) {
             log.info("Loading environment variables...");
             this.contactName = System.getenv(GithubActions.CONTACT_NAME);
             log.info("Loaded environment variables...");
@@ -162,7 +160,7 @@ public class WhatsappTest implements WhatsappListener {
         var picResponse = whatsappAPI.queryChatPicture(contactChat).get();
         switch (picResponse.status()){
             case 200 -> {
-                if(isActionsEnvironment()){
+                if(GithubActions.isActionsEnvironment()){
                     return;
                 }
 
@@ -641,7 +639,7 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     private Object[] redactParameters(Object... params){
-        if (!isActionsEnvironment()) {
+        if (!GithubActions.isActionsEnvironment()) {
             return params;
         }
 
