@@ -823,7 +823,9 @@ public class WhatsappAPI {
     }
 
     /**
-     * Pins a chat to the top
+     * Pins a chat to the top.
+     * A maximum of three chats can be pinned to the top.
+     * This condition can be checked using {@link WhatsappDataManager#pinnedChats()}.
      *
      * @param chat the target chat
      * @return a CompletableFuture that resolves in a SimpleStatusResponse wrapping the status of the request

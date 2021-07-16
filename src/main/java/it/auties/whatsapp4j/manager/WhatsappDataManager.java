@@ -191,6 +191,18 @@ public class WhatsappDataManager {
     }
 
     /**
+     * Returns the number of pinned chats
+     *
+     * @return an unsigned int between zero and three(both inclusive)
+     */
+    public long pinnedChats(){
+        return chats
+                .stream()
+                .filter(Chat::isPinned)
+                .count();
+    }
+
+    /**
      * Clears all data associated with the WhatsappWeb's WebSocket session
      */
     public void clear() {

@@ -30,11 +30,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+
+import static it.auties.whatsapp4j.test.github.GithubActions.isActionsEnvironment;
 
 /**
  * A simple class to check that the library is working
@@ -60,7 +63,7 @@ public class WhatsappTest implements WhatsappListener {
 
     private void createApi() {
         log.info("Initializing api to start testing...");
-        if(GithubActions.isActionsEnvironment()){
+        if(isActionsEnvironment()){
             whatsappAPI = new WhatsappAPI(loadGithubKeys());
             return;
         }
@@ -70,10 +73,9 @@ public class WhatsappTest implements WhatsappListener {
     }
 
     private void loadConfig() throws IOException {
-        if(GithubActions.isActionsEnvironment()) {
+        if(isActionsEnvironment()) {
             log.info("Loading environment variables...");
             this.contactName = System.getenv(GithubActions.CONTACT_NAME);
-            this.noKeys = false;
             log.info("Loaded environment variables...");
             return;
         }
@@ -137,9 +139,11 @@ public class WhatsappTest implements WhatsappListener {
     @Order(4)
     public void testContactLookup() {
         log.info("Looking up a contact...");
-        contact = whatsappAPI.manager().findContactByName(contactName).orElseThrow(() -> new AssertionFailedError("Cannot lookup contact"));
-        contactChat = whatsappAPI.manager().findChatByJid(contact.jid()).orElseThrow();
-        log.info("Looked up: %s".formatted(contact));
+        contact = whatsappAPI.manager().findContactByName(contactName)
+                .orElseThrow(() -> new AssertionFailedError("Cannot lookup contact"));
+        contactChat = whatsappAPI.manager().findChatByJid(contact.jid())
+                .orElseThrow(() -> new AssertionFailedError("Cannot lookup chat"));
+        sensitiveLog("Looked up: %s", contact);
     }
 
     @Test
@@ -158,13 +162,17 @@ public class WhatsappTest implements WhatsappListener {
         var picResponse = whatsappAPI.queryChatPicture(contactChat).get();
         switch (picResponse.status()){
             case 200 -> {
+                if(isActionsEnvironment()){
+                    return;
+                }
+
                 var file = Files.createTempFile(UUID.randomUUID().toString(), ".jpg");
                 Files.write(file, MediaUtils.readBytes(picResponse.url()), StandardOpenOption.CREATE);
                 log.info("Loaded picture: %s".formatted(file.toString()));
             }
             case 401 -> log.info("Cannot query pic because the contact blocked you");
             case 404 -> log.info("The contact doesn't have a pic");
-            default -> throw new AssertionFailedError("Cannot query pic: %s".formatted(picResponse));
+            default -> throw new AssertionFailedError("Cannot query pic, erroneous status code: %s".formatted(picResponse));
         }
     }
 
@@ -175,7 +183,7 @@ public class WhatsappTest implements WhatsappListener {
         whatsappAPI.queryUserStatus(contact)
                 .get()
                 .status()
-                .ifPresentOrElse(status -> log.info("Queried %s".formatted(status)), () -> log.info("%s doesn't have a status".formatted(contact.bestName())));
+                .ifPresentOrElse(status -> sensitiveLog("Queried %s", status), () -> sensitiveLog("%s doesn't have a status", contact.bestName()));
     }
 
     @Test
@@ -183,7 +191,7 @@ public class WhatsappTest implements WhatsappListener {
     public void testFavouriteMessagesQuery() throws ExecutionException, InterruptedException {
         log.info("Loading 20 favourite messages...");
         var favouriteMessagesResponse = whatsappAPI.queryFavouriteMessagesInChat(contactChat, 20).get();
-        log.info("Loaded favourite messages: %s".formatted(favouriteMessagesResponse.data()));
+        sensitiveLog("Loaded favourite messages: %s", favouriteMessagesResponse.data());
     }
 
     @Test
@@ -192,7 +200,7 @@ public class WhatsappTest implements WhatsappListener {
         log.info("Loading groups in common...");
         var groupsInCommonResponse = whatsappAPI.queryGroupsInCommon(contact).get();
         Assertions.assertEquals(200, groupsInCommonResponse.status(), "Cannot query groups in common: %s".formatted(groupsInCommonResponse));
-        log.info("Loaded groups in common: %s".formatted(groupsInCommonResponse.groups()));
+        sensitiveLog("Loaded groups in common: %s", groupsInCommonResponse.groups());
     }
 
     @Test
@@ -228,7 +236,7 @@ public class WhatsappTest implements WhatsappListener {
     public void testGroupCreation() throws InterruptedException, ExecutionException {
         log.info("Creating group...");
         group = whatsappAPI.createGroup(BinaryArray.random(5).toHex(), contact).get();
-        log.info("Created group: %s".formatted(group));
+        sensitiveLog("Created group: %s", group);
     }
 
     @Test
@@ -256,39 +264,39 @@ public class WhatsappTest implements WhatsappListener {
     public void testChangeGroupDescription() throws InterruptedException, ExecutionException {
         log.info("Changing group description...");
         var changeGroupResponse = whatsappAPI.changeGroupDescription(group, BinaryArray.random(12).toHex()).get();
-        StatusUtils.checkStatusCode(changeGroupResponse, "Cannot change group description: %s");
+        StatusUtils.checkStatusCode(changeGroupResponse, "Cannot change group description, erroneous response: %s".formatted(changeGroupResponse.status()));
         log.info("Changed group description");
     }
 
     @Test
     @Order(15)
     public void testRemoveGroupParticipant() throws InterruptedException, ExecutionException {
-        log.info("Removing %s...".formatted(contact.bestName()));
+        sensitiveLog("Removing %s...", contact.bestName());
         var changeGroupResponse = whatsappAPI.remove(group, contact).get();
         switch (changeGroupResponse.status()){
-            case 200 -> log.info("Cannot remove %s: %s".formatted(contact.bestName(), changeGroupResponse));
+            case 200 -> log.info("Cannot remove participant, erroneous response: %s".formatted(changeGroupResponse));
             case 207 -> {
-                Assertions.assertTrue(StatusUtils.checkStatusCode(changeGroupResponse), "Cannot remove %s: %s".formatted(contact.bestName(), changeGroupResponse));
-                log.info("Removed %s".formatted(contact.bestName()));
+                Assertions.assertTrue(StatusUtils.checkStatusCode(changeGroupResponse), "Cannot remove participant, erroneous response: %s");
+                sensitiveLog("Removed %s", contact.bestName());
             }
 
-            default -> throw new AssertionFailedError("Cannot remove %s: %s".formatted(contact.bestName(), changeGroupResponse));
+            default -> throw new AssertionFailedError("Cannot remove participant, erroneous response code: %s".formatted(changeGroupResponse));
         }
     }
 
     @Test
     @Order(16)
     public void testAddGroupParticipant() throws InterruptedException, ExecutionException {
-        log.info("Adding %s...".formatted(contact.bestName()));
+        sensitiveLog("Adding %s...", contact.bestName());
         var changeGroupResponse = whatsappAPI.add(group, contact).get();
         switch (changeGroupResponse.status()){
-            case 200 -> log.info("Cannot add %s: %s".formatted(contact.bestName(), changeGroupResponse));
+            case 200 -> log.info("Cannot add participant, erroneous response: %s".formatted(changeGroupResponse));
             case 207 -> {
-                Assertions.assertTrue(StatusUtils.checkStatusCode(changeGroupResponse), "Cannot add %s: %s".formatted(contact.bestName(), changeGroupResponse));
-                log.info("Added %s".formatted(contact.bestName()));
+                Assertions.assertTrue(StatusUtils.checkStatusCode(changeGroupResponse), "Cannot add participant, erroneous response: %s");
+                sensitiveLog("Added %s", contact.bestName());
             }
 
-            default -> throw new AssertionFailedError("Cannot add %s: %s".formatted(contact.bestName(), changeGroupResponse));
+            default -> throw new AssertionFailedError("Cannot add participant, erroneous response code: %s".formatted(changeGroupResponse));
         }
     }
 
@@ -298,13 +306,13 @@ public class WhatsappTest implements WhatsappListener {
         log.info("Promoting %s...".formatted(contact.bestName()));
         var changeGroupResponse = whatsappAPI.promote(group, contact).get();
         switch (changeGroupResponse.status()){
-            case 200 -> log.info("Promoted %s".formatted(contact.bestName()));
+            case 200 -> log.info("Cannot promote participant, erroneous response: %s".formatted(changeGroupResponse));
             case 207 -> {
-                Assertions.assertTrue(StatusUtils.checkStatusCode(changeGroupResponse), "Cannot promote %s: %s".formatted(contact.bestName(), changeGroupResponse));
-                log.info("Promoted %s".formatted(contact.bestName()));
+                Assertions.assertTrue(StatusUtils.checkStatusCode(changeGroupResponse), "Cannot promote participant, erroneous response: %s");
+                sensitiveLog("Promoted %s", contact.bestName());
             }
 
-            default -> throw new AssertionFailedError("Cannot promote %s: %s".formatted(contact.bestName(), changeGroupResponse));
+            default -> throw new AssertionFailedError("Cannot promote participant, erroneous response code: %s".formatted(changeGroupResponse));
         }
     }
 
@@ -314,13 +322,13 @@ public class WhatsappTest implements WhatsappListener {
         log.info("Demoting %s...".formatted(contact.bestName()));
         var changeGroupResponse = whatsappAPI.demote(group, contact).get();
         switch (changeGroupResponse.status()){
-            case 200 -> log.info("Promoted %s".formatted(contact.bestName()));
+            case 200 -> log.info("Cannot demote participant, erroneous response: %s".formatted(changeGroupResponse));
             case 207 -> {
-                Assertions.assertTrue(StatusUtils.checkStatusCode(changeGroupResponse), "Cannot demote %s: %s".formatted(contact.bestName(), changeGroupResponse));
-                log.info("Demoted %s".formatted(contact.bestName()));
+                Assertions.assertTrue(StatusUtils.checkStatusCode(changeGroupResponse), "Cannot demote participant, erroneous response: %s");
+                sensitiveLog("Demoted %s", contact.bestName());
             }
 
-            default -> throw new AssertionFailedError("Cannot demote %s: %s".formatted(contact.bestName(), changeGroupResponse));
+            default -> throw new AssertionFailedError("Cannot demote participant, erroneous response code: %s".formatted(changeGroupResponse));
         }
     }
 
@@ -346,7 +354,7 @@ public class WhatsappTest implements WhatsappListener {
     @Test
     @Order(21)
     public void testGroupQuery() throws InterruptedException, ExecutionException {
-        log.info("Querying group %s...".formatted(group.jid()));
+        sensitiveLog("Querying group %s...", group.jid());
         whatsappAPI.queryChat(group.jid()).get();
         log.info("Queried group");
     }
@@ -398,7 +406,7 @@ public class WhatsappTest implements WhatsappListener {
     @Test
     @Order(27)
     public void testPin() throws ExecutionException, InterruptedException {
-        if(whatsappAPI.manager().chats().stream().filter(Chat::isPinned).count() >= 3){
+        if(whatsappAPI.manager().pinnedChats() >= 3){
             log.info("Skipping chat pinning as there are already three chats pinned...");
             return;
         }
@@ -412,7 +420,7 @@ public class WhatsappTest implements WhatsappListener {
     @Test
     @Order(28)
     public void testUnpin() throws ExecutionException, InterruptedException {
-        if(whatsappAPI.manager().chats().stream().filter(Chat::isPinned).count() >= 3){
+        if(whatsappAPI.manager().pinnedChats() >= 3){
             log.info("Skipping chat unpinning as there are already three chats pinned...");
             return;
         }
@@ -523,7 +531,7 @@ public class WhatsappTest implements WhatsappListener {
         var key = new MessageKey(group);
         var vcard = buildVcard();
         var document = ContactMessage.newContactMessage()
-                .displayName("Carletto")
+                .displayName(contact.bestName(contact.jid()))
                 .vcard(vcard)
                 .create();
         var message = new MessageContainer(document);
@@ -626,5 +634,19 @@ public class WhatsappTest implements WhatsappListener {
     public void onContacts() {
         log.info("Got contacts!");
         latch.countDown();
+    }
+
+    private void sensitiveLog(String message, Object... params){
+        log.info(message.formatted(redactParameters(params)));
+    }
+
+    private Object[] redactParameters(Object... params){
+        if (!isActionsEnvironment()) {
+            return params;
+        }
+
+        return Arrays.stream(params)
+                .map(entry -> "***")
+                .toArray(String[]::new);
     }
 }
