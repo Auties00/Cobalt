@@ -756,7 +756,7 @@ public class WhatsappAPI {
      * @return a CompletableFuture that resolves in a SimpleStatusResponse wrapping the status of the request
      */
     public @NonNull CompletableFuture<SimpleStatusResponse> markAsUnread(@NonNull Chat chat) {
-        return markChat(chat, -2);
+        return markChat(chat, -2, -1);
     }
 
     /**
@@ -766,21 +766,28 @@ public class WhatsappAPI {
      * @return a CompletableFuture that resolves in a SimpleStatusResponse wrapping the status of the request
      */
     public @NonNull CompletableFuture<SimpleStatusResponse> markAsRead(@NonNull Chat chat) {
-        return markChat(chat, -1);
+        return markChat(chat, chat.unreadMessages(), 0);
     }
 
     /**
-     * Marks a chat with a flag represented by an integer
+     * Marks a chat with a flag represented by an integer.
+     * If the request is successful, sets the number of unread messages to {@code newFlag}.
      *
-     * @param chat the target chat
-     * @param flag the flag represented by an int
+     * @param chat    the target chat
+     * @param flag    the flag represented by an int
+     * @param newFlag the new flag represented by an int
      * @return a CompletableFuture that resolves in a SimpleStatusResponse wrapping the status of the request
      */
-    public @NonNull CompletableFuture<SimpleStatusResponse> markChat(@NonNull Chat chat, int flag) {
+    public @NonNull CompletableFuture<SimpleStatusResponse> markChat(@NonNull Chat chat, int flag, int newFlag) {
         return loadChatHistory(chat).thenComposeAsync(__ -> {
             var lastMessage = chat.lastMessage().orElseThrow(() -> new IllegalArgumentException("Cannot mark chat: the chat's history is empty"));
             var node = new Node("action", attributes(attr("epoch", manager.tagAndIncrement()), attr("type", "set")), List.of(new Node("read", attributes(attr("owner", lastMessage.key().fromMe()), attr("jid", chat.jid()), attr("count", flag), attr("index", lastMessage.key().id())), null)));
-            return new BinaryRequest<SimpleStatusResponse>(configuration, keys(), node, BinaryFlag.IGNORE, BinaryMetric.READ) {}.send(socket.session());
+            return new BinaryRequest<SimpleStatusResponse>(configuration, keys(), node, BinaryFlag.IGNORE, BinaryMetric.READ) {}
+                    .send(socket.session())
+                    .thenApplyAsync(response -> {
+                        if(response.status() == 200) chat.unreadMessages(newFlag);
+                        return response;
+                    });
         });
     }
 

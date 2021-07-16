@@ -84,7 +84,7 @@ public class Chat {
 
   /**
    * The number of unread messages in this chat.
-   * To set all the messages as read it's advised to use {@link it.auties.whatsapp4j.whatsapp.WhatsappAPI#markAsRead(Chat)}.
+   * If this field is negative, this chat is marked as unread.
    */
   private int unreadMessages;
 
@@ -189,7 +189,25 @@ public class Chat {
    * @return true if this chat has unread messages
    */
   public boolean hasUnreadMessages() {
-    return unreadMessages > 0;
+    return !isMarkedRead();
+  }
+
+  /**
+   * Returns a boolean to represent whether this chat is marked as read
+   *
+   * @return true if this chat is marked as read
+   */
+  public boolean isMarkedRead() {
+    return unreadMessages == 0;
+  }
+
+  /**
+   * Returns a boolean to represent whether this chat was manually marked as unread
+   *
+   * @return true if this chat is marked as unread
+   */
+  public boolean isManuallyMarkedUnread() {
+    return unreadMessages < 0;
   }
 
   /**
