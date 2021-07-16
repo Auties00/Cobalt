@@ -42,17 +42,17 @@ public class GithubSecrets {
         return Objects.requireNonNull(PREFERENCES.get(WhatsappKeysManager.PREFERENCES_PATH, null), "Missing credentials");
     }
 
-    private String encryptCredentials(GithubKey publicKey, String credentials) {
+    private byte[] encryptCredentials(GithubKey publicKey, String credentials) {
         SodiumUtils.loadLibrary();
 
-        var publicKeyBytes = publicKey.key().getBytes();
-        var messageBytes = credentials.getBytes();
+        var publicKeyBytes = Base64.getDecoder().decode(publicKey.key());
+        var messageBytes = Base64.getEncoder().encode(credentials.getBytes());
         var cypher = new byte[messageBytes.length + 48];
 
         var result = SodiumUtils.loadLibrary().crypto_box_seal(cypher, messageBytes, messageBytes.length, publicKeyBytes);
         Validate.isTrue(result == 0, "crypto_box_seal failed");
 
-        return Base64.getEncoder().encodeToString(cypher);
+        return cypher;
     }
 
     private GithubKey getPublicKey() throws IOException, InterruptedException {
@@ -70,7 +70,7 @@ public class GithubSecrets {
                 .build();
     }
 
-    private void updateSecret(String keyId, String cypheredCredentials) throws IOException, InterruptedException {
+    private void updateSecret(String keyId, byte[] cypheredCredentials) throws IOException, InterruptedException {
         var request = createUpdateSecretRequest(keyId, cypheredCredentials);
         var response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         log.info("Sent credentials");
@@ -79,7 +79,7 @@ public class GithubSecrets {
         Validate.isTrue(response.statusCode() == 201 || response.statusCode() == 204, "Cannot update credentials");
     }
 
-    private HttpRequest createUpdateSecretRequest(String keyId, String cypheredCredentials) throws IOException {
+    private HttpRequest createUpdateSecretRequest(String keyId, byte[] cypheredCredentials) throws IOException {
         return HttpRequest.newBuilder()
                 .PUT(ofString(JACKSON.writeValueAsString(createUpdateSecretParams(keyId, cypheredCredentials))))
                 .uri(create("%s/%s".formatted(REQUEST_PATH, UPDATE_SECRET_PATH)))
@@ -88,7 +88,7 @@ public class GithubSecrets {
                 .build();
     }
 
-    private Map<String, String> createUpdateSecretParams(String keyId, String cypheredCredentials) {
+    private Map<String, ?> createUpdateSecretParams(String keyId, byte[] cypheredCredentials) {
         return Map.of(
                 "encrypted_value", cypheredCredentials,
                 "key_id", keyId
