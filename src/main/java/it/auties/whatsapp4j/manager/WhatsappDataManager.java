@@ -6,9 +6,11 @@ import it.auties.whatsapp4j.protobuf.chat.Chat;
 import it.auties.whatsapp4j.protobuf.chat.ChatMute;
 import it.auties.whatsapp4j.protobuf.contact.Contact;
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
+import it.auties.whatsapp4j.protobuf.message.server.ProtocolMessage;
 import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.request.model.Request;
 import it.auties.whatsapp4j.response.impl.json.PhoneBatteryResponse;
+import it.auties.whatsapp4j.response.model.binary.BinaryResponseModel;
 import it.auties.whatsapp4j.response.model.common.Response;
 import it.auties.whatsapp4j.response.model.json.JsonResponse;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
@@ -18,10 +20,12 @@ import lombok.experimental.Accessors;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This class is a singleton and holds all of the data regarding a session with WhatsappWeb's WebSocket.
@@ -51,7 +55,10 @@ public class WhatsappDataManager {
      * @return a non empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
     public @NonNull Optional<Contact> findContactByJid(@NonNull String jid) {
-        return contacts.stream().filter(e -> Objects.equals(e.jid(), WhatsappUtils.parseJid(jid))).findFirst();
+        return Collections.synchronizedList(contacts)
+                .stream()
+                .filter(e -> Objects.equals(e.jid(), WhatsappUtils.parseJid(jid)))
+                .findAny();
     }
 
     /**
@@ -61,7 +68,10 @@ public class WhatsappDataManager {
      * @return a non empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
     public @NonNull Optional<Contact> findContactByName(@NonNull String name) {
-        return contacts.stream().filter(e -> Objects.equals(e.bestName().orElse(null), name)).findFirst();
+        return Collections.synchronizedList(contacts)
+                .stream()
+                .filter(e -> Objects.equals(e.bestName().orElse(null), name))
+                .findAny();
     }
 
     /**
@@ -71,7 +81,10 @@ public class WhatsappDataManager {
      * @return a Set containing every result
      */
     public @NonNull Set<Contact> findContactsByName(@NonNull String name) {
-        return contacts.stream().filter(e -> Objects.equals(e.bestName().orElse(null), name)).collect(Collectors.toUnmodifiableSet());
+        return Collections.synchronizedList(contacts)
+                .stream()
+                .filter(e -> Objects.equals(e.bestName().orElse(null), name))
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     /**
@@ -81,7 +94,10 @@ public class WhatsappDataManager {
      * @return a non empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
     public @NonNull Optional<Chat> findChatByJid(@NonNull String jid) {
-        return chats.stream().filter(e -> Objects.equals(e.jid(), WhatsappUtils.parseJid(jid))).findFirst();
+        return Collections.synchronizedList(chats)
+                .stream()
+                .filter(e -> Objects.equals(e.jid(), WhatsappUtils.parseJid(jid)))
+                .findAny();
     }
 
     /**
@@ -112,7 +128,10 @@ public class WhatsappDataManager {
      * @return a non empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
     public @NonNull Optional<Chat> findChatByName(@NonNull String name) {
-        return chats.stream().filter(e -> Objects.equals(e.displayName(), name)).findFirst();
+        return Collections.synchronizedList(chats)
+                .stream()
+                .filter(e -> Objects.equals(e.displayName(), name))
+                .findAny();
     }
 
     /**
@@ -122,7 +141,10 @@ public class WhatsappDataManager {
      * @return a Set containing every result
      */
     public @NonNull Set<Chat> findChatsByName(@NonNull String name) {
-        return chats.stream().filter(e -> Objects.equals(e.displayName(), name)).collect(Collectors.toUnmodifiableSet());
+        return Collections.synchronizedList(chats)
+                .stream()
+                .filter(e -> Objects.equals(e.displayName(), name))
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     /**
@@ -132,7 +154,10 @@ public class WhatsappDataManager {
      * @return a non empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
     public @NonNull Optional<Request<?, ?>> findPendingRequest(@NonNull String tag) {
-        return pendingRequests.stream().filter(req -> req.tag().equals(tag)).findAny();
+        return Collections.synchronizedList(pendingRequests)
+                .stream()
+                .filter(req -> req.tag().equals(tag))
+                .findAny();
     }
 
     /**
@@ -152,6 +177,17 @@ public class WhatsappDataManager {
         request.complete(response);
         pendingRequests.remove(request);
         return true;
+    }
+
+    /**
+     * Adds a chat in memory
+     *
+     * @param chat the chat to add
+     * @return the input chat
+     */
+    public @NonNull Chat addChat(@NonNull Chat chat) {
+        chats.add(chat);
+        return chat;
     }
 
     /**
@@ -283,12 +319,12 @@ public class WhatsappDataManager {
         if (findContactByJid(contact.jid()).isPresent()) {
             contacts.remove(contact);
             contacts.add(contact);
-            listeners.forEach(listener -> callOnListenerThread(() -> listener.onContactUpdate(contact)));
+            callListeners(listener -> listener.onContactUpdate(contact));
             return;
         }
 
         contacts.add(contact);
-        listeners.forEach(listener -> callOnListenerThread(() -> listener.onNewContact(contact)));
+        callListeners(listener -> listener.onNewContact(contact));
     }
 
     private void parseBattery(@NonNull Node node) {
@@ -296,24 +332,33 @@ public class WhatsappDataManager {
             return;
         }
 
-        Node.fromGenericList(content).forEach(childNode -> listeners.forEach(listener -> callOnListenerThread(() -> listener.onPhoneBatteryStatusUpdate(new JsonResponse("", "", childNode.attrs()).toModel(PhoneBatteryResponse.class)))));
+        var nodes = Node.fromGenericList(content);
+        nodes.forEach(childNode -> callListeners(listener -> parseBattery(childNode, listener)));
+    }
+
+    private void parseBattery(@NonNull Node childNode, @NonNull WhatsappListener listener) {
+        var json = JsonResponse.fromMap(childNode.attrs());
+        var battery = json.toModel(PhoneBatteryResponse.class);
+        listener.onPhoneBatteryStatusUpdate(battery);
     }
 
     private void muteChat(@NonNull Node node, @NonNull Chat chat) {
         chat.mute(new ChatMute(Long.parseLong(node.attrs().get("mute"))));
-        listeners.forEach(listener -> callOnListenerThread(() -> listener.onChatMuteChange(chat)));
+        callListeners(listener -> listener.onChatMuteChange(chat));
     }
 
     private void archiveChat(@NonNull Chat chat, boolean archive) {
         chat.isArchived(archive);
-        listeners.forEach(listener -> callOnListenerThread(() -> {
-            if (archive) {
-                listener.onChatArchived(chat);
-                return;
-            }
+        callListeners(listener -> archiveChat(chat, listener, archive));
+    }
 
-            listener.onChatUnarchived(chat);
-        }));
+    private void archiveChat(@NonNull Chat chat, @NonNull WhatsappListener listener, boolean archive) {
+        if (archive) {
+            listener.onChatArchived(chat);
+            return;
+        }
+
+        listener.onChatUnarchived(chat);
     }
 
     private void deleteMessage(@NonNull Node node, @NonNull Chat chat) {
@@ -331,9 +376,9 @@ public class WhatsappDataManager {
             return;
         }
 
-        childNodes.stream().map(Node::attrs).map(entry -> entry.get("index")).filter(Objects::nonNull).map(id -> findMessageById(chat, id)).map(Optional::orElseThrow).forEach(message -> {
+        findMessagesFromNode(chat, childNodes).forEach(message -> {
             chat.messages().remove(message);
-            listeners.forEach(listener -> callOnListenerThread(() -> listener.onMessageDeleted(chat, message, false)));
+            callListeners(listener -> listener.onMessageDeleted(chat, message, false));
         });
     }
 
@@ -347,10 +392,22 @@ public class WhatsappDataManager {
             return;
         }
 
-        childNodes.stream().map(Node::attrs).map(entry -> entry.get("index")).filter(Objects::nonNull).map(id -> findMessageById(chat, id)).map(Optional::orElseThrow).forEach(message -> {
-            message.starred(false);
-            listeners.forEach(listener -> callOnListenerThread(() -> listener.onMessageUnstarred(chat, message)));
-        });
+        findMessagesFromNode(chat, childNodes)
+                .forEach(message -> unstarMessage(chat, message));
+    }
+
+    private @NonNull Stream<MessageInfo> findMessagesFromNode(@NonNull Chat chat, @NonNull List<Node> childNodes) {
+        return childNodes.stream()
+                .map(Node::attrs)
+                .map(entry -> entry.get("index"))
+                .filter(Objects::nonNull)
+                .map(id -> findMessageById(chat, id))
+                .map(Optional::orElseThrow);
+    }
+
+    private void unstarMessage(@NonNull Chat chat, @NonNull MessageInfo message) {
+        message.starred(false);
+        callListeners(listener -> listener.onMessageUnstarred(chat, message));
     }
 
     private void starMessage(@NonNull Node node, @NonNull Chat chat) {
@@ -363,10 +420,20 @@ public class WhatsappDataManager {
             return;
         }
 
-        childNodes.stream().map(Node::content).filter(entry -> entry instanceof MessageInfo).map(MessageInfo.class::cast).forEach(message -> {
-            chat.messages().addOrReplace(message);
-            listeners.forEach(listener -> callOnListenerThread(() -> listener.onMessageStarred(chat, message)));
-        });
+        findMessagesFromNodes(childNodes)
+                .forEach(message -> starMessage(chat, message));
+    }
+
+    private void starMessage(Chat chat, MessageInfo message) {
+        chat.messages().addOrReplace(message);
+        callListeners(listener -> listener.onMessageStarred(chat, message));
+    }
+
+    private @NonNull Stream<MessageInfo> findMessagesFromNodes(@NonNull List<Node> childNodes) {
+        return childNodes.stream()
+                .map(Node::content)
+                .filter(entry -> entry instanceof MessageInfo)
+                .map(entry -> (MessageInfo) entry);
     }
 
     private void parseResponse(@NonNull WhatsappWebSocket socket, @NonNull Node node, Object content) {
@@ -385,25 +452,33 @@ public class WhatsappDataManager {
         }
 
         switch (type) {
-            case "contacts" -> parseContacts(listeners, nodes);
+            case "contacts" -> parseContacts(nodes);
             case "chat" -> parseChats(nodes);
-            case "message" -> processMessagesFromNodes(socket, nodes);
+            case "message" -> processMessages(socket, node, nodes); // TODO: is this right????
         }
     }
 
     private void processMessages(@NonNull WhatsappWebSocket socket, @NonNull Node node, List<Node> nodes) {
-        var action = node.attrs().getOrDefault("add", "unknown");
-        if(action.equals("unknown")){
-            System.out.println(nodes);
+        var action = node.attrs().get("add");
+        if(action == null) {
+            return;
         }
 
         var last = Boolean.parseBoolean(node.attrs().getOrDefault("last", "false"));
-        var chat = processMessagesFromNodes(socket, nodes);
+        var chats = processMessagesFromNodes(socket, nodes);
         if (!action.equals("last") && !last) {
             return;
         }
 
-        listeners.forEach(listener -> callOnListenerThread(() -> listener.onChatRecentMessages(chat)));
+        chats.forEach(this::processMessages);
+    }
+
+    private void processMessages(@NonNull CompletableFuture<Chat> future) {
+        callListeners(listener -> processMessages(future, listener));
+    }
+
+    private void processMessages(@NonNull CompletableFuture<Chat> future, @NonNull WhatsappListener listener) {
+        future.thenAcceptAsync(listener::onChatRecentMessages);
     }
 
     private void parseReceivedStatus(@NonNull Node firstChildNode) {
@@ -419,11 +494,12 @@ public class WhatsappDataManager {
         }
 
         var message = messageOpt.get();
-        var status = switch (firstChildNode.attrs().get("type")) {
+        var statusName = firstChildNode.attrs().get("type");
+        var status = switch (statusName) {
             case "read" -> MessageInfo.MessageInfoStatus.READ;
             case "message" -> MessageInfo.MessageInfoStatus.DELIVERY_ACK;
             case "error" -> MessageInfo.MessageInfoStatus.ERROR;
-            default -> throw new IllegalStateException("Unexpected value");
+            default -> throw new IllegalStateException("Cannot process read status, unexpected value: %s".formatted(statusName));
         };
 
         if (status.index() <= message.globalStatus().index() && status != MessageInfo.MessageInfoStatus.ERROR) {
@@ -431,7 +507,7 @@ public class WhatsappDataManager {
         }
 
         message.globalStatus(status);
-        listeners.forEach(listener -> callOnListenerThread(() -> listener.onMessageGlobalReadStatusUpdate(chat, message)));
+        callListeners(listener -> listener.onMessageGlobalReadStatusUpdate(chat, message));
     }
 
     private void parseReadStatus(@NonNull Node firstChildNode) {
@@ -448,70 +524,108 @@ public class WhatsappDataManager {
 
         var chat = chatOpt.get();
         chat.unreadMessages(type ? 0 : -1);
-        listeners.forEach(listener -> callOnListenerThread(() -> listener.onChatReadStatusChange(chat)));
+        callListeners(listener -> listener.onChatReadStatusChange(chat));
     }
 
     private void parseChats(@NonNull List<Node> nodes) {
         nodes.stream()
                 .map(Node::attrs)
                 .map(Chat::fromAttributes)
-                .forEach(chats::add);
-        listeners.forEach(listener -> callOnListenerThread(listener::onChats));
+                .forEach(this::addChat);
+        callListeners(WhatsappListener::onChats);
     }
 
-    private void parseContacts(@NonNull List<WhatsappListener> listeners, @NonNull List<Node> nodes) {
+    private void parseContacts(@NonNull List<Node> nodes) {
         nodes.stream().map(Node::attrs).map(Contact::fromAttributes).forEach(contacts::add);
-        listeners.forEach(listener -> callOnListenerThread(listener::onContacts));
+        callListeners(WhatsappListener::onContacts);
     }
 
-    private Chat processMessagesFromNodes(@NonNull WhatsappWebSocket socket, @NonNull List<Node> nodes) {
-        var jid = firstMessageInfo(nodes).key().chatJid();
-        var chat = findChatByJid(jid).orElseGet(() -> queryMissingChat(socket, jid));
-        nodes.stream().map(Node::content).map(MessageInfo.class::cast).filter(Objects::nonNull).forEach(message -> processMessage(chat, message));
+    private Set<CompletableFuture<Chat>> processMessagesFromNodes(@NonNull WhatsappWebSocket socket, @NonNull List<Node> nodes) {
+        return nodes.stream()
+                .filter(node -> node.content() instanceof MessageInfo)
+                .map(node -> (MessageInfo) node.content())
+                .map(messageInfo -> processMessageFromNode(socket, messageInfo))
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
+    private @NonNull CompletableFuture<Chat> processMessageFromNode(@NonNull WhatsappWebSocket socket, @NonNull MessageInfo messageInfo) {
+        return findChatByMessage(messageInfo)
+                .map(CompletableFuture::completedFuture)
+                .orElseGet(() -> queryMissingChat(socket, messageInfo.key().chatJid()))
+                .thenApplyAsync(chat -> processMessageFromNode(messageInfo, chat));
+    }
+
+    private @NonNull Chat processMessageFromNode(@NonNull MessageInfo messageInfo, @NonNull Chat chat) {
+        processMessage(chat, messageInfo);
         return chat;
     }
 
-    private MessageInfo firstMessageInfo(List<Node> nodes) {
-        return (MessageInfo) nodes.get(0).content();
+    private void processMessage(@NonNull Chat chat, @NonNull MessageInfo message) {
+        processServerMessage(chat, message);
+        commitMessage(chat, message);
+        broadcastMessage(chat, message);
     }
 
-    private void processMessage(@NonNull Chat chat, @NonNull MessageInfo message) {
-        if (message.container().isServerMessage()) {
-            // TODO: This message could also be an history sync, handle this
-            findMessageById(chat, message.container().protocolMessage().key().id()).ifPresent(oldMessage -> {
-                chat.messages().remove(oldMessage);
-                listeners.forEach(listener -> callOnListenerThread(() -> listener.onMessageDeleted(chat, oldMessage, true)));
-            });
-        }
-
-        if (chat.messages().addOrReplace(message)) {
-            listeners.forEach(listener -> callOnListenerThread(() -> listener.onMessageUpdate(chat, message)));
-        }
-
+    private void broadcastMessage(@NonNull Chat chat, @NonNull MessageInfo message) {
         if (initializationTimeStamp > message.timestamp()) {
             return;
         }
 
         updateUnreadMessages(message, chat);
-        listeners.forEach(listener -> callOnListenerThread(() -> listener.onNewMessage(chat, message)));
+        callListeners(listener -> listener.onNewMessage(chat, message));
+    }
+
+    private void commitMessage(@NonNull Chat chat, @NonNull MessageInfo message) {
+        if (!chat.messages().addOrReplace(message)) {
+            return;
+        }
+
+        callListeners(listener -> listener.onMessageUpdate(chat, message));
+    }
+
+    private void processServerMessage(@NonNull Chat chat, @NonNull MessageInfo message) {
+        if (!message.container().isServerMessage()) {
+            return;
+        }
+
+        var protocolMessage = message.container().protocolMessage();
+        switch (protocolMessage.type()){
+            case REVOKE -> processRevokeMessage(chat, protocolMessage);
+            case EPHEMERAL_SETTING, EPHEMERAL_SYNC_RESPONSE -> processEphemeralUpdate(chat, protocolMessage);
+            case HISTORY_SYNC_NOTIFICATION -> throw new UnsupportedOperationException("WhatsappWeb4j cannot handle history syncs as of now");
+        }
+    }
+
+    private void processEphemeralUpdate(@NonNull Chat chat, @NonNull ProtocolMessage protocolMessage) {
+        chat.ephemeralMessagesToggleTime(protocolMessage.ephemeralSettingTimestamp());
+        chat.ephemeralMessageDuration(protocolMessage.ephemeralExpiration());
+    }
+
+    private void processRevokeMessage(@NonNull Chat chat, @NonNull ProtocolMessage message) {
+        var id = message.key().id();
+        findMessageById(chat, id).ifPresent(oldMessage -> processRevokeMessage(chat, oldMessage));
+    }
+
+    private void processRevokeMessage(@NonNull Chat chat, @NonNull MessageInfo oldMessage) {
+        chat.messages().remove(oldMessage);
+        callListeners(listener -> listener.onMessageDeleted(chat, oldMessage, true));
     }
 
     private void updateUnreadMessages(@NonNull MessageInfo message, Chat chat) {
-        if (message.key().fromMe() || (message.globalStatus() != null && message.globalStatus() == MessageInfo.MessageInfoStatus.READ) || message.ignore()) {
+        if (message.key().fromMe() || message.globalStatus() == MessageInfo.MessageInfoStatus.READ || message.ignore()) {
             return;
         }
 
         chat.unreadMessages(chat.unreadMessages() + 1);
     }
 
-    private @NonNull Chat queryMissingChat(@NonNull WhatsappWebSocket socket, @NonNull String jid) {
-        try {
-            var chatTemp = socket.queryChat(jid).get().data();
-            chats.add(chatTemp);
-            listeners.forEach(listener -> callOnListenerThread(() -> listener.onNewChat(chatTemp)));
-            return chatTemp;
-        } catch (InterruptedException | ExecutionException ex) {
-            throw new RuntimeException("WhatsappAPI: Cannot query chat to build unknown chat with jid %s".formatted(jid));
-        }
+    private @NonNull CompletableFuture<Chat> queryMissingChat(@NonNull WhatsappWebSocket socket, @NonNull String jid) {
+        return socket.queryChat(jid)
+                .thenApplyAsync(BinaryResponseModel::data)
+                .thenApplyAsync(this::addChat);
+    }
+
+    private void callListeners(@NonNull Consumer<WhatsappListener> consumer){
+        listeners.forEach(listener -> callOnListenerThread(() -> consumer.accept(listener)));
     }
 }

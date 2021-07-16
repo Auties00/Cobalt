@@ -2,7 +2,6 @@ package it.auties.whatsapp4j.test.github;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
-import it.auties.whatsapp4j.test.sodium.Sodium;
 import it.auties.whatsapp4j.test.utils.ConfigUtils;
 import it.auties.whatsapp4j.test.utils.SodiumUtils;
 import it.auties.whatsapp4j.utils.internal.Validate;

@@ -77,6 +77,16 @@ public final class JsonResponse extends Response<Map<String, ?>> {
     }
 
     /**
+     * Returns an int representing the value for the input key
+     *
+     * @param key the key to search
+     * @return the value as integer or 0
+     */
+    public @NonNull int getInt(@NonNull String key) {
+        return getString(key).map(Integer::parseInt).orElse(0);
+    }
+
+    /**
      * Returns an optional Long representing the value for the input key
      *
      * @param key the key to search

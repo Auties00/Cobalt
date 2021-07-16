@@ -213,6 +213,11 @@ public class WhatsappWebSocket {
         whatsappManager.digestWhatsappNode(this, response.content());
     }
 
+    @OnError
+    public void onError(@NonNull Throwable throwable){
+        throwable.printStackTrace();
+    }
+
     public void connect() {
         Validate.isTrue(!loggedIn, "WhatsappAPI: Cannot establish a connection with whatsapp as one already exists", IllegalStateException.class);
         openConnection();

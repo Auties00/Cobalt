@@ -159,7 +159,8 @@ public class MessageInfo {
    * Otherwise, this field is guaranteed to be equal to the single value stored by {@link MessageInfo#individualReadStatus()} for the contact associated with the chat associated with this message.
    */
   @JsonProperty(value = "4")
-  private MessageInfoStatus globalStatus;
+  @Builder.Default
+  private @NonNull MessageInfoStatus globalStatus = MessageInfoStatus.ERROR;
 
   /**
    * A map that holds the read status of this message for each participant.

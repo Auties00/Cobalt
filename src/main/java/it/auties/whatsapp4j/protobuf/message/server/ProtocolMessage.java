@@ -41,7 +41,7 @@ public final class ProtocolMessage implements ServerMessage {
    * This property is defined only if {@link ProtocolMessage#type} == {@link ProtocolMessageType#EPHEMERAL_SETTING} || @link ProtocolMessageType#EPHEMERAL_SYNC_RESPONSE}.
    */
   @JsonProperty(value = "4")
-  private int ephemeralExpiration;
+  private long ephemeralExpiration;
 
   /**
    * The type of this server message

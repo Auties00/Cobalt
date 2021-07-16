@@ -796,10 +796,10 @@ public class WhatsappAPI {
                 .thenComposeAsync(message -> loadAndMarkChat(chat, message.orElse(null), flag, newFlag));
     }
 
-    private CompletableFuture<SimpleStatusResponse> loadAndMarkChat(@NonNull Chat chat, @NonNull MessageInfo info, int flag, int newFlag) {
+    private CompletableFuture<SimpleStatusResponse> loadAndMarkChat(@NonNull Chat chat, MessageInfo info, int flag, int newFlag) {
         return Optional.ofNullable(info)
                 .map(message -> markChat(chat, message, flag, newFlag))
-                .orElse(CompletableFuture.completedFuture(new SimpleStatusResponse(409)));
+                .orElse(CompletableFuture.completedFuture(new SimpleStatusResponse(404)));
     }
 
     /**
@@ -932,8 +932,7 @@ public class WhatsappAPI {
                 .messages(new Messages())
                 .presences(new HashMap<>())
                 .build();
-        manager.chats().add(group);
-        return group;
+        return manager.addChat(group);
     }
 
     /**
