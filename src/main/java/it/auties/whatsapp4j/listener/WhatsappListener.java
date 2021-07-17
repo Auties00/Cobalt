@@ -1,5 +1,6 @@
 package it.auties.whatsapp4j.listener;
 
+import com.google.zxing.common.BitMatrix;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.protobuf.chat.Chat;
 import it.auties.whatsapp4j.protobuf.chat.GroupAction;
@@ -13,9 +14,11 @@ import it.auties.whatsapp4j.response.impl.json.PropsResponse;
 import it.auties.whatsapp4j.response.impl.json.UserInformationResponse;
 import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
 import it.auties.whatsapp4j.whatsapp.internal.WhatsappWebSocket;
+import lombok.Builder;
 import lombok.NonNull;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * This interface can be used to listen for events fired when new information is sent by WhatsappWeb's socket.
@@ -24,6 +27,16 @@ import java.util.List;
  * If the latter option is used, auto detection of listeners by calling {@link WhatsappAPI#autodetectListeners()}.
  */
 public interface WhatsappListener {
+    /**
+     * Called when {@link WhatsappWebSocket} successfully establishes a connection with new secrets.
+     * By default, the QR code is printed to the console.
+     *
+     * @param qr the qr code to consume
+     */
+    default void onQRCode(@NonNull BitMatrix qr){
+        System.out.println(qr.toString("\033[40m  \033[0m", "\033[47m  \033[0m"));
+    }
+
     /**
      * Called when {@link WhatsappWebSocket} successfully establishes a connection and logs in into an account.
      * When this event is called, any data, including chats and contact, is not guaranteed to be already in memory.

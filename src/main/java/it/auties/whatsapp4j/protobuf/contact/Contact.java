@@ -60,7 +60,19 @@ public class Contact {
      * The nullable last time this contact was seen available.
      * Any contact can decide to hide this information in their privacy settings.
      */
-    private  ZonedDateTime lastSeen;
+    private ZonedDateTime lastSeen;
+
+
+    /**
+     * Constructs a new Contact from a jid
+     *
+     * @param jid the jid of the new contact
+     */
+    public static Contact fromJid(@NonNull String jid){
+        return Contact.builder()
+                .jid(jid)
+                .build();
+    }
 
     /**
      * Constructs a new Contact from a map of attributes.

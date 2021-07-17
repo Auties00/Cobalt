@@ -241,12 +241,14 @@ public class WhatsappDataManager {
     }
 
     /**
-     * Executes a runnable on a single threaded ExecutorService.
+     * Executes an operation on every registered listener on the listener thread
      * This should be used to be sure that when a listener should be called it's called on a thread that is not the WebSocket's.
      * If this condition isn't met, if the thread is put on hold to wait for a response for a pending request, the WebSocket will freeze.
+     *
+     * @param consumer the operation to execute
      */
-    public void callOnListenerThread(@NonNull Runnable runnable) {
-        requestsService.execute(runnable);
+    public void callListeners(@NonNull Consumer<WhatsappListener> consumer){
+        listeners.forEach(listener -> callOnListenerThread(() -> consumer.accept(listener)));
     }
 
     /**
@@ -637,7 +639,7 @@ public class WhatsappDataManager {
                 .thenApplyAsync(this::addChat);
     }
 
-    private void callListeners(@NonNull Consumer<WhatsappListener> consumer){
-        listeners.forEach(listener -> callOnListenerThread(() -> consumer.accept(listener)));
+    private void callOnListenerThread(@NonNull Runnable runnable) {
+        requestsService.execute(runnable);
     }
 }
