@@ -12,7 +12,7 @@ import it.auties.whatsapp4j.protobuf.message.model.MessageContainer;
 import it.auties.whatsapp4j.protobuf.message.model.MessageKey;
 import it.auties.whatsapp4j.protobuf.message.server.ProtocolMessage;
 import it.auties.whatsapp4j.protobuf.message.standard.LiveLocationMessage;
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
+import it.auties.whatsapp4j.api.WhatsappAPI;
 import lombok.*;
 import lombok.experimental.Accessors;
 

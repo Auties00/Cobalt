@@ -1,7 +1,7 @@
 package it.auties.whatsapp4j.protobuf.contact;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.whatsapp4j.binary.BinaryFlag;
+import it.auties.whatsapp4j.binary.constant.BinaryFlag;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;

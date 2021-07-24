@@ -9,7 +9,7 @@ import it.auties.whatsapp4j.protobuf.message.model.MediaMessageType;
 import it.auties.whatsapp4j.protobuf.model.InteractiveAnnotation;
 import it.auties.whatsapp4j.utils.internal.CypherUtils;
 import it.auties.whatsapp4j.utils.internal.Validate;
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
+import it.auties.whatsapp4j.api.WhatsappAPI;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;

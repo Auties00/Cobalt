@@ -1,6 +1,8 @@
 package it.auties.whatsapp4j.test.ci;
 
-import it.auties.whatsapp4j.binary.BinaryArray;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import it.auties.whatsapp4j.binary.model.BinaryArray;
 import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.protobuf.chat.Chat;
@@ -19,8 +21,9 @@ import it.auties.whatsapp4j.test.utils.MediaUtils;
 import it.auties.whatsapp4j.test.utils.StatusUtils;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import it.auties.whatsapp4j.utils.internal.Validate;
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
+import it.auties.whatsapp4j.api.WhatsappAPI;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import lombok.extern.java.Log;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
@@ -632,6 +635,14 @@ public class WhatsappTest implements WhatsappListener {
     public void onContacts() {
         log.info("Got contacts!");
         latch.countDown();
+    }
+
+    @Override
+    @SneakyThrows
+    public void onQRCode(@NonNull BitMatrix qr) {
+        var file = Files.createTempFile(UUID.randomUUID().toString(), ".png");
+        MatrixToImageWriter.writeToPath(qr, "PNG", file);
+        log.info("QR code is ready to be scanned: %s".formatted(file));
     }
 
     private void sensitiveLog(String message, Object... params){

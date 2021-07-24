@@ -9,7 +9,7 @@ import it.auties.whatsapp4j.protobuf.message.security.SenderKeyDistributionMessa
 import it.auties.whatsapp4j.protobuf.message.server.ProtocolMessage;
 import it.auties.whatsapp4j.protobuf.message.standard.*;
 import it.auties.whatsapp4j.protobuf.model.Call;
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
+import it.auties.whatsapp4j.api.WhatsappAPI;
 import lombok.*;
 import lombok.experimental.Accessors;
 

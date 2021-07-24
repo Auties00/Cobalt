@@ -1,6 +1,6 @@
 package it.auties.whatsapp4j.listener;
 
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
+import it.auties.whatsapp4j.api.WhatsappAPI;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

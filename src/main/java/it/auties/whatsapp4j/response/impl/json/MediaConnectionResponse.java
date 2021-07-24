@@ -1,7 +1,7 @@
 package it.auties.whatsapp4j.response.impl.json;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.whatsapp4j.media.MediaConnection;
+import it.auties.whatsapp4j.protobuf.model.MediaConnection;
 import it.auties.whatsapp4j.response.model.json.JsonResponseModel;
 import lombok.NonNull;
 

@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import it.auties.whatsapp4j.binary.BinaryArray;
+import it.auties.whatsapp4j.binary.model.BinaryArray;
 import it.auties.whatsapp4j.serialization.KeyPairDeserializer;
 import it.auties.whatsapp4j.serialization.KeyPairSerializer;
 import it.auties.whatsapp4j.utils.internal.CypherUtils;

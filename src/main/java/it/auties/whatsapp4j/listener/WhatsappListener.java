@@ -12,13 +12,11 @@ import it.auties.whatsapp4j.response.impl.json.BlocklistResponse;
 import it.auties.whatsapp4j.response.impl.json.PhoneBatteryResponse;
 import it.auties.whatsapp4j.response.impl.json.PropsResponse;
 import it.auties.whatsapp4j.response.impl.json.UserInformationResponse;
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
-import it.auties.whatsapp4j.whatsapp.internal.WhatsappWebSocket;
-import lombok.Builder;
+import it.auties.whatsapp4j.api.WhatsappAPI;
+import it.auties.whatsapp4j.api.internal.WhatsappWebSocket;
 import lombok.NonNull;
 
 import java.util.List;
-import java.util.function.Consumer;
 
 /**
  * This interface can be used to listen for events fired when new information is sent by WhatsappWeb's socket.

@@ -16,7 +16,7 @@ import java.util.Objects;
  */
 public class WhatsappQRCode {
     private String ref;
-    private static final int SIZE = 50;
+    private static final int SIZE = 250;
     private static final MultiFormatWriter WRITER = new MultiFormatWriter();
 
     /**

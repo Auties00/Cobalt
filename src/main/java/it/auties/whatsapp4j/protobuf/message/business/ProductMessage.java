@@ -5,7 +5,7 @@ import it.auties.whatsapp4j.protobuf.message.model.BusinessMessage;
 import it.auties.whatsapp4j.protobuf.message.model.ContextualMessage;
 import it.auties.whatsapp4j.protobuf.model.CatalogSnapshot;
 import it.auties.whatsapp4j.protobuf.model.ProductSnapshot;
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
+import it.auties.whatsapp4j.api.WhatsappAPI;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

@@ -7,7 +7,7 @@ import it.auties.whatsapp4j.protobuf.message.model.BusinessMessage;
 import it.auties.whatsapp4j.protobuf.message.model.ContextualMessage;
 import it.auties.whatsapp4j.protobuf.model.FourRowTemplate;
 import it.auties.whatsapp4j.protobuf.model.HydratedFourRowTemplate;
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
+import it.auties.whatsapp4j.api.WhatsappAPI;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;

@@ -2,7 +2,7 @@ package it.auties.whatsapp4j.protobuf.message.device;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.protobuf.message.model.DeviceMessage;
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
+import it.auties.whatsapp4j.api.WhatsappAPI;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

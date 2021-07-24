@@ -1,7 +1,7 @@
 package it.auties.whatsapp4j.manager;
 
 import it.auties.whatsapp4j.listener.WhatsappListener;
-import it.auties.whatsapp4j.media.MediaConnection;
+import it.auties.whatsapp4j.protobuf.model.MediaConnection;
 import it.auties.whatsapp4j.protobuf.chat.Chat;
 import it.auties.whatsapp4j.protobuf.chat.ChatMute;
 import it.auties.whatsapp4j.protobuf.contact.Contact;
@@ -14,7 +14,7 @@ import it.auties.whatsapp4j.response.model.binary.BinaryResponseModel;
 import it.auties.whatsapp4j.response.model.common.Response;
 import it.auties.whatsapp4j.response.model.json.JsonResponse;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
-import it.auties.whatsapp4j.whatsapp.internal.WhatsappWebSocket;
+import it.auties.whatsapp4j.api.internal.WhatsappWebSocket;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -163,12 +163,11 @@ public class WhatsappDataManager {
     /**
      * Queries the first Request whose tag is equal to {@code messageTag} and, if any is found, resolves the request using {@code response}
      *
-     * @param messageTag the tag to search
      * @param response   the response to complete the request with
      * @return true if any request matching {@code messageTag} is found
      */
-    public boolean resolvePendingRequest(@NonNull String messageTag, @NonNull Response<?> response) {
-        var req = findPendingRequest(messageTag);
+    public boolean resolvePendingRequest(@NonNull Response<?> response) {
+        var req = findPendingRequest(response.tag());
         if (req.isEmpty()) {
             return false;
         }

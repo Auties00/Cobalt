@@ -1,8 +1,8 @@
 package it.auties.whatsapp4j.utils.internal;
 
-import it.auties.whatsapp4j.binary.BinaryArray;
+import it.auties.whatsapp4j.binary.model.BinaryArray;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
-import it.auties.whatsapp4j.media.MediaUpload;
+import it.auties.whatsapp4j.protobuf.model.MediaUpload;
 import it.auties.whatsapp4j.protobuf.message.model.MediaMessage;
 import it.auties.whatsapp4j.protobuf.message.model.MediaMessageType;
 import it.auties.whatsapp4j.response.model.json.JsonResponse;

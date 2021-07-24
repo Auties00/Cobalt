@@ -6,8 +6,8 @@ import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.response.model.common.Response;
 import it.auties.whatsapp4j.response.model.common.ResponseModel;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
-import it.auties.whatsapp4j.whatsapp.WhatsappConfiguration;
+import it.auties.whatsapp4j.api.WhatsappAPI;
+import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import jakarta.websocket.Session;
 import lombok.Getter;
 import lombok.NonNull;
@@ -98,11 +98,10 @@ public sealed abstract class Request<B, M extends ResponseModel> permits BinaryR
      * Completes this request using {@code response}
      *
      * @param response the response used to complete {@link Request#future}
-     * @throws IllegalArgumentException if this request isn't completable
-     * @throws ClassCastException if the type parameter of this object is not a concrete type, the reason is explained here {@link Request#modelClass()}
      */
     public void complete(@NonNull Response<?> response){
-        future.completeAsync(() -> response.toModel(modelClass()));
+        var result = response.toModel(modelClass());
+        future.complete(result);
     }
 
     /**

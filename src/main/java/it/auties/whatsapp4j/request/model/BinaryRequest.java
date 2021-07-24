@@ -1,23 +1,20 @@
 package it.auties.whatsapp4j.request.model;
 
-import it.auties.whatsapp4j.binary.BinaryArray;
-import it.auties.whatsapp4j.binary.BinaryEncoder;
-import it.auties.whatsapp4j.binary.BinaryFlag;
-import it.auties.whatsapp4j.binary.BinaryMetric;
+import it.auties.whatsapp4j.api.WhatsappAPI;
+import it.auties.whatsapp4j.api.WhatsappConfiguration;
+import it.auties.whatsapp4j.binary.constant.BinaryFlag;
+import it.auties.whatsapp4j.binary.constant.BinaryMetric;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
 import it.auties.whatsapp4j.protobuf.model.Node;
 import it.auties.whatsapp4j.response.model.common.ResponseModel;
-import it.auties.whatsapp4j.utils.internal.CypherUtils;
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
-import it.auties.whatsapp4j.whatsapp.WhatsappConfiguration;
+import it.auties.whatsapp4j.serialization.StandardWhatsappSerializer;
+import it.auties.whatsapp4j.serialization.WhatsappSerializer;
 import jakarta.websocket.Session;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -27,13 +24,8 @@ import java.util.concurrent.CompletableFuture;
  */
 @Accessors(fluent = true, chain = true)
 public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends Request<Node, M>{
-    /**
-     * An instance of the binary encoder
-     */
-    private static final BinaryEncoder ENCODER = new BinaryEncoder();
-    
     private final @NonNull @Getter Node node;
-    private final @NonNull WhatsappKeysManager keys;
+    private final @NonNull WhatsappSerializer serializer;
     private final @NonNull @Getter BinaryFlag flag;
     private final @NonNull @Getter BinaryMetric[] tags;
 
@@ -48,7 +40,7 @@ public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends 
      */
     protected BinaryRequest(@NonNull WhatsappConfiguration configuration, @NonNull WhatsappKeysManager keys, @NonNull String tag, @NonNull Node node, @NonNull BinaryFlag flag, @NonNull BinaryMetric... tags) {
         super(tag, configuration);
-        this.keys = keys;
+        this.serializer = new StandardWhatsappSerializer(keys);
         this.node = node;
         this.flag = flag;
         this.tags = tags;
@@ -64,7 +56,7 @@ public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends 
      */
     protected BinaryRequest(@NonNull WhatsappConfiguration configuration, @NonNull WhatsappKeysManager keys, @NonNull Node node, @NonNull BinaryFlag flag, @NonNull BinaryMetric... tags) {
         super(configuration);
-        this.keys = keys;
+        this.serializer = new StandardWhatsappSerializer(keys);
         this.node = node;
         this.flag = flag;
         this.tags = tags;
@@ -82,14 +74,14 @@ public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends 
 
     /**
      * Sends a binary request to the WebSocket linked to {@code session}.
-     * This message is encoded using {@link BinaryRequest#ENCODER} and then encrypted using {@code whatsappKeys}.
+     * This message is encoded using {@link BinaryRequest#serializer} and then encrypted using {@code whatsappKeys}.
      *
      * @param session the WhatsappWeb's WebSocket session
      * @return this request
      */
     public CompletableFuture<M> send(@NonNull Session session) {
         try{
-            var binaryMessage = encode();
+            var binaryMessage = serializer.serialize(this);
             if (configuration.async()) {
                 session.getAsyncRemote().sendBinary(binaryMessage, __ -> addRequest());
                 return future;
@@ -102,22 +94,4 @@ public abstract non-sealed class BinaryRequest<M extends ResponseModel> extends 
             throw new RuntimeException("An exception occurred while sending a binary message", exception);
         }
     }
-
-    /**
-     * Encodes this message as a binary message readable by whatsapp web
-     *
-     * @return a non null byte buffer
-     */
-    private @NonNull ByteBuffer encode() {
-        var messageTag = BinaryArray.forString("%s,".formatted(tag()));
-        var encodedMessage = ENCODER.encodeMessage(buildBody());
-        var encrypted = CypherUtils.aesEncrypt(encodedMessage, Objects.requireNonNull(keys.encKey()));
-        var hmacSign = CypherUtils.hmacSha256(encrypted, Objects.requireNonNull(keys.macKey()));
-        return messageTag.merged(BinaryMetric.toArray(tags())
-                .merged(BinaryArray.singleton(flag().data())))
-                .merged(hmacSign)
-                .merged(encrypted)
-                .toBuffer();
-    }
-
 }
