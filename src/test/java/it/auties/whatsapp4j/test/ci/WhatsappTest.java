@@ -29,6 +29,7 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.opentest4j.AssertionFailedError;
 
+import java.awt.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
@@ -642,6 +643,10 @@ public class WhatsappTest implements WhatsappListener {
     public void onQRCode(@NonNull BitMatrix qr) {
         var file = Files.createTempFile(UUID.randomUUID().toString(), ".png");
         MatrixToImageWriter.writeToPath(qr, "PNG", file);
+        if(Desktop.isDesktopSupported()){
+            Desktop.getDesktop().open(file.toFile());
+        }
+
         log.info("QR code is ready to be scanned: %s".formatted(file));
     }
 

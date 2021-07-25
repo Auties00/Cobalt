@@ -2,6 +2,7 @@ package it.auties.whatsapp4j.protobuf.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.protobuf.info.ContextInfo;
+import it.auties.whatsapp4j.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.protobuf.message.model.ContextualMessage;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import lombok.*;
@@ -34,7 +35,7 @@ public final class ContactMessage extends ContextualMessage {
 
   /**
    * Constructs a new builder to create a ContactMessage.
-   * The result can be later sent using {@link WhatsappAPI#sendMessage(it.auties.whatsapp4j.protobuf.info.MessageInfo)}
+   * The result can be later sent using {@link WhatsappAPI#sendMessage(MessageInfo)}
    *
    * @param displayName the display name of the contact that the new message wraps
    * @param vcard       the info about the contact that the new message wraps encoded as a vcard

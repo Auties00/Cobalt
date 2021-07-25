@@ -4,7 +4,7 @@ import it.auties.whatsapp4j.api.WhatsappAPI;
 import it.auties.whatsapp4j.listener.RegisterListener;
 import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.protobuf.chat.Chat;
-import it.auties.whatsapp4j.protobuf.info.MessageInfo;
+import it.auties.whatsapp4j.protobuf.model.info.MessageInfo;
 import lombok.NonNull;
 import org.example.whatsapp.command.CommandManager;
 

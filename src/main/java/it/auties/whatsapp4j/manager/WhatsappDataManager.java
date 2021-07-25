@@ -1,13 +1,13 @@
 package it.auties.whatsapp4j.manager;
 
 import it.auties.whatsapp4j.listener.WhatsappListener;
-import it.auties.whatsapp4j.protobuf.model.MediaConnection;
+import it.auties.whatsapp4j.protobuf.model.media.MediaConnection;
 import it.auties.whatsapp4j.protobuf.chat.Chat;
 import it.auties.whatsapp4j.protobuf.chat.ChatMute;
 import it.auties.whatsapp4j.protobuf.contact.Contact;
 import it.auties.whatsapp4j.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.protobuf.message.server.ProtocolMessage;
-import it.auties.whatsapp4j.protobuf.model.Node;
+import it.auties.whatsapp4j.protobuf.model.misc.Node;
 import it.auties.whatsapp4j.request.model.Request;
 import it.auties.whatsapp4j.response.impl.json.PhoneBatteryResponse;
 import it.auties.whatsapp4j.response.model.binary.BinaryResponseModel;

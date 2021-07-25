@@ -1,6 +1,6 @@
 package it.auties.whatsapp4j.response.model.binary;
 
-import it.auties.whatsapp4j.protobuf.model.Node;
+import it.auties.whatsapp4j.protobuf.model.misc.Node;
 import it.auties.whatsapp4j.response.model.common.Response;
 import it.auties.whatsapp4j.response.model.common.ResponseModel;
 import lombok.NonNull;

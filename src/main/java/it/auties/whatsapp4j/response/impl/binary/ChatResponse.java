@@ -1,7 +1,7 @@
 package it.auties.whatsapp4j.response.impl.binary;
 
 import it.auties.whatsapp4j.protobuf.chat.Chat;
-import it.auties.whatsapp4j.protobuf.model.Node;
+import it.auties.whatsapp4j.protobuf.model.misc.Node;
 import it.auties.whatsapp4j.response.model.binary.BinaryResponseModel;
 import lombok.NonNull;
 

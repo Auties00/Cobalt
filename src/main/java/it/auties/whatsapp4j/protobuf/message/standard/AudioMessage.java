@@ -2,6 +2,7 @@ package it.auties.whatsapp4j.protobuf.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.protobuf.info.ContextInfo;
+import it.auties.whatsapp4j.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.protobuf.message.model.MediaMessage;
 import it.auties.whatsapp4j.protobuf.message.model.MediaMessageType;
 import it.auties.whatsapp4j.utils.internal.CypherUtils;
@@ -97,7 +98,7 @@ public final class AudioMessage extends MediaMessage {
 
   /**
    * Constructs a new builder to create a AudioMessage.
-   * The result can be later sent using {@link WhatsappAPI#sendMessage(it.auties.whatsapp4j.protobuf.info.MessageInfo)}
+   * The result can be later sent using {@link WhatsappAPI#sendMessage(MessageInfo)}
    *
    * @param media         the non null image that the new message holds
    * @param mimeType      the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}

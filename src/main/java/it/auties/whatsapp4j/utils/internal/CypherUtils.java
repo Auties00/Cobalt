@@ -1,8 +1,9 @@
 package it.auties.whatsapp4j.utils.internal;
 
+import com.southernstorm.noise.protocol.HandshakeState;
 import it.auties.whatsapp4j.binary.model.BinaryArray;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
-import it.auties.whatsapp4j.protobuf.model.MediaUpload;
+import it.auties.whatsapp4j.protobuf.model.media.MediaUpload;
 import it.auties.whatsapp4j.protobuf.message.model.MediaMessage;
 import it.auties.whatsapp4j.protobuf.message.model.MediaMessageType;
 import it.auties.whatsapp4j.response.model.json.JsonResponse;
@@ -28,6 +29,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.security.*;
+import java.security.interfaces.XECPrivateKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Optional;
@@ -39,6 +41,8 @@ import java.util.Optional;
 @UtilityClass
 public class CypherUtils {
     private final HttpClient CLIENT = HttpClient.newHttpClient();
+    private final String HANDSHAKE_PROTOCOL = "Noise_XX_25519_AESGCM_SHA256";
+    private final byte[] HANDSHAKE_PROLOGUE = new byte[]{87, 65, 5, 2};
     private final String XDH = "XDH";
     private final String CURVE = "X25519";
     private final String HMAC_SHA256 = "HmacSHA256";
@@ -49,8 +53,31 @@ public class CypherUtils {
     private final int BLOCK_SIZE = 16;
 
     @SneakyThrows
-    @NonNull
-    public KeyPair calculateRandomKeyPair() {
+    public @NonNull HandshakeState calculateHandshake(@NonNull KeyPair keyPair) {
+        var rawPublicKey = extractRawPublicKey(keyPair.getPublic());
+        var rawPrivateKey = extractRawPrivateKey(keyPair.getPrivate());
+        var handshake = new HandshakeState(HANDSHAKE_PROTOCOL, HandshakeState.INITIATOR);
+        handshake.getFixedEphemeralKey().setPublicKey(rawPublicKey, 0);
+        handshake.getFixedEphemeralKey().setPrivateKey(rawPrivateKey, 0);
+        handshake.getLocalKeyPair().generateKeyPair();
+        handshake.setPrologue(HANDSHAKE_PROLOGUE, 0, HANDSHAKE_PROLOGUE.length);
+        return handshake;
+    }
+
+    @SneakyThrows
+    public @NonNull BinaryArray multiDeviceEncrypt(byte @NonNull [] message) {
+        var parsedMessage = BinaryArray.forArray(HANDSHAKE_PROLOGUE)
+                .merged(BinaryArray.forInt(message.length))
+                .merged(message);
+        if (parsedMessage.size() >= 64) {
+            return parsedMessage;
+        }
+
+        return parsedMessage.merged(new byte[64 - parsedMessage.size()]);
+    }
+
+    @SneakyThrows
+    public @NonNull KeyPair calculateRandomKeyPair() {
         return KeyPairGenerator.getInstance(CURVE).generateKeyPair();
     }
 
@@ -71,6 +98,13 @@ public class CypherUtils {
     public byte @NonNull [] extractRawPublicKey(@NonNull PublicKey publicKey){
         var x25519PublicKeyParameters = (X25519PublicKeyParameters) PublicKeyFactory.createKey(publicKey.getEncoded());
         return x25519PublicKeyParameters.getEncoded();
+    }
+
+    @SneakyThrows
+    public byte @NonNull [] extractRawPrivateKey(@NonNull PrivateKey privateKey){
+        var xecPrivateKey = (XECPrivateKey) privateKey;
+        return xecPrivateKey.getScalar()
+                .orElseThrow(() -> new IllegalArgumentException("Cannot serialize a private key with no scalar value"));
     }
 
     @SneakyThrows
@@ -191,12 +225,17 @@ public class CypherUtils {
         var token = Base64.getUrlEncoder().withoutPadding().encodeToString(fileEncSha256);
         var uri = URI.create("%s/%s?auth=%s&token=%s".formatted(type.url(), token, connection.auth(), token));
 
-        var request = HttpRequest.newBuilder().uri(uri).POST(HttpRequest.BodyPublishers.ofByteArray(encFile)).build();
+        var request = HttpRequest.newBuilder()
+                .uri(uri)
+                .POST(HttpRequest.BodyPublishers.ofByteArray(encFile))
+                .build();
 
         var response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         var body = JsonResponse.fromJson(response.body());
-        var encodedUrl = body.getString("url").orElseThrow(() -> new RuntimeException("WhatsappAPI: Cannot upload media, missing url response %s".formatted(body)));
-        var directPath = body.getString("direct_path").orElseThrow(() -> new RuntimeException("WhatsappAPI: Cannot upload media, missing direct path response %s".formatted(body)));
+        var encodedUrl = body.getString("url")
+                .orElseThrow(() -> new IllegalArgumentException("WhatsappAPI: Cannot upload media, missing url response %s".formatted(body)));
+        var directPath = body.getString("direct_path")
+                .orElseThrow(() -> new IllegalArgumentException("WhatsappAPI: Cannot upload media, missing direct path response %s".formatted(body)));
 
         return new MediaUpload(encodedUrl, directPath, mediaKey, encFile, fileSha256, fileEncSha256, sidecar, type);
     }

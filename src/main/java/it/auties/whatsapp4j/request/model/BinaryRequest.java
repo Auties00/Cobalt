@@ -5,7 +5,7 @@ import it.auties.whatsapp4j.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.binary.constant.BinaryFlag;
 import it.auties.whatsapp4j.binary.constant.BinaryMetric;
 import it.auties.whatsapp4j.manager.WhatsappKeysManager;
-import it.auties.whatsapp4j.protobuf.model.Node;
+import it.auties.whatsapp4j.protobuf.model.misc.Node;
 import it.auties.whatsapp4j.response.model.common.ResponseModel;
 import it.auties.whatsapp4j.serialization.StandardWhatsappSerializer;
 import it.auties.whatsapp4j.serialization.WhatsappSerializer;

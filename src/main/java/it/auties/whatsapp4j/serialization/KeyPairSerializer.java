@@ -3,6 +3,7 @@ package it.auties.whatsapp4j.serialization;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import it.auties.whatsapp4j.utils.internal.CypherUtils;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -24,8 +25,6 @@ public class KeyPairSerializer extends JsonSerializer<KeyPair> {
     }
 
     private byte[] encodePrivateKey(KeyPair keyPair) {
-        return ((XECPrivateKey) keyPair.getPrivate())
-                .getScalar()
-                .orElseThrow(() -> new IllegalArgumentException("Cannot serialize a private key with no scalar value"));
+        return CypherUtils.extractRawPrivateKey(keyPair.getPrivate());
     }
 }

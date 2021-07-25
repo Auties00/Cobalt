@@ -2,7 +2,7 @@ package it.auties.whatsapp4j.request.model;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
-import it.auties.whatsapp4j.protobuf.model.Node;
+import it.auties.whatsapp4j.protobuf.model.misc.Node;
 import it.auties.whatsapp4j.response.model.common.Response;
 import it.auties.whatsapp4j.response.model.common.ResponseModel;
 import it.auties.whatsapp4j.utils.WhatsappUtils;

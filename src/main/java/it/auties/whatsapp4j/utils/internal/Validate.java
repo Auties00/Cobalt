@@ -4,6 +4,8 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
+import java.lang.reflect.InvocationTargetException;
+
 /**
  * This utility class provides an easy way to check if a condition is satisfied
  * If the condition isn't satisfied, an exception is thrown
@@ -44,8 +46,16 @@ public class Validate {
      * @param exception the type of exception to throw if {@code value} isn't true
      * @param args      the arguments used to format the exception thrown if {@code value} isn't true
      */
-    @SneakyThrows
-    public void isTrue(boolean value, @NonNull String message, @NonNull Class<? extends Exception> exception, @NonNull Object... args) {
-        if (!value) throw exception.getConstructor(String.class).newInstance(message.formatted(args));
+    public void isTrue(boolean value, @NonNull String message, @NonNull Class<? extends RuntimeException> exception, @NonNull Object... args) {
+        try {
+            if (value) {
+                return;
+            }
+
+            throw exception.getConstructor(String.class)
+                    .newInstance(message.formatted(args));
+        }catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException ex){
+            throw new RuntimeException(message.formatted(args));
+        }
     }
 }

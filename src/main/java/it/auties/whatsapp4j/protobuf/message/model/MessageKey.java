@@ -3,6 +3,7 @@ package it.auties.whatsapp4j.protobuf.message.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.protobuf.chat.Chat;
+import it.auties.whatsapp4j.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.utils.WhatsappUtils;
 import it.auties.whatsapp4j.api.WhatsappAPI;
 import lombok.*;
@@ -11,7 +12,7 @@ import lombok.experimental.Accessors;
 import java.util.Optional;
 
 /**
- * A container for unique identifiers and metadata linked to a {@link Message} and contained in {@link it.auties.whatsapp4j.protobuf.info.MessageInfo}.
+ * A container for unique identifiers and metadata linked to a {@link Message} and contained in {@link MessageInfo}.
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
  * Instead, methods inside {@link WhatsappAPI} should be used.
  */

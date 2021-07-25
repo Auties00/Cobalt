@@ -4,7 +4,7 @@ import it.auties.whatsapp4j.listener.RegisterListener;
 import it.auties.whatsapp4j.listener.WhatsappListener;
 import it.auties.whatsapp4j.protobuf.chat.Chat;
 import it.auties.whatsapp4j.protobuf.contact.Contact;
-import it.auties.whatsapp4j.protobuf.info.MessageInfo;
+import it.auties.whatsapp4j.protobuf.model.info.MessageInfo;
 import it.auties.whatsapp4j.response.impl.json.UserInformationResponse;
 import lombok.NonNull;
 

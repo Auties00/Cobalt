@@ -4,9 +4,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.protobuf.info.ContextInfo;
+import it.auties.whatsapp4j.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.protobuf.message.model.MediaMessage;
 import it.auties.whatsapp4j.protobuf.message.model.MediaMessageType;
-import it.auties.whatsapp4j.protobuf.model.InteractiveAnnotation;
+import it.auties.whatsapp4j.protobuf.model.misc.InteractiveAnnotation;
 import it.auties.whatsapp4j.utils.internal.CypherUtils;
 import it.auties.whatsapp4j.utils.internal.Validate;
 import it.auties.whatsapp4j.api.WhatsappAPI;
@@ -143,7 +144,7 @@ public final class VideoMessage extends MediaMessage {
 
   /**
    * Constructs a new builder to create a VideoMessage that wraps a video.
-   * The result can be later sent using {@link WhatsappAPI#sendMessage(it.auties.whatsapp4j.protobuf.info.MessageInfo)}
+   * The result can be later sent using {@link WhatsappAPI#sendMessage(MessageInfo)}
    *
    * @param media       the non null video that the new message wraps
    * @param mimeType    the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
@@ -179,7 +180,7 @@ public final class VideoMessage extends MediaMessage {
    * Constructs a new builder to create a VideoMessage that wraps a video that will be played as a gif.
    * Wrapping a gif file instead of a video will result in an exception if detected or in an unplayable message.
    * This is because Whatsapp doesn't support standard gifs.
-   * The result can be later sent using {@link WhatsappAPI#sendMessage(it.auties.whatsapp4j.protobuf.info.MessageInfo)}
+   * The result can be later sent using {@link WhatsappAPI#sendMessage(MessageInfo)}
    *
    * @param media       the non null video that the new message wraps
    * @param mimeType    the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
