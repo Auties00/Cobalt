@@ -139,7 +139,7 @@ public class Chat {
             .timestamp(json.getLong("t").orElse(ZonedDateTime.now().toEpochSecond()))
             .newJid(json.getString("new_jid").orElse(null))
             .unreadMessages(json.getInteger("count").orElse(0))
-            .mute(json.getInteger("mute").map(ChatMute::new).orElse(ChatMute.UNKNOWN))
+            .mute(json.getLong("mute").map(ChatMute::new).orElse(ChatMute.UNKNOWN))
             .isSpam(json.getBoolean("spam"))
             .isArchived(json.getBoolean(("archive")))
             .isReadOnly(json.getBoolean(("read_only")))
