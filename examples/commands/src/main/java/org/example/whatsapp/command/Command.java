@@ -1,6 +1,6 @@
 package org.example.whatsapp.command;
 
-import it.auties.whatsapp4j.api.WhatsappAPI;
+import it.auties.whatsapp4j.common.api.WhatsappAPI;
 import it.auties.whatsapp4j.protobuf.chat.Chat;
 import it.auties.whatsapp4j.protobuf.model.info.MessageInfo;
 import lombok.NonNull;

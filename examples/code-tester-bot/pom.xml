@@ -10,7 +10,7 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <java.version>16</java.version>
+        <java.version>17</java.version>
         <whatsapp4j.version>2.2-SNAPSHOT</whatsapp4j.version>
     </properties>
 
@@ -21,10 +21,11 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <source>16</source>
+                    <target>16</target>
                     <release>${java.version}</release>
                     <compilerArgument>--enable-preview</compilerArgument>
+                    <compilerArgs>--enable-preview</compilerArgs>
                 </configuration>
             </plugin>
         </plugins>
