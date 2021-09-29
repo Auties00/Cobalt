@@ -209,15 +209,14 @@ public record BinaryArray(byte[] data) {
     }
 
     /**
-     * Constructs a new BinaryArray from this object's array of bytes and converts them to unsigned bytes
+     * Constructs a new BinaryArray from this object's array of bytes and converts them to unsigned ints
      *
-     * @return a BinaryArray with the above characteristics
+     * @return an array of ints with the above characteristics
      */
-    public @NonNull BinaryArray toUnsigned() {
-        var result = new byte[size()];
-        IntStream.range(0, result.length)
-                .forEach(x -> result[x] = (byte) Byte.toUnsignedInt(at(x)));
-        return forArray(result);
+    public @NonNull int[] toUnsigned() {
+        return IntStream.range(0, size())
+                .map(index -> Byte.toUnsignedInt(at(index)))
+                .toArray();
     }
 
     /**

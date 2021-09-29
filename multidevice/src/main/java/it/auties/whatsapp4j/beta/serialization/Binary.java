@@ -1,5 +1,7 @@
 package it.auties.whatsapp4j.beta.serialization;
 
+import it.auties.whatsapp4j.common.utils.Validate;
+
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -97,21 +99,24 @@ public record Binary(ByteBuffer buffer) {
     }
 
     public byte[] readAllBytes() {
-        return readBytes(-1);
+        return readBytes(0, buffer.position() - 1);
     }
 
     public byte[] readBytes(long size) {
-        if (size > Integer.MAX_VALUE) {
-            throw new RuntimeException("long => int");
+        if(size >= Integer.MAX_VALUE){
+            throw new UnsupportedOperationException(String.valueOf(size));
         }
 
-        buffer.rewind();
-        if(size < 0){
-            size = buffer.remaining();
-        }
+        return readBytes(buffer.position() - 1, (int) (buffer.position() + size - 1));
+    }
 
-        var bytes = new byte[(int) size];
-        buffer.get(bytes);
+    public byte[] readBytes(int start, int end) {
+        System.out.printf("Reading bytes from %s to %s%n", start, end);
+        Validate.isTrue(start >= 0, "Expected unsigned int for start, got: %s", start);
+        Validate.isTrue(end >= 0, "Expected unsigned int for end, got: %s", end);
+        Validate.isTrue(end >= start, "Expected end to be bigger than start, got: %s - %s", start, end);
+        var bytes = new byte[end - start];
+        buffer.get(start, bytes, 0, bytes.length);
         return bytes;
     }
 
@@ -120,35 +125,26 @@ public record Binary(ByteBuffer buffer) {
     }
 
     public Binary writeInt8(byte in) {
-        System.out.printf("Writing int8 %s to buffer %s%n", in, Arrays.toString(buffer.array()));
         buffer.put(temp(1).put(in).rewind());
-        System.out.printf("Wrote %s to buffer %s%n", in, Arrays.toString(buffer.array()));
         return this;
     }
 
     public Binary writeUInt8(int in) {
-        System.out.printf("Writing uint8 %s to buffer %s%n", in, Arrays.toString(buffer.array()));
         return writeInt8(checkUnsigned(in).byteValue());
     }
 
     public Binary writeUInt16(int in) {
-        System.out.printf("Writing uint16 %s to buffer %s%n", in, Arrays.toString(buffer.array()));
         buffer.put(temp(2).putShort(checkUnsigned(in).shortValue()).rewind());
-        System.out.printf("Wrote %s to buffer %s%n", in, Arrays.toString(buffer.array()));
         return this;
     }
 
     public Binary writeInt32(int in) {
-        System.out.printf("Writing int32 %s to buffer %s%n", in, Arrays.toString(buffer.array()));
         buffer.put(temp(4).putInt(in).rewind());
-        System.out.printf("Wrote %s to buffer %s%n", in, Arrays.toString(buffer.array()));
         return this;
     }
 
     public Binary writeUInt32(long in) {
-        System.out.printf("Writing uint32 %s to buffer %s%n", in, Arrays.toString(buffer.array()));
         buffer.put(temp(4).putInt(checkUnsigned(in).intValue()).rewind());
-        System.out.printf("Wrote %s to buffer %s%n", in, Arrays.toString(buffer.array()));
         return this;
     }
 

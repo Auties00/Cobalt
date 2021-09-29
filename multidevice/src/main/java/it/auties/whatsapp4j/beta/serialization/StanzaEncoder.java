@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -26,8 +27,8 @@ public class StanzaEncoder{
 
     private static final List<Character> NUMBERS = List.of('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '.', '�', '�', '�', '�');
     private static final List<Character> HEX = List.of('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F');
-    public static final int UNSIGNED_BYTE_MAX_VALUE = 256;
-    public static final int UNSIGNED_SHORT_MAX_VALUE = 65536;
+    private static final int UNSIGNED_BYTE_MAX_VALUE = 256;
+    private static final int UNSIGNED_SHORT_MAX_VALUE = 65536;
 
     private Binary binary;
     private int counter;
@@ -36,13 +37,14 @@ public class StanzaEncoder{
         this(new Binary(), 1, null);
     }
 
-    public List<Node> readList(int size){
+    private List<Node> readList(int size){
+        System.out.println("Reading list with size " + size);
         return IntStream.range(0, size)
                 .mapToObj(index -> decodeStanza(binary))
                 .toList();
     }
 
-    public String readString(List<Character> permitted, int start, int end) {
+    private String readString(List<Character> permitted, int start, int end) {
         var string = new int[2 * end - start];
         IntStream.iterate(0, index -> index < string.length - 1, n -> n + 2)
                 .forEach(index -> readChar(permitted, string, index));
@@ -61,59 +63,60 @@ public class StanzaEncoder{
         string[index + 1] = permitted.get(15 & token);
     }
 
-    public void writeString(String input, int token) {
+    private void writeString(String input, int token) {
         binary.writeUInt8(token);
         writeStringLength(input);
-        IntStream.range(0, input.length())
-                .forEach(index -> writeChar(input, token, index));
+        for (int index = 0, charCode = 0; index < input.length(); index++) {
+            var codePoint = Character.codePointAt(input, index);
+            var parsedCodePoint = parseCodePoint(token, codePoint);
+            if (index % 2 != 0) {
+                binary.writeUInt8(charCode |= parsedCodePoint);
+                continue;
+            }
+
+            charCode = parsedCodePoint << 4;
+            if (index != input.length() - 1) {
+                continue;
+            }
+
+            charCode |= 15;
+            binary.writeUInt8(charCode);
+        }
     }
 
     private void writeStringLength(String input) {
-        var halfLength = input.length() / 2;
+        var roundedLength = (int) Math.ceil(input.length() / 2F);
         if(input.length() % 2 == 1){
-            binary.writeUInt8(halfLength | 128);
+            binary.writeUInt8(roundedLength | 128);
             return;
         }
 
-        binary.writeUInt8(halfLength);
-    }
-
-    private void writeChar(String input, int token, int index) {
-        var codePoint = Character.codePointAt(input, index);
-        var parsedCodePoint = parseCodePoint(token, codePoint);
-        if (index % 2 != 0) {
-            return;
-        }
-
-        if (index != input.length() - 1) {
-            binary.writeUInt8((parsedCodePoint << 4) | parsedCodePoint);
-            return;
-        }
-
-        binary.writeUInt8((parsedCodePoint << 4) | 15);
+        binary.writeUInt8(roundedLength);
     }
 
     private int parseCodePoint(int token, int codePoint) {
-        if(48 <= codePoint && codePoint <= 57){
+        if(codePoint >= 48 && codePoint <= 67){
             return codePoint - 48;
         }
 
-        if(255 == token){
-            return switch (codePoint){
-                case 45 -> 10;
-                case 46 -> 11;
-                default -> throw new IllegalArgumentException("Cannot parse codepoint %s with token %s".formatted(codePoint, token));
-            };
+        if(token == 255){
+            if(codePoint == 45){
+                return 10;
+            }
+
+            if(codePoint == 46){
+                return 11;
+            }
         }
 
-        if(251 == token && 65 <= codePoint && codePoint <= 70){
+        if(token == 251 && codePoint >= 65 && codePoint <= 70){
             return codePoint - 55;
         }
 
         throw new IllegalArgumentException("Cannot parse codepoint %s with token %s".formatted(codePoint, token));
     }
 
-    public void writeLong(long input) {
+    private void writeLong(long input) {
         if (input < 256){
             binary.writeUInt8(252);
             binary.writeUInt8((int) input);
@@ -132,7 +135,7 @@ public class StanzaEncoder{
         binary.writeUInt32(input);
     }
 
-    public void writeString(String input) {
+    private void writeString(String input) {
         if (input.isEmpty()){
             binary.writeUInt8(252);
             binary.writeUInt8(0);
@@ -151,12 +154,13 @@ public class StanzaEncoder{
 
         var o = rawStringLength(input);
         if (o < 128) {
-            if (input.matches("!/[^0-9.-]+?/")) {
+            System.out.println("Writing string " + input);
+            if (!input.matches("[^0-9.-]+?")) {
                 writeString(input, 255);
                 return;
             }
 
-            if (input.matches("!/[^0-9A-F]+?/")) {
+            if (!input.matches("[^0-9A-F]+?")) {
                 writeString(input, 251);
                 return;
             }
@@ -184,7 +188,7 @@ public class StanzaEncoder{
         return input.getBytes(StandardCharsets.UTF_8).length;
     }
 
-    public void writeNode(Node input) {
+    private void writeNode(Node input) {
         if (input.description().equals("0")) {
             binary.writeUInt8(UNSIGNED_BYTE_TAG);
             binary.writeUInt8(0);
@@ -243,7 +247,7 @@ public class StanzaEncoder{
         return size;
     }
 
-    public Object read(boolean raw) {
+    private Object read(boolean raw) {
         var token = binary.readUInt8();
         return switch (token) {
             case 0 -> null;
@@ -261,12 +265,8 @@ public class StanzaEncoder{
     }
 
     private String readStringFallback(int token) {
-        if (token <= 0 || token >= 240) {
-            throw new RuntimeException("Cannot decode string using fallback, invalid token: %s".formatted(token));
-        }
-
         if (token >= 236) {
-            var dict = TOKENS.get(token - STRING_TOKENS[0]);
+            var dict = TOKENS.get((token - STRING_TOKENS[0]) >= TOKENS.size() ? TOKENS.size() - 1 : token - STRING_TOKENS[0]);
             if (dict == null) {
                 throw new RuntimeException("Cannot decode string using fallback: missing dictionary");
             }
@@ -340,7 +340,7 @@ public class StanzaEncoder{
         return Jid.createAd(user, agent, device);
     }
 
-    public void write(Object input) {
+    private void write(Object input) {
         switch (input) {
             case null -> binary.writeUInt8(0);
             case Node n -> writeNode(n);
@@ -382,7 +382,6 @@ public class StanzaEncoder{
             throw new RuntimeException("Decode string got invalid value %s, string expected".formatted(t));
         }
 
-        System.out.printf("Decoded: %s%n", t);
         return result;
     }
 
@@ -391,24 +390,35 @@ public class StanzaEncoder{
         var token = binary.readUInt8();
         var size = token == UNSIGNED_BYTE_TAG ? binary.readUInt8() : binary.readUInt16();
         if (size == 0) {
-            throw new RuntimeException("Failed to decode node, node cannot be empty");
+            throw new RuntimeException("Failed to decode node: node cannot be empty");
         }
 
         var description = decodeStanzaString();
+        System.out.printf("Node's description: %s%n", description);
         var attrs = readAttributes(size);
-        if (size != 1) {
+        System.out.println("Attrs size: " + size);
+        if (size % 2 != 0) {
             return new Node(description, attrs, null);
         }
 
         var content = read(false);
-        return content instanceof Jid jid ? new Node(description, attrs, jid.toString()) : new Node(description, attrs, content);
+        if (content instanceof Jid jid) {
+            return new Node(description, attrs, jid.toString());
+        }
+
+        return new Node(description, attrs, content);
     }
 
     private Map<String, Object> readAttributes(int size) {
-        return IntStream.iterate(size - 1, index -> index > 1, index -> index - 2)
-                .mapToObj(index -> decodeStanzaString())
-                .map(key -> Map.entry(key, read(true)))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        System.out.printf("Reading %s attributes%n", size);
+        var map = new HashMap<String, Object>();
+        for (var t = size - 1; t > 1; t -= 2) {
+            var s = decodeStanzaString();
+            var l = read(true);
+            map.put(s, l);
+        }
+
+        return map;
     }
 
     public byte[] encodeStanza(Node node) {
@@ -423,9 +433,10 @@ public class StanzaEncoder{
     public Binary unpackStanza(byte[] input) {
         var data = Binary.fromBytes(input);
         if ((2 & data.readUInt8()) != 0) {
+            System.out.println("Unpacking");
             var decompressor = new Inflater();
             try {
-                decompressor.setInput(input);
+                decompressor.setInput(data.readAllBytes());
                 var temp = new byte[2048];
                 var length = decompressor.inflate(temp);
                 var result = new byte[length];
@@ -438,6 +449,7 @@ public class StanzaEncoder{
             }
         }
 
+        System.out.println("jt already unpacked");
         return data;
     }
 
