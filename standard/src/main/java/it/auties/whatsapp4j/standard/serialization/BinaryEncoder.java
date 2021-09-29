@@ -141,7 +141,7 @@ public record BinaryEncoder(@NonNull List<Byte> cache) {
         Arrays.stream(tokens).forEach(token -> writeString(token, false));
     }
 
-    private void writeAttributes(@NonNull Map<String, String> attrs) {
+    private void writeAttributes(@NonNull Map<String, Object> attrs) {
         attrs.forEach(this::writeStrings);
     }
 

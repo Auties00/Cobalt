@@ -15,6 +15,7 @@ import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.params.X25519PublicKeyParameters;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
+import org.bouncycastle.jcajce.interfaces.EdDSAPrivateKey;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
@@ -48,11 +49,11 @@ public class CypherUtils {
     private final String SHA256 = "SHA-256";
     private final String HKDF = "HKDF-Salt";
     private final int BLOCK_SIZE = 16;
+
     @SneakyThrows
     public @NonNull KeyPair randomKeyPair() {
         return KeyPairGenerator.getInstance(CURVE)
                 .generateKeyPair();
-
     }
 
     @SneakyThrows
@@ -69,18 +70,16 @@ public class CypherUtils {
     }
 
     @SneakyThrows
-    public byte @NonNull [] parseKey(@NonNull PublicKey publicKey) {
+    public byte @NonNull [] raw(@NonNull PublicKey publicKey) {
         var x25519PublicKeyParameters = (X25519PublicKeyParameters) PublicKeyFactory.createKey(publicKey.getEncoded());
         return x25519PublicKeyParameters.getEncoded();
-
     }
 
     @SneakyThrows
-    public byte @NonNull [] parseKey(@NonNull PrivateKey privateKey) {
+    public byte @NonNull [] raw(@NonNull PrivateKey privateKey) {
         var xecPrivateKey = (XECPrivateKey) privateKey;
         return xecPrivateKey.getScalar()
                 .orElseThrow(() -> new IllegalArgumentException("Cannot serialize a private key with no scalar value"));
-
     }
 
     @SneakyThrows

@@ -24,7 +24,7 @@ public record BinaryArray(byte[] data) {
      * @return a new {@code BinaryArray} wrapping an empty bytes array
      */
     public static @NonNull BinaryArray empty() {
-        return forArray(new byte[0]);
+        return forArray();
     }
 
     /**
@@ -33,35 +33,35 @@ public record BinaryArray(byte[] data) {
      * @param in the array of bytes to wrap
      * @return a new {@code BinaryArray} wrapping {@code in}
      */
-    public static @NonNull BinaryArray forArray(byte[] in) {
+    public static @NonNull BinaryArray forArray(byte... in) {
         return new BinaryArray(in);
     }
 
     /**
-     * Constructs a new non empty {@code BinaryArray}
+     * Constructs a new non-empty {@code BinaryArray}
      *
      * @param in the byte to wrap
-     * @return a new non empty {@code BinaryArray} wrapping a bytes array that only contains {@param in}
+     * @return a new non-empty {@code BinaryArray} wrapping a bytes array that only contains {@param in}
      */
     public static @NonNull BinaryArray singleton(byte in) {
         return new BinaryArray(new byte[]{in});
     }
 
     /**
-     * Constructs a new non empty {@code BinaryArray} of a fixed size representing an integer
+     * Constructs a new non-empty {@code BinaryArray} of a fixed size representing an integer
      *
      * @param integer the int to wrap
      * @param length  the length of the array
-     * @return a new non empty {@code BinaryArray} wrapping a bytes array that only contains {@param in}
+     * @return a new non-empty {@code BinaryArray} wrapping a bytes array that only contains {@param in}
      */
     public static @NonNull BinaryArray forInt(int integer, int length) {
-        var ints = IntStream.range(0, length)
-                .map(index -> index == 0 ? integer : integer >> (8 * index))
-                .toArray();
-        var results = new byte[ints.length];
-        IntStream.range(0, ints.length)
-                .forEach(x -> results[results.length - x - 1] = (byte) ints[x]);
-        return forArray(results);
+        var result = new byte[length];
+        for(var i = length - 1; i >= 0; i--){
+            result[i] = (byte) (255 & integer);
+            integer >>>= 8;
+        }
+
+        return forArray(result);
     }
 
     /**
@@ -179,7 +179,7 @@ public record BinaryArray(byte[] data) {
 
     /**
      * Returns the index within this object's bytes array of the first occurrence of a byte that matches {@param character}
-     * If this condition is met, a non empty Optional wrapping said index is returned
+     * If this condition is met, a non-empty Optional wrapping said index is returned
      * Otherwise, an empty Optional is returned
      *
      * @param character the character to search

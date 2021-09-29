@@ -245,7 +245,7 @@ public class MessageInfo {
   /**
    * Returns an optional {@link MessageInfo} representing the message quoted by this message if said message is in memory
    *
-   * @return a non empty optional {@link MessageInfo} if this message quotes a message in memory
+   * @return a non-empty optional {@link MessageInfo} if this message quotes a message in memory
    */
   public @NonNull Optional<MessageInfo> quotedMessage(){
     return Optional.of(container)

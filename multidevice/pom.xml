@@ -27,5 +27,10 @@
             <artifactId>common</artifactId>
             <version>${common.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.whispersystems</groupId>
+            <artifactId>curve25519-java</artifactId>
+            <version>0.5.0</version>
+        </dependency>
     </dependencies>
 </project>

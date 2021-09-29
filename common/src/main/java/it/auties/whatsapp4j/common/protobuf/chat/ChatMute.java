@@ -45,7 +45,7 @@ public record ChatMute(long time) {
     /**
      * Returns an optional time representing the date that the mute associated with this object ends
      *
-     * @return a non empty optional date if {@link ChatMute#time} > 0
+     * @return a non-empty optional date if {@link ChatMute#time} > 0
      */
     public @NonNull Optional<ZonedDateTime> muteEndDate() {
         return isMuted() ? Optional.of(ZonedDateTime.ofInstant(Instant.ofEpochSecond(time), ZoneId.systemDefault())) : Optional.empty();

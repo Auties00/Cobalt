@@ -15,8 +15,10 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 
+import java.nio.ByteBuffer;
 import java.security.KeyPair;
 import java.util.Base64;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -41,13 +43,25 @@ public class MultiDeviceKeysManager extends WhatsappKeysManager {
     private @NonNull SignedKeyPair signedPreKey;
 
     @JsonProperty
-    private @NonNull int registrationId;
+    private int registrationId;
+
+    @JsonProperty
+    private BinaryArray writeKey, readKey;
 
     public MultiDeviceKeysManager(){
         super(Base64.getEncoder().encodeToString(BinaryArray.random(16).data()), CypherUtils.randomKeyPair(), null, null, null, null);
         this.ephemeralKeyPair = CypherUtils.randomKeyPair();
         this.signedIdentityKey = CypherUtils.randomKeyPair();
-        this.signedPreKey = MultiDeviceCypher.randomSignedPreKey();
-        this.registrationId = ThreadLocalRandom.current().nextInt(Short.MIN_VALUE, Short.MAX_VALUE) & 0x3fff;
+        this.signedPreKey = MultiDeviceCypher.randomSignedPreKey(signedIdentityKey);
+        this.registrationId = ThreadLocalRandom.current().nextInt() & 0x3fff;
+    }
+
+    public MultiDeviceKeysManager initializeKeys(@NonNull BinaryArray writeKey, @NonNull BinaryArray readKey) {
+        return this.initializeKeys(null, null, writeKey, readKey);
+    }
+
+    @Override
+    public MultiDeviceKeysManager initializeKeys(String serverToken, String clientToken, @NonNull BinaryArray writeKey, @NonNull BinaryArray readKey) {
+        return writeKey(writeKey).readKey(readKey);
     }
 }

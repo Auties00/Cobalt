@@ -20,7 +20,6 @@ import it.auties.whatsapp4j.common.protobuf.chat.GroupAction;
 import it.auties.whatsapp4j.common.protobuf.chat.GroupPolicy;
 import it.auties.whatsapp4j.common.protobuf.chat.GroupSetting;
 import it.auties.whatsapp4j.common.protobuf.contact.Contact;
-import it.auties.whatsapp4j.common.protobuf.contact.IContactStatus;
 import it.auties.whatsapp4j.common.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.common.protobuf.model.misc.Node;
 import it.auties.whatsapp4j.common.serialization.IWhatsappSerializer;
@@ -34,6 +33,7 @@ import it.auties.whatsapp4j.common.utils.Validate;
 import it.auties.whatsapp4j.common.utils.WhatsappQRCode;
 import jakarta.websocket.*;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
@@ -64,7 +64,7 @@ import java.util.concurrent.TimeUnit;
 @ClientEndpoint(configurator = WhatsappSocketConfiguration.class)
 @Log
 public class WhatsappSocket implements IWhatsappSocket {
-    private Session session;
+    private @Getter(onMethod = @__(@NonNull)) Session session;
     private boolean loggedIn;
     private final @NonNull WebSocketContainer container;
     private final @NonNull ScheduledExecutorService pingService;
@@ -134,7 +134,7 @@ public class WhatsappSocket implements IWhatsappSocket {
 
     private @NonNull BitMatrix createMatrix(@NonNull InitialResponse response) {
         var ref = Objects.requireNonNull(response.ref(), "Cannot find ref for QR code generation, the version code is probably outdated");
-        var publicKey = CypherUtils.parseKey(keys.keyPair().getPublic());
+        var publicKey = CypherUtils.raw(keys.keyPair().getPublic());
         var clientId = keys.clientId();
         return qrCode.generate(ref, publicKey, clientId);
     }
@@ -497,10 +497,6 @@ public class WhatsappSocket implements IWhatsappSocket {
 
     private void handleList(@NonNull JsonListResponse response) {
         manager.callListeners(listener -> listener.onListResponse(response.content()));
-    }
-
-    public @NonNull Session session() {
-        return Objects.requireNonNull(session, "WhatsappAPI: The session linked to the WebSocket is null");
     }
 
     public @NonNull CompletableFuture<ChatResponse> queryChat(@NonNull String jid) {

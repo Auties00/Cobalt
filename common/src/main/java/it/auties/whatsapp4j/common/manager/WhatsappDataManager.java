@@ -49,7 +49,7 @@ public class WhatsappDataManager {
      * Queries the first contact whose jid is equal to {@code jid}
      *
      * @param jid the jid to search
-     * @return a non empty Optional containing the first result if any is found otherwise an empty Optional empty
+     * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
     public @NonNull Optional<Contact> findContactByJid(@NonNull String jid) {
         return Collections.synchronizedList(contacts)
@@ -62,7 +62,7 @@ public class WhatsappDataManager {
      * Queries the first contact whose name is equal to {@code name}
      *
      * @param name the name to search
-     * @return a non empty Optional containing the first result if any is found otherwise an empty Optional empty
+     * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
     public @NonNull Optional<Contact> findContactByName(@NonNull String name) {
         return Collections.synchronizedList(contacts)
@@ -88,7 +88,7 @@ public class WhatsappDataManager {
      * Queries the first chat whose jid is equal to {@code jid}
      *
      * @param jid the jid to search
-     * @return a non empty Optional containing the first result if any is found otherwise an empty Optional empty
+     * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
     public @NonNull Optional<Chat> findChatByJid(@NonNull String jid) {
         return Collections.synchronizedList(chats)
@@ -102,7 +102,7 @@ public class WhatsappDataManager {
      *
      * @param chat the chat to search in
      * @param id   the jid to search
-     * @return a non empty Optional containing the result if it is found otherwise an empty Optional empty
+     * @return a non-empty Optional containing the result if it is found otherwise an empty Optional empty
      */
     public @NonNull Optional<MessageInfo> findMessageById(@NonNull Chat chat, @NonNull String id) {
         return chat.messages().stream().filter(e -> Objects.equals(e.key().id(), id)).findAny();
@@ -112,7 +112,7 @@ public class WhatsappDataManager {
      * Queries the chat associated with {@code message}
      *
      * @param message the message to use as context
-     * @return a non empty Optional containing the result if it is found otherwise an empty Optional empty
+     * @return a non-empty Optional containing the result if it is found otherwise an empty Optional empty
      */
     public @NonNull Optional<Chat> findChatByMessage(@NonNull MessageInfo message) {
         return findChatByJid(message.key().chatJid());
@@ -122,7 +122,7 @@ public class WhatsappDataManager {
      * Queries the first chat whose name is equal to {@code name}
      *
      * @param name the name to search
-     * @return a non empty Optional containing the first result if any is found otherwise an empty Optional empty
+     * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
     public @NonNull Optional<Chat> findChatByName(@NonNull String name) {
         return Collections.synchronizedList(chats)
@@ -148,7 +148,7 @@ public class WhatsappDataManager {
      * Queries the first Request whose tag is equal to {@code tag}
      *
      * @param tag the tag to search
-     * @return a non empty Optional containing the first result if any is found otherwise an empty Optional empty
+     * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
     public @NonNull Optional<Request<?, ?>> findPendingRequest(@NonNull String tag) {
         return Collections.synchronizedList(pendingRequests)

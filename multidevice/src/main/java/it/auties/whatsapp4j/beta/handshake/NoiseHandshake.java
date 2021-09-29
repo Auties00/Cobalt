@@ -1,31 +1,30 @@
 package it.auties.whatsapp4j.beta.handshake;
 
+import it.auties.whatsapp4j.beta.manager.MultiDeviceKeysManager;
 import it.auties.whatsapp4j.beta.utils.MultiDeviceCypher;
 import it.auties.whatsapp4j.common.binary.BinaryArray;
 import it.auties.whatsapp4j.common.utils.CypherUtils;
 import lombok.SneakyThrows;
-import org.bouncycastle.crypto.engines.AESEngine;
-import org.bouncycastle.crypto.modes.GCMBlockCipher;
-import org.bouncycastle.crypto.params.AEADParameters;
-import org.bouncycastle.crypto.params.KeyParameter;
-
-import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 import static it.auties.whatsapp4j.common.binary.BinaryArray.forArray;
 
 public class NoiseHandshake {
+    private MultiDeviceKeysManager keys;
     private BinaryArray hash;
     private BinaryArray salt;
     private BinaryArray cryptoKey;
     private long counter;
 
-    public void start() {
+    public NoiseHandshake() {
         var encodedProtocol = BinaryArray.forString(MultiDeviceCypher.handshakeProtocol());
         this.hash = encodedProtocol;
         this.salt = encodedProtocol;
         this.cryptoKey = encodedProtocol;
         updateHash(MultiDeviceCypher.handshakePrologue());
+    }
+
+    public void start(MultiDeviceKeysManager keys){
+        this.keys = keys;
     }
 
     @SneakyThrows
@@ -35,36 +34,21 @@ public class NoiseHandshake {
     }
 
     @SneakyThrows
-    public BinaryArray encrypt(byte[] bytes) {
-        var cipher = createAESGCMCipher(true);
-        var outputLength = cipher.getOutputSize(bytes.length);
-        var output = new byte[outputLength];
-        var outputOffset = cipher.processBytes(bytes, 0, bytes.length, output, 0);
-        cipher.doFinal(output, outputOffset);
-        var result = forArray(output);
-        updateHash(result.data());
-        return result;
-    }
+    public byte[] cypher(byte[] bytes, boolean encrypt) {
+        var cipher = MultiDeviceCypher.aesGmc(cryptoKey.data(), hash.data(), counter++, encrypt);
+        var result = MultiDeviceCypher.aesGmcEncrypt(cipher, bytes);
+        if(!encrypt){
+            updateHash(bytes);
+            return result;
+        }
 
-    @SneakyThrows
-    public BinaryArray decrypt(byte[] bytes) {
-        var cipher = createAESGCMCipher(false);
-        var outputLength = cipher.getOutputSize(bytes.length);
-        var output = new byte[outputLength];
-        var outputOffset = cipher.processBytes(bytes, 0, bytes.length, output, 0);
-        cipher.doFinal(output, outputOffset);
-        var result = forArray(output);
-        updateHash(result.data());
-        System.out.printf("Iv: %s%nCrypto key: %s%nHash: %s%nData: %s%nResult: %s%n", counter - 1, cryptoKey.toHex(), hash.toHex(), forArray(bytes).toHex(), result.toHex());
+        updateHash(result);
         return result;
     }
 
     public void finish()  {
         var expanded = CypherUtils.hkdfExtractAndExpand(salt, 64);
-        var writeKey = expanded.cut(32).data();
-        var readKey = expanded.slice(32).data();
-        System.err.println("Write key: " + Arrays.toString(writeKey));
-        System.err.println("Read key: " + Arrays.toString(readKey));
+        keys.initializeKeys(expanded.cut(32), expanded.slice(32));
     }
 
     public void mixIntoKey(byte[] bytes)  {
@@ -73,24 +57,5 @@ public class NoiseHandshake {
         var expanded = CypherUtils.hkdfExpand(key, null, 64);
         this.salt = expanded.cut(32);
         this.cryptoKey = expanded.slice(32);
-    }
-
-    private GCMBlockCipher createAESGCMCipher(boolean forEncryption) {
-        var secretKey = new KeyParameter(cryptoKey.data());
-        var iv = createIv();
-
-        var cipher = new AESEngine();
-        cipher.init(forEncryption, secretKey);
-
-        var gcm = new GCMBlockCipher(cipher);
-        var params = new AEADParameters(secretKey, 128, iv, hash.data());
-        gcm.init(forEncryption, params);
-        return gcm;
-    }
-
-    private byte[] createIv() {
-        return ByteBuffer.allocate(12)
-                .putLong(4, counter++)
-                .array();
     }
 }

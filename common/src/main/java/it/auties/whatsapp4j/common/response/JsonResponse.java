@@ -58,7 +58,7 @@ public final class JsonResponse extends Response<Map<String, ?>> {
      * Returns an optional String representing the value for the input key
      *
      * @param key the key to search
-     * @return a non empty optional if the key is present, otherwise an empty optional
+     * @return a non-empty optional if the key is present, otherwise an empty optional
      */
     public @NonNull Optional<String> getString(@NonNull String key) {
         return getObject(key, String.class);
@@ -68,7 +68,7 @@ public final class JsonResponse extends Response<Map<String, ?>> {
      * Returns an optional Integer representing the value for the input key
      *
      * @param key the key to search
-     * @return a non empty optional if the key is present, otherwise an empty optional
+     * @return a non-empty optional if the key is present, otherwise an empty optional
      */
     public @NonNull Optional<Integer> getInteger(@NonNull String key) {
         return getString(key).map(Integer::parseInt);
@@ -88,7 +88,7 @@ public final class JsonResponse extends Response<Map<String, ?>> {
      * Returns an optional Long representing the value for the input key
      *
      * @param key the key to search
-     * @return a non empty optional if the key is present, otherwise an empty optional
+     * @return a non-empty optional if the key is present, otherwise an empty optional
      */
     public @NonNull Optional<Long> getLong(@NonNull String key) {
         return getString(key).map(Long::parseLong);
@@ -110,7 +110,7 @@ public final class JsonResponse extends Response<Map<String, ?>> {
      * @param key   the key to search
      * @param clazz a Class that represents {@code <T>}
      * @param <T>   the type of the result
-     * @return a non empty optional if the key is present, otherwise an empty optional
+     * @return a non-empty optional if the key is present, otherwise an empty optional
      */
     public <T> @NonNull Optional<T> getObject(@NonNull String key, @NonNull Class<T> clazz) {
         return Optional.ofNullable(content.get(key)).map(clazz::cast);

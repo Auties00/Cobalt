@@ -114,7 +114,7 @@ public class WhatsappUtils {
      * Returns a binary array containing an encrypted media
      *
      * @param url the url of the encrypted media to download
-     * @return a non empty optional if the media is available
+     * @return a non-empty optional if the media is available
      */
     public @NonNull Optional<BinaryArray> readEncryptedMedia(@NonNull String url) {
         try {
@@ -131,7 +131,7 @@ public class WhatsappUtils {
      * @return a non-null Map of attributes
      */
     @SafeVarargs
-    public @NonNull Map<String, String> attributes(@NonNull Map.Entry<String, String>... entries) {
+    public @NonNull Map<String, Object> attributes(@NonNull Map.Entry<String, Object>... entries) {
         return Arrays.stream(entries).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
@@ -142,7 +142,7 @@ public class WhatsappUtils {
      * @param value the non-null value
      * @return a non-null Entry
      */
-    public @NonNull Map.Entry<String, String> attribute(@NonNull String key, @NonNull Object value) {
-        return Map.entry(key, String.valueOf(value));
+    public @NonNull Map.Entry<String, Object> attribute(@NonNull String key, @NonNull Object value) {
+        return Map.entry(key, value);
     }
 }

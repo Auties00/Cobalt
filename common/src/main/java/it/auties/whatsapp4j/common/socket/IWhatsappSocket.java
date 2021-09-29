@@ -2,6 +2,7 @@ package it.auties.whatsapp4j.common.socket;
 
 import it.auties.whatsapp4j.common.api.AbstractWhatsappAPI;
 import it.auties.whatsapp4j.common.manager.WhatsappKeysManager;
+import jakarta.websocket.OnError;
 import lombok.NonNull;
 
 /**
@@ -12,4 +13,9 @@ import lombok.NonNull;
 public interface IWhatsappSocket {
     void connect();
     @NonNull WhatsappKeysManager keys();
+
+    @OnError
+    default void onError(@NonNull Throwable throwable){
+        throwable.printStackTrace();
+    }
 }

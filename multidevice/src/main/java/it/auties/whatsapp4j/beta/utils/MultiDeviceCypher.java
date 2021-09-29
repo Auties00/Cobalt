@@ -5,20 +5,20 @@ import it.auties.whatsapp4j.common.utils.CypherUtils;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
-import org.bouncycastle.asn1.ASN1Encodable;
-import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.edec.EdECObjectIdentifiers;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.crypto.InvalidCipherTextException;
+import org.bouncycastle.crypto.engines.AESEngine;
+import org.bouncycastle.crypto.modes.GCMBlockCipher;
+import org.bouncycastle.crypto.params.AEADParameters;
+import org.bouncycastle.crypto.params.KeyParameter;
 
-import javax.crypto.KeyAgreement;
+import java.nio.ByteBuffer;
 import java.security.*;
+import java.security.interfaces.XECPrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.HexFormat;
-import java.util.stream.IntStream;
 
 /**
  * This utility class provides helper functionality to easily encrypt and decrypt data
@@ -39,30 +39,77 @@ public class MultiDeviceCypher {
         return HANDSHAKE_PROLOGUE;
     }
 
-    public @NonNull BinaryArray encryptMessage(byte @NonNull [] message) {
-        return BinaryArray.forArray(handshakePrologue())
+    @SneakyThrows
+    public @NonNull BinaryArray encryptMessage(byte @NonNull [] message, BinaryArray writeKey, long count) {
+        if(writeKey != null){
+            System.out.println("Using cypher...");
+            var cipher = aesGmc(writeKey.data(), null, count, true);
+            message = aesGmcEncrypt(cipher, message);
+        }
+
+        System.out.printf("Sending request number %s%n", count);
+        return BinaryArray.empty()
+                .append(count != 0 ? new byte[0] : handshakePrologue())
                 .append(BinaryArray.forInt(message.length, 3))
-                .append(message)
-                .fill(64);
+                .append(message);
     }
 
-    public @NonNull SignedKeyPair randomSignedPreKey() {
-        try {
-            var keyPair = CypherUtils.randomKeyPair();
-            var parsedPublicKey = CypherUtils.parseKey(keyPair.getPublic());
-            var message = new byte[parsedPublicKey.length + 1];
-            IntStream.range(0, message.length).forEach(index -> message[index] = index == 0 ? 5 : parsedPublicKey[index - 1]);
-            var sign = Signature.getInstance(ED_CURVE);
-            var keyFactory = KeyFactory.getInstance(ED_DSA);
-            var parsedPrivateKey = CypherUtils.parseKey(keyPair.getPrivate());
-            var privateKeyInfo = new PrivateKeyInfo(new AlgorithmIdentifier(EdECObjectIdentifiers.id_Ed25519), new DEROctetString(parsedPrivateKey));
-            var privateKeySpec = new PKCS8EncodedKeySpec(privateKeyInfo.getEncoded());
-            var privateKey = keyFactory.generatePrivate(privateKeySpec);
-            sign.initSign(privateKey);
-            sign.update(message);
-            return new SignedKeyPair(parsedPublicKey, parsedPrivateKey, sign.sign());
-        }catch (Exception ex){
-            throw new RuntimeException("Cannot generate random signed key pair", ex);
-        }
+    public GCMBlockCipher aesGmc(byte @NonNull [] key, byte[] data, long count, boolean forEncryption) {
+        var secretKey = new KeyParameter(key);
+        var iv = createIv(count);
+
+        var cipher = new AESEngine();
+        cipher.init(forEncryption, secretKey);
+
+        var gcm = new GCMBlockCipher(cipher);
+        var params = new AEADParameters(secretKey, 128, iv, data);
+        gcm.init(forEncryption, params);
+        return gcm;
+    }
+
+    public byte[] aesGmcEncrypt(GCMBlockCipher cipher, byte[] bytes) throws InvalidCipherTextException {
+        var outputLength = cipher.getOutputSize(bytes.length);
+        var output = new byte[outputLength];
+        var outputOffset = cipher.processBytes(bytes, 0, bytes.length, output, 0);
+        cipher.doFinal(output, outputOffset);
+        return output;
+    }
+
+    private byte[] createIv(long count) {
+        return ByteBuffer.allocate(12)
+                .putLong(4, count)
+                .array();
+    }
+
+    @SneakyThrows
+    public @NonNull SignedKeyPair randomSignedPreKey(@NonNull KeyPair signedIdentityKey) {
+        var keyPair = CypherUtils.randomKeyPair();
+        var publicKey = CypherUtils.raw(keyPair.getPublic());
+        var privateKey = CypherUtils.raw(keyPair.getPrivate());
+        var signKey = calculateSignature(signedIdentityKey.getPrivate(), createSignKey(publicKey));
+        return new SignedKeyPair(publicKey, privateKey, signKey);
+    }
+
+    @SneakyThrows
+    private byte[] calculateSignature(PrivateKey key, byte[] data) {
+        var rawPrivateKey = ((XECPrivateKey) key).getScalar().orElseThrow();
+
+        var keyFactory = KeyFactory.getInstance("Ed25519");
+        var privateKeyInfo = new PrivateKeyInfo(new AlgorithmIdentifier(EdECObjectIdentifiers.id_Ed25519), new DEROctetString(rawPrivateKey));
+        var privateKeySpec = new PKCS8EncodedKeySpec(privateKeyInfo.getEncoded());
+        var privateKey = keyFactory.generatePrivate(privateKeySpec);
+
+        var signer = Signature.getInstance("Ed25519");
+        signer.initSign(privateKey);
+        signer.update(data);
+        return signer.sign();
+    }
+
+
+    private byte @NonNull [] createSignKey(byte @NonNull [] publicKey) {
+        return BinaryArray.empty()
+                .append((byte) 5)
+                .append(publicKey)
+                .data();
     }
 }

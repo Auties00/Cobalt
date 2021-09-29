@@ -214,7 +214,7 @@ public class Chat {
   /**
    * Returns an optional value containing the new jid of this chat
    *
-   * @return a non empty optional if the new jid is not null, otherwise an empty optional
+   * @return a non-empty optional if the new jid is not null, otherwise an empty optional
    */
   public @NonNull Optional<String> newJid() {
     return Optional.ofNullable(newJid);
@@ -223,7 +223,7 @@ public class Chat {
   /**
    * Returns an optional value containing the time this chat was pinned
    *
-   * @return a non empty optional if the chat is pinned, otherwise an empty optional
+   * @return a non-empty optional if the chat is pinned, otherwise an empty optional
    */
   public @NonNull Optional<ZonedDateTime> pinned() {
     return WhatsappUtils.parseWhatsappTime(pinned);
@@ -232,7 +232,7 @@ public class Chat {
   /**
    * Returns an optional value containing the time in seconds before a message is automatically deleted from this chat both locally and from WhatsappWeb's servers
    *
-   * @return a non empty optional if ephemeral messages are enabled for this chat, otherwise an empty optional
+   * @return a non-empty optional if ephemeral messages are enabled for this chat, otherwise an empty optional
    */
   public @NonNull Optional<ZonedDateTime> ephemeralMessageDuration() {
     return WhatsappUtils.parseWhatsappTime(ephemeralMessageDuration);
@@ -241,7 +241,7 @@ public class Chat {
   /**
    * Returns an optional value containing the time in seconds since {@link java.time.Instant#EPOCH} when ephemeral messages were turned on
    *
-   * @return a non empty optional if ephemeral messages are enabled for this chat, otherwise an empty optional
+   * @return a non-empty optional if ephemeral messages are enabled for this chat, otherwise an empty optional
    */
   public @NonNull Optional<ZonedDateTime> ephemeralMessagesToggleTime() {
     return WhatsappUtils.parseWhatsappTime(ephemeralMessagesToggleTime);
@@ -250,7 +250,7 @@ public class Chat {
   /**
    * Returns an optional value containing the latest message in chronological terms for this chat
    *
-   * @return a non empty optional if {@link Chat#messages} isn't empty, otherwise an empty optional
+   * @return a non-empty optional if {@link Chat#messages} isn't empty, otherwise an empty optional
    */
   public @NonNull Optional<MessageInfo> lastMessage() {
     return messages.isEmpty() ? Optional.empty() : Optional.of(messages.get(messages.size() - 1));
@@ -259,7 +259,7 @@ public class Chat {
   /**
    * Returns an optional value containing the first message in chronological terms for this chat
    *
-   * @return a non empty optional if {@link Chat#messages} isn't empty, otherwise an empty optional
+   * @return a non-empty optional if {@link Chat#messages} isn't empty, otherwise an empty optional
    */
   public @NonNull Optional<MessageInfo> firstMessage() {
     return messages.isEmpty() ? Optional.empty() : Optional.of(messages.get(0));

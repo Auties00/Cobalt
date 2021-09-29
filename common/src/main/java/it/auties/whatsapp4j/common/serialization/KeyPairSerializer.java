@@ -24,6 +24,6 @@ public class KeyPairSerializer extends JsonSerializer<KeyPair> {
     }
 
     private byte[] encodePrivateKey(KeyPair keyPair) {
-        return CypherUtils.parseKey(keyPair.getPrivate());
+        return CypherUtils.raw(keyPair.getPrivate());
     }
 }

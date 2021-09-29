@@ -1,6 +1,7 @@
 module it.auties.whatsapp4j.beta {
     requires it.auties.whatsapp4j.shared;
     requires lombok;
+    requires curve25519.java;
     requires com.fasterxml.jackson.annotation;
     requires com.fasterxml.jackson.databind;
     requires java.prefs;
