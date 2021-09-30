@@ -4,7 +4,7 @@ import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp4j.common.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.common.protobuf.model.misc.Node;
 import it.auties.whatsapp4j.common.utils.Validate;
-import it.auties.whatsapp4j.standard.binary.BinaryTag;
+import it.auties.whatsapp4j.common.binary.BinaryTag;
 import it.auties.whatsapp4j.standard.binary.BinaryTokens;
 import lombok.NonNull;
 

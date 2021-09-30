@@ -10,7 +10,7 @@ import java.util.stream.IntStream;
 
 public class Buffer {
     public static void main(String[] args) {
-        var node = new Node("iq", Map.of("id", "123"), List.of(new Node("ping", Map.of("id", "123"), List.of(new Node("iq", Map.of("id", "123"), null)))));
+        var node = new Node("iq", Map.of("id", "123", "to", "mario"), List.of(new Node("ping", Map.of("id", "123"), List.of(new Node("iq", Map.of("id", "123"), null)))));
         var encoded = new StanzaEncoder().encodeStanza(node);
         System.out.println(Arrays.toString(encoded));
         System.out.println(Arrays.toString(BinaryArray.forArray(encoded).toUnsigned()));

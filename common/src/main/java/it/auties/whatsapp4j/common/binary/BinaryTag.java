@@ -1,6 +1,5 @@
-package it.auties.whatsapp4j.standard.binary;
+package it.auties.whatsapp4j.common.binary;
 
-import it.auties.whatsapp4j.common.binary.BinaryArray;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;

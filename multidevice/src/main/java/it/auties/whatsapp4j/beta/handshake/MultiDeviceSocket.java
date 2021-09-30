@@ -78,6 +78,7 @@ public class MultiDeviceSocket implements IWhatsappSocket {
             case 1 -> authenticate(multiDeviceMessage);
             case 2 -> {
                 var unpacked = stanzaEncoder.unpackStanza(multiDeviceMessage.decoded().data());
+                System.out.println(Arrays.toString(unpacked.readAllBytes()));
                 var decoded = stanzaEncoder.decodeStanza(unpacked);
                 System.out.println(decoded);
             }

@@ -8,6 +8,7 @@ import it.auties.whatsapp4j.common.utils.Validate;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -78,7 +79,7 @@ public record Node(@NonNull String description,
      * @param list the generic list to parse
      * @return a non-null list containing only objects from {@code list} of type WhatsappNode
      */
-    public static @NonNull List<Node> fromGenericList(@NonNull List<?> list) {
+    public static @NonNull List<Node> fromGenericList(@NonNull Collection<?> list) {
         return list.stream()
                 .filter(entry -> entry instanceof Node)
                 .map(Node.class::cast)

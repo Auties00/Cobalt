@@ -1,5 +1,6 @@
 package it.auties.whatsapp4j.beta.serialization;
 
+import it.auties.whatsapp4j.common.binary.BinaryTag;
 import it.auties.whatsapp4j.common.utils.Validate;
 
 import java.math.BigInteger;
@@ -99,24 +100,25 @@ public record Binary(ByteBuffer buffer) {
     }
 
     public byte[] readAllBytes() {
+        return readBytes(0, buffer.limit());
+    }
+
+    public byte[] readWrittenBytes() {
         return readBytes(0, buffer.position() - 1);
     }
 
     public byte[] readBytes(long size) {
-        if(size >= Integer.MAX_VALUE){
-            throw new UnsupportedOperationException(String.valueOf(size));
-        }
-
-        return readBytes(buffer.position() - 1, (int) (buffer.position() + size - 1));
+        var parsed = Validate.isValid(size, size >= 0 && size < Integer.MAX_VALUE, "Cannot read %s bytes", size);
+        return readBytes(buffer.position(), buffer.position() + parsed.intValue());
     }
 
     public byte[] readBytes(int start, int end) {
-        System.out.printf("Reading bytes from %s to %s%n", start, end);
         Validate.isTrue(start >= 0, "Expected unsigned int for start, got: %s", start);
         Validate.isTrue(end >= 0, "Expected unsigned int for end, got: %s", end);
         Validate.isTrue(end >= start, "Expected end to be bigger than start, got: %s - %s", start, end);
         var bytes = new byte[end - start];
         buffer.get(start, bytes, 0, bytes.length);
+        buffer.position(buffer.position() + bytes.length);
         return bytes;
     }
 
@@ -131,6 +133,10 @@ public record Binary(ByteBuffer buffer) {
 
     public Binary writeUInt8(int in) {
         return writeInt8(checkUnsigned(in).byteValue());
+    }
+
+    public Binary writeUInt8(BinaryTag in) {
+        return writeUInt8(in.data());
     }
 
     public Binary writeUInt16(int in) {
@@ -182,7 +188,9 @@ public record Binary(ByteBuffer buffer) {
     }
 
     public Binary writeBytes(byte... in) {
-        IntStream.range(0, in.length).mapToObj(index -> Byte.toUnsignedInt(in[index])).forEach(buffer::putInt);
+        for(var entry : in) {
+            buffer.put(entry);
+        }
         return this;
     }
 

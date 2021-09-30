@@ -4,7 +4,7 @@ import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.whatsapp4j.common.binary.BinaryArray;
 import it.auties.whatsapp4j.common.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.common.protobuf.model.misc.Node;
-import it.auties.whatsapp4j.standard.binary.BinaryTag;
+import it.auties.whatsapp4j.common.binary.BinaryTag;
 import it.auties.whatsapp4j.standard.binary.BinaryTokens;
 import it.auties.whatsapp4j.common.utils.Validate;
 import lombok.NonNull;
@@ -168,7 +168,7 @@ public class BinaryDecoder {
     }
 
     @SneakyThrows
-    private Map<String, String> readAttributes(int n) {
+    private Map<String, Object> readAttributes(int n) {
         return IntStream.range(0, n).boxed().collect(Collectors.toMap(x -> readString(readUnsignedInt()), x -> readString(readUnsignedInt()), (a, b) -> b, HashMap::new));
     }
 
