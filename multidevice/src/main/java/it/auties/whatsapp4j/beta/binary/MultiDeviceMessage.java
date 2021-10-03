@@ -18,4 +18,8 @@ public class MultiDeviceMessage extends BinaryMessage {
         this.length = array.cut(3).toInt();
         this.decoded = array.slice(3, 3 + length);
     }
+
+    public MultiDeviceMessage(byte @NonNull [] array) {
+        this(BinaryArray.forArray(array));
+    }
 }

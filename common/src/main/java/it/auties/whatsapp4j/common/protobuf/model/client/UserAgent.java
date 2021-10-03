@@ -2,6 +2,7 @@ package it.auties.whatsapp4j.common.protobuf.model.client;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import it.auties.whatsapp4j.common.protobuf.info.WebInfo;
 import it.auties.whatsapp4j.common.protobuf.model.app.AppVersion;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -52,6 +53,11 @@ public class UserAgent {
 
   @JsonProperty(value = "1")
   private UserAgentPlatform platform;
+
+  public UserAgent(AppVersion appVersion, UserAgentPlatform platform){
+    this.appVersion = appVersion;
+    this.platform = platform;
+  }
 
   @Accessors(fluent = true)
   public enum UserAgentPlatform {

@@ -1,5 +1,6 @@
 package it.auties.whatsapp4j.beta.utils;
 
+import it.auties.whatsapp4j.beta.binary.BinaryBuffer;
 import it.auties.whatsapp4j.common.binary.BinaryArray;
 import it.auties.whatsapp4j.common.utils.CypherUtils;
 import lombok.NonNull;
@@ -29,7 +30,6 @@ public class MultiDeviceCypher {
     private final String HANDSHAKE_PROTOCOL = "Noise_XX_25519_AESGCM_SHA256\0\0\0\0";
     private final byte[] HANDSHAKE_PROLOGUE = new byte[]{87, 65, 5, 2};
     private final String ED_CURVE = "Ed25519";
-    private final String ED_DSA = "EdDSA";
 
     public @NonNull String handshakeProtocol(){
         return HANDSHAKE_PROTOCOL;
@@ -42,16 +42,16 @@ public class MultiDeviceCypher {
     @SneakyThrows
     public @NonNull BinaryArray encryptMessage(byte @NonNull [] message, BinaryArray writeKey, long count) {
         if(writeKey != null){
-            System.out.println("Using cypher...");
             var cipher = aesGmc(writeKey.data(), null, count, true);
             message = aesGmcEncrypt(cipher, message);
         }
 
-        System.out.printf("Sending request number %s%n", count);
-        return BinaryArray.empty()
-                .append(count != 0 ? new byte[0] : handshakePrologue())
-                .append(BinaryArray.forInt(message.length, 3))
-                .append(message);
+        return new BinaryBuffer()
+                .writeBytes(count == 0 ? handshakePrologue() : new byte[0])
+                .writeUInt8(message.length >> 16)
+                .writeUInt16(65535 & message.length)
+                .writeBytes(message)
+                .readWrittenBytesToArray();
     }
 
     public GCMBlockCipher aesGmc(byte @NonNull [] key, byte[] data, long count, boolean forEncryption) {
@@ -71,7 +71,7 @@ public class MultiDeviceCypher {
         var outputLength = cipher.getOutputSize(bytes.length);
         var output = new byte[outputLength];
         var outputOffset = cipher.processBytes(bytes, 0, bytes.length, output, 0);
-        cipher.doFinal(output, outputOffset);
+        cipher.doFinal(output, outputOffset);;
         return output;
     }
 
@@ -94,12 +94,12 @@ public class MultiDeviceCypher {
     private byte[] calculateSignature(PrivateKey key, byte[] data) {
         var rawPrivateKey = ((XECPrivateKey) key).getScalar().orElseThrow();
 
-        var keyFactory = KeyFactory.getInstance("Ed25519");
+        var keyFactory = KeyFactory.getInstance(ED_CURVE);
         var privateKeyInfo = new PrivateKeyInfo(new AlgorithmIdentifier(EdECObjectIdentifiers.id_Ed25519), new DEROctetString(rawPrivateKey));
         var privateKeySpec = new PKCS8EncodedKeySpec(privateKeyInfo.getEncoded());
         var privateKey = keyFactory.generatePrivate(privateKeySpec);
 
-        var signer = Signature.getInstance("Ed25519");
+        var signer = Signature.getInstance(ED_CURVE);
         signer.initSign(privateKey);
         signer.update(data);
         return signer.sign();

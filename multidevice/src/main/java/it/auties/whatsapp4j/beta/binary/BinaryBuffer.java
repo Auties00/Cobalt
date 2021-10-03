@@ -1,39 +1,41 @@
-package it.auties.whatsapp4j.beta.serialization;
+package it.auties.whatsapp4j.beta.binary;
 
+import it.auties.whatsapp4j.common.binary.BinaryArray;
 import it.auties.whatsapp4j.common.binary.BinaryTag;
 import it.auties.whatsapp4j.common.utils.Validate;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.experimental.Accessors;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.stream.IntStream;
+import java.util.function.Consumer;
 
 /**
  * A class used to encode a WhatsappNode and then send it to WhatsappWeb's WebSocket.
  *
  */
-public record Binary(ByteBuffer buffer) {
-    public Binary() {
-        this(ByteBuffer.allocate(128));
+@AllArgsConstructor
+@Data
+@Accessors(fluent = true)
+public final class BinaryBuffer {
+    private ByteBuffer buffer;
+
+    public BinaryBuffer(int size) {
+        this(ByteBuffer.allocate(size));
     }
 
-    public static Binary withSize(int size) {
-        return new Binary(ByteBuffer.allocate(size));
+    public BinaryBuffer() {
+        this(256);
     }
 
-    public static Binary fromString(String string) {
+    public static BinaryBuffer fromString(String string) {
         return fromBytes(string.getBytes(StandardCharsets.UTF_8));
     }
 
-    public static Binary fromBytes(byte... bytes) {
-        return new Binary(ByteBuffer.wrap(bytes));
-    }
-
-    public static Binary fromBytes(byte[]... bytes) {
-        var result = withSize(length(bytes));
-        Arrays.stream(bytes).forEach(result::writeBytes);
-        return result;
+    public static BinaryBuffer fromBytes(byte... bytes) {
+        return new BinaryBuffer(ByteBuffer.wrap(bytes));
     }
 
     public byte readInt8() {
@@ -99,82 +101,97 @@ public record Binary(ByteBuffer buffer) {
         return result;
     }
 
+    public BinaryBuffer remaining() {
+        var remaining = fromBytes(readBytes(buffer.remaining()));
+        remaining.buffer().position(0);
+        return remaining;
+    }
+
     public byte[] readAllBytes() {
-        return readBytes(0, buffer.limit());
+        return buffer.array();
     }
 
     public byte[] readWrittenBytes() {
-        return readBytes(0, buffer.position() - 1);
+        return readBytes(0, buffer.position(), false);
+    }
+
+    public BinaryArray readWrittenBytesToArray() {
+        return BinaryArray.forArray(readWrittenBytes());
     }
 
     public byte[] readBytes(long size) {
         var parsed = Validate.isValid(size, size >= 0 && size < Integer.MAX_VALUE, "Cannot read %s bytes", size);
-        return readBytes(buffer.position(), buffer.position() + parsed.intValue());
+        return readBytes(buffer.position(), buffer.position() + parsed.intValue(), true);
     }
 
-    public byte[] readBytes(int start, int end) {
+    public byte[] readBytes(int start, int end, boolean shift) {
         Validate.isTrue(start >= 0, "Expected unsigned int for start, got: %s", start);
         Validate.isTrue(end >= 0, "Expected unsigned int for end, got: %s", end);
         Validate.isTrue(end >= start, "Expected end to be bigger than start, got: %s - %s", start, end);
         var bytes = new byte[end - start];
         buffer.get(start, bytes, 0, bytes.length);
-        buffer.position(buffer.position() + bytes.length);
+        if (shift) {
+            buffer.position(buffer.position() + bytes.length);
+        }
         return bytes;
     }
 
     public String readString(long size) {
-        return new String(readBytes(size));
+        return new String(readBytes(size), StandardCharsets.UTF_8);
     }
 
-    public Binary writeInt8(byte in) {
-        buffer.put(temp(1).put(in).rewind());
-        return this;
+    public BinaryBuffer writeInt8(byte in) {
+        return write(temp -> temp.put(in), 1);
     }
 
-    public Binary writeUInt8(int in) {
+    public BinaryBuffer writeUInt8(int in) {
         return writeInt8(checkUnsigned(in).byteValue());
     }
 
-    public Binary writeUInt8(BinaryTag in) {
+    public BinaryBuffer writeUInt8(BinaryTag in) {
         return writeUInt8(in.data());
     }
 
-    public Binary writeUInt16(int in) {
-        buffer.put(temp(2).putShort(checkUnsigned(in).shortValue()).rewind());
+    public BinaryBuffer writeUInt16(int in) {
+        return write(temp -> temp.putShort(checkUnsigned(in).shortValue()), 2);
+    }
+
+    public BinaryBuffer writeInt32(int in) {
+        return write(temp -> temp.putInt(in), 4);
+    }
+
+    public BinaryBuffer writeUInt32(long in) {
+        return writeInt32(checkUnsigned(in).intValue());
+    }
+
+    public BinaryBuffer writeInt64(long in) {
+        return write(temp -> temp.putLong(in), 8);
+    }
+
+    public BinaryBuffer writeUInt64(BigInteger in) {
+        return write(temp -> temp.put(in.toByteArray()), 8);
+    }
+
+    public BinaryBuffer writeFloat32(float in) {
+        return write(temp -> temp.putFloat(in), 4);
+    }
+
+    public BinaryBuffer writeFloat64(double in) {
+        return write(temp -> temp.putDouble(in), 8);
+    }
+
+    private BinaryBuffer write(Consumer<ByteBuffer> consumer, int size) {
+        var temp = ByteBuffer.allocate(size);
+        if (buffer.position() + size + 1 >= buffer.limit()) {
+            reserve(buffer.limit() * 2);
+        }
+
+        consumer.accept(temp);
+        buffer.put(temp.rewind());
         return this;
     }
 
-    public Binary writeInt32(int in) {
-        buffer.put(temp(4).putInt(in).rewind());
-        return this;
-    }
-
-    public Binary writeUInt32(long in) {
-        buffer.put(temp(4).putInt(checkUnsigned(in).intValue()).rewind());
-        return this;
-    }
-
-    public Binary writeInt64(long in) {
-        buffer.put(temp(8).putLong(in).rewind());
-        return this;
-    }
-
-    public Binary writeUInt64(BigInteger in) {
-        buffer.put(temp(8).put(in.toByteArray()).rewind());
-        return this;
-    }
-
-    public Binary writeFloat32(float in) {
-        buffer.put(temp(4).putFloat(in).rewind());
-        return this;
-    }
-
-    public Binary writeFloat64(double in) {
-        buffer.put(temp(8).putDouble(in).rewind());
-        return this;
-    }
-
-    public Binary writeVarInt(int in) {
+    public BinaryBuffer writeVarInt(int in) {
         while (true) {
             var bits = in & 0x7f;
             in >>>= 7;
@@ -187,23 +204,20 @@ public record Binary(ByteBuffer buffer) {
         }
     }
 
-    public Binary writeBytes(byte... in) {
-        for(var entry : in) {
-            buffer.put(entry);
-        }
+    public BinaryBuffer writeBytes(byte... in) {
+        for (var entry : in) writeInt8(entry);
         return this;
     }
 
-    public Binary writeString(String in) {
+    public BinaryBuffer writeString(String in) {
         return writeBytes(in.getBytes(StandardCharsets.UTF_8));
     }
 
-    private static int length(byte[][] bytes) {
-        return Arrays.stream(bytes).mapToInt(Binary::length).sum();
-    }
-
-    private static int length(byte[] array) {
-        return array.length;
+    private BinaryBuffer reserve(int size) {
+        var resized = ByteBuffer.allocate(Math.max(size, 128));
+        for(var entry : readWrittenBytes()) resized.put(entry);
+        this.buffer = resized;
+        return this;
     }
 
     private <N extends Number> N checkUnsigned(N number) {
@@ -212,9 +226,5 @@ public record Binary(ByteBuffer buffer) {
         }
 
         throw new IllegalArgumentException("Expected unsigned number, got %s".formatted(number));
-    }
-
-    private ByteBuffer temp(int size) {
-        return ByteBuffer.allocate(size);
     }
 }

@@ -25,6 +25,10 @@ public record Jid(String user, int device, int agent, String server, boolean ad)
     }
 
     public static String toUserId(String jid) {
+        if(jid == null) {
+            return null;
+        }
+
         return jid.replace("@c.us", "").replace("@s.whatsapp.net", "").replace("@g.us", "");
     }
 

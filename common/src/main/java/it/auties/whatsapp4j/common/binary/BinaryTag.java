@@ -16,12 +16,14 @@ import java.util.Arrays;
 @AllArgsConstructor
 @Accessors(fluent = true)
 public enum BinaryTag {
+    UNKNOWN(-1),
     LIST_EMPTY(0),
     STREAM_END(2),
     DICTIONARY_0(236),
     DICTIONARY_1(237),
     DICTIONARY_2(238),
     DICTIONARY_3(239),
+    AD_JID(247),
     LIST_8(248),
     LIST_16(249),
     JID_PAIR(250),
@@ -40,10 +42,12 @@ public enum BinaryTag {
      * Returns the {@link BinaryTag} whose content matches {@code data}
      *
      * @param data the data to search
-     * @throws IllegalArgumentException if no {@link BinaryTag} matches {@code data}
      * @return the matching {@link BinaryTag}
      */
     public static @NonNull BinaryTag forData(int data){
-        return Arrays.stream(values()).filter(entry -> entry.data() == data).findAny().orElseThrow(() -> new IllegalArgumentException("Tag#forData: cannot convert %s to any tag".formatted(data)));
+        return Arrays.stream(values())
+                .filter(entry -> entry.data() == data)
+                .findAny()
+                .orElse(UNKNOWN);
     }
 }

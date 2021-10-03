@@ -9,4 +9,5 @@ module it.auties.whatsapp4j.beta {
     requires jakarta.websocket;
     requires it.auties.protoc.api;
     requires com.google.zxing;
+    requires com.google.protobuf;
 }
