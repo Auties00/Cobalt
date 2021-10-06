@@ -123,7 +123,7 @@ public class WhatsappKeysManager {
      * @return this object for chaining
      */
     @SuppressWarnings("UnusedReturnValue")
-    public WhatsappKeysManager initializeKeys(@NonNull String serverToken, @NonNull String clientToken, @NonNull BinaryArray encKey, @NonNull BinaryArray macKey) {
+    public WhatsappKeysManager initializeKeys(String serverToken, String clientToken, @NonNull BinaryArray encKey, @NonNull BinaryArray macKey) {
         this.encKey(encKey).macKey(macKey).serverToken(serverToken).clientToken(clientToken);
         save();
         return this;
@@ -172,9 +172,5 @@ public class WhatsappKeysManager {
         } catch (JsonProcessingException exception) {
             throw new RuntimeException("WhatsappAPI: Cannot serialize MultiDeviceKeysManager to JSON", exception);
         }
-    }
-    
-    public IWhatsappSerializer serializer(){
-        throw new UnsupportedOperationException("No serializer provided");
     }
 }

@@ -1,7 +1,7 @@
 package it.auties.whatsapp4j.test;
 
-import it.auties.whatsapp4j.standard.response.GroupModificationResponse;
-import it.auties.whatsapp4j.standard.response.SimpleStatusResponse;
+import it.auties.whatsapp4j.response.GroupModificationResponse;
+import it.auties.whatsapp4j.response.SimpleStatusResponse;
 import lombok.experimental.UtilityClass;
 import lombok.extern.java.Log;
 import org.junit.jupiter.api.Assertions;

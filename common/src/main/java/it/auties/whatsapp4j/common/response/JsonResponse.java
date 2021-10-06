@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.NonNull;
 
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 /**
@@ -65,6 +66,16 @@ public final class JsonResponse extends Response<Map<String, ?>> {
     }
 
     /**
+     * Returns a String representing the value for the input key
+     *
+     * @param key the key to search
+     * @return a nullable String
+     */
+    public String getNullableString(@NonNull String key) {
+        return getObject(key, String.class).orElse(null);
+    }
+
+    /**
      * Returns an optional Integer representing the value for the input key
      *
      * @param key the key to search
@@ -80,7 +91,7 @@ public final class JsonResponse extends Response<Map<String, ?>> {
      * @param key the key to search
      * @return the value as integer or 0
      */
-    public @NonNull int getInt(@NonNull String key) {
+    public int getInt(@NonNull String key) {
         return getString(key).map(Integer::parseInt).orElse(0);
     }
 
@@ -100,7 +111,7 @@ public final class JsonResponse extends Response<Map<String, ?>> {
      * @param key the key to search
      * @return true if the key is present and true, otherwise false
      */
-    public @NonNull boolean getBoolean(@NonNull String key) {
+    public boolean getBoolean(@NonNull String key) {
         return getString(key).map(Boolean::parseBoolean).orElse(false);
     }
 

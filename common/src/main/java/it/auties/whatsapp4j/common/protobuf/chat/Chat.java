@@ -3,7 +3,7 @@ package it.auties.whatsapp4j.common.protobuf.chat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp4j.common.api.AbstractWhatsappAPI;
 import it.auties.whatsapp4j.common.protobuf.contact.Contact;
-import it.auties.whatsapp4j.common.protobuf.contact.IContactStatus;
+import it.auties.whatsapp4j.common.protobuf.contact.ContactStatus;
 import it.auties.whatsapp4j.common.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.common.protobuf.model.misc.Messages;
 import it.auties.whatsapp4j.common.protobuf.model.misc.Node;
@@ -64,7 +64,7 @@ public class Chat {
    * This is because a contact can be online on Whatsapp and composing, recording or paused in a specific chat.
    */
   @Builder.Default
-  private @NonNull Map<Contact, IContactStatus> presences = new HashMap<>();
+  private @NonNull Map<Contact, ContactStatus> presences = new HashMap<>();
 
   /**
    * The non-null mute of this chat
@@ -130,21 +130,19 @@ public class Chat {
    *
    * @return a new instance of Chat
    */
-  public static @NonNull Chat fromAttributes(@NonNull Map<String, String> attrs) {
-    var json = JsonResponse.fromMap(attrs);
-    var jid = json.getString("jid")
-            .orElseThrow(() -> new IllegalArgumentException("Cannot parse chat(%s): missing attribute jid".formatted(json)));
+  public static @NonNull Chat fromAttributes(@NonNull JsonResponse attrs) {
+    var jid = attrs.getString("jid").orElseThrow(() -> new IllegalArgumentException("Cannot parse chat(%s): missing attribute jid".formatted(attrs)));
     return Chat.builder()
-            .displayName(json.getString("name").orElse(WhatsappUtils.phoneNumberFromJid(jid)))
+            .displayName(attrs.getString("name").orElse(WhatsappUtils.phoneNumberFromJid(jid)))
             .jid(jid)
-            .timestamp(json.getLong("t").orElse(ZonedDateTime.now().toEpochSecond()))
-            .newJid(json.getString("new_jid").orElse(null))
-            .unreadMessages(json.getInteger("count").orElse(0))
-            .mute(json.getInteger("mute").map(ChatMute::new).orElse(ChatMute.UNKNOWN))
-            .isSpam(json.getBoolean("spam"))
-            .isArchived(json.getBoolean(("archive")))
-            .isReadOnly(json.getBoolean(("read_only")))
-            .pinned(json.getLong("pin").orElse(0L))
+            .timestamp(attrs.getLong("t").orElse(ZonedDateTime.now().toEpochSecond()))
+            .newJid(attrs.getString("new_jid").orElse(null))
+            .unreadMessages(attrs.getInteger("count").orElse(0))
+            .mute(attrs.getInteger("mute").map(ChatMute::new).orElse(ChatMute.UNKNOWN))
+            .isSpam(attrs.getBoolean("spam"))
+            .isArchived(attrs.getBoolean("archive"))
+            .isReadOnly(attrs.getBoolean("read_only"))
+            .pinned(attrs.getLong("pin").orElse(0L))
             .build();
   }
 

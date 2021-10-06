@@ -1,0 +1,17 @@
+package it.auties.whatsapp4j.response;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import it.auties.whatsapp4j.common.response.JsonResponseModel;
+
+import java.util.List;
+
+/**
+ * A json model that contains information about a modification made to a group
+ *
+ * @param jid           the nullable jid of the group
+ * @param status        the http status code for the original request
+ * @param modifications a list of modifications made to the participants of the group and their relative status
+ */
+public final record GroupModificationResponse(@JsonProperty("gid") String jid, int status,
+                                              @JsonProperty("participants") List<ModificationForParticipant> modifications) implements JsonResponseModel {
+}

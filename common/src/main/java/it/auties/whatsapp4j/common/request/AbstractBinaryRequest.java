@@ -21,8 +21,8 @@ import java.util.concurrent.CompletableFuture;
  */
 @Accessors(fluent = true, chain = true)
 public abstract non-sealed class AbstractBinaryRequest<M extends ResponseModel> extends Request<Node, M>{
-    private final @NonNull @Getter Node node;
-    private final @NonNull WhatsappKeysManager keys;
+    protected final @NonNull @Getter Node node;
+    protected final @NonNull WhatsappKeysManager keys;
 
     /**
      * Constructs a new instance of a BinaryRequest using a custom non-null request tag
@@ -59,28 +59,5 @@ public abstract non-sealed class AbstractBinaryRequest<M extends ResponseModel> 
     @Override
     public @NonNull Node buildBody() {
         return node;
-    }
-
-    /**
-     * Sends a binary request to the WebSocket linked to {@code session}.
-     * This message is encoded using {@link WhatsappKeysManager#serializer()} and then encrypted using {@code whatsappKeys}.
-     *
-     * @param session the WhatsappWeb's WebSocket session
-     * @return this request
-     */
-    public CompletableFuture<M> send(@NonNull Session session) {
-        try{
-            var binaryMessage = keys.serializer().serialize(this);
-            if (configuration.async()) {
-                session.getAsyncRemote().sendBinary(binaryMessage, __ -> addRequest());
-                return future;
-            }
-
-            session.getBasicRemote().sendBinary(binaryMessage);
-            addRequest();
-            return future;
-        }catch (IOException exception){
-            throw new RuntimeException("An exception occurred while sending a binary message", exception);
-        }
     }
 }

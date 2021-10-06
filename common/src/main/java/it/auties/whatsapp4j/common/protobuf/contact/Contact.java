@@ -3,6 +3,7 @@ package it.auties.whatsapp4j.common.protobuf.contact;
 import it.auties.whatsapp4j.common.api.AbstractWhatsappAPI;
 import it.auties.whatsapp4j.common.protobuf.chat.Chat;
 import it.auties.whatsapp4j.common.protobuf.model.misc.Node;
+import it.auties.whatsapp4j.common.response.JsonResponse;
 import it.auties.whatsapp4j.common.utils.WhatsappUtils;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -55,7 +56,7 @@ public class Contact {
      * By default, Whatsapp will not send updates about a contact's status unless they send a message or are in the recent contacts.
      * To force Whatsapp to send updates, use {@link AbstractWhatsappAPI#subscribeToContactPresence(Contact)}.
      */
-    private IContactStatus lastKnownPresence;
+    private ContactStatus lastKnownPresence;
 
     /**
      * The nullable last time this contact was seen available.
@@ -81,12 +82,12 @@ public class Contact {
      *
      * @return a new instance of Contact.
      */
-    public static @NonNull Contact fromAttributes(@NonNull Map<String, String> attrs) {
+    public static @NonNull Contact fromAttributes(@NonNull JsonResponse attrs) {
         return Contact.builder()
-                .jid(attrs.get("jid"))
-                .name(attrs.get("name"))
-                .chosenName(attrs.get("notify"))
-                .shortName(attrs.get("short"))
+                .jid(attrs.getNullableString("jid"))
+                .name(attrs.getNullableString("name"))
+                .chosenName(attrs.getNullableString("notify"))
+                .shortName(attrs.getNullableString("short"))
                 .build();
     }
 
@@ -121,7 +122,7 @@ public class Contact {
      *
      * @return an optional object wrapping this contact's last known presence
      */
-    public @NonNull Optional<IContactStatus> lastKnownPresence() {
+    public @NonNull Optional<ContactStatus> lastKnownPresence() {
         return Optional.ofNullable(lastKnownPresence);
     }
 

@@ -14,6 +14,7 @@
     <properties>
         <common.version>2.2.2-SNAPSHOT</common.version>
         <noise.version>1.2</noise.version>
+        <signal.version>2.7.1</signal.version>
     </properties>
 
     <dependencies>
@@ -36,6 +37,16 @@
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
             <version>4.0.0-rc-2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java-util</artifactId>
+            <version>4.0.0-rc-2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.whispersystems</groupId>
+            <artifactId>signal-protocol-java</artifactId>
+            <version>${signal.version}</version>
         </dependency>
     </dependencies>
 </project>

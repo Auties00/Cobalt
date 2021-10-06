@@ -4,18 +4,18 @@ import it.auties.whatsapp4j.common.binary.BinaryArray;
 import it.auties.whatsapp4j.common.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.common.protobuf.message.model.MediaMessage;
 import it.auties.whatsapp4j.common.protobuf.message.model.MediaMessageType;
-import it.auties.whatsapp4j.common.protobuf.model.media.MediaConnection;
 import it.auties.whatsapp4j.common.protobuf.model.media.MediaUpload;
 import it.auties.whatsapp4j.common.response.JsonResponse;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
+import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.edec.EdECObjectIdentifiers;
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.params.X25519PublicKeyParameters;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
-import org.bouncycastle.jcajce.interfaces.EdDSAPrivateKey;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
@@ -30,6 +30,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.security.*;
 import java.security.interfaces.XECPrivateKey;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Objects;
@@ -57,12 +58,7 @@ public class CypherUtils {
     }
 
     @SneakyThrows
-    public @NonNull BinaryArray calculateSharedSecret(byte @NonNull [] rawPublicKey, @NonNull PrivateKey privateKey) {
-        var keyFactory = KeyFactory.getInstance(CURVE);
-        var publicKeyInfo = new SubjectPublicKeyInfo(new AlgorithmIdentifier(EdECObjectIdentifiers.id_X25519), rawPublicKey);
-        var publicKeySpec = new X509EncodedKeySpec(publicKeyInfo.getEncoded());
-        var publicKey = keyFactory.generatePublic(publicKeySpec);
-
+    public BinaryArray calculateSharedSecret(PublicKey publicKey, PrivateKey privateKey) {
         var keyAgreement = KeyAgreement.getInstance(XDH);
         keyAgreement.init(privateKey);
         keyAgreement.doPhase(publicKey, true);
@@ -81,6 +77,23 @@ public class CypherUtils {
         return xecPrivateKey.getScalar()
                 .orElseThrow(() -> new IllegalArgumentException("Cannot serialize a private key with no scalar value"));
     }
+
+    @SneakyThrows
+    public PublicKey toX509Encoded(byte @NonNull [] rawPublicKey) {
+        var keyFactory = KeyFactory.getInstance(CURVE);
+        var publicKeyInfo = new SubjectPublicKeyInfo(new AlgorithmIdentifier(EdECObjectIdentifiers.id_X25519), rawPublicKey);
+        var publicKeySpec = new X509EncodedKeySpec(publicKeyInfo.getEncoded());
+        return keyFactory.generatePublic(publicKeySpec);
+    }
+
+    @SneakyThrows
+    public PrivateKey toPKCS8Encoded(byte @NonNull [] rawPrivateKey) {
+        var keyFactory = KeyFactory.getInstance("X25519");
+        var privateKeyInfo = new PrivateKeyInfo(new AlgorithmIdentifier(EdECObjectIdentifiers.id_X25519), new DEROctetString(rawPrivateKey));
+        var privateKey = new PKCS8EncodedKeySpec(privateKeyInfo.getEncoded());
+        return keyFactory.generatePrivate(privateKey);
+    }
+
 
     @SneakyThrows
     public @NonNull BinaryArray hmacSha256(@NonNull BinaryArray plain, @NonNull BinaryArray key) {

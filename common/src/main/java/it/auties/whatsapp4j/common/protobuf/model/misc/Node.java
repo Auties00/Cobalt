@@ -4,14 +4,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.auties.whatsapp4j.common.response.JsonResponse;
+import it.auties.whatsapp4j.common.utils.Nodes;
 import it.auties.whatsapp4j.common.utils.Validate;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * An immutable model class that represents the primary unit used by WhatsappWeb's WebSocket to communicate with the client.
@@ -22,7 +22,6 @@ import java.util.Objects;
  */
 public record Node(@NonNull String description,
                    @NonNull Map<String, Object> attrs, Object content) {
-    private static final ObjectMapper JACKSON = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     /**
      * Constructs a Node that only provides a non-null tag
@@ -34,56 +33,12 @@ public record Node(@NonNull String description,
     }
 
     /**
-     * Constructs a WhatsappNode from a list where the content is always a JSON String
+     * Returns the attributes of this object as a JsonResponse
      *
-     * @param list the generic list to parse
-     * @return a non-null list containing only objects from {@code list} of type WhatsappNode
+     * @return a non-null instance of JsonResponse
      */
-    public static @NonNull Node fromList(@NonNull List<?> list) {
-        Validate.isTrue(list.size() == 3, "WhatsappAPI: Cannot parse %s as a WhatsappNode", list);
-        if (!(list.get(0) instanceof String description)) {
-            throw new IllegalArgumentException("WhatsappAPI: Cannot parse %s as a WhatsappNode, no description found".formatted(list));
-        }
-
-        if (!(list.get(1) instanceof String attrs)) {
-            throw new IllegalArgumentException("WhatsappAPI: Cannot parse %s as a WhatsappNode, no attrs found".formatted(list));
-        }
-
-        try {
-            return new Node(description, parseListAttrs(attrs), JACKSON.writeValueAsString(list.get(2)));
-        }catch (JsonProcessingException exception){
-            throw new IllegalArgumentException("Cannot parse node from list", exception);
-        }
-    }
-
-
-    private static @NonNull Map<String, Object> parseListAttrs(String attrs){
-        if(attrs == null){
-            return Map.of();
-        }
-
-        if (!attrs.startsWith("}") || !attrs.endsWith("}")) {
-            return Map.of("content", attrs);
-        }
-
-        try {
-            return JACKSON.readValue(attrs, new TypeReference<>() {});
-        }catch (JsonProcessingException exception){
-            throw new IllegalArgumentException("Cannot parse attributes from string", exception);
-        }
-    }
-
-    /**
-     * Constructs a list of WhatsappNodes from a generic List
-     *
-     * @param list the generic list to parse
-     * @return a non-null list containing only objects from {@code list} of type WhatsappNode
-     */
-    public static @NonNull List<Node> fromGenericList(@NonNull Collection<?> list) {
-        return list.stream()
-                .filter(entry -> entry instanceof Node)
-                .map(Node.class::cast)
-                .toList();
+    public @NonNull JsonResponse attributes(){
+        return JsonResponse.fromMap(attrs);
     }
 
     /**
@@ -91,16 +46,38 @@ public record Node(@NonNull String description,
      *
      * @return a non-null list containing WhatsappNodes extracted from this node's content
      */
-    public @NonNull List<Node> childNodes() {
+    public @NonNull LinkedList<Node> childNodes() {
         if (!hasContent()) {
-            return List.of();
+            return new LinkedList<>();
         }
 
         if (!(content instanceof List<?> listContent)) {
-            return List.of();
+            return new LinkedList<>();
         }
 
-        return fromGenericList(listContent);
+        return Nodes.validNodes(listContent);
+    }
+
+    /**
+     * Returns a node that matches the nullable description provided
+     *
+     * @return an optional node, present if a result was found
+     */
+    public @NonNull Optional<Node> findNodeByDescription(String description) {
+        return childNodes().stream()
+                .filter(node -> Objects.equals(node.description(), description))
+                .findFirst();
+    }
+
+    /**
+     * Returns a node that matches the nullable description provided
+     *
+     * @return an optional node, present if a result was found
+     */
+    public @NonNull List<Node> findNodesByDescription(String description) {
+        return childNodes().stream()
+                .filter(node -> Objects.equals(node.description(), description))
+                .toList();
     }
 
     /**

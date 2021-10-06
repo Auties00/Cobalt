@@ -10,7 +10,7 @@ import it.auties.whatsapp4j.common.protobuf.chat.GroupAction;
 import it.auties.whatsapp4j.common.protobuf.chat.GroupPolicy;
 import it.auties.whatsapp4j.common.protobuf.chat.GroupSetting;
 import it.auties.whatsapp4j.common.protobuf.contact.Contact;
-import it.auties.whatsapp4j.common.protobuf.contact.IContactStatus;
+import it.auties.whatsapp4j.common.protobuf.contact.ContactStatus;
 import it.auties.whatsapp4j.common.protobuf.info.ContextInfo;
 import it.auties.whatsapp4j.common.protobuf.info.MessageInfo;
 import it.auties.whatsapp4j.common.protobuf.message.model.ContextualMessage;
@@ -303,7 +303,7 @@ public abstract class AbstractWhatsappAPI {
      * @param presence the new status
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> changePresence(@NonNull IContactStatus presence);
+    public abstract @NonNull CompletableFuture<? extends ResponseModel> changePresence(@NonNull ContactStatus presence);
     
     /**
      * Changes your presence for a specific chat
@@ -312,7 +312,7 @@ public abstract class AbstractWhatsappAPI {
      * @param presence the new status
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> changePresence(@NonNull Chat chat, @NonNull IContactStatus presence);
+    public abstract @NonNull CompletableFuture<? extends ResponseModel> changePresence(@NonNull Chat chat, @NonNull ContactStatus presence);
     
     /**
      * Promotes any number of contacts to admin in a group
