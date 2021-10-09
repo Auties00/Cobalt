@@ -39,14 +39,14 @@ public class MultiDeviceCypher {
     }
 
     @SneakyThrows
-    public @NonNull BinaryArray encryptMessage(byte @NonNull [] message, BinaryArray writeKey, long count) {
+    public @NonNull BinaryArray encryptMessage(byte @NonNull [] message, BinaryArray writeKey, long count, boolean prologue) {
         if(writeKey != null){
-            var cipher = aesGmc(writeKey.data(), null, count, true);
+            var cipher = aesGmc(writeKey.data(), new byte[0], count, true);
             message = aesGmcEncrypt(cipher, message);
         }
 
         return new BinaryBuffer()
-                .writeBytes(count == 0 ? handshakePrologue() : new byte[0])
+                .writeBytes(prologue ? handshakePrologue() : new byte[0])
                 .writeUInt8(message.length >> 16)
                 .writeUInt16(65535 & message.length)
                 .writeBytes(message)

@@ -1,34 +1,39 @@
+import it.auties.whatsapp4j.binary.BinaryDecoder;
 import it.auties.whatsapp4j.binary.BinaryEncoder;
+import it.auties.whatsapp4j.binary.BinaryUnpack;
+import it.auties.whatsapp4j.common.utils.CypherUtils;
 import it.auties.whatsapp4j.utils.Jid;
 import it.auties.whatsapp4j.common.binary.BinaryArray;
 import it.auties.whatsapp4j.common.protobuf.model.misc.Node;
 import lombok.experimental.UtilityClass;
 
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @UtilityClass
 public class Testing {
     public void main(String[] args) {
-        var a = "19";
-        for(var x = 0; x < a.length(); x++){
-            System.out.println(Character.codePointAt(a, x));
-        }
-    }
-
-    private Map<String, Object> orderedMap() {
-        var map = new LinkedHashMap<String, Object>();
-        map.put("id", "mario");
-        map.put("to", Jid.WHATSAPP_SERVER);
-        map.put("type", "get");
-        map.put("xmlns", "w:p");
-        return map;
-    }
-
-    private void printKeepAlive(Node keepAlive) {
-        var encoded = new BinaryEncoder().encode(keepAlive);
-        System.out.printf("Keep alive: %s%n", Arrays.toString(BinaryArray.forArray(encoded).toUnsigned()));
+        var iq = new Node(
+                "iq",
+                Map.of(
+                        "id", "939139193",
+                        "to", Jid.WHATSAPP_SERVER,
+                        "type", "result"
+                ),
+                List.of(
+                        new Node(
+                                "pair-device-sign",
+                                Map.of(),
+                                List.of(
+                                        new Node(
+                                                "device-identity",
+                                                Map.of("key-index", 21),
+                                                CypherUtils.randomKeyPair().getPrivate().getEncoded()
+                                        )
+                                )
+                        )
+                )
+        );
+        System.out.println(iq);
+        System.out.println(new BinaryDecoder().decode(BinaryUnpack.unpack(new BinaryEncoder().encode(iq))));
     }
 }

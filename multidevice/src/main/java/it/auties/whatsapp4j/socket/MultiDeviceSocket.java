@@ -7,7 +7,6 @@ import it.auties.whatsapp4j.binary.BinaryUnpack;
 import it.auties.whatsapp4j.binary.MultiDeviceMessage;
 import it.auties.whatsapp4j.manager.MultiDeviceKeysManager;
 import it.auties.whatsapp4j.socket.Proto.*;
-import it.auties.whatsapp4j.utils.Jid;
 import it.auties.whatsapp4j.utils.MultiDeviceCypher;
 import it.auties.whatsapp4j.common.api.WhatsappConfiguration;
 import it.auties.whatsapp4j.common.binary.BinaryArray;
@@ -24,10 +23,6 @@ import lombok.extern.java.Log;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Base64;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import static it.auties.whatsapp4j.common.utils.CypherUtils.*;
 
@@ -58,10 +53,14 @@ public class MultiDeviceSocket implements IWhatsappSocket {
     @SneakyThrows
     public void onOpen(@NonNull Session session) {
         session(session);
+        if(loggedIn){
+            return;
+        }
+
         handshake.start(keys());
         handshake.updateHash(keys.ephemeralKeyPair().publicKey());
         var handshakeMessage = HandshakeMessage.newBuilder().setClientHello(ClientHello.newBuilder().setEphemeral(ByteString.copyFrom(keys.ephemeralKeyPair().publicKey())).build()).build();
-        sendBinaryRequest(handshakeMessage.toByteArray());
+        sendBinaryRequest(handshakeMessage.toByteArray(), true);
     }
 
     @OnMessage
@@ -102,47 +101,36 @@ public class MultiDeviceSocket implements IWhatsappSocket {
         var protobufMessage = HandshakeMessage.newBuilder().setClientFinish(ClientFinish.newBuilder().setStatic(ByteString.copyFrom(encodedKey)).setPayload(ByteString.copyFrom(encodedPayload)).build()).build();
         sendBinaryRequest(protobufMessage.toByteArray());
 
+        changeState(true);
         handshake.finish();
-        ping();
-        this.loggedIn = true;
-        this.readCounter = 0;
-        this.writeCounter = 0;
-    }
-
-    private void ping() {
-        var keepAlive = new Node(
-                "iq",
-                Map.of(
-                        "id", BinaryUnpack.generateId(),
-                        "to", Jid.WHATSAPP_SERVER,
-                        "type", "get",
-                        "xmlns", "w:p"
-                ),
-                List.of(new Node("ping"))
-        );
-
-        Executors.newSingleThreadScheduledExecutor()
-                .scheduleAtFixedRate(() -> sendBinaryRequest(keepAlive), 0, 20, TimeUnit.SECONDS);
     }
 
     private byte[] createPayload() {
-        var companion = CompanionProps.newBuilder()
-                .setOs("Windows")
-                .setVersion(AppVersion.newBuilder().setPrimary(10).build())
-                .setPlatformType(CompanionProps.CompanionPropsPlatformType.CHROME)
-                .setRequireFullSync(false)
-                .build();
-        var registerData = CompanionRegData.newBuilder()
-                .setBuildHash(ByteString.copyFrom(Base64.getDecoder().decode("S9Kdc4pc4EJryo21snc5cg==")))
-                .setCompanionProps(companion.toByteString())
-                .setERegid(ByteString.copyFrom(BinaryArray.forInt(keys().registrationId(), 4).data()))
-                .setEKeytype(ByteString.copyFrom(BinaryArray.forInt(5, 1).data()))
-                .setEIdent(ByteString.copyFrom(keys().signedIdentityKey().publicKey()))
-                .setESkeyId(ByteString.copyFrom(BinaryArray.forInt(keys().signedPreKey().id(), 3).data()))
-                .setESkeyVal(ByteString.copyFrom(keys().signedPreKey().keyPair().publicKey()))
-                .setESkeySig(ByteString.copyFrom(keys().signedPreKey().signature()))
-                .build();
-        var userAgent = UserAgent.newBuilder()
+        var payload = createClientPayload(keys().mayRestore());
+        if (!keys().mayRestore()) {
+            return payload.setRegData(createRegisterData())
+                    .build()
+                    .toByteArray();
+        }
+
+        System.out.println(keys().me());
+        return payload.setUsername(Long.parseLong(keys().me().user()))
+                .setDevice(keys().me().device())
+                .build()
+                .toByteArray();
+    }
+
+    private ClientPayload.Builder createClientPayload(boolean passive) {
+        return ClientPayload.newBuilder()
+                .setConnectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
+                .setConnectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
+                .setUserAgent(createUserAgent())
+                .setPassive(passive)
+                .setWebInfo(WebInfo.newBuilder().setWebSubPlatform(WebInfo.WebInfoWebSubPlatform.WEB_BROWSER));
+    }
+
+    private UserAgent createUserAgent() {
+        return UserAgent.newBuilder()
                 .setAppVersion(AppVersion.newBuilder().setPrimary(2).setSecondary(2126).setTertiary(14).build())
                 .setPlatform(UserAgent.UserAgentPlatform.WEB)
                 .setReleaseChannel(UserAgent.UserAgentReleaseChannel.RELEASE)
@@ -155,24 +143,41 @@ public class MultiDeviceSocket implements IWhatsappSocket {
                 .setLocaleLanguageIso6391("en")
                 .setLocaleCountryIso31661Alpha2("en")
                 .build();
-        return ClientPayload.newBuilder()
-                .setConnectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
-                .setConnectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
-                .setPassive(false)
-                .setRegData(registerData)
-                .setUserAgent(userAgent)
-                .setWebInfo(WebInfo.newBuilder().setWebSubPlatform(WebInfo.WebInfoWebSubPlatform.WEB_BROWSER))
-                .build()
-                .toByteArray();
+    }
+
+    private CompanionRegData createRegisterData() {
+        return CompanionRegData.newBuilder()
+                .setBuildHash(ByteString.copyFrom(Base64.getDecoder().decode("S9Kdc4pc4EJryo21snc5cg==")))
+                .setCompanionProps(createCompanionProps().toByteString())
+                .setERegid(ByteString.copyFrom(BinaryArray.forInt(keys().registrationId(), 4).data()))
+                .setEKeytype(ByteString.copyFrom(BinaryArray.forInt(5, 1).data()))
+                .setEIdent(ByteString.copyFrom(keys().signedIdentityKey().publicKey()))
+                .setESkeyId(ByteString.copyFrom(BinaryArray.forInt(keys().signedPreKey().id(), 3).data()))
+                .setESkeyVal(ByteString.copyFrom(keys().signedPreKey().keyPair().publicKey()))
+                .setESkeySig(ByteString.copyFrom(keys().signedPreKey().signature()))
+                .build();
+    }
+
+    private CompanionProps createCompanionProps() {
+        return CompanionProps.newBuilder()
+                .setOs("Windows")
+                .setVersion(AppVersion.newBuilder().setPrimary(10).build())
+                .setPlatformType(CompanionProps.CompanionPropsPlatformType.CHROME)
+                .setRequireFullSync(false)
+                .build();
     }
 
     void sendBinaryRequest(@NonNull Node node){
         sendBinaryRequest(encoder.encode(node));
     }
 
-    @SneakyThrows
     void sendBinaryRequest(byte @NonNull [] message){
-        var parsed = MultiDeviceCypher.encryptMessage(message, keys.writeKey(), writeCounter++);
+        sendBinaryRequest(message, false);
+    }
+
+    @SneakyThrows
+    void sendBinaryRequest(byte @NonNull [] message, boolean prologue){
+        var parsed = MultiDeviceCypher.encryptMessage(message, keys.writeKey(), writeCounter++, prologue);
         if(options.async()) {
             session.getAsyncRemote().sendBinary(parsed.toBuffer());
             return;
@@ -188,6 +193,20 @@ public class MultiDeviceSocket implements IWhatsappSocket {
         }catch (IOException | DeploymentException exception){
             throw new RuntimeException("Cannot connect to WhatsappWeb's WebServer", exception);
         }
+    }
+
+    @SneakyThrows
+    void reconnect(){
+        changeState(false);
+        session().close();
+        connect();
+    }
+
+    void changeState(boolean loggedIn){
+        this.loggedIn = loggedIn;
+        this.readCounter = 0;
+        this.writeCounter = 0;
+        keys().readKey(null).writeKey(null);
     }
 
     @OnClose

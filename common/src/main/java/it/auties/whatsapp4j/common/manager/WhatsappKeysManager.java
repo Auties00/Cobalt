@@ -155,7 +155,7 @@ public class WhatsappKeysManager {
             var preferences = Preferences.userRoot().get(PREFERENCES_PATH, null);
             return preferences == null ? this : JACKSON.readerForUpdating(this).readValue(preferences);
         }catch (JsonProcessingException exception){
-            throw new RuntimeException("Cannot deserialize WhatsappKeysManager from preferences");
+            throw new RuntimeException("Cannot deserialize WhatsappKeysManager from preferences", exception);
         }
     }
 

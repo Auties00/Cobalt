@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import it.auties.whatsapp4j.utils.IdentityKeyPair;
+import it.auties.whatsapp4j.utils.Jid;
 import it.auties.whatsapp4j.utils.SignedKeyPair;
 import it.auties.whatsapp4j.common.binary.BinaryArray;
 import it.auties.whatsapp4j.common.manager.WhatsappKeysManager;
@@ -20,6 +21,7 @@ import org.whispersystems.libsignal.ecc.DjbECPublicKey;
 import org.whispersystems.libsignal.util.KeyHelper;
 
 import java.util.Base64;
+import java.util.Objects;
 
 /**
  * This class is a data class used to hold the clientId, serverToken, clientToken, publicKey, privateKey, encryptionKey and macKey.
@@ -30,13 +32,9 @@ import java.util.Base64;
 @Accessors(fluent = true, chain = true)
 public class MultiDeviceKeysManager extends WhatsappKeysManager {
     @JsonProperty
-    @JsonSerialize(using = KeyPairSerializer.class)
-    @JsonDeserialize(using = KeyPairDeserializer.class)
     private IdentityKeyPair ephemeralKeyPair;
 
     @JsonProperty
-    @JsonSerialize(using = KeyPairSerializer.class)
-    @JsonDeserialize(using = KeyPairDeserializer.class)
     private IdentityKeyPair signedIdentityKey;
 
     @JsonProperty
@@ -49,6 +47,8 @@ public class MultiDeviceKeysManager extends WhatsappKeysManager {
     private @NonNull String advSecretKey;
 
     @JsonProperty
+    private Jid me;
+
     private BinaryArray writeKey, readKey;
 
     public MultiDeviceKeysManager() {
@@ -83,9 +83,18 @@ public class MultiDeviceKeysManager extends WhatsappKeysManager {
         return writeKey(writeKey).readKey(readKey);
     }
 
+    public void initializeUser(@NonNull Jid me) {
+        me(me).save();
+    }
+
     @Override
     public MultiDeviceKeysManager withPreferences() {
         super.withPreferences();
         return this;
+    }
+
+    @Override
+    public boolean mayRestore() {
+        return Objects.nonNull(me());
     }
 }

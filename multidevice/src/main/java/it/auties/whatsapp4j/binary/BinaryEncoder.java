@@ -140,9 +140,19 @@ public record BinaryEncoder(BinaryBuffer binary){
         }
 
         var index = DOUBLE_BYTE.indexOf(input);
-        binary.writeUInt8(index / (DOUBLE_BYTE.size() / 3));
-        binary.writeUInt8(index);
+        binary.writeUInt8(doubleByteStringTag(index));
+        binary.writeUInt8(index % (DOUBLE_BYTE.size() / 4));
         return true;
+    }
+
+    private BinaryTag doubleByteStringTag(int index){
+        return switch (index / (DOUBLE_BYTE.size() / 4)){
+            case 0 -> DICTIONARY_0;
+            case 1 -> DICTIONARY_1;
+            case 2 -> DICTIONARY_2;
+            case 3 -> DICTIONARY_3;
+            default -> throw new IllegalArgumentException("Cannot find tag for quadrant %s".formatted(index));
+        };
     }
 
     private int rawStringLength(String input) {
@@ -188,12 +198,13 @@ public record BinaryEncoder(BinaryBuffer binary){
     private void write(Object input) {
         switch (input) {
             case null -> binary.writeUInt8(LIST_EMPTY);
-            case Jid jid -> writeJid(jid);
             case String str -> writeString(str);
-            case byte[] bytes -> writeBytes(bytes);
-            case Collection<?> collection -> writeList(collection);
             case Number number -> writeString(number.toString());
-            default -> throw new RuntimeException("Invalid payload type: %s".formatted(input.getClass().getName()));
+            case byte[] bytes -> writeBytes(bytes);
+            case Jid jid -> writeJid(jid);
+            case Collection<?> collection -> writeList(collection);
+            case Node ignored -> throw new IllegalArgumentException("Invalid payload type: nodes should be wrapped by a collection");
+            default -> throw new IllegalArgumentException("Invalid payload type: %s".formatted(input.getClass().getName()));
         }
     }
 

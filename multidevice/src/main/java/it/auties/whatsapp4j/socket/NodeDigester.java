@@ -1,10 +1,10 @@
 package it.auties.whatsapp4j.socket;
 
-import com.google.protobuf.util.JsonFormat;
+import com.google.protobuf.ByteString;
+import it.auties.whatsapp4j.binary.BinaryUnpack;
 import it.auties.whatsapp4j.common.binary.BinaryArray;
 import it.auties.whatsapp4j.common.manager.WhatsappDataManager;
 import it.auties.whatsapp4j.common.protobuf.model.misc.Node;
-import it.auties.whatsapp4j.common.utils.CypherUtils;
 import it.auties.whatsapp4j.common.utils.Validate;
 import it.auties.whatsapp4j.utils.Jid;
 import lombok.NonNull;
@@ -14,6 +14,9 @@ import org.whispersystems.curve25519.Curve25519;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+
+import static it.auties.whatsapp4j.common.utils.CypherUtils.hmacSha256;
+import static it.auties.whatsapp4j.common.utils.CypherUtils.raw;
 
 /**
  * This class is a singleton and holds all the data regarding a session with WhatsappWeb's WebSocket.
@@ -37,7 +40,12 @@ public class NodeDigester {
         System.out.printf("Received: %s%n", node);
         switch (node.description()){
             case "iq" -> {
-                var container = node.childNodes().getFirst();
+                var children = node.childNodes();
+                if(children.isEmpty()){
+                    return;
+                }
+
+                var container = children.getFirst();
                 switch (container.description()){
                     case "pair-device" -> generateQrCode(socket, node, container);
                     case "pair-success" -> confirmQrCode(socket, node, container);
@@ -45,7 +53,14 @@ public class NodeDigester {
                 }
             }
 
-            case "stream:error" -> System.err.println(node);
+            case "stream:error" -> {
+                var code = node.attributes().getInt("code");
+                if(code != 515){
+                    return;
+                }
+
+                socket.reconnect();
+            }
             default -> System.err.println("Unhandled");
         }
     }
@@ -53,7 +68,7 @@ public class NodeDigester {
     private void generateQrCode(MultiDeviceSocket socket, Node node, Node container) {
         var refHolder = container.findNodeByDescription("ref").orElseThrow();
         var qr = new String((byte[]) refHolder.content(), StandardCharsets.UTF_8);
-        var matrix = socket.qrCode().generate(qr, CypherUtils.raw(socket.keys().keyPair().getPublic()), socket.keys().signedIdentityKey().publicKey(), socket.keys().advSecretKey());
+        var matrix = socket.qrCode().generate(qr, raw(socket.keys().keyPair().getPublic()), socket.keys().signedIdentityKey().publicKey(), socket.keys().advSecretKey());
         MANAGER.callListeners(listener -> listener.onQRCode(matrix));
         var iq = new Node(
                 "iq",
@@ -66,23 +81,28 @@ public class NodeDigester {
         );
 
         socket.sendBinaryRequest(iq);
+        ping(socket);
     }
 
     @SneakyThrows
     private void confirmQrCode(MultiDeviceSocket socket, Node node, Node container) {
+        socket.keys().initializeUser(fetchJid(container));
+
         var curve = Curve25519.getInstance(Curve25519.BEST);
-        var deviceIdentity = (byte[]) container.findNodeByDescription("device-identity").map(Node::content).orElseThrow();
-        var jid = container.findNodeByDescription("device").map(Node::attrs).orElseThrow().get("jid");
+        var deviceIdentity = fetchDeviceIdentity(container);
+
         var advIdentity = Proto.ADVSignedDeviceIdentityHMAC.parseFrom(deviceIdentity);
         var advSecret = Base64.getDecoder().decode(socket.keys().advSecretKey());
-        var advSign = CypherUtils.hmacSha256(BinaryArray.forArray(advIdentity.getDetails().toByteArray()), BinaryArray.forArray(advSecret));
+        var advSign = hmacSha256(BinaryArray.forArray(advIdentity.getDetails().toByteArray()), BinaryArray.forArray(advSecret));
         Validate.isTrue(Arrays.equals(advIdentity.getHmac().toByteArray(), advSign.data()), "Cannot login: Hmac validation failed!", SecurityException.class);
+
         var account = Proto.ADVSignedDeviceIdentity.parseFrom(advIdentity.getDetails());
         var message = BinaryArray.forArray(new byte[]{6, 0})
                 .append(account.getDetails().toByteArray())
                 .append(socket.keys().signedIdentityKey().publicKey())
                 .data();
         Validate.isTrue(curve.verifySignature(account.getAccountSignatureKey().toByteArray(), message, account.getAccountSignature().toByteArray()), "Cannot login: Hmac validation failed!", SecurityException.class);
+
         var deviceSignatureMessage = BinaryArray.forArray(new byte[]{6, 1})
                 .append(account.getDetails().toByteArray())
                 .append(socket.keys().signedIdentityKey().publicKey())
@@ -91,7 +111,6 @@ public class NodeDigester {
         var deviceSignature = curve.calculateSignature(socket.keys().signedIdentityKey().privateKey(), deviceSignatureMessage);
 
         var keyIndex = Proto.ADVDeviceIdentity.parseFrom(account.getDetails()).getKeyIndex();
-        System.out.println("Key index: " + keyIndex);
         var iq = new Node(
                 "iq",
                 Map.of(
@@ -106,14 +125,44 @@ public class NodeDigester {
                                 List.of(
                                         new Node(
                                                 "device-identity",
-                                                Map.of("key-index", String.valueOf(keyIndex)),
-                                                account.toByteArray()
+                                                Map.of("key-index", keyIndex),
+                                                 account.toBuilder().setDeviceSignature(ByteString.copyFrom(deviceSignature)).clearAccountSignatureKey().build().toByteArray()
                                         )
                                 )
                         )
                 )
         );
-
         socket.sendBinaryRequest(iq);
+    }
+
+    private byte[] fetchDeviceIdentity(Node container) {
+        return container.findNodeByDescription("device-identity")
+                .map(Node::content)
+                .filter(data -> data instanceof byte[])
+                .map(data -> (byte[]) data)
+                .orElseThrow(() -> new NoSuchElementException("Cannot find device identity node for authentication in %s".formatted(container)));
+    }
+
+    private Jid fetchJid(Node container) {
+        return container.findNodeByDescription("device")
+                .map(Node::attributes)
+                .orElseThrow(() -> new NoSuchElementException("Cannot find device node for authentication in %s".formatted(container)))
+                .getObject("jid", Jid.class)
+                .orElseThrow(() -> new NoSuchElementException("Cannot find jid attribute in %s".formatted(container)));
+    }
+
+    private void ping(MultiDeviceSocket socket) {
+        var keepAlive = new Node(
+                "iq",
+                Map.of(
+                        "id", BinaryUnpack.generateId(),
+                        "to", Jid.WHATSAPP_SERVER,
+                        "type", "get",
+                        "xmlns", "w:p"
+                ),
+                List.of(new Node("ping"))
+        );
+
+        socket.sendBinaryRequest(keepAlive);
     }
 }

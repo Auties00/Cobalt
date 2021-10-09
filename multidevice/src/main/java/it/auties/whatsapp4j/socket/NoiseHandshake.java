@@ -16,16 +16,13 @@ public class NoiseHandshake {
     private BinaryArray cryptoKey;
     private long counter;
 
-    public NoiseHandshake() {
+    public void start(MultiDeviceKeysManager keys){
         var encodedProtocol = forString(handshakeProtocol());
         this.hash = encodedProtocol;
         this.salt = encodedProtocol;
         this.cryptoKey = encodedProtocol;
-        updateHash(handshakePrologue());
-    }
-
-    public void start(MultiDeviceKeysManager keys){
         this.keys = keys;
+        updateHash(handshakePrologue());
     }
 
     @SneakyThrows

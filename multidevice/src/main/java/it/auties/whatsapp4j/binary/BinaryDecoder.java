@@ -89,7 +89,8 @@ public class BinaryDecoder{
 
     private String readStringFromToken(int token) {
         if (token >= DICTIONARY_0.data() && token <= DICTIONARY_3.data()) {
-            return DOUBLE_BYTE.get(binary.readUInt8());
+            var delta = (DOUBLE_BYTE.size() / 4) * (token - DICTIONARY_0.data());
+            return DOUBLE_BYTE.get(binary.readUInt8() + delta);
         }
 
         return SINGLE_BYTE.get(token - 1);
