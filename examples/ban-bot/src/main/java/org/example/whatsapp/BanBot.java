@@ -1,6 +1,6 @@
 package org.example.whatsapp;
 
-import it.auties.whatsapp4j.common.api.WhatsappAPI;
+import it.auties.whatsapp.api.WhatsappAPI;
 
 // This is the main class of our bot
 public class BanBot {

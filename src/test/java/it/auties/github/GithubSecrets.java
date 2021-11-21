@@ -35,7 +35,7 @@ public class GithubSecrets {
     }
 
     private String getCredentialsAsJson(){
-        return Objects.requireNonNull(PREFERENCES.get("it.auties.whatsapp4j.common.manager.WhatsappKeysManager", null), "Missing credentials");
+        return Objects.requireNonNull(PREFERENCES.get("it.auties.whatsapp.manager.WhatsappKeysManager", null), "Missing credentials");
     }
 
     private byte[] encryptCredentials(GithubKey publicKey, String credentials) {

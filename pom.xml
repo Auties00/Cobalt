@@ -4,11 +4,6 @@
     <groupId>com.github.auties00</groupId>
     <artifactId>whatsappweb4j</artifactId>
     <version>2.2.2-SNAPSHOT</version>
-    <modules>
-        <module>common</module>
-        <module>standard</module>
-        <module>multidevice</module>
-    </modules>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Standalone fully-featured Whatsapp Web API for Java and Kotlin</description>
     <url>https://github.com/Auties00/WhatsappWeb4j</url>
@@ -69,7 +64,7 @@
             </build>
         </profile>
     </profiles>
-    <packaging>pom</packaging>
+    <packaging>jar</packaging>
 
     <repositories>
         <repository>
@@ -89,10 +84,18 @@
         <maven.deploy.plugin.version>2.8.2</maven.deploy.plugin.version>
         <delombok.plugin.version>1.18.20</delombok.plugin.version>
         <nexus.staging.maven.plugin.version>1.6.7</nexus.staging.maven.plugin.version>
-        <lombok.version>edge-SNAPSHOT</lombok.version>
-        <junit.version>5.6.3</junit.version>
-        <jna.version>5.8.0</jna.version>
-        <jackson.version>2.12.3</jackson.version>
+        <bouncy.castle.version>1.69</bouncy.castle.version>
+        <zxing.version>3.4.1</zxing.version>
+        <protoc.version>1.5-SNAPSHOT</protoc.version>
+        <tyrus.version>2.0.0</tyrus.version>
+        <lombok.version>1.18.22</lombok.version>
+        <junit.version>5.8.1</junit.version>
+        <jna.version>5.9.0</jna.version>
+        <jackson.version>2.13.0</jackson.version>
+        <common.version>2.2.2-SNAPSHOT</common.version>
+        <noise.version>1.2</noise.version>
+        <signal.version>2.7.1</signal.version>
+        <classgraph.version>4.8.134</classgraph.version>
         <delombok.output>${project.build.directory}\delomboked-sources</delombok.output>
     </properties>
 
@@ -229,6 +232,26 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.glassfish.tyrus</groupId>
+            <artifactId>tyrus-server</artifactId>
+            <version>${tyrus.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>javase</artifactId>
+            <version>${zxing.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk15on</artifactId>
+            <version>${bouncy.castle.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>protoc-api</artifactId>
+            <version>${protoc.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
@@ -256,6 +279,41 @@
             <artifactId>jna</artifactId>
             <version>${jna.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>noise-java</artifactId>
+            <version>${noise.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>common</artifactId>
+            <version>${common.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.whispersystems</groupId>
+            <artifactId>curve25519-java</artifactId>
+            <version>0.5.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>4.0.0-rc-2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java-util</artifactId>
+            <version>4.0.0-rc-2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.whispersystems</groupId>
+            <artifactId>signal-protocol-java</artifactId>
+            <version>${signal.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.classgraph</groupId>
+            <artifactId>classgraph</artifactId>
+            <version>${classgraph.version}</version>
         </dependency>
     </dependencies>
 </project>

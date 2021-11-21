@@ -1,6 +1,6 @@
 package org.example.whatsapp.bot;
 
-import it.auties.whatsapp4j.common.api.WhatsappAPI;
+import it.auties.whatsapp.api.WhatsappAPI;
 import org.example.whatsapp.command.CommandManager;
 import org.example.whatsapp.command.HelloCommand;
 
