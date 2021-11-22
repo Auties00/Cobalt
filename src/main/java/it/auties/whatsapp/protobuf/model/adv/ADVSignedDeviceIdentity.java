@@ -11,7 +11,7 @@ import lombok.experimental.Accessors;
 @NoArgsConstructor
 @Data
 @Builder
-@Accessors(fluent = true)
+@Accessors(fluent = true, chain = true)
 public class ADVSignedDeviceIdentity {
   @JsonProperty(value = "4")
   private byte[] deviceSignature;

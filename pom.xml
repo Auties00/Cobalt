@@ -92,7 +92,6 @@
         <junit.version>5.8.1</junit.version>
         <jna.version>5.9.0</jna.version>
         <jackson.version>2.13.0</jackson.version>
-        <common.version>2.2.2-SNAPSHOT</common.version>
         <noise.version>1.2</noise.version>
         <signal.version>2.7.1</signal.version>
         <classgraph.version>4.8.134</classgraph.version>
@@ -285,11 +284,6 @@
             <groupId>com.github.auties00</groupId>
             <artifactId>noise-java</artifactId>
             <version>${noise.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.auties00</groupId>
-            <artifactId>common</artifactId>
-            <version>${common.version}</version>
         </dependency>
         <dependency>
             <groupId>org.whispersystems</groupId>
