@@ -9,7 +9,7 @@ import lombok.experimental.Accessors;
 import java.util.Arrays;
 
 /**
- * A model class that holds the information related to an ad reply.
+ * A model class that holds the information related to an companion reply.
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
  * Instead, methods inside {@link Whatsapp} should be used.
  */
@@ -20,31 +20,31 @@ import java.util.Arrays;
 @Accessors(fluent = true)
 public class AdReplyInfo {
   /**
-   * The caption of the original ad
+   * The caption of the original companion
    */
   @JsonProperty(value = "17")
   private String caption;
 
   /**
-   * The thumbnail of the original ad encoded as jpeg in an array of bytes
+   * The thumbnail of the original companion encoded as jpeg in an array of bytes
    */
   @JsonProperty(value = "16")
   private byte[] jpegThumbnail;
 
   /**
-   * The type of original ad
+   * The type of original companion
    */
   @JsonProperty(value = "2")
   private AdReplyInfoMediaType mediaType;
 
   /**
-   * The name of the advertiser that served the original ad
+   * The name of the advertiser that served the original companion
    */
   @JsonProperty(value = "1")
   private String advertiserName;
 
   /**
-   * The constants of this enumerated type describe the various types of ad that a {@link AdReplyInfo} can link to
+   * The constants of this enumerated type describe the various types of companion that a {@link AdReplyInfo} can link to
    */
   @Accessors(fluent = true)
   public enum AdReplyInfoMediaType {

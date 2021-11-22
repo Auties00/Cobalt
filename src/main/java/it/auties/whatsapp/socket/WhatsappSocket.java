@@ -272,7 +272,7 @@ public class WhatsappSocket {
         }
 
         private void confirmConnection() {
-            Node.withChildren("iq", of("id", WhatsappUtils.buildRequestTag(options()), "to", ContactId.WHATSAPP_SERVER, "xmlns", "passive", "type", "set"), Node.with("active"))
+            Node.withChildren("iq", of("id", WhatsappUtils.buildRequestTag(options()), "to", ContactId.WHATSAPP, "xmlns", "passive", "type", "set"), Node.with("active"))
                     .toRequest()
                     .send(session(), keys(), store());
         }
@@ -283,7 +283,7 @@ public class WhatsappSocket {
             }
 
             keys().preKeys(true);
-            Node.withChildren("iq", of("id", WhatsappUtils.buildRequestTag(options()), "xmlns", "encrypt", "type", "set", "to", ContactId.WHATSAPP_SERVER), createPreKeysContent())
+            Node.withChildren("iq", of("id", WhatsappUtils.buildRequestTag(options()), "xmlns", "encrypt", "type", "set", "to", ContactId.WHATSAPP), createPreKeysContent())
                     .toRequest()
                     .send(session(), keys(), store());
         }
@@ -321,7 +321,7 @@ public class WhatsappSocket {
         }
 
         private void ping() {
-            Node.with("iq", of("id", WhatsappUtils.buildRequestTag(options()), "to", ContactId.WHATSAPP_SERVER, "type", "get", "xmlns", "w:p"), Node.with("ping"))
+            Node.with("iq", of("id", WhatsappUtils.buildRequestTag(options()), "to", ContactId.WHATSAPP, "type", "get", "xmlns", "w:p"), Node.with("ping"))
                     .toRequest()
                     .send(session(), keys(), store());
         }
@@ -379,7 +379,7 @@ public class WhatsappSocket {
         }
 
         private void sendConfirmNode(Node node, Node content) {
-            Node.withChildren("iq", of("id", WhatsappUtils.readNullableId(node), "to", ContactId.WHATSAPP_SERVER, "type", "result"), content)
+            Node.withChildren("iq", of("id", WhatsappUtils.readNullableId(node), "to", ContactId.WHATSAPP, "type", "result"), content)
                     .toRequest()
                     .send(session(), keys(), store());
         }

@@ -43,7 +43,7 @@ public class ContextInfo {
   private MessageKey placeholderKey;
 
   /**
-   * The ad that this ContextualMessage quotes
+   * The companion that this ContextualMessage quotes
    */
   @JsonProperty(value = "23")
   private AdReplyInfo quotedAd;

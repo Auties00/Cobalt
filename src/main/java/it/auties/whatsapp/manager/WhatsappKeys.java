@@ -114,7 +114,7 @@ public class WhatsappKeys {
         this.ephemeralKeyPair = Cipher.randomKeyPair();
         this.identityKeyPair = Cipher.randomKeyPair();
         this.signedKeyPair = Cipher.randomKeyPair(id, identityKeyPair());
-        this.companionKey = Cipher.generateSenderKey();
+        this.companionKey = Cipher.randomSenderKey();
     }
 
     /**

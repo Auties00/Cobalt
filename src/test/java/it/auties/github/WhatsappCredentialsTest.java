@@ -2,8 +2,6 @@ package it.auties.github;
 
 import lombok.extern.java.Log;
 import org.junit.jupiter.api.Test;
-import it.auties.github.GithubActions;
-import it.auties.github.GithubSecrets;
 
 import java.io.IOException;
 

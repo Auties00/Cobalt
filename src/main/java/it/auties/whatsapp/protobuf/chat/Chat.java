@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.protobuf.contact.Contact;
+import it.auties.whatsapp.protobuf.contact.ContactId;
 import it.auties.whatsapp.protobuf.contact.ContactStatus;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.model.Messages;
@@ -20,7 +21,6 @@ import java.util.Optional;
 /**
  * A model class that represents a Chat.
  * A chat can be of two types: a conversation with a contact or a group.
- * To check if this chat is a group use {@link Chat#isGroup()} or {@link WhatsappUtils#isGroup(String)}.
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
  * Instead, methods inside {@link Whatsapp} should be used.
  * This class also offers a builder, accessible using {@link Chat#builder()}.
@@ -35,7 +35,7 @@ public class Chat {
    * The non-null unique jid used to identify this chat
    */
   @JsonProperty(value = "2")
-  private @NonNull String jid;
+  private @NonNull ContactId id;
   
   /**
    * The non-null display name of this chat
@@ -47,8 +47,7 @@ public class Chat {
    * A non-null arrayList of messages in this chat sorted chronologically
    */
   @Builder.Default
-  private @NonNull
-  Messages messages = new Messages();
+  private @NonNull Messages messages = new Messages();
 
   /**
    * A map that holds the status of each participant, excluding yourself, for this chat.
@@ -128,7 +127,7 @@ public class Chat {
    * @return true if this chat is a group
    */
   public boolean isGroup() {
-    return WhatsappUtils.isGroup(jid);
+    return id.type() == ContactId.Type.GROUP;
   }
 
   /**

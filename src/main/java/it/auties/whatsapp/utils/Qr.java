@@ -12,7 +12,7 @@ import lombok.experimental.UtilityClass;
 
 import java.util.Map;
 
-import static it.auties.whatsapp.binary.BinaryArray.*;
+import static it.auties.whatsapp.binary.BinaryArray.of;
 
 /**
  * A utility class used to generate QR codes to authenticate with whatsapp

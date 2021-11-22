@@ -4,6 +4,7 @@ import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.cipher.Request;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
+import it.auties.whatsapp.protobuf.contact.ContactId;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.model.MediaConnection;
 import it.auties.whatsapp.protobuf.model.Node;
@@ -68,7 +69,7 @@ public class WhatsappStore {
      */
     public @NonNull Optional<Contact> findContactByJid(@NonNull String jid) {
         return contacts.parallelStream()
-                .filter(e -> Objects.equals(e.jid(), WhatsappUtils.parseJid(jid)))
+                .filter(contact -> Objects.equals(contact.id().toString(), ContactId.parseId(jid)))
                 .findAny();
     }
 
@@ -80,7 +81,7 @@ public class WhatsappStore {
      */
     public @NonNull Optional<Contact> findContactByName(@NonNull String name) {
         return contacts.parallelStream()
-                .filter(e -> Objects.equals(e.bestName().orElse(null), name))
+                .filter(contact -> Objects.equals(contact.bestName(null), name))
                 .findAny();
     }
 
@@ -92,7 +93,7 @@ public class WhatsappStore {
      */
     public @NonNull Set<Contact> findContactsByName(@NonNull String name) {
         return contacts.parallelStream()
-                .filter(e -> Objects.equals(e.bestName().orElse(null), name))
+                .filter(contact -> Objects.equals(contact.bestName(null), name))
                 .collect(Collectors.toUnmodifiableSet());
     }
 
@@ -104,7 +105,7 @@ public class WhatsappStore {
      */
     public @NonNull Optional<Chat> findChatByJid(@NonNull String jid) {
         return chats.parallelStream()
-                .filter(e -> Objects.equals(e.jid(), WhatsappUtils.parseJid(jid)))
+                .filter(chat -> Objects.equals(chat.id().toString(), ContactId.parseId(jid)))
                 .findAny();
     }
 
@@ -118,7 +119,7 @@ public class WhatsappStore {
     public @NonNull Optional<MessageInfo> findMessageById(@NonNull Chat chat, @NonNull String id) {
         return chat.messages()
                 .parallelStream()
-                .filter(e -> Objects.equals(e.key().id(), id))
+                .filter(message -> Objects.equals(message.key().id(), id))
                 .findAny();
     }
 
@@ -140,7 +141,7 @@ public class WhatsappStore {
      */
     public @NonNull Optional<Chat> findChatByName(@NonNull String name) {
         return chats.parallelStream()
-                .filter(e -> Objects.equals(e.displayName(), name))
+                .filter(chat -> Objects.equals(chat.displayName(), name))
                 .findAny();
     }
 
@@ -152,7 +153,7 @@ public class WhatsappStore {
      */
     public @NonNull Set<Chat> findChatsByName(@NonNull String name) {
         return chats.parallelStream()
-                .filter(e -> Objects.equals(e.displayName(), name))
+                .filter(chat -> Objects.equals(chat.displayName(), name))
                 .collect(Collectors.toUnmodifiableSet());
     }
 

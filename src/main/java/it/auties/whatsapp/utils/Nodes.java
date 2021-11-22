@@ -4,9 +4,15 @@ import it.auties.whatsapp.protobuf.model.Node;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
+/**
+ * A utility class used to work with {@link Node}
+ */
 @UtilityClass
 public class Nodes {
     /**

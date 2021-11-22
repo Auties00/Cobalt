@@ -1,24 +1,18 @@
 package it.auties.whatsapp.utils;
 
-import com.google.zxing.common.BitMatrix;
 import it.auties.whatsapp.api.WhatsappConfiguration;
 import it.auties.whatsapp.binary.BinaryArray;
-import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.model.Node;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 
-import java.net.URL;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static java.time.ZoneId.systemDefault;
+import static java.time.ZonedDateTime.ofInstant;
 
 /**
  * This utility class provides helper functionality to easily extract data out of Whatsapp models or raw protobuf messages
@@ -30,26 +24,6 @@ public class WhatsappUtils {
      * Request counter, decoupled from {@link it.auties.whatsapp.manager.WhatsappStore}
      */
     private final AtomicLong requestCounter = new AtomicLong();
-
-    /**
-     * Returns the phone number associated with a jid
-     *
-     * @param jid the input jid
-     * @return a non-null String
-     */
-    public String phoneNumberFromJid(@NonNull String jid) {
-        return jid.split("@", 2)[0];
-    }
-
-    /**
-     * Parses c.us jids to standard whatsapp jids
-     *
-     * @param jid the input jid
-     * @return a non-null String
-     */
-    public String parseJid(@NonNull String jid) {
-        return jid.replaceAll("@c\\.us", "@s.whatsapp.net");
-    }
 
     /**
      * Returns a random message id
@@ -79,17 +53,7 @@ public class WhatsappUtils {
     public Optional<ZonedDateTime> parseWhatsappTime(long input) {
         return Optional.of(input)
                 .filter(time -> time != 0)
-                .map(time -> ZonedDateTime.ofInstant(Instant.ofEpochSecond(time), ZoneId.systemDefault()));
-    }
-
-    /**
-     * Returns a boolean that determines whether {@code jid} is a group
-     *
-     * @param jid the input jid
-     * @return true if {@code jid} is a group
-     */
-    public boolean isGroup(@NonNull String jid) {
-        return jid.contains("-") || jid.contains("g.us");
+                .map(time -> ofInstant(Instant.ofEpochSecond(time), systemDefault()));
     }
 
     /**

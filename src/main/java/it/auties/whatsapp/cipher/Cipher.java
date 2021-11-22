@@ -1,11 +1,12 @@
 package it.auties.whatsapp.cipher;
 
+import io.netty.buffer.ByteBufUtil;
 import it.auties.whatsapp.binary.BinaryArray;
-import it.auties.whatsapp.binary.BinaryBuffer;
 import it.auties.whatsapp.binary.BinaryDecoder;
 import it.auties.whatsapp.protobuf.model.IdentityKeyPair;
 import it.auties.whatsapp.protobuf.model.Node;
 import it.auties.whatsapp.protobuf.model.SignedKeyPair;
+import it.auties.whatsapp.utils.Buffers;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
@@ -198,14 +199,13 @@ public class Cipher {
     }
 
     public BinaryArray cipherMessage(byte @NonNull [] message, BinaryArray writeKey, long iv, boolean prologue) {
-        System.out.printf("Iv == 0 ? %s%n", prologue);
         var ciphered = cipherMessage0(message, writeKey, iv);
-        return new BinaryBuffer()
+        var buffer = ByteBufUtil.threadLocalDirectBuffer()
                 .writeBytes(prologue ? handshakePrologue() : new byte[0])
-                .writeUInt8(ciphered.length >> 16)
-                .writeUInt16(65535 & ciphered.length)
-                .writeBytes(ciphered)
-                .readWrittenBytesToArray();
+                .writeByte(ciphered.length >> 16)
+                .writeInt(65535 & ciphered.length)
+                .writeBytes(ciphered);
+        return Buffers.readBinary(buffer);
     }
 
     private byte[] cipherMessage0(byte[] message, BinaryArray writeKey, long iv) {
@@ -225,7 +225,7 @@ public class Cipher {
     }
 
     @SneakyThrows
-    public byte[] generateSenderKey() {
+    public byte[] randomSenderKey() {
         var key = new byte[32];
         var secureRandom = SecureRandom.getInstance(SHA_PRNG);
         secureRandom.nextBytes(key);

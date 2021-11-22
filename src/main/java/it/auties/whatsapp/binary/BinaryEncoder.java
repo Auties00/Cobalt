@@ -1,25 +1,28 @@
 package it.auties.whatsapp.binary;
 
+import io.netty.buffer.ByteBuf;
 import it.auties.whatsapp.protobuf.contact.ContactId;
 import it.auties.whatsapp.protobuf.model.Node;
+import it.auties.whatsapp.utils.Buffers;
 import it.auties.whatsapp.utils.Nodes;
+import lombok.NonNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 
 import static it.auties.whatsapp.binary.BinaryTag.*;
 
-public record BinaryEncoder(BinaryBuffer binary){
+public record BinaryEncoder(@NonNull ByteBuf binary){
     private static final int UNSIGNED_BYTE_MAX_VALUE = 256;
     private static final int UNSIGNED_SHORT_MAX_VALUE = 65536;
     private static final int INT_20_MAX_VALUE = 1048576;
 
     public BinaryEncoder(){
-        this(new BinaryBuffer());
+        this(Buffers.newBuffer());
     }
 
     public byte[] encode(Node node) {
-        binary.buffer().position(0);
+        binary.clear();
         var binaryArr = writeNode(node);
         var result = new byte[1 + binaryArr.length];
         result[0] = 0;
@@ -28,13 +31,13 @@ public record BinaryEncoder(BinaryBuffer binary){
     }
 
     private void writeString(String input, BinaryTag token) {
-        binary.writeUInt8(token);
+        binary.writeShort(token.data());
         writeStringLength(input);
         for (int index = 0, charCode = 0; index < input.length(); index++) {
             var codePoint = Character.codePointAt(input, index);
             var parsedCodePoint = parseCodePoint(token.data(), codePoint);
             if (index % 2 != 0) {
-                binary.writeUInt8(charCode |= parsedCodePoint);
+                binary.writeShort(charCode |= parsedCodePoint);
                 continue;
             }
 
@@ -44,18 +47,18 @@ public record BinaryEncoder(BinaryBuffer binary){
             }
 
             charCode |= 15;
-            binary.writeUInt8(charCode);
+            binary.writeShort(charCode);
         }
     }
 
     private void writeStringLength(String input) {
         var roundedLength = (int) Math.ceil(input.length() / 2F);
         if(input.length() % 2 == 1){
-            binary.writeUInt8(roundedLength | 128);
+            binary.writeShort(roundedLength | 128);
             return;
         }
 
-        binary.writeUInt8(roundedLength);
+        binary.writeShort(roundedLength);
     }
 
     private int parseCodePoint(int token, int codePoint) {
@@ -80,33 +83,33 @@ public record BinaryEncoder(BinaryBuffer binary){
 
     private void writeLong(long input) {
         if (input < UNSIGNED_BYTE_MAX_VALUE){
-            binary.writeUInt8(BINARY_8);
-            binary.writeUInt8((int) input);
+            binary.writeShort(BINARY_8.data());
+            binary.writeShort((int) input);
             return;
         }
 
         if (input < INT_20_MAX_VALUE){
-            binary.writeUInt8(BINARY_20);
-            binary.writeUInt8((int) ((input >>> 16) & 255));
-            binary.writeUInt8((int) ((input >>> 8) & 255));
-            binary.writeUInt8((int) (255 & input));
+            binary.writeShort(BINARY_20.data());
+            binary.writeShort((int) ((input >>> 16) & 255));
+            binary.writeShort((int) ((input >>> 8) & 255));
+            binary.writeShort((int) (255 & input));
             return;
         }
 
-        binary.writeUInt8(BINARY_32);
-        binary.writeUInt32(input);
+        binary.writeShort(BINARY_32.data());
+        binary.writeLong(input);
     }
 
     private void writeString(String input) {
         if (input.isEmpty()){
-            binary.writeUInt8(BINARY_8);
-            binary.writeUInt8(LIST_EMPTY);
+            binary.writeShort(BINARY_8.data());
+            binary.writeShort(LIST_EMPTY.data());
             return;
         }
 
         var tokenIndex = BinaryTokens.SINGLE_BYTE.indexOf(input);
         if (tokenIndex != -1) {
-            binary.writeUInt8(tokenIndex + 1);
+            binary.writeShort(tokenIndex + 1);
             return;
         }
 
@@ -128,7 +131,7 @@ public record BinaryEncoder(BinaryBuffer binary){
         }
 
         writeLong(length);
-        binary.writeString(input);
+        binary.writeBytes(input.getBytes(StandardCharsets.UTF_8));
     }
 
     private boolean writeDoubleByteString(String input) {
@@ -137,8 +140,8 @@ public record BinaryEncoder(BinaryBuffer binary){
         }
 
         var index = BinaryTokens.DOUBLE_BYTE.indexOf(input);
-        binary.writeUInt8(doubleByteStringTag(index));
-        binary.writeUInt8(index % (BinaryTokens.DOUBLE_BYTE.size() / 4));
+        binary.writeShort(doubleByteStringTag(index).data());
+        binary.writeShort(index % (BinaryTokens.DOUBLE_BYTE.size() / 4));
         return true;
     }
 
@@ -158,16 +161,16 @@ public record BinaryEncoder(BinaryBuffer binary){
 
     private byte[] writeNode(Node input) {
         if (input.description().equals("0")) {
-            binary.writeUInt8(LIST_8);
-            binary.writeUInt8(LIST_EMPTY);
-            return binary.readWrittenBytes();
+            binary.writeShort(LIST_8.data());
+            binary.writeShort(LIST_EMPTY.data());
+            return binary.array();
         }
 
         writeInt(input.size());
         writeString(input.description());
         writeAttributes(input);
         if(input.hasContent()) write(input.content());
-        return binary.readWrittenBytes();
+        return binary.array();
     }
 
     private void writeAttributes(Node input) {
@@ -179,14 +182,14 @@ public record BinaryEncoder(BinaryBuffer binary){
 
     private void writeInt(int size) {
         if (size < UNSIGNED_BYTE_MAX_VALUE) {
-            binary.writeUInt8(LIST_8);
-            binary.writeUInt8(size);
+            binary.writeShort(LIST_8.data());
+            binary.writeShort(size);
             return;
         }
 
         if (size < UNSIGNED_SHORT_MAX_VALUE) {
-            binary.writeUInt8(LIST_16);
-            binary.writeUInt16(size);
+            binary.writeShort(LIST_16.data());
+            binary.writeInt(size);
         }
 
         throw new IllegalArgumentException("Cannot write int %s: overflow".formatted(size));
@@ -194,7 +197,7 @@ public record BinaryEncoder(BinaryBuffer binary){
 
     private void write(Object input) {
         switch (input) {
-            case null -> binary.writeUInt8(LIST_EMPTY);
+            case null -> binary.writeShort(LIST_EMPTY.data());
             case String str -> writeString(str);
             case Number number -> writeString(number.toString());
             case byte[] bytes -> writeBytes(bytes);
@@ -216,22 +219,22 @@ public record BinaryEncoder(BinaryBuffer binary){
     }
 
     private void writeJid(ContactId jid) {
-        if(jid.ad()){
-            binary.writeUInt8(AD_JID);
-            binary.writeUInt8(jid.agent());
-            binary.writeUInt8(jid.device());
+        if(jid.companion()){
+            binary.writeShort(COMPANION_JID.data());
+            binary.writeShort(jid.agent());
+            binary.writeShort(jid.device());
             writeString(jid.user());
             return;
         }
 
-        binary.writeUInt8(JID_PAIR);
+        binary.writeShort(JID_PAIR.data());
         if(jid.user() != null) {
             writeString(jid.user());
             writeString(jid.server());
             return;
         }
 
-        binary.writeUInt8(LIST_EMPTY);
+        binary.writeShort(LIST_EMPTY.data());
         writeString(jid.server());
     }
 }

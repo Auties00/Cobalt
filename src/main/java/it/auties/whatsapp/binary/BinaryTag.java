@@ -23,7 +23,7 @@ public enum BinaryTag {
     DICTIONARY_1(237),
     DICTIONARY_2(238),
     DICTIONARY_3(239),
-    AD_JID(247),
+    COMPANION_JID(247),
     LIST_8(248),
     LIST_16(249),
     JID_PAIR(250),

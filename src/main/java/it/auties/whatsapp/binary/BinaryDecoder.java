@@ -1,9 +1,12 @@
 package it.auties.whatsapp.binary;
 
+import io.netty.buffer.ByteBuf;
 import it.auties.whatsapp.protobuf.contact.ContactId;
 import it.auties.whatsapp.protobuf.model.Node;
+import it.auties.whatsapp.utils.Buffers;
 import lombok.AllArgsConstructor;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -12,37 +15,40 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.zip.Inflater;
 
+import static io.netty.buffer.ByteBufUtil.threadLocalDirectBuffer;
 import static it.auties.whatsapp.binary.BinaryTag.*;
 
 @AllArgsConstructor
 public class BinaryDecoder{
-    private BinaryBuffer binary;
+    private ByteBuf binary;
     public BinaryDecoder(){
-        this(new BinaryBuffer());
+        this(Buffers.newBuffer());
     }
-    public BinaryBuffer unpack(byte[] input) {
-        var data = BinaryBuffer.of(input);
-        var token = data.readUInt8() & 2;
+    
+    public ByteBuf unpack(byte[] input) {
+        var data = threadLocalDirectBuffer();
+        data.writeBytes(input);
+        var token = data.readUnsignedInt() & 2;
         if (token == 0) {
-            return data.remaining();
+            return data.discardReadBytes();
         }
 
         try {
             var decompressor = new Inflater();
-            decompressor.setInput(data.remaining().readAllBytes());
+            decompressor.setInput(Buffers.readBytes(data.discardReadBytes()));
             var temp = new byte[2048];
             var length = decompressor.inflate(temp);
-            var result = new byte[length];
-            System.arraycopy(temp, 0, result, 0, length);
-            return BinaryBuffer.of(result);
+            var result = threadLocalDirectBuffer();
+            result.writeBytes(Arrays.copyOf(temp, length));
+            return result;
         }catch (Exception exception){
             throw new RuntimeException("Cannot inflate data", exception);
         }
     }
 
-    public Node decode(BinaryBuffer binary){
+    public Node decode(ByteBuf binary){
         this.binary = binary;
-        var token = binary.readUInt8();
+        var token = binary.readUnsignedByte();
         var size = readListSize(token);
         if (size == 0) {
             throw new IllegalArgumentException("Failed to decode body: body cannot be empty");
@@ -77,7 +83,7 @@ public class BinaryDecoder{
         IntStream.iterate(0, index -> index < string.length - 1, n -> n + 2)
                 .forEach(index -> readChar(permitted, string, index));
         if (start != 0) {
-            string[string.length - 1] = permitted.get(binary.readUInt8() >>> 4);
+            string[string.length - 1] = permitted.get(binary.readUnsignedByte() >>> 4);
         }
 
         return Arrays.stream(string)
@@ -86,18 +92,18 @@ public class BinaryDecoder{
     }
 
     private void readChar(List<Character> permitted, int[] string, int index) {
-        var token = binary.readUInt8();
+        var token = binary.readUnsignedByte();
         string[index] = permitted.get(token >>> 4);
         string[index + 1] = permitted.get(15 & token);
     }
 
     private Object read(boolean parseBytes) {
-        var tag = binary.readUInt8();
+        var tag = binary.readUnsignedByte();
         return switch (forData(tag)) {
             case LIST_EMPTY -> null;
-            case AD_JID -> readAdJid();
-            case LIST_8 -> readList(binary.readUInt8());
-            case LIST_16 -> readList(binary.readUInt16());
+            case COMPANION_JID -> readCompanionJid();
+            case LIST_8 -> readList(binary.readUnsignedByte());
+            case LIST_16 -> readList(binary.readUnsignedShort());
             case JID_PAIR -> readJidPair();
             case HEX_8 -> readHexString();
             case BINARY_8 -> readString(parseBytes);
@@ -111,70 +117,73 @@ public class BinaryDecoder{
     private String readStringFromToken(int token) {
         if (token >= DICTIONARY_0.data() && token <= DICTIONARY_3.data()) {
             var delta = (BinaryTokens.DOUBLE_BYTE.size() / 4) * (token - DICTIONARY_0.data());
-            return BinaryTokens.DOUBLE_BYTE.get(binary.readUInt8() + delta);
+            return BinaryTokens.DOUBLE_BYTE.get(binary.readUnsignedByte() + delta);
         }
 
         return BinaryTokens.SINGLE_BYTE.get(token - 1);
     }
 
     private String readNibble() {
-        var number = binary.readUInt8();
+        var number = binary.readUnsignedByte();
         return readString(BinaryTokens.NUMBERS, number >>> 7, 127 & number);
     }
 
     private Object readString32(boolean parseBytes) {
         if (parseBytes) {
-            return binary.readString(binary.readUInt32());
+            var buffer = binary.readBytes(binary.readUnsignedShort());
+            return new String(Buffers.readBytes(buffer), StandardCharsets.UTF_8);
         }
 
-        return binary.readBytes(binary.readUInt32());
+        return Buffers.readBytes(binary, binary.readUnsignedShort());
     }
 
     private Object readString16(boolean parseBytes) {
-        var size = ((15 & binary.readUInt8()) << 16) + (binary.readUInt8() << 8) + binary.readUInt8();
+        var size = ((15 & binary.readUnsignedByte()) << 16) + (binary.readUnsignedByte() << 8) + binary.readUnsignedByte();
         if (parseBytes) {
-            return binary.readString(size);
+            var buffer = binary.readBytes(size);
+            return new String(Buffers.readBytes(buffer), StandardCharsets.UTF_8);
         }
 
-        return binary.readBytes(size);
+        return Buffers.readBytes(binary, size);
     }
 
     private Object readString(boolean parseBytes) {
+        var size = binary.readUnsignedByte();
         if (parseBytes) {
-            return binary.readString(binary.readUInt8());
+            var buffer = binary.readBytes(size);
+            return new String(Buffers.readBytes(buffer), StandardCharsets.UTF_8);
         }
 
-        return binary.readBytes(binary.readUInt8());
+        return Buffers.readBytes(binary, size);
     }
 
     private String readHexString() {
-        var number = binary.readUInt8();
+        var number = binary.readUnsignedByte();
         return readString(BinaryTokens.HEX, number >>> 7, 127 & number);
     }
 
     private ContactId readJidPair() {
         return switch (read(true)){
-            case String encoded -> ContactId.create(encoded, decodeString());
-            case null -> ContactId.create(null, decodeString());
+            case String encoded -> ContactId.of(encoded, decodeString());
+            case null -> ContactId.of(null, decodeString());
             default -> throw new RuntimeException("Invalid jid type");
         };
     }
 
-    private ContactId readAdJid() {
-        var agent = binary.readUInt8();
-        var device = binary.readUInt8();
+    private ContactId readCompanionJid() {
+        var agent = binary.readUnsignedByte();
+        var device = binary.readUnsignedByte();
         var user = decodeString();
-        return ContactId.createAd(user, agent, device);
+        return ContactId.ofCompanion(user, agent, device);
     }
 
     private int readListSize(int token) {
         if (token == LIST_8.data()){
-            return binary.readUInt8();
+            return binary.readUnsignedByte();
         }
 
-        return binary.readUInt16();
+        return binary.readUnsignedShort();
     }
-
 
     private Map<String, Object> readAttributes(int size) {
         var map = new HashMap<String, Object>();

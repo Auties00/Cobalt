@@ -12,6 +12,7 @@ open module it.auties.whatsapp4j {
     requires io.github.classgraph;
     requires java.net.http;
     requires jdk.crypto.ec;
-    requires curve25519.java;
     requires signal.protocol.java;
+    requires curve25519.java;
+    requires netty.buffer;
 }

@@ -25,7 +25,7 @@ public class Contact {
     /**
      * The non-null unique jid used to identify this contact
      */
-    private final @NonNull String jid;
+    private final @NonNull ContactId id;
 
     /**
      * The nullable name specified by this contact when he created a Whatsapp account.
@@ -61,23 +61,10 @@ public class Contact {
      */
     private ZonedDateTime lastSeen;
 
-
-    /**
-     * Constructs a new Contact from a jid
-     *
-     * @param jid the jid of the new contact
-     */
-    public static Contact fromJid(@NonNull String jid){
-        return Contact.builder()
-                .jid(jid)
-                .build();
-    }
-
     /**
      * Returns an optional String representing the first valid(non-null) name for this contact.
      * If no valid name is found, an empty optional is returned.
      * In this case, consider using the phone number of this contact as a name.
-     * It can be obtained by passing this contact's jid to {@link WhatsappUtils#phoneNumberFromJid(String)}.
      *
      * @return an optional String
      */
@@ -86,13 +73,13 @@ public class Contact {
     }
 
     /**
-     * Returns a non-null String representing the first valid(non-null) name for this contact.
+     * Returns a nullable String representing the first valid(non-null) name for this contact.
      * If no valid name is found, {@code orElse} is returned.
      *
-     * @param orElse a non-null String returned if no valid name is present for this contact
-     * @return a non-null String
+     * @param orElse a nullable String returned if no valid name is present for this contact
+     * @return a nullable String
      */
-    public @NonNull String bestName(@NonNull String orElse) {
+    public String bestName(String orElse) {
         return bestName().orElse(orElse);
     }
 

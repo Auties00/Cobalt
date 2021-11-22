@@ -1,29 +1,84 @@
 package it.auties.whatsapp.protobuf.contact;
 
+import it.auties.whatsapp.api.Whatsapp;
+import lombok.Builder;
+import lombok.NonNull;
+
 import java.util.Objects;
 
-public record ContactId(String user, int device, int agent, String server, boolean ad) {
-    public static final String OFFICIAL_BIZ_WID = "16505361212@c.us";
-    public static final String USER_JID_SUFFIX = "s.whatsapp.net";
-    public static final ContactId WHATSAPP_SERVER = createServer("s.whatsapp.net");
+/**
+ * A model class that represents a jid.
+ * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
+ * Instead, methods inside {@link Whatsapp} should be used.
+ * This class also offers a builder, accessible using {@link ContactId#builder()}.
+ */
+@Builder
+public record ContactId(String user, int device, int agent, @NonNull String server, boolean companion) {
+    /**
+     * The official business account address
+     */
+    public static final String OFFICIAL_BUSINESS_ACCOUNT = "16505361212@c.us";
 
-    public static ContactId create(String jid) {
-        return new ContactId(toUserId(jid), 0, 0, USER_JID_SUFFIX, false);
+    /**
+     * The at for all Whatsapp users
+     */
+    public static final String USER_ADDRESS = "s.whatsapp.net";
+
+    /**
+     * The ID of Whatsapp, used to send nodes
+     */
+    public static final ContactId WHATSAPP = ofServer(USER_ADDRESS);
+
+    /**
+     * Constructs a new ContactId for a user from a jid
+     *
+     * @param jid the non-null jid of the user
+     * @return a non-null contact id
+     */
+    public static ContactId of(@NonNull String jid) {
+        return new ContactId(parseId(jid), 0, 0, USER_ADDRESS, false);
     }
 
-    public static ContactId create(String jid, String server) {
-        return new ContactId(toUserId(jid), 0, 0, server, false);
+    /**
+     * Constructs a new ContactId for a user from a jid and a custom server
+     *
+     * @param jid    the nullable jid of the user
+     * @param server the non-null custom server
+     * @return a non-null contact id
+     */
+    public static ContactId of(String jid, @NonNull String server) {
+        return new ContactId(parseId(jid), 0, 0, server, false);
     }
 
-    public static ContactId createServer(String server) {
+    /**
+     * Constructs a new ContactId that represents a server
+     *
+     * @param server the non-null custom server
+     * @return a non-null contact id
+     */
+    public static ContactId ofServer(@NonNull String server) {
         return new ContactId(null, 0, 0, server, false);
     }
 
-    public static ContactId createAd(String jid, int agent, int device) {
-        return new ContactId(toUserId(jid), device, agent, USER_JID_SUFFIX, true);
+    /**
+     * Constructs a new ContactId for a companion
+     *
+     * @param jid    the nullable jid of the user
+     * @param agent  the agent id
+     * @param device the device id
+     * @return a non-null contact id
+     */
+    public static ContactId ofCompanion(String jid, int agent, int device) {
+        return new ContactId(parseId(jid), device, agent, USER_ADDRESS, true);
     }
 
-    public static String toUserId(String jid) {
+    /**
+     * Parses a nullable jid to the Whatsapp Jid Format
+     *
+     * @param jid the nullable jid to parse
+     * @return null if {@code jid == null}, otherwise a non null string
+     */
+    public static String parseId(String jid) {
         if(jid == null) {
             return null;
         }
@@ -33,6 +88,11 @@ public record ContactId(String user, int device, int agent, String server, boole
                 .replace("@g.us", "");
     }
 
+    /**
+     * Returns the type of this jid
+     *
+     * @return a non null type
+     */
     public Type type() {
         if (device() != 0) {
             return Type.COMPANION;
@@ -46,8 +106,8 @@ public record ContactId(String user, int device, int agent, String server, boole
             return Type.BROADCAST;
         }
 
-        if (toString().equals(OFFICIAL_BIZ_WID)) {
-            return Type.OFFICIAL_BIZ_ACCOUNT;
+        if (toString().equals(OFFICIAL_BUSINESS_ACCOUNT)) {
+            return Type.OFFICIAL_BUSINESS_ACCOUNT;
         }
 
         if (Objects.equals(server(), "g.us")) {
@@ -63,14 +123,69 @@ public record ContactId(String user, int device, int agent, String server, boole
         }
 
         if (Objects.equals(server(), "c.us") && Objects.equals(user(), "0")) {
-            return Type.PSA;
+            return Type.ANNOUNCEMENT;
         }
 
         if(Objects.equals(user(), "status") && Objects.equals(server(), "broadcast")){
-            return Type.STATUS_V3;
+            return Type.STATUS;
         }
 
         return Type.UNKNOWN;
+    }
+
+    /**
+     * The constants of this enumerated type describe the various types of jids currently supported
+     */
+    public enum Type {
+        /**
+         * Represents a device connected using the multi device beta
+         */
+        COMPANION,
+
+        /**
+         * Regular Whatsapp contact Jid
+         */
+        USER,
+
+        /**
+         * Broadcast list
+         */
+        BROADCAST,
+
+        /**
+         * Official business account
+         */
+        OFFICIAL_BUSINESS_ACCOUNT,
+
+        /**
+         * Group Chat Jid
+         */
+        GROUP,
+
+        /**
+         * Group Call Jid
+         */
+        GROUP_CALL,
+
+        /**
+         * Server Jid: Used to send nodes to Whatsapp usually
+         */
+        SERVER,
+
+        /**
+         * Announcements Chat Jid: Read only chat, usually used by Whatsapp for log updates
+         */
+        ANNOUNCEMENT,
+
+        /**
+         * Image Status Jid of a contact
+         */
+        STATUS,
+
+        /**
+         * Unknown Jid type
+         */
+        UNKNOWN
     }
 
     @Override
@@ -81,35 +196,22 @@ public record ContactId(String user, int device, int agent, String server, boole
 
     @Override
     public String toString() {
-        if (ad()) {
+        if (companion()) {
             if (agent == 0 && device == 0) {
-                return "%s@%s".formatted(user, USER_JID_SUFFIX);
+                return "%s@%s".formatted(user, USER_ADDRESS);
             }
 
             if (agent != 0 && device == 0) {
-                return "%s.%s@%s".formatted(user, agent, USER_JID_SUFFIX);
+                return "%s.%s@%s".formatted(user, agent, USER_ADDRESS);
             }
 
             if (agent == 0) {
-                return "%s:%s@%s".formatted(user, device, USER_JID_SUFFIX);
+                return "%s:%s@%s".formatted(user, device, USER_ADDRESS);
             }
 
-            return "%s.%s:%s@%s".formatted(user, agent, device, USER_JID_SUFFIX);
+            return "%s.%s:%s@%s".formatted(user, agent, device, USER_ADDRESS);
         }
 
         return user() == null ? server : "%s@%s".formatted(user(), server);
-    }
-
-    public enum Type {
-        COMPANION,
-        USER,
-        BROADCAST,
-        OFFICIAL_BIZ_ACCOUNT,
-        GROUP,
-        GROUP_CALL,
-        SERVER,
-        PSA,
-        STATUS_V3,
-        UNKNOWN
     }
 }
