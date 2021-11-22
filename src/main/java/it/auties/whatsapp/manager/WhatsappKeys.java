@@ -41,7 +41,7 @@ public class WhatsappKeys {
     private int id;
 
     /**
-     * The secret key pair used for binary messages
+     * The secret key pair used for buffer messages
      */
     @JsonProperty
     private @NonNull IdentityKeyPair companionKeyPair;

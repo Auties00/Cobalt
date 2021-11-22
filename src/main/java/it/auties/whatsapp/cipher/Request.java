@@ -26,7 +26,7 @@ import java.util.concurrent.CompletableFuture;
 @Log
 public class Request {
     /**
-     * The binary encoder, used to encode requests that take as a parameter a node
+     * The buffer encoder, used to encode requests that take as a parameter a node
      */
     private static final BinaryEncoder NODE_ENCODER = new BinaryEncoder();
 

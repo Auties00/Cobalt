@@ -86,6 +86,7 @@ public class WhatsappSocket {
     @SneakyThrows
     public void onBinary(byte @NonNull [] raw) {
         var message = new BinaryMessage(raw);
+        System.out.println("Incoming message: " + raw.length);
         if(message.length() == ERROR_CONSTANT){
             disconnect();
             return;
@@ -97,7 +98,6 @@ public class WhatsappSocket {
             return;
         }
 
-        System.out.println("Incoming message: " + raw.length);
         var deciphered = Cipher.decipherMessage(message.decoded().data(), keys.readKey(), store.readCounter().getAndIncrement());
         if(store().resolvePendingRequest(deciphered, false)){
             return;

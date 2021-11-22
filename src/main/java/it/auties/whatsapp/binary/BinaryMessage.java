@@ -13,12 +13,12 @@ import static it.auties.whatsapp.binary.BinaryArray.of;
 @Accessors(fluent = true)
 public class BinaryMessage {
     /**
-     * The raw binary array used to construct this object
+     * The raw buffer array used to construct this object
      */
     @NonNull BinaryArray raw;
 
     /**
-     * The raw binary array sliced at [3, {@code length})
+     * The raw buffer array sliced at [3, {@code length})
      */
     @NonNull BinaryArray decoded;
 
@@ -28,9 +28,9 @@ public class BinaryMessage {
     int length;
 
     /**
-     * Constructs a new instance of this wrapper from a binary array
+     * Constructs a new instance of this wrapper from a buffer array
      *
-     * @param array the non-null binary array
+     * @param array the non-null buffer array
      */
     public BinaryMessage(@NonNull BinaryArray array) {
         this.raw = raw();

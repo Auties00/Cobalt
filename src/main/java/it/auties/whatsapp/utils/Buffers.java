@@ -24,7 +24,7 @@ public class Buffers {
      * Reads the readable bytes of the provided buffer
      *
      * @param buffer the non-null byte buffer to read
-     * @return a non-null binary array
+     * @return a non-null buffer array
      */
     public BinaryArray readBinary(@NonNull ByteBuf buffer){
         return BinaryArray.of(readBytes(buffer));
@@ -38,6 +38,16 @@ public class Buffers {
      */
     public byte[] readBytes(@NonNull ByteBuf buffer){
         return readBytes(buffer, buffer.readableBytes());
+    }
+
+    /**
+     * Reads all the bytes of the provided buffer
+     *
+     * @param buffer the non-null byte buffer to read
+     * @return a non-null byte array
+     */
+    public byte[] readAllBytes(@NonNull ByteBuf buffer){
+        return readBytes(buffer, buffer.readerIndex(0).readableBytes());
     }
 
     /**

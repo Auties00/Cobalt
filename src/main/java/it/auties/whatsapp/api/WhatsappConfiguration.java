@@ -34,8 +34,8 @@ public class WhatsappConfiguration {
 
     /**
      * The tag used to send messages to WhatsappWeb's WebSocket
-     * The tag used to send binary requests to WhatsappWeb's WebSocket after the authentication process has succeeded is built using {@link WhatsappUtils#buildRequestTag(WhatsappConfiguration)}
-     * It is important to use a pseudo random string as using the same tag two times in a binary request, even in different sessions, will make the request fail
+     * The tag used to send buffer requests to WhatsappWeb's WebSocket after the authentication process has succeeded is built using {@link WhatsappUtils#buildRequestTag(WhatsappConfiguration)}
+     * It is important to use a pseudo random string as using the same tag two times in a buffer request, even in different sessions, will make the request fail
      */
     @Default
     private final @NonNull String requestTag = BinaryArray.random(12).toHex();

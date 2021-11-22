@@ -36,7 +36,7 @@ import java.util.Objects;
 
 /**
  * This utility class provides helper functionality to easily encrypt and decrypt data
- * This class should only be used for WhatsappWeb's WebSocket binary operations
+ * This class should only be used for WhatsappWeb's WebSocket buffer operations
  *
  * TODO: Refactor and migrate off curve25519 library
  */
@@ -202,8 +202,8 @@ public class Cipher {
         var ciphered = cipherMessage0(message, writeKey, iv);
         var buffer = ByteBufUtil.threadLocalDirectBuffer()
                 .writeBytes(prologue ? handshakePrologue() : new byte[0])
-                .writeByte(ciphered.length >> 16)
-                .writeInt(65535 & ciphered.length)
+                .writeInt(ciphered.length >> 16)
+                .writeShort(65535 & ciphered.length)
                 .writeBytes(ciphered);
         return Buffers.readBinary(buffer);
     }

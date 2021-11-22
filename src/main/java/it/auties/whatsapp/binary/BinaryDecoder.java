@@ -4,7 +4,7 @@ import io.netty.buffer.ByteBuf;
 import it.auties.whatsapp.protobuf.contact.ContactId;
 import it.auties.whatsapp.protobuf.model.Node;
 import it.auties.whatsapp.utils.Buffers;
-import lombok.AllArgsConstructor;
+import lombok.NonNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -18,9 +18,7 @@ import java.util.zip.Inflater;
 import static io.netty.buffer.ByteBufUtil.threadLocalDirectBuffer;
 import static it.auties.whatsapp.binary.BinaryTag.*;
 
-@AllArgsConstructor
-public class BinaryDecoder{
-    private ByteBuf binary;
+public record BinaryDecoder(@NonNull ByteBuf buffer){
     public BinaryDecoder(){
         this(Buffers.newBuffer());
     }
@@ -28,14 +26,14 @@ public class BinaryDecoder{
     public ByteBuf unpack(byte[] input) {
         var data = threadLocalDirectBuffer();
         data.writeBytes(input);
-        var token = data.readUnsignedInt() & 2;
+        var token = data.readByte() & 2;
         if (token == 0) {
             return data.discardReadBytes();
         }
 
         try {
             var decompressor = new Inflater();
-            decompressor.setInput(Buffers.readBytes(data.discardReadBytes()));
+            decompressor.setInput(Buffers.readBytes(data));
             var temp = new byte[2048];
             var length = decompressor.inflate(temp);
             var result = threadLocalDirectBuffer();
@@ -46,15 +44,20 @@ public class BinaryDecoder{
         }
     }
 
-    public Node decode(ByteBuf binary){
-        this.binary = binary;
-        var token = binary.readUnsignedByte();
-        var size = readListSize(token);
+    public Node decode(@NonNull ByteBuf input){
+        buffer.clear();
+        buffer.writeBytes(input);
+        return readNode();
+    }
+
+    private Node readNode() {
+        var token = buffer.readUnsignedByte();
+        var size = readSize(token);
         if (size == 0) {
             throw new IllegalArgumentException("Failed to decode body: body cannot be empty");
         }
 
-        var description = decodeString();
+        var description = readString();
         var attrs = readAttributes(size);
         if (size % 2 != 0) {
             return new Node(description, attrs, null);
@@ -63,18 +66,18 @@ public class BinaryDecoder{
         return new Node(description, attrs, read(false));
     }
 
-    public String decodeString() {
+    public String readString() {
         var read = read(true);
-        if(read instanceof String string){
-            return string;
+        if (!(read instanceof String string)) {
+            throw new IllegalArgumentException("Strict decoding failed: expected string, got %s with type %s".formatted(read, read.getClass().getName()));
         }
 
-        throw new IllegalArgumentException("Strict decoding failed: expected string, got %s with type %s".formatted(read, read.getClass().getName()));
+        return string;
     }
 
     private List<Node> readList(int size){
         return IntStream.range(0, size)
-                .mapToObj(index -> decode(binary))
+                .mapToObj(index -> readNode())
                 .toList();
     }
 
@@ -83,7 +86,7 @@ public class BinaryDecoder{
         IntStream.iterate(0, index -> index < string.length - 1, n -> n + 2)
                 .forEach(index -> readChar(permitted, string, index));
         if (start != 0) {
-            string[string.length - 1] = permitted.get(binary.readUnsignedByte() >>> 4);
+            string[string.length - 1] = permitted.get(buffer.readUnsignedByte() >>> 4);
         }
 
         return Arrays.stream(string)
@@ -92,18 +95,18 @@ public class BinaryDecoder{
     }
 
     private void readChar(List<Character> permitted, int[] string, int index) {
-        var token = binary.readUnsignedByte();
+        var token = buffer.readUnsignedByte();
         string[index] = permitted.get(token >>> 4);
         string[index + 1] = permitted.get(15 & token);
     }
 
     private Object read(boolean parseBytes) {
-        var tag = binary.readUnsignedByte();
+        var tag = buffer.readUnsignedByte();
         return switch (forData(tag)) {
             case LIST_EMPTY -> null;
             case COMPANION_JID -> readCompanionJid();
-            case LIST_8 -> readList(binary.readUnsignedByte());
-            case LIST_16 -> readList(binary.readUnsignedShort());
+            case LIST_8 -> readList(buffer.readUnsignedByte());
+            case LIST_16 -> readList(buffer.readUnsignedShort());
             case JID_PAIR -> readJidPair();
             case HEX_8 -> readHexString();
             case BINARY_8 -> readString(parseBytes);
@@ -117,78 +120,78 @@ public class BinaryDecoder{
     private String readStringFromToken(int token) {
         if (token >= DICTIONARY_0.data() && token <= DICTIONARY_3.data()) {
             var delta = (BinaryTokens.DOUBLE_BYTE.size() / 4) * (token - DICTIONARY_0.data());
-            return BinaryTokens.DOUBLE_BYTE.get(binary.readUnsignedByte() + delta);
+            return BinaryTokens.DOUBLE_BYTE.get(buffer.readUnsignedByte() + delta);
         }
 
         return BinaryTokens.SINGLE_BYTE.get(token - 1);
     }
 
     private String readNibble() {
-        var number = binary.readUnsignedByte();
+        var number = buffer.readUnsignedByte();
         return readString(BinaryTokens.NUMBERS, number >>> 7, 127 & number);
     }
 
     private Object readString32(boolean parseBytes) {
         if (parseBytes) {
-            var buffer = binary.readBytes(binary.readUnsignedShort());
+            var buffer = this.buffer.readBytes(this.buffer.readUnsignedShort());
             return new String(Buffers.readBytes(buffer), StandardCharsets.UTF_8);
         }
 
-        return Buffers.readBytes(binary, binary.readUnsignedShort());
+        return Buffers.readBytes(buffer, buffer.readUnsignedShort());
     }
 
     private Object readString16(boolean parseBytes) {
-        var size = ((15 & binary.readUnsignedByte()) << 16) + (binary.readUnsignedByte() << 8) + binary.readUnsignedByte();
+        var size = ((15 & buffer.readUnsignedByte()) << 16) + (buffer.readUnsignedByte() << 8) + buffer.readUnsignedByte();
         if (parseBytes) {
-            var buffer = binary.readBytes(size);
+            var buffer = this.buffer.readBytes(size);
             return new String(Buffers.readBytes(buffer), StandardCharsets.UTF_8);
         }
 
-        return Buffers.readBytes(binary, size);
+        return Buffers.readBytes(buffer, size);
     }
 
     private Object readString(boolean parseBytes) {
-        var size = binary.readUnsignedByte();
+        var size = buffer.readUnsignedByte();
         if (parseBytes) {
-            var buffer = binary.readBytes(size);
+            var buffer = this.buffer.readBytes(size);
             return new String(Buffers.readBytes(buffer), StandardCharsets.UTF_8);
         }
 
-        return Buffers.readBytes(binary, size);
+        return Buffers.readBytes(buffer, size);
     }
 
     private String readHexString() {
-        var number = binary.readUnsignedByte();
+        var number = buffer.readUnsignedByte();
         return readString(BinaryTokens.HEX, number >>> 7, 127 & number);
     }
 
     private ContactId readJidPair() {
         return switch (read(true)){
-            case String encoded -> ContactId.of(encoded, decodeString());
-            case null -> ContactId.of(null, decodeString());
+            case String encoded -> ContactId.of(encoded, readString());
+            case null -> ContactId.of(null, readString());
             default -> throw new RuntimeException("Invalid jid type");
         };
     }
 
     private ContactId readCompanionJid() {
-        var agent = binary.readUnsignedByte();
-        var device = binary.readUnsignedByte();
-        var user = decodeString();
+        var agent = buffer.readUnsignedByte();
+        var device = buffer.readUnsignedByte();
+        var user = readString();
         return ContactId.ofCompanion(user, agent, device);
     }
 
-    private int readListSize(int token) {
+    private int readSize(int token) {
         if (token == LIST_8.data()){
-            return binary.readUnsignedByte();
+            return buffer.readUnsignedByte();
         }
 
-        return binary.readUnsignedShort();
+        return buffer.readUnsignedShort();
     }
 
     private Map<String, Object> readAttributes(int size) {
         var map = new HashMap<String, Object>();
-        for (var t = size - 1; t > 1; t -= 2) {
-            var key = decodeString();
+        for (var pair = size - 1; pair > 1; pair -= 2) {
+            var key = readString();
             var value = read(true);
             map.put(key, value);
         }
