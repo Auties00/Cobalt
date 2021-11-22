@@ -18,14 +18,11 @@ import java.util.concurrent.CountDownLatch;
 public class WhatsappAPITest {
     @Test
     public void login() throws InterruptedException {
-        var await = new CountDownLatch(1);
         var whatsapp = new WhatsappSocket(WhatsappConfiguration.defaultOptions(), new WhatsappStore(), new WhatsappKeys());
         whatsapp.store().listeners().add(new Listener());
         whatsapp.connect();
-        await.await();
-    }
-
-    private static class Listener implements WhatsappListener {
 
     }
+
+    private static class Listener implements WhatsappListener { }
 }
