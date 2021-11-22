@@ -292,8 +292,8 @@
         </dependency>
         <dependency>
             <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
-            <version>4.0.0-rc-2</version>
+            <artifactId>protobuf-javalite</artifactId>
+            <version>3.19.1</version>
         </dependency>
         <dependency>
             <groupId>com.google.protobuf</groupId>

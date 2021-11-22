@@ -1,25 +1,11 @@
 package it.auties.whatsapp.socket;
 
 import com.google.protobuf.ByteString;
-import it.auties.protobuf.decoder.ProtobufDecoder;
-import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp.binary.BinaryDecoder;
 import it.auties.whatsapp.binary.BinaryEncoder;
 import it.auties.whatsapp.binary.BinaryMessage;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.protobuf.contact.ContactId;
-import it.auties.whatsapp.protobuf.info.WebInfo;
-import it.auties.whatsapp.protobuf.message.server.HandshakeMessage;
-import it.auties.whatsapp.protobuf.model.adv.ADVDeviceIdentity;
-import it.auties.whatsapp.protobuf.model.adv.ADVSignedDeviceIdentity;
-import it.auties.whatsapp.protobuf.model.adv.ADVSignedDeviceIdentityHMAC;
-import it.auties.whatsapp.protobuf.model.app.AppVersion;
-import it.auties.whatsapp.protobuf.model.client.ClientFinish;
-import it.auties.whatsapp.protobuf.model.client.ClientHello;
-import it.auties.whatsapp.protobuf.model.client.ClientPayload;
-import it.auties.whatsapp.protobuf.model.client.UserAgent;
-import it.auties.whatsapp.protobuf.model.companion.CompanionProps;
-import it.auties.whatsapp.protobuf.model.companion.CompanionRegData;
 import it.auties.whatsapp.utils.*;
 import it.auties.whatsapp.api.WhatsappConfiguration;
 import it.auties.whatsapp.binary.BinaryArray;
@@ -38,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
+import it.auties.whatsapp.socket.Proto.*;
 
 @RequiredArgsConstructor
 @Data
@@ -81,8 +68,8 @@ public class WhatsappSocket {
 
         handshake.start(keys());
         handshake.updateHash(keys.ephemeralKeyPair().publicKey());
-        var handshakeMessage = new HandshakeMessage(new ClientHello(keys.ephemeralKeyPair().publicKey()));
-        sendBinaryRequest(ProtobufEncoder.encode(handshakeMessage), true);
+        var handshakeMessage = HandshakeMessage.newBuilder().setClientHello(ClientHello.newBuilder().setEphemeral(ByteString.copyFrom(keys.ephemeralKeyPair().publicKey())).build()).build();
+        sendBinaryRequest(handshakeMessage.toByteArray(), true);
     }
 
     @OnMessage
@@ -104,87 +91,87 @@ public class WhatsappSocket {
 
     @SneakyThrows
     private void authenticate(byte[] message) {
-        var serverHello = ProtobufDecoder.forType(HandshakeMessage.class).decode(message).serverHello();
+        var serverHello = HandshakeMessage.parseFrom(message).getServerHello();
         var ephemeralPrivate = CypherUtils.toPKCS8Encoded(keys.ephemeralKeyPair().privateKey());
-        handshake.updateHash(serverHello.ephemeral());
-        var sharedEphemeral = CypherUtils.calculateSharedSecret(CypherUtils.toX509Encoded(serverHello.ephemeral()), ephemeralPrivate);
+        handshake.updateHash(serverHello.getEphemeral().toByteArray());
+        var sharedEphemeral = CypherUtils.calculateSharedSecret(CypherUtils.toX509Encoded(serverHello.getEphemeral().toByteArray()), ephemeralPrivate);
         handshake.mixIntoKey(sharedEphemeral.data());
 
-        var decodedStaticText = handshake.cypher(serverHello.staticText(), false);
+        var decodedStaticText = handshake.cypher(serverHello.getStatic().toByteArray(), false);
         var sharedStatic = CypherUtils.calculateSharedSecret(CypherUtils.toX509Encoded(decodedStaticText), ephemeralPrivate);
         handshake.mixIntoKey(sharedStatic.data());
-        handshake.cypher(serverHello.payload(), false);
+        handshake.cypher(serverHello.getPayload().toByteArray(), false);
 
         var encodedKey = handshake.cypher(CypherUtils.raw(keys.keyPair().getPublic()), true);
-        var sharedPrivate = CypherUtils.calculateSharedSecret(CypherUtils.toX509Encoded(serverHello.ephemeral()), keys.keyPair().getPrivate());
+        var sharedPrivate = CypherUtils.calculateSharedSecret(CypherUtils.toX509Encoded(serverHello.getEphemeral().toByteArray()), keys.keyPair().getPrivate());
         handshake.mixIntoKey(sharedPrivate.data());
 
         var encodedPayload = handshake.cypher(createPayload(), true);
-        var protobufMessage = new HandshakeMessage(new ClientFinish(encodedKey, encodedPayload));
-        sendBinaryRequest(ProtobufEncoder.encode(protobufMessage));
+        var protobufMessage = HandshakeMessage.newBuilder().setClientFinish(ClientFinish.newBuilder().setStatic(ByteString.copyFrom(encodedKey)).setPayload(ByteString.copyFrom(encodedPayload)).build()).build();
+        sendBinaryRequest(protobufMessage.toByteArray());
 
         changeState(true);
         handshake.finish();
     }
 
-    @SneakyThrows
     private byte[] createPayload() {
         var payload = createClientPayload(keys().mayRestore());
         if (!keys().mayRestore()) {
-            payload.regData(createRegisterData());
-        }else {
-            payload.username(Long.parseLong(keys().me().user()))
-                    .device(keys().me().device());
+            return payload.setRegData(createRegisterData())
+                    .build()
+                    .toByteArray();
         }
 
-        return ProtobufEncoder.encode(payload);
+        return payload.setUsername(Long.parseLong(keys().me().user()))
+                .setDevice(keys().me().device())
+                .build()
+                .toByteArray();
     }
 
-    private ClientPayload.ClientPayloadBuilder createClientPayload(boolean passive) {
-        return ClientPayload.builder()
-                .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
-                .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
-                .userAgent(createUserAgent())
-                .passive(passive)
-                .webInfo(new WebInfo(WebInfo.WebInfoWebSubPlatform.WEB_BROWSER));
+    private ClientPayload.Builder createClientPayload(boolean passive) {
+        return ClientPayload.newBuilder()
+                .setConnectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
+                .setConnectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
+                .setUserAgent(createUserAgent())
+                .setPassive(passive)
+                .setWebInfo(WebInfo.newBuilder().setWebSubPlatform(WebInfo.WebInfoWebSubPlatform.WEB_BROWSER));
     }
 
     private UserAgent createUserAgent() {
-        return UserAgent.builder()
-                .appVersion(new AppVersion(2, 2126, 14))
-                .platform(UserAgent.UserAgentPlatform.WEB)
-                .releaseChannel(UserAgent.UserAgentReleaseChannel.RELEASE)
-                .mcc("000")
-                .mnc("000")
-                .osVersion("0.1")
-                .manufacturer("")
-                .device("Desktop")
-                .osBuildNumber("0.1")
-                .localeLanguageIso6391("en")
-                .localeCountryIso31661Alpha2("en")
+        return UserAgent.newBuilder()
+                .setAppVersion(AppVersion.newBuilder().setPrimary(2).setSecondary(2126).setTertiary(14).build())
+                .setPlatform(UserAgent.UserAgentPlatform.WEB)
+                .setReleaseChannel(UserAgent.UserAgentReleaseChannel.RELEASE)
+                .setMcc("000")
+                .setMnc("000")
+                .setOsVersion("0.1")
+                .setManufacturer("")
+                .setDevice("Desktop")
+                .setOsBuildNumber("0.1")
+                .setLocaleLanguageIso6391("en")
+                .setLocaleCountryIso31661Alpha2("en")
                 .build();
     }
 
-    @SneakyThrows
     private CompanionRegData createRegisterData() {
-        return CompanionRegData.builder()
-                .buildHash(Base64.getDecoder().decode("S9Kdc4pc4EJryo21snc5cg=="))
-                .companionProps(ProtobufEncoder.encode(createCompanionProps()))
-                .eRegid(BinaryArray.of(keys().id(), 4).data())
-                .eKeytype(BinaryArray.of(5, 1).data())
-                .eIdent(keys().signedIdentityKey().publicKey())
-                .eSkeyId(BinaryArray.of(keys().signedPreKey().id(), 3).data())
-                .eSkeyVal(keys().signedPreKey().keyPair().publicKey())
-                .eSkeySig(keys().signedPreKey().signature())
+        return CompanionRegData.newBuilder()
+                .setBuildHash(ByteString.copyFrom(Base64.getDecoder().decode("S9Kdc4pc4EJryo21snc5cg==")))
+                .setCompanionProps(createCompanionProps().toByteString())
+                .setERegid(ByteString.copyFrom(BinaryArray.of(keys().id(), 4).data()))
+                .setEKeytype(ByteString.copyFrom(BinaryArray.of(5, 1).data()))
+                .setEIdent(ByteString.copyFrom(keys().signedIdentityKey().publicKey()))
+                .setESkeyId(ByteString.copyFrom(BinaryArray.of(keys().signedPreKey().id(), 3).data()))
+                .setESkeyVal(ByteString.copyFrom(keys().signedPreKey().keyPair().publicKey()))
+                .setESkeySig(ByteString.copyFrom(keys().signedPreKey().signature()))
                 .build();
     }
 
     private CompanionProps createCompanionProps() {
-        return CompanionProps.builder()
-                .os("Windows")
-                .version(new AppVersion(10))
-                .platformType(CompanionProps.CompanionPropsPlatformType.CHROME)
-                .requireFullSync(false)
+        return CompanionProps.newBuilder()
+                .setOs("Windows")
+                .setVersion(AppVersion.newBuilder().setPrimary(10).build())
+                .setPlatformType(CompanionProps.CompanionPropsPlatformType.CHROME)
+                .setRequireFullSync(false)
                 .build();
     }
     
@@ -351,26 +338,26 @@ public class WhatsappSocket {
         var curve = Curve25519.getInstance(Curve25519.BEST);
         var deviceIdentity = fetchDeviceIdentity(container);
 
-        var advIdentity = ProtobufDecoder.forType(ADVSignedDeviceIdentityHMAC.class).decode(deviceIdentity);
+        var advIdentity = Proto.ADVSignedDeviceIdentityHMAC.parseFrom(deviceIdentity);
         var advSecret = Base64.getDecoder().decode(keys().advSecretKey());
-        var advSign = CypherUtils.hmacSha256(BinaryArray.of(advIdentity.details()), BinaryArray.of(advSecret));
-        Validate.isTrue(Arrays.equals(advIdentity.hmac(), advSign.data()), "Cannot login: Hmac validation failed!", SecurityException.class);
+        var advSign = CypherUtils.hmacSha256(BinaryArray.of(advIdentity.getDetails().toByteArray()), BinaryArray.of(advSecret));
+        Validate.isTrue(Arrays.equals(advIdentity.getHmac().toByteArray(), advSign.data()), "Cannot login: Hmac validation failed!", SecurityException.class);
 
-        var account = ProtobufDecoder.forType(ADVSignedDeviceIdentity.class).decode(advIdentity.details());
+        var account = Proto.ADVSignedDeviceIdentity.parseFrom(advIdentity.getDetails());
         var message = BinaryArray.of(new byte[]{6, 0})
-                .append(account.details())
+                .append(account.getDetails().toByteArray())
                 .append(keys().signedIdentityKey().publicKey())
                 .data();
-        Validate.isTrue(curve.verifySignature(account.accountSignatureKey(), message, account.accountSignature()), "Cannot login: Hmac validation failed!", SecurityException.class);
+        Validate.isTrue(curve.verifySignature(account.getAccountSignatureKey().toByteArray(), message, account.getAccountSignature().toByteArray()), "Cannot login: Hmac validation failed!", SecurityException.class);
 
         var deviceSignatureMessage = BinaryArray.of(new byte[]{6, 1})
-                .append(account.details())
+                .append(account.getDetails().toByteArray())
                 .append(keys().signedIdentityKey().publicKey())
-                .append(account.accountSignature())
+                .append(account.getAccountSignatureKey().toByteArray())
                 .data();
         var deviceSignature = curve.calculateSignature(keys().signedIdentityKey().privateKey(), deviceSignatureMessage);
 
-        var keyIndex = ProtobufDecoder.forType(ADVDeviceIdentity.class).decode(account.details()).keyIndex();
+        var keyIndex = Proto.ADVDeviceIdentity.parseFrom(account.getDetails()).getKeyIndex();
         var content = new Node(
                 "pair-device-sign",
                 Map.of(),
@@ -378,7 +365,7 @@ public class WhatsappSocket {
                         new Node(
                                 "device-identity",
                                 Map.of("key-index", keyIndex),
-                                ProtobufEncoder.encode(account.deviceSignature(deviceSignature).accountSignature(null))
+                                account.toBuilder().setDeviceSignature(ByteString.copyFrom(deviceSignature)).clearAccountSignatureKey().build().toByteArray()
                         )
                 )
         );
@@ -416,16 +403,16 @@ public class WhatsappSocket {
         sendBinaryRequest(keepAlive);
     }
 
-    private void sendBinaryRequest(@NonNull Node node){
+    void sendBinaryRequest(@NonNull Node node){
         sendBinaryRequest(encoder.encode(node));
     }
 
-    private void sendBinaryRequest(byte @NonNull [] message){
+    void sendBinaryRequest(byte @NonNull [] message){
         sendBinaryRequest(message, false);
     }
 
     @SneakyThrows
-    private void sendBinaryRequest(byte @NonNull [] message, boolean prologue){
+    void sendBinaryRequest(byte @NonNull [] message, boolean prologue){
         var parsed = MultiDeviceCypher.encryptMessage(message, keys.writeKey(), writeCounter++, prologue);
         if(options.async()) {
             session.getAsyncRemote().sendBinary(parsed.toBuffer());
@@ -445,13 +432,13 @@ public class WhatsappSocket {
     }
 
     @SneakyThrows
-    private void reconnect(){
+    void reconnect(){
         changeState(false);
         session().close();
         connect();
     }
 
-    private void changeState(boolean loggedIn){
+    void changeState(boolean loggedIn){
         this.loggedIn = loggedIn;
         this.readCounter = 0;
         this.writeCounter = 0;
