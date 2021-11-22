@@ -7,7 +7,9 @@ import it.auties.whatsapp.protobuf.chat.GroupAction;
 import it.auties.whatsapp.protobuf.chat.GroupPolicy;
 import it.auties.whatsapp.protobuf.chat.GroupSetting;
 import it.auties.whatsapp.protobuf.contact.Contact;
+import it.auties.whatsapp.protobuf.contact.ContactId;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
+import it.auties.whatsapp.socket.WhatsappSocket;
 import lombok.NonNull;
 
 import java.util.List;
@@ -16,29 +18,30 @@ import java.util.List;
  * This interface can be used to listen for events fired when new information is sent by WhatsappWeb's socket.
  * A WhatsappListener can be registered manually using {@link Whatsapp#registerListener(WhatsappListener)}.
  * Otherwise, it can be registered by annotating it with the {@link RegisterListener} annotation.
- * If the latter option is used, auto-detection of listeners by calling {@link Whatsapp#autodetectListeners()}.
  */
 public interface WhatsappListener {
     /**
-     * Called when {@link IWhatsappSocket} successfully establishes a connection with new secrets.
+     * Called when {@link WhatsappSocket} successfully establishes a connection with new secrets.
      * By default, the QR code is printed to the console.
      *
-     * @param qr the qr code to consume
+     * @param qr the generator code to consume
      */
     default void onQRCode(@NonNull BitMatrix qr){
         System.out.println(qr.toString("\033[40m  \033[0m", "\033[47m  \033[0m"));
     }
 
     /**
-     * Called when {@link IWhatsappSocket} successfully establishes a connection and logs in into an account.
+     * Called when {@link WhatsappSocket} successfully establishes a connection and logs in into an account.
      * When this event is called, any data, including chats and contact, is not guaranteed to be already in memory.
      * Instead, {@link WhatsappListener#onChats()} and {@link WhatsappListener#onContacts()} should be used.
+     *
+     * @param me the user that logged in
      */
-    default void onLoggedIn() {
+    default void onLoggedIn(@NonNull ContactId me) {
     }
 
     /**
-     * Called when {@link IWhatsappSocket} successfully disconnects from WhatsappWeb's WebSocket.
+     * Called when {@link WhatsappSocket} successfully disconnects from WhatsappWeb's WebSocket.
      * When this event is called, any data, including chats and contact, is guaranteed to not be available anymore.
      */
     default void onDisconnected() {
@@ -54,23 +57,23 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when {@link IWhatsappSocket} receives a plain text list.
+     * Called when {@link WhatsappSocket} receives a plain text list.
      * This data is usually not very useful, but it may be necessary for particular use cases.
      *
-     * @param response the list received as plain text by {@link IWhatsappSocket}
+     * @param response the list received as plain text by {@link WhatsappSocket}
      */
     default void onListResponse(@NonNull List<Object> response) {
     }
 
     /**
-     * Called when {@link IWhatsappSocket} receives all the contacts from WhatsappWeb's WebSocket.
+     * Called when {@link WhatsappSocket} receives all the contacts from WhatsappWeb's WebSocket.
      * To access this data use {@link WhatsappStore#contacts()}.
      */
     default void onContacts() {
     }
 
     /**
-     * Called when {@link IWhatsappSocket} receives an update regarding a contact
+     * Called when {@link WhatsappSocket} receives an update regarding a contact
      *
      * @param contact the updated contact
      */
@@ -78,7 +81,7 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when {@link IWhatsappSocket} receives a new contact
+     * Called when {@link WhatsappSocket} receives a new contact
      *
      * @param contact the new contact
      */
@@ -86,7 +89,7 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when {@link IWhatsappSocket} receives an update regarding the presence of a contact.
+     * Called when {@link WhatsappSocket} receives an update regarding the presence of a contact.
      * If {@code chat} is a conversation with {@code contact}, the new presence is available by calling {@link Contact#lastKnownPresence()}.
      * Otherwise, it should be queried using {@link Chat#presences()}.
      *
@@ -97,7 +100,7 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when {@link IWhatsappSocket} receives all the chats from WhatsappWeb's WebSocket.
+     * Called when {@link WhatsappSocket} receives all the chats from WhatsappWeb's WebSocket.
      * When this event is fired, it is guaranteed that all metadata excluding messages will be present.
      * To access this data use {@link WhatsappStore#chats()}.
      * If you also need the messages to be loaded, please refer to {@link WhatsappListener#onChatRecentMessages(Chat)}.
@@ -106,14 +109,14 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when {@link IWhatsappSocket} receives the recent message for a chat already in memory.
+     * Called when {@link WhatsappSocket} receives the recent message for a chat already in memory.
      * When this event is fired, it is guaranteed that all metadata excluding messages will be present.
      */
     default void onChatRecentMessages(@NonNull Chat chat) {
     }
 
     /**
-     * Called when {@link IWhatsappSocket} receives a new chat
+     * Called when {@link WhatsappSocket} receives a new chat
      *
      * @param chat the new chat
      */

@@ -48,7 +48,7 @@ public record Node(@NonNull String description,
             return new LinkedList<>();
         }
 
-        return Nodes.validNodes(listContent);
+        return Nodes.filter(listContent);
     }
 
     /**

@@ -106,7 +106,6 @@ public final class VideoMessage extends MediaMessage {
 
   /**
    * The media key of the video that this object wraps.
-   * This key is used to decrypt the encoded media by {@link CypherUtils#mediaDecrypt(MediaMessage)}
    */
   @JsonProperty(value = "6")
   private byte[] mediaKey;
@@ -158,6 +157,7 @@ public final class VideoMessage extends MediaMessage {
    */
   @Builder(builderClassName = "NewVideoMessageBuilder", builderMethodName = "newVideoMessage", buildMethodName = "create")
   private static VideoMessage videoBuilder(byte @NonNull [] media, String mimeType, String caption, int width, int height, int seconds, ContextInfo contextInfo) {
+    /*
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.VIDEO);
     return VideoMessage.builder()
             .fileSha256(upload.fileSha256())
@@ -174,6 +174,8 @@ public final class VideoMessage extends MediaMessage {
             .seconds(seconds)
             .contextInfo(contextInfo)
             .create();
+    */
+    throw new UnsupportedOperationException("Work in progress");
   }
 
   /**
@@ -194,6 +196,7 @@ public final class VideoMessage extends MediaMessage {
    */
   @Builder(builderClassName = "NewGifMessageBuilder", builderMethodName = "newGifMessage", buildMethodName = "create")
   private static VideoMessage gifBuilder(byte @NonNull [] media, String mimeType, String caption, int width, int height, VideoMessageAttribution gifAttribution, ContextInfo contextInfo) {
+/*
     Validate.isTrue(!Objects.equals(guessMimeType(media), "image/gif") && !Objects.equals(mimeType, "image/gif"), "Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.VIDEO);
     return VideoMessage.builder()
@@ -213,6 +216,8 @@ public final class VideoMessage extends MediaMessage {
             .caption(caption)
             .contextInfo(contextInfo)
             .create();
+ */
+    throw new UnsupportedOperationException("Work in progress");
   }
 
   private static @NonNull String guessMimeType(byte[] media) {

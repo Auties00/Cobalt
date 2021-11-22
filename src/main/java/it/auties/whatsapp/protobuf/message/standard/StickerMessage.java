@@ -89,7 +89,7 @@ public final class StickerMessage extends MediaMessage {
 
   /**
    * The media key of the sticker that this object wraps.
-   * This key is used to decrypt the encoded media by {@link CypherUtils#mediaDecrypt(MediaMessage)}
+
    */
   @JsonProperty(value = "4")
   private byte[] mediaKey;
@@ -126,6 +126,7 @@ public final class StickerMessage extends MediaMessage {
    */
   @Builder(builderClassName = "NewStickerMessageBuilder", builderMethodName = "newStickerMessage", buildMethodName = "create")
   private static StickerMessage builder(byte @NonNull [] media, String mimeType, byte[] pngThumbnail, boolean isAnimated, ContextInfo contextInfo) {
+    /*
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.STICKER);
     return StickerMessage.builder()
             .fileSha256(upload.fileSha256())
@@ -142,6 +143,8 @@ public final class StickerMessage extends MediaMessage {
             .pngThumbnail(pngThumbnail)
             .contextInfo(contextInfo)
             .create();
+     */
+    throw new UnsupportedOperationException("Work in progress");
   }
 
   private static StickerMessageBuilder<?, ?> builder(){

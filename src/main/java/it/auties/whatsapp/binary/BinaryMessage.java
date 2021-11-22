@@ -5,7 +5,6 @@ import lombok.experimental.Accessors;
 
 import static it.auties.whatsapp.binary.BinaryArray.*;
 
-@AllArgsConstructor
 @Value
 @Accessors(fluent = true)
 public class BinaryMessage {
@@ -13,7 +12,9 @@ public class BinaryMessage {
     @NonNull BinaryArray decoded;
     int length;
     public BinaryMessage(@NonNull BinaryArray array) {
-        this(array, array.slice(3), array.cut(3).toInt());
+        this.raw = raw();
+        this.length = array.cut(3).toInt();
+        this.decoded = array.slice(3, length + 3);
     }
 
     public BinaryMessage(byte @NonNull [] array) {

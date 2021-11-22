@@ -13,6 +13,7 @@ import lombok.experimental.Accessors;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -28,11 +29,13 @@ import java.util.stream.Collectors;
 @Data
 @Accessors(fluent = true)
 public class WhatsappStore {
-    protected final @NonNull ExecutorService requestsService;
-    protected final @NonNull List<Chat> chats;
-    protected final @NonNull List<Contact> contacts;
-    protected final @NonNull List<Request<?, ?>> pendingRequests;
-    protected final @NonNull List<WhatsappListener> listeners;
+    private static final Set<WhatsappStore> instances = new HashSet<>();
+    private final @NonNull UUID uuid;
+    private final @NonNull ExecutorService requestsService;
+    private final @NonNull List<Chat> chats;
+    private final @NonNull List<Contact> contacts;
+    private final @NonNull List<Request<?, ?>> pendingRequests;
+    private final @NonNull List<WhatsappListener> listeners;
     private final long initializationTimeStamp;
     private @Getter(onMethod = @__(@NonNull)) MediaConnection mediaConnection;
     private @Getter(onMethod = @__(@NonNull)) String phoneNumberJid;
@@ -41,10 +44,18 @@ public class WhatsappStore {
      * Constructs a new default instance of WhatsappDataManager
      */
     public WhatsappStore(){
-        this(Executors.newSingleThreadExecutor(),
+        this(UUID.randomUUID(), Executors.newSingleThreadExecutor(),
                 new Vector<>(), new Vector<>(),
                 new Vector<>(), new Vector<>(),
                 System.currentTimeMillis());
+        instances.add(this);
+    }
+
+    public static WhatsappStore findStoreById(UUID uuid){
+        return instances.parallelStream()
+                .filter(entry -> Objects.equals(entry.uuid(), uuid))
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException("Missing session: %s".formatted(uuid)));
     }
 
     /**

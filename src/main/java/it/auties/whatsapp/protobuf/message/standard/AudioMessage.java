@@ -54,7 +54,7 @@ public final class AudioMessage extends MediaMessage {
 
   /**
    * The media key of the audio that this object wraps.
-   * This key is used to decrypt the encoded media by {@link CypherUtils#mediaDecrypt(MediaMessage)}
+
    */
   @JsonProperty(value = "7")
   private byte[] mediaKey;
@@ -109,6 +109,7 @@ public final class AudioMessage extends MediaMessage {
    */
   @Builder(builderClassName= "NewAudioMessageBuilder", builderMethodName = "newAudioMessage", buildMethodName = "create")
   private static AudioMessage builder(byte @NonNull [] media, ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
+    /*
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.AUDIO);
     return AudioMessage.builder()
             .fileSha256(upload.fileSha256())
@@ -123,6 +124,8 @@ public final class AudioMessage extends MediaMessage {
             .streamingSidecar(upload.sidecar())
             .voiceMessage(voiceMessage)
             .create();
+     */
+    throw new UnsupportedOperationException("Work in progress");
   }
 
   private static AudioMessageBuilder<?, ?> builder() {

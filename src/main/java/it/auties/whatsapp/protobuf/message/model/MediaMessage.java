@@ -30,7 +30,8 @@ public abstract sealed class MediaMessage extends ContextualMessage permits Audi
      */
     public byte @NonNull [] decodedMedia(){
         if(decodedMedia == null){
-            this.decodedMedia = CypherUtils.mediaDecrypt(this);
+            // this.decodedMedia = CypherUtils.mediaDecrypt(this);
+            throw new UnsupportedOperationException("Work in progress");
         }
 
         return decodedMedia;
@@ -42,7 +43,8 @@ public abstract sealed class MediaMessage extends ContextualMessage permits Audi
      * @return a non-null array of bytes
      */
     public byte @NonNull [] refreshMedia(){
-        return this.decodedMedia = CypherUtils.mediaDecrypt(this);
+        throw new UnsupportedOperationException("Work in progress");
+        // return this.decodedMedia = CypherUtils.mediaDecrypt(this);
     }
 
     /**

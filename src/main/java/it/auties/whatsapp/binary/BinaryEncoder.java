@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 
 import static it.auties.whatsapp.binary.BinaryTag.*;
-import static it.auties.whatsapp.binary.BinaryTokens.*;
 
 public record BinaryEncoder(BinaryBuffer binary){
     private static final int UNSIGNED_BYTE_MAX_VALUE = 256;
@@ -64,17 +63,15 @@ public record BinaryEncoder(BinaryBuffer binary){
             return codePoint - 48;
         }
 
-        if(token == 255){
-            if(codePoint == 45){
-                return 10;
-            }
-
-            if(codePoint == 46){
-                return 11;
-            }
+        if(NIBBLE_8.contentEquals(token) && codePoint == 45){
+            return 10;
         }
 
-        if(token == 251 && codePoint >= 65 && codePoint <= 70){
+        if(NIBBLE_8.contentEquals(token) && codePoint == 46){
+            return 11;
+        }
+
+        if(HEX_8.contentEquals(token) && codePoint >= 65 && codePoint <= 70){
             return codePoint - 55;
         }
 
@@ -107,7 +104,7 @@ public record BinaryEncoder(BinaryBuffer binary){
             return;
         }
 
-        var tokenIndex = SINGLE_BYTE.indexOf(input);
+        var tokenIndex = BinaryTokens.SINGLE_BYTE.indexOf(input);
         if (tokenIndex != -1) {
             binary.writeUInt8(tokenIndex + 1);
             return;
@@ -119,12 +116,12 @@ public record BinaryEncoder(BinaryBuffer binary){
 
         var length = rawStringLength(input);
         if (length < 128) {
-            if (checkRegex(input, NUMBERS_REGEX)) {
+            if (BinaryTokens.checkRegex(input, BinaryTokens.NUMBERS_REGEX)) {
                 writeString(input, NIBBLE_8);
                 return;
             }
 
-            if (checkRegex(input, HEX_REGEX)) {
+            if (BinaryTokens.checkRegex(input, BinaryTokens.HEX_REGEX)) {
                 writeString(input, HEX_8);
                 return;
             }
@@ -135,18 +132,18 @@ public record BinaryEncoder(BinaryBuffer binary){
     }
 
     private boolean writeDoubleByteString(String input) {
-        if (!DOUBLE_BYTE.contains(input)) {
+        if (!BinaryTokens.DOUBLE_BYTE.contains(input)) {
             return false;
         }
 
-        var index = DOUBLE_BYTE.indexOf(input);
+        var index = BinaryTokens.DOUBLE_BYTE.indexOf(input);
         binary.writeUInt8(doubleByteStringTag(index));
-        binary.writeUInt8(index % (DOUBLE_BYTE.size() / 4));
+        binary.writeUInt8(index % (BinaryTokens.DOUBLE_BYTE.size() / 4));
         return true;
     }
 
     private BinaryTag doubleByteStringTag(int index){
-        return switch (index / (DOUBLE_BYTE.size() / 4)){
+        return switch (index / (BinaryTokens.DOUBLE_BYTE.size() / 4)){
             case 0 -> DICTIONARY_0;
             case 1 -> DICTIONARY_1;
             case 2 -> DICTIONARY_2;
@@ -210,7 +207,7 @@ public record BinaryEncoder(BinaryBuffer binary){
 
     private void writeList(Collection<?> collection) {
         writeInt(collection.size());
-        Nodes.validNodes(collection).forEach(this::writeNode);
+        Nodes.filter(collection).forEach(this::writeNode);
     }
 
     private void writeBytes(byte[] bytes) {

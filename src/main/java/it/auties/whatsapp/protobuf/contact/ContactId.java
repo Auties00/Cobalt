@@ -74,7 +74,8 @@ public record ContactId(String user, int device, int agent, String server, boole
 
     @Override
     public boolean equals(Object other) {
-        return other instanceof ContactId jid && Objects.equals(server(), jid.server());
+        return other instanceof ContactId jid
+                && Objects.equals(server(), jid.server());
     }
 
     @Override
@@ -95,14 +96,20 @@ public record ContactId(String user, int device, int agent, String server, boole
             return "%s.%s:%s@%s".formatted(user, agent, device, USER_JID_SUFFIX);
         }
 
-        if (user() != null) {
-            return "%s@%s".formatted(user(), server);
-        }
-
-        return server;
+        return user() == null ? server
+                : "%s@%s".formatted(user(), server);
     }
 
-    enum Type {
-        COMPANION, USER, BROADCAST, OFFICIAL_BIZ_ACCOUNT, GROUP, GROUP_CALL, SERVER, PSA, STATUS_V3, UNKNOWN
+    public enum Type {
+        COMPANION,
+        USER,
+        BROADCAST,
+        OFFICIAL_BIZ_ACCOUNT,
+        GROUP,
+        GROUP_CALL,
+        SERVER,
+        PSA,
+        STATUS_V3,
+        UNKNOWN
     }
 }

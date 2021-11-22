@@ -31,8 +31,8 @@ public class Contact {
 
     /**
      * The nullable name specified by this contact when he created a Whatsapp account.
-     * Theoretically, it should not be possible for this field to be null as its required when registering for Whatsapp.
-     * Though it looks that it can be removed later, so its nullable.
+     * Theoretically, it should not be possible for this field to be null as it's required when registering for Whatsapp.
+     * Though it looks that it can be removed later, so it's nullable.
      */
     private final String chosenName;
 
@@ -93,7 +93,7 @@ public class Contact {
     /**
      * Returns an optional String representing the first valid(non-null) name for this contact.
      * If no valid name is found, an empty optional is returned.
-     * In this case, consider using the the phone number of this contact as a name.
+     * In this case, consider using the phone number of this contact as a name.
      * It can be obtained by passing this contact's jid to {@link WhatsappUtils#phoneNumberFromJid(String)}.
      *
      * @return an optional String
@@ -101,7 +101,6 @@ public class Contact {
     public @NonNull Optional<String> bestName() {
         return Optional.ofNullable(name != null ? name : chosenName);
     }
-
 
     /**
      * Returns a non-null String representing the first valid(non-null) name for this contact.
@@ -113,7 +112,6 @@ public class Contact {
     public @NonNull String bestName(@NonNull String orElse) {
         return bestName().orElse(orElse);
     }
-
 
     /**
      * Returns an optional object wrapping this contact's last known presence.

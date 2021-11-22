@@ -1,5 +1,7 @@
-module it.auties.whatsapp4j {
-    requires lombok;
+open module it.auties.whatsapp4j {
+    requires static lombok;
+    requires transitive java.logging;
+
     requires curve25519.java;
     requires com.fasterxml.jackson.annotation;
     requires com.fasterxml.jackson.databind;

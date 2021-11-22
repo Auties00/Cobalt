@@ -58,7 +58,7 @@ public final class DocumentMessage extends MediaMessage {
 
   /**
    * The media key of the document that this object wraps.
-   * This key is used to decrypt the encoded media by {@link CypherUtils#mediaDecrypt(MediaMessage)}
+
    */
   @JsonProperty(value = "7")
   private byte[] mediaKey;
@@ -116,6 +116,7 @@ public final class DocumentMessage extends MediaMessage {
    */
   @Builder(builderClassName = "NewDocumentMessageBuilder", builderMethodName = "newDocumentMessage", buildMethodName = "create")
   private static DocumentMessage builder(byte @NonNull [] media, String mimeType, String title, int pageCount, String fileName, byte[] jpegThumbnail, ContextInfo contextInfo) {
+    /*
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.DOCUMENT);
     return DocumentMessage.builder()
             .fileSha256(upload.fileSha256())
@@ -131,6 +132,8 @@ public final class DocumentMessage extends MediaMessage {
             .jpegThumbnail(jpegThumbnail)
             .contextInfo(contextInfo)
             .create();
+     */
+    throw new UnsupportedOperationException("Work in progress");
   }
 
   private static DocumentMessageBuilder<?, ?> builder(){

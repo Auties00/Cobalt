@@ -13,7 +13,6 @@ import java.util.stream.IntStream;
 import java.util.zip.Inflater;
 
 import static it.auties.whatsapp.binary.BinaryTag.*;
-import static it.auties.whatsapp.binary.BinaryTokens.*;
 
 @AllArgsConstructor
 public class BinaryDecoder{
@@ -111,16 +110,16 @@ public class BinaryDecoder{
 
     private String readStringFromToken(int token) {
         if (token >= DICTIONARY_0.data() && token <= DICTIONARY_3.data()) {
-            var delta = (DOUBLE_BYTE.size() / 4) * (token - DICTIONARY_0.data());
-            return DOUBLE_BYTE.get(binary.readUInt8() + delta);
+            var delta = (BinaryTokens.DOUBLE_BYTE.size() / 4) * (token - DICTIONARY_0.data());
+            return BinaryTokens.DOUBLE_BYTE.get(binary.readUInt8() + delta);
         }
 
-        return SINGLE_BYTE.get(token - 1);
+        return BinaryTokens.SINGLE_BYTE.get(token - 1);
     }
 
     private String readNibble() {
         var number = binary.readUInt8();
-        return readString(NUMBERS, number >>> 7, 127 & number);
+        return readString(BinaryTokens.NUMBERS, number >>> 7, 127 & number);
     }
 
     private Object readString32(boolean parseBytes) {
@@ -150,7 +149,7 @@ public class BinaryDecoder{
 
     private String readHexString() {
         var number = binary.readUInt8();
-        return readString(HEX, number >>> 7, 127 & number);
+        return readString(BinaryTokens.HEX, number >>> 7, 127 & number);
     }
 
     private ContactId readJidPair() {

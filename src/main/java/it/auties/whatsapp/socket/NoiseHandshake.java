@@ -1,17 +1,14 @@
 package it.auties.whatsapp.socket;
 
-import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.whatsapp.manager.WhatsappKeys;
+import it.auties.whatsapp.utils.CypherUtils;
+import it.auties.whatsapp.utils.MultiDeviceCypher;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 
-import static it.auties.whatsapp.utils.MultiDeviceCypher.*;
-import static it.auties.whatsapp.binary.BinaryArray.*;
-import static it.auties.whatsapp.utils.CypherUtils.*;
-import static it.auties.whatsapp.utils.MultiDeviceCypher.aesGmc;
-import static it.auties.whatsapp.utils.MultiDeviceCypher.aesGmcEncrypt;
-import static it.auties.whatsapp.utils.MultiDeviceCypher.handshakePrologue;
-import static it.auties.whatsapp.utils.MultiDeviceCypher.handshakeProtocol;
+import static it.auties.whatsapp.binary.BinaryArray.empty;
+import static it.auties.whatsapp.binary.BinaryArray.of;
 
 public class NoiseHandshake {
     private WhatsappKeys keys;
@@ -21,24 +18,24 @@ public class NoiseHandshake {
     private long counter;
 
     public void start(WhatsappKeys keys){
-        var encodedProtocol = BinaryArray.of(handshakeProtocol());
+        var encodedProtocol = of(MultiDeviceCypher.handshakeProtocol());
         this.hash = encodedProtocol;
         this.salt = encodedProtocol;
         this.cryptoKey = encodedProtocol;
         this.keys = keys;
-        updateHash(handshakePrologue());
+        updateHash(MultiDeviceCypher.handshakePrologue());
     }
 
     @SneakyThrows
     public void updateHash(byte @NonNull [] data) {
         var input = hash.append(of(data));
-        this.hash = sha256(input);
+        this.hash = CypherUtils.sha256(input);
     }
 
     @SneakyThrows
     public byte[] cypher(byte @NonNull [] bytes, boolean encrypt) {
-        var cipher = aesGmc(cryptoKey.data(), hash.data(), counter++, encrypt);
-        var result = aesGmcEncrypt(cipher, bytes);
+        var cipher = MultiDeviceCypher.aesGmc(cryptoKey.data(), hash.data(), counter++, encrypt);
+        var result = MultiDeviceCypher.aesGmcEncrypt(cipher, bytes);
         if(!encrypt){
             updateHash(bytes);
             return result;
@@ -61,7 +58,7 @@ public class NoiseHandshake {
     }
 
     private BinaryArray extractAndExpandWithHash(@NonNull BinaryArray key) {
-        var extracted = hkdfExtract(key, salt.data());
-        return hkdfExpand(extracted, null, 64);
+        var extracted = CypherUtils.hkdfExtract(key, salt.data());
+        return CypherUtils.hkdfExpand(extracted, null, 64);
     }
 }

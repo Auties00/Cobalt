@@ -19,6 +19,8 @@ import lombok.experimental.Accessors;
 import java.time.Instant;
 import java.util.*;
 
+import static it.auties.whatsapp.manager.WhatsappStore.*;
+
 /**
  * A model class that holds the information related to a {@link Message}.
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
@@ -225,7 +227,7 @@ public class MessageInfo {
    * @return a non-null string
    */
   public @NonNull String senderJid(){
-    return key.fromMe() ? MANAGER.phoneNumberJid() : Optional.ofNullable(senderJid).orElse(key.chatJid());
+    return key.fromMe() ? findStoreById(key().session()).phoneNumberJid() : Objects.requireNonNullElse(senderJid, key.chatJid());
   }
 
   /**
@@ -234,7 +236,8 @@ public class MessageInfo {
    * @return an optional wrapping a {@link Contact}
    */
   public @NonNull Optional<Contact> sender(){
-    return MANAGER.findContactByJid(senderJid());
+    return findStoreById(key().session())
+            .findContactByJid(senderJid());
   }
 
   /**
@@ -246,7 +249,8 @@ public class MessageInfo {
     return Optional.of(container)
             .flatMap(MessageContainer::populatedContextualMessage)
             .map(ContextualMessage::contextInfo)
-            .flatMap(contextualMessage -> MANAGER.findMessageById(key.chat().orElseThrow(), contextualMessage.quotedMessageId()));
+            .flatMap(contextualMessage -> findStoreById(key().session())
+                    .findMessageById(key.chat().orElseThrow(), contextualMessage.quotedMessageId()));
   }
 
   /**

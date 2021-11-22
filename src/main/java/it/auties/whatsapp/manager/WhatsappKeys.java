@@ -137,6 +137,12 @@ public class WhatsappKeys {
         this.advSecretKey = Base64.getEncoder().encodeToString(KeyHelper.generateSenderKey());
     }
 
+    public WhatsappKeys initializeKeys(@NonNull BinaryArray writeKey, @NonNull BinaryArray readKey){
+        return readKey(readKey)
+                .writeKey(writeKey)
+                .save();
+    }
+
     /**
      * Checks if the serverToken and clientToken are not null
      *

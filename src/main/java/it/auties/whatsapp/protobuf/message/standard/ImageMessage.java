@@ -105,7 +105,7 @@ public final class ImageMessage extends MediaMessage {
 
   /**
    * The media key of the image that this object wraps.
-   * This key is used to decrypt the encoded media by {@link CypherUtils#mediaDecrypt(MediaMessage)}
+
    */
   @JsonProperty(value = "8")
   private byte[] mediaKey;
@@ -168,6 +168,7 @@ public final class ImageMessage extends MediaMessage {
    */
   @Builder(builderClassName = "NewImageMessageBuilder", builderMethodName = "newImageMessage", buildMethodName = "create")
   private static ImageMessage simpleBuilder(byte @NonNull [] media, String mimeType, String caption, int width, int height, ContextInfo contextInfo) {
+    /*
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.IMAGE);
     return ImageMessage.newRawImageMessage()
             .fileSha256(upload.fileSha256())
@@ -183,6 +184,9 @@ public final class ImageMessage extends MediaMessage {
             .height(height)
             .contextInfo(contextInfo)
             .create();
+     */
+
+    throw new UnsupportedOperationException("Work in progress");
   }
 
   /**

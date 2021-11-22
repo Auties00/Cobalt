@@ -9,14 +9,17 @@ import it.auties.whatsapp.utils.WhatsappUtils;
 import lombok.*;
 import lombok.experimental.Accessors;
 
+import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * A container for unique identifiers and metadata linked to a {@link Message} and contained in {@link MessageInfo}.
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
  * Instead, methods inside {@link Whatsapp} should be used.
  */
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@RequiredArgsConstructor
 @NoArgsConstructor
 @Data
 @Builder(builderMethodName = "newMessageKey", buildMethodName = "create")
@@ -30,10 +33,22 @@ public class MessageKey {
   private String id = WhatsappUtils.randomId();
 
   /**
+   * The id of the session that owns this contact
+   */
+  private @NonNull UUID session;
+
+  /**
+   * The cached value of the store
+   */
+  @Getter(AccessLevel.NONE)
+  @Setter(AccessLevel.NONE)
+  private WhatsappStore cachedStore;
+
+  /**
    * The jid of the contact or group that sent the message.
    */
   @JsonProperty(value = "1")
-  private String chatJid;
+  private @NonNull String chatJid;
 
   /**
    * Determines whether the message was sent by you or by someone else
@@ -42,20 +57,17 @@ public class MessageKey {
   private boolean fromMe;
 
   /**
-   * Constructs a MessageKey for a message with a random id, sent by someone that isn't yourself and a provided chat
-   *
-   * @param chat the message's chat
-   */
-  public MessageKey(@NonNull Chat chat) {
-    this(WhatsappUtils.randomId(), chat.jid(), true);
-  }
-
-  /**
    * Returns the chat where the message was sent
    *
    * @return an optional wrapping a {@link Chat}
    */
   public Optional<Chat> chat(){
-    return WhatsappStore.singletonInstance().findChatByJid(chatJid);
+    return WhatsappStore.findStoreById(session())
+            .findChatByJid(chatJid);
+  }
+
+  public WhatsappStore store(){
+    return Objects.requireNonNullElseGet(cachedStore,
+            () -> this.cachedStore = WhatsappStore.findStoreById(session()));
   }
 }

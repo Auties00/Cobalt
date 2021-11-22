@@ -166,6 +166,7 @@
                     <outputDirectory>${delombok.output}</outputDirectory>
                     <excludedFiles>
                         <excludedFile>module-info.java</excludedFile>
+                        <excludedFile>Proto.java</excludedFile>
                     </excludedFiles>
                 </configuration>
                 <executions>

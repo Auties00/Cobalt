@@ -6,6 +6,7 @@ import it.auties.whatsapp.binary.BinaryEncoder;
 import it.auties.whatsapp.binary.BinaryMessage;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.socket.Proto.*;
+import it.auties.whatsapp.utils.CypherUtils;
 import it.auties.whatsapp.utils.MultiDeviceCypher;
 import it.auties.whatsapp.api.WhatsappConfiguration;
 import it.auties.whatsapp.binary.BinaryArray;
@@ -16,36 +17,40 @@ import jakarta.websocket.*;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.java.Log;
+import org.bouncycastle.crypto.InvalidCipherTextException;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.Base64;
-
-import static it.auties.whatsapp.utils.CypherUtils.*;
 
 @RequiredArgsConstructor
 @Data
 @Accessors(fluent = true)
 @ClientEndpoint(configurator = WhatsappSocketConfiguration.class)
 @Log
-public class MultiDeviceSocket {
+public class WhatsappSocket {
     private @Getter(onMethod = @__(@NonNull)) Session session;
     private boolean loggedIn;
     private final NoiseHandshake handshake;
-    private final @NonNull WebSocketContainer webSocketContainer;
+    private final @NonNull WebSocketContainer container;
     private final @NonNull WhatsappConfiguration options;
-    private final @NonNull WhatsappStore manager;
+    private final @NonNull WhatsappStore store;
     private final @NonNull WhatsappKeys keys;
-    private final @NonNull WhatsappQRCode qrCode;
     private final @NonNull BinaryEncoder encoder;
     private final @NonNull BinaryDecoder decoder;
+    private final @NonNull NodeDigester digester;
     private long readCounter;
     private long writeCounter;
 
-    public MultiDeviceSocket(WhatsappConfiguration options, WhatsappStore store, WhatsappKeys keys) {
-        this(new NoiseHandshake(), ContainerProvider.getWebSocketContainer(),
-                options, store, keys, new WhatsappQRCode(),
-                new BinaryEncoder(), new BinaryDecoder());
+    public WhatsappSocket(@NonNull WhatsappConfiguration options, @NonNull WhatsappStore store, @NonNull WhatsappKeys keys) {
+        this.handshake = new NoiseHandshake();
+        this.container = ContainerProvider.getWebSocketContainer();
+        this.options = options;
+        this.store = store;
+        this.keys = keys;
+        this.encoder = new BinaryEncoder();
+        this.decoder = new BinaryDecoder();
+        this.digester = new NodeDigester(this, new WhatsappQRCode());
     }
 
     @OnOpen
@@ -75,24 +80,24 @@ public class MultiDeviceSocket {
         var cipher = MultiDeviceCypher.aesGmc(keys().readKey().data(), null, readCounter++, false);
         var plainText = MultiDeviceCypher.aesGmcEncrypt(cipher, message);
         var decoded = decoder.decode(decoder.unpack(plainText));
-        NodeDigester.digestWhatsappNode(this, decoded);
+        digester.digest(decoded);
     }
 
     @SneakyThrows
     private void authenticate(byte[] message) {
         var serverHello = HandshakeMessage.parseFrom(message).getServerHello();
-        var ephemeralPrivate = toPKCS8Encoded(keys.ephemeralKeyPair().privateKey());
+        var ephemeralPrivate = CypherUtils.toPKCS8Encoded(keys.ephemeralKeyPair().privateKey());
         handshake.updateHash(serverHello.getEphemeral().toByteArray());
-        var sharedEphemeral = calculateSharedSecret(toX509Encoded(serverHello.getEphemeral().toByteArray()), ephemeralPrivate);
+        var sharedEphemeral = CypherUtils.calculateSharedSecret(CypherUtils.toX509Encoded(serverHello.getEphemeral().toByteArray()), ephemeralPrivate);
         handshake.mixIntoKey(sharedEphemeral.data());
 
         var decodedStaticText = handshake.cypher(serverHello.getStatic().toByteArray(), false);
-        var sharedStatic = calculateSharedSecret(toX509Encoded(decodedStaticText), ephemeralPrivate);
+        var sharedStatic = CypherUtils.calculateSharedSecret(CypherUtils.toX509Encoded(decodedStaticText), ephemeralPrivate);
         handshake.mixIntoKey(sharedStatic.data());
         handshake.cypher(serverHello.getPayload().toByteArray(), false);
 
-        var encodedKey = handshake.cypher(raw(keys.keyPair().getPublic()), true);
-        var sharedPrivate = calculateSharedSecret(toX509Encoded(serverHello.getEphemeral().toByteArray()), keys.keyPair().getPrivate());
+        var encodedKey = handshake.cypher(CypherUtils.raw(keys.keyPair().getPublic()), true);
+        var sharedPrivate = CypherUtils.calculateSharedSecret(CypherUtils.toX509Encoded(serverHello.getEphemeral().toByteArray()), keys.keyPair().getPrivate());
         handshake.mixIntoKey(sharedPrivate.data());
 
         var encodedPayload = handshake.cypher(createPayload(), true);
@@ -110,7 +115,6 @@ public class MultiDeviceSocket {
                     .build()
                     .toByteArray();
         }
-
 
         return payload.setUsername(Long.parseLong(keys().me().user()))
                 .setDevice(keys().me().device())
@@ -186,7 +190,7 @@ public class MultiDeviceSocket {
 
     public void connect() {
         try{
-            webSocketContainer.connectToServer(this, URI.create(options.whatsappUrlBeta()));
+            container.connectToServer(this, URI.create(options.whatsappUrlBeta()));
         }catch (IOException | DeploymentException exception){
             throw new RuntimeException("Cannot connect to WhatsappWeb's WebServer", exception);
         }
@@ -209,5 +213,10 @@ public class MultiDeviceSocket {
     @OnClose
     public void onClose(){
         System.out.println("Closed");
+    }
+
+    @OnError
+    public void onError(Throwable throwable){
+        throwable.printStackTrace();
     }
 }

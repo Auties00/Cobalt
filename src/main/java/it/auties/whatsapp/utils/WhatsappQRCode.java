@@ -6,6 +6,7 @@ import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 
 import java.util.Base64;
 import java.util.Objects;
@@ -21,37 +22,16 @@ public class WhatsappQRCode {
     /**
      * Generates a QR code to initialize the connection with WhatsappWeb's WebSocket
      *
-     * @param ref       the ref to generate the qr code, might be null
-     * @param publicKey the non-null raw publicKey
-     * @param clientId  the non-null client id
-     * @return a non-null {@link BitMatrix}
-     */
-    public @NonNull BitMatrix generate(String ref, byte @NonNull [] publicKey, @NonNull String clientId) {
-        this.ref = Objects.requireNonNullElse(ref, this.ref);
-        var qr = "%s,%s,%s".formatted(this.ref, Base64.getEncoder().encodeToString(publicKey), clientId);
-        return generate(qr);
-    }
-
-    /**
-     * Generates a QR code to initialize the connection with WhatsappWeb's WebSocket
-     *
-     * @param ref         the ref to generate the qr code, might be null
+     * @param ref         the ref to generate the generator code, might be null
      * @param publicKey   the non-null raw publicKey
      * @param identityKey the non-null identity key
      * @param secretKey   the non-null secret key
      * @return a non-null {@link BitMatrix}
      */
-    public @NonNull BitMatrix generate(String ref, byte @NonNull [] publicKey, byte @NonNull [] identityKey, @NonNull String secretKey) {
+    @SneakyThrows
+    public BitMatrix generate(String ref, byte @NonNull [] publicKey, byte @NonNull [] identityKey, @NonNull String secretKey) {
         this.ref = Objects.requireNonNullElse(ref, this.ref);
         var qr = "%s,%s,%s, %s".formatted(this.ref, Base64.getEncoder().encodeToString(publicKey), Base64.getEncoder().encodeToString(identityKey), secretKey);
-        return generate(qr);
-    }
-
-    private BitMatrix generate(String qr) {
-        try {
-            return WRITER.encode(qr, BarcodeFormat.QR_CODE, SIZE, SIZE);
-        } catch (WriterException ex) {
-            throw new RuntimeException("Cannot generate a QR code", ex);
-        }
+        return WRITER.encode(qr, BarcodeFormat.QR_CODE, SIZE, SIZE);
     }
 }

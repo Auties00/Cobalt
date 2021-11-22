@@ -19,7 +19,8 @@ public class Nodes {
     /**
      * Jackson instance
      */
-    private static final ObjectMapper JACKSON = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private static final ObjectMapper JACKSON = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     /**
      * Constructs a WhatsappNode from a list where the content is always a JSON String
@@ -38,7 +39,7 @@ public class Nodes {
         }
 
         try {
-            return new Node(description, parseListAttrs(attrs), JACKSON.writeValueAsString(list.get(2)));
+            return new Node(description, parseAttributesFromString(attrs), JACKSON.writeValueAsString(list.get(2)));
         }catch (JsonProcessingException exception){
             throw new IllegalArgumentException("Cannot parse node from list", exception);
         }
@@ -50,14 +51,14 @@ public class Nodes {
      * @param list the generic list to parse
      * @return a non-null list containing only objects from {@code list} of type WhatsappNode
      */
-    public static @NonNull LinkedList<Node> validNodes(@NonNull Collection<?> list) {
+    public static @NonNull LinkedList<Node> filter(@NonNull Collection<?> list) {
         return list.stream()
                 .filter(entry -> entry instanceof Node)
                 .map(Node.class::cast)
                 .collect(Collectors.toCollection(LinkedList::new));
     }
 
-    private static @NonNull Map<String, Object> parseListAttrs(String attrs){
+    private static @NonNull Map<String, Object> parseAttributesFromString(String attrs){
         if(attrs == null){
             return Map.of();
         }
