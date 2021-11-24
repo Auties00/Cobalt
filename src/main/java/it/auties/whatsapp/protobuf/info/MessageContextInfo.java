@@ -1,7 +1,7 @@
 package it.auties.whatsapp.protobuf.info;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.whatsapp.protobuf.model.misc.DeviceListMetadata;
+import it.auties.whatsapp.protobuf.beta.DeviceListMetadata;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

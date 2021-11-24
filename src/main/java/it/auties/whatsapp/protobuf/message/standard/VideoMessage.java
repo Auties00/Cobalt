@@ -4,13 +4,11 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.protobuf.beta.InteractiveAnnotation;
 import it.auties.whatsapp.protobuf.info.ContextInfo;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
-import it.auties.whatsapp.protobuf.model.misc.InteractiveAnnotation;
 import it.auties.whatsapp.protobuf.message.model.MediaMessage;
 import it.auties.whatsapp.protobuf.message.model.MediaMessageType;
-import it.auties.whatsapp.utils.CypherUtils;
-import it.auties.whatsapp.utils.Validate;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
@@ -18,10 +16,8 @@ import lombok.experimental.SuperBuilder;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URLConnection;
-import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 /**

@@ -9,7 +9,7 @@ import it.auties.whatsapp.protobuf.message.device.DeviceSyncMessage;
 import it.auties.whatsapp.protobuf.message.security.SenderKeyDistributionMessage;
 import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
 import it.auties.whatsapp.protobuf.message.standard.*;
-import it.auties.whatsapp.protobuf.model.call.Call;
+import it.auties.whatsapp.protobuf.beta.Call;
 import lombok.*;
 import lombok.experimental.Accessors;
 

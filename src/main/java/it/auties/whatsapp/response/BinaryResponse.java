@@ -1,6 +1,6 @@
 package it.auties.whatsapp.response;
 
-import it.auties.whatsapp.protobuf.model.misc.Node;
+import it.auties.whatsapp.protobuf.model.Node;
 import lombok.NonNull;
 
 import java.lang.reflect.InvocationTargetException;

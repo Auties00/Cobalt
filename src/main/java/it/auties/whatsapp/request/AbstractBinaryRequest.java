@@ -3,7 +3,7 @@ package it.auties.whatsapp.request;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappConfiguration;
 import it.auties.whatsapp.manager.WhatsappKeys;
-import it.auties.whatsapp.protobuf.model.misc.Node;
+import it.auties.whatsapp.protobuf.model.Node;
 import it.auties.whatsapp.response.ResponseModel;
 import it.auties.whatsapp.utils.WhatsappUtils;
 import lombok.Getter;

@@ -2,8 +2,8 @@ package it.auties.whatsapp.utils;
 
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.binary.BinaryBuffer;
-import it.auties.whatsapp.protobuf.model.key.IdentityKeyPair;
-import it.auties.whatsapp.protobuf.model.key.SignedKeyPair;
+import it.auties.whatsapp.protobuf.model.IdentityKeyPair;
+import it.auties.whatsapp.protobuf.model.SignedKeyPair;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;

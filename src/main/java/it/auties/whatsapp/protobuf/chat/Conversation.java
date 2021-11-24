@@ -3,7 +3,7 @@ package it.auties.whatsapp.protobuf.chat;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.whatsapp.protobuf.model.history.HistorySyncMsg;
+import it.auties.whatsapp.protobuf.beta.HistorySyncMsg;
 import lombok.*;
 import lombok.experimental.Accessors;
 

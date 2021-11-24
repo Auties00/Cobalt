@@ -1,6 +1,5 @@
 package it.auties.whatsapp.socket;
 
-import com.google.protobuf.ByteString;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp.binary.BinaryDecoder;
@@ -8,23 +7,13 @@ import it.auties.whatsapp.binary.BinaryEncoder;
 import it.auties.whatsapp.binary.BinaryMessage;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.protobuf.contact.ContactId;
-import it.auties.whatsapp.protobuf.info.WebInfo;
+import it.auties.whatsapp.protobuf.beta.*;
 import it.auties.whatsapp.protobuf.message.server.HandshakeMessage;
-import it.auties.whatsapp.protobuf.model.adv.ADVDeviceIdentity;
-import it.auties.whatsapp.protobuf.model.adv.ADVSignedDeviceIdentity;
-import it.auties.whatsapp.protobuf.model.adv.ADVSignedDeviceIdentityHMAC;
-import it.auties.whatsapp.protobuf.model.app.AppVersion;
-import it.auties.whatsapp.protobuf.model.client.ClientFinish;
-import it.auties.whatsapp.protobuf.model.client.ClientHello;
-import it.auties.whatsapp.protobuf.model.client.ClientPayload;
-import it.auties.whatsapp.protobuf.model.client.UserAgent;
-import it.auties.whatsapp.protobuf.model.companion.CompanionProps;
-import it.auties.whatsapp.protobuf.model.companion.CompanionRegData;
 import it.auties.whatsapp.utils.*;
 import it.auties.whatsapp.api.WhatsappConfiguration;
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.manager.WhatsappStore;
-import it.auties.whatsapp.protobuf.model.misc.Node;
+import it.auties.whatsapp.protobuf.model.Node;
 import jakarta.websocket.*;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -81,7 +70,7 @@ public class WhatsappSocket {
 
         handshake.start(keys());
         handshake.updateHash(keys.ephemeralKeyPair().publicKey());
-        var handshakeMessage = new HandshakeMessage(new ClientHello(keys.ephemeralKeyPair().publicKey()));
+        var handshakeMessage = new HandshakeMessage(new ClientHello(null, null, keys.ephemeralKeyPair().publicKey()));
         sendBinaryRequest(ProtobufEncoder.encode(handshakeMessage), true);
     }
 
@@ -110,7 +99,7 @@ public class WhatsappSocket {
         var sharedEphemeral = CypherUtils.calculateSharedSecret(CypherUtils.toX509Encoded(serverHello.ephemeral()), ephemeralPrivate);
         handshake.mixIntoKey(sharedEphemeral.data());
 
-        var decodedStaticText = handshake.cypher(serverHello.staticText(), false);
+        var decodedStaticText = handshake.cypher(serverHello._static(), false);
         var sharedStatic = CypherUtils.calculateSharedSecret(CypherUtils.toX509Encoded(decodedStaticText), ephemeralPrivate);
         handshake.mixIntoKey(sharedStatic.data());
         handshake.cypher(serverHello.payload(), false);
@@ -120,7 +109,7 @@ public class WhatsappSocket {
         handshake.mixIntoKey(sharedPrivate.data());
 
         var encodedPayload = handshake.cypher(createPayload(), true);
-        var protobufMessage = new HandshakeMessage(new ClientFinish(encodedKey, encodedPayload));
+        var protobufMessage = new HandshakeMessage(new ClientFinish(encodedPayload, encodedKey));
         sendBinaryRequest(ProtobufEncoder.encode(protobufMessage));
 
         changeState(true);
@@ -137,7 +126,7 @@ public class WhatsappSocket {
                     .device(keys().me().device());
         }
 
-        return ProtobufEncoder.encode(payload);
+        return ProtobufEncoder.encode(payload.build());
     }
 
     private ClientPayload.ClientPayloadBuilder createClientPayload(boolean passive) {
@@ -146,12 +135,12 @@ public class WhatsappSocket {
                 .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
                 .userAgent(createUserAgent())
                 .passive(passive)
-                .webInfo(new WebInfo(WebInfo.WebInfoWebSubPlatform.WEB_BROWSER));
+                .webInfo(WebInfo.builder().webSubPlatform(WebInfo.WebInfoWebSubPlatform.WEB_BROWSER).build());
     }
 
     private UserAgent createUserAgent() {
         return UserAgent.builder()
-                .appVersion(new AppVersion(2, 2126, 14))
+                .appVersion(new AppVersion(0, 0, 14, 2126, 2))
                 .platform(UserAgent.UserAgentPlatform.WEB)
                 .releaseChannel(UserAgent.UserAgentReleaseChannel.RELEASE)
                 .mcc("000")
@@ -182,7 +171,7 @@ public class WhatsappSocket {
     private CompanionProps createCompanionProps() {
         return CompanionProps.builder()
                 .os("Windows")
-                .version(new AppVersion(10))
+                .version(new AppVersion(0, 0, 0, 0, 10))
                 .platformType(CompanionProps.CompanionPropsPlatformType.CHROME)
                 .requireFullSync(false)
                 .build();

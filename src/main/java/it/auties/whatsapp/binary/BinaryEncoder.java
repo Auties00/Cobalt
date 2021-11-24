@@ -1,6 +1,6 @@
 package it.auties.whatsapp.binary;
 
-import it.auties.whatsapp.protobuf.model.misc.Node;
+import it.auties.whatsapp.protobuf.model.Node;
 import it.auties.whatsapp.protobuf.contact.ContactId;
 import it.auties.whatsapp.utils.Nodes;
 
