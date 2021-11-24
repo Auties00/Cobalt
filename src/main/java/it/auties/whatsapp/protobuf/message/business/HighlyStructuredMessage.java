@@ -3,7 +3,7 @@ package it.auties.whatsapp.protobuf.message.business;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.protobuf.model.hsm.HSMLocalizableParameter;
+import it.auties.whatsapp.protobuf.beta.HSMLocalizableParameter;
 import it.auties.whatsapp.protobuf.message.model.BusinessMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

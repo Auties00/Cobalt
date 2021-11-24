@@ -4,7 +4,7 @@ import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
-import it.auties.whatsapp.protobuf.model.media.MediaConnection;
+import it.auties.whatsapp.protobuf.model.MediaConnection;
 import it.auties.whatsapp.request.Request;
 import it.auties.whatsapp.response.Response;
 import it.auties.whatsapp.utils.WhatsappUtils;
@@ -12,8 +12,6 @@ import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;

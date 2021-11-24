@@ -2,9 +2,8 @@ package it.auties.whatsapp.utils;
 
 import it.auties.whatsapp.api.WhatsappConfiguration;
 import it.auties.whatsapp.binary.BinaryArray;
-import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.contact.Contact;
-import it.auties.whatsapp.protobuf.model.misc.Node;
+import it.auties.whatsapp.protobuf.model.Node;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 
@@ -16,7 +15,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * This utility class provides helper functionality to easily extract data out of Whatsapp models or raw protobuf messages

@@ -61,7 +61,7 @@ public record BinaryArray(byte @NonNull [] data) {
      * @return a new {@code BinaryArray} wrapping {@param in}
      */
     public static BinaryArray of(@NonNull String in) {
-        return of(in.getBytes());
+        return of(in.getBytes(StandardCharsets.UTF_8));
     }
 
     /**

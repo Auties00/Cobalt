@@ -4,13 +4,15 @@ import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.utils.CypherUtils;
 import it.auties.whatsapp.utils.MultiDeviceCypher;
-import lombok.NonNull;
-import lombok.SneakyThrows;
+import lombok.*;
+import org.bouncycastle.util.Arrays;
 
 import static it.auties.whatsapp.binary.BinaryArray.empty;
 import static it.auties.whatsapp.binary.BinaryArray.of;
 
-public class NoiseHandshake {
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@NoArgsConstructor
+public class NoiseHandshake implements Cloneable {
     private WhatsappKeys keys;
     private BinaryArray hash;
     private BinaryArray salt;
@@ -60,5 +62,11 @@ public class NoiseHandshake {
     private BinaryArray extractAndExpandWithHash(@NonNull BinaryArray key) {
         var extracted = CypherUtils.hkdfExtract(key, salt.data());
         return CypherUtils.hkdfExpand(extracted, null, 64);
+    }
+
+    @Override
+    public NoiseHandshake clone() throws CloneNotSupportedException {
+        super.clone();
+        return new NoiseHandshake(keys, of(Arrays.clone(hash.data())), of(Arrays.clone(salt.data())), of(Arrays.clone(cryptoKey.data())), counter);
     }
 }

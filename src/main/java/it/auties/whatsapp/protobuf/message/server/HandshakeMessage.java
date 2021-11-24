@@ -1,9 +1,10 @@
 package it.auties.whatsapp.protobuf.message.server;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.whatsapp.protobuf.model.client.ClientFinish;
-import it.auties.whatsapp.protobuf.model.client.ClientHello;
-import it.auties.whatsapp.protobuf.model.server.ServerHello;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.whatsapp.protobuf.beta.ClientFinish;
+import it.auties.whatsapp.protobuf.beta.ClientHello;
+import it.auties.whatsapp.protobuf.beta.ServerHello;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,12 +18,15 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 public class HandshakeMessage {
   @JsonProperty(value = "4")
+  @JsonPropertyDescription("ClientFinish")
   private ClientFinish clientFinish;
 
   @JsonProperty(value = "3")
+  @JsonPropertyDescription("ServerHello")
   private ServerHello serverHello;
 
   @JsonProperty(value = "2")
+  @JsonPropertyDescription("ClientHello")
   private ClientHello clientHello;
 
   public HandshakeMessage(ClientHello clientHello){

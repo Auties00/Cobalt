@@ -1,11 +1,6 @@
 package it.auties.whatsapp.utils;
 
 import it.auties.whatsapp.binary.BinaryArray;
-import it.auties.whatsapp.manager.WhatsappStore;
-import it.auties.whatsapp.protobuf.message.model.MediaMessage;
-import it.auties.whatsapp.protobuf.message.model.MediaMessageType;
-import it.auties.whatsapp.protobuf.model.media.MediaUpload;
-import it.auties.whatsapp.response.JsonResponse;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
@@ -22,17 +17,11 @@ import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.net.URI;
 import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.security.*;
 import java.security.interfaces.XECPrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.Base64;
 import java.util.Objects;
 
 /**

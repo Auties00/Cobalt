@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappConfiguration;
 import it.auties.whatsapp.manager.WhatsappStore;
-import it.auties.whatsapp.protobuf.model.misc.Node;
+import it.auties.whatsapp.protobuf.model.Node;
 import it.auties.whatsapp.response.Response;
 import it.auties.whatsapp.response.ResponseModel;
 import it.auties.whatsapp.utils.WhatsappUtils;
