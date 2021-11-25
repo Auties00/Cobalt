@@ -1,7 +1,7 @@
 package it.auties.whatsapp.binary;
 
-import it.auties.whatsapp.protobuf.model.Node;
 import it.auties.whatsapp.protobuf.contact.ContactId;
+import it.auties.whatsapp.protobuf.model.Node;
 import lombok.AllArgsConstructor;
 
 import java.util.Arrays;
@@ -45,7 +45,7 @@ public class BinaryDecoder{
         var token = binary.readUInt8();
         var size = readListSize(token);
         if (size == 0) {
-            throw new IllegalArgumentException("Failed to decode node: node cannot be empty");
+            throw new IllegalArgumentException("Failed to decode body: body cannot be empty");
         }
 
         var description = decodeString();

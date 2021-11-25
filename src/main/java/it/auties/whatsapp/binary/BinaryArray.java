@@ -14,8 +14,6 @@ import java.util.stream.IntStream;
 
 /**
  * A utility class that wraps an array of bytes
- * It provides an easy interface to modify said data, convert it or generate it
- * This is intended to only be used for WhatsappWeb's WebSocket binary operations
  */
 public record BinaryArray(byte @NonNull [] data) {
     /**

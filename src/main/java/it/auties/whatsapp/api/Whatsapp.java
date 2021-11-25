@@ -1,5 +1,6 @@
 package it.auties.whatsapp.api;
 
+import it.auties.whatsapp.api.RegisterListener.Scanner;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.chat.GroupAction;
@@ -12,12 +13,8 @@ import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
 import it.auties.whatsapp.protobuf.message.model.Message;
 import it.auties.whatsapp.protobuf.model.Node;
-import it.auties.whatsapp.response.ResponseModel;
-import it.auties.whatsapp.api.RegisterListener.Scanner;
 import it.auties.whatsapp.utils.Validate;
-import lombok.Data;
 import lombok.NonNull;
-import lombok.experimental.Accessors;
 
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -29,18 +26,11 @@ import java.util.concurrent.CompletableFuture;
  * It can be configured using a default configuration or a custom one.
  * Multiple instances of this class can be initialized, though it is not advisable as; is a singleton and cannot distinguish between the data associated with each session.
  */
-@Data
-@Accessors(fluent = true)
-public abstract class Whatsapp {
-    private final WhatsappStore store;
-    public Whatsapp(WhatsappStore store){
-        this.store = store;
-        Scanner.scan(this)
-                .forEach(this::registerListener);
-    }
-
+public record Whatsapp(WhatsappStore store) {
     public Whatsapp(){
         this(new WhatsappStore());
+        Scanner.scan(this)
+                .forEach(this::registerListener);
     }
 
     /**
@@ -50,8 +40,9 @@ public abstract class Whatsapp {
      * @return the same instance
      * @throws IllegalArgumentException if the {@code listener} cannot be added
      */
-    public @NonNull Whatsapp registerListener(@NonNull WhatsappListener listener) {
-        Validate.isTrue(store.listeners().add(listener), "WhatsappAPI: Cannot add listener %s", listener.getClass().getName());
+    public Whatsapp registerListener(@NonNull WhatsappListener listener) {
+        Validate.isTrue(store.listeners().add(listener),
+                "WhatsappAPI: Cannot add listener %s", listener.getClass().getName());
         return this;
     }
 
@@ -62,8 +53,9 @@ public abstract class Whatsapp {
      * @return the same instance
      * @throws IllegalArgumentException if the {@code listener} cannot be added
      */
-    public @NonNull Whatsapp removeListener(@NonNull WhatsappListener listener) {
-        Validate.isTrue(store.listeners().remove(listener), "WhatsappAPI: Cannot remove listener %s", listener.getClass().getName());
+    public Whatsapp removeListener(@NonNull WhatsappListener listener) {
+        Validate.isTrue(store.listeners().remove(listener),
+                "WhatsappAPI: Cannot remove listener %s", listener.getClass().getName());
         return this;
     }
 
@@ -73,7 +65,9 @@ public abstract class Whatsapp {
      * @return the same instance
      * @throws IllegalStateException if a previous connection already exists
      */
-    public abstract @NonNull Whatsapp connect();
+    public Whatsapp connect() {
+        return null;
+    }
 
     /**
      * Disconnects from Whatsapp Web's WebSocket if a previous connection exists
@@ -81,7 +75,9 @@ public abstract class Whatsapp {
      * @return the same instance
      * @throws IllegalStateException if a previous connection doesn't exist
      */
-    public abstract @NonNull Whatsapp disconnect();
+    public Whatsapp disconnect() {
+        return null;
+    }
 
     /**
      * Disconnects from Whatsapp Web's WebSocket and logs out of WhatsappWeb invalidating the previous saved credentials
@@ -90,7 +86,9 @@ public abstract class Whatsapp {
      * @return the same instance
      * @throws IllegalStateException if a previous connection doesn't exist
      */
-    public abstract @NonNull Whatsapp logout();
+    public Whatsapp logout() {
+        return null;
+    }
 
     /**
      * Disconnects and reconnects to Whatsapp Web's WebSocket if a previous connection exists
@@ -98,7 +96,9 @@ public abstract class Whatsapp {
      * @return the same instance
      * @throws IllegalStateException if a previous connection doesn't exist
      */
-    public abstract @NonNull Whatsapp reconnect();
+    public Whatsapp reconnect() {
+        return null;
+    }
 
     /**
      * Sends a request to Whatsapp in order to receive updates when the status of a contact changes.
@@ -108,7 +108,9 @@ public abstract class Whatsapp {
      * @param contact the contact whose status the api should receive updates on
      * @return a CompletableFuture    
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> subscribeToContactPresence(@NonNull Contact contact);
+    public CompletableFuture<?> subscribeToContactPresence(@NonNull Contact contact) {
+        return null;
+    }
 
     /**
      * Builds and sends a message from a chat and a message
@@ -117,7 +119,9 @@ public abstract class Whatsapp {
      * @param message the message to send
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> sendMessage(@NonNull Chat chat, @NonNull String message);
+    public CompletableFuture<?> sendMessage(@NonNull Chat chat, @NonNull String message) {
+        return null;
+    }
 
     /**
      * Builds and sends a message from a chat, a message and a quoted message
@@ -127,7 +131,9 @@ public abstract class Whatsapp {
      * @param quotedMessage the message that; should quote
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> sendMessage(@NonNull Chat chat, @NonNull String message, @NonNull MessageInfo quotedMessage);
+    public CompletableFuture<?> sendMessage(@NonNull Chat chat, @NonNull String message, @NonNull MessageInfo quotedMessage) {
+        return null;
+    }
 
     /**
      * Builds and sends a message from a chat and a message
@@ -136,7 +142,9 @@ public abstract class Whatsapp {
      * @param message the message to send
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> sendMessage(@NonNull Chat chat, @NonNull Message message);
+    public CompletableFuture<?> sendMessage(@NonNull Chat chat, @NonNull Message message) {
+        return null;
+    }
 
     /**
      * Builds and sends a message from a chat, a message and a quoted message
@@ -146,7 +154,9 @@ public abstract class Whatsapp {
      * @param quotedMessage the message that; should quote
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> sendMessage(@NonNull Chat chat, @NonNull ContextualMessage message, @NonNull MessageInfo quotedMessage);
+    public CompletableFuture<?> sendMessage(@NonNull Chat chat, @NonNull ContextualMessage message, @NonNull MessageInfo quotedMessage) {
+        return null;
+    }
 
     /**
      * Builds and sends a message from a chat, a message and a context
@@ -156,7 +166,9 @@ public abstract class Whatsapp {
      * @param contextInfo the context of the message to send
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> sendMessage(@NonNull Chat chat, @NonNull ContextualMessage message, @NonNull ContextInfo contextInfo);
+    public CompletableFuture<?> sendMessage(@NonNull Chat chat, @NonNull ContextualMessage message, @NonNull ContextInfo contextInfo) {
+        return null;
+    }
 
     /**
      * Sends a message info to a chat
@@ -164,7 +176,9 @@ public abstract class Whatsapp {
      * @param message the message to send
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> sendMessage(@NonNull MessageInfo message);
+    public CompletableFuture<?> sendMessage(@NonNull MessageInfo message) {
+        return null;
+    }
 
     /**
      * Executes a query to determine whether a Whatsapp account linked
@@ -173,7 +187,9 @@ public abstract class Whatsapp {
      * @param phoneNumber the phone number to check
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<Boolean> hasWhatsapp(@NonNull String phoneNumber);
+    public CompletableFuture<Boolean> hasWhatsapp(@NonNull String phoneNumber) {
+        return null;
+    }
 
     /**
      * Queries the written whatsapp status of a Contact
@@ -181,7 +197,9 @@ public abstract class Whatsapp {
      * @param contact the target contact
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> queryUserStatus(@NonNull Contact contact);
+    public CompletableFuture<?> queryUserStatus(@NonNull Contact contact) {
+        return null;
+    }
 
     /**
      * Queries the profile picture of a Chat
@@ -189,7 +207,9 @@ public abstract class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> queryChatPicture(@NonNull Chat chat);
+    public CompletableFuture<?> queryChatPicture(@NonNull Chat chat) {
+        return null;
+    }
 
     /**
      * Queries the metadata of a group
@@ -198,7 +218,9 @@ public abstract class Whatsapp {
      * @return a CompletableFuture     
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> queryGroupMetadata(@NonNull Chat chat);
+    public CompletableFuture<?> queryGroupMetadata(@NonNull Chat chat) {
+        return null;
+    }
 
     /**
      * Queries the invite code of a group
@@ -207,7 +229,9 @@ public abstract class Whatsapp {
      * @return a CompletableFuture     
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> queryGroupInviteCode(@NonNull Chat chat);
+    public CompletableFuture<?> queryGroupInviteCode(@NonNull Chat chat) {
+        return null;
+    }
 
     /**
      * Queries the groups in common with a contact
@@ -215,7 +239,9 @@ public abstract class Whatsapp {
      * @param contact the target contact
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> queryGroupsInCommon(@NonNull Contact contact);
+    public CompletableFuture<?> queryGroupsInCommon(@NonNull Contact contact) {
+        return null;
+    }
 
     /**
      * Queries a chat that is not in memory associated with a contact.
@@ -224,7 +250,9 @@ public abstract class Whatsapp {
      * @param contact the target contact
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> queryChat(@NonNull Contact contact);
+    public CompletableFuture<?> queryChat(@NonNull Contact contact) {
+        return null;
+    }
 
     /**
      * Queries a chat that is not in memory associated by its jid.
@@ -233,7 +261,9 @@ public abstract class Whatsapp {
      * @param jid the target jid
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> queryChat(@NonNull String jid);
+    public CompletableFuture<?> queryChat(@NonNull String jid) {
+        return null;
+    }
 
     /**
      * Queries a specified amount of starred/favourite messages in a chat, including ones not in memory
@@ -242,7 +272,9 @@ public abstract class Whatsapp {
      * @param count the amount of messages
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> queryFavouriteMessagesInChat(@NonNull Chat chat, int count);
+    public CompletableFuture<?> queryFavouriteMessagesInChat(@NonNull Chat chat, int count) {
+        return null;
+    }
 
     /**
      * Tries to load in chat the entire chat history for a chat.
@@ -251,7 +283,9 @@ public abstract class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<Chat> loadEntireChatHistory(@NonNull Chat chat);
+    public CompletableFuture<?> loadEntireChatHistory(@NonNull Chat chat) {
+        return null;
+    }
 
 
     /**
@@ -260,7 +294,9 @@ public abstract class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<Chat> loadChatHistory(@NonNull Chat chat);
+    public CompletableFuture<?> loadChatHistory(@NonNull Chat chat) {
+        return null;
+    }
 
     /**
      * Loads in memory a provided number of messages before the last message in memory for a chat in chronological terms
@@ -269,7 +305,9 @@ public abstract class Whatsapp {
      * @param messageCount the number of messages to load
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<Chat> loadChatHistory(@NonNull Chat chat, int messageCount);
+    public CompletableFuture<?> loadChatHistory(@NonNull Chat chat, int messageCount) {
+        return null;
+    }
 
     /**
      * Loads in memory a provided number of messages before a provided message in memory for a chat in chronological terms
@@ -279,7 +317,9 @@ public abstract class Whatsapp {
      * @param messageCount the amount of messages to load
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<Chat> loadChatHistory(@NonNull Chat chat, @NonNull MessageInfo lastMessage, int messageCount);
+    public CompletableFuture<?> loadChatHistory(@NonNull Chat chat, @NonNull MessageInfo lastMessage, int messageCount) {
+        return null;
+    }
 
     /**
      * Changes your presence for everyone on Whatsapp
@@ -287,8 +327,10 @@ public abstract class Whatsapp {
      * @param presence the new status
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> changePresence(@NonNull ContactStatus presence);
-    
+    public CompletableFuture<?> changePresence(@NonNull ContactStatus presence) {
+        return null;
+    }
+
     /**
      * Changes your presence for a specific chat
      *
@@ -296,8 +338,10 @@ public abstract class Whatsapp {
      * @param presence the new status
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> changePresence(@NonNull Chat chat, @NonNull ContactStatus presence);
-    
+    public CompletableFuture<?> changePresence(@NonNull Chat chat, @NonNull ContactStatus presence) {
+        return null;
+    }
+
     /**
      * Promotes any number of contacts to admin in a group
      *
@@ -306,7 +350,9 @@ public abstract class Whatsapp {
      * @return a CompletableFuture     
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> promote(@NonNull Chat group, @NonNull Contact... contacts);
+    public CompletableFuture<?> promote(@NonNull Chat group, @NonNull Contact... contacts) {
+        return null;
+    }
 
     /**
      * Demotes any number of contacts to admin in a group
@@ -316,7 +362,9 @@ public abstract class Whatsapp {
      * @return a CompletableFuture     
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> demote(@NonNull Chat group, @NonNull Contact... contacts);
+    public CompletableFuture<?> demote(@NonNull Chat group, @NonNull Contact... contacts) {
+        return null;
+    }
 
     /**
      * Adds any number of contacts to a group
@@ -326,7 +374,9 @@ public abstract class Whatsapp {
      * @return a CompletableFuture     
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> add(@NonNull Chat group, @NonNull Contact... contacts);
+    public CompletableFuture<?> add(@NonNull Chat group, @NonNull Contact... contacts) {
+        return null;
+    }
 
     /**
      * Removes any number of contacts from group
@@ -336,7 +386,9 @@ public abstract class Whatsapp {
      * @return a CompletableFuture     
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> remove(@NonNull Chat group, @NonNull Contact... contacts);
+    public CompletableFuture<?> remove(@NonNull Chat group, @NonNull Contact... contacts) {
+        return null;
+    }
 
     /**
      * Executes an action on any number of contacts represented by a raw list of WhatsappNodes
@@ -348,7 +400,9 @@ public abstract class Whatsapp {
      * @throws IllegalArgumentException if the provided chat is not a group
      * @throws IllegalArgumentException if no jids are provided
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> executeActionOnGroupParticipant(@NonNull Chat group, @NonNull GroupAction action, @NonNull List<Node> jids);
+    public CompletableFuture<?> executeActionOnGroupParticipant(@NonNull Chat group, @NonNull GroupAction action, @NonNull List<Node> jids) {
+        return null;
+    }
 
     /**
      * Changes the name of a group
@@ -359,7 +413,9 @@ public abstract class Whatsapp {
      * @throws IllegalArgumentException if the provided chat is not a group
      * @throws IllegalArgumentException if the provided new name is empty or blank
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> changeGroupName(@NonNull Chat group, @NonNull String newName);
+    public CompletableFuture<?> changeGroupName(@NonNull Chat group, @NonNull String newName) {
+        return null;
+    }
 
     /**
      * Changes the description of a group
@@ -369,7 +425,9 @@ public abstract class Whatsapp {
      * @return a CompletableFuture     
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> changeGroupDescription(@NonNull Chat group, @NonNull String newDescription);
+    public CompletableFuture<?> changeGroupDescription(@NonNull Chat group, @NonNull String newDescription) {
+        return null;
+    }
 
     /**
      * Changes which category of users can send messages in a group
@@ -379,7 +437,9 @@ public abstract class Whatsapp {
      * @return a CompletableFuture     
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> changeWhoCanSendMessagesInGroup(@NonNull Chat group, @NonNull GroupPolicy policy);
+    public CompletableFuture<?> changeWhoCanSendMessagesInGroup(@NonNull Chat group, @NonNull GroupPolicy policy) {
+        return null;
+    }
 
     /**
      * Changes which category of users can edit the group's settings
@@ -389,7 +449,9 @@ public abstract class Whatsapp {
      * @return a CompletableFuture     
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> changeWhoCanEditGroupInfo(@NonNull Chat group, @NonNull GroupPolicy policy);
+    public CompletableFuture<?> changeWhoCanEditGroupInfo(@NonNull Chat group, @NonNull GroupPolicy policy) {
+        return null;
+    }
 
     /**
      * Enforces a new policy for a setting in a group
@@ -400,7 +462,9 @@ public abstract class Whatsapp {
      * @return a CompletableFuture     
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> changeGroupSetting(@NonNull Chat group, @NonNull GroupSetting setting, @NonNull GroupPolicy policy);
+    public CompletableFuture<?> changeGroupSetting(@NonNull Chat group, @NonNull GroupSetting setting, @NonNull GroupPolicy policy) {
+        return null;
+    }
 
     /**
      * Changes the picture of a group
@@ -411,7 +475,9 @@ public abstract class Whatsapp {
      * @return a CompletableFuture     
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> changeGroupPicture(@NonNull Chat group, byte @NonNull [] image);
+    public CompletableFuture<?> changeGroupPicture(@NonNull Chat group, byte @NonNull [] image) {
+        return null;
+    }
 
     /**
      * Removes the picture of a group
@@ -420,7 +486,9 @@ public abstract class Whatsapp {
      * @return a CompletableFuture     
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> removeGroupPicture(@NonNull Chat group);
+    public CompletableFuture<?> removeGroupPicture(@NonNull Chat group) {
+        return null;
+    }
 
     /**
      * Leaves a group
@@ -428,7 +496,9 @@ public abstract class Whatsapp {
      * @param group the target group
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> leave(@NonNull Chat group);
+    public CompletableFuture<?> leave(@NonNull Chat group) {
+        return null;
+    }
 
     /**
      * Mutes a chat indefinitely
@@ -436,7 +506,9 @@ public abstract class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> mute(@NonNull Chat chat);
+    public CompletableFuture<?> mute(@NonNull Chat chat) {
+        return null;
+    }
 
     /**
      * Mutes a chat until a specific date
@@ -445,7 +517,9 @@ public abstract class Whatsapp {
      * @param until the date the mute ends
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> mute(@NonNull Chat chat, @NonNull ZonedDateTime until);
+    public CompletableFuture<?> mute(@NonNull Chat chat, @NonNull ZonedDateTime until) {
+        return null;
+    }
 
     /**
      * Mutes a chat until a specific date expressed in seconds since the epoch
@@ -454,15 +528,19 @@ public abstract class Whatsapp {
      * @param untilInSeconds the date the mute ends expressed in seconds since the epoch
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> mute(@NonNull Chat chat, long untilInSeconds);
-    
+    public CompletableFuture<?> mute(@NonNull Chat chat, long untilInSeconds) {
+        return null;
+    }
+
     /**
      * Unmutes a chat
      *
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> unmute(@NonNull Chat chat);
+    public CompletableFuture<?> unmute(@NonNull Chat chat) {
+        return null;
+    }
 
     /**
      * Blocks a contact
@@ -470,7 +548,9 @@ public abstract class Whatsapp {
      * @param contact the target contact
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> block(@NonNull Contact contact);
+    public CompletableFuture<?> block(@NonNull Contact contact) {
+        return null;
+    }
 
     /**
      * Enables ephemeral messages in a chat, this means that messages will be automatically cancelled in said chat after a week
@@ -478,7 +558,9 @@ public abstract class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> enableEphemeralMessages(@NonNull Chat chat);
+    public CompletableFuture<?> enableEphemeralMessages(@NonNull Chat chat) {
+        return null;
+    }
 
     /**
      * Disables ephemeral messages in a chat, this means that messages sent in said chat will never be cancelled
@@ -486,7 +568,9 @@ public abstract class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> disableEphemeralMessages(@NonNull Chat chat);
+    public CompletableFuture<?> disableEphemeralMessages(@NonNull Chat chat) {
+        return null;
+    }
 
     /**
      * Changes the ephemeral status of a chat, this means that messages will be automatically cancelled in said chat after the provided time
@@ -495,7 +579,9 @@ public abstract class Whatsapp {
      * @param time the time to live for a message expressed in seconds
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> changeEphemeralStatus(@NonNull Chat chat, int time);
+    public CompletableFuture<?> changeEphemeralStatus(@NonNull Chat chat, int time) {
+        return null;
+    }
 
     /**
      * Marks a chat as unread
@@ -503,7 +589,9 @@ public abstract class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> markAsUnread(@NonNull Chat chat);
+    public CompletableFuture<?> markAsUnread(@NonNull Chat chat) {
+        return null;
+    }
 
     /**
      * Marks a chat as read
@@ -511,7 +599,9 @@ public abstract class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> markAsRead(@NonNull Chat chat);
+    public CompletableFuture<?> markAsRead(@NonNull Chat chat) {
+        return null;
+    }
 
     /**
      * Marks a chat with a flag represented by an integer.
@@ -524,7 +614,9 @@ public abstract class Whatsapp {
      * @param newFlag the new flag represented by an int
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> markChat(@NonNull Chat chat, int flag, int newFlag);
+    public CompletableFuture<?> markChat(@NonNull Chat chat, int flag, int newFlag) {
+        return null;
+    }
 
     /**
      * Marks a chat with a flag represented by an integer.
@@ -536,7 +628,9 @@ public abstract class Whatsapp {
      * @param newFlag     the new flag represented by an int
      * @return a CompletableFuture 
      */
-    public abstract CompletableFuture<? extends ResponseModel> markChat(@NonNull Chat chat, @NonNull MessageInfo lastMessage, int flag, int newFlag);
+    public CompletableFuture<?> markChat(@NonNull Chat chat, @NonNull MessageInfo lastMessage, int flag, int newFlag) {
+        return null;
+    }
 
     /**
      * Pins a chat to the top.
@@ -546,7 +640,9 @@ public abstract class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> pin(@NonNull Chat chat);
+    public CompletableFuture<?> pin(@NonNull Chat chat) {
+        return null;
+    }
 
     /**
      * Unpins a chat from the top
@@ -554,7 +650,9 @@ public abstract class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> unpin(@NonNull Chat chat);
+    public CompletableFuture<?> unpin(@NonNull Chat chat) {
+        return null;
+    }
 
     /**
      * Archives a chat.
@@ -563,7 +661,9 @@ public abstract class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> archive(@NonNull Chat chat);
+    public CompletableFuture<?> archive(@NonNull Chat chat) {
+        return null;
+    }
 
     /**
      * Unarchives a chat
@@ -571,7 +671,9 @@ public abstract class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> unarchive(@NonNull Chat chat);
+    public CompletableFuture<?> unarchive(@NonNull Chat chat) {
+        return null;
+    }
 
     /**
      * Creates a new group with the provided name and with at least one contact
@@ -584,7 +686,9 @@ public abstract class Whatsapp {
      * @throws IllegalArgumentException if; contains your jid
      * @throws IllegalStateException    inside the CompletableFuture if the contact cannot be created
      */
-    public abstract @NonNull CompletableFuture<Chat> createGroup(@NonNull String subject, @NonNull Contact... contacts);
+    public CompletableFuture<?> createGroup(@NonNull String subject, @NonNull Contact... contacts) {
+        return null;
+    }
 
     /**
      * Searches for a specific amount of messages globally, including data that is not in memory.
@@ -595,7 +699,9 @@ public abstract class Whatsapp {
      * @param page   the page to query
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> search(@NonNull String search, int count, int page);
+    public CompletableFuture<?> search(@NonNull String search, int count, int page) {
+        return null;
+    }
 
     /**
      * Searches for a specific amount of messages in a specific chat's messages, including ones that are not in memory
@@ -607,5 +713,7 @@ public abstract class Whatsapp {
      * @param page   the page to query
      * @return a CompletableFuture 
      */
-    public abstract @NonNull CompletableFuture<? extends ResponseModel> searchInChat(@NonNull String search, @NonNull Chat chat, int count, int page);
+    public CompletableFuture<?> searchInChat(@NonNull String search, @NonNull Chat chat, int count, int page) {
+        return null;
+    }
 }

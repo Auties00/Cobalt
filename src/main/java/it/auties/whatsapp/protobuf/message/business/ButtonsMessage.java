@@ -8,7 +8,7 @@ import it.auties.whatsapp.protobuf.message.standard.DocumentMessage;
 import it.auties.whatsapp.protobuf.message.standard.ImageMessage;
 import it.auties.whatsapp.protobuf.message.standard.LocationMessage;
 import it.auties.whatsapp.protobuf.message.standard.VideoMessage;
-import it.auties.whatsapp.protobuf.beta.Button;
+import it.auties.whatsapp.protobuf.temp.Button;
 import lombok.*;
 import lombok.experimental.Accessors;
 

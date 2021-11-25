@@ -1,7 +1,7 @@
 package it.auties.whatsapp.binary;
 
-import it.auties.whatsapp.protobuf.model.Node;
 import it.auties.whatsapp.protobuf.contact.ContactId;
+import it.auties.whatsapp.protobuf.model.Node;
 import it.auties.whatsapp.utils.Nodes;
 
 import java.nio.charset.StandardCharsets;
@@ -171,7 +171,7 @@ public record BinaryEncoder(BinaryBuffer binary){
     }
 
     private void writeAttributes(Node input) {
-        input.attrs().forEach((key, value) -> {
+        input.attributes().forEach((key, value) -> {
             writeString(key);
             write(value);
         });

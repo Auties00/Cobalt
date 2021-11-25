@@ -82,30 +82,47 @@
         <maven.source.plugin.version>3.0.1</maven.source.plugin.version>
         <maven.javadoc.plugin.version>3.2.0</maven.javadoc.plugin.version>
         <maven.deploy.plugin.version>2.8.2</maven.deploy.plugin.version>
-        <delombok.plugin.version>1.18.20</delombok.plugin.version>
+        <delombok.plugin.version>1.18.20.0</delombok.plugin.version>
         <nexus.staging.maven.plugin.version>1.6.7</nexus.staging.maven.plugin.version>
         <bouncy.castle.version>1.69</bouncy.castle.version>
         <zxing.version>3.4.1</zxing.version>
         <protoc.version>1.5-SNAPSHOT</protoc.version>
         <tyrus.version>2.0.0</tyrus.version>
         <lombok.version>1.18.22</lombok.version>
-        <junit.version>5.8.1</junit.version>
+        <junit.version>5.8.2</junit.version>
         <jna.version>5.9.0</jna.version>
         <jackson.version>2.13.0</jackson.version>
         <noise.version>1.2</noise.version>
-        <signal.version>2.7.1</signal.version>
-        <classgraph.version>4.8.134</classgraph.version>
-        <delombok.output>${project.build.directory}\delomboked-sources</delombok.output>
+        <signal.version>2.8.1</signal.version>
+        <classgraph.version>4.8.137</classgraph.version>
+        <delombok.input>${project.basedir}\src\main\java</delombok.input>
+        <delombok.output>${project.build.directory}\delombok</delombok.output>
     </properties>
 
     <build>
         <plugins>
+            <!-- Attach source code -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>${maven.source.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- Compile the project-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven.compiler.plugin.version}</version>
                 <configuration>
+                    <compileSourceRoots>${delombok.input}</compileSourceRoots>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                     <release>${java.version}</release>
@@ -137,67 +154,6 @@
                 </dependencies>
                 <configuration>
                     <argLine>--enable-preview</argLine>
-                </configuration>
-            </plugin>
-
-            <!-- Generate and attach the sourcecode -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>${maven.source.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- Delombok the project to prepare for javadoc generation -->
-            <plugin>
-                <groupId>com.github.auties00</groupId>
-                <artifactId>delombok-plugin</artifactId>
-                <version>${delombok.plugin.version}</version>
-                <configuration>
-                    <rootDirectory>${project.build.sourceDirectory}</rootDirectory>
-                    <outputDirectory>${delombok.output}</outputDirectory>
-                    <excludedFiles>
-                        <excludedFile>module-info.java</excludedFile>
-                        <excludedFile>Proto.java</excludedFile>
-                    </excludedFiles>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>process-sources</phase>
-                        <goals>
-                            <goal>delombok</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- Generate and attach javadocs from delomboked source -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>${maven.javadoc.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <sourcepath>${delombok.output}</sourcepath>
-                    <release>${java.version}</release>
-                    <failOnError>true</failOnError>
-                    <additionalOptions>--enable-preview</additionalOptions>
-                    <debug>true</debug>
-                    <verbose>true</verbose>
                 </configuration>
             </plugin>
 
@@ -279,26 +235,6 @@
             <artifactId>jna</artifactId>
             <version>${jna.version}</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.github.auties00</groupId>
-            <artifactId>noise-java</artifactId>
-            <version>${noise.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.whispersystems</groupId>
-            <artifactId>curve25519-java</artifactId>
-            <version>0.5.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-javalite</artifactId>
-            <version>3.19.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java-util</artifactId>
-            <version>4.0.0-rc-2</version>
         </dependency>
         <dependency>
             <groupId>org.whispersystems</groupId>

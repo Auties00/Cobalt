@@ -2,13 +2,11 @@ package it.auties.whatsapp.protobuf.chat;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactStatus;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.model.Messages;
-import it.auties.whatsapp.protobuf.model.Node;
-import it.auties.whatsapp.api.WhatsappListener;
-import it.auties.whatsapp.response.JsonResponse;
 import it.auties.whatsapp.utils.WhatsappUtils;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -123,28 +121,6 @@ public class Chat {
    * This field is used to determine whether a chat was marked as being spam or not.
    */
   private boolean isSpam;
-
-  /**
-   * Constructs a new Chat from a map of attributes.
-   * This method is usually used to deserialize a Chat from the attributes of a {@link Node}.
-   *
-   * @return a new instance of Chat
-   */
-  public static @NonNull Chat fromAttributes(@NonNull JsonResponse attrs) {
-    var jid = attrs.getString("jid").orElseThrow(() -> new IllegalArgumentException("Cannot parse chat(%s): missing attribute jid".formatted(attrs)));
-    return Chat.builder()
-            .displayName(attrs.getString("name").orElse(WhatsappUtils.phoneNumberFromJid(jid)))
-            .jid(jid)
-            .timestamp(attrs.getLong("t").orElse(ZonedDateTime.now().toEpochSecond()))
-            .newJid(attrs.getString("new_jid").orElse(null))
-            .unreadMessages(attrs.getInteger("count").orElse(0))
-            .mute(attrs.getInteger("mute").map(ChatMute::new).orElse(ChatMute.UNKNOWN))
-            .isSpam(attrs.getBoolean("spam"))
-            .isArchived(attrs.getBoolean("archive"))
-            .isReadOnly(attrs.getBoolean("read_only"))
-            .pinned(attrs.getLong("pin").orElse(0L))
-            .build();
-  }
 
   /**
    * Returns a boolean to represent whether this chat is a group or not

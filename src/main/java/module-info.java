@@ -2,7 +2,6 @@ open module it.auties.whatsapp4j {
     requires static lombok;
     requires transitive java.logging;
 
-    requires curve25519.java;
     requires com.fasterxml.jackson.annotation;
     requires com.fasterxml.jackson.databind;
     requires java.prefs;
@@ -10,9 +9,9 @@ open module it.auties.whatsapp4j {
     requires jakarta.websocket;
     requires it.auties.protoc.api;
     requires com.google.zxing;
-    requires com.google.protobuf;
-    requires com.google.protobuf.util;
-    requires signal.protocol.java;
     requires io.github.classgraph;
     requires java.net.http;
+    requires jdk.crypto.ec;
+    requires curve25519.java;
+    requires signal.protocol.java;
 }

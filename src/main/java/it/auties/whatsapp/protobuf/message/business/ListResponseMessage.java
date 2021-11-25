@@ -3,7 +3,7 @@ package it.auties.whatsapp.protobuf.message.business;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.protobuf.info.ContextInfo;
-import it.auties.whatsapp.protobuf.beta.SingleSelectReply;
+import it.auties.whatsapp.protobuf.temp.SingleSelectReply;
 import lombok.*;
 import lombok.experimental.Accessors;
 

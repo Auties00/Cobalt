@@ -8,8 +8,6 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 
-import java.util.function.Function;
-
 /**
  * A configuration class used to specify the behaviour of {@link Whatsapp}.
  * Each field is immutable, this means that once this class has been initialized, cannot be changed.
@@ -27,17 +25,9 @@ public class WhatsappConfiguration {
      */
     @Default
     private final @NonNull String whatsappVersion = "2.2126.14";
-    
-    /**
-     * The url of WhatsappWeb's WebSocket
-     * This may change based on the region this API is being used in
-     */
-    @Default
-    private final @NonNull String whatsappUrl = "wss://web.whatsapp.com/ws";
 
     /**
      * The url of the multi device beta socket
-     * This may change based on the region this API is being used in
      */
     @Default
     private final @NonNull String whatsappUrlBeta = "wss://web.whatsapp.com/ws/chat";
@@ -63,13 +53,6 @@ public class WhatsappConfiguration {
      */
     @Default
     private final @NonNull String shortDescription = "W4J";
-
-    /**
-     * This property determines whether the requests sent to WhatsappWeb's WebSocket should be sent asynchronously or not
-     * It is recommended to set this field to true as it helps with performance while not using necessarily more resources
-     */
-    @Default
-    private final boolean async = true;
 
     /**
      * Constructs a new instance of WhatsappConfiguration with default options

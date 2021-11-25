@@ -2,8 +2,8 @@ package it.auties.whatsapp.protobuf.info;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.whatsapp.protobuf.beta.ProductListHeaderImage;
-import it.auties.whatsapp.protobuf.beta.ProductSection;
+import it.auties.whatsapp.protobuf.temp.ProductListHeaderImage;
+import it.auties.whatsapp.protobuf.temp.ProductSection;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

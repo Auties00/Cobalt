@@ -1,48 +1,24 @@
 package it.auties.whatsapp.utils;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.whatsapp.protobuf.model.Node;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @UtilityClass
 public class Nodes {
     /**
-     * Jackson instance
-     */
-    private static final ObjectMapper JACKSON = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-    /**
-     * Constructs a WhatsappNode from a list where the content is always a JSON String
+     * Returns {@code nodes} if any non-null value is found in the collection.
+     * Otherwise, returns null.
      *
-     * @param list the generic list to parse
-     * @return a non-null list containing only objects from {@code list} of type WhatsappNode
+     * @param nodes the nullable list of nodes to check
+     * @return a nullable list of nodes
      */
-    public static @NonNull Node fromList(@NonNull List<?> list) {
-        Validate.isTrue(list.size() == 3, "WhatsappAPI: Cannot parse %s as a WhatsappNode", list);
-        if (!(list.get(0) instanceof String description)) {
-            throw new IllegalArgumentException("WhatsappAPI: Cannot parse %s as a WhatsappNode, no description found".formatted(list));
-        }
-
-        if (!(list.get(1) instanceof String attrs)) {
-            throw new IllegalArgumentException("WhatsappAPI: Cannot parse %s as a WhatsappNode, no attrs found".formatted(list));
-        }
-
-        try {
-            return new Node(description, parseAttributesFromString(attrs), JACKSON.writeValueAsString(list.get(2)));
-        }catch (JsonProcessingException exception){
-            throw new IllegalArgumentException("Cannot parse node from list", exception);
-        }
+    public static List<Node> orNull(List<Node> nodes) {
+        return nodes == null || nodes.stream().allMatch(Objects::isNull) ? null
+                : nodes;
     }
 
     /**
@@ -51,26 +27,18 @@ public class Nodes {
      * @param list the generic list to parse
      * @return a non-null list containing only objects from {@code list} of type WhatsappNode
      */
-    public static @NonNull LinkedList<Node> filter(@NonNull Collection<?> list) {
-        return list.stream()
+    public static @NonNull LinkedList<Node> filter(Object list) {
+        if(list == null){
+            return new LinkedList<>();
+        }
+
+        if(!(list instanceof Collection<?> collection)){
+            return new LinkedList<>();
+        }
+
+        return collection.stream()
                 .filter(entry -> entry instanceof Node)
                 .map(Node.class::cast)
                 .collect(Collectors.toCollection(LinkedList::new));
-    }
-
-    private static @NonNull Map<String, Object> parseAttributesFromString(String attrs){
-        if(attrs == null){
-            return Map.of();
-        }
-
-        if (!attrs.startsWith("}") || !attrs.endsWith("}")) {
-            return Map.of("content", attrs);
-        }
-
-        try {
-            return JACKSON.readValue(attrs, new TypeReference<>() {});
-        }catch (JsonProcessingException exception){
-            throw new IllegalArgumentException("Cannot parse attributes from string", exception);
-        }
     }
 }

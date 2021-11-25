@@ -6,7 +6,6 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 /**
  * The constants of this enumerated type describe the various tags used by an encrypted {@link BinaryArray}.

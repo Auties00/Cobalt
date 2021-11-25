@@ -7,5 +7,5 @@ import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
  *
  * This interface is sealed to prepare for <a href="https://openjdk.java.net/jeps/406">pattern matching for instanceof in switch statements</a>, set to be released in Java 17.
  */
-public sealed interface ServerMessage extends Message permits SecurityMessage, ProtocolMessage {
+public sealed interface ServerMessage extends Message permits ProtocolMessage, it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage {
 }

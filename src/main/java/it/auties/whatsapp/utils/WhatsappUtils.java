@@ -1,5 +1,6 @@
 package it.auties.whatsapp.utils;
 
+import com.google.zxing.common.BitMatrix;
 import it.auties.whatsapp.api.WhatsappConfiguration;
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.protobuf.contact.Contact;
@@ -15,6 +16,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This utility class provides helper functionality to easily extract data out of Whatsapp models or raw protobuf messages
@@ -22,7 +26,10 @@ import java.util.Optional;
  */
 @UtilityClass
 public class WhatsappUtils {
-    private int counter = 0;
+    /**
+     * Request counter, decoupled from {@link it.auties.whatsapp.manager.WhatsappStore}
+     */
+    private final AtomicLong requestCounter = new AtomicLong();
 
     /**
      * Returns the phone number associated with a jid
@@ -60,7 +67,7 @@ public class WhatsappUtils {
      * @return a non-null String
      */
     public String buildRequestTag(@NonNull WhatsappConfiguration configuration) {
-        return "%s-%s".formatted(configuration.requestTag(), counter++);
+        return "%s-%s".formatted(configuration.requestTag(), requestCounter.getAndIncrement());
     }
 
     /**
@@ -86,42 +93,12 @@ public class WhatsappUtils {
     }
 
     /**
-     * Returns a List of WhatsappNodes that represent {@code contacts}
+     * Reads the nullable id of the provided node
      *
-     * @param contacts any number of contacts to convert
-     * @return a non-null List of WhatsappNodes
-     * @throws IllegalArgumentException if {@code contacts} is empty
+     * @param node the input node
+     * @return a nullable string
      */
-    public List<Node> jidsToParticipantNodes(@NonNull Contact... contacts) {
-        return jidsToParticipantNodes(Arrays.stream(contacts)
-                .map(Contact::jid)
-                .toArray(String[]::new));
-    }
-
-    /**
-     * Returns a List of WhatsappNodes that represent {@code jids}
-     *
-     * @param jids any number of jids to convert
-     * @return a non-null List of WhatsappNodes
-     * @throws IllegalArgumentException if {@code jids} is empty
-     */
-    public List<Node> jidsToParticipantNodes(@NonNull String... jids) {
-        return Arrays.stream(jids)
-                .map(jid -> new Node("participant", Map.of("jid", jid), null))
-                .toList();
-    }
-
-    /**
-     * Returns a binary array containing an encrypted media
-     *
-     * @param url the url of the encrypted media to download
-     * @return a non-empty optional if the media is available
-     */
-    public Optional<BinaryArray> readEncryptedMedia(@NonNull String url) {
-        try {
-            return Optional.of(BinaryArray.of(new URL(url).openStream().readAllBytes()));
-        } catch (Exception e) {
-            return Optional.empty();
-        }
+    public String readNullableId(@NonNull Node node){
+        return (String) node.attributes().getOrDefault("id", null);
     }
 }

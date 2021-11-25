@@ -6,11 +6,14 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.message.business.*;
 import it.auties.whatsapp.protobuf.message.device.DeviceSentMessage;
 import it.auties.whatsapp.protobuf.message.device.DeviceSyncMessage;
-import it.auties.whatsapp.protobuf.message.security.SenderKeyDistributionMessage;
 import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
+import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.protobuf.message.standard.*;
-import it.auties.whatsapp.protobuf.beta.Call;
-import lombok.*;
+import it.auties.whatsapp.protobuf.temp.Call;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.experimental.Accessors;
 
 import java.util.Optional;
@@ -25,7 +28,6 @@ import java.util.Optional;
  * <ul>
  *     <li>Server messages: {@link MessageContainer#protocolMessage} is populated</li>
  *     <li>Device messages: {@link MessageContainer#deviceSentMessage} or {@link MessageContainer#deviceSyncMessage} are populated</li>
- *     <li>Security messages(Signal's standard): {@link MessageContainer#senderKeyDistributionMessage} or {@link MessageContainer#fastRatchetKeySenderKeyDistributionMessage} are populated. These messages follow the <a href="https://github.com/signalapp/libsignal-protocol-c">Signal Protocol</a></li>
  *     <li>Whatsapp Business messages: {@link MessageContainer#templateButtonReplyMessage}, {@link MessageContainer#templateMessage}, {@link MessageContainer#highlyStructuredMessage}, {@link MessageContainer#productMessage} or any payment message are populated</li>
  *     <li>Standard messages: Any other property may be populated, though only one at the time. These messages may only be sent by contacts.</li>
  * </ul>
@@ -35,10 +37,9 @@ import java.util.Optional;
  */
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
 @Builder
 @Accessors(fluent = true)
-public class MessageContainer {
+public class MessageContainer { // Not how I would design it, Whatsapp's choice obviously
   /**
    * Sever message
    */
@@ -190,31 +191,10 @@ public class MessageContainer {
   @JsonProperty(value = "3")
   private ImageMessage imageMessage;
 
-  /**
-   * This property should NOT be used.
-   * The Protobuf used by whatsapp has two fields for text messages: one with context and one without.
-   * From a developer perspective though, it's kind of hell to use so I joined them into one.
-   */
+  // Just a linker
   @JsonProperty(value = "1")
-  private String rawText;
-
-  /**
-   * Json accessor to delegate the property rawText to textMessage
-   *
-   * @param rawText the text to delegate
-   */
-  @JsonProperty(value = "1")
-  private void rawText(String rawText){
-    this.textMessage = new TextMessage(rawText);
-  }
-
-  /**
-   * This accessor should not be used and is provided only as a string utility.
-   *
-   * @return the raw text
-   */
-  private String rawText(){
-    return rawText;
+  private void fromText(String textMessageWithNoContext){
+    this.textMessage = new TextMessage(textMessageWithNoContext);
   }
 
   /**
@@ -223,31 +203,33 @@ public class MessageContainer {
    * @param message the message that the new container should wrap
    * @param <T> the type of the message
    */
-  // When Java 17 comes out this will be simplified to an elegant switch statement, for now this is what we've got
   public <T extends Message> MessageContainer(@NonNull T message){
-    if(message instanceof SenderKeyDistributionMessage senderKeyDistributionMessage) this.senderKeyDistributionMessage = senderKeyDistributionMessage;
-    if(message instanceof ImageMessage imageMessage) this.imageMessage = imageMessage;
-    if(message instanceof ContactMessage contactMessage) this.contactMessage = contactMessage;
-    if(message instanceof LocationMessage locationMessage) this.locationMessage = locationMessage;
-    if(message instanceof TextMessage extendedTextMessage) this.textMessage = extendedTextMessage;
-    if(message instanceof DocumentMessage documentMessage) this.documentMessage = documentMessage;
-    if(message instanceof AudioMessage audioMessage) this.audioMessage = audioMessage;
-    if(message instanceof VideoMessage videoMessage) this.videoMessage = videoMessage;
-    if(message instanceof ProtocolMessage protocolMessage) this.protocolMessage = protocolMessage;
-    if(message instanceof ContactsArrayMessage contactsArrayMessage) this.contactsArrayMessage = contactsArrayMessage;
-    if(message instanceof HighlyStructuredMessage highlyStructuredMessage) this.highlyStructuredMessage = highlyStructuredMessage;
-    if(message instanceof SendPaymentMessage sendPaymentMessage) this.sendPaymentMessage = sendPaymentMessage;
-    if(message instanceof LiveLocationMessage liveLocationMessage) this.liveLocationMessage = liveLocationMessage;
-    if(message instanceof RequestPaymentMessage requestPaymentMessage) this.requestPaymentMessage = requestPaymentMessage;
-    if(message instanceof DeclinePaymentRequestMessage declinePaymentRequestMessage) this.declinePaymentRequestMessage = declinePaymentRequestMessage;
-    if(message instanceof CancelPaymentRequestMessage cancelPaymentRequestMessage) this.cancelPaymentRequestMessage = cancelPaymentRequestMessage;
-    if(message instanceof TemplateMessage templateMessage) this.templateMessage = templateMessage;
-    if(message instanceof StickerMessage stickerMessage) this.stickerMessage = stickerMessage;
-    if(message instanceof GroupInviteMessage groupInviteMessage) this.groupInviteMessage = groupInviteMessage;
-    if(message instanceof TemplateButtonReplyMessage templateButtonReplyMessage) this.templateButtonReplyMessage = templateButtonReplyMessage;
-    if(message instanceof ProductMessage productMessage) this.productMessage = productMessage;
-    if(message instanceof DeviceSentMessage deviceSentMessage) this.deviceSentMessage = deviceSentMessage;
-    if(message instanceof DeviceSyncMessage deviceSyncMessage) this.deviceSyncMessage = deviceSyncMessage;
+    switch (message) {
+      case SenderKeyDistributionMessage senderKeyDistributionMessage -> this.senderKeyDistributionMessage = senderKeyDistributionMessage;
+      case ImageMessage imageMessage -> this.imageMessage = imageMessage;
+      case ContactMessage contactMessage -> this.contactMessage = contactMessage;
+      case LocationMessage locationMessage -> this.locationMessage = locationMessage;
+      case TextMessage extendedTextMessage -> this.textMessage = extendedTextMessage;
+      case DocumentMessage documentMessage -> this.documentMessage = documentMessage;
+      case AudioMessage audioMessage -> this.audioMessage = audioMessage;
+      case VideoMessage videoMessage -> this.videoMessage = videoMessage;
+      case ProtocolMessage protocolMessage -> this.protocolMessage = protocolMessage;
+      case ContactsArrayMessage contactsArrayMessage -> this.contactsArrayMessage = contactsArrayMessage;
+      case HighlyStructuredMessage highlyStructuredMessage -> this.highlyStructuredMessage = highlyStructuredMessage;
+      case SendPaymentMessage sendPaymentMessage -> this.sendPaymentMessage = sendPaymentMessage;
+      case LiveLocationMessage liveLocationMessage -> this.liveLocationMessage = liveLocationMessage;
+      case RequestPaymentMessage requestPaymentMessage -> this.requestPaymentMessage = requestPaymentMessage;
+      case DeclinePaymentRequestMessage declinePaymentRequestMessage -> this.declinePaymentRequestMessage = declinePaymentRequestMessage;
+      case CancelPaymentRequestMessage cancelPaymentRequestMessage -> this.cancelPaymentRequestMessage = cancelPaymentRequestMessage;
+      case TemplateMessage templateMessage -> this.templateMessage = templateMessage;
+      case StickerMessage stickerMessage -> this.stickerMessage = stickerMessage;
+      case GroupInviteMessage groupInviteMessage -> this.groupInviteMessage = groupInviteMessage;
+      case TemplateButtonReplyMessage templateButtonReplyMessage -> this.templateButtonReplyMessage = templateButtonReplyMessage;
+      case ProductMessage productMessage -> this.productMessage = productMessage;
+      case DeviceSentMessage deviceSentMessage -> this.deviceSentMessage = deviceSentMessage;
+      case DeviceSyncMessage deviceSyncMessage -> this.deviceSyncMessage = deviceSyncMessage;
+      default -> throw new IllegalStateException("Unsupported message: " + message);
+    }
   }
 
   /**
@@ -265,14 +247,14 @@ public class MessageContainer {
    *
    * @return a non-null Optional Message
    */
-  public Optional<Message> populatedMessage(){
+  public Optional<Message> content(){
     if(this.senderKeyDistributionMessage != null) return Optional.of(senderKeyDistributionMessage);
     if(this.imageMessage != null) return Optional.of(imageMessage);
-    if(this.contactMessage != null) return Optional.of( contactMessage);
+    if(this.contactMessage != null) return Optional.of(contactMessage);
     if(this.locationMessage != null) return Optional.of(locationMessage);
     if(this.textMessage  != null) return Optional.of(textMessage);
     if(this.documentMessage != null) return Optional.of(documentMessage);
-    if(this.audioMessage != null) return Optional.of( audioMessage);
+    if(this.audioMessage != null) return Optional.of(audioMessage);
     if(this.videoMessage != null) return Optional.of(videoMessage);
     if(this.protocolMessage != null) return Optional.of(protocolMessage);
     if(this.contactsArrayMessage != null) return Optional.of(contactsArrayMessage);
@@ -297,13 +279,13 @@ public class MessageContainer {
    *
    * @return a non-null Optional ContextualMessage
    */
-  public Optional<ContextualMessage> populatedContextualMessage(){
+  public Optional<ContextualMessage> contentWithContext(){
     if(this.imageMessage != null) return Optional.of(imageMessage);
-    if(this.contactMessage != null) return Optional.of( contactMessage);
+    if(this.contactMessage != null) return Optional.of(contactMessage);
     if(this.locationMessage != null) return Optional.of(locationMessage);
     if(this.textMessage  != null) return Optional.of(textMessage);
     if(this.documentMessage != null) return Optional.of(documentMessage);
-    if(this.audioMessage != null) return Optional.of( audioMessage);
+    if(this.audioMessage != null) return Optional.of(audioMessage);
     if(this.videoMessage != null) return Optional.of(videoMessage);
     if(this.contactsArrayMessage != null) return Optional.of(contactsArrayMessage);
     if(this.liveLocationMessage != null) return Optional.of(liveLocationMessage);
@@ -321,28 +303,22 @@ public class MessageContainer {
    * @return a non-null enumerated type
    */
   public @NonNull MessageContainerContentType type(){
-    var message = populatedMessage().orElse(null);
-    if(message == null){
-      return MessageContainerContentType.EMPTY;
-    }
+    return switch (content().orElse(null)){
+      case null -> MessageContainerContentType.EMPTY;
+      case ServerMessage ignored -> MessageContainerContentType.SERVER;
+      case DeviceMessage ignored -> MessageContainerContentType.DEVICE;
+      case BusinessMessage ignored -> MessageContainerContentType.BUSINESS;
+      default -> MessageContainerContentType.STANDARD;
+    };
+  }
 
-    if(message instanceof SecurityMessage){
-      return MessageContainerContentType.SECURITY;
-    }
-
-    if(message instanceof ServerMessage){
-      return MessageContainerContentType.SERVER;
-    }
-
-    if(message instanceof DeviceMessage){
-      return MessageContainerContentType.DEVICE;
-    }
-
-    if(message instanceof BusinessMessage){
-      return MessageContainerContentType.BUSINESS;
-    }
-
-    return MessageContainerContentType.STANDARD;
+  /**
+   * Returns whether this container is empty
+   *
+   * @return true if this container is empty
+   */
+  public boolean isEmpty(){
+    return type() == MessageContainerContentType.EMPTY;
   }
 
   /**
@@ -350,7 +326,7 @@ public class MessageContainer {
    *
    * @return true if this container contains a standard message
    */
-  public boolean isStandardMessage(){
+  public boolean isStandard(){
     return type() == MessageContainerContentType.STANDARD;
   }
 
@@ -359,14 +335,32 @@ public class MessageContainer {
    *
    * @return true if this container contains a sever message
    */
-  public boolean isServerMessage(){
+  public boolean isServer(){
     return type() == MessageContainerContentType.SERVER;
+  }
+
+  /**
+   * Returns whether this container contains a business message
+   *
+   * @return true if this container contains a business message
+   */
+  public boolean isBusiness(){
+    return type() == MessageContainerContentType.SERVER;
+  }
+
+  /**
+   * Returns whether this container contains a device message
+   *
+   * @return true if this container contains a device message
+   */
+  public boolean isDevice(){
+    return type() == MessageContainerContentType.DEVICE;
   }
 
   /**
    * The constants of this enumerated type describe the various types of messages that a {@link MessageContainer} can wrap
    */
-  enum MessageContainerContentType {
+  public enum MessageContainerContentType {
     /**
      * Server message
      */
@@ -376,11 +370,6 @@ public class MessageContainer {
      * Device message
      */
     DEVICE,
-
-    /**
-     * Security message
-     */
-    SECURITY,
 
     /**
      * Business message

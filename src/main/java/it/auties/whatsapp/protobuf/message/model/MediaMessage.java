@@ -2,7 +2,6 @@ package it.auties.whatsapp.protobuf.message.model;
 
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.message.standard.*;
-import it.auties.whatsapp.utils.CypherUtils;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -14,8 +13,8 @@ import lombok.experimental.SuperBuilder;
  * Instead, methods inside {@link Whatsapp} should be used.
  */
 @AllArgsConstructor
-@NoArgsConstructor
 @SuperBuilder(buildMethodName = "create")
+@NoArgsConstructor
 public abstract sealed class MediaMessage extends ContextualMessage permits AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoMessage {
     /**
      * The cached decoded media, by default null

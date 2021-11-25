@@ -1,12 +1,12 @@
 package it.auties.whatsapp.manager;
 
 import it.auties.whatsapp.api.WhatsappListener;
+import it.auties.whatsapp.cipher.Request;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.model.MediaConnection;
-import it.auties.whatsapp.request.Request;
-import it.auties.whatsapp.response.Response;
+import it.auties.whatsapp.protobuf.model.Node;
 import it.auties.whatsapp.utils.WhatsappUtils;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -14,6 +14,7 @@ import lombok.experimental.Accessors;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -32,8 +33,10 @@ public class WhatsappStore {
     private final @NonNull ExecutorService requestsService;
     private final @NonNull List<Chat> chats;
     private final @NonNull List<Contact> contacts;
-    private final @NonNull List<Request<?, ?>> pendingRequests;
+    private final @NonNull List<Request> pendingRequests;
     private final @NonNull List<WhatsappListener> listeners;
+    private final AtomicLong readCounter;
+    private final AtomicLong writeCounter;
     private final long initializationTimeStamp;
     private @Getter(onMethod = @__(@NonNull)) MediaConnection mediaConnection;
     private @Getter(onMethod = @__(@NonNull)) String phoneNumberJid;
@@ -45,6 +48,7 @@ public class WhatsappStore {
         this(UUID.randomUUID(), Executors.newSingleThreadExecutor(),
                 new Vector<>(), new Vector<>(),
                 new Vector<>(), new Vector<>(),
+                new AtomicLong(), new AtomicLong(),
                 System.currentTimeMillis());
         instances.add(this);
     }
@@ -153,33 +157,27 @@ public class WhatsappStore {
     }
 
     /**
-     * Queries the first Request whose tag is equal to {@code tag}
+     * Queries the first request whose id is equal to {@code id}
      *
-     * @param tag the tag to search
+     * @param id the id to search, can be null
      * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
-    public @NonNull Optional<Request<?, ?>> findPendingRequest(@NonNull String tag) {
-        return pendingRequests.parallelStream()
-                .filter(req -> req.tag().equals(tag))
+    public @NonNull Optional<Request> findPendingRequest(String id) {
+        return id == null ? Optional.empty() : pendingRequests.parallelStream()
+                .filter(request -> Objects.equals(request.id(), id))
                 .findAny();
     }
 
     /**
-     * Queries the first Request whose tag is equal to {@code messageTag} and, if any is found, resolves the request using {@code response}
+     * Queries the first request whose id equals the one stored by the response and, if any is found, it completes it
      *
-     * @param response   the response to complete the request with
-     * @return true if any request matching {@code messageTag} is found
+     * @param response the response to complete the request with
+     * @return true if any request matching {@code response} is found
      */
-    public boolean resolvePendingRequest(@NonNull Response<?> response) {
-        var req = findPendingRequest(response.tag());
-        if (req.isEmpty()) {
-            return false;
-        }
-
-        var request = req.get();
-        request.complete(response);
-        pendingRequests.remove(request);
-        return true;
+    public boolean resolvePendingRequest(@NonNull Node response, boolean exceptionally) {
+        return findPendingRequest(WhatsappUtils.readNullableId(response))
+                .map(request -> deleteAndComplete(response, request, exceptionally))
+                .isPresent();
     }
 
     /**
@@ -194,23 +192,32 @@ public class WhatsappStore {
     }
 
     /**
-     * Returns the number of pinned chats
+     * Returns the chats pinned to the top
      *
-     * @return an unsigned int between zero and three(both inclusive)
+     * @return a non null list of chats
      */
-    public long pinnedChats(){
+    public List<Chat> pinnedChats(){
         return chats.parallelStream()
                 .filter(Chat::isPinned)
-                .count();
+                .toList();
     }
 
     /**
-     * Clears all data associated with the WhatsappWeb's WebSocket session
+     * Resets to zero both the read and write counter
+     */
+    public void clearCounters(){
+        this.readCounter.set(0);
+        this.writeCounter.set(0);
+    }
+
+    /**
+     * Clears all the data that this object holds
      */
     public void clear() {
         chats.clear();
         contacts.clear();
         pendingRequests.clear();
+        clearCounters();
     }
 
     /**
@@ -223,5 +230,11 @@ public class WhatsappStore {
     public void callListeners(@NonNull Consumer<WhatsappListener> consumer){
         listeners.forEach(listener ->
                 requestsService.execute(() -> consumer.accept(listener)));
+    }
+
+    private Request deleteAndComplete(Node response, Request request, boolean exceptionally) {
+        pendingRequests.remove(request);
+        request.complete(response, exceptionally);
+        return request;
     }
 }

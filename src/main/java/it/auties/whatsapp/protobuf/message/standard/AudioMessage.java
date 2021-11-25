@@ -6,13 +6,9 @@ import it.auties.whatsapp.protobuf.info.ContextInfo;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.message.model.MediaMessage;
 import it.auties.whatsapp.protobuf.message.model.MediaMessageType;
-import it.auties.whatsapp.utils.CypherUtils;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
-
-import java.time.ZonedDateTime;
-import java.util.Optional;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds an audio inside.

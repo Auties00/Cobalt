@@ -4,9 +4,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.manager.WhatsappStore;
-import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.chat.Chat;
+import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
 import it.auties.whatsapp.protobuf.message.model.Message;
 import it.auties.whatsapp.protobuf.message.model.MessageContainer;
@@ -19,7 +18,7 @@ import lombok.experimental.Accessors;
 import java.time.Instant;
 import java.util.*;
 
-import static it.auties.whatsapp.manager.WhatsappStore.*;
+import static it.auties.whatsapp.manager.WhatsappStore.findStoreById;
 
 /**
  * A model class that holds the information related to a {@link Message}.
@@ -247,7 +246,7 @@ public class MessageInfo {
    */
   public @NonNull Optional<MessageInfo> quotedMessage(){
     return Optional.of(container)
-            .flatMap(MessageContainer::populatedContextualMessage)
+            .flatMap(MessageContainer::contentWithContext)
             .map(ContextualMessage::contextInfo)
             .flatMap(contextualMessage -> findStoreById(key().session())
                     .findMessageById(key.chat().orElseThrow(), contextualMessage.quotedMessageId()));

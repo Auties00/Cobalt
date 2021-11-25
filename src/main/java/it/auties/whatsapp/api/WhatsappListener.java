@@ -10,6 +10,7 @@ import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactId;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.socket.WhatsappSocket;
+import it.auties.whatsapp.utils.Qr;
 import lombok.NonNull;
 
 import java.util.List;
@@ -27,7 +28,7 @@ public interface WhatsappListener {
      * @param qr the generator code to consume
      */
     default void onQRCode(@NonNull BitMatrix qr){
-        System.out.println(qr.toString("\033[40m  \033[0m", "\033[47m  \033[0m"));
+        Qr.print(qr);
     }
 
     /**

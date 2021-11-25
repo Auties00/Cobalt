@@ -2,8 +2,6 @@ package it.auties.whatsapp.protobuf.contact;
 
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.chat.Chat;
-import it.auties.whatsapp.protobuf.model.Node;
-import it.auties.whatsapp.response.JsonResponse;
 import it.auties.whatsapp.utils.WhatsappUtils;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -72,21 +70,6 @@ public class Contact {
     public static Contact fromJid(@NonNull String jid){
         return Contact.builder()
                 .jid(jid)
-                .build();
-    }
-
-    /**
-     * Constructs a new Contact from a map of attributes.
-     * This method is usually used to deserialize a Contact from the attributes of a {@link Node}.
-     *
-     * @return a new instance of Contact.
-     */
-    public static @NonNull Contact fromAttributes(@NonNull JsonResponse attrs) {
-        return Contact.builder()
-                .jid(attrs.getNullableString("jid"))
-                .name(attrs.getNullableString("name"))
-                .chosenName(attrs.getNullableString("notify"))
-                .shortName(attrs.getNullableString("short"))
                 .build();
     }
 

@@ -5,7 +5,6 @@ import java.util.Objects;
 public record ContactId(String user, int device, int agent, String server, boolean ad) {
     public static final String OFFICIAL_BIZ_WID = "16505361212@c.us";
     public static final String USER_JID_SUFFIX = "s.whatsapp.net";
-    public static final ContactId GROUP = createServer("g.us");
     public static final ContactId WHATSAPP_SERVER = createServer("s.whatsapp.net");
 
     public static ContactId create(String jid) {
@@ -29,7 +28,9 @@ public record ContactId(String user, int device, int agent, String server, boole
             return null;
         }
 
-        return jid.replace("@c.us", "").replace("@s.whatsapp.net", "").replace("@g.us", "");
+        return jid.replace("@c.us", "")
+                .replace("@s.whatsapp.net", "")
+                .replace("@g.us", "");
     }
 
     public Type type() {
@@ -96,8 +97,7 @@ public record ContactId(String user, int device, int agent, String server, boole
             return "%s.%s:%s@%s".formatted(user, agent, device, USER_JID_SUFFIX);
         }
 
-        return user() == null ? server
-                : "%s@%s".formatted(user(), server);
+        return user() == null ? server : "%s@%s".formatted(user(), server);
     }
 
     public enum Type {

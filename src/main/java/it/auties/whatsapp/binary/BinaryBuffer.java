@@ -1,9 +1,7 @@
 package it.auties.whatsapp.binary;
 
 import it.auties.whatsapp.utils.Validate;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.experimental.Accessors;
+import lombok.NonNull;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -11,21 +9,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 
 /**
- * A class used to encode a WhatsappNode and then send it to WhatsappWeb's WebSocket.
- *
+ * A utility class that wraps a ByteBuffer
+ * It provides an easy interface for IO operations related to Whatsapp
  */
-@AllArgsConstructor
-@Data
-@Accessors(fluent = true)
-public final class BinaryBuffer {
-    private ByteBuffer buffer;
-
+@SuppressWarnings({"UnusedReturnValue", "unused"}) // UnusedReturnValue: Chaining, unused: might need them in the future
+public record BinaryBuffer(@NonNull ByteBuffer buffer) {
     public BinaryBuffer(int size) {
         this(ByteBuffer.allocate(size));
     }
 
     public BinaryBuffer() {
-        this(256);
+        this(5096);
     }
 
     public static BinaryBuffer of(String string) {
@@ -154,7 +148,7 @@ public final class BinaryBuffer {
     private BinaryBuffer write(Consumer<ByteBuffer> consumer, int size) {
         var temp = ByteBuffer.allocate(size);
         if (buffer.position() + size + 1 >= buffer.limit()) {
-            reserve(buffer.limit() * 2);
+            throw new IndexOutOfBoundsException("Out of space");
         }
 
         consumer.accept(temp);
@@ -169,13 +163,6 @@ public final class BinaryBuffer {
 
     public BinaryBuffer writeString(String in) {
         return writeBytes(in.getBytes(StandardCharsets.UTF_8));
-    }
-
-    private BinaryBuffer reserve(int size) {
-        var resized = ByteBuffer.allocate(Math.max(size, 128));
-        for(var entry : readWrittenBytes()) resized.put(entry);
-        this.buffer = resized;
-        return this;
     }
 
     private <N extends Number> N checkUnsigned(N number) {
