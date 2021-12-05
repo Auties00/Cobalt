@@ -47,7 +47,7 @@ public class Buffers {
      * @return a non-null byte array
      */
     public byte[] readAllBytes(@NonNull ByteBuf buffer){
-        return readBytes(buffer, buffer.readerIndex(0).readableBytes());
+        return readBytes(buffer.readerIndex(0));
     }
 
     /**

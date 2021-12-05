@@ -1,6 +1,7 @@
 package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.api.RegisterListener.Scanner;
+import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.chat.GroupAction;
@@ -13,6 +14,7 @@ import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
 import it.auties.whatsapp.protobuf.message.model.Message;
 import it.auties.whatsapp.protobuf.model.Node;
+import it.auties.whatsapp.socket.WhatsappSocket;
 import it.auties.whatsapp.utils.Validate;
 import lombok.NonNull;
 
@@ -26,9 +28,9 @@ import java.util.concurrent.CompletableFuture;
  * It can be configured using a default configuration or a custom one.
  * Multiple instances of this class can be initialized, though it is not advisable as; is a singleton and cannot distinguish between the data associated with each session.
  */
-public record Whatsapp(WhatsappStore store) {
+public record Whatsapp(WhatsappSocket socket) {
     public Whatsapp(){
-        this(new WhatsappStore());
+        this(new WhatsappSocket(WhatsappConfiguration.defaultOptions(), new WhatsappStore(), WhatsappKeys.fromMemory()));
         Scanner.scan(this)
                 .forEach(this::registerListener);
     }
@@ -41,7 +43,7 @@ public record Whatsapp(WhatsappStore store) {
      * @throws IllegalArgumentException if the {@code listener} cannot be added
      */
     public Whatsapp registerListener(@NonNull WhatsappListener listener) {
-        Validate.isTrue(store.listeners().add(listener),
+        Validate.isTrue(socket.store().listeners().add(listener),
                 "WhatsappAPI: Cannot add listener %s", listener.getClass().getName());
         return this;
     }
@@ -54,7 +56,7 @@ public record Whatsapp(WhatsappStore store) {
      * @throws IllegalArgumentException if the {@code listener} cannot be added
      */
     public Whatsapp removeListener(@NonNull WhatsappListener listener) {
-        Validate.isTrue(store.listeners().remove(listener),
+        Validate.isTrue(socket.store().listeners().remove(listener),
                 "WhatsappAPI: Cannot remove listener %s", listener.getClass().getName());
         return this;
     }
@@ -63,20 +65,20 @@ public record Whatsapp(WhatsappStore store) {
      * Opens a connection with Whatsapp Web's WebSocket if a previous connection doesn't exist
      *
      * @return the same instance
-     * @throws IllegalStateException if a previous connection already exists
      */
     public Whatsapp connect() {
-        return null;
+        socket.connect();
+        return this;
     }
 
     /**
      * Disconnects from Whatsapp Web's WebSocket if a previous connection exists
      *
      * @return the same instance
-     * @throws IllegalStateException if a previous connection doesn't exist
      */
     public Whatsapp disconnect() {
-        return null;
+        socket.disconnect();
+        return this;
     }
 
     /**
@@ -84,20 +86,19 @@ public record Whatsapp(WhatsappStore store) {
      * The next time the API is used, the QR code will need to be scanned again
      *
      * @return the same instance
-     * @throws IllegalStateException if a previous connection doesn't exist
      */
     public Whatsapp logout() {
-        return null;
+        throw new UnsupportedOperationException("logout");
     }
 
     /**
      * Disconnects and reconnects to Whatsapp Web's WebSocket if a previous connection exists
      *
      * @return the same instance
-     * @throws IllegalStateException if a previous connection doesn't exist
      */
     public Whatsapp reconnect() {
-        return null;
+        socket.reconnect();
+        return this;
     }
 
     /**

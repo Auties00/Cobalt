@@ -188,11 +188,14 @@ public class WhatsappSocket {
         }
     }
 
-    @SneakyThrows
-    private void reconnect(){
-        changeState(false);
-        session().close();
-        connect();
+    public void reconnect(){
+        try {
+            changeState(false);
+            session().close();
+            connect();
+        }catch (IOException exception){
+            throw new RuntimeException("Cannot reconnect to WhatsappWeb's WebServer", exception);
+        }
     }
 
     public void disconnect(){
