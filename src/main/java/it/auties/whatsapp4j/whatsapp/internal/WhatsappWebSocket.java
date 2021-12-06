@@ -92,6 +92,10 @@ public class WhatsappWebSocket {
             session(session);
         }
 
+        sendInitialRequest(session);
+    }
+
+    private void sendInitialRequest(Session session) {
         new InitialRequest<InitialResponse>(options, whatsappKeys){}
                 .send(session)
                 .thenAccept(this::handleInitialMessage);
@@ -127,7 +131,7 @@ public class WhatsappWebSocket {
     private void scheduleQrCodeUpdate(InitialResponse response) {
         Validate.isTrue(response.status() != 429, "Out of attempts to scan the QR code", IllegalStateException.class);
         CompletableFuture.delayedExecutor(response.ttl(), TimeUnit.MILLISECONDS)
-                .execute(() -> generateQrCode(response));
+                .execute(() -> sendInitialRequest(session()));
     }
 
     private void solveChallenge(@NonNull TakeOverResponse response) {
