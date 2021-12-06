@@ -1,8 +1,9 @@
-package it.auties.whatsapp.protobuf.model;
+package it.auties.whatsapp.protobuf.group;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.protobuf.decoder.ProtobufDecoder;
+import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.crypto.Cipher;
 import it.auties.whatsapp.utils.Validate;
@@ -11,13 +12,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
-import org.whispersystems.libsignal.InvalidKeyException;
-import org.whispersystems.libsignal.InvalidMessageException;
-import org.whispersystems.libsignal.ecc.Curve;
-import org.whispersystems.libsignal.ecc.ECPrivateKey;
-import org.whispersystems.libsignal.ecc.ECPublicKey;
 import org.whispersystems.libsignal.protocol.CiphertextMessage;
-import org.whispersystems.libsignal.util.ByteUtil;
 
 import java.io.IOException;
 
@@ -29,6 +24,7 @@ import java.io.IOException;
 @Accessors(fluent = true)
 public class SenderKeyMessage {
   private static final int SIGNATURE_LENGTH = 64;
+  private static final int CURRENT_VERSION = 3;
 
   @JsonProperty(value = "1")
   @JsonPropertyDescription("uint32")
@@ -40,11 +36,15 @@ public class SenderKeyMessage {
 
   @JsonProperty(value = "3")
   @JsonPropertyDescription("bytes")
-  private byte[] ciphertext;
-
+  private byte[] cipherText;
+  
+  private int version;
+  
   private byte[] serialized;
 
-  private int version;
+  public SenderKeyMessage(int id, int iteration, byte[] ciphertext) {
+    this(id, iteration, ciphertext, 0, null);
+  }
 
   public SenderKeyMessage(byte[] serialized) {
     try {
@@ -53,17 +53,28 @@ public class SenderKeyMessage {
       var message = serializedBinary.slice(1, serialized.length - 1 - SIGNATURE_LENGTH).data();
       var signature = serializedBinary.slice(serialized.length - 1 - SIGNATURE_LENGTH, SIGNATURE_LENGTH).data();
       Validate.isTrue(version > 3, "Legacy version");
-      Validate.isTrue(version <= CipherConstants.CURRENT_VERSION, "Unknown version");
+      Validate.isTrue(version <= CURRENT_VERSION, "Unknown version");
       var senderKeyMessage = ProtobufDecoder.forType(getClass()).decode(message);
 
       this.serialized = serialized;
       this.version = version;
       this.id = senderKeyMessage.id();
       this.iteration = senderKeyMessage.iteration();
-      this.ciphertext = senderKeyMessage.ciphertext();
+      this.cipherText = senderKeyMessage.cipherText();
     } catch (IOException exception) {
       throw new RuntimeException("Cannot decode SenderKeyMessage", exception);
     }
+  }
+
+  public SenderKeyMessage(int keyId, int iteration, byte[] ciphertext, byte[] signatureKey) {
+    var version = (byte) ((CURRENT_VERSION << 4 | CURRENT_VERSION) & 0xFF);
+    var message = ProtobufEncoder.encode(new SenderKeyMessage(keyId, iteration, ciphertext));
+    var signature = Cipher.calculateSignature(signatureKey, BinaryArray.of(version).append(message).data());
+    this.serialized = BinaryArray.of(version).append(message).append(signature).data();
+    this.version = CURRENT_VERSION;
+    this.id = keyId;
+    this.iteration = iteration;
+    this.cipherText = ciphertext;
   }
 
   public void verifySignature(byte[] signatureKey) {

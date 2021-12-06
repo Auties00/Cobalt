@@ -67,7 +67,9 @@ public class Messages extends ArrayList<MessageInfo> {
      */
     @Override
     public boolean addAll(Collection<? extends MessageInfo> collection) {
-        return collection.stream().map(this::addOrReplace).reduce(true, (a, b) -> a && b);
+        return collection.stream()
+                .map(this::addOrReplace)
+                .reduce(true, (first, second) -> first && second);
     }
 
     /**

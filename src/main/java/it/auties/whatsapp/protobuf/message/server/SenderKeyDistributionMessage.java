@@ -23,18 +23,11 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 public final class SenderKeyDistributionMessage implements ServerMessage {
   /**
-   * The signing key of the message
+   * The id of the sender
    */
-  @JsonProperty(value = "4")
-  @JsonPropertyDescription("bytes")
-  private byte[] signingKey;
-
-  /**
-   * The chain key of the message
-   */
-  @JsonProperty(value = "3")
-  @JsonPropertyDescription("bytes")
-  private byte[] chainKey;
+  @JsonProperty(value = "1")
+  @JsonPropertyDescription("uint32")
+  private int id;
 
   /**
    * The iteration of the message
@@ -44,9 +37,16 @@ public final class SenderKeyDistributionMessage implements ServerMessage {
   private int iteration;
 
   /**
-   * The id of the sender
+   * The chain key of the message
    */
-  @JsonProperty(value = "1")
-  @JsonPropertyDescription("uint32")
-  private int id;
+  @JsonProperty(value = "3")
+  @JsonPropertyDescription("bytes")
+  private byte[] chainKey;
+
+  /**
+   * The signing key of the message
+   */
+  @JsonProperty(value = "4")
+  @JsonPropertyDescription("bytes")
+  private byte[] signingKey;
 }

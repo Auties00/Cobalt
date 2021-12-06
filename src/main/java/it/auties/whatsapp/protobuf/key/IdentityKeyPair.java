@@ -1,4 +1,4 @@
-package it.auties.whatsapp.protobuf.model;
+package it.auties.whatsapp.protobuf.key;
 
 import lombok.NonNull;
 

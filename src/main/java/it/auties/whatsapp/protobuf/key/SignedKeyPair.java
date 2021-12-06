@@ -1,5 +1,7 @@
-package it.auties.whatsapp.protobuf.model;
+package it.auties.whatsapp.protobuf.key;
 
+import it.auties.whatsapp.protobuf.key.IdentityKeyPair;
+import it.auties.whatsapp.protobuf.model.Node;
 import lombok.NonNull;
 
 public record SignedKeyPair(byte @NonNull [] id, @NonNull IdentityKeyPair keyPair, byte @NonNull [] signature) {

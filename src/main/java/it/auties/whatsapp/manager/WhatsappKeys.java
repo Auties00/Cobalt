@@ -6,14 +6,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.crypto.Cipher;
 import it.auties.whatsapp.protobuf.contact.ContactId;
-import it.auties.whatsapp.protobuf.model.IdentityKeyPair;
-import it.auties.whatsapp.protobuf.model.SignedKeyPair;
+import it.auties.whatsapp.protobuf.group.SenderKeyName;
+import it.auties.whatsapp.protobuf.group.SenderKeyRecord;
+import it.auties.whatsapp.protobuf.group.SenderKeyState;
+import it.auties.whatsapp.protobuf.group.SenderKeyStructure;
+import it.auties.whatsapp.protobuf.key.IdentityKeyPair;
+import it.auties.whatsapp.protobuf.key.SignedKeyPair;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 
-import java.util.Optional;
+import java.util.*;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
@@ -88,6 +92,11 @@ public class WhatsappKeys {
     private BinaryArray writeKey, readKey;
 
     /**
+     * Sender keys for signal implementation
+     */
+    private List<SenderKeyStructure> senderKeyStructures;
+
+    /**
      * Returns the keys saved in memory or constructs a new clean instance
      *
      * @return a non-null instance of WhatsappKeys
@@ -115,6 +124,7 @@ public class WhatsappKeys {
         this.identityKeyPair = Cipher.randomKeyPair();
         this.signedKeyPair = Cipher.randomKeyPair(id, identityKeyPair());
         this.companionKey = Cipher.randomSenderKey();
+        this.senderKeyStructures = new ArrayList<>();
     }
 
     /**
@@ -156,7 +166,22 @@ public class WhatsappKeys {
      *
      * @return true if both the serverToken and clientToken are not null
      */
-    public boolean hasUser() {
+    public boolean hasCompanion() {
         return companion != null;
+    }
+
+    /**
+     * Queries the first {@link SenderKeyRecord} that matches {@code name}
+     *
+     * @param name the non-null name to search
+     * @return a non-null SenderKeyRecord
+     * @throws NoSuchElementException if no element can be found
+     */
+    public SenderKeyRecord findSenderKeyByName(@NonNull SenderKeyName name){
+        return senderKeyStructures.stream()
+                .filter(structure -> Objects.equals(structure.name(), name))
+                .findFirst()
+                .map(SenderKeyStructure::record)
+                .orElseThrow(() -> new NoSuchElementException("Cannot find sender key for name %s".formatted(name)));
     }
 }

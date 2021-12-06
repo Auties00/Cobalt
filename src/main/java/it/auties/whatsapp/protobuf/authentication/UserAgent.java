@@ -1,4 +1,4 @@
-package it.auties.whatsapp.protobuf.model;
+package it.auties.whatsapp.protobuf.authentication;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;

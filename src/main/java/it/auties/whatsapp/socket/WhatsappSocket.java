@@ -4,7 +4,7 @@ import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.whatsapp.api.WhatsappConfiguration;
 import it.auties.whatsapp.binary.BinaryMessage;
 import it.auties.whatsapp.crypto.Cipher;
-import it.auties.whatsapp.crypto.NoiseHandshake;
+import it.auties.whatsapp.crypto.Handshake;
 import it.auties.whatsapp.crypto.Request;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
@@ -12,9 +12,9 @@ import it.auties.whatsapp.protobuf.authentication.*;
 import it.auties.whatsapp.protobuf.contact.ContactId;
 import it.auties.whatsapp.protobuf.message.server.HandshakeMessage;
 import it.auties.whatsapp.protobuf.model.Node;
-import it.auties.whatsapp.protobuf.model.PreKey;
-import it.auties.whatsapp.protobuf.model.UserAgent;
-import it.auties.whatsapp.protobuf.model.Version;
+import it.auties.whatsapp.protobuf.key.PreKey;
+import it.auties.whatsapp.protobuf.authentication.UserAgent;
+import it.auties.whatsapp.protobuf.authentication.Version;
 import it.auties.whatsapp.utils.Qr;
 import it.auties.whatsapp.utils.Validate;
 import it.auties.whatsapp.utils.WhatsappUtils;
@@ -51,7 +51,7 @@ public class WhatsappSocket {
 
     private @Getter(onMethod = @__(@NonNull)) Session session;
     private boolean loggedIn;
-    private final NoiseHandshake handshake;
+    private final Handshake handshake;
     private final @NonNull WebSocketContainer container;
     private final @NonNull WhatsappConfiguration options;
     private final @NonNull WhatsappStore store;
@@ -60,7 +60,7 @@ public class WhatsappSocket {
     private CountDownLatch lock;
 
     public WhatsappSocket(@NonNull WhatsappConfiguration options, @NonNull WhatsappStore store, @NonNull WhatsappKeys keys) {
-        this.handshake = new NoiseHandshake();
+        this.handshake = new Handshake();
         this.container = ContainerProvider.getWebSocketContainer();
         this.options = options;
         this.store = store;
@@ -135,9 +135,9 @@ public class WhatsappSocket {
                 .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
                 .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
                 .userAgent(createUserAgent())
-                .passive(keys.hasUser())
+                .passive(keys.hasCompanion())
                 .webInfo(new WebInfo(WebInfo.WebInfoWebSubPlatform.WEB_BROWSER));
-        return encode(keys.hasUser() ? builder.username(parseLong(keys().companion().user())).device(keys().companion().device()).build()
+        return encode(keys.hasCompanion() ? builder.username(parseLong(keys().companion().user())).device(keys().companion().device()).build()
                 : builder.regData(createRegisterData()).build());
     }
 

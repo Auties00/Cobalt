@@ -1,18 +1,10 @@
-package it.auties.whatsapp.protobuf.model;
+package it.auties.whatsapp.protobuf.group;
 
 import com.fasterxml.jackson.annotation.*;
-
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.util.*;
 
 import it.auties.whatsapp.crypto.Hkdf;
 import lombok.*;
 import lombok.experimental.Accessors;
-import org.whispersystems.libsignal.groups.ratchet.SenderMessageKey;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 
 @AllArgsConstructor
 @NoArgsConstructor

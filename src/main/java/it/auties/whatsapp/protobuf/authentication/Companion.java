@@ -3,7 +3,6 @@ package it.auties.whatsapp.protobuf.authentication;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import it.auties.whatsapp.protobuf.model.Version;
 import lombok.*;
 import lombok.experimental.Accessors;
 

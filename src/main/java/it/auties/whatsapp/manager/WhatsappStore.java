@@ -20,7 +20,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
- * This class is a singleton and holds all the data regarding a session with WhatsappWeb's WebSocket.
+ * This class holds all the data regarding a session with WhatsappWeb's WebSocket.
  * It also provides various methods to query this data.
  * It should not be used by multiple sessions as, being a singleton, it cannot determine and divide data coming from different sessions.
  * It should not be initialized manually.

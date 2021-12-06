@@ -9,7 +9,7 @@ import static it.auties.whatsapp.binary.BinaryArray.of;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor
-public class NoiseHandshake {
+public class Handshake {
     private static final BinaryArray PROTOCOL = BinaryArray.of("Noise_XX_25519_AESGCM_SHA256\0\0\0\0");
     private WhatsappKeys keys;
     private BinaryArray hash;

@@ -3,9 +3,9 @@ package it.auties.whatsapp.crypto;
 import io.netty.buffer.ByteBufUtil;
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.binary.BinaryDecoder;
-import it.auties.whatsapp.protobuf.model.IdentityKeyPair;
+import it.auties.whatsapp.protobuf.key.IdentityKeyPair;
 import it.auties.whatsapp.protobuf.model.Node;
-import it.auties.whatsapp.protobuf.model.SignedKeyPair;
+import it.auties.whatsapp.protobuf.key.SignedKeyPair;
 import it.auties.whatsapp.utils.Buffers;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -32,13 +32,12 @@ import javax.crypto.spec.SecretKeySpec;
 import java.security.*;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.Objects;
 
 /**
  * This utility class provides helper functionality to easily encrypt and decrypt data
  * This class should only be used for WhatsappWeb's WebSocket buffer operations
  *
- * TODO: Refactor and migrate off curve25519 library
+ * TODO: Refactor and migrate off curve25519 library and decouple in multiple classes
  */
 @UtilityClass
 public class Cipher {
@@ -47,7 +46,6 @@ public class Cipher {
     private final String CURVE_25519 = "X25519";
     private final String HMAC_SHA256 = "HmacSHA256";
     private final String SHA256 = "SHA-256";
-    private final String HKDF = "HKDF-Salt";
     private final String SHA_PRNG = "SHA1PRNG";
 
     @SneakyThrows

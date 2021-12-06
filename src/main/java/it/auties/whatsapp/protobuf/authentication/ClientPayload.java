@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import it.auties.whatsapp.protobuf.model.UserAgent;
 import it.auties.whatsapp.protobuf.temp.DNSSource;
 import lombok.*;
 import lombok.experimental.Accessors;
