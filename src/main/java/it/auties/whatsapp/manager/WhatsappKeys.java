@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.whatsapp.binary.BinaryArray;
-import it.auties.whatsapp.cipher.Cipher;
+import it.auties.whatsapp.crypto.Cipher;
 import it.auties.whatsapp.protobuf.contact.ContactId;
 import it.auties.whatsapp.protobuf.model.IdentityKeyPair;
 import it.auties.whatsapp.protobuf.model.SignedKeyPair;

@@ -1,4 +1,4 @@
-package it.auties.whatsapp.cipher;
+package it.auties.whatsapp.crypto;
 
 import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp.binary.BinaryEncoder;

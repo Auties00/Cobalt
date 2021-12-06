@@ -1,4 +1,4 @@
-package it.auties.whatsapp.cipher;
+package it.auties.whatsapp.crypto;
 
 import lombok.NonNull;
 import org.bouncycastle.crypto.InvalidCipherTextException;

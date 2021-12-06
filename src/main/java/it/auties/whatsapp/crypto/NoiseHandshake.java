@@ -1,4 +1,4 @@
-package it.auties.whatsapp.cipher;
+package it.auties.whatsapp.crypto;
 
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.manager.WhatsappKeys;
@@ -47,19 +47,19 @@ public class NoiseHandshake {
     }
 
     public void finish()  {
-        var expanded = extractAndExpandWithHash(empty());
+        var expanded = extractAndExpandWithHash(new byte[0]);
         keys.initializeKeys(expanded.cut(32), expanded.slice(32));
     }
 
     public void mixIntoKey(byte @NonNull [] bytes)  {
         this.counter = 0;
-        var expanded = extractAndExpandWithHash(of(bytes));
+        var expanded = extractAndExpandWithHash(bytes);
         this.salt = expanded.cut(32);
         this.cryptoKey = expanded.slice(32);
     }
 
-    private BinaryArray extractAndExpandWithHash(@NonNull BinaryArray key) {
-        var extracted = Cipher.hkdfExtract(key, salt.data());
-        return Cipher.hkdfExpand(extracted, null, 64);
+    private BinaryArray extractAndExpandWithHash(byte @NonNull [] key) {
+        var extracted = Hkdf.extract(salt.data(), key);
+        return of(Hkdf.expand(extracted, null, 64));
     }
 }

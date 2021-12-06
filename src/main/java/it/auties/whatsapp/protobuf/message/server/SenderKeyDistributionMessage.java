@@ -23,16 +23,30 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 public final class SenderKeyDistributionMessage implements ServerMessage {
   /**
-   * Axolotl sender key distribution message
+   * The signing key of the message
    */
-  @JsonProperty(value = "2")
+  @JsonProperty(value = "4")
   @JsonPropertyDescription("bytes")
-  private byte[] axolotlSenderKeyDistributionMessage;
+  private byte[] signingKey;
 
   /**
-   * Group id
+   * The chain key of the message
+   */
+  @JsonProperty(value = "3")
+  @JsonPropertyDescription("bytes")
+  private byte[] chainKey;
+
+  /**
+   * The iteration of the message
+   */
+  @JsonProperty(value = "2")
+  @JsonPropertyDescription("uint32")
+  private int iteration;
+
+  /**
+   * The id of the sender
    */
   @JsonProperty(value = "1")
-  @JsonPropertyDescription("string")
-  private String groupId;
+  @JsonPropertyDescription("uint32")
+  private int id;
 }

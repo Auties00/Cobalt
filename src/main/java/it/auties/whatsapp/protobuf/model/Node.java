@@ -1,6 +1,6 @@
 package it.auties.whatsapp.protobuf.model;
 
-import it.auties.whatsapp.cipher.Request;
+import it.auties.whatsapp.crypto.Request;
 import it.auties.whatsapp.utils.Nodes;
 import lombok.NonNull;
 

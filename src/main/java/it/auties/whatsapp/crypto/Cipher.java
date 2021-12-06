@@ -1,4 +1,4 @@
-package it.auties.whatsapp.cipher;
+package it.auties.whatsapp.crypto;
 
 import io.netty.buffer.ByteBufUtil;
 import it.auties.whatsapp.binary.BinaryArray;
@@ -129,54 +129,6 @@ public class Cipher {
     }
 
     @SneakyThrows
-    public BinaryArray hkdfExtract(@NonNull BinaryArray input) {
-        return hkdfExtract(input, null);
-    }
-
-    @SneakyThrows
-    public BinaryArray hkdfExtract(@NonNull BinaryArray input, byte[] key) {
-        var hmac = Mac.getInstance(HMAC_SHA256);
-        var salt = new SecretKeySpec(Objects.requireNonNullElse(key, new byte[hmac.getMacLength()]), HKDF);
-        hmac.init(salt);
-        return BinaryArray.of(hmac.doFinal(input.data()));
-    }
-
-    @SneakyThrows
-    public BinaryArray hkdfExtractAndExpand(@NonNull BinaryArray input, int size) {
-        return hkdfExtractAndExpand(input, null, size);
-    }
-
-    @SneakyThrows
-    public BinaryArray hkdfExtractAndExpand(@NonNull BinaryArray input, byte[] data, int size) {
-        return hkdfExpand(hkdfExtract(input), data, size);
-    }
-
-    @SneakyThrows
-    public BinaryArray hkdfExpand(@NonNull BinaryArray input, byte[] data, int size) {
-        var hmac = Mac.getInstance(HMAC_SHA256);
-        var hmacLength = hmac.getMacLength();
-        var inputSecret = new SecretKeySpec(input.data(), HMAC_SHA256);
-
-        hmac.init(inputSecret);
-        var rounds = (size + hmacLength - 1) / hmacLength;
-        var hkdfOutput = new byte[rounds * hmacLength];
-        var offset = 0;
-        var tLength = 0;
-
-        for (var i = 0; i < rounds ; i++) {
-            hmac.update(hkdfOutput, Math.max(0, offset - hmacLength), tLength);
-            hmac.update(Objects.requireNonNullElse(data, new byte[0]));
-            hmac.update((byte)(i + 1));
-            hmac.doFinal(hkdfOutput, offset);
-
-            tLength = hmacLength;
-            offset += hmacLength;
-        }
-
-        return BinaryArray.of(hkdfOutput).cut(size);
-    }
-
-    @SneakyThrows
     public byte[] sha256(byte @NonNull [] data) {
         var digest = MessageDigest.getInstance(SHA256);
         return digest.digest(data);
@@ -230,5 +182,12 @@ public class Cipher {
         var secureRandom = SecureRandom.getInstance(SHA_PRNG);
         secureRandom.nextBytes(key);
         return key;
+    }
+
+    @SneakyThrows
+    public int randomSenderKeyId() {
+        var key = new byte[32];
+        var secureRandom = SecureRandom.getInstance(SHA_PRNG);
+        return secureRandom.nextInt(2147483647);
     }
 }

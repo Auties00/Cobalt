@@ -3,9 +3,9 @@ package it.auties.whatsapp.socket;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.whatsapp.api.WhatsappConfiguration;
 import it.auties.whatsapp.binary.BinaryMessage;
-import it.auties.whatsapp.cipher.Cipher;
-import it.auties.whatsapp.cipher.NoiseHandshake;
-import it.auties.whatsapp.cipher.Request;
+import it.auties.whatsapp.crypto.Cipher;
+import it.auties.whatsapp.crypto.NoiseHandshake;
+import it.auties.whatsapp.crypto.Request;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.authentication.*;
@@ -199,6 +199,7 @@ public class WhatsappSocket {
     }
 
     public void disconnect(){
+
         try{
             session.close();
         }catch (IOException exception){

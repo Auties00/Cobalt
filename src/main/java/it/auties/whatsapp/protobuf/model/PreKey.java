@@ -1,7 +1,7 @@
 package it.auties.whatsapp.protobuf.model;
 
 import it.auties.whatsapp.binary.BinaryArray;
-import it.auties.whatsapp.cipher.Cipher;
+import it.auties.whatsapp.crypto.Cipher;
 
 public record PreKey(byte[] id, byte[] publicKey) {
     public static PreKey fromIndex(int index){
