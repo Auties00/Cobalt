@@ -33,7 +33,7 @@ public class Nodes {
      * @param list the generic list to parse
      * @return a non-null list containing only objects from {@code list} of type WhatsappNode
      */
-    public static @NonNull LinkedList<Node> filter(Object list) {
+    public static LinkedList<Node> findAll(Object list) {
         if(list == null){
             return new LinkedList<>();
         }
@@ -46,5 +46,19 @@ public class Nodes {
                 .filter(entry -> entry instanceof Node)
                 .map(Node.class::cast)
                 .collect(Collectors.toCollection(LinkedList::new));
+    }
+
+    /**
+     * Finds the first Node that matches the provided description
+     *
+     * @param nodes the non-null list of nodes to look through
+     * @param description the non-null description to look for
+     * @return a non-null list of nodes
+     */
+    public static List<Node> findAll(@NonNull List<Node> nodes, @NonNull String description) {
+        return nodes.stream()
+                .map(node -> node.findNodes(description))
+                .flatMap(Collection::stream)
+                .toList();
     }
 }

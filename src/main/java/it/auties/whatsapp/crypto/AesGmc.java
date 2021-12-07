@@ -11,7 +11,8 @@ import java.nio.ByteBuffer;
 
 public class AesGmc {
     private GCMBlockCipher cipher;
-    public void initialize(byte @NonNull [] key, byte[] data, long ivCounter, boolean encrypt){
+
+    public void initialize(byte @NonNull [] key, byte[] data, long ivCounter, boolean encrypt) {
         var secretKey = new KeyParameter(key);
         var iv = createIv(ivCounter);
         var cipher = new AESEngine();
@@ -28,14 +29,12 @@ public class AesGmc {
             var outputOffset = cipher.processBytes(bytes, 0, bytes.length, output, 0);
             cipher.doFinal(output, outputOffset);
             return output;
-        }catch (InvalidCipherTextException exception){
+        } catch (InvalidCipherTextException exception) {
             throw new IllegalArgumentException("Cannot process provided bytes", exception);
         }
     }
 
     private byte[] createIv(long count) {
-        return ByteBuffer.allocate(12)
-                .putLong(4, count)
-                .array();
+        return ByteBuffer.allocate(12).putLong(4, count).array();
     }
 }

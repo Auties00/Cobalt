@@ -36,9 +36,8 @@ public interface WhatsappListener {
      * When this event is called, any data, including chats and contact, is not guaranteed to be already in memory.
      * Instead, {@link WhatsappListener#onChats()} and {@link WhatsappListener#onContacts()} should be used.
      *
-     * @param me the user that logged in
      */
-    default void onLoggedIn(@NonNull ContactId me) {
+    default void onLoggedIn() {
     }
 
     /**

@@ -2,10 +2,11 @@ package it.auties.whatsapp.socket;
 
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.whatsapp.api.WhatsappConfiguration;
+import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.binary.BinaryMessage;
-import it.auties.whatsapp.crypto.Cipher;
+import it.auties.whatsapp.crypto.CipherHelper;
 import it.auties.whatsapp.crypto.Handshake;
-import it.auties.whatsapp.crypto.Request;
+import it.auties.whatsapp.exchange.Request;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.authentication.*;
@@ -25,8 +26,9 @@ import lombok.extern.java.Log;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.NoSuchElementException;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -79,14 +81,13 @@ public class WhatsappSocket {
         handshake.start(keys());
         handshake.updateHash(keys.ephemeralKeyPair().publicKey());
         Request.with(new HandshakeMessage(new ClientHello(keys.ephemeralKeyPair().publicKey())))
-                .send(session(), keys(), store(), true);
+                .sendWithPrologue(session(), keys(), store());
     }
 
     @OnMessage
     @SneakyThrows
     public void onBinary(byte @NonNull [] raw) {
         var message = new BinaryMessage(raw);
-        System.out.println("Incoming message: " + raw.length);
         if(message.length() == ERROR_CONSTANT){
             disconnect();
             return;
@@ -98,7 +99,14 @@ public class WhatsappSocket {
             return;
         }
 
-        var deciphered = Cipher.decipherMessage(message.decoded().data(), keys.readKey(), store.readCounter().getAndIncrement());
+        var oldCounter = store.readCounter().get();
+        var deciphered = decipherMessage(message);
+        var currentCounter = store.readCounter().get();
+        if(currentCounter - oldCounter != 1){
+            log.warning("Skipped %s IVs to decipher message with length %s".formatted(currentCounter - oldCounter, message.length()));
+        }
+
+        System.out.printf("Received: %s%n", deciphered);
         if(store().resolvePendingRequest(deciphered, false)){
             return;
         }
@@ -106,26 +114,34 @@ public class WhatsappSocket {
         digester.digest(deciphered);
     }
 
+    private Node decipherMessage(BinaryMessage message) {
+        try {
+            return CipherHelper.decipherMessage(message.decoded().data(), keys.readKey(), store.readCounter().getAndIncrement());
+        }catch (Throwable throwable){
+            return decipherMessage(message);
+        }
+    }
+
     @SneakyThrows
     private void authenticate(byte[] message) {
         var serverHello = ProtobufDecoder.forType(HandshakeMessage.class).decode(message).serverHello();
         handshake.updateHash(serverHello.ephemeral());
-        var sharedEphemeral = Cipher.calculateSharedSecret(serverHello.ephemeral(), keys.ephemeralKeyPair().privateKey());
+        var sharedEphemeral = CipherHelper.calculateSharedSecret(serverHello.ephemeral(), keys.ephemeralKeyPair().privateKey());
         handshake.mixIntoKey(sharedEphemeral.data());
 
         var decodedStaticText = handshake.cypher(serverHello.staticText(), false);
-        var sharedStatic = Cipher.calculateSharedSecret(decodedStaticText, keys.ephemeralKeyPair().privateKey());
+        var sharedStatic = CipherHelper.calculateSharedSecret(decodedStaticText, keys.ephemeralKeyPair().privateKey());
         handshake.mixIntoKey(sharedStatic.data());
         handshake.cypher(serverHello.payload(), false);
 
         var encodedKey = handshake.cypher(keys.companionKeyPair().publicKey(), true);
-        var sharedPrivate = Cipher.calculateSharedSecret(serverHello.ephemeral(), keys.companionKeyPair().privateKey());
+        var sharedPrivate = CipherHelper.calculateSharedSecret(serverHello.ephemeral(), keys.companionKeyPair().privateKey());
         handshake.mixIntoKey(sharedPrivate.data());
 
         var encodedPayload = handshake.cypher(createUserPayload(), true);
         var clientFinish = new ClientFinish(encodedKey, encodedPayload);
         Request.with(new HandshakeMessage(clientFinish))
-                .send(session(), keys(), store());
+                .sendWithNoResponse(session(), keys(), store());
         changeState(true);
         handshake.finish();
     }
@@ -224,29 +240,60 @@ public class WhatsappSocket {
         throwable.printStackTrace();
     }
 
+    public CompletableFuture<Node> send(Node node){
+        return node.toRequest(options())
+                .send(session(), keys(), store());
+    }
+
+    public CompletableFuture<Node> sendWithNoResponse(Node node){
+        return node.toRequest(options())
+                .sendWithNoResponse(session(), keys(), store());
+    }
+
+    public CompletableFuture<Node> sendQuery(Map<String, Object> query, Node body){
+        return send(Node.withChildren("iq", query, body));
+    }
+
+    public CompletableFuture<List<Node>> sendQuery(Node queryNode, Node... queryBody) {
+        var query = Node.withChildren("query", queryNode);
+        var list = Node.withChildren("list", queryBody);
+        var sync = Node.withChildren("usync",
+                of("sid", WhatsappUtils.buildRequestTag(options), "mode", "query", "last", "true", "index", "0", "context", "interactive"),
+                query, list);
+        return sendQuery(of("to", ContactId.WHATSAPP, "type", "get", "xmlns", "usync"), sync)
+                .thenApplyAsync(this::parseQueryResult);
+    }
+
+    private List<Node> parseQueryResult(Node result) {
+        return result.findNodes("usync")
+                .stream()
+                .map(node -> node.findNode("list"))
+                .map(node -> node.findNodes("user"))
+                .flatMap(Collection::stream)
+                .toList();
+    }
+
     private class Digester {
         private void digest(@NonNull Node node) {
-            System.out.printf("Received: %s%n", node);
             switch (node.description()){
                 case "iq" -> digestIq(node);
                 case "success" -> digestSuccess();
                 case "stream:error" -> digestError(node);
                 case "failure" -> digestFailure(node);
                 case "xmlstreamend" -> disconnect();
-                default -> System.err.println("Unhandled");
             }
         }
 
         private void digestFailure(Node node) {
-            Validate.isTrue(node.attributes().get("reason").equals(401),
-                    "WhatsappWeb failure at %s, status code: %s",
-                    node.attributes().get("location"), node.attributes().get("reason"));
+            Validate.isTrue(node.attributes().getLong("reason") == 401,
+                    "Socket failed at %s with status code %s",
+                    node.attributes().getString("location"), node.attributes().getLong("reason"));
             reconnect();
         }
 
         private void digestError(Node node) {
-            var code = node.attributes().getOrDefault("code", "");
-            if(code.equals("515")){
+            var code = node.attributes().getLong("code");
+            if(code == 515){
                 reconnect();
                 return;
             }
@@ -258,6 +305,9 @@ public class WhatsappSocket {
         private void digestSuccess() {
             sendPreKeys();
             confirmConnection();
+            Executors.newSingleThreadScheduledExecutor()
+                    .scheduleAtFixedRate(this::ping, 0L, 20L, TimeUnit.SECONDS);
+            store.callListeners(WhatsappListener::onLoggedIn);
         }
 
         private void digestIq(Node node) {
@@ -270,15 +320,13 @@ public class WhatsappSocket {
             switch (container.description()){
                 case "pair-device" -> generateQrCode(node, container);
                 case "pair-success" -> confirmQrCode(node, container);
-                case "active" -> store().callListeners(listener -> listener.onLoggedIn(keys().companion()));
                 default -> throw new IllegalArgumentException("Cannot handle iq request, unknown description. %s%n".formatted(container.description()));
             }
         }
 
         private void confirmConnection() {
-            Node.withChildren("iq", of("id", WhatsappUtils.buildRequestTag(options()), "to", ContactId.WHATSAPP, "xmlns", "passive", "type", "set"), Node.with("active"))
-                    .toRequest()
-                    .send(session(), keys(), store());
+            send(Node.withChildren("iq", of("to", ContactId.WHATSAPP, "xmlns", "passive", "type", "set"),
+                    Node.with("active")));
         }
 
         private void sendPreKeys() {
@@ -287,9 +335,8 @@ public class WhatsappSocket {
             }
 
             keys().preKeys(true);
-            Node.withChildren("iq", of("id", WhatsappUtils.buildRequestTag(options()), "xmlns", "encrypt", "type", "set", "to", ContactId.WHATSAPP), createPreKeysContent())
-                    .toRequest()
-                    .send(session(), keys(), store());
+            send(Node.withChildren("iq", of("xmlns", "encrypt", "type", "set", "to", ContactId.WHATSAPP),
+                    createPreKeysContent()));
         }
 
         private Node[] createPreKeysContent() {
@@ -320,14 +367,11 @@ public class WhatsappSocket {
         private void generateQrCode(Node node, Node container) {
             printQrCode(container);
             sendConfirmNode(node, null);
-            Executors.newSingleThreadScheduledExecutor()
-                    .scheduleAtFixedRate(this::ping, 0L, 30L, TimeUnit.SECONDS);
         }
 
         private void ping() {
-            Node.with("iq", of("id", WhatsappUtils.buildRequestTag(options()), "to", ContactId.WHATSAPP, "type", "get", "xmlns", "w:p"), Node.with("ping"))
-                    .toRequest()
-                    .send(session(), keys(), store());
+            var ping = Node.with("ping");
+            send(Node.withChildren("iq", of("to", ContactId.WHATSAPP, "type", "get", "xmlns", "w:p"), ping));
         }
 
         private void printQrCode(Node container) {
@@ -342,64 +386,51 @@ public class WhatsappSocket {
         }
 
         private String decodeQrCode(Node container) {
-            return container.findNodeByDescription("ref")
-                    .filter(ref -> ref.content() instanceof byte[])
-                    .map(ref -> (byte[]) ref.content())
-                    .map(String::new)
-                    .orElseThrow(() -> new NoSuchElementException("Pairing error: missing qr code reference"));
+            var bytes = (byte[]) container.findNode("ref").content();
+            return new String(bytes, StandardCharsets.UTF_8);
         }
 
         @SneakyThrows
         private void confirmQrCode(Node node, Node container) {
-               var userIdentity = fetchJid(container);
-               keys().companion(userIdentity);
+            var userIdentity = fetchJid(container);
+            keys().companion(userIdentity);
 
-               var deviceIdentity = fetchDeviceIdentity(container);
-               var advIdentity = ProtobufDecoder.forType(ADVSignedDeviceIdentityHMAC.class).decode(deviceIdentity);
-               var advSign = Cipher.hmacSha256(of(advIdentity.details()), of(keys().companionKey()));
-               Validate.isTrue(Arrays.equals(advIdentity.hmac(), advSign.data()), "Cannot login: Hmac validation failed!", SecurityException.class);
+            var deviceIdentity = (byte[]) container.findNode("device-identity").content();
+            var advIdentity = ProtobufDecoder.forType(ADVSignedDeviceIdentityHMAC.class).decode(deviceIdentity);
+            var advSign = CipherHelper.hmacSha256(of(advIdentity.details()), of(keys().companionKey()));
+            Validate.isTrue(Arrays.equals(advIdentity.hmac(), advSign.data()), "Cannot login: Hmac validation failed!", SecurityException.class);
 
-               var account = ProtobufDecoder.forType(ADVSignedDeviceIdentity.class).decode(advIdentity.details());
-               var message = of(new byte[]{6, 0})
-                       .append(account.details())
-                       .append(keys().identityKeyPair().publicKey())
-                       .data();
-               Validate.isTrue(Cipher.verifySignature(account.accountSignatureKey(), message, account.accountSignature()),
-                       "Cannot login: Hmac validation failed!", SecurityException.class);
+            var account = ProtobufDecoder.forType(ADVSignedDeviceIdentity.class).decode(advIdentity.details());
+            var message = of(new byte[]{6, 0})
+                    .append(account.details())
+                    .append(keys().identityKeyPair().publicKey())
+                    .data();
+            Validate.isTrue(CipherHelper.verifySignature(account.accountSignatureKey(), message, account.accountSignature()),
+                    "Cannot login: Hmac validation failed!", SecurityException.class);
 
-               var deviceSignatureMessage = of(new byte[]{6, 1})
-                       .append(account.details())
-                       .append(keys().identityKeyPair().publicKey())
-                       .append(account.accountSignature())
-                       .data();
-               var deviceSignature = Cipher.calculateSignature(keys().identityKeyPair().privateKey(), deviceSignatureMessage);
+            var deviceSignatureMessage = of(new byte[]{6, 1})
+                    .append(account.details())
+                    .append(keys().identityKeyPair().publicKey())
+                    .append(account.accountSignature())
+                    .data();
+            var deviceSignature = CipherHelper.calculateSignature(keys().identityKeyPair().privateKey(), deviceSignatureMessage);
 
-               var keyIndex = ProtobufDecoder.forType(ADVDeviceIdentity.class).decode(account.details()).keyIndex();
-               var identity = encode(account.deviceSignature(deviceSignature).accountSignature(null));
-               var identityNode = Node.with("device-identity", of("key-index", keyIndex), identity);
-               var content = Node.withChildren("pair-device-sign", identityNode);
+            var keyIndex = ProtobufDecoder.forType(ADVDeviceIdentity.class).decode(account.details()).keyIndex();
+            var identity = encode(account.deviceSignature(deviceSignature).accountSignature(null));
+            var identityNode = Node.with("device-identity", of("key-index", keyIndex), identity);
+            var content = Node.withChildren("pair-device-sign", identityNode);
 
-               sendConfirmNode(node, content);
+            sendConfirmNode(node, content);
         }
 
         private void sendConfirmNode(Node node, Node content) {
-            Node.withChildren("iq", of("id", WhatsappUtils.readNullableId(node), "to", ContactId.WHATSAPP, "type", "result"), content)
-                    .toRequest()
-                    .send(session(), keys(), store());
-        }
-
-        private byte[] fetchDeviceIdentity(Node container) {
-            return container.findNodeByDescription("device-identity")
-                    .map(Node::content)
-                    .filter(data -> data instanceof byte[])
-                    .map(data -> (byte[]) data)
-                    .orElseThrow(() -> new NoSuchElementException("Cannot find device identity body for authentication in %s".formatted(container)));
+            send(Node.withChildren("iq", of("id", WhatsappUtils.readNullableId(node), "to", ContactId.WHATSAPP, "type", "result"), content));
         }
 
         private ContactId fetchJid(Node container) {
-            return container.findNodeByDescription("device")
-                    .map(node -> (ContactId) node.attributes().get("jid"))
-                    .orElseThrow(() -> new NoSuchElementException("Cannot find jid attribute in %s".formatted(container)));
+            var node = Objects.requireNonNull(container.findNode("device"));
+            return node.attributes().getJid("jid")
+                    .orElseThrow(() -> new NoSuchElementException("Missing identity jid for session"));
         }
     }
 }

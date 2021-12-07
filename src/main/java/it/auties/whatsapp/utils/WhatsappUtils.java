@@ -63,6 +63,6 @@ public class WhatsappUtils {
      * @return a nullable string
      */
     public String readNullableId(@NonNull Node node){
-        return (String) node.attributes().getOrDefault("id", null);
+        return node.attributes().getString("id", null);
     }
 }

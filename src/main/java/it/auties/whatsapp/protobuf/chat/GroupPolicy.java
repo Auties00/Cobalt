@@ -23,18 +23,18 @@ public enum GroupPolicy {
      * Returns a GroupPolicy based on a boolean value obtained from Whatsapp
      *
      * @param input the boolean value obtained from Whatsapp
-     * @return a lowercase non-null String
+     * @return a non-null GroupPolicy
      */
-    public static @NonNull GroupPolicy forData(boolean input) {
+    public static GroupPolicy forData(boolean input) {
         return input ? ADMINS : ANYONE;
     }
 
     /**
      * Returns a boolean parsed as a string for Whatsapp
      *
-     * @return a lowercase non-null String
+     * @return a non-null String
      */
-    public @NonNull String data() {
+    public String data() {
         return String.valueOf(this == ADMINS);
     }
 }

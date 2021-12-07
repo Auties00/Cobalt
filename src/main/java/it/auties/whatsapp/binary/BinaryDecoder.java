@@ -59,11 +59,8 @@ public record BinaryDecoder(@NonNull ByteBuf buffer){
 
         var description = readString();
         var attrs = readAttributes(size);
-        if (size % 2 != 0) {
-            return new Node(description, attrs, null);
-        }
-
-        return new Node(description, attrs, read(false));
+        return size % 2 != 0 ? Node.with(description, attrs, null)
+                : Node.with(description, attrs, read(false));
     }
 
     public String readString() {

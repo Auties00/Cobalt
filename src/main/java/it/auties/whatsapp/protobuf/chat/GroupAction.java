@@ -35,7 +35,7 @@ public enum GroupAction {
      *
      * @return a lowercase non-null String
      */
-    public @NonNull String data() {
+    public String data() {
         return name().toLowerCase();
     }
 }

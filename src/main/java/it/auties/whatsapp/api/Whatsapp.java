@@ -1,6 +1,10 @@
 package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.api.RegisterListener.Scanner;
+import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.whatsapp.exchange.GroupResponse;
+import it.auties.whatsapp.exchange.HasWhatsappResponse;
+import it.auties.whatsapp.exchange.StatusResponse;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.chat.Chat;
@@ -8,6 +12,7 @@ import it.auties.whatsapp.protobuf.chat.GroupAction;
 import it.auties.whatsapp.protobuf.chat.GroupPolicy;
 import it.auties.whatsapp.protobuf.chat.GroupSetting;
 import it.auties.whatsapp.protobuf.contact.Contact;
+import it.auties.whatsapp.protobuf.contact.ContactId;
 import it.auties.whatsapp.protobuf.contact.ContactStatus;
 import it.auties.whatsapp.protobuf.info.ContextInfo;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
@@ -15,12 +20,21 @@ import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
 import it.auties.whatsapp.protobuf.message.model.Message;
 import it.auties.whatsapp.protobuf.model.Node;
 import it.auties.whatsapp.socket.WhatsappSocket;
+import it.auties.whatsapp.utils.Nodes;
 import it.auties.whatsapp.utils.Validate;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.NonNull;
 
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+
+import static it.auties.whatsapp.protobuf.model.Node.with;
+import static it.auties.whatsapp.protobuf.model.Node.withChildren;
+import static java.util.Map.of;
 
 /**
  * A class used to interface a user to WhatsappWeb's WebSocket.
@@ -28,11 +42,32 @@ import java.util.concurrent.CompletableFuture;
  * It can be configured using a default configuration or a custom one.
  * Multiple instances of this class can be initialized, though it is not advisable as; is a singleton and cannot distinguish between the data associated with each session.
  */
-public record Whatsapp(WhatsappSocket socket) {
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+public class Whatsapp {
+    private WhatsappSocket socket;
+
     public Whatsapp(){
         this(new WhatsappSocket(WhatsappConfiguration.defaultOptions(), new WhatsappStore(), WhatsappKeys.fromMemory()));
         Scanner.scan(this)
                 .forEach(this::registerListener);
+    }
+
+    /**
+     * Returns the store associated with this session
+     *
+     * @return a non-null WhatsappStore
+     */
+    public WhatsappStore store(){
+        return socket.store();
+    }
+
+    /**
+     * Returns the keys associated with this session
+     *
+     * @return a non-null WhatsappKeys
+     */
+    public WhatsappKeys keys(){
+        return socket.keys();
     }
 
     /**
@@ -110,7 +145,9 @@ public record Whatsapp(WhatsappSocket socket) {
      * @return a CompletableFuture    
      */
     public CompletableFuture<?> subscribeToContactPresence(@NonNull Contact contact) {
-        return null;
+        // Node[description=presence, attributes={id=54595.12796-126, to=97@s.whatsapp.net, type=subscribe}, content=null]
+        // No response
+        return socket.sendWithNoResponse(with("presence", of("to", contact.id(), "type", "subscribe"), null));
     }
 
     /**
@@ -182,34 +219,87 @@ public record Whatsapp(WhatsappSocket socket) {
     }
 
     /**
-     * Executes a query to determine whether a Whatsapp account linked
-     * to the supplied phone number exists.
+     * Executes a query to determine whether any number of jids have an account on Whatsapp
      *
-     * @param phoneNumber the phone number to check
-     * @return a CompletableFuture 
+     * @param jids the contacts to check
+     * @return a CompletableFuture that wraps a non-null list of HasWhatsappResponse
      */
-    public CompletableFuture<Boolean> hasWhatsapp(@NonNull String phoneNumber) {
-        return null;
+    public CompletableFuture<List<HasWhatsappResponse>> hasWhatsapp(@NonNull ContactId... jids) {
+        var contactNodes = Arrays.stream(jids)
+                .map(jid -> with("contact", "+%s".formatted(jid.user())))
+                .toArray(Node[]::new);
+        return socket.sendQuery(with("contact"), withChildren("user", contactNodes))
+                .thenApplyAsync(nodes -> nodes.stream().map(HasWhatsappResponse::new).toList());
+    }
+
+    /**
+     * Queries the block list
+     *
+     * @return a CompletableFuture that wraps a non-null list of ContactId
+     */
+    public CompletableFuture<List<ContactId>> queryBlockList() {
+        return socket.sendQuery(of("xmlns", "blocklist", "to", ContactId.WHATSAPP, "type", "get"), null)
+                .thenApplyAsync(this::parseBlockList);
+    }
+
+    private List<ContactId> parseBlockList(Node result) {
+        return result.findNode("list")
+                .findNodes("item")
+                .stream()
+                .map(item -> item.attributes().getJid("jid").orElseThrow())
+                .toList();
     }
 
     /**
      * Queries the written whatsapp status of a Contact
      *
      * @param contact the target contact
-     * @return a CompletableFuture 
+     * @return a CompletableFuture that wraps a non-null list of StatusResponse
      */
-    public CompletableFuture<?> queryUserStatus(@NonNull Contact contact) {
-        return null;
+    public CompletableFuture<List<StatusResponse>> queryUserStatus(@NonNull Contact contact) {
+        var query = with("status");
+        var body = with("user", of("jid", ContactId.of(contact.id().user())), null);
+        return socket.sendQuery(query, body)
+                .thenApplyAsync(response -> Nodes.findAll(response, "status"))
+                .thenApplyAsync(nodes -> nodes.stream().map(StatusResponse::new).toList());
     }
 
     /**
-     * Queries the profile picture of a Chat
+     * Queries the profile picture of a chat.
      *
-     * @param chat the target chat
-     * @return a CompletableFuture 
+     * @param chat the chat to query
+     * @return a CompletableFuture that wraps nullable jpg url hosted on Whatsapp's servers
      */
-    public CompletableFuture<?> queryChatPicture(@NonNull Chat chat) {
-        return null;
+    public CompletableFuture<String> queryChatPicture(@NonNull Chat chat) {
+        return queryChatPicture(chat.id());
+    }
+
+    /**
+     * Queries the profile picture of a chat.
+     *
+     * @param contact the contact to query
+     * @return a CompletableFuture that wraps nullable jpg url hosted on Whatsapp's servers
+     */
+    public CompletableFuture<String> queryChatPicture(@NonNull Contact contact) {
+        return queryChatPicture(contact.id());
+    }
+
+    /**
+     * Queries the profile picture of a chat.
+     *
+     * @param jid the jid of the chat to query
+     * @return a CompletableFuture that wraps nullable jpg url hosted on Whatsapp's servers
+     */
+    public CompletableFuture<String> queryChatPicture(@NonNull ContactId jid) {
+        var body = Node.with("picture", of("query", "url"), null);
+        return socket.sendQuery(of("xmlns", "w:profile:picture", "to", ContactId.WHATSAPP, "type", "get", "target", jid), body)
+                .thenApplyAsync(this::parseChatPicture);
+    }
+
+    private String parseChatPicture(Node result) {
+        return Optional.ofNullable(result.findNode("picture"))
+                .map(picture -> picture.attributes().getString("url", null))
+                .orElse(null);
     }
 
     /**
@@ -219,8 +309,12 @@ public record Whatsapp(WhatsappSocket socket) {
      * @return a CompletableFuture     
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    public CompletableFuture<?> queryGroupMetadata(@NonNull Chat chat) {
-        return null;
+    public CompletableFuture<GroupResponse> queryGroupMetadata(@NonNull Chat chat) {
+        // Node[description=iq, attributes={xmlns=w:g2, to=79-@g.us, id=54008.49510-688, type=get}, content=[Node[description=query, attributes={request=interactive}, content=null]]]
+        // Node[description=iq, attributes={from=79-@g.us, id=54008.49510-688, type=result}, content=[Node[description=group, attributes={creator=79@s.whatsapp.net, p_v_id=13456, a_v_id=94276, subject=Coglions Boys, s_t=, id=79-, creation=}, content=[Node[description=participant, attributes={jid=8@s.whatsapp.net}, content=null], Node[description=participant, attributes={jid=19@s.whatsapp.net}, content=null], Node[description=participant, attributes={jid=79@s.whatsapp.net}, content=null], Node[description=participant, attributes={jid=34@s.whatsapp.net, type=admin}, content=null], Node[description=description, attributes={}, content=null]]]]]
+        return socket.sendQuery(of("xmlns", "w:g2", "to", chat.id(), "type", "get"), with("query", of("request", "interactive"), null))
+                .thenApplyAsync(result -> result.findNode("group"))
+                .thenApplyAsync(GroupResponse::new);
     }
 
     /**
@@ -230,8 +324,9 @@ public record Whatsapp(WhatsappSocket socket) {
      * @return a CompletableFuture     
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    public CompletableFuture<?> queryGroupInviteCode(@NonNull Chat chat) {
-        return null;
+    public CompletableFuture<String> queryGroupInviteCode(@NonNull Chat chat) {
+        return socket.sendQuery(of("xmlns", "w:g2", "to", chat.id(), "type", "get"), with("invite"))
+                .thenApplyAsync(result -> result.findNode("invite").attributes().getString("code"));
     }
 
     /**
@@ -241,28 +336,7 @@ public record Whatsapp(WhatsappSocket socket) {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> queryGroupsInCommon(@NonNull Contact contact) {
-        return null;
-    }
-
-    /**
-     * Queries a chat that is not in memory associated with a contact.
-     * This method does not add said chat to; automatically.
-     *
-     * @param contact the target contact
-     * @return a CompletableFuture 
-     */
-    public CompletableFuture<?> queryChat(@NonNull Contact contact) {
-        return null;
-    }
-
-    /**
-     * Queries a chat that is not in memory associated by its jid.
-     * This method does not add said chat to; automatically.
-     *
-     * @param jid the target jid
-     * @return a CompletableFuture 
-     */
-    public CompletableFuture<?> queryChat(@NonNull String jid) {
+        // Unknown
         return null;
     }
 
@@ -274,51 +348,7 @@ public record Whatsapp(WhatsappSocket socket) {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> queryFavouriteMessagesInChat(@NonNull Chat chat, int count) {
-        return null;
-    }
-
-    /**
-     * Tries to load in chat the entire chat history for a chat.
-     * This process might take several minutes for chats that contain thousands of messages.
-     *
-     * @param chat the target chat
-     * @return a CompletableFuture 
-     */
-    public CompletableFuture<?> loadEntireChatHistory(@NonNull Chat chat) {
-        return null;
-    }
-
-
-    /**
-     * Loads in memory twenty messages before the last message in memory for a chat in chronological terms
-     *
-     * @param chat the target chat
-     * @return a CompletableFuture 
-     */
-    public CompletableFuture<?> loadChatHistory(@NonNull Chat chat) {
-        return null;
-    }
-
-    /**
-     * Loads in memory a provided number of messages before the last message in memory for a chat in chronological terms
-     *
-     * @param chat         the target chat
-     * @param messageCount the number of messages to load
-     * @return a CompletableFuture 
-     */
-    public CompletableFuture<?> loadChatHistory(@NonNull Chat chat, int messageCount) {
-        return null;
-    }
-
-    /**
-     * Loads in memory a provided number of messages before a provided message in memory for a chat in chronological terms
-     *
-     * @param chat         the target chat
-     * @param lastMessage  the last message that should be queried chronologically, exclusive
-     * @param messageCount the amount of messages to load
-     * @return a CompletableFuture 
-     */
-    public CompletableFuture<?> loadChatHistory(@NonNull Chat chat, @NonNull MessageInfo lastMessage, int messageCount) {
+        // Unknown
         return null;
     }
 
@@ -329,7 +359,7 @@ public record Whatsapp(WhatsappSocket socket) {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> changePresence(@NonNull ContactStatus presence) {
-        return null;
+        return socket.send(with("presence", of("type", presence.data()), null));
     }
 
     /**
@@ -340,7 +370,7 @@ public record Whatsapp(WhatsappSocket socket) {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> changePresence(@NonNull Chat chat, @NonNull ContactStatus presence) {
-        return null;
+        return socket.send(with("presence", of("to", chat.id(), "type", presence.data()), null));
     }
 
     /**
@@ -681,40 +711,30 @@ public record Whatsapp(WhatsappSocket socket) {
      *
      * @param subject  the new group's name
      * @param contacts at least one contact to add to the group
-     * @return a CompletableFuture     
-     * @throws IllegalArgumentException if the name is blank
-     * @throws IllegalArgumentException if at least one contact isn't provided
-     * @throws IllegalArgumentException if; contains your jid
-     * @throws IllegalStateException    inside the CompletableFuture if the contact cannot be created
+     * @return a CompletableFuture
      */
-    public CompletableFuture<?> createGroup(@NonNull String subject, @NonNull Contact... contacts) {
-        return null;
+    public CompletableFuture<GroupResponse> createGroup(@NonNull String subject, @NonNull Contact... contacts) {
+        var participants = Arrays.stream(contacts)
+                .map(contact -> with("participant", of("jid", contact.id()), null))
+                .toArray(Node[]::new);
+        var body = withChildren("create", of("subject", subject, "key", BinaryArray.random(12).toHex()), participants);
+        return socket.sendQuery(of("xmlns", "w:g2", "to", "g.us", "type", "set"), body)
+                .thenApplyAsync(response -> response.findNode("group"))
+                .thenApplyAsync(GroupResponse::new);
     }
 
-    /**
-     * Searches for a specific amount of messages globally, including data that is not in memory.
-     * If there are too many result the {@code message} parameter should be specified in order to view the next pages.
-     *
-     * @param search the keyword to search
-     * @param count  the number of messages to query
-     * @param page   the page to query
-     * @return a CompletableFuture 
-     */
-    public CompletableFuture<?> search(@NonNull String search, int count, int page) {
-        return null;
+    private void starMessagePlaceholder() {
+        // Sent Binary Message Node[description=iq, attributes={xmlns=w:sync:app:state, to=s.whatsapp.net, id=54595.12796-297, type=set}, content=[Node[description=sync, attributes={}, content=[Node[description=collection, attributes={name=regular_high, return_snapshot=false, version=13}, content=[Node[description=patch, attributes={}, content=[B@1cd3e518]]]]]]]
+        // Received Binary Message Node[description=iq, attributes={from=s.whatsapp.net, id=54595.12796-297, type=result}, content=[Node[description=sync, attributes={}, content=[Node[description=collection, attributes={name=regular_high, version=14}, content=null]]]]]
     }
 
-    /**
-     * Searches for a specific amount of messages in a specific chat's messages, including ones that are not in memory
-     * If there are too many result the {@code message} parameter should be specified in order to view the next pages
-     *
-     * @param search the keyword to search
-     * @param chat   the target chat
-     * @param count  the number of messages to query
-     * @param page   the page to query
-     * @return a CompletableFuture 
-     */
-    public CompletableFuture<?> searchInChat(@NonNull String search, @NonNull Chat chat, int count, int page) {
-        return null;
+    private void unstarMessagePlaceholder() {
+        // Sent Binary Message Node[description=iq, attributes={xmlns=w:sync:app:state, to=s.whatsapp.net, id=54595.12796-301, type=set}, content=[Node[description=sync, attributes={}, content=[Node[description=collection, attributes={name=regular_high, return_snapshot=false, version=14}, content=[Node[description=patch, attributes={}, content=[B@73ce9a0b]]]]]]]
+        // Received Binary Message Node[description=iq, attributes={from=s.whatsapp.net, id=54595.12796-301, type=result}, content=[Node[description=sync, attributes={}, content=[Node[description=collection, attributes={name=regular_high, version=15}, content=null]]]]]
+    }
+
+    private void createMediaConnectionPlaceholder(){
+        // Sent Binary Message Node[description=iq, attributes={xmlns=w:m, to=s.whatsapp.net, id=54595.12796-319, type=set}, content=[Node[description=media_conn, attributes={}, content=null]]]
+        //Received Binary Message Node[description=iq, attributes={from=s.whatsapp.net, id=54595.12796-319, type=result}, content=[Node[description=media_conn, attributes={auth=AWQkTwWMKc8evmNls99lMA2th8gPHKz474hwoYbOXBhVv3KcKKE_aCC1mew, auth_ttl=21600, max_buckets=12, ttl=300}, content=[Node[description=host, attributes={hostname=media-mxp2-1.cdn.whatsapp.net, fallback_class=pop, fallback_hostname=media-fco2-1.cdn.whatsapp.net, fallback_ip6=2a03:2880:f269:c1:face:b00c:0:167, fallback_ip4=157.240.231.60, type=primary, ip4=157.240.203.60, class=pop, ip6=2a03:2880:f26d:c2:face:b00c:0:167}, content=[Node[description=download, attributes={}, content=null]]], Node[description=host, attributes={hostname=media.fmxp9-1.fna.whatsapp.net, fallback_class=pop, fallback_hostname=media-mxp1-1.cdn.whatsapp.net, fallback_ip6=2a03:2880:f208:c5:face:b00c:0:167, fallback_ip4=31.13.86.51, type=primary, ip4=91.81.217.226, class=fna, ip6=2a01:8d0:7:15:face:b00c:3333:7020}, content=[Node[description=upload, attributes={}, content=null], Node[description=download, attributes={}, content=[Node[description=video, attributes={}, content=null], Node[description=image, attributes={}, content=null], Node[description=gif, attributes={}, content=null], Node[description=sticker, attributes={}, content=null]]], Node[description=download_buckets, attributes={}, content=[Node[description=0, attributes={}, content=null]]]]], Node[description=host, attributes={hostname=mmg.whatsapp.net, type=fallback, class=pop}, content=null]]]]]
     }
 }

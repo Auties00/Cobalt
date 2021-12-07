@@ -2,6 +2,7 @@ package it.auties.whatsapp.protobuf.temp;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

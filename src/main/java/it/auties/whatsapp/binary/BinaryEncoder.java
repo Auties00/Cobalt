@@ -174,7 +174,7 @@ public record BinaryEncoder(@NonNull ByteBuf buffer){
     }
 
     private void writeAttributes(Node input) {
-        input.attributes().forEach((key, value) -> {
+        input.attributes().map().forEach((key, value) -> {
             writeString(key);
             write(value);
         });
@@ -210,7 +210,7 @@ public record BinaryEncoder(@NonNull ByteBuf buffer){
 
     private void writeList(Collection<?> collection) {
         writeInt(collection.size());
-        Nodes.filter(collection).forEach(this::writeNode);
+        Nodes.findAll(collection).forEach(this::writeNode);
     }
 
     private void writeBytes(byte[] bytes) {

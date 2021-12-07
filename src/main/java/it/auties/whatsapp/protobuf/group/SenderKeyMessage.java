@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp.binary.BinaryArray;
-import it.auties.whatsapp.crypto.Cipher;
+import it.auties.whatsapp.crypto.CipherHelper;
 import it.auties.whatsapp.utils.Validate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -69,7 +69,7 @@ public class SenderKeyMessage {
   public SenderKeyMessage(int keyId, int iteration, byte[] ciphertext, byte[] signatureKey) {
     var version = (byte) ((CURRENT_VERSION << 4 | CURRENT_VERSION) & 0xFF);
     var message = ProtobufEncoder.encode(new SenderKeyMessage(keyId, iteration, ciphertext));
-    var signature = Cipher.calculateSignature(signatureKey, BinaryArray.of(version).append(message).data());
+    var signature = CipherHelper.calculateSignature(signatureKey, BinaryArray.of(version).append(message).data());
     this.serialized = BinaryArray.of(version).append(message).append(signature).data();
     this.version = CURRENT_VERSION;
     this.id = keyId;
@@ -81,7 +81,7 @@ public class SenderKeyMessage {
     var signatureKeyBinary = BinaryArray.of(signatureKey);
     var message = signatureKeyBinary.slice(serialized.length - SIGNATURE_LENGTH);
     var signature = signatureKeyBinary.slice(serialized.length - SIGNATURE_LENGTH, SIGNATURE_LENGTH);
-    Validate.isTrue(Cipher.verifySignature(signatureKey, message.data(), signature.data()), "Invalid signature");
+    Validate.isTrue(CipherHelper.verifySignature(signatureKey, message.data(), signature.data()), "Invalid signature");
   }
 
   public int type() {

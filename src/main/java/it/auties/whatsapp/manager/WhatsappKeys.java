@@ -4,11 +4,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.whatsapp.binary.BinaryArray;
-import it.auties.whatsapp.crypto.Cipher;
+import it.auties.whatsapp.crypto.CipherHelper;
 import it.auties.whatsapp.protobuf.contact.ContactId;
 import it.auties.whatsapp.protobuf.group.SenderKeyName;
 import it.auties.whatsapp.protobuf.group.SenderKeyRecord;
-import it.auties.whatsapp.protobuf.group.SenderKeyState;
 import it.auties.whatsapp.protobuf.group.SenderKeyStructure;
 import it.auties.whatsapp.protobuf.key.IdentityKeyPair;
 import it.auties.whatsapp.protobuf.key.SignedKeyPair;
@@ -118,12 +117,12 @@ public class WhatsappKeys {
     }
 
     public WhatsappKeys() {
-        this.id = Cipher.randomRegistrationId();
-        this.companionKeyPair = Cipher.randomKeyPair();
-        this.ephemeralKeyPair = Cipher.randomKeyPair();
-        this.identityKeyPair = Cipher.randomKeyPair();
-        this.signedKeyPair = Cipher.randomKeyPair(id, identityKeyPair());
-        this.companionKey = Cipher.randomSenderKey();
+        this.id = CipherHelper.randomRegistrationId();
+        this.companionKeyPair = CipherHelper.randomKeyPair();
+        this.ephemeralKeyPair = CipherHelper.randomKeyPair();
+        this.identityKeyPair = CipherHelper.randomKeyPair();
+        this.signedKeyPair = CipherHelper.randomKeyPair(id, identityKeyPair());
+        this.companionKey = CipherHelper.randomSenderKey();
         this.senderKeyStructures = new ArrayList<>();
     }
 

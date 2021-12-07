@@ -4,8 +4,8 @@ import io.netty.buffer.ByteBufUtil;
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.binary.BinaryDecoder;
 import it.auties.whatsapp.protobuf.key.IdentityKeyPair;
-import it.auties.whatsapp.protobuf.model.Node;
 import it.auties.whatsapp.protobuf.key.SignedKeyPair;
+import it.auties.whatsapp.protobuf.model.Node;
 import it.auties.whatsapp.utils.Buffers;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -36,11 +36,11 @@ import java.security.spec.X509EncodedKeySpec;
 /**
  * This utility class provides helper functionality to easily encrypt and decrypt data
  * This class should only be used for WhatsappWeb's WebSocket buffer operations
- *
+ * <p>
  * TODO: Refactor and migrate off curve25519 library and decouple in multiple classes
  */
 @UtilityClass
-public class Cipher {
+public class CipherHelper {
     private final BinaryDecoder DECODER = new BinaryDecoder();
     private final byte[] HANDSHAKE_PROLOGUE = new byte[]{87, 65, 5, 2};
     private final String CURVE_25519 = "X25519";
@@ -74,20 +74,18 @@ public class Cipher {
     }
 
     @SneakyThrows
-    public boolean verifySignature(byte @NonNull [] publicKey, byte @NonNull [] message, byte @NonNull [] signature){
-        return Curve25519.getInstance(Curve25519.BEST)
-                .verifySignature(publicKey, message, signature);
+    public boolean verifySignature(byte @NonNull [] publicKey, byte @NonNull [] message, byte @NonNull [] signature) {
+        return Curve25519.getInstance(Curve25519.BEST).verifySignature(publicKey, message, signature);
     }
 
     @SneakyThrows
     public byte[] calculateSignature(byte @NonNull [] privateKey, byte @NonNull [] message) {
-        return Curve25519.getInstance(Curve25519.BEST)
-                .calculateSignature(privateKey, message);
+        return Curve25519.getInstance(Curve25519.BEST).calculateSignature(privateKey, message);
     }
 
     @SneakyThrows
     public byte[] raw(@NonNull PublicKey publicKey) {
-        return switch (PublicKeyFactory.createKey(publicKey.getEncoded())){
+        return switch (PublicKeyFactory.createKey(publicKey.getEncoded())) {
             case X25519PublicKeyParameters x25519 -> x25519.getEncoded();
             case Ed25519PublicKeyParameters ed25519 -> ed25519.getEncoded();
             default -> throw new IllegalStateException("Unsupported key type");
@@ -96,7 +94,7 @@ public class Cipher {
 
     @SneakyThrows
     public byte[] raw(@NonNull PrivateKey privateKey) {
-        return switch (PrivateKeyFactory.createKey(privateKey.getEncoded())){
+        return switch (PrivateKeyFactory.createKey(privateKey.getEncoded())) {
             case X25519PrivateKeyParameters x25519 -> x25519.getEncoded();
             case Ed25519PrivateKeyParameters ed25519 -> ed25519.getEncoded();
             default -> throw new IllegalStateException("Unsupported key type");
@@ -137,11 +135,11 @@ public class Cipher {
         return BinaryArray.of(sha256(data.data()));
     }
 
-    public byte[] handshakePrologue(){
+    public byte[] handshakePrologue() {
         return HANDSHAKE_PROLOGUE;
     }
 
-    public Node decipherMessage(byte @NonNull [] message, @NonNull BinaryArray readKey, long iv){
+    public Node decipherMessage(byte @NonNull [] message, @NonNull BinaryArray readKey, long iv) {
         var aes = new AesGmc();
         aes.initialize(readKey.data(), null, iv, false);
         var plainText = aes.processBytes(message);
@@ -150,16 +148,12 @@ public class Cipher {
 
     public BinaryArray cipherMessage(byte @NonNull [] message, BinaryArray writeKey, long iv, boolean prologue) {
         var ciphered = cipherMessage0(message, writeKey, iv);
-        var buffer = ByteBufUtil.threadLocalDirectBuffer()
-                .writeBytes(prologue ? handshakePrologue() : new byte[0])
-                .writeInt(ciphered.length >> 16)
-                .writeShort(65535 & ciphered.length)
-                .writeBytes(ciphered);
+        var buffer = ByteBufUtil.threadLocalDirectBuffer().writeBytes(prologue ? handshakePrologue() : new byte[0]).writeInt(ciphered.length >> 16).writeShort(65535 & ciphered.length).writeBytes(ciphered);
         return Buffers.readBinary(buffer);
     }
 
     private byte[] cipherMessage0(byte[] message, BinaryArray writeKey, long iv) {
-        if(writeKey == null){
+        if (writeKey == null) {
             return message;
         }
 

@@ -4,7 +4,6 @@ import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import lombok.*;
 
-import static it.auties.whatsapp.binary.BinaryArray.empty;
 import static it.auties.whatsapp.binary.BinaryArray.of;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -17,19 +16,19 @@ public class Handshake {
     private BinaryArray cryptoKey;
     private long counter;
 
-    public void start(WhatsappKeys keys){
+    public void start(WhatsappKeys keys) {
         this.hash = PROTOCOL;
         this.salt = PROTOCOL;
         this.cryptoKey = PROTOCOL;
         this.keys = keys;
         this.counter = 0;
-        updateHash(Cipher.handshakePrologue());
+        updateHash(CipherHelper.handshakePrologue());
     }
 
     @SneakyThrows
     public void updateHash(byte @NonNull [] data) {
         var input = hash.append(of(data));
-        this.hash = Cipher.sha256(input);
+        this.hash = CipherHelper.sha256(input);
     }
 
     @SneakyThrows
@@ -37,7 +36,7 @@ public class Handshake {
         var aes = new AesGmc();
         aes.initialize(cryptoKey.data(), hash.data(), counter++, encrypt);
         var cyphered = aes.processBytes(bytes);
-        if(!encrypt){
+        if (!encrypt) {
             updateHash(bytes);
             return cyphered;
         }
@@ -46,12 +45,12 @@ public class Handshake {
         return cyphered;
     }
 
-    public void finish()  {
+    public void finish() {
         var expanded = extractAndExpandWithHash(new byte[0]);
         keys.initializeKeys(expanded.cut(32), expanded.slice(32));
     }
 
-    public void mixIntoKey(byte @NonNull [] bytes)  {
+    public void mixIntoKey(byte @NonNull [] bytes) {
         this.counter = 0;
         var expanded = extractAndExpandWithHash(bytes);
         this.salt = expanded.cut(32);
