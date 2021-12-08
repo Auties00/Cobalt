@@ -1,12 +1,11 @@
 package it.auties.whatsapp.protobuf.key;
 
 import it.auties.whatsapp.binary.BinaryArray;
-import it.auties.whatsapp.crypto.CipherHelper;
 import it.auties.whatsapp.protobuf.model.Node;
 
 public record PreKey(byte[] id, byte[] publicKey) {
     public static PreKey fromIndex(int index){
-        return new PreKey(BinaryArray.of(index, 3).data(), CipherHelper.randomKeyPair().publicKey());
+        return new PreKey(BinaryArray.of(index, 3).data(), IdentityKeyPair.random().publicKey());
     }
 
     public Node encode(){

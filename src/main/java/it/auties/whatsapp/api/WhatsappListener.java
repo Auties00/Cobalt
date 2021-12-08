@@ -7,7 +7,6 @@ import it.auties.whatsapp.protobuf.chat.GroupAction;
 import it.auties.whatsapp.protobuf.chat.GroupPolicy;
 import it.auties.whatsapp.protobuf.chat.GroupSetting;
 import it.auties.whatsapp.protobuf.contact.Contact;
-import it.auties.whatsapp.protobuf.contact.ContactId;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.socket.WhatsappSocket;
 import it.auties.whatsapp.utils.Qr;

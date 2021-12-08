@@ -1,21 +1,19 @@
 package it.auties.whatsapp.socket;
 
 import it.auties.protobuf.decoder.ProtobufDecoder;
-import it.auties.whatsapp.api.WhatsappConfiguration;
 import it.auties.whatsapp.api.WhatsappListener;
+import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.binary.BinaryMessage;
-import it.auties.whatsapp.crypto.CipherHelper;
+import it.auties.whatsapp.crypto.Curve;
 import it.auties.whatsapp.crypto.Handshake;
 import it.auties.whatsapp.exchange.Request;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.authentication.*;
 import it.auties.whatsapp.protobuf.contact.ContactId;
+import it.auties.whatsapp.protobuf.key.PreKey;
 import it.auties.whatsapp.protobuf.message.server.HandshakeMessage;
 import it.auties.whatsapp.protobuf.model.Node;
-import it.auties.whatsapp.protobuf.key.PreKey;
-import it.auties.whatsapp.protobuf.authentication.UserAgent;
-import it.auties.whatsapp.protobuf.authentication.Version;
 import it.auties.whatsapp.utils.Qr;
 import it.auties.whatsapp.utils.Validate;
 import it.auties.whatsapp.utils.WhatsappUtils;
@@ -54,20 +52,22 @@ public class WhatsappSocket {
     private @Getter(onMethod = @__(@NonNull)) Session session;
     private boolean loggedIn;
     private final Handshake handshake;
-    private final @NonNull WebSocketContainer container;
-    private final @NonNull WhatsappConfiguration options;
-    private final @NonNull WhatsappStore store;
-    private final @NonNull WhatsappKeys keys;
-    private final @NonNull Digester digester;
+    private final WebSocketContainer container;
+    private final WhatsappOptions options;
+    private final WhatsappStore store;
+    private final WhatsappKeys keys;
+    private final Authenticator authenticator;
+    private final Handler handler;
     private CountDownLatch lock;
 
-    public WhatsappSocket(@NonNull WhatsappConfiguration options, @NonNull WhatsappStore store, @NonNull WhatsappKeys keys) {
+    public WhatsappSocket(@NonNull WhatsappOptions options, @NonNull WhatsappStore store, @NonNull WhatsappKeys keys) {
         this.handshake = new Handshake();
         this.container = ContainerProvider.getWebSocketContainer();
         this.options = options;
         this.store = store;
         this.keys = keys;
-        this.digester = new Digester();
+        this.authenticator = new Authenticator();
+        this.handler = new Handler();
         this.lock = new CountDownLatch(1);
     }
 
@@ -94,7 +94,7 @@ public class WhatsappSocket {
         }
 
         if(!loggedIn){
-            authenticate(message.decoded().data());
+            authenticator.sendUserPayload(message.decoded().data());
             lock.countDown();
             return;
         }
@@ -111,88 +111,15 @@ public class WhatsappSocket {
             return;
         }
 
-        digester.digest(deciphered);
+        handler.digest(deciphered);
     }
 
     private Node decipherMessage(BinaryMessage message) {
         try {
-            return CipherHelper.decipherMessage(message.decoded().data(), keys.readKey(), store.readCounter().getAndIncrement());
+            return message.toNode(keys.readKey(), store.readCounter().getAndIncrement());
         }catch (Throwable throwable){
             return decipherMessage(message);
         }
-    }
-
-    @SneakyThrows
-    private void authenticate(byte[] message) {
-        var serverHello = ProtobufDecoder.forType(HandshakeMessage.class).decode(message).serverHello();
-        handshake.updateHash(serverHello.ephemeral());
-        var sharedEphemeral = CipherHelper.calculateSharedSecret(serverHello.ephemeral(), keys.ephemeralKeyPair().privateKey());
-        handshake.mixIntoKey(sharedEphemeral.data());
-
-        var decodedStaticText = handshake.cypher(serverHello.staticText(), false);
-        var sharedStatic = CipherHelper.calculateSharedSecret(decodedStaticText, keys.ephemeralKeyPair().privateKey());
-        handshake.mixIntoKey(sharedStatic.data());
-        handshake.cypher(serverHello.payload(), false);
-
-        var encodedKey = handshake.cypher(keys.companionKeyPair().publicKey(), true);
-        var sharedPrivate = CipherHelper.calculateSharedSecret(serverHello.ephemeral(), keys.companionKeyPair().privateKey());
-        handshake.mixIntoKey(sharedPrivate.data());
-
-        var encodedPayload = handshake.cypher(createUserPayload(), true);
-        var clientFinish = new ClientFinish(encodedKey, encodedPayload);
-        Request.with(new HandshakeMessage(clientFinish))
-                .sendWithNoResponse(session(), keys(), store());
-        changeState(true);
-        handshake.finish();
-    }
-
-    private byte[] createUserPayload() {
-        var builder = ClientPayload.builder()
-                .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
-                .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
-                .userAgent(createUserAgent())
-                .passive(keys.hasCompanion())
-                .webInfo(new WebInfo(WebInfo.WebInfoWebSubPlatform.WEB_BROWSER));
-        return encode(keys.hasCompanion() ? builder.username(parseLong(keys().companion().user())).device(keys().companion().device()).build()
-                : builder.regData(createRegisterData()).build());
-    }
-
-    private UserAgent createUserAgent() {
-        return UserAgent.builder()
-                .appVersion(new Version(2, 2144, 11))
-                .platform(UserAgent.UserAgentPlatform.WEB)
-                .releaseChannel(UserAgent.UserAgentReleaseChannel.RELEASE)
-                .mcc("000")
-                .mnc("000")
-                .osVersion("0.1")
-                .manufacturer("")
-                .device("Desktop")
-                .osBuildNumber("0.1")
-                .localeLanguageIso6391("en")
-                .localeCountryIso31661Alpha2("en")
-                .build();
-    }
-
-    private CompanionData createRegisterData() {
-        return CompanionData.builder()
-                .buildHash(ofBase64(BUILD_HASH).data())
-                .companion(encode(createCompanionProps()))
-                .id(of(keys().id(), 4).data())
-                .keyType(of(KEY_TYPE, 1).data())
-                .identifier(keys().identityKeyPair().publicKey())
-                .signatureId(keys().signedKeyPair().id())
-                .signaturePublicKey(keys().signedKeyPair().keyPair().publicKey())
-                .signature(keys().signedKeyPair().signature())
-                .build();
-    }
-
-    private Companion createCompanionProps() {
-        return Companion.builder()
-                .os(SYSTEM)
-                .version(new Version(10))
-                .platformType(Companion.CompanionPropsPlatformType.CHROME)
-                .requireFullSync(false)
-                .build();
     }
 
     public void connect() {
@@ -258,7 +185,7 @@ public class WhatsappSocket {
         var query = Node.withChildren("query", queryNode);
         var list = Node.withChildren("list", queryBody);
         var sync = Node.withChildren("usync",
-                of("sid", WhatsappUtils.buildRequestTag(options), "mode", "query", "last", "true", "index", "0", "context", "interactive"),
+                of("sid", WhatsappUtils.buildRequestTag(), "mode", "query", "last", "true", "index", "0", "context", "interactive"),
                 query, list);
         return sendQuery(of("to", ContactId.WHATSAPP, "type", "get", "xmlns", "usync"), sync)
                 .thenApplyAsync(this::parseQueryResult);
@@ -273,7 +200,82 @@ public class WhatsappSocket {
                 .toList();
     }
 
-    private class Digester {
+    private class Authenticator {
+        @SneakyThrows
+        private void sendUserPayload(byte[] message) {
+            var serverHello = ProtobufDecoder.forType(HandshakeMessage.class).decode(message).serverHello();
+            handshake.updateHash(serverHello.ephemeral());
+            var sharedEphemeral = Curve.calculateSharedSecret(serverHello.ephemeral(), keys.ephemeralKeyPair().privateKey());
+            handshake.mixIntoKey(sharedEphemeral.data());
+
+            var decodedStaticText = handshake.cypher(serverHello.staticText(), false);
+            var sharedStatic = Curve.calculateSharedSecret(decodedStaticText, keys.ephemeralKeyPair().privateKey());
+            handshake.mixIntoKey(sharedStatic.data());
+            handshake.cypher(serverHello.payload(), false);
+
+            var encodedKey = handshake.cypher(keys.companionKeyPair().publicKey(), true);
+            var sharedPrivate = Curve.calculateSharedSecret(serverHello.ephemeral(), keys.companionKeyPair().privateKey());
+            handshake.mixIntoKey(sharedPrivate.data());
+
+            var encodedPayload = handshake.cypher(createUserPayload(), true);
+            var clientFinish = new ClientFinish(encodedKey, encodedPayload);
+            Request.with(new HandshakeMessage(clientFinish))
+                    .sendWithNoResponse(session(), keys(), store());
+            changeState(true);
+            handshake.finish();
+        }
+
+        private byte[] createUserPayload() {
+            var builder = ClientPayload.builder()
+                    .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
+                    .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
+                    .userAgent(createUserAgent())
+                    .passive(keys.hasCompanion())
+                    .webInfo(new WebInfo(WebInfo.WebInfoWebSubPlatform.WEB_BROWSER));
+            return encode(keys.hasCompanion() ? builder.username(parseLong(keys().companion().user())).device(keys().companion().device()).build()
+                    : builder.regData(createRegisterData()).build());
+        }
+
+        private UserAgent createUserAgent() {
+            return UserAgent.builder()
+                    .appVersion(new Version(2, 2144, 11))
+                    .platform(UserAgent.UserAgentPlatform.WEB)
+                    .releaseChannel(UserAgent.UserAgentReleaseChannel.RELEASE)
+                    .mcc("000")
+                    .mnc("000")
+                    .osVersion("0.1")
+                    .manufacturer("")
+                    .device("Desktop")
+                    .osBuildNumber("0.1")
+                    .localeLanguageIso6391("en")
+                    .localeCountryIso31661Alpha2("en")
+                    .build();
+        }
+
+        private CompanionData createRegisterData() {
+            return CompanionData.builder()
+                    .buildHash(ofBase64(BUILD_HASH).data())
+                    .companion(encode(createCompanionProps()))
+                    .id(of(keys().id(), 4).data())
+                    .keyType(of(KEY_TYPE, 1).data())
+                    .identifier(keys().identityKeyPair().publicKey())
+                    .signatureId(keys().signedKeyPair().id())
+                    .signaturePublicKey(keys().signedKeyPair().keyPair().publicKey())
+                    .signature(keys().signedKeyPair().signature())
+                    .build();
+        }
+
+        private Companion createCompanionProps() {
+            return Companion.builder()
+                    .os(SYSTEM)
+                    .version(new Version(10))
+                    .platformType(Companion.CompanionPropsPlatformType.CHROME)
+                    .requireFullSync(false)
+                    .build();
+        }
+    }
+
+    private class Handler {
         private void digest(@NonNull Node node) {
             switch (node.description()){
                 case "iq" -> digestIq(node);
@@ -397,7 +399,7 @@ public class WhatsappSocket {
 
             var deviceIdentity = (byte[]) container.findNode("device-identity").content();
             var advIdentity = ProtobufDecoder.forType(ADVSignedDeviceIdentityHMAC.class).decode(deviceIdentity);
-            var advSign = CipherHelper.hmacSha256(of(advIdentity.details()), of(keys().companionKey()));
+            var advSign = Curve.verifyHmac(of(advIdentity.details()), of(keys().companionKey()));
             Validate.isTrue(Arrays.equals(advIdentity.hmac(), advSign.data()), "Cannot login: Hmac validation failed!", SecurityException.class);
 
             var account = ProtobufDecoder.forType(ADVSignedDeviceIdentity.class).decode(advIdentity.details());
@@ -405,7 +407,7 @@ public class WhatsappSocket {
                     .append(account.details())
                     .append(keys().identityKeyPair().publicKey())
                     .data();
-            Validate.isTrue(CipherHelper.verifySignature(account.accountSignatureKey(), message, account.accountSignature()),
+            Validate.isTrue(Curve.verifySignature(account.accountSignatureKey(), message, account.accountSignature()),
                     "Cannot login: Hmac validation failed!", SecurityException.class);
 
             var deviceSignatureMessage = of(new byte[]{6, 1})
@@ -413,7 +415,7 @@ public class WhatsappSocket {
                     .append(keys().identityKeyPair().publicKey())
                     .append(account.accountSignature())
                     .data();
-            var deviceSignature = CipherHelper.calculateSignature(keys().identityKeyPair().privateKey(), deviceSignatureMessage);
+            var deviceSignature = Curve.calculateSignature(keys().identityKeyPair().privateKey(), deviceSignatureMessage);
 
             var keyIndex = ProtobufDecoder.forType(ADVDeviceIdentity.class).decode(account.details()).keyIndex();
             var identity = encode(account.deviceSignature(deviceSignature).accountSignature(null));

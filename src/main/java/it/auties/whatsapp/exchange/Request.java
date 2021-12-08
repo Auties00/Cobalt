@@ -2,10 +2,11 @@ package it.auties.whatsapp.exchange;
 
 import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp.binary.BinaryEncoder;
-import it.auties.whatsapp.crypto.CipherHelper;
+import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.model.Node;
+import it.auties.whatsapp.utils.Buffers;
 import it.auties.whatsapp.utils.WhatsappUtils;
 import jakarta.websocket.SendResult;
 import jakarta.websocket.Session;
@@ -15,15 +16,17 @@ import lombok.extern.java.Log;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import static it.auties.whatsapp.crypto.Handshake.PROLOGUE;
+
 /**
  * An abstract model class that represents a request made from the client to the server.
  */
 @Log
 public record Request(String id, @NonNull Object body, @NonNull CompletableFuture<Node> future) {
     /**
-     * The buffer encoder, used to encode requests that take as a parameter a node
+     * The binary encoder, used to encode requests that take as a parameter a node
      */
-    private static final BinaryEncoder NODE_ENCODER = new BinaryEncoder();
+    private static final BinaryEncoder ENCODER = new BinaryEncoder();
 
     /**
      * The timeout in seconds before a Request wrapping a Node fails
@@ -35,7 +38,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      */
     public static Request with(@NonNull Node body) {
         System.out.printf("Sending %s%n", body);
-        return new Request(WhatsappUtils.readNullableId(body), NODE_ENCODER.encode(body), createTimedFuture());
+        return new Request(WhatsappUtils.readNullableId(body), ENCODER.encode(body), createTimedFuture());
     }
 
     private static CompletableFuture<Node> createTimedFuture() {
@@ -53,12 +56,11 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     /**
      * Sends a request to the WebSocket linked to {@code session}.
      *
-     * @param store   the store
      * @param session the WhatsappWeb's WebSocket session
-     * @return this request
+     * @param store   the store
      */
-    public @NonNull CompletableFuture<Node> sendWithPrologue(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store) {
-        return send(session, keys, store, true, false);
+    public void sendWithPrologue(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store) {
+        send(session, keys, store, true, false);
     }
 
     /**
@@ -93,8 +95,13 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @return this request
      */
     public @NonNull CompletableFuture<Node> send(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store, boolean prologue, boolean response) {
-        var encryptedBody = CipherHelper.cipherMessage(parseBodyOrThrow(), keys.writeKey(), store.writeCounter().getAndIncrement(), prologue);
-        session.getAsyncRemote().sendBinary(encryptedBody.toBuffer(),
+        var ciphered = cipherMessage(keys, store);
+        var buffer = Buffers.newBuffer()
+                .writeBytes(prologue ? PROLOGUE : new byte[0])
+                .writeInt(ciphered.length >> 16)
+                .writeShort(65535 & ciphered.length)
+                .writeBytes(ciphered);
+        session.getAsyncRemote().sendBinary(Buffers.readBinary(buffer).toBuffer(),
                 result -> handleSendResult(store, result, response));
         return future;
     }
@@ -114,14 +121,6 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
         future.complete(response);
     }
 
-    private byte[] parseBodyOrThrow() {
-        return switch (body) {
-            case byte[] bytes -> bytes;
-            case Node node -> NODE_ENCODER.encode(node);
-            default -> throw new IllegalStateException("Illegal body: " + body);
-        };
-    }
-
     private void handleSendResult(WhatsappStore store, SendResult result, boolean response) {
         if (!result.isOK()) {
             future.completeExceptionally(new IllegalArgumentException("Cannot send %s".formatted(this), result.getException()));
@@ -134,5 +133,19 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
         }
 
         store.pendingRequests().add(this);
+    }
+
+    private byte[] cipherMessage(WhatsappKeys keys, WhatsappStore store) {
+        var body = switch (body()) {
+            case byte[] bytes -> bytes;
+            case Node node -> ENCODER.encode(node);
+            default -> throw new IllegalStateException("Illegal body: " + body());
+        };
+        if (keys.writeKey() == null) {
+            return body;
+        }
+
+        return AesGmc.with(keys.writeKey(), store.writeCounter().getAndIncrement(), true)
+                .process(body);
     }
 }

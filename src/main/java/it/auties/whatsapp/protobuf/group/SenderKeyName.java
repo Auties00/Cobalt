@@ -1,7 +1,5 @@
 package it.auties.whatsapp.protobuf.group;
 
-import org.whispersystems.libsignal.SignalProtocolAddress;
-
 import java.util.Objects;
 
 public record SenderKeyName(String groupId, ProtocolAddress sender) {

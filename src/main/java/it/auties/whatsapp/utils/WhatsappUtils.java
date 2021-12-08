@@ -1,6 +1,5 @@
 package it.auties.whatsapp.utils;
 
-import it.auties.whatsapp.api.WhatsappConfiguration;
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.protobuf.model.Node;
 import lombok.NonNull;
@@ -8,6 +7,7 @@ import lombok.experimental.UtilityClass;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -26,6 +26,11 @@ public class WhatsappUtils {
     private final AtomicLong requestCounter = new AtomicLong();
 
     /**
+     * The request tag, used to create messages
+     */
+    private final String requestTag = BinaryArray.random(12).toHex().toLowerCase(Locale.ROOT);
+
+    /**
      * Returns a random message id
      *
      * @return a non-null ten character String
@@ -37,11 +42,10 @@ public class WhatsappUtils {
     /**
      * Returns a request tag built using {@code configuration}
      *
-     * @param configuration the configuration to use to build the message
      * @return a non-null String
      */
-    public String buildRequestTag(@NonNull WhatsappConfiguration configuration) {
-        return "%s-%s".formatted(configuration.requestTag(), requestCounter.getAndIncrement());
+    public String buildRequestTag() {
+        return "%s-%s".formatted(requestTag, requestCounter.getAndIncrement());
     }
 
     /**

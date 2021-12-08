@@ -1,7 +1,6 @@
 package it.auties.whatsapp.exchange;
 
 import it.auties.whatsapp.protobuf.chat.GroupParticipant;
-import it.auties.whatsapp.protobuf.chat.GroupRole;
 import it.auties.whatsapp.protobuf.contact.ContactId;
 import it.auties.whatsapp.protobuf.model.Node;
 import it.auties.whatsapp.utils.WhatsappUtils;
@@ -14,7 +13,6 @@ import lombok.experimental.Accessors;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 
 @AllArgsConstructor
 @Data

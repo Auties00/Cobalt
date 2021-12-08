@@ -2,14 +2,18 @@ package it.auties.whatsapp.crypto;
 
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.manager.WhatsappKeys;
-import lombok.*;
+import lombok.NonNull;
+import lombok.SneakyThrows;
+
+import java.security.MessageDigest;
 
 import static it.auties.whatsapp.binary.BinaryArray.of;
 
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-@NoArgsConstructor
 public class Handshake {
+    public static final byte[] PROLOGUE = new byte[]{87, 65, 5, 2};
     private static final BinaryArray PROTOCOL = BinaryArray.of("Noise_XX_25519_AESGCM_SHA256\0\0\0\0");
+    private static final String HASH_ALGORITHM = "SHA-256";
+
     private WhatsappKeys keys;
     private BinaryArray hash;
     private BinaryArray salt;
@@ -22,20 +26,20 @@ public class Handshake {
         this.cryptoKey = PROTOCOL;
         this.keys = keys;
         this.counter = 0;
-        updateHash(CipherHelper.handshakePrologue());
+        updateHash(PROLOGUE);
     }
 
     @SneakyThrows
     public void updateHash(byte @NonNull [] data) {
-        var input = hash.append(of(data));
-        this.hash = CipherHelper.sha256(input);
+        var input = hash.append(data);
+        var digest = MessageDigest.getInstance(HASH_ALGORITHM);
+        this.hash = of(digest.digest(input.data()));
     }
 
     @SneakyThrows
     public byte[] cypher(byte @NonNull [] bytes, boolean encrypt) {
-        var aes = new AesGmc();
-        aes.initialize(cryptoKey.data(), hash.data(), counter++, encrypt);
-        var cyphered = aes.processBytes(bytes);
+        var cyphered = AesGmc.with(cryptoKey, hash.data(), counter++, encrypt)
+                .process(bytes);
         if (!encrypt) {
             updateHash(bytes);
             return cyphered;

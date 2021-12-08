@@ -4,6 +4,7 @@ import com.google.zxing.common.BitMatrix;
 import it.auties.whatsapp.api.RegisterListener;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappListener;
+import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactId;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.Test;
 public class WhatsappAPITest {
     @Test
     public void login() {
+        new WhatsappKeys().delete();
         var api = new Whatsapp();
         api.connect();
     }

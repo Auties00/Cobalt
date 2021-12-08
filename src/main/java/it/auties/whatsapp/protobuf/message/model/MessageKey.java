@@ -21,40 +21,43 @@ import java.util.UUID;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @RequiredArgsConstructor
 @NoArgsConstructor
-@Data
 @Builder(builderMethodName = "newMessageKey", buildMethodName = "create")
 @Accessors(fluent = true)
 public class MessageKey {
   /**
-   * The id of the message
-   */
-  @JsonProperty(value = "3")
-  @Builder.Default
-  private String id = WhatsappUtils.randomId();
-
-  /**
-   * The id of the session that owns this contact
-   */
-  private @NonNull UUID session;
-
-  /**
-   * The cached value of the store
-   */
-  @Getter(AccessLevel.NONE)
-  @Setter(AccessLevel.NONE)
-  private WhatsappStore cachedStore;
-
-  /**
    * The jid of the contact or group that sent the message.
    */
   @JsonProperty(value = "1")
+  @Getter
+  @Setter
   private @NonNull String chatJid;
 
   /**
    * Determines whether the message was sent by you or by someone else
    */
   @JsonProperty(value = "2")
+  @Getter
+  @Setter
   private boolean fromMe;
+
+  /**
+   * The id of the message
+   */
+  @JsonProperty(value = "3")
+  @Builder.Default
+  @Getter
+  @Setter
+  private String id = WhatsappUtils.randomId();
+
+  /**
+   * The id of the session that owns this contact
+   */
+  private @NonNull UUID storeUuid;
+
+  /**
+   * The cached value of the store
+   */
+  private WhatsappStore cachedStore;
 
   /**
    * Returns the chat where the message was sent
@@ -62,12 +65,12 @@ public class MessageKey {
    * @return an optional wrapping a {@link Chat}
    */
   public Optional<Chat> chat(){
-    return WhatsappStore.findStoreById(session())
+    return WhatsappStore.findStoreById(storeUuid)
             .findChatByJid(chatJid);
   }
 
   public WhatsappStore store(){
     return Objects.requireNonNullElseGet(cachedStore,
-            () -> this.cachedStore = WhatsappStore.findStoreById(session()));
+            () -> this.cachedStore = WhatsappStore.findStoreById(storeUuid));
   }
 }

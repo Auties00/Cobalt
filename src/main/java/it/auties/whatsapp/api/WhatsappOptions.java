@@ -1,7 +1,5 @@
 package it.auties.whatsapp.api;
 
-import it.auties.whatsapp.binary.BinaryArray;
-import it.auties.whatsapp.utils.WhatsappUtils;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Data;
@@ -12,33 +10,25 @@ import lombok.experimental.Accessors;
  * A configuration class used to specify the behaviour of {@link Whatsapp}.
  * Each field is immutable, this means that once this class has been initialized, cannot be changed.
  * If reflection is used, it is not guaranteed that the settings will effectively change.
- * This class should be configured using its builder, accessible using {@link WhatsappConfiguration#builder()}.
+ * This class should be configured using its builder, accessible using {@link WhatsappOptions#builder()}.
  * An all arguments' constructor is also available if considered more suitable for the coding style of the project.
  */
 @Builder
 @Data
 @Accessors(fluent = true)
-public class WhatsappConfiguration {
+public class WhatsappOptions {
     /**
      * The version of WhatsappWeb to use
      * If the version is too outdated, the server will refuse to connect
      */
     @Default
-    private final @NonNull String whatsappVersion = "2.2126.14";
+    private final int[] whatsappVersion = new int[]{2, 2144, 11};
 
     /**
      * The url of the multi device beta socket
      */
     @Default
     private final @NonNull String whatsappUrlBeta = "wss://web.whatsapp.com/ws/chat";
-
-    /**
-     * The tag used to send messages to WhatsappWeb's WebSocket
-     * The tag used to send buffer requests to WhatsappWeb's WebSocket after the authentication process has succeeded is built using {@link WhatsappUtils#buildRequestTag(WhatsappConfiguration)}
-     * It is important to use a pseudo random string as using the same tag two times in a buffer request, even in different sessions, will make the request fail
-     */
-    @Default
-    private final @NonNull String requestTag = BinaryArray.random(12).toHex();
 
     /**
      * The description provided to Whatsapp during the authentication process
@@ -59,7 +49,7 @@ public class WhatsappConfiguration {
      *
      * @return a new instance of WhatsappConfiguration with the above characteristics
      */
-    public static @NonNull WhatsappConfiguration defaultOptions() {
-        return WhatsappConfiguration.builder().build();
+    public static @NonNull WhatsappOptions defaultOptions() {
+        return WhatsappOptions.builder().build();
     }
 }

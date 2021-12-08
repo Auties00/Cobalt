@@ -2,6 +2,7 @@ package it.auties.whatsapp.crypto;
 
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.protobuf.group.*;
+import it.auties.whatsapp.protobuf.key.IdentityKeyPair;
 import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.utils.Validate;
 import lombok.SneakyThrows;
@@ -18,7 +19,7 @@ public record SignalGroup(SenderKeyName senderKeyId, WhatsappKeys keys) {
     public SenderKeyDistributionMessage create(SenderKeyName senderKeyName) {
         var senderKeyRecord = keys.findSenderKeyByName(senderKeyName);
         if (senderKeyRecord.isEmpty()) {
-            senderKeyRecord.senderKeyState(CipherHelper.randomSenderKeyId(), 0, CipherHelper.randomSenderKey(), CipherHelper.randomKeyPair().privateKey());
+            senderKeyRecord.senderKeyState(Signal.randomSenderKeyId(), 0, Signal.randomSenderKey(), IdentityKeyPair.random().privateKey());
             keys.senderKeyStructures().add(new SenderKeyStructure(senderKeyName, senderKeyRecord));
         }
 

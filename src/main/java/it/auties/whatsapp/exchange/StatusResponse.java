@@ -5,13 +5,10 @@ import it.auties.whatsapp.utils.WhatsappUtils;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NonNull;
 import lombok.experimental.Accessors;
 
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @AllArgsConstructor

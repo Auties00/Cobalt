@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
 import it.auties.whatsapp.protobuf.message.model.Message;
@@ -14,11 +13,10 @@ import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
 import it.auties.whatsapp.protobuf.message.standard.LiveLocationMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.experimental.Delegate;
 
 import java.time.Instant;
 import java.util.*;
-
-import static it.auties.whatsapp.manager.WhatsappStore.findStoreById;
 
 /**
  * A model class that holds the information related to a {@link Message}.
@@ -186,6 +184,7 @@ public class MessageInfo {
    * The MessageKey of this message
    */
   @JsonProperty(value = "1", required = true)
+  @Delegate
   private @NonNull MessageKey key;
 
   /**
@@ -203,30 +202,12 @@ public class MessageInfo {
   }
 
   /**
-   * Returns the jid of the chat where the message was sent
-   *
-   * @return a non-null string
-   */
-  public @NonNull String chatJid(){
-    return key().chatJid();
-  }
-
-  /**
-   * Returns the chat where the message was sent
-   *
-   * @return an optional wrapping a {@link Chat}
-   */
-  public @NonNull Optional<Chat> chat() {
-    return key().chat();
-  }
-
-  /**
    * Returns the jid of the contact that sent the message
    *
    * @return a non-null string
    */
-  public @NonNull String senderJid(){
-    return key.fromMe() ? findStoreById(key().session()).phoneNumberJid() : Objects.requireNonNullElse(senderJid, key.chatJid());
+  public String senderJid(){
+    return Objects.requireNonNullElse(senderJid, chatJid());
   }
 
   /**
@@ -234,8 +215,8 @@ public class MessageInfo {
    *
    * @return an optional wrapping a {@link Contact}
    */
-  public @NonNull Optional<Contact> sender(){
-    return findStoreById(key().session())
+  public Optional<Contact> sender(){
+    return key.store()
             .findContactByJid(senderJid());
   }
 
@@ -244,12 +225,11 @@ public class MessageInfo {
    *
    * @return a non-empty optional {@link MessageInfo} if this message quotes a message in memory
    */
-  public @NonNull Optional<MessageInfo> quotedMessage(){
+  public Optional<MessageInfo> quotedMessage(){
     return Optional.of(container)
             .flatMap(MessageContainer::contentWithContext)
             .map(ContextualMessage::contextInfo)
-            .flatMap(contextualMessage -> findStoreById(key().session())
-                    .findMessageById(key.chat().orElseThrow(), contextualMessage.quotedMessageId()));
+            .flatMap(contextualMessage -> key.store().findMessageById(key.chat().orElseThrow(), contextualMessage.quotedMessageId()));
   }
 
   /**

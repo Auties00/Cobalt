@@ -2,15 +2,12 @@ package it.auties.whatsapp.protobuf.group;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.crypto.Hkdf;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
-import org.whispersystems.libsignal.kdf.HKDFv3;
-import org.whispersystems.libsignal.util.ByteUtil;
 
 import java.nio.charset.StandardCharsets;
 

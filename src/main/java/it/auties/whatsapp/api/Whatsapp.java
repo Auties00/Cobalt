@@ -47,7 +47,7 @@ public class Whatsapp {
     private WhatsappSocket socket;
 
     public Whatsapp(){
-        this(new WhatsappSocket(WhatsappConfiguration.defaultOptions(), new WhatsappStore(), WhatsappKeys.fromMemory()));
+        this(new WhatsappSocket(WhatsappOptions.defaultOptions(), new WhatsappStore(), WhatsappKeys.fromMemory()));
         Scanner.scan(this)
                 .forEach(this::registerListener);
     }
@@ -359,7 +359,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> changePresence(@NonNull ContactStatus presence) {
-        return socket.send(with("presence", of("type", presence.data()), null));
+        return socket.sendWithNoResponse(with("presence", of("type", presence.data()), null));
     }
 
     /**
@@ -370,7 +370,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> changePresence(@NonNull Chat chat, @NonNull ContactStatus presence) {
-        return socket.send(with("presence", of("to", chat.id(), "type", presence.data()), null));
+        return socket.sendWithNoResponse(with("presence", of("to", chat.id(), "type", presence.data()), null));
     }
 
     /**

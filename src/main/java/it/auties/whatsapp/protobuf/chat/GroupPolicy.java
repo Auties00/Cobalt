@@ -1,7 +1,6 @@
 package it.auties.whatsapp.protobuf.chat;
 
 import it.auties.whatsapp.api.Whatsapp;
-import lombok.NonNull;
 
 /**
  * The constants of this enumerated type describe the various policies that can be enforced for a {@link GroupSetting} in a {@link Chat}.

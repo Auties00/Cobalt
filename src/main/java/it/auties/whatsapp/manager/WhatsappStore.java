@@ -6,10 +6,12 @@ import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactId;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
-import it.auties.whatsapp.protobuf.model.MediaConnection;
 import it.auties.whatsapp.protobuf.model.Node;
 import it.auties.whatsapp.utils.WhatsappUtils;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 
 import java.util.*;
@@ -39,8 +41,6 @@ public class WhatsappStore {
     private final AtomicLong readCounter;
     private final AtomicLong writeCounter;
     private final long initializationTimeStamp;
-    private @Getter(onMethod = @__(@NonNull)) MediaConnection mediaConnection;
-    private @Getter(onMethod = @__(@NonNull)) String phoneNumberJid;
 
     /**
      * Constructs a new default instance of WhatsappDataManager

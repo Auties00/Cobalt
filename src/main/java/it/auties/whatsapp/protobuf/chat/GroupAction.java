@@ -2,7 +2,6 @@ package it.auties.whatsapp.protobuf.chat;
 
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.contact.Contact;
-import lombok.NonNull;
 
 /**
  * The constants of this enumerated type describe the various actions that can be executed on a {@link Contact} in a {@link Chat}.

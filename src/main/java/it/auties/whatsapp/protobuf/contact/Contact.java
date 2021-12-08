@@ -2,7 +2,6 @@ package it.auties.whatsapp.protobuf.contact;
 
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.chat.Chat;
-import it.auties.whatsapp.utils.WhatsappUtils;
 import lombok.*;
 import lombok.experimental.Accessors;
 

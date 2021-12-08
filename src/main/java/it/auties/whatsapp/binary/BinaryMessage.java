@@ -1,5 +1,7 @@
 package it.auties.whatsapp.binary;
 
+import it.auties.whatsapp.crypto.AesGmc;
+import it.auties.whatsapp.protobuf.model.Node;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.Accessors;
@@ -12,6 +14,11 @@ import static it.auties.whatsapp.binary.BinaryArray.of;
 @Value
 @Accessors(fluent = true)
 public class BinaryMessage {
+    /**
+     * The node decoder
+     */
+    static BinaryDecoder decoder = new BinaryDecoder();
+
     /**
      * The raw buffer array used to construct this object
      */
@@ -45,5 +52,11 @@ public class BinaryMessage {
      */
     public BinaryMessage(byte @NonNull [] array) {
         this(of(array));
+    }
+
+    public Node toNode(@NonNull BinaryArray readKey, long iv) {
+        var plainText = AesGmc.with(readKey, iv, false)
+                .process(decoded.data());
+        return decoder.decode(decoder.unpack(plainText));
     }
 }

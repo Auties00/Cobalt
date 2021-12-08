@@ -1,5 +1,6 @@
 package it.auties.whatsapp.crypto;
 
+import it.auties.whatsapp.binary.BinaryArray;
 import lombok.NonNull;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.engines.AESEngine;
@@ -9,20 +10,25 @@ import org.bouncycastle.crypto.params.KeyParameter;
 
 import java.nio.ByteBuffer;
 
-public class AesGmc {
-    private GCMBlockCipher cipher;
+public record AesGmc(@NonNull GCMBlockCipher cipher) {
+    private static final int NONCE = 128;
 
-    public void initialize(byte @NonNull [] key, byte[] data, long ivCounter, boolean encrypt) {
-        var secretKey = new KeyParameter(key);
-        var iv = createIv(ivCounter);
-        var cipher = new AESEngine();
-        cipher.init(encrypt, secretKey);
-        this.cipher = new GCMBlockCipher(cipher);
-        var params = new AEADParameters(secretKey, 128, iv, data);
-        this.cipher.init(encrypt, params);
+    public static AesGmc with(@NonNull BinaryArray key, long ivCounter, boolean encrypt) {
+        return with(key, null, ivCounter, encrypt);
     }
 
-    public byte[] processBytes(byte[] bytes) {
+    public static AesGmc with(@NonNull BinaryArray key, byte[] data, long ivCounter, boolean encrypt) {
+        var cipher = new GCMBlockCipher(new AESEngine());
+        var parameters = new AEADParameters(new KeyParameter(key.data()), NONCE, createIv(ivCounter), data);
+        cipher.init(encrypt, parameters);
+        return new AesGmc(cipher);
+    }
+
+    private static byte[] createIv(long count) {
+        return ByteBuffer.allocate(12).putLong(4, count).array();
+    }
+
+    public synchronized byte[] process(byte[] bytes) {
         try {
             var outputLength = cipher.getOutputSize(bytes.length);
             var output = new byte[outputLength];
@@ -32,9 +38,5 @@ public class AesGmc {
         } catch (InvalidCipherTextException exception) {
             throw new IllegalArgumentException("Cannot process provided bytes", exception);
         }
-    }
-
-    private byte[] createIv(long count) {
-        return ByteBuffer.allocate(12).putLong(4, count).array();
     }
 }
