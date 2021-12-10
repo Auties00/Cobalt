@@ -1,7 +1,7 @@
 package it.auties.whatsapp.binary;
 
 import it.auties.whatsapp.crypto.AesGmc;
-import it.auties.whatsapp.protobuf.model.Node;
+import it.auties.whatsapp.exchange.Node;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.Accessors;
@@ -57,6 +57,6 @@ public class BinaryMessage {
     public Node toNode(@NonNull BinaryArray readKey, long iv) {
         var plainText = AesGmc.with(readKey, iv, false)
                 .process(decoded.data());
-        return decoder.decode(decoder.unpack(plainText));
+        return decoder.decode(plainText);
     }
 }

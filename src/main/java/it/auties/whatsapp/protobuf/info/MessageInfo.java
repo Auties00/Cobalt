@@ -5,12 +5,11 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.contact.Contact;
-import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
-import it.auties.whatsapp.protobuf.message.model.Message;
-import it.auties.whatsapp.protobuf.message.model.MessageContainer;
-import it.auties.whatsapp.protobuf.message.model.MessageKey;
+import it.auties.whatsapp.protobuf.contact.ContactId;
+import it.auties.whatsapp.protobuf.message.model.*;
 import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
 import it.auties.whatsapp.protobuf.message.standard.LiveLocationMessage;
+import it.auties.whatsapp.util.Unsupported;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.Delegate;
@@ -30,131 +29,18 @@ import java.util.*;
 @Accessors(fluent = true)
 public class MessageInfo {
   /**
-   * Ephemeral duration
+   * The MessageKey of this message
    */
-  @JsonProperty(value = "33")
-  private int ephemeralDuration;
+  @JsonProperty(value = "1", required = true)
+  @Delegate
+  private @NonNull MessageKey key;
 
   /**
-   * Ephemeral start timestamp
+   * The container of this message
    */
-  @JsonProperty(value = "32")
-  private long ephemeralStartTimestamp;
-
-  /**
-   * Quoted payment info
-   */
-  @JsonProperty(value = "31")
-  private PaymentInfo quotedPaymentInfo;
-
-  /**
-   * Final live location
-   */
-  @JsonProperty(value = "30")
-  private LiveLocationMessage finalLiveLocation;
-
-  /**
-   * PaymentInfo
-   */
-  @JsonProperty(value = "29")
-  private PaymentInfo paymentInfo;
-
-  /**
-   * Labels
-   */
-  @JsonProperty(value = "28")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  private List<String> labels;
-
-  /**
-   * Duration
-   */
-  @JsonProperty(value = "27")
-  private int duration;
-
-  /**
-   * Message stub parameters
-   */
-  @JsonProperty(value = "26")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  private List<String> messageStubParameters;
-
-  /**
-   * Clear media
-   */
-  @JsonProperty(value = "25")
-  private boolean clearMedia;
-
-  /**
-   * The stub type of this message.
-   * This property is populated only if the message that {@link MessageInfo#container} wraps is a {@link ProtocolMessage}.
-   */
-  @JsonProperty(value = "24")
-  private MessageInfoStubType messageStubType;
-
-  /**
-   * Url number
-   */
-  @JsonProperty(value = "23")
-  private boolean urlNumber;
-
-  /**
-   * Url text
-   */
-  @JsonProperty(value = "22")
-  private boolean urlText;
-
-  /**
-   * Multicast
-   */
-  @JsonProperty(value = "21")
-  private boolean multicast;
-
-  /**
-   * Media Cipher Text SHA256
-   */
-  @JsonProperty(value = "20")
-  private byte[] mediaCiphertextSha256;
-
-  /**
-   * Push name
-   */
-  @JsonProperty(value = "19")
-  private String pushName;
-
-  /**
-   * Whether this message was sent using a broadcast list
-   */
-  @JsonProperty(value = "18")
-  private boolean broadcast;
-
-  /**
-   * Whether this message is starred
-   */
-  @JsonProperty(value = "17")
-  private boolean starred;
-
-  /**
-   * Whether this message should be ignored or counted as an unread message
-   */
-  @JsonProperty(value = "16")
-  private boolean ignore;
-
-  /**
-   * The jid of the participant that sent the message in a group.
-   * This property is only populated if {@link MessageInfo#chat()} refers to a group.
-   */
-  @JsonProperty(value = "5")
-  private String senderJid;
-
-  /**
-   * The global status of this message.
-   * If the chat associated with this message is a group it is guaranteed that this field is equal or lower hierarchically then every value stored by {@link MessageInfo#individualReadStatus()}.
-   * Otherwise, this field is guaranteed to be equal to the single value stored by {@link MessageInfo#individualReadStatus()} for the contact associated with the chat associated with this message.
-   */
-  @JsonProperty(value = "4")
+  @JsonProperty(value = "2")
   @Builder.Default
-  private @NonNull MessageInfoStatus globalStatus = MessageInfoStatus.ERROR;
+  private @NonNull MessageContainer content = new MessageContainer();
 
   /**
    * A map that holds the read status of this message for each participant.
@@ -165,7 +51,16 @@ public class MessageInfo {
    * It is important to remember that it is guaranteed that every participant will be present as a key.
    */
   @Builder.Default
-  private @NonNull Map<Contact, MessageInfoStatus> individualReadStatus = new HashMap<>();
+  private @NonNull Map<Contact, MessageStatus> individualReadStatus = new HashMap<>();
+
+  /**
+   * The global status of this message.
+   * If the chat associated with this message is a group it is guaranteed that this field is equal or lower hierarchically then every value stored by {@link MessageInfo#individualReadStatus()}.
+   * Otherwise, this field is guaranteed to be equal to the single value stored by {@link MessageInfo#individualReadStatus()} for the contact associated with the chat associated with this message.
+   */
+  @JsonProperty(value = "4")
+  @Builder.Default
+  private @NonNull MessageStatus globalStatus = MessageStatus.ERROR;
 
   /**
    * The timestamp, that is the seconds since {@link java.time.Instant#EPOCH}, when this message was sent
@@ -174,18 +69,127 @@ public class MessageInfo {
   private long timestamp;
 
   /**
-   * The container of this message
+   * The jid of the participant that sent the message in a group.
+   * This property is only populated if {@link MessageInfo#chat()} refers to a group.
    */
-  @JsonProperty(value = "2")
-  @Builder.Default
-  private @NonNull MessageContainer container = new MessageContainer();
+  @JsonProperty(value = "5")
+  private ContactId senderId;
 
   /**
-   * The MessageKey of this message
+   * Duration
    */
-  @JsonProperty(value = "1", required = true)
-  @Delegate
-  private @NonNull MessageKey key;
+  @JsonProperty(value = "27")
+  private int duration;
+
+  /**
+   * Whether this message should be ignored or counted as an unread message
+   */
+  @JsonProperty(value = "16")
+  private boolean ignore;
+
+  /**
+   * Whether this message is starred
+   */
+  @JsonProperty(value = "17")
+  private boolean starred;
+
+  /**
+   * Whether this message was sent using a broadcast list
+   */
+  @JsonProperty(value = "18")
+  private boolean broadcast;
+
+  /**
+   * Multicast
+   */
+  @JsonProperty(value = "21")
+  private boolean multicast;
+
+  /**
+   * Url text
+   */
+  @JsonProperty(value = "22")
+  private boolean urlText;
+
+  /**
+   * Url number
+   */
+  @JsonProperty(value = "23")
+  private boolean urlNumber;
+
+  /**
+   * Clear media
+   */
+  @JsonProperty(value = "25")
+  private boolean clearMedia;
+
+  /**
+   * Push name
+   */
+  @JsonProperty(value = "19")
+  private String pushName;
+
+  /**
+   * Ephemeral start timestamp
+   */
+  @JsonProperty(value = "32")
+  private long ephemeralStartTimestamp;
+
+  /**
+   * Ephemeral duration
+   */
+  @JsonProperty(value = "33")
+  private int ephemeralDuration;
+
+  /**
+   * The stub type of this message.
+   * This property is populated only if the message that {@link MessageInfo#content} wraps is a {@link ProtocolMessage}.
+   */
+  @JsonProperty(value = "24")
+  private StubType stubType;
+
+  /**
+   * Message stub parameters
+   */
+  @JsonProperty(value = "26")
+  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  private List<String> stubParameters;
+
+  /**
+   * Labels
+   */
+  @JsonProperty(value = "28")
+  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  private List<String> labels;
+
+  /**
+   * PaymentInfo
+   */
+  @JsonProperty(value = "29")
+  @Unsupported
+  private PaymentInfo paymentInfo;
+
+  /**
+   * Final live location
+   */
+  @JsonProperty(value = "30")
+  @Unsupported
+  private LiveLocationMessage finalLiveLocation;
+
+  /**
+   * Quoted payment info
+   */
+  @JsonProperty(value = "31")
+  @Unsupported
+  private PaymentInfo quotedPaymentInfo;
+
+  /**
+   * Media Cipher Text SHA256
+   */
+  @JsonProperty(value = "20")
+  @Unsupported
+  private byte[] mediaCiphertextSha256;
+
 
   /**
    * Constructs a new MessageInfo from a MessageKey and a MessageContainer
@@ -196,18 +200,27 @@ public class MessageInfo {
   public MessageInfo(@NonNull MessageKey key, @NonNull MessageContainer container) {
     this.key = key;
     this.timestamp = Instant.now().getEpochSecond();
-    this.globalStatus = MessageInfoStatus.PENDING;
-    this.container = container;
+    this.globalStatus = MessageStatus.PENDING;
+    this.content = container;
     this.individualReadStatus = new HashMap<>();
+  }
+
+  /**
+   * Checks whether this message wraps a stub type
+   *
+   * @return true if this message wraps a stub type
+   */
+  public boolean hasStub(){
+    return stubType != null;
   }
 
   /**
    * Returns the jid of the contact that sent the message
    *
-   * @return a non-null string
+   * @return a non-null ContactId
    */
-  public String senderJid(){
-    return Objects.requireNonNullElse(senderJid, chatJid());
+  public ContactId senderId(){
+    return Objects.requireNonNullElse(senderId, chatId());
   }
 
   /**
@@ -217,7 +230,7 @@ public class MessageInfo {
    */
   public Optional<Contact> sender(){
     return key.store()
-            .findContactByJid(senderJid());
+            .findContactByJid(senderId().toString());
   }
 
   /**
@@ -226,71 +239,21 @@ public class MessageInfo {
    * @return a non-empty optional {@link MessageInfo} if this message quotes a message in memory
    */
   public Optional<MessageInfo> quotedMessage(){
-    return Optional.of(container)
+    return Optional.of(content)
             .flatMap(MessageContainer::contentWithContext)
             .map(ContextualMessage::contextInfo)
             .flatMap(contextualMessage -> key.store().findMessageById(key.chat().orElseThrow(), contextualMessage.quotedMessageId()));
   }
 
   /**
-   * The constants of this enumerated type describe the various types of status of a {@link MessageInfo}
-   */
-  @Accessors(fluent = true)
-  public enum MessageInfoStatus {
-    /**
-     * Error
-     */
-    ERROR(0),
-
-    /**
-     * Pending
-     */
-    PENDING(1),
-
-    /**
-     * Acknowledged by the server
-     */
-    SERVER_ACK(2),
-
-    /**
-     * Delivered
-     */
-    DELIVERY_ACK(3),
-
-    /**
-     * Read
-     */
-    READ(4),
-
-    /**
-     * Played
-     */
-    PLAYED(5);
-
-    private final @Getter int index;
-
-    MessageInfoStatus(int index) {
-      this.index = index;
-    }
-
-    @JsonCreator
-    public static MessageInfoStatus forIndex(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
-          .orElse(null);
-    }
-  }
-
-  /**
    * The constants of this enumerated type describe the various types of server message that a {@link MessageInfo} can describe
    */
   @Accessors(fluent = true)
-  public enum MessageInfoStubType {
+  public enum StubType {
     UNKNOWN(0),
     REVOKE(1),
     CIPHERTEXT(2),
-    FUTUREPROOF(3),
+    FUTURE_PROOF(3),
     NON_VERIFIED_TRANSITION(4),
     UNVERIFIED_TRANSITION(5),
     VERIFIED_TRANSITION(6),
@@ -335,7 +298,7 @@ public class MessageInfo {
     CALL_MISSED_GROUP_VOICE(45),
     CALL_MISSED_GROUP_VIDEO(46),
     PAYMENT_CIPHERTEXT(47),
-    PAYMENT_FUTUREPROOF(48),
+    PAYMENT_FUTURE_PROOF(48),
     PAYMENT_TRANSACTION_STATUS_UPDATE_FAILED(49),
     PAYMENT_TRANSACTION_STATUS_UPDATE_REFUNDED(50),
     PAYMENT_TRANSACTION_STATUS_UPDATE_REFUND_FAILED(51),
@@ -355,7 +318,7 @@ public class MessageInfo {
     BIZ_MOVE_TO_CONSUMER_APP(65),
     BIZ_TWO_TIER_MIGRATION_TOP(66),
     BIZ_TWO_TIER_MIGRATION_BOTTOM(67),
-    OVERSIZED(68),
+    OVER_SIZED(68),
     GROUP_CHANGE_NO_FREQUENTLY_FORWARDED(69),
     GROUP_V4_ADD_INVITE_SENT(70),
     GROUP_PARTICIPANT_ADD_REQUEST_JOIN(71),
@@ -363,12 +326,12 @@ public class MessageInfo {
 
     private final @Getter int index;
 
-    MessageInfoStubType(int index) {
+    StubType(int index) {
       this.index = index;
     }
 
     @JsonCreator
-    public static MessageInfoStubType forIndex(int index) {
+    public static StubType forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
           .findFirst()

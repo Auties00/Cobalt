@@ -2,9 +2,9 @@ package it.auties.whatsapp.binary;
 
 import io.netty.buffer.ByteBuf;
 import it.auties.whatsapp.protobuf.contact.ContactId;
-import it.auties.whatsapp.protobuf.model.Node;
-import it.auties.whatsapp.utils.Buffers;
-import it.auties.whatsapp.utils.Nodes;
+import it.auties.whatsapp.exchange.Node;
+import it.auties.whatsapp.util.Buffers;
+import it.auties.whatsapp.util.Nodes;
 import lombok.NonNull;
 
 import java.nio.charset.StandardCharsets;

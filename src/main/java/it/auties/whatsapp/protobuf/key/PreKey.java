@@ -1,7 +1,7 @@
 package it.auties.whatsapp.protobuf.key;
 
 import it.auties.whatsapp.binary.BinaryArray;
-import it.auties.whatsapp.protobuf.model.Node;
+import it.auties.whatsapp.exchange.Node;
 
 public record PreKey(byte[] id, byte[] publicKey) {
     public static PreKey fromIndex(int index){

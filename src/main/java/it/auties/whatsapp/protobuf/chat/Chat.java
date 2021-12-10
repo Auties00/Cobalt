@@ -7,8 +7,8 @@ import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactId;
 import it.auties.whatsapp.protobuf.contact.ContactStatus;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
-import it.auties.whatsapp.protobuf.model.Messages;
-import it.auties.whatsapp.utils.WhatsappUtils;
+import it.auties.whatsapp.util.Messages;
+import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.*;
 import lombok.experimental.Accessors;
 

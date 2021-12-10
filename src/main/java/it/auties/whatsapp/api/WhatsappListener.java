@@ -9,7 +9,7 @@ import it.auties.whatsapp.protobuf.chat.GroupSetting;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.socket.WhatsappSocket;
-import it.auties.whatsapp.utils.Qr;
+import it.auties.whatsapp.util.Qr;
 import lombok.NonNull;
 
 import java.util.List;

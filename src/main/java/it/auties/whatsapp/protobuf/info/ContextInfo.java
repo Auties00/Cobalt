@@ -3,6 +3,7 @@ package it.auties.whatsapp.protobuf.info;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.protobuf.contact.ContactId;
 import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
 import it.auties.whatsapp.protobuf.message.model.MessageContainer;
 import it.auties.whatsapp.protobuf.message.model.MessageKey;
@@ -95,7 +96,7 @@ public class ContextInfo {
    * The jid of the contact that sent the message that this ContextualMessage quotes
    */
   @JsonProperty(value = "2")
-  private String quotedMessageSenderJid;
+  private ContactId quotedMessageSenderId;
 
   /**
    * The id of the message that this ContextualMessage quotes
@@ -109,8 +110,8 @@ public class ContextInfo {
    * @param quotedMessage the message to quote
    */
   public ContextInfo(@NonNull MessageInfo quotedMessage){
-    this.quotedMessageContainer = quotedMessage.container();
+    this.quotedMessageContainer = quotedMessage.content();
     this.quotedMessageId = quotedMessage.key().id();
-    this.quotedMessageSenderJid = quotedMessage.senderJid();
+    this.quotedMessageSenderId = quotedMessage.senderId();
   }
 }

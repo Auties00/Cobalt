@@ -16,6 +16,7 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 /**
@@ -245,33 +246,33 @@ public class MessageContainer { // Not how I would design it, Whatsapp's choice 
   /**
    * Returns the first populated message inside this container
    *
-   * @return a non-null Optional Message
+   * @return a non-null Message
    */
-  public Optional<Message> content(){
-    if(this.senderKeyDistributionMessage != null) return Optional.of(senderKeyDistributionMessage);
-    if(this.imageMessage != null) return Optional.of(imageMessage);
-    if(this.contactMessage != null) return Optional.of(contactMessage);
-    if(this.locationMessage != null) return Optional.of(locationMessage);
-    if(this.textMessage  != null) return Optional.of(textMessage);
-    if(this.documentMessage != null) return Optional.of(documentMessage);
-    if(this.audioMessage != null) return Optional.of(audioMessage);
-    if(this.videoMessage != null) return Optional.of(videoMessage);
-    if(this.protocolMessage != null) return Optional.of(protocolMessage);
-    if(this.contactsArrayMessage != null) return Optional.of(contactsArrayMessage);
-    if(this.highlyStructuredMessage != null) return Optional.of(highlyStructuredMessage);
-    if(this.sendPaymentMessage != null) return Optional.of(sendPaymentMessage);
-    if(this.liveLocationMessage != null) return Optional.of(liveLocationMessage);
-    if(this.requestPaymentMessage != null) return Optional.of(requestPaymentMessage);
-    if(this.declinePaymentRequestMessage != null) return Optional.of(declinePaymentRequestMessage);
-    if(this.cancelPaymentRequestMessage != null) return Optional.of(cancelPaymentRequestMessage);
-    if(this.templateMessage != null) return Optional.of(templateMessage);
-    if(this.stickerMessage != null) return Optional.of(stickerMessage);
-    if(this.groupInviteMessage != null) return Optional.of(groupInviteMessage);
-    if(this.templateButtonReplyMessage != null) return Optional.of(templateButtonReplyMessage);
-    if(this.productMessage != null) return Optional.of(productMessage);
-    if(this.deviceSentMessage != null) return Optional.of(deviceSentMessage);
-    if(this.deviceSyncMessage != null) return Optional.of(deviceSyncMessage);
-    return Optional.empty();
+  public Message content(){
+    if(this.senderKeyDistributionMessage != null) return senderKeyDistributionMessage;
+    if(this.imageMessage != null) return imageMessage;
+    if(this.contactMessage != null) return contactMessage;
+    if(this.locationMessage != null) return locationMessage;
+    if(this.textMessage  != null) return textMessage;
+    if(this.documentMessage != null) return documentMessage;
+    if(this.audioMessage != null) return audioMessage;
+    if(this.videoMessage != null) return videoMessage;
+    if(this.protocolMessage != null) return protocolMessage;
+    if(this.contactsArrayMessage != null) return contactsArrayMessage;
+    if(this.highlyStructuredMessage != null) return highlyStructuredMessage;
+    if(this.sendPaymentMessage != null) return sendPaymentMessage;
+    if(this.liveLocationMessage != null) return liveLocationMessage;
+    if(this.requestPaymentMessage != null) return requestPaymentMessage;
+    if(this.declinePaymentRequestMessage != null) return declinePaymentRequestMessage;
+    if(this.cancelPaymentRequestMessage != null) return cancelPaymentRequestMessage;
+    if(this.templateMessage != null) return templateMessage;
+    if(this.stickerMessage != null) return stickerMessage;
+    if(this.groupInviteMessage != null) return groupInviteMessage;
+    if(this.templateButtonReplyMessage != null) return templateButtonReplyMessage;
+    if(this.productMessage != null) return productMessage;
+    if(this.deviceSentMessage != null) return deviceSentMessage;
+    if(this.deviceSyncMessage != null) return deviceSyncMessage;
+    throw new NoSuchElementException("MessageContainer has no content!");
   }
 
   /**
@@ -303,22 +304,12 @@ public class MessageContainer { // Not how I would design it, Whatsapp's choice 
    * @return a non-null enumerated type
    */
   public @NonNull MessageContainerContentType type(){
-    return switch (content().orElse(null)){
-      case null -> MessageContainerContentType.EMPTY;
+    return switch (content()){
       case ServerMessage ignored -> MessageContainerContentType.SERVER;
       case DeviceMessage ignored -> MessageContainerContentType.DEVICE;
       case BusinessMessage ignored -> MessageContainerContentType.BUSINESS;
       default -> MessageContainerContentType.STANDARD;
     };
-  }
-
-  /**
-   * Returns whether this container is empty
-   *
-   * @return true if this container is empty
-   */
-  public boolean isEmpty(){
-    return type() == MessageContainerContentType.EMPTY;
   }
 
   /**
@@ -380,10 +371,5 @@ public class MessageContainer { // Not how I would design it, Whatsapp's choice 
      * Standard message
      */
     STANDARD,
-
-    /**
-     * No message
-     */
-    EMPTY
   }
 }

@@ -1,10 +1,8 @@
-package it.auties.whatsapp.protobuf.model;
+package it.auties.whatsapp.exchange;
 
-import it.auties.whatsapp.api.WhatsappOptions;
-import it.auties.whatsapp.exchange.Request;
-import it.auties.whatsapp.utils.Attributes;
-import it.auties.whatsapp.utils.Nodes;
-import it.auties.whatsapp.utils.WhatsappUtils;
+import it.auties.whatsapp.util.Attributes;
+import it.auties.whatsapp.util.Nodes;
+import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.NonNull;
 
 import java.util.*;
@@ -126,21 +124,19 @@ public record Node(@NonNull String description,
     /**
      * Constructs a new request from this node
      *
-     * @param configuration the non null config
      * @return a non null request
      */
-    public Request toRequest(@NonNull WhatsappOptions configuration){
-        return toRequest(configuration, true);
+    public Request toRequest(){
+        return toRequest(true);
     }
 
     /**
      * Constructs a new request from this node
      *
-     * @param configuration the non null config
      * @param needsId       whether an id attribute should be added if missing
      * @return a non null request
      */
-    public Request toRequest(@NonNull WhatsappOptions configuration, boolean needsId){
+    public Request toRequest(boolean needsId){
         if (needsId && WhatsappUtils.readNullableId(this) == null) {
             attributes.map().put("id", WhatsappUtils.buildRequestTag());
         }

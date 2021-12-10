@@ -1,4 +1,4 @@
-package it.auties.whatsapp.utils;
+package it.auties.whatsapp.util;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
@@ -11,20 +11,6 @@ import static lombok.Lombok.sneakyThrow;
  */
 @UtilityClass
 public class Validate {
-    /**
-     * Throws an exception with type IllegalArgumentException with message {@code message} formatted using {@code args} if {@code value} is not true.
-     * Otherwise returns {@code object}
-     *
-     * @param object    the object to return if the check is successful
-     * @param condition the value to check
-     * @param message   the message of the exception to throw if {@code value} isn't true
-     * @param args      the arguments used to format the exception thrown if {@code value} isn't true
-     */
-    public <T> T isValid(T object, boolean condition, @NonNull String message, @NonNull Object... args) {
-        isTrue(condition, message, IllegalArgumentException.class, args);
-        return object;
-    }
-
     /**
      * Throws an exception with type IllegalArgumentException with message {@code message} formatted using {@code args} if {@code value} is not true
      *
@@ -55,7 +41,7 @@ public class Validate {
      * @param value     the value to check
      * @param throwable the exception to throw
      */
-    public void isTrue(boolean value, Throwable throwable) {
+    public void isTrue(boolean value, @NonNull Throwable throwable) {
         if (value) {
             return;
         }

@@ -1,6 +1,6 @@
 package it.auties.whatsapp.binary;
 
-import it.auties.whatsapp.utils.Validate;
+import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 import org.bouncycastle.util.encoders.Hex;
 

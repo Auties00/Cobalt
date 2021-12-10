@@ -1,6 +1,5 @@
 package it.auties.whatsapp.exchange;
 
-import it.auties.whatsapp.protobuf.model.Node;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.experimental.Accessors;

@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.NonNull;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * A model class that represents a jid.
@@ -70,6 +71,31 @@ public record ContactId(String user, int device, int agent, @NonNull String serv
      */
     public static ContactId ofCompanion(String jid, int agent, int device) {
         return new ContactId(parseId(jid), device, agent, USER_ADDRESS, true);
+    }
+
+    /**
+     * Constructs a new ContactId from an encoded value
+     *
+     * @param encoded the nullable encoded value
+     * @return a non-null optional ContactId
+     */
+    public static Optional<ContactId> ofEncoded(String encoded) {
+        if(encoded == null || !encoded.contains("@")){
+            return Optional.empty();
+        }
+
+        try {
+            var atIndex = encoded.indexOf("@");
+            var server = encoded.substring(atIndex + 1);
+            var userAndDevice = encoded.substring(0, atIndex).split(":", 2);
+            var userAndAgent = userAndDevice[0].split("_");
+            var user = userAndAgent[0];
+            var agent = Integer.parseInt(userAndAgent[1]);
+            var device = Integer.parseInt(userAndDevice[1]);
+            return Optional.of(new ContactId(user, device, agent, server, false));
+        }catch (Exception exception){
+            return Optional.empty();
+        }
     }
 
     /**
@@ -196,22 +222,25 @@ public record ContactId(String user, int device, int agent, @NonNull String serv
 
     @Override
     public String toString() {
-        if (companion()) {
-            if (agent == 0 && device == 0) {
-                return "%s@%s".formatted(user, USER_ADDRESS);
-            }
-
-            if (agent != 0 && device == 0) {
-                return "%s.%s@%s".formatted(user, agent, USER_ADDRESS);
-            }
-
-            if (agent == 0) {
-                return "%s:%s@%s".formatted(user, device, USER_ADDRESS);
-            }
-
-            return "%s.%s:%s@%s".formatted(user, agent, device, USER_ADDRESS);
+        if (!companion()) {
+            var user = Objects.requireNonNullElse(user(), "");
+            var agent = agent() != 0 ? "_%s".formatted(agent()) : "";
+            var device = device() != 0 ? ":%s".formatted(device()) : "";
+            return "%s%s%s@%s".formatted(user, agent, device, server());
         }
 
-        return user() == null ? server : "%s@%s".formatted(user(), server);
+        if (agent == 0 && device == 0) {
+            return "%s@%s".formatted(user, USER_ADDRESS);
+        }
+
+        if (agent != 0 && device == 0) {
+            return "%s.%s@%s".formatted(user, agent, USER_ADDRESS);
+        }
+
+        if (agent == 0) {
+            return "%s:%s@%s".formatted(user, device, USER_ADDRESS);
+        }
+
+        return "%s.%s:%s@%s".formatted(user, agent, device, USER_ADDRESS);
     }
 }

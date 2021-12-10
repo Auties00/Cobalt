@@ -1,4 +1,4 @@
-package it.auties.whatsapp.utils;
+package it.auties.whatsapp.util;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;

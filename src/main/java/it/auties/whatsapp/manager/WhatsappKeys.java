@@ -10,6 +10,7 @@ import it.auties.whatsapp.protobuf.group.SenderKeyName;
 import it.auties.whatsapp.protobuf.group.SenderKeyRecord;
 import it.auties.whatsapp.protobuf.group.SenderKeyStructure;
 import it.auties.whatsapp.protobuf.key.IdentityKeyPair;
+import it.auties.whatsapp.protobuf.key.PreKey;
 import it.auties.whatsapp.protobuf.key.SignedKeyPair;
 import lombok.Data;
 import lombok.NonNull;
@@ -74,16 +75,16 @@ public class WhatsappKeys {
     private byte @NonNull [] companionKey;
 
     /**
+     * Whether these keys have generated pre keys assigned to them
+     */
+    @JsonProperty
+    private @NonNull LinkedList<@NonNull PreKey> preKeys;
+
+    /**
      * The user using these keys
      */
     @JsonProperty
     private ContactId companion;
-
-    /**
-     * Whether these keys have generated pre keys assigned to them
-     */
-    @JsonProperty
-    private boolean preKeys;
 
     /**
      * Session dependent keys to write and read cyphered messages
@@ -124,6 +125,7 @@ public class WhatsappKeys {
         this.signedKeyPair = SignedKeyPair.with(id, identityKeyPair());
         this.companionKey = Signal.randomSenderKey();
         this.senderKeyStructures = new ArrayList<>();
+        this.preKeys = new LinkedList<>();
     }
 
     /**
@@ -167,6 +169,15 @@ public class WhatsappKeys {
      */
     public boolean hasCompanion() {
         return companion != null;
+    }
+
+    /**
+     * Checks if the client sent pre keys to the server
+     *
+     * @return true if the client sent pre keys to the server
+     */
+    public boolean hasPreKeys() {
+        return !preKeys.isEmpty();
     }
 
     /**

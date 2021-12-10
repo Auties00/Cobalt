@@ -2,8 +2,8 @@ package it.auties.whatsapp.binary;
 
 import io.netty.buffer.ByteBuf;
 import it.auties.whatsapp.protobuf.contact.ContactId;
-import it.auties.whatsapp.protobuf.model.Node;
-import it.auties.whatsapp.utils.Buffers;
+import it.auties.whatsapp.exchange.Node;
+import it.auties.whatsapp.util.Buffers;
 import lombok.NonNull;
 
 import java.nio.charset.StandardCharsets;
@@ -15,20 +15,24 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.zip.Inflater;
 
-import static io.netty.buffer.ByteBufUtil.threadLocalDirectBuffer;
 import static it.auties.whatsapp.binary.BinaryTag.*;
 
 public record BinaryDecoder(@NonNull ByteBuf buffer){
     public BinaryDecoder(){
         this(Buffers.newBuffer());
     }
-    
-    public ByteBuf unpack(byte[] input) {
-        var data = threadLocalDirectBuffer();
-        data.writeBytes(input);
+    public Node decode(byte @NonNull [] input){
+        buffer.clear()
+                .writeBytes(unpack(input));
+        return readNode();
+    }
+
+    private byte[] unpack(byte[] input){
+        var data = Buffers.newBuffer()
+                .writeBytes(input);
         var token = data.readByte() & 2;
         if (token == 0) {
-            return data.discardReadBytes();
+            return Buffers.readBytes(data);
         }
 
         try {
@@ -36,18 +40,10 @@ public record BinaryDecoder(@NonNull ByteBuf buffer){
             decompressor.setInput(Buffers.readBytes(data));
             var temp = new byte[2048];
             var length = decompressor.inflate(temp);
-            var result = threadLocalDirectBuffer();
-            result.writeBytes(Arrays.copyOf(temp, length));
-            return result;
+            return Arrays.copyOf(temp, length);
         }catch (Exception exception){
             throw new RuntimeException("Cannot inflate data", exception);
         }
-    }
-
-    public Node decode(@NonNull ByteBuf input){
-        buffer.clear();
-        buffer.writeBytes(input);
-        return readNode();
     }
 
     private Node readNode() {

@@ -20,6 +20,7 @@ import java.security.PublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 
+// TODO: Migrate off Curve25519 library
 @UtilityClass
 public class Curve {
     private final String CURVE_25519 = "X25519";
@@ -34,7 +35,8 @@ public class Curve {
 
     @SneakyThrows
     public boolean verifySignature(byte @NonNull [] publicKey, byte @NonNull [] message, byte @NonNull [] signature) {
-        return Curve25519.getInstance(Curve25519.BEST).verifySignature(publicKey, message, signature);
+        return Curve25519.getInstance(Curve25519.BEST)
+                .verifySignature(publicKey, message, signature);
     }
 
     @SneakyThrows
@@ -46,7 +48,8 @@ public class Curve {
 
     @SneakyThrows
     public byte[] calculateSignature(byte @NonNull [] privateKey, byte @NonNull [] message) {
-        return Curve25519.getInstance(Curve25519.BEST).calculateSignature(privateKey, message);
+        return Curve25519.getInstance(Curve25519.BEST)
+                .calculateSignature(privateKey, message);
     }
 
     @SneakyThrows

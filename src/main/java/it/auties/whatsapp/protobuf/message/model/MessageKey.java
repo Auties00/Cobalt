@@ -4,8 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.chat.Chat;
+import it.auties.whatsapp.protobuf.contact.ContactId;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
-import it.auties.whatsapp.utils.WhatsappUtils;
+import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -30,7 +31,7 @@ public class MessageKey {
   @JsonProperty(value = "1")
   @Getter
   @Setter
-  private @NonNull String chatJid;
+  private @NonNull ContactId chatId;
 
   /**
    * Determines whether the message was sent by you or by someone else
@@ -66,7 +67,7 @@ public class MessageKey {
    */
   public Optional<Chat> chat(){
     return WhatsappStore.findStoreById(storeUuid)
-            .findChatByJid(chatJid);
+            .findChatByJid(Objects.toString(chatId()));
   }
 
   public WhatsappStore store(){

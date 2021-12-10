@@ -1,4 +1,4 @@
-package it.auties.whatsapp.protobuf.model;
+package it.auties.whatsapp.util;
 
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.info.MessageInfo;

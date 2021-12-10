@@ -2,7 +2,7 @@ package it.auties.whatsapp.protobuf.key;
 
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.crypto.Curve;
-import it.auties.whatsapp.protobuf.model.Node;
+import it.auties.whatsapp.exchange.Node;
 import lombok.NonNull;
 
 public record SignedKeyPair(byte @NonNull [] id, @NonNull IdentityKeyPair keyPair, byte @NonNull [] signature) {

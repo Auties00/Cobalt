@@ -6,7 +6,7 @@ import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.crypto.Curve;
-import it.auties.whatsapp.utils.Validate;
+import it.auties.whatsapp.util.Validate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

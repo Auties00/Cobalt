@@ -6,8 +6,8 @@ import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactId;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
-import it.auties.whatsapp.protobuf.model.Node;
-import it.auties.whatsapp.utils.WhatsappUtils;
+import it.auties.whatsapp.exchange.Node;
+import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NonNull;
@@ -130,7 +130,7 @@ public class WhatsappStore {
      * @return a non-empty Optional containing the result if it is found otherwise an empty Optional empty
      */
     public @NonNull Optional<Chat> findChatByMessage(@NonNull MessageInfo message) {
-        return findChatByJid(message.key().chatJid());
+        return findChatByJid(message.key().chatId().toString());
     }
 
     /**

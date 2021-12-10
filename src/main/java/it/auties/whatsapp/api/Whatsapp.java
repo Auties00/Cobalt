@@ -1,9 +1,10 @@
 package it.auties.whatsapp.api;
 
-import it.auties.whatsapp.api.RegisterListener.Scanner;
 import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.whatsapp.compiler.RegisterListenerScanner;
 import it.auties.whatsapp.exchange.GroupResponse;
 import it.auties.whatsapp.exchange.HasWhatsappResponse;
+import it.auties.whatsapp.exchange.Node;
 import it.auties.whatsapp.exchange.StatusResponse;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
@@ -18,10 +19,10 @@ import it.auties.whatsapp.protobuf.info.ContextInfo;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
 import it.auties.whatsapp.protobuf.message.model.Message;
-import it.auties.whatsapp.protobuf.model.Node;
 import it.auties.whatsapp.socket.WhatsappSocket;
-import it.auties.whatsapp.utils.Nodes;
-import it.auties.whatsapp.utils.Validate;
+import it.auties.whatsapp.util.Nodes;
+import it.auties.whatsapp.util.Unsupported;
+import it.auties.whatsapp.util.Validate;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
@@ -32,8 +33,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import static it.auties.whatsapp.protobuf.model.Node.with;
-import static it.auties.whatsapp.protobuf.model.Node.withChildren;
+import static it.auties.whatsapp.exchange.Node.with;
+import static it.auties.whatsapp.exchange.Node.withChildren;
 import static java.util.Map.of;
 
 /**
@@ -48,7 +49,7 @@ public class Whatsapp {
 
     public Whatsapp(){
         this(new WhatsappSocket(WhatsappOptions.defaultOptions(), new WhatsappStore(), WhatsappKeys.fromMemory()));
-        Scanner.scan(this)
+        RegisterListenerScanner.scan(this)
                 .forEach(this::registerListener);
     }
 
@@ -358,6 +359,7 @@ public class Whatsapp {
      * @param presence the new status
      * @return a CompletableFuture 
      */
+    @Unsupported
     public CompletableFuture<?> changePresence(@NonNull ContactStatus presence) {
         return socket.sendWithNoResponse(with("presence", of("type", presence.data()), null));
     }

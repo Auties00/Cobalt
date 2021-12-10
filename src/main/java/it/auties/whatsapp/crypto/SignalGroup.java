@@ -4,7 +4,7 @@ import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.protobuf.group.*;
 import it.auties.whatsapp.protobuf.key.IdentityKeyPair;
 import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
-import it.auties.whatsapp.utils.Validate;
+import it.auties.whatsapp.util.Validate;
 import lombok.SneakyThrows;
 
 import javax.crypto.Cipher;

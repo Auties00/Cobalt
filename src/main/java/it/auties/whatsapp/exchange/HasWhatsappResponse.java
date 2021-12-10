@@ -1,7 +1,6 @@
 package it.auties.whatsapp.exchange;
 
 import it.auties.whatsapp.protobuf.contact.ContactId;
-import it.auties.whatsapp.protobuf.model.Node;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

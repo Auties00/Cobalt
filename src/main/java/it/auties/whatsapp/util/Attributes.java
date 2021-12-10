@@ -1,4 +1,4 @@
-package it.auties.whatsapp.utils;
+package it.auties.whatsapp.util;
 
 import it.auties.whatsapp.protobuf.contact.ContactId;
 import lombok.NonNull;
@@ -14,6 +14,11 @@ public record Attributes(Map<String, Object> map) {
 
     public static Attributes of(@NonNull Map<String, Object> map){
         return new Attributes(new HashMap<>(map));
+    }
+
+    public Attributes put(@NonNull String key, Object value){
+        map.put(key, value);
+        return this;
     }
 
     public <T> T get(@NonNull String key, @NonNull T defaultValue, @NonNull Class<T> clazz){

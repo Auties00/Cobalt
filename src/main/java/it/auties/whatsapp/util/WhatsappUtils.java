@@ -1,7 +1,7 @@
-package it.auties.whatsapp.utils;
+package it.auties.whatsapp.util;
 
 import it.auties.whatsapp.binary.BinaryArray;
-import it.auties.whatsapp.protobuf.model.Node;
+import it.auties.whatsapp.exchange.Node;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 
