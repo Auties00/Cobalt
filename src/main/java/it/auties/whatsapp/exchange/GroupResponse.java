@@ -1,7 +1,7 @@
 package it.auties.whatsapp.exchange;
 
 import it.auties.whatsapp.protobuf.chat.GroupParticipant;
-import it.auties.whatsapp.protobuf.contact.ContactId;
+import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -21,7 +21,7 @@ public class GroupResponse extends Response {
     private String id;
     private String subject;
     private ZonedDateTime subjectTimeStamp;
-    private ContactId founder;
+    private ContactJid founder;
     private ZonedDateTime foundationTimestamp;
     private List<GroupParticipant> participants;
 

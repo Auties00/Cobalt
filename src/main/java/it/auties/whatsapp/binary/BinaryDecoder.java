@@ -1,7 +1,7 @@
 package it.auties.whatsapp.binary;
 
 import io.netty.buffer.ByteBuf;
-import it.auties.whatsapp.protobuf.contact.ContactId;
+import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.exchange.Node;
 import it.auties.whatsapp.util.Buffers;
 import lombok.NonNull;
@@ -158,19 +158,19 @@ public record BinaryDecoder(@NonNull ByteBuf buffer){
         return readString(BinaryTokens.HEX, number >>> 7, 127 & number);
     }
 
-    private ContactId readJidPair() {
+    private ContactJid readJidPair() {
         return switch (read(true)){
-            case String encoded -> ContactId.of(encoded, readString());
-            case null -> ContactId.of(null, readString());
+            case String encoded -> ContactJid.of(encoded, readString());
+            case null -> ContactJid.of(null, readString());
             default -> throw new RuntimeException("Invalid jid type");
         };
     }
 
-    private ContactId readCompanionJid() {
+    private ContactJid readCompanionJid() {
         var agent = buffer.readUnsignedByte();
         var device = buffer.readUnsignedByte();
         var user = readString();
-        return ContactId.ofCompanion(user, agent, device);
+        return ContactJid.ofCompanion(user, device, agent);
     }
 
     private int readSize(int token) {

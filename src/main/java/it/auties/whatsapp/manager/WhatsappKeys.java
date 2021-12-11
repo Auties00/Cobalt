@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.whatsapp.binary.BinaryArray;
-import it.auties.whatsapp.crypto.Signal;
-import it.auties.whatsapp.protobuf.contact.ContactId;
+import it.auties.whatsapp.crypto.SignalHelper;
+import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.group.SenderKeyName;
 import it.auties.whatsapp.protobuf.group.SenderKeyRecord;
 import it.auties.whatsapp.protobuf.group.SenderKeyStructure;
@@ -84,7 +84,7 @@ public class WhatsappKeys {
      * The user using these keys
      */
     @JsonProperty
-    private ContactId companion;
+    private ContactJid companion;
 
     /**
      * Session dependent keys to write and read cyphered messages
@@ -118,12 +118,12 @@ public class WhatsappKeys {
     }
 
     public WhatsappKeys() {
-        this.id = Signal.randomRegistrationId();
+        this.id = SignalHelper.randomRegistrationId();
         this.companionKeyPair = IdentityKeyPair.random();
         this.ephemeralKeyPair = IdentityKeyPair.random();
         this.identityKeyPair = IdentityKeyPair.random();
         this.signedKeyPair = SignedKeyPair.with(id, identityKeyPair());
-        this.companionKey = Signal.randomSenderKey();
+        this.companionKey = SignalHelper.randomSenderKey();
         this.senderKeyStructures = new ArrayList<>();
         this.preKeys = new LinkedList<>();
     }

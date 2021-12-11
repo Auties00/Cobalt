@@ -1,6 +1,6 @@
 package it.auties.whatsapp.util;
 
-import it.auties.whatsapp.protobuf.contact.ContactId;
+import it.auties.whatsapp.protobuf.contact.ContactJid;
 import lombok.NonNull;
 
 import java.util.HashMap;
@@ -55,16 +55,16 @@ public record Attributes(Map<String, Object> map) {
                 .orElse(defaultValue);
     }
 
-    public Optional<ContactId> getJid(@NonNull String key){
+    public Optional<ContactJid> getJid(@NonNull String key){
         return get(key, Object.class)
                 .map(this::parseJid);
 
     }
 
-    private ContactId parseJid(Object value) {
+    private ContactJid parseJid(Object value) {
         return switch (value) {
-            case ContactId jid -> jid;
-            case String encodedJid -> ContactId.of(encodedJid);
+            case ContactJid jid -> jid;
+            case String encodedJid -> ContactJid.of(encodedJid);
             default -> throw new IllegalStateException("Unexpected value: " + value);
         };
     }

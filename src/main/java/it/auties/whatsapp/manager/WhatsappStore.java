@@ -4,7 +4,7 @@ import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.exchange.Request;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
-import it.auties.whatsapp.protobuf.contact.ContactId;
+import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.exchange.Node;
 import it.auties.whatsapp.util.WhatsappUtils;
@@ -69,7 +69,7 @@ public class WhatsappStore {
      */
     public @NonNull Optional<Contact> findContactByJid(@NonNull String jid) {
         return contacts.parallelStream()
-                .filter(contact -> Objects.equals(contact.id().toString(), ContactId.parseId(jid)))
+                .filter(contact -> Objects.equals(contact.id().toString(), ContactJid.withoutServer(jid)))
                 .findAny();
     }
 
@@ -105,7 +105,7 @@ public class WhatsappStore {
      */
     public @NonNull Optional<Chat> findChatByJid(@NonNull String jid) {
         return chats.parallelStream()
-                .filter(chat -> Objects.equals(chat.id().toString(), ContactId.parseId(jid)))
+                .filter(chat -> Objects.equals(chat.id().toString(), ContactJid.withoutServer(jid)))
                 .findAny();
     }
 

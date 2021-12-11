@@ -10,7 +10,7 @@ import it.auties.whatsapp.exchange.Request;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.authentication.*;
-import it.auties.whatsapp.protobuf.contact.ContactId;
+import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.key.PreKey;
 import it.auties.whatsapp.protobuf.message.server.HandshakeMessage;
@@ -190,7 +190,7 @@ public class WhatsappSocket {
         var sync = withChildren("usync",
                 of("sid", WhatsappUtils.buildRequestTag(), "mode", "query", "last", "true", "index", "0", "context", "interactive"),
                 query, list);
-        return sendQuery(of("to", ContactId.WHATSAPP, "type", "get", "xmlns", "usync"), sync)
+        return sendQuery(of("to", ContactJid.WHATSAPP, "type", "get", "xmlns", "usync"), sync)
                 .thenApplyAsync(this::parseQueryResult);
     }
 
@@ -330,7 +330,7 @@ public class WhatsappSocket {
         }
 
         private void confirmConnection() {
-            send(withChildren("iq", of("to", ContactId.WHATSAPP, "xmlns", "passive", "type", "set"),
+            send(withChildren("iq", of("to", ContactJid.WHATSAPP, "xmlns", "passive", "type", "set"),
                     with("active")));
         }
 
@@ -339,7 +339,7 @@ public class WhatsappSocket {
                 return;
             }
 
-            send(withChildren("iq", of("xmlns", "encrypt", "type", "set", "to", ContactId.WHATSAPP),
+            send(withChildren("iq", of("xmlns", "encrypt", "type", "set", "to", ContactJid.WHATSAPP),
                     createPreKeysContent()));
         }
 
@@ -377,7 +377,7 @@ public class WhatsappSocket {
 
         private void ping() {
             var ping = with("ping");
-            send(withChildren("iq", of("to", ContactId.WHATSAPP, "type", "get", "xmlns", "w:p"), ping));
+            send(withChildren("iq", of("to", ContactJid.WHATSAPP, "type", "get", "xmlns", "w:p"), ping));
         }
 
         private void printQrCode(Node container) {
@@ -430,10 +430,10 @@ public class WhatsappSocket {
         }
 
         private void sendConfirmNode(Node node, Node content) {
-            send(withChildren("iq", of("id", WhatsappUtils.readNullableId(node), "to", ContactId.WHATSAPP, "type", "result"), content));
+            send(withChildren("iq", of("id", WhatsappUtils.readNullableId(node), "to", ContactJid.WHATSAPP, "type", "result"), content));
         }
 
-        private ContactId fetchJid(Node container) {
+        private ContactJid fetchJid(Node container) {
             var node = Objects.requireNonNull(container.findNode("device"));
             return node.attributes().getJid("jid")
                     .orElseThrow(() -> new NoSuchElementException("Missing identity jid for session"));
@@ -459,7 +459,7 @@ public class WhatsappSocket {
             retries.put(messageId, retryCount + 1);
             var isGroup = node.attributes().get("participant", Object.class).isPresent();
             var key = keys.preKeys().getFirst();
-            var from = ContactId.ofEncoded(node.attributes().getString("from", null));
+            var from = ContactJid.ofEncoded(node.attributes().getString("from", null));
             var to = isGroup ? node.attributes().getJid("from").orElseThrow() : from.orElseThrow().toString();
             var receipt = withChildren("receipt", of("id", messageId, "type", "retry", "to", to), with("retry", of("count", retryCount.toString(), "id", WhatsappUtils.readNullableId(node), "t", node.attributes().getString("t"), "v", "1"), null), with("registration", of(keys.id(), 4)), withChildren("keys", with("type", (byte) 5), with("identity", keys.identityKeyPair().publicKey()), withChildren("key", with("id", of(key.id(), 3)), with("value", key.publicKey())), withChildren("skey", with("id", keys.signedKeyPair().id()), with("value", keys.signedKeyPair().keyPair().publicKey()), with("signature", keys.signedKeyPair().signature())), with("device-identity", encode(account))));
             node.attributes().put("recipient", node.attributes().get("recipient", Object.class).orElse(null));

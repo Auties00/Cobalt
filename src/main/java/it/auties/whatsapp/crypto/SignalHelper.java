@@ -10,7 +10,7 @@ import java.security.SecureRandom;
  * This class should only be used for WhatsappWeb's WebSocket buffer operations
  */
 @UtilityClass
-public class Signal {
+public class SignalHelper {
     private final String SHA_PRNG = "SHA1PRNG";
 
     @SneakyThrows

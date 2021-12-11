@@ -1,34 +1,34 @@
 package it.auties.whatsapp.protobuf.contact;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.whatsapp.api.Whatsapp;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.Accessors;
+import lombok.extern.java.Log;
 
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * A model class that represents a jid.
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
  * Instead, methods inside {@link Whatsapp} should be used.
- * This class also offers a builder, accessible using {@link ContactId#builder()}.
+ * This class also offers a builder, accessible using {@link ContactJid#builder()}.
  */
 @Builder
-public record ContactId(String user, int device, int agent, @NonNull String server, boolean companion) {
+@Log
+public record ContactJid(String user, @NonNull Server server, int device, int agent) {
     /**
      * The official business account address
      */
-    public static final String OFFICIAL_BUSINESS_ACCOUNT = "16505361212@c.us";
-
-    /**
-     * The at for all Whatsapp users
-     */
-    public static final String USER_ADDRESS = "s.whatsapp.net";
+    public static final String OFFICIAL_BUSINESS_ACCOUNT = "16505361212@s.whatsapp.net";
 
     /**
      * The ID of Whatsapp, used to send nodes
      */
-    public static final ContactId WHATSAPP = ofServer(USER_ADDRESS);
+    public static final ContactJid WHATSAPP = ofServer(Server.WHATSAPP);
 
     /**
      * Constructs a new ContactId for a user from a jid
@@ -36,8 +36,8 @@ public record ContactId(String user, int device, int agent, @NonNull String serv
      * @param jid the non-null jid of the user
      * @return a non-null contact id
      */
-    public static ContactId of(@NonNull String jid) {
-        return new ContactId(parseId(jid), 0, 0, USER_ADDRESS, false);
+    public static ContactJid of(@NonNull String jid) {
+        return new ContactJid(withoutServer(jid), Server.WHATSAPP, 0, 0);
     }
 
     /**
@@ -47,8 +47,8 @@ public record ContactId(String user, int device, int agent, @NonNull String serv
      * @param server the non-null custom server
      * @return a non-null contact id
      */
-    public static ContactId of(String jid, @NonNull String server) {
-        return new ContactId(parseId(jid), 0, 0, server, false);
+    public static ContactJid of(String jid, @NonNull Server server) {
+        return new ContactJid(withoutServer(jid), server, 0, 0);
     }
 
     /**
@@ -57,8 +57,8 @@ public record ContactId(String user, int device, int agent, @NonNull String serv
      * @param server the non-null custom server
      * @return a non-null contact id
      */
-    public static ContactId ofServer(@NonNull String server) {
-        return new ContactId(null, 0, 0, server, false);
+    public static ContactJid ofServer(@NonNull Server server) {
+        return new ContactJid(null, server, 0, 0);
     }
 
     /**
@@ -69,8 +69,8 @@ public record ContactId(String user, int device, int agent, @NonNull String serv
      * @param device the device id
      * @return a non-null contact id
      */
-    public static ContactId ofCompanion(String jid, int agent, int device) {
-        return new ContactId(parseId(jid), device, agent, USER_ADDRESS, true);
+    public static ContactJid ofCompanion(String jid, int device, int agent) {
+        return new ContactJid(withoutServer(jid), Server.WHATSAPP, device, agent);
     }
 
     /**
@@ -79,9 +79,9 @@ public record ContactId(String user, int device, int agent, @NonNull String serv
      * @param encoded the nullable encoded value
      * @return a non-null optional ContactId
      */
-    public static Optional<ContactId> ofEncoded(String encoded) {
+    public static ContactJid ofEncoded(String encoded) {
         if(encoded == null || !encoded.contains("@")){
-            return Optional.empty();
+            throw new IllegalArgumentException("Cannot decode %s".formatted(encoded));
         }
 
         try {
@@ -92,9 +92,9 @@ public record ContactId(String user, int device, int agent, @NonNull String serv
             var user = userAndAgent[0];
             var agent = Integer.parseInt(userAndAgent[1]);
             var device = Integer.parseInt(userAndDevice[1]);
-            return Optional.of(new ContactId(user, device, agent, server, false));
+            return new ContactJid(user, Server.forAddress(server), device, agent);
         }catch (Exception exception){
-            return Optional.empty();
+            throw new RuntimeException("Cannot decode %s: %s".formatted(encoded, exception.getMessage()));
         }
     }
 
@@ -104,14 +104,16 @@ public record ContactId(String user, int device, int agent, @NonNull String serv
      * @param jid the nullable jid to parse
      * @return null if {@code jid == null}, otherwise a non null string
      */
-    public static String parseId(String jid) {
+    public static String withoutServer(String jid) {
         if(jid == null) {
             return null;
         }
 
-        return jid.replace("@c.us", "")
-                .replace("@s.whatsapp.net", "")
-                .replace("@g.us", "");
+        for(var server : Server.values()) {
+            jid = jid.replaceAll(server.toString(), "");
+        }
+
+        return jid;
     }
 
     /**
@@ -120,43 +122,37 @@ public record ContactId(String user, int device, int agent, @NonNull String serv
      * @return a non null type
      */
     public Type type() {
-        if (device() != 0) {
+        if (isCompanion()) {
             return Type.COMPANION;
         }
 
-        if (Objects.equals(server(), "s.whatsapp.net")) {
-            return Type.USER;
-        }
-
-        if (Objects.equals(server(), "broadcast")) {
-            return Type.BROADCAST;
-        }
-
-        if (toString().equals(OFFICIAL_BUSINESS_ACCOUNT)) {
+        if (Objects.equals(toString(), OFFICIAL_BUSINESS_ACCOUNT)) {
             return Type.OFFICIAL_BUSINESS_ACCOUNT;
         }
 
-        if (Objects.equals(server(), "g.us")) {
-            return Type.SERVER;
-        }
+        return switch (server()){
+            case WHATSAPP -> Type.USER;
+            case BROADCAST -> Objects.equals(user(), "status") ? Type.STATUS : Type.BROADCAST;
+            case GROUP -> Type.GROUP;
+            case GROUP_CALL -> Type.GROUP_CALL;
+            case USER -> switch (user()){
+                case "server" -> Type.SERVER;
+                case "0" -> Type.ANNOUNCEMENT;
+                default -> Type.UNKNOWN;
+            };
+        };
+    }
 
-        if (Objects.equals(server(), "call")) {
-            return Type.GROUP_CALL;
-        }
+    public boolean contentEquals(String user){
+        return Objects.equals(user(), user);
+    }
 
-        if (Objects.equals(server(), "c.us") && Objects.equals(user(), "server")) {
-            return Type.SERVER;
-        }
+    public boolean contentEquals(Server server){
+        return Objects.equals(server(), server);
+    }
 
-        if (Objects.equals(server(), "c.us") && Objects.equals(user(), "0")) {
-            return Type.ANNOUNCEMENT;
-        }
-
-        if(Objects.equals(user(), "status") && Objects.equals(server(), "broadcast")){
-            return Type.STATUS;
-        }
-
-        return Type.UNKNOWN;
+    public boolean isCompanion(){
+        return device() != 0;
     }
 
     /**
@@ -214,15 +210,35 @@ public record ContactId(String user, int device, int agent, @NonNull String serv
         UNKNOWN
     }
 
-    @Override
-    public boolean equals(Object other) {
-        return other instanceof ContactId jid
-                && Objects.equals(server(), jid.server());
+    @AllArgsConstructor
+    @Accessors(fluent = true)
+    public enum Server {
+        USER("c.us"),
+        GROUP("g.us"),
+        BROADCAST("broadcast"),
+        GROUP_CALL("call"),
+        WHATSAPP("s.whatsapp.net");
+
+        @Getter
+        private String address;
+
+        @JsonCreator
+        public static Server forAddress(String address) {
+            return Arrays.stream(values())
+                    .filter(entry -> Objects.equals(entry.address(), address))
+                    .findFirst()
+                    .orElseThrow(() -> new NoSuchElementException("No known server matches %s".formatted(address)));
+        }
+
+        @Override
+        public String toString() {
+            return address();
+        }
     }
 
     @Override
     public String toString() {
-        if (!companion()) {
+        if (isCompanion()) {
             var user = Objects.requireNonNullElse(user(), "");
             var agent = agent() != 0 ? "_%s".formatted(agent()) : "";
             var device = device() != 0 ? ":%s".formatted(device()) : "";
@@ -230,17 +246,17 @@ public record ContactId(String user, int device, int agent, @NonNull String serv
         }
 
         if (agent == 0 && device == 0) {
-            return "%s@%s".formatted(user, USER_ADDRESS);
+            return "%s@%s".formatted(user, WHATSAPP);
         }
 
         if (agent != 0 && device == 0) {
-            return "%s.%s@%s".formatted(user, agent, USER_ADDRESS);
+            return "%s.%s@%s".formatted(user, agent, WHATSAPP);
         }
 
         if (agent == 0) {
-            return "%s:%s@%s".formatted(user, device, USER_ADDRESS);
+            return "%s:%s@%s".formatted(user, device, WHATSAPP);
         }
 
-        return "%s.%s:%s@%s".formatted(user, agent, device, USER_ADDRESS);
+        return "%s.%s:%s@%s".formatted(user, agent, device, WHATSAPP);
     }
 }

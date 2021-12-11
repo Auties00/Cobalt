@@ -19,7 +19,7 @@ public record SignalGroup(SenderKeyName senderKeyId, WhatsappKeys keys) {
     public SenderKeyDistributionMessage create(SenderKeyName senderKeyName) {
         var senderKeyRecord = keys.findSenderKeyByName(senderKeyName);
         if (senderKeyRecord.isEmpty()) {
-            senderKeyRecord.senderKeyState(Signal.randomSenderKeyId(), 0, Signal.randomSenderKey(), IdentityKeyPair.random().privateKey());
+            senderKeyRecord.senderKeyState(SignalHelper.randomSenderKeyId(), 0, SignalHelper.randomSenderKey(), IdentityKeyPair.random().privateKey());
             keys.senderKeyStructures().add(new SenderKeyStructure(senderKeyName, senderKeyRecord));
         }
 

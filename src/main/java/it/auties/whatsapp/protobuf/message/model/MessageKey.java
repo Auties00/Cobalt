@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.chat.Chat;
-import it.auties.whatsapp.protobuf.contact.ContactId;
+import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.*;
@@ -31,7 +31,7 @@ public class MessageKey {
   @JsonProperty(value = "1")
   @Getter
   @Setter
-  private @NonNull ContactId chatId;
+  private @NonNull ContactJid chatId;
 
   /**
    * Determines whether the message was sent by you or by someone else

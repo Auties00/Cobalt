@@ -1,7 +1,7 @@
 package it.auties.whatsapp.binary;
 
 import io.netty.buffer.ByteBuf;
-import it.auties.whatsapp.protobuf.contact.ContactId;
+import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.exchange.Node;
 import it.auties.whatsapp.util.Buffers;
 import it.auties.whatsapp.util.Nodes;
@@ -201,7 +201,7 @@ public record BinaryEncoder(@NonNull ByteBuf buffer){
             case String str -> writeString(str);
             case Number number -> writeString(number.toString());
             case byte[] bytes -> writeBytes(bytes);
-            case ContactId jid -> writeJid(jid);
+            case ContactJid jid -> writeJid(jid);
             case Collection<?> collection -> writeList(collection);
             case Node ignored -> throw new IllegalArgumentException("Invalid payload type: nodes should be wrapped by a collection");
             default -> throw new IllegalArgumentException("Invalid payload type: %s".formatted(input.getClass().getName()));
@@ -218,7 +218,7 @@ public record BinaryEncoder(@NonNull ByteBuf buffer){
         buffer.writeBytes(bytes);
     }
 
-    private void writeJid(ContactId jid) {
+    private void writeJid(ContactJid jid) {
         if(jid.companion()){
             buffer.writeByte(COMPANION_JID.data());
             buffer.writeByte(jid.agent());

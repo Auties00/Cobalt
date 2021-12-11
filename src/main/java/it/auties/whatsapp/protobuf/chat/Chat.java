@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.protobuf.contact.Contact;
-import it.auties.whatsapp.protobuf.contact.ContactId;
+import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.contact.ContactStatus;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.util.Messages;
@@ -35,7 +35,7 @@ public class Chat {
    * The non-null unique jid used to identify this chat
    */
   @JsonProperty(value = "2")
-  private @NonNull ContactId id;
+  private @NonNull ContactJid id;
   
   /**
    * The non-null display name of this chat
@@ -127,7 +127,7 @@ public class Chat {
    * @return true if this chat is a group
    */
   public boolean isGroup() {
-    return id.type() == ContactId.Type.GROUP;
+    return id.type() == ContactJid.Type.GROUP;
   }
 
   /**

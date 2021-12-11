@@ -1,6 +1,6 @@
 package it.auties.whatsapp.exchange;
 
-import it.auties.whatsapp.protobuf.contact.ContactId;
+import it.auties.whatsapp.protobuf.contact.ContactJid;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,7 +14,7 @@ import java.util.Optional;
 @EqualsAndHashCode(callSuper = true)
 @Accessors(fluent = true)
 public class HasWhatsappResponse extends Response {
-    private ContactId contact;
+    private ContactJid contact;
     private boolean hasWhatsapp;
 
     public HasWhatsappResponse(@NonNull Node source) {
@@ -26,7 +26,7 @@ public class HasWhatsappResponse extends Response {
                 .equals("in");
     }
 
-    public Optional<ContactId> contact(){
+    public Optional<ContactJid> contact(){
         return Optional.ofNullable(contact);
     }
 }

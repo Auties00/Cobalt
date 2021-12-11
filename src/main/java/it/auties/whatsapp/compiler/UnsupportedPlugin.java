@@ -59,7 +59,7 @@ public class UnsupportedPlugin implements Plugin, TaskListener {
             return (Unsupported) method.getModifiers()
                     .getAnnotations()
                     .stream()
-                    .filter(annotation -> annotation.getAnnotationType().toString().equals("Unsupported"))
+                    .filter(annotation -> annotation.getAnnotationType().toString().equals(Unsupported.class.getSimpleName()))
                     .findFirst()
                     .orElse(null);
         }

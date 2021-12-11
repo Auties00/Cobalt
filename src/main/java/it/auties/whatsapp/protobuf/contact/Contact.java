@@ -24,7 +24,7 @@ public class Contact {
     /**
      * The non-null unique jid used to identify this contact
      */
-    private final @NonNull ContactId id;
+    private final @NonNull ContactJid id;
 
     /**
      * The nullable name specified by this contact when he created a Whatsapp account.
