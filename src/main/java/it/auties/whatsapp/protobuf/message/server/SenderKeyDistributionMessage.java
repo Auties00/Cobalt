@@ -37,7 +37,7 @@ public final class SenderKeyDistributionMessage implements ServerMessage {
   private int iteration;
 
   /**
-   * The chain key of the message
+   * The value key of the message
    */
   @JsonProperty(value = "3")
   @JsonPropertyDescription("bytes")

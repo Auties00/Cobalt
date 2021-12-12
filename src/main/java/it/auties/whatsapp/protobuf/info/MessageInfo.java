@@ -4,8 +4,13 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.crypto.SignalGroup;
+import it.auties.whatsapp.exchange.Node;
+import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.protobuf.contact.Contact;
-import it.auties.whatsapp.protobuf.contact.ContactId;
+import it.auties.whatsapp.protobuf.contact.ContactJid;
+import it.auties.whatsapp.protobuf.signal.group.ProtocolAddress;
+import it.auties.whatsapp.protobuf.signal.group.SenderKeyName;
 import it.auties.whatsapp.protobuf.message.model.*;
 import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
 import it.auties.whatsapp.protobuf.message.standard.LiveLocationMessage;
@@ -13,6 +18,7 @@ import it.auties.whatsapp.util.Unsupported;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.Delegate;
+import org.whispersystems.libsignal.SessionCipher;
 
 import java.time.Instant;
 import java.util.*;
@@ -73,7 +79,7 @@ public class MessageInfo {
    * This property is only populated if {@link MessageInfo#chat()} refers to a group.
    */
   @JsonProperty(value = "5")
-  private ContactId senderId;
+  private ContactJid senderId;
 
   /**
    * Duration
@@ -190,7 +196,6 @@ public class MessageInfo {
   @Unsupported
   private byte[] mediaCiphertextSha256;
 
-
   /**
    * Constructs a new MessageInfo from a MessageKey and a MessageContainer
    *
@@ -203,6 +208,96 @@ public class MessageInfo {
     this.globalStatus = MessageStatus.PENDING;
     this.content = container;
     this.individualReadStatus = new HashMap<>();
+  }
+
+  public MessageInfo ofEncoded(Node stanza, WhatsappKeys keys) {
+    var deviceIdentity = stanza.findNodes("device-identity").stream().map(result -> (byte[]) result.content()).findFirst().orElse(new byte[0]);
+
+    var id = stanza.attributes().getString("id");
+    var from = ContactJid.ofEncoded(stanza.attributes().getString("recipient"));
+    /*
+          if(from.type() == ContactJid.Type.USER) {
+        var recipient = stanza.attributes().getString("recipient", null);
+        if(recipient != null) {
+          chatId = recipient
+        } else {
+          chatId = from
+        }
+        msgType = 'chat'
+                author = from
+      } else if(isJidGroup(from)) {
+        if(!participant) {
+          throw new Boom('No participant in group message')
+        }
+        msgType = 'group'
+                author = participant
+                chatId = from
+      } else if(isJidBroadcast(from)) {
+        if(!participant) {
+          throw new Boom('No participant in group message')
+        }
+        const isParticipantMe = isMe(participant)
+        if(isJidStatusBroadcast(from)) {
+          msgType = isParticipantMe ? 'direct_peer_status' : 'other_status'
+        } else {
+          msgType = isParticipantMe ? 'peer_broadcast' : 'other_broadcast'
+        }
+        chatId = from
+                author = participant
+      }
+    const sender = msgType === 'chat' ? author : chatId;
+     */
+
+    stanza.findNodes("enc").stream().filter(encrypted -> encrypted.content() instanceof byte[]).forEach(encrypted -> {
+      var e2eType = encrypted.attributes().getString("type");
+      var message = switch (e2eType) {
+        case "skmsg" -> {
+          var senderName = new SenderKeyName(sender, new ProtocolAddress(author.split("@")[0], 0));
+          var cipher = new SignalGroup(senderName, keys);
+          yield cipher.decipher((byte[]) encrypted.content());
+        }
+
+        case "pkmsg", "msg" -> {
+          var user = isJidUser(sender) ? sender : author;
+          	var addr = user.split("@")[0];
+	var session = new SessionCipher(signalStorage(auth), addr)
+                  let result: Buffer
+          switch(type) {
+            case 'pkmsg':
+              result = await session.decryptPreKeyWhisperMessage(msg)
+              break
+            case 'msg':
+              result = await session.decryptWhisperMessage(msg)
+              break
+          }
+          return result
+          yield decryptSignalProto(user, e2eType, content as Buffer, auth)
+        }
+      }
+
+      /*
+       switch(e2eType) {
+                    case 'skmsg':
+                      msgBuffer = await decryptGroupSignalProto(sender, author, content, auth)
+                      break
+                    case 'pkmsg':
+                    case 'msg':
+                        const user = isJidUser(sender) ? sender : author
+                            msgBuffer = await decryptSignalProto(user, e2eType, content as Buffer, auth)
+                      break
+                  }
+                const msg = proto.Message.decode(unpadRandomMax16(msgBuffer))
+                  if(msg.senderKeyDistributionMessage) {
+                    await processSenderKeyMessage(author, msg.senderKeyDistributionMessage, auth)
+                  }
+
+                  successes.push(msg)
+                } catch(error) {
+                  failures.push({ error: new Boom(error, { data: Buffer.from(encodeBinaryNode(stanza)).toString('base64') }) })
+                }
+              }
+       */
+    });
   }
 
   /**
@@ -219,7 +314,7 @@ public class MessageInfo {
    *
    * @return a non-null ContactId
    */
-  public ContactId senderId(){
+  public ContactJid senderId(){
     return Objects.requireNonNullElse(senderId, chatId());
   }
 

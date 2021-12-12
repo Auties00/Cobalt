@@ -1,8 +1,8 @@
-package it.auties.whatsapp.protobuf.info;
+package it.auties.whatsapp.protobuf.signal.auth;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.whatsapp.protobuf.signal.auth.WebdPayload;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -15,18 +15,22 @@ import java.util.Arrays;
 @Accessors(fluent = true)
 public class WebInfo {
   @JsonProperty(value = "4")
+  @JsonPropertyDescription("WebInfoWebSubPlatform")
   private WebInfoWebSubPlatform webSubPlatform;
 
   @JsonProperty(value = "3")
+  @JsonPropertyDescription("WebdPayload")
   private WebdPayload webdPayload;
 
   @JsonProperty(value = "2")
+  @JsonPropertyDescription("string")
   private String version;
 
   @JsonProperty(value = "1")
+  @JsonPropertyDescription("string")
   private String refToken;
 
-  public WebInfo(WebInfoWebSubPlatform webSubPlatform){
+  public WebInfo(@NonNull WebInfoWebSubPlatform webSubPlatform){
     this.webSubPlatform = webSubPlatform;
   }
 
