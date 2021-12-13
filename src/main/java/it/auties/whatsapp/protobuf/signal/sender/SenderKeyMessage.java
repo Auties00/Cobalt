@@ -1,4 +1,4 @@
-package it.auties.whatsapp.protobuf.signal.group;
+package it.auties.whatsapp.protobuf.signal.sender;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -51,11 +51,7 @@ public class SenderKeyMessage {
       var serializedBinary = BinaryArray.of(serialized);
       var version = Byte.toUnsignedInt(serializedBinary.at(0)) >> 4;
       var message = serializedBinary.slice(1, serialized.length - 1 - SIGNATURE_LENGTH).data();
-      var signature = serializedBinary.slice(serialized.length - 1 - SIGNATURE_LENGTH, SIGNATURE_LENGTH).data();
-      Validate.isTrue(version > 3, "Legacy version");
-      Validate.isTrue(version <= CURRENT_VERSION, "Unknown version");
       var senderKeyMessage = ProtobufDecoder.forType(getClass()).decode(message);
-
       this.serialized = serialized;
       this.version = version;
       this.id = senderKeyMessage.id();

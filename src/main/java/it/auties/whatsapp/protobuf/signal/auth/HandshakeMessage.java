@@ -1,4 +1,4 @@
-package it.auties.whatsapp.protobuf.message.server;
+package it.auties.whatsapp.protobuf.signal.auth;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -17,17 +17,17 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class HandshakeMessage {
-  @JsonProperty(value = "4")
-  @JsonPropertyDescription("ClientFinish")
-  private ClientFinish clientFinish;
+  @JsonProperty(value = "2")
+  @JsonPropertyDescription("ClientHello")
+  private ClientHello clientHello;
 
   @JsonProperty(value = "3")
   @JsonPropertyDescription("ServerHello")
   private ServerHello serverHello;
 
-  @JsonProperty(value = "2")
-  @JsonPropertyDescription("ClientHello")
-  private ClientHello clientHello;
+  @JsonProperty(value = "4")
+  @JsonPropertyDescription("ClientFinish")
+  private ClientFinish clientFinish;
 
   public HandshakeMessage(ClientHello clientHello){
     this.clientHello = clientHello;

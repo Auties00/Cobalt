@@ -6,12 +6,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
-import it.auties.whatsapp.protobuf.signal.group.SenderKeyName;
-import it.auties.whatsapp.protobuf.signal.group.SenderKeyRecord;
-import it.auties.whatsapp.protobuf.signal.group.SenderKeyStructure;
-import it.auties.whatsapp.protobuf.signal.key.IdentityKeyPair;
-import it.auties.whatsapp.protobuf.signal.key.PreKey;
-import it.auties.whatsapp.protobuf.signal.key.SignedKeyPair;
+import it.auties.whatsapp.protobuf.signal.key.SignalKeyPair;
+import it.auties.whatsapp.protobuf.signal.key.SignalPreKey;
+import it.auties.whatsapp.protobuf.signal.key.SignalSignedKeyPair;
+import it.auties.whatsapp.protobuf.signal.sender.SenderKeyName;
+import it.auties.whatsapp.protobuf.signal.sender.SenderKeyRecord;
+import it.auties.whatsapp.protobuf.signal.sender.SenderKeyStructure;
+import it.auties.whatsapp.protobuf.signal.session.ProtocolAddress;
+import it.auties.whatsapp.protobuf.signal.session.SessionRecord;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -48,25 +50,25 @@ public class WhatsappKeys {
      * The secret key pair used for buffer messages
      */
     @JsonProperty
-    private @NonNull IdentityKeyPair companionKeyPair;
+    private @NonNull SignalKeyPair companionKeyPair;
 
     /**
      * The ephemeral key pair
      */
     @JsonProperty
-    private @NonNull IdentityKeyPair ephemeralKeyPair;
+    private @NonNull SignalKeyPair ephemeralKeyPair;
 
     /**
      * The signed identity key
      */
     @JsonProperty
-    private @NonNull IdentityKeyPair identityKeyPair;
+    private @NonNull SignalKeyPair identityKeyPair;
 
     /**
      * The signed pre key
      */
     @JsonProperty
-    private @NonNull SignedKeyPair signedKeyPair;
+    private @NonNull SignalSignedKeyPair signedKeyPair;
 
     /**
      * The adv secret key
@@ -78,7 +80,7 @@ public class WhatsappKeys {
      * Whether these keys have generated pre keys assigned to them
      */
     @JsonProperty
-    private @NonNull LinkedList<@NonNull PreKey> preKeys;
+    private @NonNull LinkedList<@NonNull SignalPreKey> preKeys;
 
     /**
      * The user using these keys
@@ -95,6 +97,22 @@ public class WhatsappKeys {
      * Sender keys for signal implementation
      */
     private List<SenderKeyStructure> senderKeyStructures;
+
+    /**
+     * Sessions map
+     */
+    private Map<ProtocolAddress, SessionRecord> sessions;
+
+    /**
+     * Trusted keys
+     */
+    private Map<ProtocolAddress, byte[]> identities;
+
+
+    /**
+     * Trusted identity keys
+     */
+    private Map<Integer, byte[]> signedIdentities;
 
     /**
      * Returns the keys saved in memory or constructs a new clean instance
@@ -119,13 +137,16 @@ public class WhatsappKeys {
 
     public WhatsappKeys() {
         this.id = SignalHelper.randomRegistrationId();
-        this.companionKeyPair = IdentityKeyPair.random();
-        this.ephemeralKeyPair = IdentityKeyPair.random();
-        this.identityKeyPair = IdentityKeyPair.random();
-        this.signedKeyPair = SignedKeyPair.with(id, identityKeyPair());
+        this.companionKeyPair = SignalKeyPair.random();
+        this.ephemeralKeyPair = SignalKeyPair.random();
+        this.identityKeyPair = SignalKeyPair.random();
+        this.signedKeyPair = SignalSignedKeyPair.with(id, identityKeyPair());
         this.companionKey = SignalHelper.randomSenderKey();
         this.senderKeyStructures = new ArrayList<>();
         this.preKeys = new LinkedList<>();
+        this.sessions = new HashMap<>();
+        this.identities = new HashMap<>();
+        this.signedIdentities = new HashMap<>();
     }
 
     /**
@@ -193,5 +214,51 @@ public class WhatsappKeys {
                 .findFirst()
                 .map(SenderKeyStructure::record)
                 .orElseThrow(() -> new NoSuchElementException("Cannot find sender key for name %s".formatted(name)));
+    }
+
+    /**
+     * Queries the {@link SessionRecord} that matches {@code address}
+     *
+     * @param address the non-null address to search
+     * @return a non-null SessionRecord
+     * @throws NullPointerException if no element can be found
+     */
+    public SessionRecord findSessionByAddress(@NonNull ProtocolAddress address){
+        return Objects.requireNonNull(sessions.get(address), "Cannot find any session matching the provided address");
+    }
+
+    /**
+     * Queries the trusted key that matches {@code address}
+     *
+     * @param address the non-null address to search
+     * @return a non-null array of bytes
+     * @throws NullPointerException if no element can be found
+     */
+    public byte[] findIdentityByAddress(@NonNull ProtocolAddress address) {
+        return Objects.requireNonNull(identities.get(address), "Cannot find any identity matching the provided address");
+    }
+
+    /**
+     * Queries the trusted key that matches {@code id}
+     *
+     * @param id the id to search
+     * @return a non-null array of bytes
+     * @throws NullPointerException if no element can be found
+     */
+    public byte[] findSignedIdentityByAddress(int id) {
+        return Objects.requireNonNull(signedIdentities.get(id), "Cannot find any signed identity matching the provided address");
+    }
+
+
+    /**
+     * Checks whether {@code identityKey} is trusted for {@code address}
+     *
+     * @param address the non-null address
+     * @param identityKey the nullable identity key
+     * @return true if any match is found
+     */
+    public boolean hasTrust(@NonNull ProtocolAddress address, byte[] identityKey) {
+        var key = identities.get(address);
+        return (key == null || Arrays.equals(key, identityKey));
     }
 }

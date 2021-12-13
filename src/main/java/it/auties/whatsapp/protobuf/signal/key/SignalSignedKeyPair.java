@@ -5,13 +5,13 @@ import it.auties.whatsapp.crypto.Curve;
 import it.auties.whatsapp.exchange.Node;
 import lombok.NonNull;
 
-public record SignedKeyPair(byte @NonNull [] id, @NonNull IdentityKeyPair keyPair, byte @NonNull [] signature) {
-    public static SignedKeyPair with(int id, @NonNull IdentityKeyPair identityKeyPair){
+public record SignalSignedKeyPair(byte @NonNull [] id, @NonNull SignalKeyPair keyPair, byte @NonNull [] signature) {
+    public static SignalSignedKeyPair with(int id, @NonNull SignalKeyPair identityKeyPair){
         var encodedId = BinaryArray.of(id, 3).data();
-        var keyPair = IdentityKeyPair.random();
+        var keyPair = SignalKeyPair.random();
         var publicKey = BinaryArray.of((byte) 5).append(keyPair.publicKey()).data();
         var signature = Curve.calculateSignature(identityKeyPair.privateKey(), publicKey);
-        return new SignedKeyPair(encodedId, keyPair, signature);
+        return new SignalSignedKeyPair(encodedId, keyPair, signature);
     }
 
     public Node encode(){

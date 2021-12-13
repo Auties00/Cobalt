@@ -1,4 +1,6 @@
-package it.auties.whatsapp.protobuf.signal.group;
+package it.auties.whatsapp.protobuf.signal.sender;
+
+import it.auties.whatsapp.protobuf.signal.session.ProtocolAddress;
 
 import java.util.Objects;
 

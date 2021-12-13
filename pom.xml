@@ -188,6 +188,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
             <groupId>org.glassfish.tyrus</groupId>
             <artifactId>tyrus-server</artifactId>
             <version>${tyrus.version}</version>
@@ -213,10 +219,19 @@
             <version>${jackson.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
-            <scope>compile</scope>
+            <groupId>org.whispersystems</groupId>
+            <artifactId>signal-protocol-java</artifactId>
+            <version>${signal.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.classgraph</groupId>
+            <artifactId>classgraph</artifactId>
+            <version>${classgraph.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-buffer</artifactId>
+            <version>5.0.0.Alpha2</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -235,21 +250,6 @@
             <artifactId>jna</artifactId>
             <version>${jna.version}</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.whispersystems</groupId>
-            <artifactId>signal-protocol-java</artifactId>
-            <version>${signal.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.github.classgraph</groupId>
-            <artifactId>classgraph</artifactId>
-            <version>${classgraph.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-buffer</artifactId>
-            <version>5.0.0.Alpha2</version>
         </dependency>
     </dependencies>
 </project>

@@ -1,131 +1,207 @@
 package it.auties.whatsapp.crypto;
 
 import it.auties.whatsapp.manager.WhatsappKeys;
-import it.auties.whatsapp.protobuf.signal.group.ProtocolAddress;
+import it.auties.whatsapp.protobuf.signal.message.PreKeySignalMessage;
+import it.auties.whatsapp.protobuf.signal.message.SignalMessage;
+import it.auties.whatsapp.protobuf.signal.message.SignalProtocolMessage;
+import it.auties.whatsapp.protobuf.signal.session.*;
+import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
-import org.whispersystems.libsignal.protocol.CiphertextMessage;
-import org.whispersystems.libsignal.state.IdentityKeyStore;
-import org.whispersystems.libsignal.state.SessionRecord;
+import org.whispersystems.libsignal.ratchet.RatchetingSession;
 
 public record SignalSession(@NonNull ProtocolAddress address, @NonNull WhatsappKeys keys) {
-    public void cipher(byte[] paddedMessage) {
-        SessionRecord sessionRecord = sessionStore.loadSession(remoteAddress);
-        SessionState sessionState = sessionRecord.getSessionState();
-        ChainKey chainKey = sessionState.getSenderChainKey();
-        MessageKeys messageKeys = chainKey.getMessageKeys();
-        ECPublicKey senderEphemeral = sessionState.getSenderRatchetKey();
-        int previousCounter = sessionState.getPreviousCounter();
-        int sessionVersion = sessionState.getSessionVersion();
+    public SignalProtocolMessage cipher(byte[] paddedMessage) {
+        var sessionRecord = keys.sessions().get(address);
+        var sessionState = sessionRecord.currentSession();
+        var chainKey = sessionState.senderChain().chainKey();
+        var messageKeys = chainKey.messageKeys();
+        var senderEphemeral = sessionState.publicSenderRatchetKey();
+        var previousCounter = sessionState.previousCounter();
+        var sessionVersion = sessionState.sessionVersion();
 
-        byte[] ciphertextBody = getCiphertext(messageKeys, paddedMessage);
-        CiphertextMessage ciphertextMessage = new SignalMessage(sessionVersion, messageKeys.getMacKey(), senderEphemeral, chainKey.getIndex(), previousCounter, ciphertextBody, sessionState.getLocalIdentityKey(), sessionState.getRemoteIdentityKey());
+        var ciphertextBody = getCiphertext(messageKeys, paddedMessage);
+        var ciphertextMessage = getCipherTextMessage(sessionState, chainKey, messageKeys, senderEphemeral, previousCounter, sessionVersion, ciphertextBody);
 
-        if (sessionState.hasUnacknowledgedPreKeyMessage()) {
-            UnacknowledgedPreKeyMessageItems items = sessionState.getUnacknowledgedPreKeyMessageItems();
-            int localRegistrationId = sessionState.getLocalRegistrationId();
-
-            ciphertextMessage = new PreKeySignalMessage(sessionVersion, localRegistrationId, items.getPreKeyId(), items.getSignedPreKeyId(), items.getBaseKey(), sessionState.getLocalIdentityKey(), (SignalMessage) ciphertextMessage);
-        }
-
-        sessionState.setSenderChainKey(chainKey.getNextChainKey());
-
-        if (!identityKeyStore.isTrustedIdentity(remoteAddress, sessionState.getRemoteIdentityKey(), IdentityKeyStore.Direction.SENDING)) {
-            throw new UntrustedIdentityException(remoteAddress.getName(), sessionState.getRemoteIdentityKey());
-        }
-
-        identityKeyStore.saveIdentity(remoteAddress, sessionState.getRemoteIdentityKey());
-        sessionStore.storeSession(remoteAddress, sessionRecord);
+        sessionState.senderChain().chainKey(chainKey.nextChainKey());
+        Validate.isTrue(keys.hasTrust(address, sessionState.remoteIdentityKey()), "Untrusted key");
+        keys.identities().put(address, sessionState.remoteIdentityKey());
+        keys.sessions().put(address, sessionRecord);
         return ciphertextMessage;
     }
 
+    private SignalProtocolMessage getCipherTextMessage(SessionStructure sessionState, ChainKey chainKey, MessageKeys messageKeys, byte[] senderEphemeral, int previousCounter, int sessionVersion, byte[] ciphertextBody) {
+        var ciphertextMessage = new SignalMessage(sessionVersion, messageKeys.macKey(), senderEphemeral, chainKey.index(), previousCounter, ciphertextBody, sessionState.localIdentityPublic(), sessionState.remoteIdentityKey());
+        if (!sessionState.hasUnacknowledgedPreKeyMessage()) {
+            return ciphertextMessage;
+        }
 
-    public byte[] decrypt(PreKeySignalMessage ciphertext) throws DuplicateMessageException, LegacyMessageException, InvalidMessageException, InvalidKeyIdException, InvalidKeyException, UntrustedIdentityException {
-        return decrypt(ciphertext, new NullDecryptionCallback());
+        var items = sessionState.unacknowledgedPreKeyMessageItems();
+        var localRegistrationId = sessionState.localRegistrationId();
+        return new PreKeySignalMessage(sessionVersion, localRegistrationId, items.preKeyId(), items.signedPreKeyId(), items.baseKey(), sessionState.localIdentityPublic(), ciphertextMessage);
     }
 
 
-    public byte[] decrypt(PreKeySignalMessage ciphertext, DecryptionCallback callback) throws DuplicateMessageException, LegacyMessageException, InvalidMessageException, InvalidKeyIdException, InvalidKeyException, UntrustedIdentityException {
-        synchronized (SESSION_LOCK) {
-            SessionRecord sessionRecord = sessionStore.loadSession(remoteAddress);
-            Optional<Integer> unsignedPreKeyId = sessionBuilder.process(sessionRecord, ciphertext);
-            byte[] plaintext = decrypt(sessionRecord, ciphertext.getWhisperMessage());
+    private int process(SessionRecord sessionRecord, PreKeySignalMessage message) {
+        var theirIdentityKey = message.identityKey();
+        Validate.isTrue(keys.hasTrust(address, theirIdentityKey), "Untrusted key");
 
-            callback.handlePlaintext(plaintext);
+        var unsignedPreKeyId = processV3(sessionRecord, message);
 
-            sessionStore.storeSession(remoteAddress, sessionRecord);
+        keys.identities().put(address, theirIdentityKey);
 
-            if (unsignedPreKeyId.isPresent()) {
-                preKeyStore.removePreKey(unsignedPreKeyId.get());
-            }
+        return unsignedPreKeyId;
+    }
 
-            return plaintext;
+    private int processV3(SessionRecord sessionRecord, PreKeySignalMessage message) {
+        if (sessionRecord.hasSessionState(message.signalMessage().messageVersion(), message.baseKey())) {
+            return -1;
+        }
+
+        var ourSignedPreKey = keys.signedIdentities().get(message.signedPreKeyId());
+
+        var parameters= new BobSignalProtocolParameters()
+                .theirBaseKey(message.baseKey())
+                .theirIdentityKey(message.identityKey())
+                .ourIdentityKey(keys.identityKeyPair())
+                .ourSignedPreKey(ourSignedPreKey)
+                .ourRatchetKey(ourSignedPreKey);
+        if(message.preKeyId() != 0){
+            parameters.ourOneTimePreKey(keys.findSignedIdentityByAddress(message.preKeyId()));
+        }
+
+        if (!sessionRecord.fresh()) {
+            sessionRecord.archiveCurrentState();
+        }
+
+        org.whispersystems.libsignal.ratchet.BobSignalProtocolParameters
+        RatchetingSession.initializeSession(sessionRecord.getSessionState(), parameters.create());
+
+        sessionRecord.getSessionState().setLocalRegistrationId(identityKeyStore.getLocalRegistrationId());
+        sessionRecord.getSessionState().setRemoteRegistrationId(message.getRegistrationId());
+        sessionRecord.getSessionState().setAliceBaseKey(message.getBaseKey().serialize());
+
+        if (message.getPreKeyId().isPresent()) {
+            return message.getPreKeyId();
+        } else {
+            return Optional.absent();
         }
     }
 
-
-    public byte[] decrypt(SignalMessage ciphertext) throws InvalidMessageException, DuplicateMessageException, LegacyMessageException, NoSessionException, UntrustedIdentityException {
-        return decrypt(ciphertext, new NullDecryptionCallback());
-    }
-
-
-    public byte[] decrypt(SignalMessage ciphertext, DecryptionCallback callback) throws InvalidMessageException, DuplicateMessageException, LegacyMessageException, NoSessionException, UntrustedIdentityException {
-        synchronized (SESSION_LOCK) {
-
-            if (!sessionStore.containsSession(remoteAddress)) {
-                throw new NoSessionException("No session for: " + remoteAddress);
+    public void process(PreKeyBundle preKey) throws InvalidKeyException, UntrustedIdentityException {
+            if (!identityKeyStore.isTrustedIdentity(remoteAddress, preKey.getIdentityKey(), IdentityKeyStore.Direction.SENDING)) {
+                throw new UntrustedIdentityException(remoteAddress.getName(), preKey.getIdentityKey());
             }
 
-            SessionRecord sessionRecord = sessionStore.loadSession(remoteAddress);
-            byte[] plaintext = decrypt(sessionRecord, ciphertext);
-
-            if (!identityKeyStore.isTrustedIdentity(remoteAddress, sessionRecord.getSessionState().getRemoteIdentityKey(), IdentityKeyStore.Direction.RECEIVING)) {
-                throw new UntrustedIdentityException(remoteAddress.getName(), sessionRecord.getSessionState().getRemoteIdentityKey());
+            if (preKey.getSignedPreKey() != null &&
+                    !org.whispersystems.libsignal.ecc.Curve.verifySignature(preKey.getIdentityKey().getPublicKey(),
+                            preKey.getSignedPreKey().serialize(),
+                            preKey.getSignedPreKeySignature()))
+            {
+                throw new InvalidKeyException("Invalid signature on device key!");
             }
 
-            identityKeyStore.saveIdentity(remoteAddress, sessionRecord.getSessionState().getRemoteIdentityKey());
+            if (preKey.getSignedPreKey() == null) {
+                throw new InvalidKeyException("No signed prekey!");
+            }
 
-            callback.handlePlaintext(plaintext);
+            SessionRecord         sessionRecord        = sessionStore.loadSession(remoteAddress);
+            ECKeyPair             ourBaseKey           = org.whispersystems.libsignal.ecc.Curve.generateKeyPair();
+            ECPublicKey theirSignedPreKey    = preKey.getSignedPreKey();
+            Optional<ECPublicKey> theirOneTimePreKey   = Optional.fromNullable(preKey.getPreKey());
+            Optional<Integer>     theirOneTimePreKeyId = theirOneTimePreKey.isPresent() ? Optional.of(preKey.getPreKeyId()) :
+                    Optional.<Integer>absent();
 
+            AliceSignalProtocolParameters.Builder parameters = AliceSignalProtocolParameters.newBuilder();
+
+            parameters.setOurBaseKey(ourBaseKey)
+                    .setOurIdentityKey(identityKeyStore.getIdentityKeyPair())
+                    .setTheirIdentityKey(preKey.getIdentityKey())
+                    .setTheirSignedPreKey(theirSignedPreKey)
+                    .setTheirRatchetKey(theirSignedPreKey)
+                    .setTheirOneTimePreKey(theirOneTimePreKey);
+
+            if (!sessionRecord.isFresh()) sessionRecord.archiveCurrentState();
+
+            RatchetingSession.initializeSession(sessionRecord.getSessionState(), parameters.create());
+
+            sessionRecord.getSessionState().setUnacknowledgedPreKeyMessage(theirOneTimePreKeyId, preKey.getSignedPreKeyId(), ourBaseKey.getPublicKey());
+            sessionRecord.getSessionState().setLocalRegistrationId(identityKeyStore.getLocalRegistrationId());
+            sessionRecord.getSessionState().setRemoteRegistrationId(preKey.getRegistrationId());
+            sessionRecord.getSessionState().setAliceBaseKey(ourBaseKey.getPublicKey().serialize());
+
+            identityKeyStore.saveIdentity(remoteAddress, preKey.getIdentityKey());
             sessionStore.storeSession(remoteAddress, sessionRecord);
-
-            return plaintext;
         }
+
+
+        public byte[] decrypt(PreKeySignalMessage ciphertext) {
+        var sessionRecord = keys.sessions().get(address);
+        var unsignedPreKeyId = sessionBuilder.process(sessionRecord, ciphertext);
+        var plaintext = decrypt(sessionRecord, ciphertext.getWhisperMessage());
+
+        sessionStore.storeSession(remoteAddress, sessionRecord);
+
+        if (unsignedPreKeyId.isPresent()) {
+            preKeyStore.removePreKey(unsignedPreKeyId.get());
+        }
+
+        return plaintext;
     }
 
-    private byte[] decrypt(SessionRecord sessionRecord, SignalMessage ciphertext) throws DuplicateMessageException, LegacyMessageException, InvalidMessageException {
-        synchronized (SESSION_LOCK) {
-            Iterator<SessionState> previousStates = sessionRecord.getPreviousSessionStates().iterator();
-            List<Exception> exceptions = new LinkedList<>();
 
+    public byte[] decrypt(SignalMessage ciphertext) {
+        if (!sessionStore.containsSession(remoteAddress)) {
+            throw new NoSessionException("No session for: " + remoteAddress);
+        }
+
+        SessionRecord sessionRecord = sessionStore.loadSession(remoteAddress);
+        byte[] plaintext = decrypt(sessionRecord, ciphertext);
+
+        if (!identityKeyStore.isTrustedIdentity(remoteAddress, sessionRecord.getSessionState().getRemoteIdentityKey(), IdentityKeyStore.Direction.RECEIVING)) {
+            throw new UntrustedIdentityException(remoteAddress.getName(), sessionRecord.getSessionState().getRemoteIdentityKey());
+        }
+
+        identityKeyStore.saveIdentity(remoteAddress, sessionRecord.getSessionState().getRemoteIdentityKey());
+
+        callback.handlePlaintext(plaintext);
+
+        sessionStore.storeSession(remoteAddress, sessionRecord);
+
+        return plaintext;
+    }
+
+    private byte[] decrypt(SessionRecord sessionRecord, SignalMessage ciphertext) {
+        Iterator<SessionState> previousStates = sessionRecord.getPreviousSessionStates().iterator();
+        List<Exception> exceptions = new LinkedList<>();
+
+        try {
+            SessionState sessionState = new SessionState(sessionRecord.getSessionState());
+            byte[] plaintext = decrypt(sessionState, ciphertext);
+
+            sessionRecord.setState(sessionState);
+            return plaintext;
+        } catch (InvalidMessageException e) {
+            exceptions.add(e);
+        }
+
+        while (previousStates.hasNext()) {
             try {
-                SessionState sessionState = new SessionState(sessionRecord.getSessionState());
-                byte[] plaintext = decrypt(sessionState, ciphertext);
+                SessionState promotedState = new SessionState(previousStates.next());
+                byte[] plaintext = decrypt(promotedState, ciphertext);
 
-                sessionRecord.setState(sessionState);
+                previousStates.remove();
+                sessionRecord.promoteState(promotedState);
+
                 return plaintext;
             } catch (InvalidMessageException e) {
                 exceptions.add(e);
             }
-
-            while (previousStates.hasNext()) {
-                try {
-                    SessionState promotedState = new SessionState(previousStates.next());
-                    byte[] plaintext = decrypt(promotedState, ciphertext);
-
-                    previousStates.remove();
-                    sessionRecord.promoteState(promotedState);
-
-                    return plaintext;
-                } catch (InvalidMessageException e) {
-                    exceptions.add(e);
-                }
-            }
-
-            throw new InvalidMessageException("No valid sessions.", exceptions);
         }
+
+        throw new InvalidMessageException("No valid sessions.", exceptions);
     }
 
-    private byte[] decrypt(SessionState sessionState, SignalMessage ciphertextMessage) throws InvalidMessageException, DuplicateMessageException, LegacyMessageException {
+    private byte[] decrypt(SessionState sessionState, SignalMessage ciphertextMessage) {
         if (!sessionState.hasSenderChain()) {
             throw new InvalidMessageException("Uninitialized session!");
         }
@@ -156,14 +232,12 @@ public record SignalSession(@NonNull ProtocolAddress address, @NonNull WhatsappK
     }
 
     public int getSessionVersion() {
-        synchronized (SESSION_LOCK) {
-            if (!sessionStore.containsSession(remoteAddress)) {
-                throw new IllegalStateException(String.format("No session for (%s)!", remoteAddress));
-            }
-
-            SessionRecord record = sessionStore.loadSession(remoteAddress);
-            return record.getSessionState().getSessionVersion();
+        if (!sessionStore.containsSession(remoteAddress)) {
+            throw new IllegalStateException(String.format("No session for (%s)!", remoteAddress));
         }
+
+        SessionRecord record = sessionStore.loadSession(remoteAddress);
+        return record.getSessionState().getSessionVersion();
     }
 
     private ChainKey getOrCreateChainKey(SessionState sessionState, ECPublicKey theirEphemeral) throws InvalidMessageException {

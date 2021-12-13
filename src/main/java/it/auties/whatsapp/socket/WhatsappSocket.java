@@ -11,8 +11,9 @@ import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
-import it.auties.whatsapp.protobuf.signal.key.PreKey;
-import it.auties.whatsapp.protobuf.message.server.HandshakeMessage;
+import it.auties.whatsapp.protobuf.signal.auth.*;
+import it.auties.whatsapp.protobuf.signal.key.SignalPreKey;
+import it.auties.whatsapp.protobuf.signal.auth.HandshakeMessage;
 import it.auties.whatsapp.exchange.Node;
 import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
 import it.auties.whatsapp.util.Qr;
@@ -361,9 +362,9 @@ public class WhatsappSocket {
 
         private Node createPreKeys(){
             var nodes = IntStream.range(0, 30)
-                    .mapToObj(PreKey::fromIndex)
+                    .mapToObj(SignalPreKey::fromIndex)
                     .peek(keys.preKeys()::add)
-                    .map(PreKey::encode)
+                    .map(SignalPreKey::encode)
                     .toList();
 
             return with("list", nodes);
@@ -459,7 +460,7 @@ public class WhatsappSocket {
             var isGroup = node.attributes().get("participant", Object.class).isPresent();
             var key = keys.preKeys().getFirst();
             var from = ContactJid.ofEncoded(node.attributes().getString("from", null));
-            var to = isGroup ? node.attributes().getJid("from").orElseThrow() : from.orElseThrow().toString();
+            var to = isGroup ? node.attributes().getJid("from").orElseThrow() : from.toString();
             var receipt = withChildren("receipt", of("id", messageId, "type", "retry", "to", to), with("retry", of("count", retryCount.toString(), "id", WhatsappUtils.readNullableId(node), "t", node.attributes().getString("t"), "v", "1"), null), with("registration", of(keys.id(), 4)), withChildren("keys", with("type", (byte) 5), with("identity", keys.identityKeyPair().publicKey()), withChildren("key", with("id", of(key.id(), 3)), with("value", key.publicKey())), withChildren("skey", with("id", keys.signedKeyPair().id()), with("value", keys.signedKeyPair().keyPair().publicKey()), with("signature", keys.signedKeyPair().signature())), with("device-identity", encode(account))));
             node.attributes().put("recipient", node.attributes().get("recipient", Object.class).orElse(null));
             node.attributes().put("participant", node.attributes().get("participant", Object.class).orElse(null));

@@ -1,4 +1,4 @@
-package it.auties.whatsapp.protobuf.signal.group;
+package it.auties.whatsapp.protobuf.signal.sender;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
