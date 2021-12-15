@@ -416,7 +416,7 @@ public class WhatsappAPI {
         return chat.firstMessage()
                 .map(userMessage -> loadChatHistory(chat, userMessage, messageCount))
                 .orElseGet(() -> queryChat(chat.jid()).thenApplyAsync(res -> {
-                    chat.messages().addAll(res.data().messages());
+                    res.data().ifPresent(data -> chat.messages().addAll(data.messages()));
                     return chat;
                 }));
     }

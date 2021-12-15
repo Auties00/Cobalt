@@ -266,6 +266,7 @@ public class WhatsappWebSocket {
 
     private void openConnection() {
         try{
+            webSocketContainer.setDefaultMaxSessionIdleTimeout(0);
             webSocketContainer.connectToServer(this, URI.create(options.whatsappUrl()));
         }catch (IOException | DeploymentException exception){
             throw new RuntimeException("Cannot connect to WhatsappWeb's WebServer", exception);
@@ -418,8 +419,9 @@ public class WhatsappWebSocket {
 
     // This is not a very good approach probably as there should be more CMDs
     private void handleCmd(@NonNull JsonResponse res) {
-        if (!res.hasKey("type") || !res.hasKey("kind")) {
-            return;
+        var type = res.getString("type");
+        if(type.isPresent() && type.get().equals("upgrade_md_prod")){
+            throw new IllegalStateException("Please turn off multidevice beta from Whatsapp");
         }
 
         var kind = res.getString("kind").orElse("unknown");

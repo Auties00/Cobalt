@@ -636,7 +636,7 @@ public class WhatsappDataManager {
     private @NonNull CompletableFuture<Chat> queryMissingChat(@NonNull WhatsappWebSocket socket, @NonNull String jid) {
         return socket.queryChat(jid)
                 .thenApplyAsync(BinaryResponseModel::data)
-                .thenApplyAsync(this::addChat);
+                .thenApplyAsync(optional -> optional.isEmpty() ? null : addChat(optional.get()));
     }
 
     private void callOnListenerThread(@NonNull Runnable runnable) {
