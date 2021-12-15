@@ -509,13 +509,8 @@ public class WhatsappDataManager {
 
         var message = messageOpt.get();
         var statusName = firstChildNode.attrs().get("type");
-        var status = switch (statusName) {
-            case "read" -> MessageInfo.MessageInfoStatus.READ;
-            case "message" -> MessageInfo.MessageInfoStatus.DELIVERY_ACK;
-            case "error" -> MessageInfo.MessageInfoStatus.ERROR;
-            default -> throw new IllegalStateException("Cannot process read status, unexpected value: %s".formatted(statusName));
-        };
-
+        var status = Objects.requireNonNull(MessageInfo.MessageInfoStatus.forName(statusName),
+                "Cannot process read status, unexpected value: %s".formatted(statusName));
         if (status.index() <= message.globalStatus().index() && status != MessageInfo.MessageInfoStatus.ERROR) {
             return;
         }
