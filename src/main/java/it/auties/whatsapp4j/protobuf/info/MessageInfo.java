@@ -304,7 +304,6 @@ public class MessageInfo {
           .orElse(null);
     }
 
-    @JsonCreator
     public static MessageInfoStatus forName(String name) {
       return Arrays.stream(values())
               .filter(entry -> entry.name().equalsIgnoreCase(name))
