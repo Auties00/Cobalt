@@ -11,7 +11,6 @@ import java.util.Objects;
 
 @UtilityClass
 public class SodiumUtils {
-    private final String LIBRARY_PROPERTY = "java.library.path";
     private final String SODIUM_WIN32 = "sodium/windows/libsodium.dll";
     private final String SODIUM_WIN64 = "sodium/windows64/libsodium.dll";
     private final String SODIUM_LINUX = "sodium/linux64/libsodium.so";
@@ -29,9 +28,9 @@ public class SodiumUtils {
     private String setupJavaProperty() {
         try {
             var path = getSodiumPath();
-            var directory = SodiumUtils.class.getClassLoader().getResource(path);
-            var filePath = Path.of(Objects.requireNonNull(directory).toURI());
-            System.setProperty(LIBRARY_PROPERTY, filePath.toString());
+            var directory = Objects.requireNonNull(SodiumUtils.class.getClassLoader().getResource(path));
+            var filePath = Path.of(directory.toURI()).toRealPath();
+            System.load(filePath.toString());
             return filePath.getFileName().toString();
         }catch (Exception exception){
             throw new RuntimeException("Cannot setup sodium", exception);

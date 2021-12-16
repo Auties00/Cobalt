@@ -85,7 +85,7 @@ public class WhatsappUtils {
      * @return true if {@code jid} is a group
      */
     public boolean isGroup(@NonNull String jid) {
-        return jid.contains("-");
+        return jid.endsWith("g.us");
     }
 
     /**
