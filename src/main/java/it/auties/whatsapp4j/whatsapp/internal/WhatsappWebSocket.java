@@ -248,14 +248,13 @@ public class WhatsappWebSocket {
 
     @SneakyThrows
     public void disconnect(String reason, boolean logout, boolean reconnect) {
-        Validate.isTrue(loggedIn, "WhatsappAPI: Cannot terminate the connection with whatsapp as it doesn't exist", IllegalStateException.class);
         whatsappManager.clear();
         if (logout) {
             new LogOutRequest(options) {}
                     .send(session())
                     .thenRunAsync(whatsappKeys::deleteKeysFromMemory);
         }
-
+        pingService.shutdown();
         session().close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, reason));
         session(null);
         whatsappManager.callListeners(WhatsappListener::onDisconnected);
