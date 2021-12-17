@@ -3,6 +3,7 @@ package it.auties.whatsapp.protobuf.signal.session;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -36,6 +37,12 @@ public class Chain {
 
     public Chain(byte[] senderRatchetKey, ChainKey chainKey) {
         this.senderRatchetKey = senderRatchetKey;
+        this.chainKey = chainKey;
+    }
+
+    public Chain(SignalKeyPair senderRatchetKeyPair, ChainKey chainKey) {
+        this.senderRatchetKey = senderRatchetKeyPair.publicKey();
+        this.senderRatchetKeyPrivate = senderRatchetKeyPair.privateKey();
         this.chainKey = chainKey;
     }
 }

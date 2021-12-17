@@ -6,9 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
-import it.auties.whatsapp.protobuf.signal.key.SignalKeyPair;
-import it.auties.whatsapp.protobuf.signal.key.SignalPreKey;
-import it.auties.whatsapp.protobuf.signal.key.SignalSignedKeyPair;
+import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
+import it.auties.whatsapp.protobuf.signal.keypair.SignalPreKey;
+import it.auties.whatsapp.protobuf.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.protobuf.signal.sender.SenderKeyName;
 import it.auties.whatsapp.protobuf.signal.sender.SenderKeyRecord;
 import it.auties.whatsapp.protobuf.signal.sender.SenderKeyStructure;
@@ -112,7 +112,7 @@ public class WhatsappKeys {
     /**
      * Trusted identity keys
      */
-    private Map<Integer, byte[]> signedIdentities;
+    private Map<Integer, SignalKeyPair> signedIdentities;
 
     /**
      * Returns the keys saved in memory or constructs a new clean instance
@@ -245,7 +245,7 @@ public class WhatsappKeys {
      * @return a non-null array of bytes
      * @throws NullPointerException if no element can be found
      */
-    public byte[] findSignedIdentityByAddress(int id) {
+    public SignalKeyPair findSignedIdentityByAddress(int id) {
         return Objects.requireNonNull(signedIdentities.get(id), "Cannot find any signed identity matching the provided address");
     }
 

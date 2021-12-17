@@ -219,7 +219,7 @@ public record BinaryEncoder(@NonNull ByteBuf buffer){
     }
 
     private void writeJid(ContactJid jid) {
-        if(jid.companion()){
+        if(jid.isCompanion()){
             buffer.writeByte(COMPANION_JID.data());
             buffer.writeByte(jid.agent());
             buffer.writeByte(jid.device());
@@ -230,12 +230,12 @@ public record BinaryEncoder(@NonNull ByteBuf buffer){
         buffer.writeByte(JID_PAIR.data());
         if(jid.user() != null) {
             writeString(jid.user());
-            writeString(jid.server());
+            writeString(jid.server().address());
             return;
         }
 
         buffer.writeByte(LIST_EMPTY.data());
-        writeString(jid.server());
+        writeString(jid.server().address());
     }
 
     private int length(String input) {

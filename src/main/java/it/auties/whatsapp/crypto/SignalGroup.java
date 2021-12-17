@@ -2,7 +2,7 @@ package it.auties.whatsapp.crypto;
 
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.protobuf.signal.sender.*;
-import it.auties.whatsapp.protobuf.signal.key.SignalKeyPair;
+import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.util.Validate;
 import lombok.SneakyThrows;

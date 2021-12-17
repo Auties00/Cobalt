@@ -1,6 +1,6 @@
 package it.auties.whatsapp.protobuf.signal.session;
 
-import it.auties.whatsapp.protobuf.signal.key.SignalKeyPair;
+import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,10 +11,10 @@ import lombok.experimental.Accessors;
 @Data
 @Accessors(fluent = true)
 public class SymmetricSignalProtocolParameters {
-    private byte[] ourIdentityKey;
-    private byte[] ourBaseKey;
-    private byte[] ourRatchetKey;
+    private SignalKeyPair ourIdentityKey;
+    private SignalKeyPair ourBaseKey;
+    private SignalKeyPair ourRatchetKey;
     private byte[] theirIdentityKey;
-    private byte[] theirBaseKey;
     private byte[] theirRatchetKey;
+    private byte[] theirBaseKey;
 }

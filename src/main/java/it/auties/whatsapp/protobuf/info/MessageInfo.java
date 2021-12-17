@@ -4,13 +4,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.crypto.SignalGroup;
 import it.auties.whatsapp.exchange.Node;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
-import it.auties.whatsapp.protobuf.signal.session.ProtocolAddress;
-import it.auties.whatsapp.protobuf.signal.sender.SenderKeyName;
 import it.auties.whatsapp.protobuf.message.model.*;
 import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
 import it.auties.whatsapp.protobuf.message.standard.LiveLocationMessage;
@@ -18,7 +15,6 @@ import it.auties.whatsapp.util.Unsupported;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.Delegate;
-import org.whispersystems.libsignal.SessionCipher;
 
 import java.time.Instant;
 import java.util.*;
@@ -211,11 +207,16 @@ public class MessageInfo {
   }
 
   public MessageInfo ofEncoded(Node stanza, WhatsappKeys keys) {
-    var deviceIdentity = stanza.findNodes("device-identity").stream().map(result -> (byte[]) result.content()).findFirst().orElse(new byte[0]);
+    /*
+       From Baileys!!!
+        var deviceIdentity = stanza.findNodes("device-identity")
+            .stream()
+            .map(result -> (byte[]) result.content())
+            .findFirst()
+            .orElse(new byte[0]);
 
     var id = stanza.attributes().getString("id");
     var from = ContactJid.ofEncoded(stanza.attributes().getString("recipient"));
-    /*
           if(from.type() == ContactJid.Type.USER) {
         var recipient = stanza.attributes().getString("recipient", null);
         if(recipient != null) {
@@ -246,9 +247,8 @@ public class MessageInfo {
                 author = participant
       }
     const sender = msgType === 'chat' ? author : chatId;
-     */
 
-    stanza.findNodes("enc").stream().filter(encrypted -> encrypted.content() instanceof byte[]).forEach(encrypted -> {
+        stanza.findNodes("enc").stream().filter(encrypted -> encrypted.content() instanceof byte[]).forEach(encrypted -> {
       var e2eType = encrypted.attributes().getString("type");
       var message = switch (e2eType) {
         case "skmsg" -> {
@@ -296,8 +296,9 @@ public class MessageInfo {
                   failures.push({ error: new Boom(error, { data: Buffer.from(encodeBinaryNode(stanza)).toString('base64') }) })
                 }
               }
-       */
-    });
+  });
+     */
+    throw new UnsupportedOperationException("Work in progress");
   }
 
   /**

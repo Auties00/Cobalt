@@ -36,6 +36,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @param jid the non-null jid of the user
      * @return a non-null contact id
      */
+    @JsonCreator
     public static ContactJid of(@NonNull String jid) {
         return new ContactJid(withoutServer(jid), Server.WHATSAPP, 0, 0);
     }

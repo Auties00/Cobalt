@@ -1,29 +1,27 @@
 package it.auties.whatsapp.util;
 
 import it.auties.whatsapp.crypto.Curve;
-import it.auties.whatsapp.protobuf.signal.key.SignalKeyPair;
-import it.auties.whatsapp.protobuf.signal.session.AliceSignalProtocolParameters;
-import it.auties.whatsapp.protobuf.signal.session.BobSignalProtocolParameters;
-import it.auties.whatsapp.protobuf.signal.session.SessionStructure;
-import it.auties.whatsapp.protobuf.signal.session.SymmetricSignalProtocolParameters;
+import it.auties.whatsapp.crypto.Hkdf;
+import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
+import it.auties.whatsapp.protobuf.signal.session.*;
+import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.Arrays;
 
 @UtilityClass
 public class Sessions {
     private final int CURRENT_VERSION = 3;
     public void initializeSession(SessionStructure sessionState, SymmetricSignalProtocolParameters parameters) {
-        if (isAlice(parameters.ourBaseKey(), parameters.theirBaseKey())) {
+        if (Arrays.equals(parameters.ourBaseKey().publicKey(), parameters.theirBaseKey())) {
             var aliceSignalParameters = new AliceSignalProtocolParameters()
                     .ourBaseKey(parameters.ourBaseKey())
                     .ourIdentityKey(parameters.ourIdentityKey())
                     .theirRatchetKey(parameters.theirRatchetKey())
                     .theirIdentityKey(parameters.theirIdentityKey())
                     .theirSignedPreKey(parameters.theirBaseKey())
-                    .theirOneTimePreKey(-1);
+                    .theirOneTimePreKey(null);
             initializeSession(sessionState, aliceSignalParameters);
             return;
         }
@@ -39,108 +37,66 @@ public class Sessions {
         initializeSession(sessionState, bobSignalParameters);
     }
 
+    @SneakyThrows
     public void initializeSession(SessionStructure sessionState, AliceSignalProtocolParameters parameters) {
-        try {
-            sessionState.sessionVersion(CURRENT_VERSION);
-            sessionState.remoteIdentityKey(parameters.theirIdentityKey());
-            sessionState.localIdentityPublic(parameters.ourIdentityKey());
+        sessionState.sessionVersion(CURRENT_VERSION);
+        sessionState.remoteIdentityKey(parameters.theirIdentityKey());
+        sessionState.localIdentityPublic(parameters.ourIdentityKey().publicKey());
 
-            var             sendingRatchetKey = SignalKeyPair.random();
-            var secrets           = new ByteArrayOutputStream();
+        var sendingRatchetKey = SignalKeyPair.random();
+        var secrets = new ByteArrayOutputStream();
 
-            secrets.write(getDiscontinuityBytes());
+        secrets.write(discontinuityBytes());
 
-            secrets.write(Curve.calculateSharedSecret(parameters.theirSignedPreKey(),
-                    parameters.ourIdentityKey().getPrivateKey()));
-            secrets.write(Curve.calculateAgreement(parameters.getTheirIdentityKey().getPublicKey(),
-                    parameters.getOurBaseKey().getPrivateKey()));
-            secrets.write(Curve.calculateAgreement(parameters.getTheirSignedPreKey(),
-                    parameters.getOurBaseKey().getPrivateKey()));
+        secrets.write(Curve.calculateSharedSecret(parameters.theirSignedPreKey(), parameters.ourIdentityKey().privateKey()).data());
+        secrets.write(Curve.calculateSharedSecret(parameters.theirIdentityKey(), parameters.ourBaseKey().privateKey()).data());
+        secrets.write(Curve.calculateSharedSecret(parameters.theirSignedPreKey(), parameters.ourBaseKey().privateKey()).data());
 
-            if (parameters.getTheirOneTimePreKey().isPresent()) {
-                secrets.write(Curve.calculateAgreement(parameters.getTheirOneTimePreKey().get(),
-                        parameters.getOurBaseKey().getPrivateKey()));
-            }
-
-            org.whispersystems.libsignal.ratchet.RatchetingSession.DerivedKeys derivedKeys  = calculateDerivedKeys(secrets.toByteArray());
-            Pair<RootKey, ChainKey> sendingChain = derivedKeys.getRootKey().createChain(parameters.getTheirRatchetKey(), sendingRatchetKey);
-
-            sessionState.addReceiverChain(parameters.getTheirRatchetKey(), derivedKeys.getChainKey());
-            sessionState.setSenderChain(sendingRatchetKey, sendingChain.second());
-            sessionState.setRootKey(sendingChain.first());
-        } catch (IOException e) {
-            throw new AssertionError(e);
+        if (parameters.theirOneTimePreKey() != null) {
+            secrets.write(Curve.calculateSharedSecret(parameters.theirOneTimePreKey(), parameters.ourBaseKey().privateKey()).data());
         }
+
+        var derivedKeys = calculateDerivedKeys(secrets.toByteArray());
+        var sendingChain = derivedKeys.rootKey().createChain(parameters.theirRatchetKey(), sendingRatchetKey);
+
+        sessionState.addReceiverChain(parameters.theirRatchetKey(), derivedKeys.chainKey());
+        sessionState.senderChain(sendingRatchetKey, sendingChain.chainKey());
+        sessionState.rootKey(sendingChain.rootKey().key());
     }
 
-    public void initializeSession(SessionState sessionState, BobSignalProtocolParameters parameters)
-            throws InvalidKeyException
-    {
+    @SneakyThrows
+    public void initializeSession(SessionStructure sessionState, BobSignalProtocolParameters parameters) {
+        sessionState.sessionVersion(CURRENT_VERSION);
+        sessionState.remoteIdentityKey(parameters.theirIdentityKey());
+        sessionState.localIdentityPublic(parameters.ourOneTimePreKey().publicKey());
 
-        try {
-            sessionState.setSessionVersion(CiphertextMessage.CURRENT_VERSION);
-            sessionState.setRemoteIdentityKey(parameters.getTheirIdentityKey());
-            sessionState.setLocalIdentityKey(parameters.getOurIdentityKey().getPublicKey());
+        var secrets = new ByteArrayOutputStream();
 
-            ByteArrayOutputStream secrets = new ByteArrayOutputStream();
+        secrets.write(discontinuityBytes());
 
-            secrets.write(getDiscontinuityBytes());
+        secrets.write(Curve.calculateSharedSecret(parameters.theirIdentityKey(), parameters.ourSignedPreKey().privateKey()).data());
+        secrets.write(Curve.calculateSharedSecret(parameters.theirBaseKey(), parameters.ourIdentityKey().privateKey()).data());
+        secrets.write(Curve.calculateSharedSecret(parameters.theirBaseKey(), parameters.ourSignedPreKey().privateKey()).data());
 
-            secrets.write(Curve.calculateAgreement(parameters.getTheirIdentityKey().getPublicKey(),
-                    parameters.getOurSignedPreKey().getPrivateKey()));
-            secrets.write(Curve.calculateAgreement(parameters.getTheirBaseKey(),
-                    parameters.getOurIdentityKey().getPrivateKey()));
-            secrets.write(Curve.calculateAgreement(parameters.getTheirBaseKey(),
-                    parameters.getOurSignedPreKey().getPrivateKey()));
-
-            if (parameters.getOurOneTimePreKey().isPresent()) {
-                secrets.write(Curve.calculateAgreement(parameters.getTheirBaseKey(),
-                        parameters.getOurOneTimePreKey().get().getPrivateKey()));
-            }
-
-            org.whispersystems.libsignal.ratchet.RatchetingSession.DerivedKeys derivedKeys = calculateDerivedKeys(secrets.toByteArray());
-
-            sessionState.setSenderChain(parameters.getOurRatchetKey(), derivedKeys.getChainKey());
-            sessionState.setRootKey(derivedKeys.getRootKey());
-        } catch (IOException e) {
-            throw new AssertionError(e);
+        if (parameters.ourOneTimePreKey() != null) {
+            secrets.write(Curve.calculateSharedSecret(parameters.theirBaseKey(), parameters.ourOneTimePreKey().privateKey()).data());
         }
+
+        var derivedKeys = calculateDerivedKeys(secrets.toByteArray());
+        sessionState.senderChain(parameters.ourRatchetKey(), derivedKeys.chainKey());
+        sessionState.rootKey(derivedKeys.rootKey().key());
     }
 
-    private byte[] getDiscontinuityBytes() {
-        byte[] discontinuity = new byte[32];
+    private byte[] discontinuityBytes() {
+        var discontinuity = new byte[32];
         Arrays.fill(discontinuity, (byte) 0xFF);
         return discontinuity;
     }
 
-    private org.whispersystems.libsignal.ratchet.RatchetingSession.DerivedKeys calculateDerivedKeys(byte[] masterSecret) {
-        HKDF     kdf                = new HKDFv3();
-        byte[]   derivedSecretBytes = kdf.deriveSecrets(masterSecret, "WhisperText".getBytes(), 64);
-        byte[][] derivedSecrets     = ByteUtil.split(derivedSecretBytes, 32, 32);
-
-        return new org.whispersystems.libsignal.ratchet.RatchetingSession.DerivedKeys(new RootKey(kdf, derivedSecrets[0]),
-                new ChainKey(kdf, derivedSecrets[1], 0));
-    }
-
-    private boolean isAlice(ECPublicKey ourKey, ECPublicKey theirKey) {
-        return ourKey.compareTo(theirKey) < 0;
-    }
-
-    private class DerivedKeys {
-        private final RootKey   rootKey;
-        private final ChainKey  chainKey;
-
-        private DerivedKeys(RootKey rootKey, ChainKey chainKey) {
-            this.rootKey   = rootKey;
-            this.chainKey  = chainKey;
-        }
-
-        public RootKey getRootKey() {
-            return rootKey;
-        }
-
-        public ChainKey getChainKey() {
-            return chainKey;
-        }
+    private DerivedKeys calculateDerivedKeys(byte[] masterSecret) {
+        var derivedSecretBytes = Hkdf.deriveSecrets(masterSecret, "WhisperText".getBytes(), 64);
+        var root = new RootKey(Arrays.copyOfRange(derivedSecretBytes, 0, 32));
+        var chain = new ChainKey(0, Arrays.copyOfRange(derivedSecretBytes, 32, 64));
+        return new DerivedKeys(root, chain);
     }
 }

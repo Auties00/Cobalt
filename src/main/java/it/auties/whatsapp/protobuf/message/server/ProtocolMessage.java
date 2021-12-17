@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.message.model.MessageKey;
 import it.auties.whatsapp.protobuf.message.model.ServerMessage;
-import it.auties.whatsapp.protobuf.temp.*;
+import it.auties.whatsapp.protobuf.sync.*;
 import lombok.*;
 import lombok.experimental.Accessors;
 

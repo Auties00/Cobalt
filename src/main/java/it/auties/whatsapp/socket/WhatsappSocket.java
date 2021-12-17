@@ -12,7 +12,7 @@ import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.signal.auth.*;
-import it.auties.whatsapp.protobuf.signal.key.SignalPreKey;
+import it.auties.whatsapp.protobuf.signal.keypair.SignalPreKey;
 import it.auties.whatsapp.protobuf.signal.auth.HandshakeMessage;
 import it.auties.whatsapp.exchange.Node;
 import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;

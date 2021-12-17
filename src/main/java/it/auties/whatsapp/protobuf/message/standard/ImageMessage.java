@@ -7,7 +7,7 @@ import it.auties.whatsapp.protobuf.info.ContextInfo;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.message.model.MediaMessage;
 import it.auties.whatsapp.protobuf.message.model.MediaMessageType;
-import it.auties.whatsapp.protobuf.temp.InteractiveAnnotation;
+import it.auties.whatsapp.protobuf.unknown.InteractiveAnnotation;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;

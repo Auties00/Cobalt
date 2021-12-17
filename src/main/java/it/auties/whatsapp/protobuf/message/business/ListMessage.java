@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.protobuf.info.ContextInfo;
 import it.auties.whatsapp.protobuf.info.ProductListInfo;
-import it.auties.whatsapp.protobuf.temp.Section;
+import it.auties.whatsapp.protobuf.unknown.Section;
 import lombok.*;
 import lombok.experimental.Accessors;
 

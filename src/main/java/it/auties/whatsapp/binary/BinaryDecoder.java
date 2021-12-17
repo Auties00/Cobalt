@@ -16,6 +16,7 @@ import java.util.stream.IntStream;
 import java.util.zip.Inflater;
 
 import static it.auties.whatsapp.binary.BinaryTag.*;
+import static it.auties.whatsapp.protobuf.contact.ContactJid.Server.forAddress;
 
 public record BinaryDecoder(@NonNull ByteBuf buffer){
     public BinaryDecoder(){
@@ -160,8 +161,8 @@ public record BinaryDecoder(@NonNull ByteBuf buffer){
 
     private ContactJid readJidPair() {
         return switch (read(true)){
-            case String encoded -> ContactJid.of(encoded, readString());
-            case null -> ContactJid.of(null, readString());
+            case String encoded -> ContactJid.of(encoded, forAddress(readString()));
+            case null -> ContactJid.of(null, forAddress(readString()));
             default -> throw new RuntimeException("Invalid jid type");
         };
     }

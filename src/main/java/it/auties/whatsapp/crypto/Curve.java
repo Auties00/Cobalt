@@ -25,6 +25,7 @@ import java.security.spec.X509EncodedKeySpec;
 public class Curve {
     private final String CURVE_25519 = "X25519";
     private final String HMAC_SHA256 = "HmacSHA256";
+
     @SneakyThrows
     public BinaryArray calculateSharedSecret(byte @NonNull [] publicKey, byte @NonNull [] privateKey) {
         var keyAgreement = KeyAgreement.getInstance(CURVE_25519);

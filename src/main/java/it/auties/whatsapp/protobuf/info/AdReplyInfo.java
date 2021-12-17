@@ -2,6 +2,7 @@ package it.auties.whatsapp.protobuf.info;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -23,29 +24,34 @@ public class AdReplyInfo {
    * The caption of the original companion
    */
   @JsonProperty(value = "17")
+  @JsonPropertyDescription("string")
   private String caption;
 
   /**
    * The thumbnail of the original companion encoded as jpeg in an array of bytes
    */
   @JsonProperty(value = "16")
+  @JsonPropertyDescription("bytes")
   private byte[] jpegThumbnail;
 
   /**
    * The type of original companion
    */
   @JsonProperty(value = "2")
+  @JsonPropertyDescription("AdReplyInfoMediaType")
   private AdReplyInfoMediaType mediaType;
 
   /**
    * The name of the advertiser that served the original companion
    */
   @JsonProperty(value = "1")
+  @JsonPropertyDescription("string")
   private String advertiserName;
 
   /**
    * The constants of this enumerated type describe the various types of companion that a {@link AdReplyInfo} can link to
    */
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum AdReplyInfoMediaType {
     /**
@@ -64,10 +70,6 @@ public class AdReplyInfo {
     VIDEO(2);
 
     private final @Getter int index;
-
-    AdReplyInfoMediaType(int index) {
-      this.index = index;
-    }
 
     @JsonCreator
     public static AdReplyInfoMediaType forIndex(int index) {

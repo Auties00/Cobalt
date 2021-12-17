@@ -2,8 +2,11 @@ package it.auties.whatsapp.protobuf.info;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.whatsapp.protobuf.temp.ProductListHeaderImage;
-import it.auties.whatsapp.protobuf.temp.ProductSection;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.protobuf.contact.ContactJid;
+import it.auties.whatsapp.protobuf.unknown.ProductListHeaderImage;
+import it.auties.whatsapp.protobuf.unknown.ProductSection;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,19 +15,36 @@ import lombok.experimental.Accessors;
 
 import java.util.List;
 
+/**
+ * A model class that holds the information related to a list of products.
+ * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
+ * Instead, methods inside {@link Whatsapp} should be used.
+ */
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
 @Builder
 @Accessors(fluent = true)
 public class ProductListInfo {
-  @JsonProperty(value = "3")
-  private String businessOwnerJid;
-
-  @JsonProperty(value = "2")
-  private ProductListHeaderImage headerImage;
-
+  /**
+   * The products that this message wraps
+   */
   @JsonProperty(value = "1")
+  @JsonPropertyDescription("ProductSection")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<ProductSection> productSections;
+
+  /**
+   * The header image of the messages that this message wraps
+   */
+  @JsonProperty(value = "2")
+  @JsonPropertyDescription("ProductListHeaderImage")
+  private ProductListHeaderImage headerImage;
+
+  /**
+   * The id of the seller of the products that this message wraps
+   */
+  @JsonProperty(value = "3")
+  @JsonPropertyDescription("string")
+  private ContactJid sellerId;
 }
