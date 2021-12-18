@@ -107,19 +107,19 @@ public class Chat {
   /**
    * This field is used to determine whether a chat is archived or not.
    */
-  private boolean isArchived;
+  private boolean archived;
 
   /**
    * This field is used to determine whether a chat is read only or not.
    * If true, it means that it's not possible to send messages here.
    * This is the case, for example, for groups where only admins can send messages.
    */
-  private boolean isReadOnly;
+  private boolean readOnly;
 
   /**
    * This field is used to determine whether a chat was marked as being spam or not.
    */
-  private boolean isSpam;
+  private boolean spam;
 
   /**
    * Returns a boolean to represent whether this chat is a group or not

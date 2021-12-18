@@ -26,15 +26,15 @@ import java.util.List;
 @Accessors(fluent = true)
 public final class ContactsArrayMessage extends ContextualMessage {
   /**
+   * The name of the contact the first contact that this message wraps
+   */
+  @JsonProperty(value = "1")
+  private String displayName;
+
+  /**
    * A list of {@link ContactMessage} that this message wraps
    */
   @JsonProperty(value = "2")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<ContactMessage> contacts;
-
-  /**
-   * The name of the contact the first contact that this message wraps
-   */
-  @JsonProperty(value = "1")
-  private String displayName;
 }

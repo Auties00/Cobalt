@@ -2,6 +2,7 @@ package it.auties.whatsapp.protobuf.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.info.ContextInfo;
 import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
 import lombok.AllArgsConstructor;
@@ -24,23 +25,23 @@ import lombok.experimental.SuperBuilder;
 @Accessors(fluent = true)
 public final class GroupInviteMessage extends ContextualMessage {
   /**
-   * The context info of this message
+   * The jid of the group that this invite regards
    */
-  @JsonProperty(value = "7")
-  private ContextInfo contextInfo; // Overrides ContextualMessage's context info
+  @JsonProperty(value = "1")
+  private ContactJid groupId;
 
   /**
-   * The caption of this invite
+   * The invite code of this message
    */
-  @JsonProperty(value = "6")
-  private String caption;
+  @JsonProperty(value = "2")
+  private String code;
 
   /**
-   * The thumbnail of the group that this invite regards encoded as jpeg in an array of bytes
+   * The expiration of this invite in milliseconds since {@link java.time.Instant#EPOCH}
    */
-  @JsonProperty(value = "5")
-  private byte[] jpegThumbnail;
-
+  @JsonProperty(value = "3")
+  private long expiration;
+  
   /**
    * The name of the group that this invite regards
    */
@@ -48,20 +49,20 @@ public final class GroupInviteMessage extends ContextualMessage {
   private String groupName;
 
   /**
-   * The expiration of this invite in milliseconds since {@link java.time.Instant#EPOCH}
+   * The thumbnail of the group that this invite regards encoded as jpeg in an array of bytes
    */
-  @JsonProperty(value = "3")
-  private long inviteExpiration;
+  @JsonProperty(value = "5")
+  private byte[] thumbnail;
 
   /**
-   * The invite code of this message
+   * The caption of this invite
    */
-  @JsonProperty(value = "2")
-  private String inviteCode;
-
+  @JsonProperty(value = "6")
+  private String caption;
+  
   /**
-   * The jid of the group that this invite regards
+   * The context info of this message
    */
-  @JsonProperty(value = "1")
-  private String groupJid;
+  @JsonProperty(value = "7")
+  private ContextInfo contextInfo; // Overrides ContextualMessage's context info
 }

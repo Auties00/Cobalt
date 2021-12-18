@@ -1,9 +1,9 @@
 package it.auties.whatsapp.protobuf.message.model;
 
+import it.auties.whatsapp.protobuf.message.standard.ProductMessage;
+
 /**
  * A model interface that represents a WhatsappMessage sent by a contact or by Whatsapp.
- *
- * This interface is sealed to prepare for <a href="https://openjdk.java.net/jeps/406">pattern matching for instanceof in switch statements</a>, set to be released in Java 17.
  */
-public sealed interface Message permits BusinessMessage, ContextualMessage, DeviceMessage, ServerMessage {
+public sealed interface Message permits ContextualMessage, DeviceMessage, PaymentMessage, ServerMessage, ButtonMessage, ProductMessage {
 }

@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.unknown.Conversation;
-import it.auties.whatsapp.protobuf.unknown.Pushname;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -22,7 +21,7 @@ public class HistorySync {
   @JsonProperty(value = "7")
   @JsonPropertyDescription("Pushname")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  private List<Pushname> pushnames;
+  private List<PushName> pushNames;
 
   @JsonProperty(value = "6")
   @JsonPropertyDescription("uint32")

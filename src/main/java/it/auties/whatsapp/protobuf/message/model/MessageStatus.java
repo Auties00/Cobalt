@@ -46,7 +46,7 @@ public enum MessageStatus {
     private final @Getter int index;
 
     @JsonCreator
-    public static MessageStatus forString(String encoded){
+    public static MessageStatus forName(String encoded){
         return switch (encoded) {
             case null -> DELIVERED;
             case "read", "read-self" -> READ;

@@ -20,6 +20,7 @@ import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
@@ -144,9 +145,9 @@ public class WhatsappKeys {
         this.companionKey = SignalHelper.randomSenderKey();
         this.senderKeyStructures = new ArrayList<>();
         this.preKeys = new LinkedList<>();
-        this.sessions = new HashMap<>();
-        this.identities = new HashMap<>();
-        this.signedIdentities = new HashMap<>();
+        this.sessions = new ConcurrentHashMap<>();
+        this.identities = new ConcurrentHashMap<>();
+        this.signedIdentities = new ConcurrentHashMap<>();
     }
 
     /**

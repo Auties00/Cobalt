@@ -22,14 +22,14 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 public final class DeviceSentMessage implements DeviceMessage {
   /**
-   * The message container that this object wraps.
-   */
-  @JsonProperty(value = "2")
-  private MessageContainer message;
-
-  /**
    * The unique identifier that this message update regards.
    */
   @JsonProperty(value = "1")
   private String destinationJid;
+
+  /**
+   * The message container that this object wraps.
+   */
+  @JsonProperty(value = "2")
+  private MessageContainer message;
 }

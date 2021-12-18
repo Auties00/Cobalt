@@ -1,0 +1,27 @@
+package it.auties.whatsapp.protobuf.message.payment;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.protobuf.message.model.MessageKey;
+import it.auties.whatsapp.protobuf.message.model.PaymentMessage;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.Accessors;
+
+/**
+ * A model class that represents a WhatsappMessage that cancels a {@link RequestPaymentMessage}.
+ * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
+ * Instead, methods inside {@link Whatsapp} should be used.
+ */
+@AllArgsConstructor(staticName = "newCancelPaymentMessage")
+@NoArgsConstructor
+@Data
+@Accessors(fluent = true)
+public final class CancelPaymentRequestMessage implements PaymentMessage {
+  /**
+   * The key of the original {@link RequestPaymentMessage} that this message cancels
+   */
+  @JsonProperty(value = "1")
+  private MessageKey key;
+}

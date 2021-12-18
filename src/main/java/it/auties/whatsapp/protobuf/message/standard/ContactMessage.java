@@ -22,16 +22,16 @@ import lombok.experimental.SuperBuilder;
 @Accessors(fluent = true)
 public final class ContactMessage extends ContextualMessage {
   /**
-   * The info about the contact that this message wraps encoded as a vcard
-   */
-  @JsonProperty(value = "16")
-  private String vcard;
-
-  /**
    * The name of the contact that this message wraps
    */
   @JsonProperty(value = "1")
   private String displayName;
+
+  /**
+   * The info about the contact that this message wraps encoded as a vcard
+   */
+  @JsonProperty(value = "16")
+  private String vcard;
 
   /**
    * Constructs a new builder to create a ContactMessage.

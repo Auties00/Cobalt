@@ -23,10 +23,46 @@ import lombok.experimental.SuperBuilder;
 @Accessors(fluent = true)
 public final class LiveLocationMessage extends ContextualMessage {
   /**
-   * The thumbnail for this live location message encoded as jpeg in an array of bytes
+   * The latitude of the location that this message wraps
    */
-  @JsonProperty(value = "16")
-  private byte[] jpegThumbnail;
+  @JsonProperty(value = "1")
+  private double latitude;
+  
+  /**
+   * The longitude of the location that this message wraps
+   */
+  @JsonProperty(value = "2")
+  private double longitude;
+
+  /**
+   * The accuracy in meters of the location that this message wraps
+   */
+  @JsonProperty(value = "3")
+  private int accuracy;
+
+  /**
+   * The speed in meters per second of the device that sent this live location message
+   */
+  @JsonProperty(value = "4")
+  private float speed;
+
+  /**
+   * Degrees Clockwise from Magnetic North
+   */
+  @JsonProperty(value = "5")
+  private int magneticNorthOffset;
+
+  /**
+   * The caption of this message
+   */
+  @JsonProperty(value = "6")
+  private String caption;
+
+  /**
+   * This property probably refers to the number of updates that this live location message.
+   */
+  @JsonProperty(value = "7")
+  private long sequenceNumber;
 
   /**
    * This offset probably refers to the time since the last update to this live location message.
@@ -36,44 +72,8 @@ public final class LiveLocationMessage extends ContextualMessage {
   private int timeOffset;
 
   /**
-   * This property probably refers to the number of updates that this live location message.
+   * The thumbnail for this live location message encoded as jpeg in an array of bytes
    */
-  @JsonProperty(value = "7")
-  private long sequenceNumber;
-
-  /**
-   * The caption of this message
-   */
-  @JsonProperty(value = "6")
-  private String caption;
-
-  /**
-   * Degrees Clockwise from Magnetic North
-   */
-  @JsonProperty(value = "5")
-  private int degreesClockwiseFromMagneticNorth;
-
-  /**
-   * The speed in meters per second of the device that sent this live location message
-   */
-  @JsonProperty(value = "4")
-  private float speedInMps;
-
-  /**
-   * The accuracy in meters of the location that this message wraps
-   */
-  @JsonProperty(value = "3")
-  private int accuracyInMeters;
-
-  /**
-   * The longitude of the location that this message wraps
-   */
-  @JsonProperty(value = "2")
-  private double degreesLongitude;
-
-  /**
-   * The latitude of the location that this message wraps
-   */
-  @JsonProperty(value = "1")
-  private double degreesLatitude;
+  @JsonProperty(value = "16")
+  private byte[] thumbnail;
 }

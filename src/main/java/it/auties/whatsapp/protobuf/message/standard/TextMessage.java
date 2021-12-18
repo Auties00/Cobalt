@@ -23,16 +23,52 @@ import java.util.Arrays;
 @Accessors(fluent = true)
 public final class TextMessage extends ContextualMessage {
   /**
-   * Determines whether the preview can be played inline
+   * The text that this message wraps
    */
-  @JsonProperty(value = "18")
-  private boolean doNotPlayInline;
+  @JsonProperty(value = "1")
+  private String text;
 
   /**
-   * The thumbnail for this text message encoded as jpeg in an array of bytes
+   * The substring of this text message that links to {@link TextMessage#canonicalUrl}, if available
    */
-  @JsonProperty(value = "16")
-  private byte[] jpegThumbnail;
+  @JsonProperty(value = "2")
+  private String matchedText;
+
+  /**
+   * The canonical url of the link that this text message wraps, if available
+   */
+  @JsonProperty(value = "4")
+  private String canonicalUrl;
+
+  /**
+   * The description of the link that this text message wraps, if available
+   */
+  @JsonProperty(value = "5")
+  private String description;
+
+  /**
+   * The title of the link that this text message wraps, if available
+   */
+  @JsonProperty(value = "6")
+  private String title;
+
+  /**
+   * The color of this text message encoded as ARGB
+   */
+  @JsonProperty(value = "7")
+  private int textArgb;
+
+  /**
+   * The background color of this text message encoded as ARGB
+   */
+  @JsonProperty(value = "8")
+  private int backgroundArgb;
+
+  /**
+   * The type of font used for the text message.
+   */
+  @JsonProperty(value = "9")
+  private TextMessageFontType font;
 
   /**
    * The type of preview that this text message provides.
@@ -43,52 +79,16 @@ public final class TextMessage extends ContextualMessage {
   private TextMessagePreviewType previewType;
 
   /**
-   * The type of font used for the this text message.
+   * The thumbnail for this text message encoded as jpeg in an array of bytes
    */
-  @JsonProperty(value = "9")
-  private TextMessageFontType font;
+  @JsonProperty(value = "16")
+  private byte[] thumbnail;
 
   /**
-   * The background color of this text message encoded as ARGB
+   * Determines whether the preview can be played inline
    */
-  @JsonProperty(value = "8")
-  private int backgroundArgb;
-
-  /**
-   * The color of this text message encoded as ARGB
-   */
-  @JsonProperty(value = "7")
-  private int textArgb;
-
-  /**
-   * The title of the link that this text message wraps, if available
-   */
-  @JsonProperty(value = "6")
-  private String title;
-
-  /**
-   * The description of the link that this text message wraps, if available
-   */
-  @JsonProperty(value = "5")
-  private String description;
-
-  /**
-   * The canonical url of the link that this text message wraps, if available
-   */
-  @JsonProperty(value = "4")
-  private String canonicalUrl;
-
-  /**
-   * The substring of this text message that links to {@link TextMessage#canonicalUrl}, if available
-   */
-  @JsonProperty(value = "2")
-  private String matchedText;
-
-  /**
-   * The text that this message wraps
-   */
-  @JsonProperty(value = "1")
-  private String text;
+  @JsonProperty(value = "18")
+  private boolean doNotPlayInline;
 
   /**
    * Constructs a TextMessage from a text
@@ -103,6 +103,7 @@ public final class TextMessage extends ContextualMessage {
    * The constants of this enumerated type describe the various types of fonts that a {@link TextMessage} supports.
    * Not all clients currently display all fonts correctly.
    */
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum TextMessageFontType {
     /**
@@ -137,10 +138,6 @@ public final class TextMessage extends ContextualMessage {
 
     private final @Getter int index;
 
-    TextMessageFontType(int index) {
-      this.index = index;
-    }
-
     @JsonCreator
     public static TextMessageFontType forIndex(int index) {
       return Arrays.stream(values())
@@ -153,6 +150,7 @@ public final class TextMessage extends ContextualMessage {
   /**
    * The constants of this enumerated type describe the various types of previuew that a {@link TextMessage} can provide.
    */
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum TextMessagePreviewType {
     /**
@@ -160,17 +158,12 @@ public final class TextMessage extends ContextualMessage {
      */
     NONE(0),
 
-
     /**
      * Video preview
      */
     VIDEO(1);
 
     private final @Getter int index;
-
-    TextMessagePreviewType(int index) {
-      this.index = index;
-    }
 
     @JsonCreator
     public static TextMessagePreviewType forIndex(int index) {

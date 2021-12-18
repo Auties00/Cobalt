@@ -3,9 +3,11 @@ package it.auties.whatsapp.protobuf.message.model;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.protobuf.message.business.*;
+import it.auties.whatsapp.protobuf.message.button.*;
 import it.auties.whatsapp.protobuf.message.device.DeviceSentMessage;
 import it.auties.whatsapp.protobuf.message.device.DeviceSyncMessage;
+import it.auties.whatsapp.protobuf.message.payment.*;
+import it.auties.whatsapp.protobuf.message.standard.ProductMessage;
 import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
 import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.protobuf.message.standard.*;
@@ -27,10 +29,12 @@ import java.util.Optional;
  *
  * There are several categories of messages:
  * <ul>
- *     <li>Server messages: {@link MessageContainer#protocolMessage} is populated</li>
- *     <li>Device messages: {@link MessageContainer#deviceSentMessage} or {@link MessageContainer#deviceSyncMessage} are populated</li>
- *     <li>Whatsapp Business messages: {@link MessageContainer#templateButtonReplyMessage}, {@link MessageContainer#templateMessage}, {@link MessageContainer#highlyStructuredMessage}, {@link MessageContainer#productMessage} or any payment message are populated</li>
- *     <li>Standard messages: Any other property may be populated, though only one at the time. These messages may only be sent by contacts.</li>
+ *     <li>Server messages</li>
+ *     <li>Device messages</li>
+ *     <li>Button messages</li>
+ *     <li>Product messages</li>
+ *     <li>Payment messages</li>
+ *     <li>Standard messages</li>
  * </ul>
  *
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
@@ -41,109 +45,60 @@ import java.util.Optional;
 @Builder
 @Accessors(fluent = true)
 public class MessageContainer { // Not how I would design it, Whatsapp's choice obviously
-  /**
-   * Sever message
-   */
-  @JsonProperty(value = "12")
-  private ProtocolMessage protocolMessage;
-
-  /**
-   * Device sync message
-   */
-  @JsonProperty(value = "32")
-  private DeviceSyncMessage deviceSyncMessage;
-
-  /**
-   * Device sent message
-   */
-  @JsonProperty(value = "31")
-  private DeviceSentMessage deviceSentMessage;
-
-  /**
-   * Fast ratchet key sender key distribution message
-   */
-  @JsonProperty(value = "15")
-  private SenderKeyDistributionMessage fastRatchetKeySenderKeyDistributionMessage;
-
+  // Just a linker
+  @JsonProperty(value = "1")
+  private void fromText(String textMessageWithNoContext){
+    this.text = new TextMessage(textMessageWithNoContext);
+  }
+  
   /**
    * Sender key distribution message
    */
   @JsonProperty(value = "2")
-  private SenderKeyDistributionMessage senderKeyDistributionMessage;
+  private SenderKeyDistributionMessage senderKeyDistribution;
+  
+  /**
+   * Image message
+   */
+  @JsonProperty(value = "3")
+  private ImageMessage image;
+  
+  /**
+   * Contact message
+   */
+  @JsonProperty(value = "4")
+  private ContactMessage contact;
 
   /**
-   * Template button reply message
+   * Location message
    */
-  @JsonProperty(value = "29")
-  private TemplateButtonReplyMessage templateButtonReplyMessage;
+  @JsonProperty(value = "5")
+  private LocationMessage location;
 
   /**
-   * Template message
+   * Text message
    */
-  @JsonProperty(value = "25")
-  private TemplateMessage templateMessage;
+  @JsonProperty(value = "6")
+  private TextMessage text;
 
   /**
-   * Highly structured message
+   * Document message
    */
-  @JsonProperty(value = "14")
-  private HighlyStructuredMessage highlyStructuredMessage;
+  @JsonProperty(value = "7")
+  private DocumentMessage document;
+  
+  /**
+   * Audio message
+   */
+  @JsonProperty(value = "8")
+  private AudioMessage audio;
 
   /**
-   * Product message
+   * Video message
    */
-  @JsonProperty(value = "30")
-  private ProductMessage productMessage;
-
-  /**
-   * Group invite message
-   */
-  @JsonProperty(value = "28")
-  private GroupInviteMessage groupInviteMessage;
-
-  /**
-   * Sticker message
-   */
-  @JsonProperty(value = "26")
-  private StickerMessage stickerMessage;
-
-  /**
-   * Cancel payment request message
-   */
-  @JsonProperty(value = "24")
-  private CancelPaymentRequestMessage cancelPaymentRequestMessage;
-
-  /**
-   * Decline payment request message
-   */
-  @JsonProperty(value = "23")
-  private DeclinePaymentRequestMessage declinePaymentRequestMessage;
-
-  /**
-   * Request payment message
-   */
-  @JsonProperty(value = "22")
-  private RequestPaymentMessage requestPaymentMessage;
-
-  /**
-   * Send payment message
-   */
-  @JsonProperty(value = "16")
-  private SendPaymentMessage sendPaymentMessage;
-
-  /**
-   * Live location message
-   */
-  @JsonProperty(value = "18")
-  private LiveLocationMessage liveLocationMessage;
-
-
-  /**
-   * Contact array message
-   */
-  @JsonProperty(value = "13")
-  private ContactsArrayMessage contactsArrayMessage;
-
+  @JsonProperty(value = "9")
+  private VideoMessage video;
+  
   /**
    * Call message
    */
@@ -151,51 +106,179 @@ public class MessageContainer { // Not how I would design it, Whatsapp's choice 
   private Call call;
 
   /**
-   * Video message
+   * Sever message
    */
-  @JsonProperty(value = "9")
-  private VideoMessage videoMessage;
+  @JsonProperty(value = "12")
+  private ProtocolMessage protocol;
+  
+  /**
+   * Contact array message
+   */
+  @JsonProperty(value = "13")
+  private ContactsArrayMessage contactsArray;
 
   /**
-   * Audio message
+   * Highly structured message
    */
-  @JsonProperty(value = "8")
-  private AudioMessage audioMessage;
+  @JsonProperty(value = "14")
+  private StructuredButtonMessage highlyStructured;
+  
+  /**
+   * Fast ratchet key sender key distribution message
+   */
+  @JsonProperty(value = "15")
+  private SenderKeyDistributionMessage fastRatchetKeySenderKeyDistribution;
+  
+  /**
+   * Send payment message
+   */
+  @JsonProperty(value = "16")
+  private SendPaymentMessage sendPayment;
 
   /**
-   * Document message
+   * Live location message
    */
-  @JsonProperty(value = "7")
-  private DocumentMessage documentMessage;
+  @JsonProperty(value = "18")
+  private LiveLocationMessage liveLocation;
+  
+  /**
+   * Request payment message
+   */
+  @JsonProperty(value = "22")
+  private RequestPaymentMessage requestPayment;
 
   /**
-   * Text message
+   * Decline payment request message
    */
-  @JsonProperty(value = "6")
-  private TextMessage textMessage;
+  @JsonProperty(value = "23")
+  private DeclinePaymentRequestMessage declinePaymentRequest;
+  
+  /**
+   * Cancel payment request message
+   */
+  @JsonProperty(value = "24")
+  private CancelPaymentRequestMessage cancelPaymentRequest;
+  
+  /**
+   * Template message
+   */
+  @JsonProperty(value = "25")
+  private TemplateMessage template;
 
   /**
-   * Location message
+   * Sticker message
    */
-  @JsonProperty(value = "5")
-  private LocationMessage locationMessage;
+  @JsonProperty(value = "26")
+  private StickerMessage sticker;
 
   /**
-   * Contact message
+   * Group invite message
    */
-  @JsonProperty(value = "4")
-  private ContactMessage contactMessage;
+  @JsonProperty(value = "28")
+  private GroupInviteMessage groupInvite;
 
   /**
-   * Image message
+   * Template button reply message
    */
-  @JsonProperty(value = "3")
-  private ImageMessage imageMessage;
+  @JsonProperty(value = "29")
+  private TemplateButtonReplyMessage templateButtonReply;
+  
+  /**
+   * Product message
+   */
+  @JsonProperty(value = "30")
+  private ProductMessage product;
 
-  // Just a linker
-  @JsonProperty(value = "1")
-  private void fromText(String textMessageWithNoContext){
-    this.textMessage = new TextMessage(textMessageWithNoContext);
+  /**
+   * Device sent message
+   */
+  @JsonProperty(value = "31")
+  private DeviceSentMessage deviceSent;
+  
+  /**
+   * Device sync message
+   */
+  @JsonProperty(value = "32")
+  private DeviceSyncMessage deviceSync;
+
+  /**
+   * List message
+   */
+  @JsonProperty(value = "36")
+  private ListMessage buttonsList;
+
+  /**
+   * View once message
+   */
+  @JsonProperty(value = "37")
+  private Message viewOnce;
+
+  /**
+   * Order message
+   */
+  @JsonProperty(value = "38")
+  private PaymentOrderMessage order;
+
+  /**
+   * List response message
+   */
+  @JsonProperty(value = "39")
+  private ListResponseMessage listResponse;
+
+  /**
+   * Ephemeral message
+   */
+  @JsonProperty(value = "40")
+  private Message ephemeral;
+
+  /**
+   * Invoice message
+   */
+  @JsonProperty(value = "41")
+  private PaymentInvoiceMessage invoice;
+
+  /**
+   * Buttons message
+   */
+  @JsonProperty(value = "42")
+  private ButtonsMessage buttons;
+
+  /**
+   * Buttons response message
+   */
+  @JsonProperty(value = "43")
+  private ButtonsResponseMessage buttonsResponse;
+
+  /**
+   * Payment invite message
+   */
+  @JsonProperty(value = "44")
+  private PaymentInviteMessage paymentInvite;
+
+  // Unsupported for now: MessageContextInfo(35), InteractiveMessage(45), ReactionMessage(46), StickerSyncRMRMessage(47)
+
+  /**
+   * Constructs a new MessageContainer from a message of any type that can only be seen once
+   *
+   * @param message the message that the new container should wrap
+   * @param <T> the type of the message
+   */
+  public static <T extends Message> MessageContainer ofViewOnce(@NonNull T message){
+    return MessageContainer.builder()
+            .viewOnce(message)
+            .build();
+  }
+
+  /**
+   * Constructs a new MessageContainer from a message of any type marking it as ephemeral
+   *
+   * @param message the message that the new container should wrap
+   * @param <T> the type of the message
+   */
+  public static <T extends Message> MessageContainer ofEphemeral(@NonNull T message){
+    return MessageContainer.builder()
+            .ephemeral(message)
+            .build();
   }
 
   /**
@@ -206,29 +289,36 @@ public class MessageContainer { // Not how I would design it, Whatsapp's choice 
    */
   public <T extends Message> MessageContainer(@NonNull T message){
     switch (message) {
-      case SenderKeyDistributionMessage senderKeyDistributionMessage -> this.senderKeyDistributionMessage = senderKeyDistributionMessage;
-      case ImageMessage imageMessage -> this.imageMessage = imageMessage;
-      case ContactMessage contactMessage -> this.contactMessage = contactMessage;
-      case LocationMessage locationMessage -> this.locationMessage = locationMessage;
-      case TextMessage extendedTextMessage -> this.textMessage = extendedTextMessage;
-      case DocumentMessage documentMessage -> this.documentMessage = documentMessage;
-      case AudioMessage audioMessage -> this.audioMessage = audioMessage;
-      case VideoMessage videoMessage -> this.videoMessage = videoMessage;
-      case ProtocolMessage protocolMessage -> this.protocolMessage = protocolMessage;
-      case ContactsArrayMessage contactsArrayMessage -> this.contactsArrayMessage = contactsArrayMessage;
-      case HighlyStructuredMessage highlyStructuredMessage -> this.highlyStructuredMessage = highlyStructuredMessage;
-      case SendPaymentMessage sendPaymentMessage -> this.sendPaymentMessage = sendPaymentMessage;
-      case LiveLocationMessage liveLocationMessage -> this.liveLocationMessage = liveLocationMessage;
-      case RequestPaymentMessage requestPaymentMessage -> this.requestPaymentMessage = requestPaymentMessage;
-      case DeclinePaymentRequestMessage declinePaymentRequestMessage -> this.declinePaymentRequestMessage = declinePaymentRequestMessage;
-      case CancelPaymentRequestMessage cancelPaymentRequestMessage -> this.cancelPaymentRequestMessage = cancelPaymentRequestMessage;
-      case TemplateMessage templateMessage -> this.templateMessage = templateMessage;
-      case StickerMessage stickerMessage -> this.stickerMessage = stickerMessage;
-      case GroupInviteMessage groupInviteMessage -> this.groupInviteMessage = groupInviteMessage;
-      case TemplateButtonReplyMessage templateButtonReplyMessage -> this.templateButtonReplyMessage = templateButtonReplyMessage;
-      case ProductMessage productMessage -> this.productMessage = productMessage;
-      case DeviceSentMessage deviceSentMessage -> this.deviceSentMessage = deviceSentMessage;
-      case DeviceSyncMessage deviceSyncMessage -> this.deviceSyncMessage = deviceSyncMessage;
+      case SenderKeyDistributionMessage senderKeyDistribution -> this.senderKeyDistribution = senderKeyDistribution;
+      case ImageMessage image -> this.image = image;
+      case ContactMessage contact -> this.contact = contact;
+      case LocationMessage location -> this.location = location;
+      case TextMessage extendedText -> this.text = extendedText;
+      case DocumentMessage document -> this.document = document;
+      case AudioMessage audio -> this.audio = audio;
+      case VideoMessage video -> this.video = video;
+      case ProtocolMessage protocol -> this.protocol = protocol;
+      case ContactsArrayMessage contactsArray -> this.contactsArray = contactsArray;
+      case StructuredButtonMessage highlyStructured -> this.highlyStructured = highlyStructured;
+      case SendPaymentMessage sendPayment -> this.sendPayment = sendPayment;
+      case LiveLocationMessage liveLocation -> this.liveLocation = liveLocation;
+      case RequestPaymentMessage requestPayment -> this.requestPayment = requestPayment;
+      case DeclinePaymentRequestMessage declinePaymentRequest -> this.declinePaymentRequest = declinePaymentRequest;
+      case CancelPaymentRequestMessage cancelPaymentRequest -> this.cancelPaymentRequest = cancelPaymentRequest;
+      case TemplateMessage template -> this.template = template;
+      case StickerMessage sticker -> this.sticker = sticker;
+      case GroupInviteMessage groupInvite -> this.groupInvite = groupInvite;
+      case TemplateButtonReplyMessage templateButtonReply -> this.templateButtonReply = templateButtonReply;
+      case ProductMessage product -> this.product = product;
+      case DeviceSentMessage deviceSent -> this.deviceSent = deviceSent;
+      case DeviceSyncMessage deviceSync -> this.deviceSync = deviceSync;
+      case ListMessage buttonsList -> this.buttonsList = buttonsList;
+      case PaymentOrderMessage order -> this.order = order;
+      case ListResponseMessage listResponse -> this.listResponse = listResponse;
+      case PaymentInvoiceMessage invoice -> this.invoice = invoice;
+      case ButtonsMessage buttons -> this.buttons = buttons;
+      case ButtonsResponseMessage buttonsResponse -> this.buttonsResponse = buttonsResponse;
+      case PaymentInviteMessage paymentInvite -> this.paymentInvite = paymentInvite;
       default -> throw new IllegalStateException("Unsupported message: " + message);
     }
   }
@@ -236,11 +326,11 @@ public class MessageContainer { // Not how I would design it, Whatsapp's choice 
   /**
    * Constructs a new MessageContainer from a simple text message
    *
-   * @param textMessage the text message that the new container should wrap
+   * @param text the text message that the new container should wrap
    */
   @JsonCreator
-  public MessageContainer(String textMessage){
-    this.textMessage = new TextMessage(textMessage);
+  public MessageContainer(String text){
+    this.text = new TextMessage(text);
   }
 
   /**
@@ -249,29 +339,36 @@ public class MessageContainer { // Not how I would design it, Whatsapp's choice 
    * @return a non-null Message
    */
   public Message content(){
-    if(this.senderKeyDistributionMessage != null) return senderKeyDistributionMessage;
-    if(this.imageMessage != null) return imageMessage;
-    if(this.contactMessage != null) return contactMessage;
-    if(this.locationMessage != null) return locationMessage;
-    if(this.textMessage  != null) return textMessage;
-    if(this.documentMessage != null) return documentMessage;
-    if(this.audioMessage != null) return audioMessage;
-    if(this.videoMessage != null) return videoMessage;
-    if(this.protocolMessage != null) return protocolMessage;
-    if(this.contactsArrayMessage != null) return contactsArrayMessage;
-    if(this.highlyStructuredMessage != null) return highlyStructuredMessage;
-    if(this.sendPaymentMessage != null) return sendPaymentMessage;
-    if(this.liveLocationMessage != null) return liveLocationMessage;
-    if(this.requestPaymentMessage != null) return requestPaymentMessage;
-    if(this.declinePaymentRequestMessage != null) return declinePaymentRequestMessage;
-    if(this.cancelPaymentRequestMessage != null) return cancelPaymentRequestMessage;
-    if(this.templateMessage != null) return templateMessage;
-    if(this.stickerMessage != null) return stickerMessage;
-    if(this.groupInviteMessage != null) return groupInviteMessage;
-    if(this.templateButtonReplyMessage != null) return templateButtonReplyMessage;
-    if(this.productMessage != null) return productMessage;
-    if(this.deviceSentMessage != null) return deviceSentMessage;
-    if(this.deviceSyncMessage != null) return deviceSyncMessage;
+    if(this.senderKeyDistribution != null) return senderKeyDistribution;
+    if(this.image != null) return image;
+    if(this.contact != null) return contact;
+    if(this.location != null) return location;
+    if(this.text != null) return text;
+    if(this.document != null) return document;
+    if(this.audio != null) return audio;
+    if(this.video != null) return video;
+    if(this.protocol != null) return protocol;
+    if(this.contactsArray != null) return contactsArray;
+    if(this.highlyStructured != null) return highlyStructured;
+    if(this.sendPayment != null) return sendPayment;
+    if(this.liveLocation != null) return liveLocation;
+    if(this.requestPayment != null) return requestPayment;
+    if(this.declinePaymentRequest != null) return declinePaymentRequest;
+    if(this.cancelPaymentRequest != null) return cancelPaymentRequest;
+    if(this.template != null) return template;
+    if(this.sticker != null) return sticker;
+    if(this.groupInvite != null) return groupInvite;
+    if(this.templateButtonReply != null) return templateButtonReply;
+    if(this.product != null) return product;
+    if(this.deviceSent != null) return deviceSent;
+    if(this.deviceSync != null) return deviceSync;
+    if(buttonsList != null) return buttonsList;
+    if(order != null) return order;
+    if(listResponse != null) return listResponse;
+    if(invoice != null) return invoice;
+    if(buttons != null) return buttons;
+    if(buttonsResponse != null) return buttonsResponse;
+    if(paymentInvite != null) return paymentInvite;
     throw new NoSuchElementException("MessageContainer has no content!");
   }
 
@@ -281,20 +378,24 @@ public class MessageContainer { // Not how I would design it, Whatsapp's choice 
    * @return a non-null Optional ContextualMessage
    */
   public Optional<ContextualMessage> contentWithContext(){
-    if(this.imageMessage != null) return Optional.of(imageMessage);
-    if(this.contactMessage != null) return Optional.of(contactMessage);
-    if(this.locationMessage != null) return Optional.of(locationMessage);
-    if(this.textMessage  != null) return Optional.of(textMessage);
-    if(this.documentMessage != null) return Optional.of(documentMessage);
-    if(this.audioMessage != null) return Optional.of(audioMessage);
-    if(this.videoMessage != null) return Optional.of(videoMessage);
-    if(this.contactsArrayMessage != null) return Optional.of(contactsArrayMessage);
-    if(this.liveLocationMessage != null) return Optional.of(liveLocationMessage);
-    if(this.templateMessage != null) return Optional.of(templateMessage);
-    if(this.stickerMessage != null) return Optional.of(stickerMessage);
-    if(this.groupInviteMessage != null) return Optional.of(groupInviteMessage);
-    if(this.templateButtonReplyMessage != null) return Optional.of(templateButtonReplyMessage);
-    if(this.productMessage != null) return Optional.of(productMessage);
+    if(this.image != null) return Optional.of(image);
+    if(this.contact != null) return Optional.of(contact);
+    if(this.location != null) return Optional.of(location);
+    if(this.text != null) return Optional.of(text);
+    if(this.document != null) return Optional.of(document);
+    if(this.audio != null) return Optional.of(audio);
+    if(this.video != null) return Optional.of(video);
+    if(this.contactsArray != null) return Optional.of(contactsArray);
+    if(this.liveLocation != null) return Optional.of(liveLocation);
+    if(this.template != null) return Optional.of(template);
+    if(this.sticker != null) return Optional.of(sticker);
+    if(this.groupInvite != null) return Optional.of(groupInvite);
+    if(this.templateButtonReply != null) return Optional.of(templateButtonReply);
+    if(this.product != null) return Optional.of(product);
+    if(buttonsList != null) return Optional.of(buttonsList);
+    if(invoice != null) return Optional.of(invoice);
+    if(buttons != null) return Optional.of(buttons);
+    if(buttonsResponse != null) return Optional.of(buttonsResponse);
     return Optional.empty();
   }
 
@@ -303,12 +404,14 @@ public class MessageContainer { // Not how I would design it, Whatsapp's choice 
    *
    * @return a non-null enumerated type
    */
-  public @NonNull MessageContainerContentType type(){
+  public @NonNull MessageContainer.ContentType type(){
     return switch (content()){
-      case ServerMessage ignored -> MessageContainerContentType.SERVER;
-      case DeviceMessage ignored -> MessageContainerContentType.DEVICE;
-      case BusinessMessage ignored -> MessageContainerContentType.BUSINESS;
-      default -> MessageContainerContentType.STANDARD;
+      case DeviceMessage ignored -> ContentType.DEVICE;
+      case PaymentMessage ignored -> ContentType.PAYMENT;
+      case ServerMessage ignored -> ContentType.SERVER;
+      case ButtonMessage ignored -> ContentType.BUTTON;
+      case ProductMessage ignored -> ContentType.PRODUCT;
+      default -> ContentType.STANDARD;
     };
   }
 
@@ -318,7 +421,7 @@ public class MessageContainer { // Not how I would design it, Whatsapp's choice 
    * @return true if this container contains a standard message
    */
   public boolean isStandard(){
-    return type() == MessageContainerContentType.STANDARD;
+    return type() == ContentType.STANDARD;
   }
 
   /**
@@ -327,16 +430,7 @@ public class MessageContainer { // Not how I would design it, Whatsapp's choice 
    * @return true if this container contains a sever message
    */
   public boolean isServer(){
-    return type() == MessageContainerContentType.SERVER;
-  }
-
-  /**
-   * Returns whether this container contains a business message
-   *
-   * @return true if this container contains a business message
-   */
-  public boolean isBusiness(){
-    return type() == MessageContainerContentType.SERVER;
+    return type() == ContentType.SERVER;
   }
 
   /**
@@ -345,17 +439,22 @@ public class MessageContainer { // Not how I would design it, Whatsapp's choice 
    * @return true if this container contains a device message
    */
   public boolean isDevice(){
-    return type() == MessageContainerContentType.DEVICE;
+    return type() == ContentType.DEVICE;
   }
 
   /**
    * The constants of this enumerated type describe the various types of messages that a {@link MessageContainer} can wrap
    */
-  public enum MessageContainerContentType {
+  public enum ContentType {
     /**
      * Server message
      */
     SERVER,
+
+    /**
+     * PAYMENT message
+     */
+    PAYMENT,
 
     /**
      * Device message
@@ -363,13 +462,18 @@ public class MessageContainer { // Not how I would design it, Whatsapp's choice 
     DEVICE,
 
     /**
-     * Business message
+     * Button message
      */
-    BUSINESS,
+    BUTTON,
+
+    /**
+     * Product message
+     */
+    PRODUCT,
 
     /**
      * Standard message
      */
-    STANDARD,
+    STANDARD
   }
 }

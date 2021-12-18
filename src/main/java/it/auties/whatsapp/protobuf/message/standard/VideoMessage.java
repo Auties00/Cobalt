@@ -8,7 +8,7 @@ import it.auties.whatsapp.protobuf.info.ContextInfo;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.message.model.MediaMessage;
 import it.auties.whatsapp.protobuf.message.model.MediaMessageType;
-import it.auties.whatsapp.protobuf.unknown.InteractiveAnnotation;
+import it.auties.whatsapp.protobuf.message.model.InteractiveAnnotation;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
@@ -33,35 +33,71 @@ import java.util.Optional;
 @Accessors(fluent = true)
 public final class VideoMessage extends MediaMessage {
   /**
-   * The source from where the gif that this message wraps comes from.
-   * This property is defined only if {@link VideoMessage#gifPlayback}.
+   * The upload url of the encoded video that this object wraps
    */
-  @JsonProperty(value = "19")
-  private VideoMessageAttribution gifAttribution;
+  @JsonProperty(value = "1")
+  private String url;
 
   /**
-   * The sidecar for the decoded video that this message wraps
+   * The mime type of the video that this object wraps.
+   * Most of the time this is {@link MediaMessageType#defaultMimeType()}
    */
-  @JsonProperty(value = "18")
-  private byte[] streamingSidecar;
+  @JsonProperty(value = "2")
+  private String mimetype;
 
   /**
-   * The thumbnail for this video message encoded as jpeg in an array of bytes
+   * The sha256 of the decoded video that this object wraps
    */
-  @JsonProperty(value = "16")
-  private byte[] jpegThumbnail;
+  @JsonProperty(value = "3")
+  private byte[] fileSha256;
 
   /**
-   * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link VideoMessage#mediaKey()}
+   * The unsigned size of the decoded video that this object wraps
    */
-  @JsonProperty(value = "14")
-  private long mediaKeyTimestamp;
+  @JsonProperty(value = "4")
+  private long fileLength;
 
   /**
-   * The direct path to the encoded image that this object wraps
+   * The length in seconds of the video that this message wraps
    */
-  @JsonProperty(value = "13")
-  private String directPath;
+  @JsonProperty(value = "5")
+  private int seconds;
+
+  /**
+   * The media key of the video that this object wraps.
+   */
+  @JsonProperty(value = "6")
+  private byte[] mediaKey;
+
+  /**
+   * The caption, that is the text below the video, of this video message
+   */
+  @JsonProperty(value = "7")
+  private String caption;
+
+  /**
+   * Determines whether this object wraps a video that must be played as a gif
+   */
+  @JsonProperty(value = "8")
+  private boolean gifPlayback;
+
+  /**
+   * The unsigned height of the decoded video that this object wraps
+   */
+  @JsonProperty(value = "9")
+  private int height;
+
+  /**
+   * The unsigned width of the decoded video that this object wraps
+   */
+  @JsonProperty(value = "10")
+  private int width;
+
+  /**
+   * The sha256 of the encoded video that this object wraps
+   */
+  @JsonProperty(value = "11")
+  private byte[] fileEncSha256;
 
   /**
    * Interactive annotations
@@ -71,71 +107,35 @@ public final class VideoMessage extends MediaMessage {
   private List<InteractiveAnnotation> interactiveAnnotations;
 
   /**
-   * The sha256 of the encoded video that this object wraps
+   * The direct path to the encoded image that this object wraps
    */
-  @JsonProperty(value = "11")
-  private byte[] fileEncSha256;
+  @JsonProperty(value = "13")
+  private String directPath;
 
   /**
-   * The unsigned width of the decoded video that this object wraps
+   * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link VideoMessage#mediaKey()}
    */
-  @JsonProperty(value = "10")
-  private int width;
+  @JsonProperty(value = "14")
+  private long mediaKeyTimestamp;
 
   /**
-   * The unsigned height of the decoded video that this object wraps
+   * The thumbnail for this video message encoded as jpeg in an array of bytes
    */
-  @JsonProperty(value = "9")
-  private int height;
+  @JsonProperty(value = "16")
+  private byte[] thumbnail;
 
   /**
-   * Determines whether this object wraps a video that must be played as a gif
+   * The sidecar for the decoded video that this message wraps
    */
-  @JsonProperty(value = "8")
-  private boolean gifPlayback;
+  @JsonProperty(value = "18")
+  private byte[] streamingSidecar;
 
   /**
-   * The caption, that is the text below the video, of this video message
+   * The source from where the gif that this message wraps comes from.
+   * This property is defined only if {@link VideoMessage#gifPlayback}.
    */
-  @JsonProperty(value = "7")
-  private String caption;
-
-  /**
-   * The media key of the video that this object wraps.
-   */
-  @JsonProperty(value = "6")
-  private byte[] mediaKey;
-
-  /**
-   * The length in seconds of the video that this message wraps
-   */
-  @JsonProperty(value = "5")
-  private int seconds;
-
-  /**
-   * The unsigned size of the decoded video that this object wraps
-   */
-  @JsonProperty(value = "4")
-  private long fileLength;
-
-  /**
-   * The sha256 of the decoded video that this object wraps
-   */
-  @JsonProperty(value = "3")
-  private byte[] fileSha256;
-
-  /**
-   * The mime type of the video that this object wraps.
-   * Most of the times this is {@link MediaMessageType#defaultMimeType()}
-   */
-  @JsonProperty(value = "2")
-  private String mimetype;
-
-  /**
-   * The upload url of the encoded video that this object wraps
-   */
-  @JsonProperty(value = "1")
-  private String url;
+  @JsonProperty(value = "19")
+  private VideoMessageAttribution gifAttribution;
 
   /**
    * Constructs a new builder to create a VideoMessage that wraps a video.
@@ -217,14 +217,11 @@ public final class VideoMessage extends MediaMessage {
   }
 
   private static @NonNull String guessMimeType(byte[] media) {
-    var result = "";
     try {
-      result = URLConnection.guessContentTypeFromStream(new ByteArrayInputStream(media));
-    } catch (IOException ignored) {
-
+      return URLConnection.guessContentTypeFromStream(new ByteArrayInputStream(media));
+    } catch (Throwable ignored) {
+      return "application/octet-stream";
     }
-
-    return Optional.ofNullable(result).orElse("application/octet-stream");
   }
 
   private static VideoMessageBuilder<?, ?> builder(){
@@ -244,6 +241,7 @@ public final class VideoMessage extends MediaMessage {
   /**
    * The constants of this enumerated type describe the various sources from where a gif can come from
    */
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum VideoMessageAttribution {
     /**
@@ -262,10 +260,6 @@ public final class VideoMessage extends MediaMessage {
     TENOR(2);
 
     private final @Getter int index;
-
-    VideoMessageAttribution(int index) {
-      this.index = index;
-    }
 
     @JsonCreator
     public static VideoMessageAttribution forIndex(int index) {

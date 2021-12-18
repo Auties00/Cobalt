@@ -23,59 +23,17 @@ import lombok.experimental.SuperBuilder;
 @Accessors(fluent = true)
 public final class DocumentMessage extends MediaMessage {
   /**
-   * The thumbnail for this document encoded as jpeg in an array of bytes
+   * The upload url of the encoded document that this object wraps
    */
-  @JsonProperty(value = "16")
-  private byte[] jpegThumbnail;
+  @JsonProperty(value = "1")
+  private String url;
 
   /**
-   * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link DocumentMessage#mediaKey()}
+   * The mime type of the audio that this object wraps.
+   * Most of the time this is {@link MediaMessageType#defaultMimeType()}
    */
-  @JsonProperty(value = "11")
-  private long mediaKeyTimestamp;
-
-  /**
-   * The direct path to the encoded media that this object wraps
-   */
-  @JsonProperty(value = "10")
-  private String directPath;
-
-  /**
-   * The sha256 of the encoded media that this object wraps
-   */
-  @JsonProperty(value = "9")
-  private byte[] fileEncSha256;
-
-  /**
-   * The name of the document that this object wraps
-   */
-  @JsonProperty(value = "8")
-  private String fileName;
-
-  /**
-   * The media key of the document that this object wraps.
-
-   */
-  @JsonProperty(value = "7")
-  private byte[] mediaKey;
-
-  /**
-   * The unsigned length in pages of the document that this object wraps
-   */
-  @JsonProperty(value = "6")
-  private int pageCount;
-
-  /**
-   * The unsigned size of the decoded media that this object wraps
-   */
-  @JsonProperty(value = "5")
-  private long fileLength;
-
-  /**
-   * The sha256 of the decoded media that this object wraps
-   */
-  @JsonProperty(value = "4")
-  private byte[] fileSha256;
+  @JsonProperty(value = "2")
+  private String mimetype;
 
   /**
    * The title of the document that this object wraps
@@ -84,17 +42,58 @@ public final class DocumentMessage extends MediaMessage {
   private String title;
 
   /**
-   * The mime type of the audio that this object wraps.
-   * Most of the times this is {@link MediaMessageType#defaultMimeType()}
+   * The sha256 of the decoded media that this object wraps
    */
-  @JsonProperty(value = "2")
-  private String mimetype;
+  @JsonProperty(value = "4")
+  private byte[] fileSha256;
 
   /**
-   * The upload url of the encoded document that this object wraps
+   * The unsigned size of the decoded media that this object wraps
    */
-  @JsonProperty(value = "1")
-  private String url;
+  @JsonProperty(value = "5")
+  private long fileLength;
+
+  /**
+   * The unsigned length in pages of the document that this object wraps
+   */
+  @JsonProperty(value = "6")
+  private int pageCount;
+
+  /**
+   * The media key of the document that this object wraps.
+   */
+  @JsonProperty(value = "7")
+  private byte[] mediaKey;
+
+  /**
+   * The name of the document that this object wraps
+   */
+  @JsonProperty(value = "8")
+  private String fileName;
+
+  /**
+   * The sha256 of the encoded media that this object wraps
+   */
+  @JsonProperty(value = "9")
+  private byte[] fileEncSha256;
+
+  /**
+   * The direct path to the encoded media that this object wraps
+   */
+  @JsonProperty(value = "10")
+  private String directPath;
+
+  /**
+   * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link DocumentMessage#mediaKey()}
+   */
+  @JsonProperty(value = "11")
+  private long mediaKeyTimestamp;
+  
+  /**
+   * The thumbnail for this document encoded as jpeg in an array of bytes
+   */
+  @JsonProperty(value = "16")
+  private byte[] thumbnail;
 
   /**
    * Constructs a new builder to create a DocumentMessage.

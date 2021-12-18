@@ -32,7 +32,7 @@ public class AdReplyInfo {
    */
   @JsonProperty(value = "16")
   @JsonPropertyDescription("bytes")
-  private byte[] jpegThumbnail;
+  private byte[] thumbnail;
 
   /**
    * The type of original companion

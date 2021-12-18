@@ -30,7 +30,6 @@ public class MessageKey {
    */
   @JsonProperty(value = "1")
   @Getter
-  @Setter
   private @NonNull ContactJid chatId;
 
   /**
@@ -38,7 +37,6 @@ public class MessageKey {
    */
   @JsonProperty(value = "2")
   @Getter
-  @Setter
   private boolean fromMe;
 
   /**
@@ -47,7 +45,6 @@ public class MessageKey {
   @JsonProperty(value = "3")
   @Builder.Default
   @Getter
-  @Setter
   private String id = WhatsappUtils.randomId();
 
   /**
