@@ -148,7 +148,7 @@ public class Whatsapp {
     public CompletableFuture<?> subscribeToContactPresence(@NonNull Contact contact) {
         // Node[description=presence, attributes={id=54595.12796-126, to=97@s.whatsapp.net, type=subscribe}, content=null]
         // No response
-        return socket.sendWithNoResponse(with("presence", of("to", contact.id(), "type", "subscribe"), null));
+        return socket.sendWithNoResponse(with("presence", of("to", contact.jid(), "type", "subscribe"), null));
     }
 
     /**
@@ -259,7 +259,7 @@ public class Whatsapp {
      */
     public CompletableFuture<List<StatusResponse>> queryUserStatus(@NonNull Contact contact) {
         var query = with("status");
-        var body = with("user", of("jid", ContactJid.of(contact.id().user())), null);
+        var body = with("user", of("jid", ContactJid.of(contact.jid().user())), null);
         return socket.sendQuery(query, body)
                 .thenApplyAsync(response -> Nodes.findAll(response, "status"))
                 .thenApplyAsync(nodes -> nodes.stream().map(StatusResponse::new).toList());
@@ -272,7 +272,7 @@ public class Whatsapp {
      * @return a CompletableFuture that wraps nullable jpg url hosted on Whatsapp's servers
      */
     public CompletableFuture<String> queryChatPicture(@NonNull Chat chat) {
-        return queryChatPicture(chat.id());
+        return queryChatPicture(chat.jid());
     }
 
     /**
@@ -282,7 +282,7 @@ public class Whatsapp {
      * @return a CompletableFuture that wraps nullable jpg url hosted on Whatsapp's servers
      */
     public CompletableFuture<String> queryChatPicture(@NonNull Contact contact) {
-        return queryChatPicture(contact.id());
+        return queryChatPicture(contact.jid());
     }
 
     /**
@@ -313,7 +313,7 @@ public class Whatsapp {
     public CompletableFuture<GroupResponse> queryGroupMetadata(@NonNull Chat chat) {
         // Node[description=iq, attributes={xmlns=w:g2, to=79-@g.us, id=54008.49510-688, type=get}, content=[Node[description=query, attributes={request=interactive}, content=null]]]
         // Node[description=iq, attributes={from=79-@g.us, id=54008.49510-688, type=result}, content=[Node[description=group, attributes={creator=79@s.whatsapp.net, p_v_id=13456, a_v_id=94276, subject=Coglions Boys, s_t=, id=79-, creation=}, content=[Node[description=participant, attributes={jid=8@s.whatsapp.net}, content=null], Node[description=participant, attributes={jid=19@s.whatsapp.net}, content=null], Node[description=participant, attributes={jid=79@s.whatsapp.net}, content=null], Node[description=participant, attributes={jid=34@s.whatsapp.net, type=admin}, content=null], Node[description=description, attributes={}, content=null]]]]]
-        return socket.sendQuery(of("xmlns", "w:g2", "to", chat.id(), "type", "get"), with("query", of("request", "interactive"), null))
+        return socket.sendQuery(of("xmlns", "w:g2", "to", chat.jid(), "type", "get"), with("query", of("request", "interactive"), null))
                 .thenApplyAsync(result -> result.findNode("group"))
                 .thenApplyAsync(GroupResponse::new);
     }
@@ -326,7 +326,7 @@ public class Whatsapp {
      * @throws IllegalArgumentException if the provided chat is not a group
      */
     public CompletableFuture<String> queryGroupInviteCode(@NonNull Chat chat) {
-        return socket.sendQuery(of("xmlns", "w:g2", "to", chat.id(), "type", "get"), with("invite"))
+        return socket.sendQuery(of("xmlns", "w:g2", "to", chat.jid(), "type", "get"), with("invite"))
                 .thenApplyAsync(result -> result.findNode("invite").attributes().getString("code"));
     }
 
@@ -372,7 +372,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> changePresence(@NonNull Chat chat, @NonNull ContactStatus presence) {
-        return socket.sendWithNoResponse(with("presence", of("to", chat.id(), "type", presence.data()), null));
+        return socket.sendWithNoResponse(with("presence", of("to", chat.jid(), "type", presence.data()), null));
     }
 
     /**
@@ -717,7 +717,7 @@ public class Whatsapp {
      */
     public CompletableFuture<GroupResponse> createGroup(@NonNull String subject, @NonNull Contact... contacts) {
         var participants = Arrays.stream(contacts)
-                .map(contact -> with("participant", of("jid", contact.id()), null))
+                .map(contact -> with("participant", of("jid", contact.jid()), null))
                 .toArray(Node[]::new);
         var body = withChildren("create", of("subject", subject, "key", BinaryArray.random(12).toHex()), participants);
         return socket.sendQuery(of("xmlns", "w:g2", "to", "g.us", "type", "set"), body)

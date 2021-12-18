@@ -7,6 +7,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+// Remove duplicates for new protobuf
 public class RemoveDuplicates {
     @SneakyThrows
     public static void main(String[] args) {
@@ -19,15 +20,17 @@ public class RemoveDuplicates {
                 .toList();
 
         Files.walk(output)
-                .filter(inputs::contains)
-                .forEach(file -> {
-                    try {
-                        Files.delete(file);
-                    }catch (IOException exception){
-                        throw new UncheckedIOException(exception);
-                    }finally {
-                        System.out.println(file);
-                    }
-                });
+                .filter(file -> inputs.contains(file.getFileName()))
+                .forEach(RemoveDuplicates::deleteAndPrint);
+    }
+
+    private static void deleteAndPrint(Path file) {
+        try {
+            Files.delete(file);
+        }catch (IOException exception){
+            throw new UncheckedIOException(exception);
+        }finally {
+            System.out.println(file);
+        }
     }
 }

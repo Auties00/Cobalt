@@ -69,7 +69,7 @@ public class WhatsappStore {
      */
     public @NonNull Optional<Contact> findContactByJid(@NonNull String jid) {
         return contacts.parallelStream()
-                .filter(contact -> Objects.equals(contact.id().toString(), ContactJid.withoutServer(jid)))
+                .filter(contact -> Objects.equals(contact.jid().toString(), ContactJid.withoutServer(jid)))
                 .findAny();
     }
 
@@ -105,7 +105,7 @@ public class WhatsappStore {
      */
     public @NonNull Optional<Chat> findChatByJid(@NonNull String jid) {
         return chats.parallelStream()
-                .filter(chat -> Objects.equals(chat.id().toString(), ContactJid.withoutServer(jid)))
+                .filter(chat -> Objects.equals(chat.jid().toString(), ContactJid.withoutServer(jid)))
                 .findAny();
     }
 
@@ -141,7 +141,7 @@ public class WhatsappStore {
      */
     public @NonNull Optional<Chat> findChatByName(@NonNull String name) {
         return chats.parallelStream()
-                .filter(chat -> Objects.equals(chat.displayName(), name))
+                .filter(chat -> Objects.equals(chat.name(), name))
                 .findAny();
     }
 
@@ -153,7 +153,7 @@ public class WhatsappStore {
      */
     public @NonNull Set<Chat> findChatsByName(@NonNull String name) {
         return chats.parallelStream()
-                .filter(chat -> Objects.equals(chat.displayName(), name))
+                .filter(chat -> Objects.equals(chat.name(), name))
                 .collect(Collectors.toUnmodifiableSet());
     }
 
