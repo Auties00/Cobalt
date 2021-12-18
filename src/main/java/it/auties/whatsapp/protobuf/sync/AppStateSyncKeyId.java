@@ -14,7 +14,7 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class AppStateSyncKeyId {
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("bytes")
   private byte[] keyId;
 }

@@ -14,11 +14,11 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class BusinessCurrency {
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("int64")
   private long amount1000;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("string")
   private String currencyCode;
 }

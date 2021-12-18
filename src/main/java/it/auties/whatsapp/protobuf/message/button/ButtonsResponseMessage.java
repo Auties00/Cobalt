@@ -27,18 +27,18 @@ public final class ButtonsResponseMessage extends ContextualMessage implements B
   /**
    * The id of the button that was selected
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   private String buttonId;
 
   /**
    * The display text of the button that was selected
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   private String displayText;
 
   /**
    * The context info of this message
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   private ContextInfo contextInfo; // Overrides ContextualMessage's context info
 }

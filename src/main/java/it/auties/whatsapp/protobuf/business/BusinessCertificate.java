@@ -14,15 +14,15 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class BusinessCertificate {
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("bytes")
   private byte[] serverSignature;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("bytes")
   private byte[] signature;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("bytes")
   private byte[] details;
 }

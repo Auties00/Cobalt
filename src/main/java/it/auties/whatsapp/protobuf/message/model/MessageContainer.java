@@ -2,6 +2,7 @@ package it.auties.whatsapp.protobuf.message.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.message.button.*;
 import it.auties.whatsapp.protobuf.message.device.DeviceSentMessage;
@@ -11,7 +12,7 @@ import it.auties.whatsapp.protobuf.message.standard.ProductMessage;
 import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
 import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.protobuf.message.standard.*;
-import it.auties.whatsapp.protobuf.unknown.Call;
+import it.auties.whatsapp.protobuf.info.CallInfo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -46,7 +47,7 @@ import java.util.Optional;
 @Accessors(fluent = true)
 public class MessageContainer { // Not how I would design it, Whatsapp's choice obviously
   // Just a linker
-  @JsonProperty(value = "1")
+  @JsonSetter("1")
   private void fromText(String textMessageWithNoContext){
     this.text = new TextMessage(textMessageWithNoContext);
   }
@@ -54,205 +55,205 @@ public class MessageContainer { // Not how I would design it, Whatsapp's choice 
   /**
    * Sender key distribution message
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   private SenderKeyDistributionMessage senderKeyDistribution;
   
   /**
    * Image message
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   private ImageMessage image;
   
   /**
    * Contact message
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   private ContactMessage contact;
 
   /**
    * Location message
    */
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   private LocationMessage location;
 
   /**
    * Text message
    */
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   private TextMessage text;
 
   /**
    * Document message
    */
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   private DocumentMessage document;
   
   /**
    * Audio message
    */
-  @JsonProperty(value = "8")
+  @JsonProperty("8")
   private AudioMessage audio;
 
   /**
    * Video message
    */
-  @JsonProperty(value = "9")
+  @JsonProperty("9")
   private VideoMessage video;
   
   /**
    * Call message
    */
-  @JsonProperty(value = "10")
-  private Call call;
+  @JsonProperty("10")
+  private CallInfo call;
 
   /**
    * Sever message
    */
-  @JsonProperty(value = "12")
+  @JsonProperty("12")
   private ProtocolMessage protocol;
   
   /**
    * Contact array message
    */
-  @JsonProperty(value = "13")
+  @JsonProperty("13")
   private ContactsArrayMessage contactsArray;
 
   /**
    * Highly structured message
    */
-  @JsonProperty(value = "14")
+  @JsonProperty("14")
   private StructuredButtonMessage highlyStructured;
   
   /**
    * Fast ratchet key sender key distribution message
    */
-  @JsonProperty(value = "15")
+  @JsonProperty("15")
   private SenderKeyDistributionMessage fastRatchetKeySenderKeyDistribution;
   
   /**
    * Send payment message
    */
-  @JsonProperty(value = "16")
+  @JsonProperty("16")
   private SendPaymentMessage sendPayment;
 
   /**
    * Live location message
    */
-  @JsonProperty(value = "18")
+  @JsonProperty("18")
   private LiveLocationMessage liveLocation;
   
   /**
    * Request payment message
    */
-  @JsonProperty(value = "22")
+  @JsonProperty("22")
   private RequestPaymentMessage requestPayment;
 
   /**
    * Decline payment request message
    */
-  @JsonProperty(value = "23")
+  @JsonProperty("23")
   private DeclinePaymentRequestMessage declinePaymentRequest;
   
   /**
    * Cancel payment request message
    */
-  @JsonProperty(value = "24")
+  @JsonProperty("24")
   private CancelPaymentRequestMessage cancelPaymentRequest;
   
   /**
    * Template message
    */
-  @JsonProperty(value = "25")
+  @JsonProperty("25")
   private TemplateMessage template;
 
   /**
    * Sticker message
    */
-  @JsonProperty(value = "26")
+  @JsonProperty("26")
   private StickerMessage sticker;
 
   /**
    * Group invite message
    */
-  @JsonProperty(value = "28")
+  @JsonProperty("28")
   private GroupInviteMessage groupInvite;
 
   /**
    * Template button reply message
    */
-  @JsonProperty(value = "29")
+  @JsonProperty("29")
   private TemplateButtonReplyMessage templateButtonReply;
   
   /**
    * Product message
    */
-  @JsonProperty(value = "30")
+  @JsonProperty("30")
   private ProductMessage product;
 
   /**
    * Device sent message
    */
-  @JsonProperty(value = "31")
+  @JsonProperty("31")
   private DeviceSentMessage deviceSent;
   
   /**
    * Device sync message
    */
-  @JsonProperty(value = "32")
+  @JsonProperty("32")
   private DeviceSyncMessage deviceSync;
 
   /**
    * List message
    */
-  @JsonProperty(value = "36")
+  @JsonProperty("36")
   private ListMessage buttonsList;
 
   /**
    * View once message
    */
-  @JsonProperty(value = "37")
+  @JsonProperty("37")
   private Message viewOnce;
 
   /**
    * Order message
    */
-  @JsonProperty(value = "38")
+  @JsonProperty("38")
   private PaymentOrderMessage order;
 
   /**
    * List response message
    */
-  @JsonProperty(value = "39")
+  @JsonProperty("39")
   private ListResponseMessage listResponse;
 
   /**
    * Ephemeral message
    */
-  @JsonProperty(value = "40")
+  @JsonProperty("40")
   private Message ephemeral;
 
   /**
    * Invoice message
    */
-  @JsonProperty(value = "41")
+  @JsonProperty("41")
   private PaymentInvoiceMessage invoice;
 
   /**
    * Buttons message
    */
-  @JsonProperty(value = "42")
+  @JsonProperty("42")
   private ButtonsMessage buttons;
 
   /**
    * Buttons response message
    */
-  @JsonProperty(value = "43")
+  @JsonProperty("43")
   private ButtonsResponseMessage buttonsResponse;
 
   /**
    * Payment invite message
    */
-  @JsonProperty(value = "44")
+  @JsonProperty("44")
   private PaymentInviteMessage paymentInvite;
 
   // Unsupported for now: MessageContextInfo(35), InteractiveMessage(45), ReactionMessage(46), StickerSyncRMRMessage(47)
@@ -440,6 +441,15 @@ public class MessageContainer { // Not how I would design it, Whatsapp's choice 
    */
   public boolean isDevice(){
     return type() == ContentType.DEVICE;
+  }
+
+  /**
+   * Returns the call wrapped by this message, if any is present
+   *
+   * @return a non-null optional
+   */
+  public Optional<CallInfo> call() {
+    return Optional.ofNullable(call);
   }
 
   /**

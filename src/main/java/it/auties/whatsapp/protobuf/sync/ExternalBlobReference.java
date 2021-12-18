@@ -14,27 +14,27 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class ExternalBlobReference {
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   @JsonPropertyDescription("bytes")
   private byte[] fileEncSha256;
 
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   @JsonPropertyDescription("bytes")
   private byte[] fileSha256;
 
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("uint64")
   private long fileSizeBytes;
 
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("string")
   private String handle;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("string")
   private String directPath;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("bytes")
   private byte[] mediaKey;
 }

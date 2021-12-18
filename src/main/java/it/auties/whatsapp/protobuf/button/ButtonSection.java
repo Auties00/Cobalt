@@ -17,12 +17,12 @@ import java.util.List;
 @Builder
 @Accessors(fluent = true)
 public class ButtonSection {
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("Row")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<ButtonRow> rows;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("string")
   private String title;
 }

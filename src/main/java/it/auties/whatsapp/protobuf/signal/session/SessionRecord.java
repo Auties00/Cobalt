@@ -19,11 +19,11 @@ import lombok.experimental.Accessors;
 public class SessionRecord {
   private static final int ARCHIVED_STATES_MAX_LENGTH = 40;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("SessionStructure")
   private SessionStructure currentSession;
   
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("SessionStructure")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private LinkedList<SessionStructure> previousSessions;

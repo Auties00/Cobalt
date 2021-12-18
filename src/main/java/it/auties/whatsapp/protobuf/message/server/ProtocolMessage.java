@@ -25,58 +25,58 @@ public final class ProtocolMessage implements ServerMessage {
   /**
    * The key of message that this server message regards
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   private MessageKey key;
 
   /**
    * The type of this server message
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   private ProtocolMessageType type;
 
   /**
    * The expiration, that is the time in seconds after which a message is automatically deleted, of messages in an ephemeral chat.
    * This property is defined only if {@link ProtocolMessage#type} == {@link ProtocolMessageType#EPHEMERAL_SETTING} || @link ProtocolMessageType#EPHEMERAL_SYNC_RESPONSE}.
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   private long ephemeralExpiration;
 
   /**
    * The timestamp, that is the time in seconds since {@link java.time.Instant#EPOCH}, of the last modification to the ephemeral settings of a chat.
    * This property is defined only if {@link ProtocolMessage#type} == {@link ProtocolMessageType#EPHEMERAL_SETTING} || @link ProtocolMessageType#EPHEMERAL_SYNC_RESPONSE}.
    */
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   private long ephemeralSettingTimestamp;
 
   /**
    * History sync notification.
    * This property is defined only if {@link ProtocolMessage#type} == {@link ProtocolMessageType#HISTORY_SYNC_NOTIFICATION}.
    */
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   private HistorySyncNotification historySyncNotification;
 
   /**
    * Unknown
    */
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   private AppStateSyncKeyShare appStateSyncKeyShare;
 
   /**
    * Unknown
    */
-  @JsonProperty(value = "8")
+  @JsonProperty("8")
   private AppStateSyncKeyRequest appStateSyncKeyRequest;
 
   /**
    * Unknown
    */
-  @JsonProperty(value = "9")
+  @JsonProperty("9")
   private InitialSecurityNotificationSettingSync initialSecurityNotificationSettingSync;
 
   /**
    * Unknown
    */
-  @JsonProperty(value = "10")
+  @JsonProperty("10")
   private AppStateFatalExceptionNotification appStateFatalExceptionNotification;
 
   /**

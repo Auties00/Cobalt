@@ -28,28 +28,28 @@ public class ContextInfo {
   /**
    * The id of the message that this ContextualMessage quotes
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("string")
   private String quotedMessageId;
 
   /**
    * The jid of the contact that sent the message that this ContextualMessage quotes
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("string")
   private ContactJid quotedMessageSenderId;
 
   /**
    * The message that this ContextualMessage quotes
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("MessageContainer")
   private MessageContainer quotedMessageContainer;
 
   /**
    * A list of the contacts' jids mentioned in this ContextualMessage
    */
-  @JsonProperty(value = "15")
+  @JsonProperty("15")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   @JsonPropertyDescription("string")
   private List<String> mentionedJid;
@@ -57,7 +57,7 @@ public class ContextInfo {
   /**
    * Conversation source
    */
-  @JsonProperty(value = "18")
+  @JsonProperty("18")
   @JsonPropertyDescription("string")
   @Unsupported
   private String conversionSource;
@@ -65,7 +65,7 @@ public class ContextInfo {
   /**
    * Conversation data
    */
-  @JsonProperty(value = "19")
+  @JsonProperty("19")
   @JsonPropertyDescription("bytes")
   @Unsupported
   private byte[] conversionData;
@@ -73,7 +73,7 @@ public class ContextInfo {
   /**
    * Conversation delay in seconds
    */
-  @JsonProperty(value = "20")
+  @JsonProperty("20")
   @JsonPropertyDescription("uint32")
   @Unsupported
   private int conversionDelaySeconds;
@@ -81,21 +81,21 @@ public class ContextInfo {
   /**
    * Forwarding score
    */
-  @JsonProperty(value = "21")
+  @JsonProperty("21")
   @JsonPropertyDescription("uint32")
   private int forwardingScore;
 
   /**
    * Whether this ContextualMessage is forwarded
    */
-  @JsonProperty(value = "22")
+  @JsonProperty("22")
   @JsonPropertyDescription("bool")
   private boolean forwarded;
 
   /**
    * The ad that this ContextualMessage quotes
    */
-  @JsonProperty(value = "23")
+  @JsonProperty("23")
   @JsonPropertyDescription("AdReplyInfo")
   @Unsupported
   private AdReplyInfo quotedAd;
@@ -103,7 +103,7 @@ public class ContextInfo {
   /**
    * Placeholder key
    */
-  @JsonProperty(value = "24")
+  @JsonProperty("24")
   @JsonPropertyDescription("MessageKey")
   @Unsupported
   private MessageKey placeholderKey;
@@ -112,7 +112,7 @@ public class ContextInfo {
    * The expiration in seconds since {@link java.time.Instant#EPOCH} for this ContextualMessage.
    * Only valid if the chat where this message was sent is ephemeral.
    */
-  @JsonProperty(value = "25")
+  @JsonProperty("25")
   @JsonPropertyDescription("uint32")
   private int expiration;
 
@@ -120,14 +120,14 @@ public class ContextInfo {
    * The timestamp, that is the time in seconds since {@link java.time.Instant#EPOCH}, of the last modification to the ephemeral settings
    * for the chat where this ContextualMessage was sent.
    */
-  @JsonProperty(value = "26")
+  @JsonProperty("26")
   @JsonPropertyDescription("int64")
   private long ephemeralSettingTimestamp;
 
   /**
    * Ephemeral shared secret
    */
-  @JsonProperty(value = "27")
+  @JsonProperty("27")
   @JsonPropertyDescription("bytes")
   @Unsupported
   private byte[] ephemeralSharedSecret;
@@ -135,7 +135,7 @@ public class ContextInfo {
   /**
    * External ad reply
    */
-  @JsonProperty(value = "28")
+  @JsonProperty("28")
   @JsonPropertyDescription("ExternalAdReplyInfo")
   @Unsupported
   private ExternalAdReplyInfo externalAdReply;
@@ -143,7 +143,7 @@ public class ContextInfo {
   /**
    * Entry point conversion source
    */
-  @JsonProperty(value = "29")
+  @JsonProperty("29")
   @JsonPropertyDescription("string")
   @Unsupported
   private String entryPointConversionSource;
@@ -151,7 +151,7 @@ public class ContextInfo {
   /**
    * Entry point conversion app
    */
-  @JsonProperty(value = "30")
+  @JsonProperty("30")
   @JsonPropertyDescription("string")
   @Unsupported
   private String entryPointConversionApp;
@@ -159,7 +159,7 @@ public class ContextInfo {
   /**
    * Entry point conversion delay in seconds
    */
-  @JsonProperty(value = "31")
+  @JsonProperty("31")
   @JsonPropertyDescription("uint32")
   @Unsupported
   private int entryPointConversionDelaySeconds;

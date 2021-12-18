@@ -14,35 +14,35 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class CompanionData {
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("bytes")
   private byte[] id;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("bytes")
   private byte[] keyType;
 
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("bytes")
   private byte[] identifier;
 
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("bytes")
   private byte[] signatureId;
 
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   @JsonPropertyDescription("bytes")
   private byte[] signaturePublicKey;
 
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   @JsonPropertyDescription("bytes")
   private byte[] signature;
 
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   @JsonPropertyDescription("bytes")
   private byte[] buildHash;
 
-  @JsonProperty(value = "8")
+  @JsonProperty("8")
   @JsonPropertyDescription("bytes")
   private byte[] companion;
 }

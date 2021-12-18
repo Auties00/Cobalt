@@ -14,47 +14,47 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class ButtonOpaqueData {
-  @JsonProperty(value = "13")
+  @JsonProperty("13")
   @JsonPropertyDescription("string")
   private String description;
 
-  @JsonProperty(value = "12")
+  @JsonProperty("12")
   @JsonPropertyDescription("string")
   private String title;
 
-  @JsonProperty(value = "11")
+  @JsonProperty("11")
   @JsonPropertyDescription("string")
   private String matchedText;
 
-  @JsonProperty(value = "10")
+  @JsonProperty("10")
   @JsonPropertyDescription("string")
   private String canonicalUrl;
 
-  @JsonProperty(value = "9")
+  @JsonProperty("9")
   @JsonPropertyDescription("string")
   private String paymentNoteMsgBody;
 
-  @JsonProperty(value = "8")
+  @JsonProperty("8")
   @JsonPropertyDescription("int32")
   private int paymentAmount1000;
 
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   @JsonPropertyDescription("double")
   private double lat;
 
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   @JsonPropertyDescription("double")
   private double lng;
 
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("string")
   private String clientUrl;
 
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("string")
   private String caption;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("string")
   private String body;
 }

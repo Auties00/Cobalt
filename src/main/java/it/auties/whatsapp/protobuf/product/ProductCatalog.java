@@ -15,15 +15,15 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class ProductCatalog {
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("string")
   private String description;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("string")
   private String title;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("ImageMessage")
   private ImageMessage catalogImage;
 }

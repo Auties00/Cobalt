@@ -21,9 +21,4 @@ public enum ChatMuteType {
      * Simply put, {@link ChatMute#time()} == 0
      */
     NOT_MUTED,
-
-    /**
-     * This constant describes a {@link ChatMute} that holds an unknown mute
-     */
-    UNKNOWN
 }

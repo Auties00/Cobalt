@@ -14,11 +14,11 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class ProductListHeaderImage {
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("bytes")
   private byte[] thumbnail;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("string")
   private String productId;
 }

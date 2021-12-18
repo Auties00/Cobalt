@@ -15,19 +15,19 @@ import java.util.Arrays;
 @Builder
 @Accessors(fluent = true)
 public class Button {
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("NativeFlowInfo")
   private NativeFlowInfo nativeFlowInfo;
 
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("ButtonType")
   private ButtonType type;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("ButtonText")
   private ButtonText buttonText;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("string")
   private String buttonId;
 

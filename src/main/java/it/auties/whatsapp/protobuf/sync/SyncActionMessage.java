@@ -15,11 +15,11 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class SyncActionMessage {
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("int64")
   private long timestamp;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("MessageKey")
   private MessageKey key;
 }

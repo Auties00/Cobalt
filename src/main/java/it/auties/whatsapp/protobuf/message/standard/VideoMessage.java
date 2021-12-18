@@ -35,106 +35,106 @@ public final class VideoMessage extends MediaMessage {
   /**
    * The upload url of the encoded video that this object wraps
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   private String url;
 
   /**
    * The mime type of the video that this object wraps.
    * Most of the time this is {@link MediaMessageType#defaultMimeType()}
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   private String mimetype;
 
   /**
    * The sha256 of the decoded video that this object wraps
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   private byte[] fileSha256;
 
   /**
    * The unsigned size of the decoded video that this object wraps
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   private long fileLength;
 
   /**
    * The length in seconds of the video that this message wraps
    */
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   private int seconds;
 
   /**
    * The media key of the video that this object wraps.
    */
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   private byte[] mediaKey;
 
   /**
    * The caption, that is the text below the video, of this video message
    */
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   private String caption;
 
   /**
    * Determines whether this object wraps a video that must be played as a gif
    */
-  @JsonProperty(value = "8")
+  @JsonProperty("8")
   private boolean gifPlayback;
 
   /**
    * The unsigned height of the decoded video that this object wraps
    */
-  @JsonProperty(value = "9")
+  @JsonProperty("9")
   private int height;
 
   /**
    * The unsigned width of the decoded video that this object wraps
    */
-  @JsonProperty(value = "10")
+  @JsonProperty("10")
   private int width;
 
   /**
    * The sha256 of the encoded video that this object wraps
    */
-  @JsonProperty(value = "11")
+  @JsonProperty("11")
   private byte[] fileEncSha256;
 
   /**
    * Interactive annotations
    */
-  @JsonProperty(value = "12")
+  @JsonProperty("12")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<InteractiveAnnotation> interactiveAnnotations;
 
   /**
    * The direct path to the encoded image that this object wraps
    */
-  @JsonProperty(value = "13")
+  @JsonProperty("13")
   private String directPath;
 
   /**
    * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link VideoMessage#mediaKey()}
    */
-  @JsonProperty(value = "14")
+  @JsonProperty("14")
   private long mediaKeyTimestamp;
 
   /**
    * The thumbnail for this video message encoded as jpeg in an array of bytes
    */
-  @JsonProperty(value = "16")
+  @JsonProperty("16")
   private byte[] thumbnail;
 
   /**
    * The sidecar for the decoded video that this message wraps
    */
-  @JsonProperty(value = "18")
+  @JsonProperty("18")
   private byte[] streamingSidecar;
 
   /**
    * The source from where the gif that this message wraps comes from.
    * This property is defined only if {@link VideoMessage#gifPlayback}.
    */
-  @JsonProperty(value = "19")
+  @JsonProperty("19")
   private VideoMessageAttribution gifAttribution;
 
   /**

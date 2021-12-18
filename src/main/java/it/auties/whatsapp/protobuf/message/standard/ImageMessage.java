@@ -29,124 +29,124 @@ public final class ImageMessage extends MediaMessage {
   /**
    * The upload url of the encoded image that this object wraps
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   private String url;
 
   /**
    * The mime type of the image that this object wraps.
    * Most of the time this is {@link MediaMessageType#defaultMimeType()}
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   private String mimetype;
 
   /**
    * The caption of this message
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   private String caption;
 
   /**
    * The sha256 of the decoded image that this object wraps
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   private byte[] fileSha256;
 
   /**
    * The unsigned size of the decoded image that this object wraps
    */
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   private long fileLength;
 
   /**
    * The unsigned height of the decoded image that this object wraps
    */
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   private int height;
 
   /**
    * The unsigned width of the decoded image that this object wraps
    */
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   private int width;
 
   /**
    * The media key of the image that this object wraps
    */
-  @JsonProperty(value = "8")
+  @JsonProperty("8")
   private byte[] mediaKey;
 
   /**
    * The sha256 of the encoded image that this object wraps
    */
-  @JsonProperty(value = "9")
+  @JsonProperty("9")
   private byte[] fileEncSha256;
 
   /**
    * Interactive annotations
    */
-  @JsonProperty(value = "10")
+  @JsonProperty("10")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<InteractiveAnnotation> interactiveAnnotations;
   
   /**
    * The direct path to the encoded image that this object wraps
    */
-  @JsonProperty(value = "11")
+  @JsonProperty("11")
   private String directPath;
 
   /**
    * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link ImageMessage#mediaKey()}
    */
-  @JsonProperty(value = "12")
+  @JsonProperty("12")
   private long mediaKeyTimestamp;
   
   /**
    * The thumbnail for this image message encoded as jpeg in an array of bytes
    */
-  @JsonProperty(value = "16")
+  @JsonProperty("16")
   private byte[] thumbnail;
 
   /**
    * The sidecar for the first sidecar
    */
-  @JsonProperty(value = "18")
+  @JsonProperty("18")
   private byte[] firstScanSidecar;
 
   /**
    * The length of the first scan
    */
-  @JsonProperty(value = "19")
+  @JsonProperty("19")
   private int firstScanLength;
 
   /**
    * Experiment Group Id
    */
-  @JsonProperty(value = "20")
+  @JsonProperty("20")
   private int experimentGroupId;
   
   /**
    * The sidecar for the scans of the decoded image
    */
-  @JsonProperty(value = "21")
+  @JsonProperty("21")
   private byte[] scansSidecar;
 
   /**
    * The length of each scan of the decoded image
    */
-  @JsonProperty(value = "22")
+  @JsonProperty("22")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<Integer> scanLengths;
 
   /**
    * The sha256 of the decoded image in medium quality
    */
-  @JsonProperty(value = "23")
+  @JsonProperty("23")
   private byte[] midQualityFileSha256;
 
   /**
    * The sha256 of the encoded image in medium quality
    */
-  @JsonProperty(value = "24")
+  @JsonProperty("24")
   private byte[] midQualityFileEncSha256;
   
   /**

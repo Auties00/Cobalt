@@ -14,31 +14,31 @@ import java.util.Arrays;
 @Builder
 @Accessors(fluent = true)
 public class BusinessDateTimeComponent {
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   @JsonPropertyDescription("HSMDateTimeComponentCalendarType")
   private HSMDateTimeComponentCalendarType calendar;
 
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   @JsonPropertyDescription("uint32")
   private int minute;
 
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   @JsonPropertyDescription("uint32")
   private int hour;
 
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("uint32")
   private int dayOfMonth;
 
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("uint32")
   private int month;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("uint32")
   private int year;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("HSMDateTimeComponentDayOfWeekType")
   private HSMDateTimeComponentDayOfWeekType dayOfWeek;
 

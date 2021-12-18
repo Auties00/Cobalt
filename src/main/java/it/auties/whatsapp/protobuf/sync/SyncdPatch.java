@@ -17,36 +17,36 @@ import java.util.List;
 @Builder
 @Accessors(fluent = true)
 public class SyncdPatch {
-  @JsonProperty(value = "8")
+  @JsonProperty("8")
   @JsonPropertyDescription("uint32")
   private int deviceIndex;
 
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   @JsonPropertyDescription("ExitCode")
   private ExitCode exitCode;
 
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   @JsonPropertyDescription("KeyId")
   private KeyId keyId;
 
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   @JsonPropertyDescription("bytes")
   private byte[] patchMac;
 
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("bytes")
   private byte[] snapshotMac;
 
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("ExternalBlobReference")
   private ExternalBlobReference externalMutations;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("SyncdMutation")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<SyncdMutation> mutations;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("SyncdVersion")
   private SyncdVersion version;
 }

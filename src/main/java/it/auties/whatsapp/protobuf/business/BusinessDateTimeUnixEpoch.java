@@ -14,7 +14,7 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class BusinessDateTimeUnixEpoch {
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("int64")
   private long timestamp;
 }

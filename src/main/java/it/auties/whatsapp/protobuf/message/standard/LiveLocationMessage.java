@@ -25,55 +25,55 @@ public final class LiveLocationMessage extends ContextualMessage {
   /**
    * The latitude of the location that this message wraps
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   private double latitude;
   
   /**
    * The longitude of the location that this message wraps
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   private double longitude;
 
   /**
    * The accuracy in meters of the location that this message wraps
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   private int accuracy;
 
   /**
    * The speed in meters per second of the device that sent this live location message
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   private float speed;
 
   /**
    * Degrees Clockwise from Magnetic North
    */
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   private int magneticNorthOffset;
 
   /**
    * The caption of this message
    */
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   private String caption;
 
   /**
    * This property probably refers to the number of updates that this live location message.
    */
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   private long sequenceNumber;
 
   /**
    * This offset probably refers to the time since the last update to this live location message.
    * In addition, it is measured in seconds since {@link java.time.Instant#EPOCH}.
    */
-  @JsonProperty(value = "8")
+  @JsonProperty("8")
   private int timeOffset;
 
   /**
    * The thumbnail for this live location message encoded as jpeg in an array of bytes
    */
-  @JsonProperty(value = "16")
+  @JsonProperty("16")
   private byte[] thumbnail;
 }

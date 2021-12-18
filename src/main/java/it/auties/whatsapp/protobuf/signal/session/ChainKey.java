@@ -17,11 +17,11 @@ import javax.crypto.spec.SecretKeySpec;
 public class ChainKey {
     private static final String HMAC = "HmacSHA256";
 
-    @JsonProperty(value = "1")
+    @JsonProperty("1")
     @JsonPropertyDescription("uint32")
     private int index;
 
-    @JsonProperty(value = "2")
+    @JsonProperty("2")
     @JsonPropertyDescription("bytes")
     private byte[] key;
 

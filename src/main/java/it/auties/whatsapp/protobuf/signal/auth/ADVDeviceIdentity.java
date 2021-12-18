@@ -14,15 +14,15 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class ADVDeviceIdentity {
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("uint32")
   private int keyIndex;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("uint64")
   private long timestamp;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("uint32")
   private int rawId;
 }

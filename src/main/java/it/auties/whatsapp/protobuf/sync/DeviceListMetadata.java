@@ -17,29 +17,29 @@ import java.util.List;
 @Builder
 @Accessors(fluent = true)
 public class DeviceListMetadata {
-  @JsonProperty(value = "10")
+  @JsonProperty("10")
   @JsonPropertyDescription("uint32")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<Integer> recipientKeyIndexes;
 
-  @JsonProperty(value = "9")
+  @JsonProperty("9")
   @JsonPropertyDescription("uint64")
   private long recipientTimestamp;
 
-  @JsonProperty(value = "8")
+  @JsonProperty("8")
   @JsonPropertyDescription("bytes")
   private byte[] recipientKeyHash;
 
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("uint32")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<Integer> senderKeyIndexes;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("uint64")
   private long senderTimestamp;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("bytes")
   private byte[] senderKeyHash;
 }

@@ -24,63 +24,63 @@ public class ExternalAdReplyInfo {
   /**
    * The title of this advertisement
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("string")
   private String title;
 
   /**
    * The body of this advertisement
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("string")
   private String body;
 
   /**
    * The media type of this ad, if any is specified
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("ExternalAdReplyInfoMediaType")
   private ExternalAdReplyInfoMediaType mediaType;
 
   /**
    * The url of the thumbnail for the media of this ad, if any is specified
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("string")
   private String thumbnailUrl;
 
   /**
    * The url of the media of this ad, if any is specified
    */
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   @JsonPropertyDescription("string")
   private String mediaUrl;
 
   /**
    * The thumbnail for the media of this ad, if any is specified
    */
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   @JsonPropertyDescription("string")
   private byte[] thumbnail;
 
   /**
    * The source type of this ad
    */
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   @JsonPropertyDescription("string")
   private String sourceType;
 
   /**
    * The source id of this ad
    */
-  @JsonProperty(value = "8")
+  @JsonProperty("8")
   @JsonPropertyDescription("string")
   private String sourceId;
 
   /**
    * The source url of this ad
    */
-  @JsonProperty(value = "9")
+  @JsonProperty("9")
   @JsonPropertyDescription("string")
   private String sourceUrl;
 

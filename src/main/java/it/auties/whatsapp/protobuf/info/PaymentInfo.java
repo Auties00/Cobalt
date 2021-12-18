@@ -24,62 +24,62 @@ public class PaymentInfo {
   /**
    * The status of this transaction
    */
-  @JsonProperty(value = "10")
+  @JsonProperty("10")
   private PaymentInfoTxnStatus transactionStatus;
 
   /**
    * The currency of this transaction
    */
-  @JsonProperty(value = "9")
+  @JsonProperty("9")
   private String currency;
 
   /**
    * Future proofed
    */
-  @JsonProperty(value = "8")
+  @JsonProperty("8")
   private boolean futureproofed;
 
   /**
    * The date of expiration of this transaction
    */
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   private long expiryTimestamp;
 
   /**
    * The MessageKey of the {@link RequestPaymentMessage} that originated this transaction
    */
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   private MessageKey requestMessageKey;
 
   /**
    * The timestamp, that is the seconds since {@link java.time.Instant#EPOCH}, when the {@link RequestPaymentMessage} that originated this transaction was sent
    */
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   private long transactionTimestamp;
 
   /**
    * The status of this payment
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   private PaymentInfoStatus status;
 
   /**
    * The jid of the beneficiary of this transaction
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   private String receiverJid;
 
   /**
    * The amount of money involved in this transaction
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   private long amount1000;
 
   /**
    * The currency of this transaction
    */
   @Deprecated
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   private PaymentInfoCurrency currencyDeprecated;
 
   /**

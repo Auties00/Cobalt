@@ -25,49 +25,49 @@ public final class TextMessage extends ContextualMessage {
   /**
    * The text that this message wraps
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   private String text;
 
   /**
    * The substring of this text message that links to {@link TextMessage#canonicalUrl}, if available
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   private String matchedText;
 
   /**
    * The canonical url of the link that this text message wraps, if available
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   private String canonicalUrl;
 
   /**
    * The description of the link that this text message wraps, if available
    */
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   private String description;
 
   /**
    * The title of the link that this text message wraps, if available
    */
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   private String title;
 
   /**
    * The color of this text message encoded as ARGB
    */
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   private int textArgb;
 
   /**
    * The background color of this text message encoded as ARGB
    */
-  @JsonProperty(value = "8")
+  @JsonProperty("8")
   private int backgroundArgb;
 
   /**
    * The type of font used for the text message.
    */
-  @JsonProperty(value = "9")
+  @JsonProperty("9")
   private TextMessageFontType font;
 
   /**
@@ -75,19 +75,19 @@ public final class TextMessage extends ContextualMessage {
    * If said message contains a link, this value will probably be {@link TextMessagePreviewType#VIDEO}.
    * Not all links, though, produce a preview.
    */
-  @JsonProperty(value = "10")
+  @JsonProperty("10")
   private TextMessagePreviewType previewType;
 
   /**
    * The thumbnail for this text message encoded as jpeg in an array of bytes
    */
-  @JsonProperty(value = "16")
+  @JsonProperty("16")
   private byte[] thumbnail;
 
   /**
    * Determines whether the preview can be played inline
    */
-  @JsonProperty(value = "18")
+  @JsonProperty("18")
   private boolean doNotPlayInline;
 
   /**

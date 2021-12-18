@@ -25,35 +25,35 @@ public class BusinessAccountInfo {
   /**
    * The facebook id
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("uint64")
   private long facebookId;
 
   /**
    * The account phone number
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("string")
   private String accountNumber;
 
   /**
    * The timestamp of the account
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("uint64")
   private long timestamp;
 
   /**
    * Indicates here this account is hosted
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("BizAccountLinkInfoHostStorageType")
   private BusinessStorageType hostStorage;
 
   /**
    * The type of this account
    */
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   @JsonPropertyDescription("BizAccountLinkInfoAccountType")
   private BusinessAccountType accountType;
 }

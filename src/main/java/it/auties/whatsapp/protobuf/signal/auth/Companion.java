@@ -14,19 +14,19 @@ import java.util.Arrays;
 @Builder
 @Accessors(fluent = true)
 public class Companion {
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("bool")
   private boolean requireFullSync;
 
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("CompanionPropsPlatformType")
   private CompanionPropsPlatformType platformType;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("AppVersion")
   private Version version;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("string")
   private String os;
 

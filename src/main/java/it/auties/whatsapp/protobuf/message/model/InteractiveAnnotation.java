@@ -25,7 +25,7 @@ public class InteractiveAnnotation {
   /**
    * Polygon vertices
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("Point")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<Point> polygonVertices;
@@ -33,7 +33,7 @@ public class InteractiveAnnotation {
   /**
    * Location
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("Location")
   private Location location;
 
@@ -42,7 +42,7 @@ public class InteractiveAnnotation {
    *
    * @return a non-null Action
    */
-  public Action actionCase() {
+  public Action type() {
     return location != null ? Action.LOCATION : Action.UNKNOWN;
   }
 
@@ -85,7 +85,7 @@ public class InteractiveAnnotation {
     /**
      * X coordinate, deprecated
      */
-    @JsonProperty(value = "1")
+    @JsonProperty("1")
     @JsonPropertyDescription("int32")
     @Deprecated
     private int xDeprecated;
@@ -93,7 +93,7 @@ public class InteractiveAnnotation {
     /**
      * Y coordinate, deprecated
      */
-    @JsonProperty(value = "2")
+    @JsonProperty("2")
     @JsonPropertyDescription("int32")
     @Deprecated
     private int yDeprecated;
@@ -101,14 +101,14 @@ public class InteractiveAnnotation {
     /**
      * X coordinate
      */
-    @JsonProperty(value = "3")
+    @JsonProperty("3")
     @JsonPropertyDescription("double")
     private double x;
 
     /**
      * Y coordinate
      */
-    @JsonProperty(value = "4")
+    @JsonProperty("4")
     @JsonPropertyDescription("double")
     private double y;
   }
@@ -125,21 +125,21 @@ public class InteractiveAnnotation {
     /**
      * The latitude of this location, in degrees
      */
-    @JsonProperty(value = "1")
+    @JsonProperty("1")
     @JsonPropertyDescription("double")
     private double latitude;
 
     /**
      * The longitude of this location, in degrees
      */
-    @JsonProperty(value = "2")
+    @JsonProperty("2")
     @JsonPropertyDescription("double")
     private double longitude;
 
     /**
      * The name of this location
      */
-    @JsonProperty(value = "3")
+    @JsonProperty("3")
     @JsonPropertyDescription("string")
     private String name;
   }

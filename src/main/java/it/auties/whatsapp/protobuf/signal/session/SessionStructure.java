@@ -24,56 +24,56 @@ import java.util.Optional;
 public class SessionStructure {
     private static final int MAX_MESSAGE_KEYS = 2000;
 
-    @JsonProperty(value = "1")
+    @JsonProperty("1")
     @JsonPropertyDescription("uint32")
     private int sessionVersion;
 
-    @JsonProperty(value = "2")
+    @JsonProperty("2")
     @JsonPropertyDescription("bytes")
     private byte[] localIdentityPublic;
 
-    @JsonProperty(value = "3")
+    @JsonProperty("3")
     @JsonPropertyDescription("bytes")
     private byte[] remoteIdentityKey;
 
-    @JsonProperty(value = "4")
+    @JsonProperty("4")
     @JsonPropertyDescription("bytes")
     private byte[] rootKey;
 
-    @JsonProperty(value = "5")
+    @JsonProperty("5")
     @JsonPropertyDescription("uint32")
     private int previousCounter;
 
-    @JsonProperty(value = "6")
+    @JsonProperty("6")
     @JsonPropertyDescription("Chain")
     private Chain senderChain;
 
-    @JsonProperty(value = "7")
+    @JsonProperty("7")
     @JsonPropertyDescription("Chain")
     @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
     private List<Chain> receiverChains;
 
-    @JsonProperty(value = "8")
+    @JsonProperty("8")
     @JsonPropertyDescription("PendingKeyExchange")
     private PendingKeyExchange pendingKeyExchange;
 
-    @JsonProperty(value = "9")
+    @JsonProperty("9")
     @JsonPropertyDescription("PendingPreKey")
     private PendingPreKey pendingPreKey;
 
-    @JsonProperty(value = "10")
+    @JsonProperty("10")
     @JsonPropertyDescription("uint32")
     private int remoteRegistrationId;
 
-    @JsonProperty(value = "11")
+    @JsonProperty("11")
     @JsonPropertyDescription("uint32")
     private int localRegistrationId;
 
-    @JsonProperty(value = "12")
+    @JsonProperty("12")
     @JsonPropertyDescription("bool")
     private boolean needsRefresh;
 
-    @JsonProperty(value = "13")
+    @JsonProperty("13")
     @JsonPropertyDescription("bytes")
     private byte[] aliceBaseKey;
 

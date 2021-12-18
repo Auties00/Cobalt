@@ -17,12 +17,12 @@ import java.util.List;
 @Builder
 @Accessors(fluent = true)
 public class ProductSection {
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("Product")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<Product> products;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("string")
   private String title;
 }

@@ -26,61 +26,61 @@ public final class PaymentInvoiceMessage extends MediaMessage implements Payment
   /**
    * The note of this invoice
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   private String note;
 
   /**
    * The token of this invoice
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   private String token;
 
   /**
    * The type of attachment that this invoice provides
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   private AttachmentType type;
 
   /**
    * The mime type of the attachment that this invoice provides
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   private String mimeType;
 
   /**
    * The media key of the attachment that this invoice provides
    */
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   private byte[] mediaKey;
 
   /**
    * The media key timestamp of the attachment that this invoice provides
    */
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   private long mediaKeyTimestamp;
 
   /**
    * The sha256 of the attachment that this invoice provides
    */
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   private byte[] fileSha256;
 
   /**
    * The sha256 of the encrypted attachment that this invoice provides
    */
-  @JsonProperty(value = "8")
+  @JsonProperty("8")
   private byte[] fileEncSha256;
 
   /**
    * The direct path to the attachment that this invoice provides
    */
-  @JsonProperty(value = "9")
+  @JsonProperty("9")
   private String directPath;
 
   /**
    * The thumbnail of the attachment that this invoice provides
    */
-  @JsonProperty(value = "10")
+  @JsonProperty("10")
   private byte[] thumbnail;
 
   /**

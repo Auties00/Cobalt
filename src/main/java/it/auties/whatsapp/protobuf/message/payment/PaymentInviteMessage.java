@@ -25,13 +25,13 @@ public final class PaymentInviteMessage implements PaymentMessage {
   /**
    * The type of service used for this payment
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   private PaymentInviteMessageServiceType serviceType;
 
   /**
    * The timestamp of expiration for this message
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   private long expiryTimestamp;
 
   @AllArgsConstructor

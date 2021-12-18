@@ -21,36 +21,36 @@ import java.util.List;
 @Builder
 @Accessors(fluent = true)
 public class FourRowTemplate {
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   @JsonPropertyDescription("LocationMessage")
   private LocationMessage locationMessage;
 
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("VideoMessage")
   private VideoMessage videoMessage;
 
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("ImageMessage")
   private ImageMessage imageMessage;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("HighlyStructuredMessage")
   private StructuredButtonMessage highlyStructuredMessage;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("DocumentMessage")
   private DocumentMessage documentMessage;
 
-  @JsonProperty(value = "8")
+  @JsonProperty("8")
   @JsonPropertyDescription("TemplateButton")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<ButtonTemplate> buttons;
 
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   @JsonPropertyDescription("HighlyStructuredMessage")
   private StructuredButtonMessage footer;
 
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   @JsonPropertyDescription("HighlyStructuredMessage")
   private StructuredButtonMessage content;
 

@@ -25,6 +25,6 @@ public sealed abstract class ContextualMessage implements Message permits Button
     /**
      * The context info of this message
      */
-    @JsonProperty(value = "17")
+    @JsonProperty("17")
     private ContextInfo contextInfo;
 }

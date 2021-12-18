@@ -11,23 +11,23 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class SignedPreKeyRecordStructure {
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("uint32")
   private int id;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("bytes")
   private byte[] publicKey;
 
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("bytes")
   private byte[] privateKey;
 
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("bytes")
   private byte[] signature;
 
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   @JsonPropertyDescription("fixed64")
   private long timestamp;
 }

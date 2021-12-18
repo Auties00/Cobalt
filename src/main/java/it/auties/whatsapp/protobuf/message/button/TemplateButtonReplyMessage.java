@@ -29,24 +29,24 @@ public final class TemplateButtonReplyMessage extends ContextualMessage implemen
   /**
    * The id of the button that was selected from the previous template message
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   private String id;
 
   /**
    * The text of the button that was selected from the previous template message
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   private String displayText;
 
   /**
    * The context info of this message
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   private ContextInfo contextInfo; // Overrides ContextualMessage's context info
 
   /**
    * The index of the button that was selected from the previous template message
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   private int index;
 }

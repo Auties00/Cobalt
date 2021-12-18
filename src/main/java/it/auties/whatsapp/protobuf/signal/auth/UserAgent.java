@@ -14,55 +14,55 @@ import java.util.Arrays;
 @Builder
 @Accessors(fluent = true)
 public class UserAgent {
-  @JsonProperty(value = "13")
+  @JsonProperty("13")
   @JsonPropertyDescription("string")
   private String deviceBoard;
 
-  @JsonProperty(value = "12")
+  @JsonProperty("12")
   @JsonPropertyDescription("string")
   private String localeCountryIso31661Alpha2;
 
-  @JsonProperty(value = "11")
+  @JsonProperty("11")
   @JsonPropertyDescription("string")
   private String localeLanguageIso6391;
 
-  @JsonProperty(value = "10")
+  @JsonProperty("10")
   @JsonPropertyDescription("UserAgentReleaseChannel")
   private UserAgentReleaseChannel releaseChannel;
 
-  @JsonProperty(value = "9")
+  @JsonProperty("9")
   @JsonPropertyDescription("string")
   private String phoneId;
 
-  @JsonProperty(value = "8")
+  @JsonProperty("8")
   @JsonPropertyDescription("string")
   private String osBuildNumber;
 
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   @JsonPropertyDescription("string")
   private String device;
 
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   @JsonPropertyDescription("string")
   private String manufacturer;
 
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   @JsonPropertyDescription("string")
   private String osVersion;
 
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("string")
   private String mnc;
 
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("string")
   private String mcc;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("AppVersion")
   private Version appVersion;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("UserAgentPlatform")
   private UserAgentPlatform platform;
 

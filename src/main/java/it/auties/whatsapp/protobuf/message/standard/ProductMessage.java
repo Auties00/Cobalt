@@ -29,18 +29,18 @@ public final class ProductMessage extends ContextualMessage implements Message {
   /**
    * The product that this message wraps
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   private ProductSnapshot product;
 
   /**
    * The jid of the WhatsappBusiness account that owns the product that this message wraps
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   private ContactJid businessOwnerId;
 
   /**
    * The catalog where the product that this message wraps is
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   private ProductCatalog catalog;
 }

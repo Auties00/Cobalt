@@ -14,11 +14,11 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class EphemeralSetting {
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("sfixed64")
   private long timestamp;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("sfixed32")
   private int duration;
 }

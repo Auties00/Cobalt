@@ -25,66 +25,66 @@ public final class LocationMessage extends ContextualMessage {
   /**
    * The latitude of the location that this message wraps
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   private double latitude;
 
   /**
    * The longitude of the location that this message wraps
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   private double longitude;
 
   /**
    * The name of the location that this message wraps
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   private String name;
 
   /**
    * The address of the location that this message wraps
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   private String address;
 
   /**
    * A URL to visit the location that this message wraps in Google Maps
    */
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   private String url;
 
   /**
    * Determines whether this message is a {@link LiveLocationMessage}
    */
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   private boolean live;
 
   /**
    * The accuracy in meters of the location that this message wraps
    */
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   private int accuracy;
 
   /**
    * The speed in meters per second of the device that sent this live location message
    */
-  @JsonProperty(value = "8")
+  @JsonProperty("8")
   private float speed;
 
   /**
    * Degrees Clockwise from Magnetic North
    */
-  @JsonProperty(value = "9")
+  @JsonProperty("9")
   private int magneticNorthOffset;
 
   /**
    * The caption of this message
    */
-  @JsonProperty(value = "11")
+  @JsonProperty("11")
   private String caption;
 
   /**
    * The thumbnail for this image message encoded as jpeg in an array of bytes
    */
-  @JsonProperty(value = "16")
+  @JsonProperty("16")
   private byte[] thumbnail;
 }

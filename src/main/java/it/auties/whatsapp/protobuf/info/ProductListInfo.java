@@ -29,7 +29,7 @@ public class ProductListInfo {
   /**
    * The products that this message wraps
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("ProductSection")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<ProductSection> productSections;
@@ -37,14 +37,14 @@ public class ProductListInfo {
   /**
    * The header image of the messages that this message wraps
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("ProductListHeaderImage")
   private ProductListHeaderImage headerImage;
 
   /**
    * The id of the seller of the products that this message wraps
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("string")
   private ContactJid sellerId;
 }

@@ -14,19 +14,19 @@ import java.util.Arrays;
 @Builder
 @Accessors(fluent = true)
 public class HydratedTemplateButton {
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("HydratedCallButton")
   private HydratedCallButton callButton;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("HydratedURLButton")
   private HydratedURLButton urlButton;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("HydratedQuickReplyButton")
   private HydratedQuickReplyButton quickReplyButton;
 
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("uint32")
   private int index;
 

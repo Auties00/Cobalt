@@ -21,19 +21,19 @@ import java.util.List;
 public class SenderKeyState {
   private static final int MAX_MESSAGE_KEYS = 2000;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("uint32")
   private int senderKeyId;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("SenderChainKey")
   private SenderChainKey senderChainKey;
 
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("SenderSigningKey")
   private SenderSigningKey senderSigningKey;
 
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("SenderMessageKey")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   @Builder.Default

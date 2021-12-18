@@ -11,19 +11,19 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class SenderKeyStateStructure {
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("uint32")
   private int senderKeyId;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("SenderChainKey")
   private SenderChainKey senderChainKey;
 
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("SenderSigningKey")
   private SenderSigningKey senderSigningKey;
 
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("SenderMessageKey")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<SenderMessageKey> senderMessageKeys;
@@ -34,11 +34,11 @@ public class SenderKeyStateStructure {
   @Builder
   @Accessors(fluent = true)
   public static class SenderChainKey {
-    @JsonProperty(value = "1")
+    @JsonProperty("1")
     @JsonPropertyDescription("uint32")
     private int iteration;
 
-    @JsonProperty(value = "2")
+    @JsonProperty("2")
     @JsonPropertyDescription("bytes")
     private byte[] seed;
   }
@@ -49,11 +49,11 @@ public class SenderKeyStateStructure {
   @Builder
   @Accessors(fluent = true)
   public static class SenderMessageKey {
-    @JsonProperty(value = "1")
+    @JsonProperty("1")
     @JsonPropertyDescription("uint32")
     private int iteration;
 
-    @JsonProperty(value = "2")
+    @JsonProperty("2")
     @JsonPropertyDescription("bytes")
     private byte[] seed;
   }
@@ -64,11 +64,11 @@ public class SenderKeyStateStructure {
   @Builder
   @Accessors(fluent = true)
   public static class SenderSigningKey {
-    @JsonProperty(value = "1")
+    @JsonProperty("1")
     @JsonPropertyDescription("bytes")
     private byte[] publicKey;
 
-    @JsonProperty(value = "2")
+    @JsonProperty("2")
     @JsonPropertyDescription("bytes")
     private byte[] privateKey;
   }

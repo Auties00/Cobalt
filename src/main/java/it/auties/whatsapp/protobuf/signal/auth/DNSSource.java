@@ -14,11 +14,11 @@ import java.util.Arrays;
 @Builder
 @Accessors(fluent = true)
 public class DNSSource {
-  @JsonProperty(value = "16")
+  @JsonProperty("16")
   @JsonPropertyDescription("bool")
   private boolean appCached;
 
-  @JsonProperty(value = "15")
+  @JsonProperty("15")
   @JsonPropertyDescription("DNSSourceDNSResolutionMethod")
   private DNSSourceDNSResolutionMethod dnsMethod;
 

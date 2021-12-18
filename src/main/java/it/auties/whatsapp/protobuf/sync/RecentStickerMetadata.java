@@ -14,31 +14,31 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class RecentStickerMetadata {
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   @JsonPropertyDescription("bool")
   private boolean sentByMe;
 
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   @JsonPropertyDescription("string")
   private String participant;
 
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   @JsonPropertyDescription("string")
   private String chatJid;
 
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("string")
   private String stanzaId;
 
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("string")
   private String mediaKey;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("string")
   private String encFilehash;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("string")
   private String directPath;
 }

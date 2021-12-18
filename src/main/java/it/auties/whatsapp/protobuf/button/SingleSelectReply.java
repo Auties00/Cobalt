@@ -14,7 +14,7 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class SingleSelectReply {
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("string")
   private String selectedRowId;
 }

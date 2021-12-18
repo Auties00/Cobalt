@@ -21,11 +21,11 @@ import static it.auties.whatsapp.binary.BinaryArray.of;
 public class SenderMessageKey {
   private static final byte[] WHISPER_GROUP = "WhisperGroup".getBytes(StandardCharsets.UTF_8);
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("uint32")
   private int iteration;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("bytes")
   private byte[] seed;
 

@@ -25,62 +25,62 @@ public final class AudioMessage extends MediaMessage {
   /**
    * The upload url of the encoded media that this object wraps
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   private String url;
 
   /**
    * The mime type of the audio that this object wraps.
    * Most of the time this is {@link MediaMessageType#defaultMimeType()}
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   private String mimetype;
 
   /**
    * The sha256 of the decoded media that this object wraps
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   private byte[] fileSha256;
 
   /**
    * The unsigned size of the decoded media that this object wraps
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   private long fileLength;
 
   /**
    * The unsigned length of the decoded audio in seconds
    */
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   private int seconds;
 
   /**
    * Determines whether this object is a normal audio message, which might contain for example music, or a voice message
    */
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   private boolean voiceMessage;
 
   /**
    * The media key of the audio that this object wraps.
    */
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   private byte[] mediaKey;
 
   /**
    * The sha256 of the encoded media that this object wraps
    */
-  @JsonProperty(value = "8")
+  @JsonProperty("8")
   private byte[] fileEncSha256;
 
   /**
    * The direct path to the encoded media that this object wraps
    */
-  @JsonProperty(value = "9")
+  @JsonProperty("9")
   private String directPath;
 
   /**
    * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link AudioMessage#mediaKey()}
    */
-  @JsonProperty(value = "10")
+  @JsonProperty("10")
   private long mediaKeyTimestamp;
 
   /**
@@ -88,7 +88,7 @@ public final class AudioMessage extends MediaMessage {
    * This allows to play and seek the audio without the need to fully decode it decrypt as CBC allows to read data from a random offset (block-size aligned).
    * Source: <a href="https://github.com/sigalor/whatsapp-web-reveng#encryption">WhatsApp Web reverse engineered</a>
    */
-  @JsonProperty(value = "18")
+  @JsonProperty("18")
   private byte[] streamingSidecar;
 
   /**

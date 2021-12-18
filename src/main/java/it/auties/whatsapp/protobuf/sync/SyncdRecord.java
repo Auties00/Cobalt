@@ -14,15 +14,15 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class SyncdRecord {
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("KeyId")
   private KeyId keyId;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("SyncdValue")
   private SyncdValue value;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("SyncdIndex")
   private SyncdIndex index;
 }

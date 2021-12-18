@@ -25,12 +25,12 @@ public final class SendPaymentMessage implements PaymentMessage {
   /**
    * The caption message, that is the message below the payment confirmation
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   private MessageContainer noteMessage;
 
   /**
    * The key of the original {@link RequestPaymentMessage} that this message confirms
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   private MessageKey requestMessageKey;
 }

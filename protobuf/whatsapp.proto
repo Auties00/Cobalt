@@ -264,7 +264,7 @@ message LocalizedName {
 
 message SyncActionData {
     optional bytes index = 1;
-    optional SyncActionValue value = 2;
+    optional SyncActionValue 2;
     optional bytes padding = 3;
     optional int32 version = 4;
 }
@@ -476,7 +476,7 @@ message ExternalBlobReference {
 
 message SyncdRecord {
     optional SyncdIndex index = 1;
-    optional SyncdValue value = 2;
+    optional SyncdValue 2;
     optional KeyId keyId = 3;
 }
 
@@ -644,10 +644,10 @@ message InteractiveAnnotation {
 message DeviceListMetadata {
     optional bytes senderKeyHash = 1;
     optional uint64 senderTimestamp = 2;
-    repeated uint32 senderKeyIndexes = 3 [packed=true];
+    repeated uint32 senderKeyIndexes = 3;
     optional bytes recipientKeyHash = 8;
     optional uint64 recipientTimestamp = 9;
-    repeated uint32 recipientKeyIndexes = 10 [packed=true];
+    repeated uint32 recipientKeyIndexes = 10;
 }
 
 message MessageContextInfo {
@@ -956,7 +956,7 @@ message AppStateSyncKeyId {
 message AppStateSyncKeyFingerprint {
     optional uint32 rawId = 1;
     optional uint32 currentIndex = 2;
-    repeated uint32 deviceIndexes = 3 [packed=true];
+    repeated uint32 deviceIndexes = 3;
 }
 
 message AppStateSyncKeyData {
@@ -1508,7 +1508,7 @@ message PaymentBackground {
 }
 
 message Money {
-    optional int64 value = 1;
+    optional int64 1;
     optional uint32 offset = 2;
     optional string currencyCode = 3;
 }
@@ -1623,7 +1623,7 @@ message ADVKeyIndexList {
     optional uint32 rawId = 1;
     optional uint64 timestamp = 2;
     optional uint32 currentIndex = 3;
-    repeated uint32 validIndexes = 4 [packed=true];
+    repeated uint32 validIndexes = 4;
 }
 
 message MessageKey {

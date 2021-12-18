@@ -27,61 +27,61 @@ public final class PaymentOrderMessage extends ContextInfo implements PaymentMes
   /**
    * The id of this order
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   private String id;
 
   /**
    * The thumbnail of this order
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   private byte[] thumbnail;
 
   /**
    * The total number of items that was ordered
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   private int itemCount;
 
   /**
    * The status of this order
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   private OrderMessageOrderStatus status;
 
   /**
    * The surface of this order
    */
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   private OrderMessageOrderSurface surface;
 
   /**
    * The message of this order
    */
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   private String message;
 
   /**
    * The title of this order
    */
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   private String title;
 
   /**
    * The id of the seller associated with this order
    */
-  @JsonProperty(value = "8")
+  @JsonProperty("8")
   private ContactJid sellerId;
 
   /**
    * The token of this order
    */
-  @JsonProperty(value = "9")
+  @JsonProperty("9")
   private String token;
 
   /**
    * The amount of money being paid for this order
    */
-  @JsonProperty(value = "10")
+  @JsonProperty("10")
   private long amount;
 
   /**
@@ -89,7 +89,7 @@ public final class PaymentOrderMessage extends ContextInfo implements PaymentMes
    * Follows the ISO-4217 Standard.
    * For a list of valid currency codes click <a href="https://en.wikipedia.org/wiki/ISO_4217">here</a>
    */
-  @JsonProperty(value = "11")
+  @JsonProperty("11")
   private String currency;
 
   /**

@@ -1,15 +1,14 @@
 package it.auties.whatsapp.util;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.message.model.Message;
+import it.auties.whatsapp.protobuf.sync.HistorySyncMsg;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.*;
 
 /**
  * This class is an implementation of ArrayList used to store the {@link Message} in a {@link Chat}.
@@ -24,11 +23,23 @@ public class Messages extends ArrayList<MessageInfo> {
     private static final Comparator<MessageInfo> ENTRY_COMPARATOR = Comparator.comparingLong(MessageInfo::timestamp);
 
     /**
-     * Constructs a new instance of WebMessageInfos from a WebMessageInfo
+     * Constructs a new instance of Messages from a list of HistorySyncMsg
+     *
+     * @param data the non-null list of HistorySyncMsg to use as a model
+     */
+    @JsonCreator
+    public Messages(@NonNull List<HistorySyncMsg> data) {
+        super();
+        data.forEach(sync -> add(sync.message()));
+    }
+
+    /**
+     * Constructs a new instance of Messages from a WebMessageInfo
      *
      * @param message the first non-null entry to add to this collection
      */
     public Messages(@NonNull MessageInfo message) {
+        super();
         add(message);
     }
 

@@ -26,15 +26,15 @@ public class SenderKeyMessage {
   private static final int SIGNATURE_LENGTH = 64;
   private static final int CURRENT_VERSION = 3;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("uint32")
   private int id;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("uint32")
   private int iteration;
 
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("bytes")
   private byte[] cipherText;
   

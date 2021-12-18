@@ -24,6 +24,6 @@ public final class DeclinePaymentRequestMessage implements PaymentMessage {
   /**
    * The key of the original {@link RequestPaymentMessage} that this message cancels
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   private MessageKey key;
 }

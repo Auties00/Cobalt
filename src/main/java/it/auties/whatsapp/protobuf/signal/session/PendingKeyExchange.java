@@ -14,31 +14,31 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class PendingKeyExchange {
-    @JsonProperty(value = "1")
+    @JsonProperty("1")
     @JsonPropertyDescription("uint32")
     private int sequence;
 
-    @JsonProperty(value = "2")
+    @JsonProperty("2")
     @JsonPropertyDescription("bytes")
     private byte[] localBaseKey;
 
-    @JsonProperty(value = "3")
+    @JsonProperty("3")
     @JsonPropertyDescription("bytes")
     private byte[] localBaseKeyPrivate;
 
-    @JsonProperty(value = "4")
+    @JsonProperty("4")
     @JsonPropertyDescription("bytes")
     private byte[] localRatchetKey;
 
-    @JsonProperty(value = "5")
+    @JsonProperty("5")
     @JsonPropertyDescription("bytes")
     private byte[] localRatchetKeyPrivate;
 
-    @JsonProperty(value = "7")
+    @JsonProperty("7")
     @JsonPropertyDescription("bytes")
     private byte[] localIdentityKey;
 
-    @JsonProperty(value = "8")
+    @JsonProperty("8")
     @JsonPropertyDescription("bytes")
     private byte[] localIdentityKeyPrivate;
 }

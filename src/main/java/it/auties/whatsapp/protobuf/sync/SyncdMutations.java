@@ -17,7 +17,7 @@ import java.util.List;
 @Builder
 @Accessors(fluent = true)
 public class SyncdMutations {
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("SyncdMutation")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<SyncdMutation> mutations;

@@ -21,40 +21,40 @@ import java.util.List;
 @Builder
 @Accessors(fluent = true)
 public class HydratedFourRowTemplate {
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   @JsonPropertyDescription("LocationMessage")
   private LocationMessage locationMessage;
 
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("VideoMessage")
   private VideoMessage videoMessage;
 
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("ImageMessage")
   private ImageMessage imageMessage;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("string")
   private String hydratedTitleText;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("DocumentMessage")
   private DocumentMessage documentMessage;
 
-  @JsonProperty(value = "9")
+  @JsonProperty("9")
   @JsonPropertyDescription("string")
   private String templateId;
 
-  @JsonProperty(value = "8")
+  @JsonProperty("8")
   @JsonPropertyDescription("HydratedTemplateButton")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<HydratedTemplateButton> hydratedButtons;
 
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   @JsonPropertyDescription("string")
   private String hydratedFooterText;
 
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   @JsonPropertyDescription("string")
   private String hydratedContentText;
 

@@ -18,19 +18,19 @@ import java.util.List;
 @Builder
 @Accessors(fluent = true)
 public class Chain {
-    @JsonProperty(value = "1")
+    @JsonProperty("1")
     @JsonPropertyDescription("bytes")
     private byte[] senderRatchetKey;
 
-    @JsonProperty(value = "2")
+    @JsonProperty("2")
     @JsonPropertyDescription("bytes")
     private byte[] senderRatchetKeyPrivate;
 
-    @JsonProperty(value = "3")
+    @JsonProperty("3")
     @JsonPropertyDescription("ChainKey")
     private ChainKey chainKey;
 
-    @JsonProperty(value = "4")
+    @JsonProperty("4")
     @JsonPropertyDescription("MessageKey")
     @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
     private List<MessageKey> messageKeys;

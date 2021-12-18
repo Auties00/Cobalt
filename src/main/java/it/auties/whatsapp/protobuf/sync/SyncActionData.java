@@ -14,19 +14,19 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class SyncActionData {
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("int32")
   private int version;
 
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("bytes")
   private byte[] padding;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("SyncActionValue")
   private SyncActionValue value;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("bytes")
   private byte[] index;
 }

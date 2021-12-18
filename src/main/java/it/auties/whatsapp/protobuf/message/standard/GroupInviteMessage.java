@@ -27,42 +27,42 @@ public final class GroupInviteMessage extends ContextualMessage {
   /**
    * The jid of the group that this invite regards
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   private ContactJid groupId;
 
   /**
    * The invite code of this message
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   private String code;
 
   /**
    * The expiration of this invite in milliseconds since {@link java.time.Instant#EPOCH}
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   private long expiration;
   
   /**
    * The name of the group that this invite regards
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   private String groupName;
 
   /**
    * The thumbnail of the group that this invite regards encoded as jpeg in an array of bytes
    */
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   private byte[] thumbnail;
 
   /**
    * The caption of this invite
    */
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   private String caption;
   
   /**
    * The context info of this message
    */
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   private ContextInfo contextInfo; // Overrides ContextualMessage's context info
 }

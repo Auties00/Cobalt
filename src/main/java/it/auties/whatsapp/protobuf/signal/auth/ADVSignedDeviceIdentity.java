@@ -14,19 +14,19 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class ADVSignedDeviceIdentity {
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("bytes")
   private byte[] deviceSignature;
 
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("bytes")
   private byte[] accountSignature;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("bytes")
   private byte[] accountSignatureKey;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("bytes")
   private byte[] details;
 }

@@ -14,15 +14,15 @@ import java.util.Arrays;
 @Builder
 @Accessors(fluent = true)
 public class BusinessLocalizableParameter {
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("HSMDateTime")
   private BusinessDateTime dateTime;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("HSMCurrency")
   private BusinessCurrency currency;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("string")
   private String _default;
 

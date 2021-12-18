@@ -18,20 +18,20 @@ import java.util.List;
 @Builder
 @Accessors(fluent = true)
 public class WebNotificationsInfo {
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   @JsonPropertyDescription("WebMessageInfo")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<MessageInfo> notifyMessages;
 
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("uint32")
   private int notifyMessageCount;
 
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("uint32")
   private int unreadChats;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("uint64")
   private long timestamp;
 }

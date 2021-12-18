@@ -24,14 +24,14 @@ public class NativeFlowInfo {
   /**
    * The name of the flow
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("string")
   private String name;
 
   /**
    * The params of the flow, encoded as json
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("string")
   private String paramsJson;
 }

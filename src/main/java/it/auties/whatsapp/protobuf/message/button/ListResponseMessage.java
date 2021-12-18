@@ -26,24 +26,24 @@ public final class ListResponseMessage implements ButtonMessage {
   /**
    * The title of this message
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   private String title;
 
   /**
    * The selected option
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   private SingleSelectReply reply;
 
   /**
    * The context info of this message
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   private ContextInfo contextInfo; // Overrides ContextualMessage's context info
 
   /**
    * The description of this message
    */
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   private String description;
 }

@@ -23,28 +23,28 @@ public class AdReplyInfo {
   /**
    * The caption of the original companion
    */
-  @JsonProperty(value = "17")
+  @JsonProperty("17")
   @JsonPropertyDescription("string")
   private String caption;
 
   /**
    * The thumbnail of the original companion encoded as jpeg in an array of bytes
    */
-  @JsonProperty(value = "16")
+  @JsonProperty("16")
   @JsonPropertyDescription("bytes")
   private byte[] thumbnail;
 
   /**
    * The type of original companion
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("AdReplyInfoMediaType")
   private AdReplyInfoMediaType mediaType;
 
   /**
    * The name of the advertiser that served the original companion
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("string")
   private String advertiserName;
 

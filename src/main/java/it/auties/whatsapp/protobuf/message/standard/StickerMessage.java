@@ -25,86 +25,86 @@ public final class StickerMessage extends MediaMessage {
   /**
    * The upload url of the encoded sticker that this object wraps
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   private String url;
 
   /**
    * The sha256 of the decoded sticker that this object wraps
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   private byte[] fileSha256;
 
   /**
    * The sha256 of the encoded sticker that this object wraps
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   private byte[] fileEncSha256;
 
   /**
    * The media key of the sticker that this object wraps
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   private byte[] mediaKey;
 
   /**
    * The mime type of the sticker that this object wraps.
    * Most of the time this is {@link MediaMessageType#defaultMimeType()}
    */
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   private String mimetype;
 
   /**
    * The unsigned height of the decoded sticker that this object wraps
    */
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   private int height;
 
   /**
    * The unsigned width of the decoded sticker that this object wraps
    */
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   private int width;
 
   /**
    * The direct path to the encoded sticker that this object wraps
    */
-  @JsonProperty(value = "8")
+  @JsonProperty("8")
   private String directPath;
 
   /**
    * The unsigned size of the decoded sticker that this object wraps
    */
-  @JsonProperty(value = "9")
+  @JsonProperty("9")
   private long fileLength;
 
   /**
    * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link StickerMessage#mediaKey()}
    */
-  @JsonProperty(value = "10")
+  @JsonProperty("10")
   private long mediaKeyTimestamp;
 
   /**
    * The length of the first frame
    */
-  @JsonProperty(value = "11")
+  @JsonProperty("11")
   private int firstFrameLength;
 
   /**
    * The sidecar for the first frame
    */
-  @JsonProperty(value = "12")
+  @JsonProperty("12")
   private byte[] firstFrameSidecar;
 
   /**
    * Determines whether this sticker message is animated
    */
-  @JsonProperty(value = "13")
+  @JsonProperty("13")
   private boolean animated;
 
   /**
    * The thumbnail for this sticker message encoded as png in an array of bytes
    */
-  @JsonProperty(value = "16")
+  @JsonProperty("16")
   private byte[] thumbnail;
 
   /**

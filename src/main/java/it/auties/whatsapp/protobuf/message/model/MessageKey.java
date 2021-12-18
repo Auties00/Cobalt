@@ -28,21 +28,21 @@ public class MessageKey {
   /**
    * The jid of the contact or group that sent the message.
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @Getter
   private @NonNull ContactJid chatId;
 
   /**
    * Determines whether the message was sent by you or by someone else
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @Getter
   private boolean fromMe;
 
   /**
    * The id of the message
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @Builder.Default
   @Getter
   private String id = WhatsappUtils.randomId();

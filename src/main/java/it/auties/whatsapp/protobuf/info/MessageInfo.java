@@ -34,15 +34,17 @@ public class MessageInfo {
    * The MessageKey of this message
    */
   @JsonProperty(value = "1", required = true)
+  @NonNull
   @Delegate
-  private @NonNull MessageKey key;
+  private MessageKey key;
 
   /**
    * The container of this message
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
+  @NonNull
   @Builder.Default
-  private @NonNull MessageContainer content = new MessageContainer();
+  private MessageContainer content = new MessageContainer();
 
   /**
    * A map that holds the read status of this message for each participant.
@@ -52,143 +54,145 @@ public class MessageInfo {
    * In this case it is guaranteed that every value stored in this map for each participant of this chat is equal or higher hierarchically then {@link MessageInfo#globalStatus()}.
    * It is important to remember that it is guaranteed that every participant will be present as a key.
    */
+  @NonNull
   @Builder.Default
-  private @NonNull Map<Contact, MessageStatus> individualReadStatus = new HashMap<>();
+  private Map<Contact, MessageStatus> individualReadStatus = new HashMap<>();
 
   /**
    * The global status of this message.
    * If the chat associated with this message is a group it is guaranteed that this field is equal or lower hierarchically then every value stored by {@link MessageInfo#individualReadStatus()}.
    * Otherwise, this field is guaranteed to be equal to the single value stored by {@link MessageInfo#individualReadStatus()} for the contact associated with the chat associated with this message.
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
+  @NonNull
   @Builder.Default
-  private @NonNull MessageStatus globalStatus = MessageStatus.ERROR;
+  private MessageStatus globalStatus = MessageStatus.ERROR;
 
   /**
    * The timestamp, that is the seconds since {@link java.time.Instant#EPOCH}, when this message was sent
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   private long timestamp;
 
   /**
    * The jid of the participant that sent the message in a group.
    * This property is only populated if {@link MessageInfo#chat()} refers to a group.
    */
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   private ContactJid senderId;
 
   /**
    * Duration
    */
-  @JsonProperty(value = "27")
+  @JsonProperty("27")
   private int duration;
 
   /**
    * Whether this message should be ignored or counted as an unread message
    */
-  @JsonProperty(value = "16")
+  @JsonProperty("16")
   private boolean ignore;
 
   /**
    * Whether this message is starred
    */
-  @JsonProperty(value = "17")
+  @JsonProperty("17")
   private boolean starred;
 
   /**
    * Whether this message was sent using a broadcast list
    */
-  @JsonProperty(value = "18")
+  @JsonProperty("18")
   private boolean broadcast;
 
   /**
    * Multicast
    */
-  @JsonProperty(value = "21")
+  @JsonProperty("21")
   private boolean multicast;
 
   /**
    * Url text
    */
-  @JsonProperty(value = "22")
+  @JsonProperty("22")
   private boolean urlText;
 
   /**
    * Url number
    */
-  @JsonProperty(value = "23")
+  @JsonProperty("23")
   private boolean urlNumber;
 
   /**
    * Clear media
    */
-  @JsonProperty(value = "25")
+  @JsonProperty("25")
   private boolean clearMedia;
 
   /**
    * Push name
    */
-  @JsonProperty(value = "19")
+  @JsonProperty("19")
   private String pushName;
 
   /**
    * Ephemeral start timestamp
    */
-  @JsonProperty(value = "32")
+  @JsonProperty("32")
   private long ephemeralStartTimestamp;
 
   /**
    * Ephemeral duration
    */
-  @JsonProperty(value = "33")
+  @JsonProperty("33")
   private int ephemeralDuration;
 
   /**
    * The stub type of this message.
    * This property is populated only if the message that {@link MessageInfo#content} wraps is a {@link ProtocolMessage}.
    */
-  @JsonProperty(value = "24")
+  @JsonProperty("24")
   private StubType stubType;
 
   /**
    * Message stub parameters
    */
-  @JsonProperty(value = "26")
+  @JsonProperty("26")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<String> stubParameters;
 
   /**
    * Labels
    */
-  @JsonProperty(value = "28")
+  @JsonProperty("28")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<String> labels;
 
   /**
    * PaymentInfo
    */
-  @JsonProperty(value = "29")
+  @JsonProperty("29")
   @Unsupported
   private PaymentInfo paymentInfo;
 
   /**
    * Final live location
    */
-  @JsonProperty(value = "30")
+  @JsonProperty("30")
   @Unsupported
   private LiveLocationMessage finalLiveLocation;
 
   /**
    * Quoted payment info
    */
-  @JsonProperty(value = "31")
+  @JsonProperty("31")
   @Unsupported
   private PaymentInfo quotedPaymentInfo;
 
   /**
    * Media Cipher Text SHA256
    */
-  @JsonProperty(value = "20")
+  @JsonProperty("20")
   @Unsupported
   private byte[] mediaCiphertextSha256;
 

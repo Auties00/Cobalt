@@ -17,15 +17,15 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class HandshakeMessage {
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("ClientHello")
   private ClientHello clientHello;
 
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("ServerHello")
   private ServerHello serverHello;
 
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("ClientFinish")
   private ClientFinish clientFinish;
 

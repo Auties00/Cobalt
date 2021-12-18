@@ -23,6 +23,6 @@ public final class DeviceSyncMessage implements DeviceMessage {
   /**
    * The data that this synchronization wraps encoded as xml and stored in an array of bytes
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   private byte[] serializedXmlBytes;
 }

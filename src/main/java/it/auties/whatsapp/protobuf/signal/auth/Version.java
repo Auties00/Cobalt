@@ -14,23 +14,23 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class Version {
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("uint32")
   private int primary;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("uint32")
   private int secondary;
 
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("uint32")
   private int tertiary;
 
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("uint32")
   private int quaternary;
 
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   @JsonPropertyDescription("uint32")
   private int quinary;
 

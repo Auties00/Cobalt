@@ -14,19 +14,19 @@ import java.util.Arrays;
 @Builder
 @Accessors(fluent = true)
 public class WebInfo {
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("WebInfoWebSubPlatform")
   private WebInfoWebSubPlatform webSubPlatform;
 
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("WebdPayload")
   private WebdPayload webdPayload;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("string")
   private String version;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("string")
   private String refToken;
 

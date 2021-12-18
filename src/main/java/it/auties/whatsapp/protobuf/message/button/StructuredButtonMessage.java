@@ -29,56 +29,56 @@ public final class StructuredButtonMessage implements ButtonMessage {
   /**
    * Namespace
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   private String namespace;
 
   /**
    * Element Name
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   private String elementName;
 
   /**
    * Params
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<String> params;
 
   /**
    * FallbackLg
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   private String fallbackLg;
 
   /**
    * FallbackLc
    */
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   private String fallbackLc;
 
   /**
    * Localizable Params
    */
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<BusinessLocalizableParameter> localizableParams;
 
   /**
    * DeterministicLg
    */
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   private String deterministicLg;
 
   /**
    * DeterministicLc
    */
-  @JsonProperty(value = "8")
+  @JsonProperty("8")
   private String deterministicLc;
 
   /**
    * Hydrated message
    */
-  @JsonProperty(value = "9")
+  @JsonProperty("9")
   private TemplateMessage hydratedHsm;
 }

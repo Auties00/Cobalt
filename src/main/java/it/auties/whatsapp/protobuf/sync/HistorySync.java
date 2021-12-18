@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
-import it.auties.whatsapp.protobuf.unknown.Conversation;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -18,28 +18,28 @@ import java.util.List;
 @Builder
 @Accessors(fluent = true)
 public class HistorySync {
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   @JsonPropertyDescription("Pushname")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<PushName> pushNames;
 
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   @JsonPropertyDescription("uint32")
   private int progress;
 
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   @JsonPropertyDescription("uint32")
   private int chunkOrder;
 
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("WebMessageInfo")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<MessageInfo> statusV3Messages;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("Conversation")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  private List<Conversation> conversations;
+  private List<Chat> conversations;
 
   @JsonProperty(value = "1", required = true)
   @JsonPropertyDescription("HistorySyncHistorySyncType")

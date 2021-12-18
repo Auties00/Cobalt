@@ -24,49 +24,49 @@ public class BusinessIdentityInfo {
   /**
    * The level of verification of this account
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("BizIdentityInfoVerifiedLevelValue")
   private BusinessVerifiedLevel level;
 
   /**
    * The certificate of this account
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("VerifiedNameCertificate")
   private BusinessCertificate certificate;
 
   /**
    * Indicates whether this account has a signed certificate
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("bool")
   private boolean signed;
 
   /**
    * Indicates whether the signed certificate of this account has been revoked
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("bool")
   private boolean revoked;
 
   /**
    * Indicates where this account is hosted
    */
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   @JsonPropertyDescription("BizIdentityInfoHostStorageType")
   private BusinessStorageType hostStorage;
 
   /**
    * The actual actors of this account
    */
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   @JsonPropertyDescription("BizIdentityInfoActualActorsType")
   private BusinessActorsType actualActors;
 
   /**
    * The privacy mode of this account
    */
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   @JsonPropertyDescription("uint64")
   private long privacyModeTs;
 }

@@ -25,28 +25,28 @@ public final class SenderKeyDistributionMessage implements ServerMessage {
   /**
    * The id of the sender
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("uint32")
   private int id;
 
   /**
    * The iteration of the message
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("uint32")
   private int iteration;
 
   /**
    * The value key of the message
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("bytes")
   private byte[] chainKey;
 
   /**
    * The signing key of the message
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("bytes")
   private byte[] signingKey;
 }

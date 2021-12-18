@@ -17,16 +17,16 @@ import java.util.List;
 @Builder
 @Accessors(fluent = true)
 public class SyncActionMessageRange {
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("SyncActionMessage")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<SyncActionMessage> messages;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("int64")
   private long lastSystemMessageTimestamp;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("int64")
   private long lastMessageTimestamp;
 }

@@ -14,11 +14,11 @@ import java.util.Arrays;
 @Builder
 @Accessors(fluent = true)
 public class SyncdMutation {
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("SyncdRecord")
   private SyncdRecord record;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("SyncdMutationSyncdOperation")
   private SyncdMutationSyncdOperation operation;
 

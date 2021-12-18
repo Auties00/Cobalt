@@ -26,30 +26,30 @@ public final class RequestPaymentMessage implements PaymentMessage {
    * Follows the ISO-4217 Standard.
    * For a list of valid currency codes click <a href="https://en.wikipedia.org/wiki/ISO_4217">here</a>
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   private String currency;
 
   /**
    * The amount of money being paid
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   private long amount;
 
   /**
    * The name of the Whatsapp business account that will receive the money
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   private String requestFrom;
 
   /**
    * The caption message, that is the message below the payment request
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   private MessageContainer noteMessage;
 
   /**
    * The timestamp, that is the time in seconds since {@link java.time.Instant#EPOCH}, for the expiration of this payment request
    */
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   private long expiryTimestamp;
 }

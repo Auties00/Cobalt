@@ -19,11 +19,11 @@ public class SenderChainKey {
 
   private static final byte[] CHAIN_KEY_SEED   = {0x02};
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("uint32")
   private int iteration;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("bytes")
   private byte[] seed;
 

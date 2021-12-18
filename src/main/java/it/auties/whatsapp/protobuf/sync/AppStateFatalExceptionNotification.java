@@ -17,11 +17,11 @@ import java.util.List;
 @Builder
 @Accessors(fluent = true)
 public class AppStateFatalExceptionNotification {
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("int64")
   private long timestamp;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("string")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<String> collectionNames;

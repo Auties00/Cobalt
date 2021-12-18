@@ -14,11 +14,11 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class AppStateSyncKey {
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("AppStateSyncKeyData")
   private AppStateSyncKeyData keyData;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("AppStateSyncKeyId")
   private AppStateSyncKeyId keyId;
 }

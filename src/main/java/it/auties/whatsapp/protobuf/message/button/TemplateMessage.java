@@ -31,27 +31,27 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
    * Four row template.
    * This property is defined only if {@link TemplateMessage#type()} == {@link Format#FOUR_ROW_TEMPLATE}.
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   private FourRowTemplate fourRowTemplate;
 
   /**
    * Hydrated four row template.
    * This property is defined only if {@link TemplateMessage#type()} == {@link Format#HYDRATED_FOUR_ROW_TEMPLATE}.
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   private HydratedFourRowTemplate hydratedFourRowTemplate;
 
   /**
    * The context info of this message
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   private ContextInfo contextInfo; // Overrides ContextualMessage's context info
 
   /**
    * Hydrated template.
    * This property is defined only if {@link TemplateMessage#type()} == {@link Format#HYDRATED_FOUR_ROW_TEMPLATE}.
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   private HydratedFourRowTemplate hydratedTemplate;
 
   /**

@@ -21,7 +21,7 @@ import java.util.NoSuchElementException;
 public class SenderKeyRecord {
   private static final int MAX_STATES = 5;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("SenderKeyStateStructure")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private LinkedList<SenderKeyState> states;

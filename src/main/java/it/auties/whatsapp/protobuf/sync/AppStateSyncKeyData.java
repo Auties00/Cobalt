@@ -14,15 +14,15 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class AppStateSyncKeyData {
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("int64")
   private long timestamp;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("AppStateSyncKeyFingerprint")
   private AppStateSyncKeyFingerprint fingerprint;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("bytes")
   private byte[] keyData;
 }

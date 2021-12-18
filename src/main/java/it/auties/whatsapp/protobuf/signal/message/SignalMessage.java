@@ -25,19 +25,19 @@ public final class SignalMessage implements SignalProtocolMessage {
 
     private int messageVersion;
 
-    @JsonProperty(value = "1")
+    @JsonProperty("1")
     @JsonPropertyDescription("bytes")
     private byte[] ratchetKey;
 
-    @JsonProperty(value = "2")
+    @JsonProperty("2")
     @JsonPropertyDescription("uint32")
     private int counter;
 
-    @JsonProperty(value = "3")
+    @JsonProperty("3")
     @JsonPropertyDescription("uint32")
     private int previousCounter;
 
-    @JsonProperty(value = "4")
+    @JsonProperty("4")
     @JsonPropertyDescription("bytes")
     private byte[] ciphertext;
 

@@ -16,19 +16,19 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class NotificationMessageInfo {
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   @JsonPropertyDescription("string")
   private String participant;
 
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   @JsonPropertyDescription("uint64")
   private long messageTimestamp;
 
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("Message")
   private Message message;
 
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("MessageKey")
   private MessageKey key;
 }

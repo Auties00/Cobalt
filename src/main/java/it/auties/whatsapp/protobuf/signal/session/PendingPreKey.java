@@ -14,15 +14,15 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class PendingPreKey {
-    @JsonProperty(value = "1")
+    @JsonProperty("1")
     @JsonPropertyDescription("uint32")
     private int preKeyId;
 
-    @JsonProperty(value = "2")
+    @JsonProperty("2")
     @JsonPropertyDescription("bytes")
     private byte[] baseKey;
 
-    @JsonProperty(value = "3")
+    @JsonProperty("3")
     @JsonPropertyDescription("int32")
     private int signedPreKeyId;
 }

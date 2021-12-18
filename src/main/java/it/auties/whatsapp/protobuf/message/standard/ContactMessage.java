@@ -24,13 +24,13 @@ public final class ContactMessage extends ContextualMessage {
   /**
    * The name of the contact that this message wraps
    */
-  @JsonProperty(value = "1")
-  private String displayName;
+  @JsonProperty("1")
+  private String name;
 
   /**
    * The info about the contact that this message wraps encoded as a vcard
    */
-  @JsonProperty(value = "16")
+  @JsonProperty("16")
   private String vcard;
 
   /**
@@ -47,7 +47,7 @@ public final class ContactMessage extends ContextualMessage {
   private static ContactMessage builder(String displayName, String vcard, ContextInfo contextInfo) {
     return ContactMessage.builder()
             .vcard(vcard)
-            .displayName(displayName)
+            .name(displayName)
             .contextInfo(contextInfo)
             .create();
   }

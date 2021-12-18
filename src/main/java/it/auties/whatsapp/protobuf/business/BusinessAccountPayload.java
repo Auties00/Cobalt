@@ -29,14 +29,14 @@ public class BusinessAccountPayload {
   /**
    * The certificate of this account
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   @JsonPropertyDescription("VerifiedNameCertificate")
   private BusinessCertificate certificate;
 
   /**
    * The info about this account
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   @JsonPropertyDescription("bytes")
   private BusinessAccountInfo info;
 

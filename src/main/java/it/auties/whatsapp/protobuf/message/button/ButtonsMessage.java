@@ -34,55 +34,55 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
   /**
    * The text of this message
    */
-  @JsonProperty(value = "1")
+  @JsonProperty("1")
   private String text;
 
   /**
    * The document message attached to this message
    */
-  @JsonProperty(value = "2")
+  @JsonProperty("2")
   private DocumentMessage document;
 
   /**
    * The image message attached to this message
    */
-  @JsonProperty(value = "3")
+  @JsonProperty("3")
   private ImageMessage image;
 
   /**
    * The video message attached to this message
    */
-  @JsonProperty(value = "4")
+  @JsonProperty("4")
   private VideoMessage video;
 
   /**
    * The location message attached to this message
    */
-  @JsonProperty(value = "5")
+  @JsonProperty("5")
   private LocationMessage location;
 
   /**
    * The image message attached to this message
    */
-  @JsonProperty(value = "6")
+  @JsonProperty("6")
   private String contentText;
 
   /**
    * The footer text of this message
    */
-  @JsonProperty(value = "7")
+  @JsonProperty("7")
   private String footerText;
 
   /**
    * The context info of this message
    */
-  @JsonProperty(value = "8")
+  @JsonProperty("8")
   private ContextInfo contextInfo; // Overrides ContextualMessage's context info
 
   /**
    * The buttons that this message wraps
    */
-  @JsonProperty(value = "9")
+  @JsonProperty("9")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<Button> buttons;
 
