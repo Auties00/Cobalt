@@ -85,7 +85,6 @@ public class WhatsappWebSocket {
         );
     }
 
-
     @OnOpen
     public void onOpen(@NonNull Session session) {
         if(this.session == null || !this.session.isOpen())  {
@@ -96,6 +95,10 @@ public class WhatsappWebSocket {
     }
 
     private void sendInitialRequest(Session session) {
+        if(loggedIn){
+            return;
+        }
+
         new InitialRequest<InitialResponse>(options, whatsappKeys){}
                 .send(session)
                 .thenAccept(this::handleInitialMessage);
