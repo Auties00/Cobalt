@@ -20,7 +20,7 @@ import java.util.Arrays;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class PaymentInfo {
+public final class PaymentInfo implements WhatsappInfo {
   /**
    * The status of this transaction
    */

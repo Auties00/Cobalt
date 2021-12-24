@@ -20,7 +20,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class NativeFlowInfo {
+public final class NativeFlowInfo implements WhatsappInfo {
   /**
    * The name of the flow
    */

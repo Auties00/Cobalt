@@ -21,7 +21,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class BusinessAccountInfo {
+public final class BusinessAccountInfo implements WhatsappInfo {
   /**
    * The facebook id
    */

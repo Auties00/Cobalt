@@ -21,7 +21,6 @@ import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
 import it.auties.whatsapp.protobuf.message.model.Message;
 import it.auties.whatsapp.socket.WhatsappSocket;
 import it.auties.whatsapp.util.Nodes;
-import it.auties.whatsapp.util.Unsupported;
 import it.auties.whatsapp.util.Validate;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

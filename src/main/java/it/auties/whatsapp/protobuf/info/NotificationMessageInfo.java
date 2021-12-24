@@ -15,20 +15,20 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class NotificationMessageInfo {
-  @JsonProperty("4")
-  @JsonPropertyDescription("string")
-  private String participant;
-
-  @JsonProperty("3")
-  @JsonPropertyDescription("uint64")
-  private long messageTimestamp;
+public final class NotificationMessageInfo implements WhatsappInfo {
+  @JsonProperty("1")
+  @JsonPropertyDescription("MessageKey")
+  private MessageKey key;
 
   @JsonProperty("2")
   @JsonPropertyDescription("Message")
   private Message message;
 
-  @JsonProperty("1")
-  @JsonPropertyDescription("MessageKey")
-  private MessageKey key;
+  @JsonProperty("3")
+  @JsonPropertyDescription("uint64")
+  private long messageTimestamp;
+
+  @JsonProperty("4")
+  @JsonPropertyDescription("string")
+  private String participant;
 }

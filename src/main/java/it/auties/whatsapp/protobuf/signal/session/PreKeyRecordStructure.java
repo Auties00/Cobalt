@@ -11,15 +11,15 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class PreKeyRecordStructure {
-  @JsonProperty("3")
-  @JsonPropertyDescription("bytes")
-  private byte[] privateKey;
+  @JsonProperty("1")
+  @JsonPropertyDescription("uint32")
+  private int id;
 
   @JsonProperty("2")
   @JsonPropertyDescription("bytes")
   private byte[] publicKey;
 
-  @JsonProperty("1")
-  @JsonPropertyDescription("uint32")
-  private int id;
+  @JsonProperty("3")
+  @JsonPropertyDescription("bytes")
+  private byte[] privateKey;
 }

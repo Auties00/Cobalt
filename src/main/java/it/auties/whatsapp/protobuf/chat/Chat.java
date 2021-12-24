@@ -1,26 +1,22 @@
 package it.auties.whatsapp.protobuf.chat;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.*;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.contact.ContactStatus;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
-import it.auties.whatsapp.util.Messages;
+import it.auties.whatsapp.protobuf.sync.HistorySyncMsg;
 import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.*;
-import lombok.experimental.Accessors;
 import lombok.Builder.Default;
+import lombok.experimental.Accessors;
 
 import java.time.ZonedDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+
+import static java.util.Collections.binarySearch;
 
 /**
  * A model class that represents a Chat.
@@ -405,5 +401,56 @@ public class Chat {
     @JsonSetter("17")
     private void unwrapDisappearingMode(Map<String, Object> wrapper) {
         this.disappearInitiator = (ChatDisappear) wrapper.get("1");
+    }
+
+    private static class Messages extends ArrayList<MessageInfo> {
+        private static final Comparator<MessageInfo> ENTRY_COMPARATOR = Comparator.comparingLong(MessageInfo::timestamp);
+        public Messages(){
+            super();
+        }
+
+        public Messages(@NonNull MessageInfo message) {
+            super();
+            add(message);
+        }
+
+        @JsonCreator
+        public Messages(@NonNull List<HistorySyncMsg> data) {
+            super();
+            data.forEach(sync -> add(sync.message()));
+        }
+
+        @Override
+        public boolean add(@NonNull MessageInfo message) {
+            var initialSize = size();
+            var insertionPoint = binarySearch(this, message, ENTRY_COMPARATOR);
+            super.add(insertionPoint > -1 ? insertionPoint : -insertionPoint - 1, message);
+            return size() != initialSize;
+        }
+
+        public boolean addOrReplace(@NonNull MessageInfo message) {
+            var result = remove(message);
+            add(message);
+            return result;
+        }
+
+        @Override
+        public boolean addAll(Collection<? extends MessageInfo> collection) {
+            return collection.stream()
+                    .map(this::addOrReplace)
+                    .reduce(true, (first, second) -> first && second);
+        }
+
+        @Override
+        public void add(int index, MessageInfo element) {
+            throw new UnsupportedOperationException("Cannot add element %s at index %s"
+                    .formatted(element, index));
+        }
+
+        @Override
+        public boolean addAll(int index, Collection<? extends MessageInfo> collection) {
+            throw new UnsupportedOperationException("Cannot add elements %s at index %s"
+                    .formatted(collection, index));
+        }
     }
 }

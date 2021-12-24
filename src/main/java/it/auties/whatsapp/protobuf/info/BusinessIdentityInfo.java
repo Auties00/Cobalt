@@ -20,7 +20,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class BusinessIdentityInfo {
+public final class BusinessIdentityInfo implements WhatsappInfo {
   /**
    * The level of verification of this account
    */

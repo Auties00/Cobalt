@@ -20,7 +20,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class CallInfo {
+public final class CallInfo implements WhatsappInfo {
   /**
    * The key of this call
    */

@@ -17,11 +17,10 @@ import java.util.List;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class WebNotificationsInfo {
-  @JsonProperty("5")
-  @JsonPropertyDescription("WebMessageInfo")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  private List<MessageInfo> notifyMessages;
+public final class WebNotificationsInfo implements WhatsappInfo {
+  @JsonProperty("2")
+  @JsonPropertyDescription("uint64")
+  private long timestamp;
 
   @JsonProperty("4")
   @JsonPropertyDescription("uint32")
@@ -31,7 +30,8 @@ public class WebNotificationsInfo {
   @JsonPropertyDescription("uint32")
   private int unreadChats;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("uint64")
-  private long timestamp;
+  @JsonProperty("5")
+  @JsonPropertyDescription("WebMessageInfo")
+  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  private List<MessageInfo> notifyMessages;
 }

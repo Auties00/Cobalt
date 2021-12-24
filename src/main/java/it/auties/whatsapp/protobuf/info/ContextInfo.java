@@ -8,7 +8,7 @@ import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
 import it.auties.whatsapp.protobuf.message.model.MessageContainer;
 import it.auties.whatsapp.protobuf.message.model.MessageKey;
-import it.auties.whatsapp.util.Unsupported;
+import it.auties.whatsapp.api.Unsupported;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -24,7 +24,7 @@ import java.util.List;
 @Data
 @Builder(builderMethodName = "newContextInfo", buildMethodName = "create")
 @Accessors(fluent = true)
-public class ContextInfo {
+public non-sealed class ContextInfo implements WhatsappInfo {
   /**
    * The id of the message that this ContextualMessage quotes
    */
@@ -172,6 +172,6 @@ public class ContextInfo {
   public ContextInfo(@NonNull MessageInfo quotedMessage){
     this.quotedMessageContainer = quotedMessage.content();
     this.quotedMessageId = quotedMessage.key().id();
-    this.quotedMessageSenderId = quotedMessage.senderId();
+    this.quotedMessageSenderId = quotedMessage.senderJid();
   }
 }

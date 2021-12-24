@@ -4,14 +4,12 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.exchange.Node;
-import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.message.model.*;
 import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
 import it.auties.whatsapp.protobuf.message.standard.LiveLocationMessage;
-import it.auties.whatsapp.util.Unsupported;
+import it.auties.whatsapp.api.Unsupported;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.Delegate;
@@ -29,7 +27,7 @@ import java.util.*;
 @Data
 @Builder(builderMethodName = "newMessageInfo", buildMethodName = "create")
 @Accessors(fluent = true)
-public class MessageInfo {
+public final class MessageInfo implements WhatsappInfo {
   /**
    * The MessageKey of this message
    */
@@ -210,101 +208,6 @@ public class MessageInfo {
     this.individualReadStatus = new HashMap<>();
   }
 
-  public MessageInfo ofEncoded(Node stanza, WhatsappKeys keys) {
-    /*
-       From Baileys!!!
-        var deviceIdentity = stanza.findNodes("device-identity")
-            .stream()
-            .map(result -> (byte[]) result.content())
-            .findFirst()
-            .orElse(new byte[0]);
-
-    var id = stanza.attributes().getString("id");
-    var from = ContactJid.ofEncoded(stanza.attributes().getString("recipient"));
-          if(from.type() == ContactJid.Type.USER) {
-        var recipient = stanza.attributes().getString("recipient", null);
-        if(recipient != null) {
-          chatId = recipient
-        } else {
-          chatId = from
-        }
-        msgType = 'chat'
-                author = from
-      } else if(isJidGroup(from)) {
-        if(!participant) {
-          throw new Boom('No participant in group message')
-        }
-        msgType = 'group'
-                author = participant
-                chatId = from
-      } else if(isJidBroadcast(from)) {
-        if(!participant) {
-          throw new Boom('No participant in group message')
-        }
-        const isParticipantMe = isMe(participant)
-        if(isJidStatusBroadcast(from)) {
-          msgType = isParticipantMe ? 'direct_peer_status' : 'other_status'
-        } else {
-          msgType = isParticipantMe ? 'peer_broadcast' : 'other_broadcast'
-        }
-        chatId = from
-                author = participant
-      }
-    const sender = msgType === 'chat' ? author : chatId;
-
-        stanza.findNodes("enc").stream().filter(encrypted -> encrypted.content() instanceof byte[]).forEach(encrypted -> {
-      var e2eType = encrypted.attributes().getString("type");
-      var message = switch (e2eType) {
-        case "skmsg" -> {
-          var senderName = new SenderKeyName(sender, new ProtocolAddress(author.split("@")[0], 0));
-          var cipher = new SignalGroup(senderName, keys);
-          yield cipher.decipher((byte[]) encrypted.content());
-        }
-
-        case "pkmsg", "msg" -> {
-          var user = isJidUser(sender) ? sender : author;
-          	var addr = user.split("@")[0];
-	var session = new SessionCipher(signalStorage(auth), addr)
-                  let result: Buffer
-          switch(type) {
-            case 'pkmsg':
-              result = await session.decryptPreKeyWhisperMessage(msg)
-              break
-            case 'msg':
-              result = await session.decryptWhisperMessage(msg)
-              break
-          }
-          return result
-          yield decryptSignalProto(user, e2eType, content as Buffer, auth)
-        }
-      }
-
-      /*
-       switch(e2eType) {
-                    case 'skmsg':
-                      msgBuffer = await decryptGroupSignalProto(sender, author, content, auth)
-                      break
-                    case 'pkmsg':
-                    case 'msg':
-                        const user = isJidUser(sender) ? sender : author
-                            msgBuffer = await decryptSignalProto(user, e2eType, content as Buffer, auth)
-                      break
-                  }
-                const msg = proto.Message.decode(unpadRandomMax16(msgBuffer))
-                  if(msg.senderKeyDistributionMessage) {
-                    await processSenderKeyMessage(author, msg.senderKeyDistributionMessage, auth)
-                  }
-
-                  successes.push(msg)
-                } catch(error) {
-                  failures.push({ error: new Boom(error, { data: Buffer.from(encodeBinaryNode(stanza)).toString('base64') }) })
-                }
-              }
-  });
-     */
-    throw new UnsupportedOperationException("Work in progress");
-  }
-
   /**
    * Checks whether this message wraps a stub type
    *
@@ -319,7 +222,7 @@ public class MessageInfo {
    *
    * @return a non-null ContactId
    */
-  public ContactJid senderId(){
+  public ContactJid senderJid(){
     return Objects.requireNonNullElse(senderId, chatId());
   }
 
@@ -330,7 +233,7 @@ public class MessageInfo {
    */
   public Optional<Contact> sender(){
     return key.store()
-            .findContactByJid(senderId().toString());
+            .findContactByJid(senderJid().toString());
   }
 
   /**
@@ -348,6 +251,7 @@ public class MessageInfo {
   /**
    * The constants of this enumerated type describe the various types of server message that a {@link MessageInfo} can describe
    */
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum StubType {
     UNKNOWN(0),
@@ -425,10 +329,6 @@ public class MessageInfo {
     CHANGE_EPHEMERAL_SETTING(72);
 
     private final @Getter int index;
-
-    StubType(int index) {
-      this.index = index;
-    }
 
     @JsonCreator
     public static StubType forIndex(int index) {

@@ -20,7 +20,7 @@ import java.util.Arrays;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class ExternalAdReplyInfo {
+public final class ExternalAdReplyInfo implements WhatsappInfo {
   /**
    * The title of this advertisement
    */

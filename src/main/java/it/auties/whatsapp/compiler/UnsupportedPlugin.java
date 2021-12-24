@@ -5,7 +5,7 @@ import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.util.*;
-import it.auties.whatsapp.util.Unsupported;
+import it.auties.whatsapp.api.Unsupported;
 
 import javax.tools.Diagnostic;
 

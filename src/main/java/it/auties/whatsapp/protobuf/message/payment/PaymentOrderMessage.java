@@ -6,7 +6,7 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.info.ContextInfo;
 import it.auties.whatsapp.protobuf.message.model.PaymentMessage;
-import it.auties.whatsapp.util.Unsupported;
+import it.auties.whatsapp.api.Unsupported;
 import lombok.*;
 import lombok.experimental.Accessors;
 

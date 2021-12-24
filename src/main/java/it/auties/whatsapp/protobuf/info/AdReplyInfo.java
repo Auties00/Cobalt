@@ -19,7 +19,7 @@ import java.util.Arrays;
 @Data
 @Builder(builderMethodName = "newAdReplyInfo", buildMethodName = "create")
 @Accessors(fluent = true)
-public class AdReplyInfo {
+public final class AdReplyInfo implements WhatsappInfo {
   /**
    * The caption of the original companion
    */

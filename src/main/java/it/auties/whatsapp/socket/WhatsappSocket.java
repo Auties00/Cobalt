@@ -444,7 +444,7 @@ public class WhatsappSocket {
         private final Map<String, Integer> retries = new HashMap<>();
 
         private void acknowledge(MessageInfo message) {
-            send(with("ack", of("id", message.key().id(), "to", message.senderId()), null));
+            send(with("ack", of("id", message.key().id(), "to", message.senderJid()), null));
         }
 
         private void retry(Node node, ADVSignedDeviceIdentity account) {

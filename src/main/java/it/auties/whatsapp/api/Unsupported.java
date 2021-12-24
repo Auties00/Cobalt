@@ -1,4 +1,4 @@
-package it.auties.whatsapp.util;
+package it.auties.whatsapp.api;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
