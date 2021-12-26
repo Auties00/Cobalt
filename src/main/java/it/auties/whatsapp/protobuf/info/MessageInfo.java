@@ -77,7 +77,7 @@ public final class MessageInfo implements WhatsappInfo {
    * This property is only populated if {@link MessageInfo#chat()} refers to a group.
    */
   @JsonProperty("5")
-  private ContactJid senderId;
+  private ContactJid senderJid;
 
   /**
    * Duration
@@ -223,7 +223,7 @@ public final class MessageInfo implements WhatsappInfo {
    * @return a non-null ContactId
    */
   public ContactJid senderJid(){
-    return Objects.requireNonNullElse(senderId, chatId());
+    return Objects.requireNonNullElse(senderJid, chatJid());
   }
 
   /**

@@ -9,7 +9,9 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.extern.java.Log;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 
 /**
  * A model class that represents a jid.
@@ -28,7 +30,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
     /**
      * The ID of Whatsapp, used to send nodes
      */
-    public static final ContactJid WHATSAPP = ofServer(Server.WHATSAPP);
+    public static final ContactJid SOCKET = ofServer(Server.WHATSAPP);
 
     /**
      * Constructs a new ContactId for a user from a jid
@@ -37,7 +39,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @return a non-null contact id
      */
     @JsonCreator
-    public static ContactJid of(@NonNull String jid) {
+    public static ContactJid ofUser(@NonNull String jid) {
         return new ContactJid(withoutServer(jid), Server.WHATSAPP, 0, 0);
     }
 
@@ -48,7 +50,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @param server the non-null custom server
      * @return a non-null contact id
      */
-    public static ContactJid of(String jid, @NonNull Server server) {
+    public static ContactJid ofUser(String jid, @NonNull Server server) {
         return new ContactJid(withoutServer(jid), server, 0, 0);
     }
 
@@ -144,16 +146,79 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
         };
     }
 
+    /**
+     * Returns whether this jid is associated with a companion device
+     *
+     * @return true if this jid is a companion
+     */
+    public boolean isCompanion(){
+        return device() != 0;
+    }
+
+    /**
+     * Checks if the input object equals this jid.
+     * The equality is determined based on the server, other variables might differ.
+     *
+     * @param other the object to check, maybe null
+     * @return true if the object matches
+     */
+    @Override
+    public boolean equals(Object other) {
+        return other instanceof ContactJid that && this.server() == that.server();
+    }
+
+    /**
+     * Returns a hash code value for the object
+     *
+     * @return a hash code value for this object
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(user, server, device, agent);
+    }
+
+    @Override
+    public String toString() {
+        if (isCompanion()) {
+            var user = Objects.requireNonNullElse(user(), "");
+            var agent = agent() != 0 ? "_%s".formatted(agent()) : "";
+            var device = device() != 0 ? ":%s".formatted(device()) : "";
+            return "%s%s%s@%s".formatted(user, agent, device, server());
+        }
+
+        if (agent == 0 && device == 0) {
+            return "%s@%s".formatted(user, Server.WHATSAPP);
+        }
+
+        if (agent != 0 && device == 0) {
+            return "%s.%s@%s".formatted(user, agent, Server.WHATSAPP);
+        }
+
+        if (agent == 0) {
+            return "%s:%s@%s".formatted(user, device, Server.WHATSAPP);
+        }
+
+        return "%s.%s:%s@%s".formatted(user, agent, device, Server.WHATSAPP);
+    }
+
+    /**
+     * Checks if the input user is equal to the one wrapped by this jid
+     *
+     * @param user the user to check, maybe null
+     * @return true if the user matches
+     */
     public boolean contentEquals(String user){
         return Objects.equals(user(), user);
     }
 
+    /**
+     * Checks if the input server is equal to the one wrapped by this jid
+     *
+     * @param server the server to check, maybe null
+     * @return true if the server matches
+     */
     public boolean contentEquals(Server server){
         return Objects.equals(server(), server);
-    }
-
-    public boolean isCompanion(){
-        return device() != 0;
     }
 
     /**
@@ -235,29 +300,5 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
         public String toString() {
             return address();
         }
-    }
-
-    @Override
-    public String toString() {
-        if (isCompanion()) {
-            var user = Objects.requireNonNullElse(user(), "");
-            var agent = agent() != 0 ? "_%s".formatted(agent()) : "";
-            var device = device() != 0 ? ":%s".formatted(device()) : "";
-            return "%s%s%s@%s".formatted(user, agent, device, server());
-        }
-
-        if (agent == 0 && device == 0) {
-            return "%s@%s".formatted(user, WHATSAPP);
-        }
-
-        if (agent != 0 && device == 0) {
-            return "%s.%s@%s".formatted(user, agent, WHATSAPP);
-        }
-
-        if (agent == 0) {
-            return "%s:%s@%s".formatted(user, device, WHATSAPP);
-        }
-
-        return "%s.%s:%s@%s".formatted(user, agent, device, WHATSAPP);
     }
 }

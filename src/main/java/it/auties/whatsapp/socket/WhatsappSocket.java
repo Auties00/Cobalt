@@ -16,6 +16,7 @@ import it.auties.whatsapp.protobuf.signal.keypair.SignalPreKey;
 import it.auties.whatsapp.protobuf.signal.auth.HandshakeMessage;
 import it.auties.whatsapp.exchange.Node;
 import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
+import it.auties.whatsapp.util.Messages;
 import it.auties.whatsapp.util.Qr;
 import it.auties.whatsapp.util.Validate;
 import it.auties.whatsapp.util.WhatsappUtils;
@@ -190,7 +191,7 @@ public class WhatsappSocket {
         var sync = withChildren("usync",
                 of("sid", WhatsappUtils.buildRequestTag(), "mode", "query", "last", "true", "index", "0", "context", "interactive"),
                 query, list);
-        return sendQuery(of("to", ContactJid.WHATSAPP, "type", "get", "xmlns", "usync"), sync)
+        return sendQuery(of("to", ContactJid.SOCKET, "type", "get", "xmlns", "usync"), sync)
                 .thenApplyAsync(this::parseQueryResult);
     }
 
@@ -286,6 +287,7 @@ public class WhatsappSocket {
                 case "stream:error" -> digestError(node);
                 case "failure" -> digestFailure(node);
                 case "xmlstreamend" -> disconnect();
+                case "message" -> Messages.decodeMessages(node, store, keys);
             }
         }
 
@@ -330,7 +332,7 @@ public class WhatsappSocket {
         }
 
         private void confirmConnection() {
-            send(withChildren("iq", of("to", ContactJid.WHATSAPP, "xmlns", "passive", "type", "set"),
+            send(withChildren("iq", of("to", ContactJid.SOCKET, "xmlns", "passive", "type", "set"),
                     with("active")));
         }
 
@@ -339,7 +341,7 @@ public class WhatsappSocket {
                 return;
             }
 
-            send(withChildren("iq", of("xmlns", "encrypt", "type", "set", "to", ContactJid.WHATSAPP),
+            send(withChildren("iq", of("xmlns", "encrypt", "type", "set", "to", ContactJid.SOCKET),
                     createPreKeysContent()));
         }
 
@@ -377,7 +379,7 @@ public class WhatsappSocket {
 
         private void ping() {
             var ping = with("ping");
-            send(withChildren("iq", of("to", ContactJid.WHATSAPP, "type", "get", "xmlns", "w:p"), ping));
+            send(withChildren("iq", of("to", ContactJid.SOCKET, "type", "get", "xmlns", "w:p"), ping));
         }
 
         private void printQrCode(Node container) {
@@ -430,7 +432,7 @@ public class WhatsappSocket {
         }
 
         private void sendConfirmNode(Node node, Node content) {
-            send(withChildren("iq", of("id", WhatsappUtils.readNullableId(node), "to", ContactJid.WHATSAPP, "type", "result"), content));
+            send(withChildren("iq", of("id", WhatsappUtils.readNullableId(node), "to", ContactJid.SOCKET, "type", "result"), content));
         }
 
         private ContactJid fetchJid(Node container) {

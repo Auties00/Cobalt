@@ -238,7 +238,7 @@ public class Whatsapp {
      * @return a CompletableFuture that wraps a non-null list of ContactId
      */
     public CompletableFuture<List<ContactJid>> queryBlockList() {
-        return socket.sendQuery(of("xmlns", "blocklist", "to", ContactJid.WHATSAPP, "type", "get"), null)
+        return socket.sendQuery(of("xmlns", "blocklist", "to", ContactJid.SOCKET, "type", "get"), null)
                 .thenApplyAsync(this::parseBlockList);
     }
 
@@ -258,7 +258,7 @@ public class Whatsapp {
      */
     public CompletableFuture<List<StatusResponse>> queryUserStatus(@NonNull Contact contact) {
         var query = with("status");
-        var body = with("user", of("jid", ContactJid.of(contact.jid().user())), null);
+        var body = with("user", of("jid", ContactJid.ofUser(contact.jid().user())), null);
         return socket.sendQuery(query, body)
                 .thenApplyAsync(response -> Nodes.findAll(response, "status"))
                 .thenApplyAsync(nodes -> nodes.stream().map(StatusResponse::new).toList());
@@ -292,7 +292,7 @@ public class Whatsapp {
      */
     public CompletableFuture<String> queryChatPicture(@NonNull ContactJid jid) {
         var body = Node.with("picture", of("query", "url"), null);
-        return socket.sendQuery(of("xmlns", "w:profile:picture", "to", ContactJid.WHATSAPP, "type", "get", "target", jid), body)
+        return socket.sendQuery(of("xmlns", "w:profile:picture", "to", ContactJid.SOCKET, "type", "get", "target", jid), body)
                 .thenApplyAsync(this::parseChatPicture);
     }
 

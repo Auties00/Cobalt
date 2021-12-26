@@ -30,7 +30,7 @@ public class MessageKey {
    */
   @JsonProperty("1")
   @Getter
-  private @NonNull ContactJid chatId;
+  private @NonNull ContactJid chatJid;
 
   /**
    * Determines whether the message was sent by you or by someone else
@@ -64,7 +64,7 @@ public class MessageKey {
    */
   public Optional<Chat> chat(){
     return WhatsappStore.findStoreById(storeUuid)
-            .findChatByJid(Objects.toString(chatId()));
+            .findChatByJid(Objects.toString(chatJid()));
   }
 
   public WhatsappStore store(){

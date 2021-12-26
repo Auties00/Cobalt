@@ -64,7 +64,7 @@ public record Attributes(Map<String, Object> map) {
     private ContactJid parseJid(Object value) {
         return switch (value) {
             case ContactJid jid -> jid;
-            case String encodedJid -> ContactJid.of(encodedJid);
+            case String encodedJid -> ContactJid.ofUser(encodedJid);
             default -> throw new IllegalStateException("Unexpected value: " + value);
         };
     }

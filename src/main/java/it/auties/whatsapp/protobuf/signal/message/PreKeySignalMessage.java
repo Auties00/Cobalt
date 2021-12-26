@@ -1,5 +1,7 @@
 package it.auties.whatsapp.protobuf.signal.message;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp.binary.BinaryArray;
@@ -27,19 +29,38 @@ public final class PreKeySignalMessage implements SignalProtocolMessage{
     private static int CURRENT_VERSION = 3;
 
     private int version;
-    private int registrationId;
+
+    @JsonProperty("1")
+    @JsonPropertyDescription("uint32")
     private int preKeyId;
-    private int signedPreKeyId;
+
+    @JsonProperty("2")
+    @JsonPropertyDescription("bytes")
     private byte[] baseKey;
+
+    @JsonProperty("3")
+    @JsonPropertyDescription("bytes")
     private byte[] identityKey;
+
+    @JsonProperty("4")
+    @JsonPropertyDescription("bytes")
     private byte[] serializedMessage;
+
+    @JsonProperty("5")
+    @JsonPropertyDescription("uint32")
+    private int registrationId;
+
+    @JsonProperty("6")
+    @JsonPropertyDescription("uint32")
+    private int signedPreKeyId;
+
     private byte[] serialized;
 
     public PreKeySignalMessage(byte[] serialized) {
         try {
             this.version = Byte.toUnsignedInt(serialized[0]) >> 4;
-            var decoded = ProtobufDecoder.forType(getClass()).decode(Arrays.copyOfRange(serialized, 1, serialized.length - 1));
-
+            var decoded = ProtobufDecoder.forType(getClass())
+                    .decode(Arrays.copyOfRange(serialized, 1, serialized.length));
             this.serialized = serialized;
             this.registrationId = decoded.registrationId();
             this.preKeyId = decoded.preKeyId();

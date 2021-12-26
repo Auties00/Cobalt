@@ -19,7 +19,7 @@ import static it.auties.whatsapp.binary.BinaryArray.of;
  */
 @UtilityClass
 public class Qr {
-    private final int MARGIN = 5;
+    private final int MARGIN = 0;
     private final int SIZE = 50;
     private final MultiFormatWriter WRITER = new MultiFormatWriter();
 

@@ -130,7 +130,7 @@ public class WhatsappStore {
      * @return a non-empty Optional containing the result if it is found otherwise an empty Optional empty
      */
     public @NonNull Optional<Chat> findChatByMessage(@NonNull MessageInfo message) {
-        return findChatByJid(message.key().chatId().toString());
+        return findChatByJid(message.key().chatJid().toString());
     }
 
     /**

@@ -118,7 +118,7 @@ public record SignalSession(@NonNull ProtocolAddress address, @NonNull WhatsappK
     }
 
 
-    public byte[] decrypt(PreKeySignalMessage ciphertext) {
+    public byte[] decipher(PreKeySignalMessage ciphertext) {
         var sessionRecord = keys.findSessionByAddress(address);
         var unsignedPreKeyId = process(sessionRecord, ciphertext);
         var plaintext = decryptRecursively(sessionRecord, ciphertext.signalMessage());
@@ -130,7 +130,7 @@ public record SignalSession(@NonNull ProtocolAddress address, @NonNull WhatsappK
         return plaintext;
     }
 
-    public byte[] decrypt(SignalMessage ciphertext) {
+    public byte[] decipher(SignalMessage ciphertext) {
         var sessionRecord = keys.findSessionByAddress(address);
         var plaintext = decryptRecursively(sessionRecord, ciphertext);
         Validate.isTrue(keys.hasTrust(address, sessionRecord.currentSession().remoteIdentityKey()), "Untrusted key");
