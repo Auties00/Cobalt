@@ -186,19 +186,12 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
             return "%s%s%s@%s".formatted(user, agent, device, server());
         }
 
-        if (agent == 0 && device == 0) {
-            return "%s@%s".formatted(user, Server.WHATSAPP);
-        }
-
-        if (agent != 0 && device == 0) {
+        if (agent != 0) {
             return "%s.%s@%s".formatted(user, agent, Server.WHATSAPP);
         }
 
-        if (agent == 0) {
-            return "%s:%s@%s".formatted(user, device, Server.WHATSAPP);
-        }
-
-        return "%s.%s:%s@%s".formatted(user, agent, device, Server.WHATSAPP);
+        return user == null ? Server.WHATSAPP.address()
+                : "%s@%s".formatted(user, Server.WHATSAPP);
     }
 
     /**
