@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.protobuf.button.Button;
 import it.auties.whatsapp.protobuf.info.ContextInfo;
 import it.auties.whatsapp.protobuf.message.model.ButtonMessage;
 import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
@@ -11,7 +12,6 @@ import it.auties.whatsapp.protobuf.message.standard.DocumentMessage;
 import it.auties.whatsapp.protobuf.message.standard.ImageMessage;
 import it.auties.whatsapp.protobuf.message.standard.LocationMessage;
 import it.auties.whatsapp.protobuf.message.standard.VideoMessage;
-import it.auties.whatsapp.protobuf.button.Button;
 import lombok.*;
 import lombok.experimental.Accessors;
 

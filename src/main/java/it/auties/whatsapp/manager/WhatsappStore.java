@@ -1,12 +1,12 @@
 package it.auties.whatsapp.manager;
 
 import it.auties.whatsapp.api.WhatsappListener;
+import it.auties.whatsapp.exchange.Node;
 import it.auties.whatsapp.exchange.Request;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
-import it.auties.whatsapp.exchange.Node;
 import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.AccessLevel;
 import lombok.Data;

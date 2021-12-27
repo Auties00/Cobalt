@@ -3,12 +3,12 @@ package it.auties.whatsapp.protobuf.info;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.whatsapp.api.Unsupported;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
 import it.auties.whatsapp.protobuf.message.model.MessageContainer;
 import it.auties.whatsapp.protobuf.message.model.MessageKey;
-import it.auties.whatsapp.api.Unsupported;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -170,7 +170,7 @@ public non-sealed class ContextInfo implements WhatsappInfo {
    * @param quotedMessage the message to quote
    */
   public ContextInfo(@NonNull MessageInfo quotedMessage){
-    this.quotedMessageContainer = quotedMessage.content();
+    this.quotedMessageContainer = quotedMessage.message();
     this.quotedMessageId = quotedMessage.key().id();
     this.quotedMessageSenderId = quotedMessage.senderJid();
   }

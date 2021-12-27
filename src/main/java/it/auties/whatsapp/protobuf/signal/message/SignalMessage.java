@@ -13,6 +13,8 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.util.Arrays;
 
+import static java.util.Arrays.copyOfRange;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
@@ -43,17 +45,12 @@ public final class SignalMessage implements SignalProtocolMessage {
 
     private byte[] serialized;
 
-    public static boolean isLegacy(byte[] message) {
-        return message != null
-                && message.length >= 1
-                && Byte.toUnsignedInt(message[0]) >> 4 != CURRENT_VERSION;
-    }
-
     public SignalMessage(byte[] serialized) {
         try {
-            var deserialized = ProtobufDecoder.forType(getClass()).decode(serialized);
+            var deserialized = ProtobufDecoder.forType(getClass())
+                    .decode(copyOfRange(serialized, 1, serialized.length - MAC_LENGTH));
             this.serialized = serialized;
-            this.ratchetKey = Arrays.copyOfRange(deserialized.ratchetKey(), 1, deserialized.ratchetKey().length);
+            this.ratchetKey = copyOfRange(deserialized.ratchetKey(), 1, deserialized.ratchetKey().length);
             this.messageVersion = Byte.toUnsignedInt(serialized[0]) >> 4;
             this.counter = deserialized.counter();
             this.previousCounter = deserialized.previousCounter();

@@ -1,7 +1,5 @@
 package it.auties.whatsapp.protobuf.signal.session;
 
-import org.whispersystems.libsignal.util.ByteUtil;
-
 import java.util.Arrays;
 
 public record DerivedRootSecrets(byte[] rootKey, byte[] chainKey) {

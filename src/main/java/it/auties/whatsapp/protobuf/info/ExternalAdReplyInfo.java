@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
 

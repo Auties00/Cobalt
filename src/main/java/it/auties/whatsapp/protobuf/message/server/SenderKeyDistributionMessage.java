@@ -26,27 +26,13 @@ public final class SenderKeyDistributionMessage implements ServerMessage {
    * The id of the sender
    */
   @JsonProperty("1")
-  @JsonPropertyDescription("uint32")
-  private int id;
+  @JsonPropertyDescription("string")
+  private String groupId;
 
   /**
-   * The iteration of the message
+   * The sender key
    */
   @JsonProperty("2")
-  @JsonPropertyDescription("uint32")
-  private int iteration;
-
-  /**
-   * The value key of the message
-   */
-  @JsonProperty("3")
   @JsonPropertyDescription("bytes")
-  private byte[] chainKey;
-
-  /**
-   * The signing key of the message
-   */
-  @JsonProperty("4")
-  @JsonPropertyDescription("bytes")
-  private byte[] signingKey;
+  private byte[] axolotlSenderKeyDistributionMessage;
 }

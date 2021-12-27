@@ -12,9 +12,12 @@ import lombok.experimental.Accessors;
 
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+
+import static java.util.Arrays.copyOfRange;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -51,7 +54,7 @@ public class SessionStructure {
     @JsonProperty("7")
     @JsonPropertyDescription("Chain")
     @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-    private List<Chain> receiverChains;
+    private List<Chain> receiverChains = new ArrayList<>();
 
     @JsonProperty("8")
     @JsonPropertyDescription("PendingKeyExchange")
@@ -82,27 +85,27 @@ public class SessionStructure {
     }
 
     public byte[] remoteIdentityKey() {
-        return remoteIdentityKey != null ? Arrays.copyOfRange(remoteIdentityKey, 1, remoteIdentityKey.length)
-                : new byte[32];
+        return remoteIdentityKey == null ? null
+                : copyOfRange(remoteIdentityKey, 1, remoteIdentityKey.length);
     }
 
     public byte[] localIdentityPublic() {
-        return localIdentityPublic != null ? Arrays.copyOfRange(localIdentityPublic, 1, localIdentityPublic.length)
-                : new byte[32];
+        return localIdentityPublic == null ? null
+                : copyOfRange(localIdentityPublic, 1, localIdentityPublic.length);
     }
 
-    public byte[] publicSenderRatchetKey() {
-        return hasSenderChain() ? Arrays.copyOfRange(senderChain.senderRatchetKey(), 1, senderChain.senderRatchetKey().length)
-                : new byte[32];
+    public byte[] senderRatchetKeyPublic() {
+        return senderChain == null || senderChain.senderRatchetKey() == null ? null
+                : copyOfRange(senderChain.senderRatchetKey(), 1, senderChain.senderRatchetKey().length);
     }
 
-    public byte[] privateSenderRatchetKey() {
-        return hasSenderChain() ? senderChain.senderRatchetKeyPrivate()
-                : new byte[32];
+    public byte[] senderRatchetKeyPrivate() {
+        return senderChain == null ? null
+                : senderChain.senderRatchetKeyPrivate();
     }
 
     public SignalKeyPair senderRatchetKeyPair() {
-        return new SignalKeyPair(publicSenderRatchetKey(), privateSenderRatchetKey());
+        return new SignalKeyPair(senderRatchetKeyPublic(), senderRatchetKeyPrivate());
     }
 
     public boolean hasSenderChain() {
@@ -111,7 +114,7 @@ public class SessionStructure {
 
     public Optional<Chain> receiverChain(byte[] senderEphemeral) {
         return receiverChains.stream()
-                .filter(receiverChain -> Arrays.equals(senderEphemeral, Arrays.copyOfRange(receiverChain.senderRatchetKey(), 1, receiverChain.senderRatchetKey().length)))
+                .filter(receiverChain -> Arrays.equals(senderEphemeral, copyOfRange(receiverChain.senderRatchetKey(), 1, receiverChain.senderRatchetKey().length)))
                 .findFirst();
     }
 
@@ -152,7 +155,7 @@ public class SessionStructure {
     }
 
     public UnacknowledgedPreKeyMessageItems unacknowledgedPreKeyMessageItems() {
-        var key = Arrays.copyOfRange(pendingPreKey().baseKey(), 0, pendingPreKey().baseKey().length);
+        var key = copyOfRange(pendingPreKey().baseKey(), 0, pendingPreKey().baseKey().length);
         return new UnacknowledgedPreKeyMessageItems(pendingPreKey.preKeyId(), pendingPreKey.signedPreKeyId(), key);
     }
 

@@ -1,23 +1,29 @@
 package it.auties.whatsapp.crypto;
 
 import it.auties.whatsapp.manager.WhatsappKeys;
-import it.auties.whatsapp.protobuf.signal.sender.*;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
-import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
+import it.auties.whatsapp.protobuf.signal.message.SignalDistributionMessage;
+import it.auties.whatsapp.protobuf.signal.sender.*;
 import it.auties.whatsapp.util.Validate;
+import lombok.NonNull;
 import lombok.SneakyThrows;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.util.NoSuchElementException;
 
-public record SignalGroup(SenderKeyName senderKeyId, WhatsappKeys keys) {
+public record SignalGroup(SenderKeyName senderKeyId, @NonNull WhatsappKeys keys) {
     private static final int MAX_MESSAGE_KEYS = 2000;
     private static final String AES_CBC = "AES/CBC/PKCS5Padding";
     private static final String AES = "AES";
+    public SignalGroup(WhatsappKeys keys){
+        this(null, keys);
+    }
 
-    public SenderKeyDistributionMessage create(SenderKeyName senderKeyName) {
-        var senderKeyRecord = keys.findSenderKeyByName(senderKeyName);
+    public SignalDistributionMessage create(SenderKeyName senderKeyName) {
+        var senderKeyRecord = keys.findSenderKeyByName(senderKeyName)
+                .orElseThrow(() -> new NoSuchElementException("Cannot find sender key for name %s".formatted(senderKeyName)));
         if (senderKeyRecord.isEmpty()) {
             senderKeyRecord.senderKeyState(SignalHelper.randomSenderKeyId(), 0, SignalHelper.randomSenderKey(), SignalKeyPair.random().privateKey());
             keys.senderKeyStructures().add(new SenderKeyStructure(senderKeyName, senderKeyRecord));
@@ -25,17 +31,19 @@ public record SignalGroup(SenderKeyName senderKeyId, WhatsappKeys keys) {
 
         var state = senderKeyRecord.senderKeyState();
         var chainKey = state.senderChainKey();
-        return new SenderKeyDistributionMessage(state.senderKeyId(), chainKey.iteration(), chainKey.seed(), state.signingKeyPublic());
+        return new SignalDistributionMessage(state.senderKeyId(), chainKey.iteration(), chainKey.seed(), state.signingKeyPublic());
     }
 
-    public void process(SenderKeyName senderKeyName, SenderKeyDistributionMessage senderKeyDistributionMessage) {
-        var senderKeyRecord = keys.findSenderKeyByName(senderKeyName);
+    public void process(SenderKeyName senderKeyName, SignalDistributionMessage senderKeyDistributionMessage) {
+        var senderKeyRecord = keys.findSenderKeyByName(senderKeyName)
+                .orElseThrow(() -> new NoSuchElementException("Cannot find sender key for name %s".formatted(senderKeyName)));
         senderKeyRecord.addSenderKeyState(senderKeyDistributionMessage.id(), senderKeyDistributionMessage.iteration(), senderKeyDistributionMessage.chainKey(), senderKeyDistributionMessage.signingKey());
         keys.senderKeyStructures().add(new SenderKeyStructure(senderKeyName, senderKeyRecord));
     }
 
     public byte[] cipher(byte[] paddedPlaintext) {
-        var record = keys.findSenderKeyByName(senderKeyId);
+        var record = keys.findSenderKeyByName(senderKeyId)
+                .orElseThrow(() -> new NoSuchElementException("Cannot find sender key for name %s".formatted(senderKeyId)));
         var senderKeyState = record.senderKeyState();
         var senderKey = senderKeyState.senderChainKey().toSenderMessageKey();
         var ciphertext = cipherText(senderKey.iv(), senderKey.cipherKey(), paddedPlaintext);
@@ -46,7 +54,8 @@ public record SignalGroup(SenderKeyName senderKeyId, WhatsappKeys keys) {
     }
 
     public byte[] decipher(byte[] senderKeyMessageBytes) {
-        var record = keys.findSenderKeyByName(senderKeyId);
+        var record = keys.findSenderKeyByName(senderKeyId)
+                .orElseThrow(() -> new NoSuchElementException("Cannot find sender key for name %s".formatted(senderKeyId)));
         Validate.isTrue(!record.isEmpty(), "No sender key for %s", senderKeyId);
         var senderKeyMessage = new SenderKeyMessage(senderKeyMessageBytes);
         var senderKeyState = record.senderKeyState(senderKeyMessage.id());

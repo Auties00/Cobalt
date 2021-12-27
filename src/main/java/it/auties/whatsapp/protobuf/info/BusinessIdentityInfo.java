@@ -4,10 +4,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.business.BusinessActorsType;
+import it.auties.whatsapp.protobuf.business.BusinessCertificate;
 import it.auties.whatsapp.protobuf.business.BusinessStorageType;
 import it.auties.whatsapp.protobuf.business.BusinessVerifiedLevel;
-import it.auties.whatsapp.protobuf.business.BusinessCertificate;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
 /**

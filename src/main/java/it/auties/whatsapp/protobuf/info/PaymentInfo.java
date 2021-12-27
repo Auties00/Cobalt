@@ -3,8 +3,8 @@ package it.auties.whatsapp.protobuf.info;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.protobuf.message.payment.RequestPaymentMessage;
 import it.auties.whatsapp.protobuf.message.model.MessageKey;
+import it.auties.whatsapp.protobuf.message.payment.RequestPaymentMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
 

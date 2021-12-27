@@ -4,15 +4,15 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.protobuf.info.CallInfo;
 import it.auties.whatsapp.protobuf.message.button.*;
 import it.auties.whatsapp.protobuf.message.device.DeviceSentMessage;
 import it.auties.whatsapp.protobuf.message.device.DeviceSyncMessage;
 import it.auties.whatsapp.protobuf.message.payment.*;
-import it.auties.whatsapp.protobuf.message.standard.ProductMessage;
 import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
 import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.protobuf.message.standard.*;
-import it.auties.whatsapp.protobuf.info.CallInfo;
+import it.auties.whatsapp.protobuf.signal.message.SignalDistributionMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -128,7 +128,7 @@ public class MessageContainer { // Not how I would design it, Whatsapp's choice 
    * Fast ratchet key sender key distribution message
    */
   @JsonProperty("15")
-  private SenderKeyDistributionMessage fastRatchetKeySenderKeyDistribution;
+  private SignalDistributionMessage fastRatchetKeySenderKeyDistribution;
   
   /**
    * Send payment message

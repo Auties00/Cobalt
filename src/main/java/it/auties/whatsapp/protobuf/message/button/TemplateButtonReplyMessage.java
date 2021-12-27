@@ -5,7 +5,6 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.info.ContextInfo;
 import it.auties.whatsapp.protobuf.message.model.ButtonMessage;
 import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
-import it.auties.whatsapp.protobuf.message.model.Message;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

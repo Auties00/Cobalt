@@ -1,16 +1,19 @@
 package it.auties.whatsapp.protobuf.signal.session;
 
-import com.fasterxml.jackson.annotation.*;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
-
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp.binary.BinaryArray;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
 import lombok.experimental.Accessors;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.LinkedList;
 
 @AllArgsConstructor
 @Data

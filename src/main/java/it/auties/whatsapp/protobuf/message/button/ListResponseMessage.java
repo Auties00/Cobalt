@@ -1,15 +1,15 @@
 package it.auties.whatsapp.protobuf.message.button;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.protobuf.info.ContextInfo;
 import it.auties.whatsapp.protobuf.button.SingleSelectReply;
+import it.auties.whatsapp.protobuf.info.ContextInfo;
 import it.auties.whatsapp.protobuf.message.model.ButtonMessage;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
-
-import java.util.Arrays;
 
 /**
  * A model class that represents a WhatsappMessage that contains a response to a previous {@link ListMessage}.

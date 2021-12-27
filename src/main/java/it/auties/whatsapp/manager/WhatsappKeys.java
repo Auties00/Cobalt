@@ -14,6 +14,8 @@ import it.auties.whatsapp.protobuf.signal.sender.SenderKeyRecord;
 import it.auties.whatsapp.protobuf.signal.sender.SenderKeyStructure;
 import it.auties.whatsapp.protobuf.signal.session.ProtocolAddress;
 import it.auties.whatsapp.protobuf.signal.session.SessionRecord;
+import it.auties.whatsapp.protobuf.signal.session.SignedPreKeyRecordStructure;
+import it.auties.whatsapp.util.Validate;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -21,8 +23,12 @@ import lombok.experimental.Accessors;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
+
+import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElseGet;
 
 /**
  * This class is a data class used to hold the clientId, serverToken, clientToken, publicKey, privateKey, encryptionKey and macKey.
@@ -109,12 +115,6 @@ public class WhatsappKeys {
      */
     private Map<ProtocolAddress, byte[]> identities;
 
-
-    /**
-     * Trusted identity keys
-     */
-    private Map<Integer, SignalKeyPair> signedIdentities;
-
     /**
      * Returns the keys saved in memory or constructs a new clean instance
      *
@@ -147,7 +147,6 @@ public class WhatsappKeys {
         this.preKeys = new LinkedList<>();
         this.sessions = new ConcurrentHashMap<>();
         this.identities = new ConcurrentHashMap<>();
-        this.signedIdentities = new ConcurrentHashMap<>();
     }
 
     /**
@@ -209,12 +208,11 @@ public class WhatsappKeys {
      * @return a non-null SenderKeyRecord
      * @throws NoSuchElementException if no element can be found
      */
-    public SenderKeyRecord findSenderKeyByName(@NonNull SenderKeyName name){
+    public Optional<SenderKeyRecord> findSenderKeyByName(@NonNull SenderKeyName name){
         return senderKeyStructures.stream()
                 .filter(structure -> Objects.equals(structure.name(), name))
                 .findFirst()
-                .map(SenderKeyStructure::record)
-                .orElseThrow(() -> new NoSuchElementException("Cannot find sender key for name %s".formatted(name)));
+                .map(SenderKeyStructure::record);
     }
 
     /**
@@ -222,10 +220,24 @@ public class WhatsappKeys {
      *
      * @param address the non-null address to search
      * @return a non-null SessionRecord
-     * @throws NullPointerException if no element can be found
      */
     public SessionRecord findSessionByAddress(@NonNull ProtocolAddress address){
-        return Objects.requireNonNull(sessions.get(address), "Cannot find any session matching the provided address");
+        return requireNonNull(sessions.get(address), "Cannot find record for address %s".formatted(address));
+    }
+
+    /**
+     * Queries the {@link SessionRecord} that matches {@code address}
+     *
+     * @param address the non-null address to search
+     * @param defaultValue the non-null default value supplier, may supply a null a value
+     * @return a nullable SessionRecord as {@code defaultValue} might supply a null value
+     */
+    public SessionRecord findSessionByAddress(@NonNull ProtocolAddress address, @NonNull Supplier<SessionRecord> defaultValue){
+        return requireNonNullElseGet(sessions.get(address), () -> {
+            var value = defaultValue.get();
+            sessions.put(address, value);
+            return value;
+        });
     }
 
     /**
@@ -236,7 +248,7 @@ public class WhatsappKeys {
      * @throws NullPointerException if no element can be found
      */
     public byte[] findIdentityByAddress(@NonNull ProtocolAddress address) {
-        return Objects.requireNonNull(identities.get(address), "Cannot find any identity matching the provided address");
+        return requireNonNull(identities.get(address), "Cannot find any identity matching the provided address");
     }
 
     /**
@@ -246,8 +258,9 @@ public class WhatsappKeys {
      * @return a non-null array of bytes
      * @throws NullPointerException if no element can be found
      */
-    public SignalKeyPair findSignedIdentityByAddress(int id) {
-        return Objects.requireNonNull(signedIdentities.get(id), "Cannot find any signed identity matching the provided address");
+    public SignedPreKeyRecordStructure findSignedIdentityByAddress(int id) {
+        Validate.isTrue(id == signedKeyPair.id(), "Id mismatch: %s != %s", id, signedKeyPair.id());
+        return new SignedPreKeyRecordStructure(id, signedKeyPair.keyPair().publicKey(), signedKeyPair.keyPair().privateKey(), signedKeyPair.signature(), 0);
     }
 
 

@@ -6,16 +6,15 @@ import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.binary.BinaryMessage;
 import it.auties.whatsapp.crypto.Curve;
 import it.auties.whatsapp.crypto.Handshake;
+import it.auties.whatsapp.exchange.Node;
 import it.auties.whatsapp.exchange.Request;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
+import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
 import it.auties.whatsapp.protobuf.signal.auth.*;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalPreKey;
-import it.auties.whatsapp.protobuf.signal.auth.HandshakeMessage;
-import it.auties.whatsapp.exchange.Node;
-import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
 import it.auties.whatsapp.util.Messages;
 import it.auties.whatsapp.util.Qr;
 import it.auties.whatsapp.util.Validate;
@@ -38,7 +37,7 @@ import java.util.stream.IntStream;
 import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
 import static it.auties.whatsapp.binary.BinaryArray.of;
 import static it.auties.whatsapp.binary.BinaryArray.ofBase64;
-import static it.auties.whatsapp.exchange.Node.*;
+import static it.auties.whatsapp.exchange.Node.with;
 import static it.auties.whatsapp.exchange.Node.withChildren;
 import static java.lang.Long.parseLong;
 import static java.util.Map.of;
@@ -241,8 +240,9 @@ public class WhatsappSocket {
         }
 
         private UserAgent createUserAgent() {
+            Validate.isTrue(options.whatsappVersion().length == 3, "Invalid version: %s", Arrays.toString(options.whatsappVersion()));
             return UserAgent.builder()
-                    .appVersion(new Version(2, 2144, 11))
+                    .appVersion(new Version(options.whatsappVersion()[0], options.whatsappVersion()[1], options.whatsappVersion()[2]))
                     .platform(UserAgent.UserAgentPlatform.WEB)
                     .releaseChannel(UserAgent.UserAgentReleaseChannel.RELEASE)
                     .mcc("000")
@@ -263,7 +263,7 @@ public class WhatsappSocket {
                     .id(of(keys().id(), 4).data())
                     .keyType(of(KEY_TYPE, 1).data())
                     .identifier(keys().identityKeyPair().publicKey())
-                    .signatureId(keys().signedKeyPair().id())
+                    .signatureId(keys().signedKeyPair().encodedId())
                     .signaturePublicKey(keys().signedKeyPair().keyPair().publicKey())
                     .signature(keys().signedKeyPair().signature())
                     .build();
@@ -287,7 +287,7 @@ public class WhatsappSocket {
                 case "stream:error" -> digestError(node);
                 case "failure" -> digestFailure(node);
                 case "xmlstreamend" -> disconnect();
-                case "message" -> Messages.decodeMessages(node, store, keys);
+                case "message" -> System.out.println("Deciphered: " + Messages.decodeMessages(node, store, keys));
             }
         }
 
@@ -470,8 +470,8 @@ public class WhatsappSocket {
         }
 
         private void handle(MessageInfo message) {
-            if (message.content().isServer()) {
-                var protocolMessage = (ProtocolMessage) message.content().content();
+            if (message.message().isServer()) {
+                var protocolMessage = (ProtocolMessage) message.message().content();
                 switch (protocolMessage.type()) {
                     case HISTORY_SYNC_NOTIFICATION -> {
                         var sync = protocolMessage.historySyncNotification();

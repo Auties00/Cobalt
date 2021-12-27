@@ -68,7 +68,9 @@ public class Sessions {
     public void initializeSession(SessionStructure sessionState, BobSignalProtocolParameters parameters) {
         sessionState.sessionVersion(CURRENT_VERSION);
         sessionState.remoteIdentityKey(parameters.theirIdentityKey());
-        sessionState.localIdentityPublic(parameters.ourOneTimePreKey().publicKey());
+        if (parameters.ourOneTimePreKey() != null) {
+            sessionState.localIdentityPublic(parameters.ourOneTimePreKey().publicKey());
+        }
 
         var secrets = new ByteArrayOutputStream();
 

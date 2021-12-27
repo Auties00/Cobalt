@@ -1,8 +1,7 @@
-package it.auties.whatsapp.protobuf.signal.session;
+package it.auties.whatsapp.protobuf.signal.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,28 +13,32 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class SignedPreKeyRecordStructure {
+public final class SignalDistributionMessage implements SignalProtocolMessage {
+  /**
+   * The id of the sender
+   */
   @JsonProperty("1")
   @JsonPropertyDescription("uint32")
   private int id;
 
+  /**
+   * The iteration of the message
+   */
   @JsonProperty("2")
-  @JsonPropertyDescription("bytes")
-  private byte[] publicKey;
+  @JsonPropertyDescription("uint32")
+  private int iteration;
 
+  /**
+   * The value key of the message
+   */
   @JsonProperty("3")
   @JsonPropertyDescription("bytes")
-  private byte[] privateKey;
+  private byte[] chainKey;
 
+  /**
+   * The signing key of the message
+   */
   @JsonProperty("4")
   @JsonPropertyDescription("bytes")
-  private byte[] signature;
-
-  @JsonProperty("5")
-  @JsonPropertyDescription("fixed64")
-  private long timestamp;
-
-  public SignalKeyPair keyPair(){
-    return new SignalKeyPair(publicKey, privateKey);
-  }
+  private byte[] signingKey;
 }

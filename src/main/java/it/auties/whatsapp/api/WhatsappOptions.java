@@ -22,7 +22,7 @@ public class WhatsappOptions {
      * If the version is too outdated, the server will refuse to connect
      */
     @Default
-    private final int[] whatsappVersion = new int[]{2, 2144, 11};
+    private final int[] whatsappVersion = new int[]{2, 2126, 12};
 
     /**
      * The url of the multi device beta socket

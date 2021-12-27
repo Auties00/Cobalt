@@ -6,7 +6,6 @@ import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.NonNull;
 
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 

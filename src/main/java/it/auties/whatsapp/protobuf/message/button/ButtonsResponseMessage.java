@@ -1,6 +1,5 @@
 package it.auties.whatsapp.protobuf.message.button;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.info.ContextInfo;
@@ -8,8 +7,6 @@ import it.auties.whatsapp.protobuf.message.model.ButtonMessage;
 import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
-
-import java.util.Arrays;
 
 /**
  * A model class that represents a WhatsappMessage that contains a response to a previous {@link ButtonsMessage}.

@@ -1,11 +1,9 @@
 package it.auties.whatsapp.protobuf.signal.session;
 
 import it.auties.whatsapp.binary.BinaryArray;
-import org.whispersystems.libsignal.util.ByteUtil;
 
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.text.ParseException;
 
 public record DerivedMessageSecrets(SecretKeySpec cipherKey, SecretKeySpec macKey, IvParameterSpec iv) {
     public static final int SIZE = 80;

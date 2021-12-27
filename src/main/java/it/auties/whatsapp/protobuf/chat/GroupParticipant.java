@@ -1,7 +1,7 @@
 package it.auties.whatsapp.protobuf.chat;
 
-import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.exchange.Node;
+import it.auties.whatsapp.protobuf.contact.ContactJid;
 import lombok.NonNull;
 
 import java.util.NoSuchElementException;

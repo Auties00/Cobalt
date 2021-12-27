@@ -6,19 +6,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.info.ContextInfo;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
+import it.auties.whatsapp.protobuf.message.model.InteractiveAnnotation;
 import it.auties.whatsapp.protobuf.message.model.MediaMessage;
 import it.auties.whatsapp.protobuf.message.model.MediaMessageType;
-import it.auties.whatsapp.protobuf.message.model.InteractiveAnnotation;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.net.URLConnection;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds a video inside.

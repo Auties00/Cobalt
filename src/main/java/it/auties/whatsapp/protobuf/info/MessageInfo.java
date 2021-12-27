@@ -3,13 +3,13 @@ package it.auties.whatsapp.protobuf.info;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import it.auties.whatsapp.api.Unsupported;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.message.model.*;
 import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
 import it.auties.whatsapp.protobuf.message.standard.LiveLocationMessage;
-import it.auties.whatsapp.api.Unsupported;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.Delegate;
@@ -42,7 +42,7 @@ public final class MessageInfo implements WhatsappInfo {
   @JsonProperty("2")
   @NonNull
   @Builder.Default
-  private MessageContainer content = new MessageContainer();
+  private MessageContainer message = new MessageContainer();
 
   /**
    * A map that holds the read status of this message for each participant.
@@ -147,7 +147,7 @@ public final class MessageInfo implements WhatsappInfo {
 
   /**
    * The stub type of this message.
-   * This property is populated only if the message that {@link MessageInfo#content} wraps is a {@link ProtocolMessage}.
+   * This property is populated only if the message that {@link MessageInfo#message} wraps is a {@link ProtocolMessage}.
    */
   @JsonProperty("24")
   private StubType stubType;
@@ -204,7 +204,7 @@ public final class MessageInfo implements WhatsappInfo {
     this.key = key;
     this.timestamp = Instant.now().getEpochSecond();
     this.globalStatus = MessageStatus.PENDING;
-    this.content = container;
+    this.message = container;
     this.individualReadStatus = new HashMap<>();
   }
 
@@ -242,7 +242,7 @@ public final class MessageInfo implements WhatsappInfo {
    * @return a non-empty optional {@link MessageInfo} if this message quotes a message in memory
    */
   public Optional<MessageInfo> quotedMessage(){
-    return Optional.of(content)
+    return Optional.of(message)
             .flatMap(MessageContainer::contentWithContext)
             .map(ContextualMessage::contextInfo)
             .flatMap(contextualMessage -> key.store().findMessageById(key.chat().orElseThrow(), contextualMessage.quotedMessageId()));

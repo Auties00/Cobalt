@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import it.auties.whatsapp.protobuf.button.HydratedTemplateButton;
 import it.auties.whatsapp.protobuf.message.standard.DocumentMessage;
 import it.auties.whatsapp.protobuf.message.standard.ImageMessage;
 import it.auties.whatsapp.protobuf.message.standard.LocationMessage;

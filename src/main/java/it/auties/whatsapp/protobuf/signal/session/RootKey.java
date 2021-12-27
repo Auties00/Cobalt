@@ -2,8 +2,8 @@ package it.auties.whatsapp.protobuf.signal.session;
 
 
 import it.auties.whatsapp.crypto.Curve;
-import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.crypto.Hkdf;
+import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
 
 public record RootKey(byte[] key) {
     public DerivedKeys createChain(byte[] theirRatchetKey, SignalKeyPair ourRatchetKey) {

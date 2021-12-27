@@ -8,7 +8,10 @@ import it.auties.whatsapp.protobuf.sync.HistorySyncMsg;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 
 /**
  * This class is an implementation of ArrayList used to store the {@link Message} in a {@link Chat}.

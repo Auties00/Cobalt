@@ -8,9 +8,13 @@ import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.message.model.MessageKey;
-import it.auties.whatsapp.protobuf.signal.message.PreKeySignalMessage;
+import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
+import it.auties.whatsapp.protobuf.signal.message.SignalDistributionMessage;
 import it.auties.whatsapp.protobuf.signal.message.SignalMessage;
+import it.auties.whatsapp.protobuf.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.protobuf.signal.sender.SenderKeyName;
+import it.auties.whatsapp.protobuf.signal.sender.SenderKeyRecord;
+import it.auties.whatsapp.protobuf.signal.sender.SenderKeyStructure;
 import it.auties.whatsapp.protobuf.signal.session.ProtocolAddress;
 import lombok.experimental.UtilityClass;
 import lombok.extern.java.Log;
@@ -64,8 +68,9 @@ public class Messages {
                     }
 
                     case "pkmsg" -> {
+                        var preKey = new SignalPreKeyMessage(encodedMessage);
                         var session = new SignalSession(senderAddress, keys);
-                        yield session.decipher(new PreKeySignalMessage(encodedMessage));
+                        yield session.decipher(preKey);
                     }
 
                     case "msg" -> {
@@ -78,10 +83,25 @@ public class Messages {
                 };
 
                 var bufferWithNoPadding = Arrays.copyOfRange(buffer, 0, buffer.length - buffer[buffer.length - 1]);
-                var message = ProtobufDecoder.forType(MessageInfo.class).decode(bufferWithNoPadding);
-                message.key(modelMessage.key());
-                message.senderJid(modelMessage.senderJid());
-                results.add(message);
+                var info = ProtobufDecoder.forType(MessageInfo.class).decode(bufferWithNoPadding);
+                if(info.message().content() instanceof SenderKeyDistributionMessage distributionMessage) {
+                    var group = new SignalGroup(keys);
+                    var groupJid = from.toString().split("@")[0];
+                    var groupAddress = new ProtocolAddress(groupJid, 0);
+                    var groupName = new SenderKeyName(distributionMessage.groupId(), groupAddress);
+                    var signalDistributionMessage = new SignalDistributionMessage(0, 0, null, distributionMessage.axolotlSenderKeyDistributionMessage());
+                    var senderKey = keys.findSenderKeyByName(groupName);
+                    if(senderKey.isEmpty()){
+                        var structure = new SenderKeyStructure(groupName, new SenderKeyRecord());
+                        keys.senderKeyStructures().add(structure);
+                    }
+
+                    group.process(groupName, signalDistributionMessage);
+                }
+
+                info.key(modelMessage.key());
+                info.senderJid(modelMessage.senderJid());
+                results.add(info);
             } catch (Throwable throwable) {
                 log.warning("An exception occurred while processing a message");
                 log.warning("This message will not be decoded and the application should continue running");

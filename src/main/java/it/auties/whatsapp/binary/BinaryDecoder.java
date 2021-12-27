@@ -1,8 +1,8 @@
 package it.auties.whatsapp.binary;
 
 import io.netty.buffer.ByteBuf;
-import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.exchange.Node;
+import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.util.Buffers;
 import lombok.NonNull;
 
