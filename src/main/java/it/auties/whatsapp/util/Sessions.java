@@ -10,6 +10,8 @@ import lombok.experimental.UtilityClass;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 
+import static java.util.Arrays.copyOfRange;
+
 @UtilityClass
 public class Sessions {
     private final int CURRENT_VERSION = 3;
@@ -39,7 +41,7 @@ public class Sessions {
 
     @SneakyThrows
     public void initializeSession(SessionStructure sessionState, AliceSignalProtocolParameters parameters) {
-        sessionState.sessionVersion(CURRENT_VERSION);
+        sessionState.version(CURRENT_VERSION);
         sessionState.remoteIdentityKey(parameters.theirIdentityKey());
         sessionState.localIdentityPublic(parameters.ourIdentityKey().publicKey());
 
@@ -66,7 +68,7 @@ public class Sessions {
 
     @SneakyThrows
     public void initializeSession(SessionStructure sessionState, BobSignalProtocolParameters parameters) {
-        sessionState.sessionVersion(CURRENT_VERSION);
+        sessionState.version(CURRENT_VERSION);
         sessionState.remoteIdentityKey(parameters.theirIdentityKey());
         if (parameters.ourOneTimePreKey() != null) {
             sessionState.localIdentityPublic(parameters.ourOneTimePreKey().publicKey());
@@ -97,8 +99,8 @@ public class Sessions {
 
     private DerivedKeys calculateDerivedKeys(byte[] masterSecret) {
         var derivedSecretBytes = Hkdf.deriveSecrets(masterSecret, "WhisperText".getBytes(), 64);
-        var root = new RootKey(Arrays.copyOfRange(derivedSecretBytes, 0, 32));
-        var chain = new ChainKey(0, Arrays.copyOfRange(derivedSecretBytes, 32, 64));
+        var root = new RootKey(copyOfRange(derivedSecretBytes, 0, 32));
+        var chain = new ChainKey(0, copyOfRange(derivedSecretBytes, 32, 64));
         return new DerivedKeys(root, chain);
     }
 }

@@ -77,6 +77,16 @@ public record Node(@NonNull String description,
     }
 
     /**
+     * Checks whether the child node with the given description exists
+     *
+     * @return true if a child node with the given description exists
+     */
+    public boolean hasNode(String description) {
+        return childNodes().stream()
+                .anyMatch(node -> Objects.equals(node.description(), description));
+    }
+
+    /**
      * Returns a body that matches the nullable description provided
      *
      * @return a nullable node
@@ -120,7 +130,6 @@ public record Node(@NonNull String description,
         return descriptionSize + attributesSize + contentSize;
     }
 
-
     /**
      * Constructs a new request from this node
      *
@@ -142,5 +151,21 @@ public record Node(@NonNull String description,
         }
 
         return Request.with(this);
+    }
+
+    /**
+     * Converts this node into a String
+     *
+     * @return a non null String
+     */
+    @Override
+    public String toString() {
+        var description = this.description.isBlank() || this.description.isEmpty() ? ""
+                : "description=%s".formatted(this.description);
+        var attributes = this.attributes.map().isEmpty() ? ""
+                : ", attributes=%s".formatted(this.attributes.map());
+        var content = this.content == null ? ""
+                : ", content=%s".formatted(this.content instanceof byte[] bytes ? Arrays.toString(bytes) : this.content);
+        return "Node[%s%s%s]".formatted(description, attributes, content);
     }
 }

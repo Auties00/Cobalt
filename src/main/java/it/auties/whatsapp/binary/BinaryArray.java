@@ -12,6 +12,10 @@ import java.util.Base64;
 import java.util.Optional;
 import java.util.stream.IntStream;
 
+import static java.lang.System.arraycopy;
+import static java.util.Arrays.copyOf;
+import static java.util.Arrays.copyOfRange;
+
 /**
  * A utility class that wraps an array of bytes
  */
@@ -128,7 +132,7 @@ public record BinaryArray(byte @NonNull [] data) {
      * @return a new {@code BinaryArray} with the above characteristics
      */
     public BinaryArray slice(int start, int end) {
-        return of(Arrays.copyOfRange(data, start >= 0 ? start : size() + start, end >= 0 ? end : size() + end));
+        return of(copyOfRange(data, start >= 0 ? start : size() + start, end >= 0 ? end : size() + end));
     }
 
     /**
@@ -138,8 +142,8 @@ public record BinaryArray(byte @NonNull [] data) {
      * @return a new {@code BinaryArray} wrapping a bytes array obtained by concatenating this object's bytes array and {@param array}'s bytes array
      */
     public BinaryArray append(BinaryArray array) {
-        var result = Arrays.copyOf(data, size() + array.size());
-        System.arraycopy(array.data, 0, result, size(), array.size());
+        var result = copyOf(data, size() + array.size());
+        arraycopy(array.data, 0, result, size(), array.size());
         return of(result);
     }
 
@@ -150,8 +154,8 @@ public record BinaryArray(byte @NonNull [] data) {
      * @return a new {@code BinaryArray} wrapping a bytes array obtained by concatenating this object's bytes array and {@param array}
      */
     public BinaryArray append(byte... array) {
-        var result = Arrays.copyOf(data, size() + array.length);
-        System.arraycopy(array, 0, result, size(), array.length);
+        var result = copyOf(data, size() + array.length);
+        arraycopy(array, 0, result, size(), array.length);
         return of(result);
     }
 
@@ -194,17 +198,6 @@ public record BinaryArray(byte @NonNull [] data) {
      */
     public int size() {
         return data.length;
-    }
-
-    /**
-     * Constructs a new BinaryArray from this object's array of bytes and converts them to unsigned ints
-     *
-     * @return an array of ints with the above characteristics
-     */
-    public int[] toUnsigned() {
-        return IntStream.range(0, size())
-                .map(index -> Byte.toUnsignedInt(at(index)))
-                .toArray();
     }
 
     /**

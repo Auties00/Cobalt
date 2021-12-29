@@ -2,6 +2,8 @@ package it.auties.whatsapp.protobuf.signal.session;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import it.auties.whatsapp.util.SignalKeyDeserializer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,6 +22,7 @@ public class PendingPreKey {
 
     @JsonProperty("2")
     @JsonPropertyDescription("bytes")
+    @JsonDeserialize(using = SignalKeyDeserializer.class)
     private byte[] baseKey;
 
     @JsonProperty("3")

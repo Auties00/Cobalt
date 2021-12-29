@@ -3,12 +3,15 @@ package it.auties.whatsapp.protobuf.signal.session;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
+import it.auties.whatsapp.util.SignalKeyDeserializer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import lombok.experimental.Delegate;
 
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -17,8 +20,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import static java.util.Arrays.copyOfRange;
-
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
@@ -26,17 +27,21 @@ import static java.util.Arrays.copyOfRange;
 @Accessors(fluent = true)
 public class SessionStructure {
     private static final int MAX_MESSAGE_KEYS = 2000;
+    private static final String AES = "AES";
+    private static final String HMAC = "HmacSHA256";
 
     @JsonProperty("1")
     @JsonPropertyDescription("uint32")
-    private int sessionVersion;
+    private int version = 2;
 
     @JsonProperty("2")
     @JsonPropertyDescription("bytes")
+    @JsonDeserialize(using = SignalKeyDeserializer.class)
     private byte[] localIdentityPublic;
 
     @JsonProperty("3")
     @JsonPropertyDescription("bytes")
+    @JsonDeserialize(using = SignalKeyDeserializer.class)
     private byte[] remoteIdentityKey;
 
     @JsonProperty("4")
@@ -49,6 +54,7 @@ public class SessionStructure {
 
     @JsonProperty("6")
     @JsonPropertyDescription("Chain")
+    @Delegate
     private Chain senderChain;
 
     @JsonProperty("7")
@@ -80,41 +86,9 @@ public class SessionStructure {
     @JsonPropertyDescription("bytes")
     private byte[] aliceBaseKey;
 
-    public int sessionVersion() {
-        return sessionVersion == 0 ? 2 : sessionVersion;
-    }
-
-    public byte[] remoteIdentityKey() {
-        return remoteIdentityKey == null ? null
-                : copyOfRange(remoteIdentityKey, 1, remoteIdentityKey.length);
-    }
-
-    public byte[] localIdentityPublic() {
-        return localIdentityPublic == null ? null
-                : copyOfRange(localIdentityPublic, 1, localIdentityPublic.length);
-    }
-
-    public byte[] senderRatchetKeyPublic() {
-        return senderChain == null || senderChain.senderRatchetKey() == null ? null
-                : copyOfRange(senderChain.senderRatchetKey(), 1, senderChain.senderRatchetKey().length);
-    }
-
-    public byte[] senderRatchetKeyPrivate() {
-        return senderChain == null ? null
-                : senderChain.senderRatchetKeyPrivate();
-    }
-
-    public SignalKeyPair senderRatchetKeyPair() {
-        return new SignalKeyPair(senderRatchetKeyPublic(), senderRatchetKeyPrivate());
-    }
-
-    public boolean hasSenderChain() {
-        return senderChain != null;
-    }
-
     public Optional<Chain> receiverChain(byte[] senderEphemeral) {
         return receiverChains.stream()
-                .filter(receiverChain -> Arrays.equals(senderEphemeral, copyOfRange(receiverChain.senderRatchetKey(), 1, receiverChain.senderRatchetKey().length)))
+                .filter(receiverChain -> Arrays.equals(senderEphemeral, receiverChain.senderRatchetPublicKey()))
                 .findFirst();
     }
 
@@ -154,11 +128,6 @@ public class SessionStructure {
         this.pendingPreKey = new PendingPreKey(preKeyId, baseKey, signedPreKeyId);
     }
 
-    public UnacknowledgedPreKeyMessageItems unacknowledgedPreKeyMessageItems() {
-        var key = copyOfRange(pendingPreKey().baseKey(), 0, pendingPreKey().baseKey().length);
-        return new UnacknowledgedPreKeyMessageItems(pendingPreKey.preKeyId(), pendingPreKey.signedPreKeyId(), key);
-    }
-
     public boolean hasMessageKeys(byte[] senderEphemeral, int counter) {
         var chain = receiverChain(senderEphemeral);
         return chain.isPresent() && chain.get()
@@ -182,8 +151,8 @@ public class SessionStructure {
 
     private MessageKeys createMessageKeys(Chain chain, MessageKey messageKey) {
         chain.messageKeys().remove(messageKey);
-        return new MessageKeys(new SecretKeySpec(messageKey.cipherKey(), "AES"),
-                new SecretKeySpec(messageKey.macKey(), "HmacSHA256"),
+        return new MessageKeys(new SecretKeySpec(messageKey.cipherKey(), AES),
+                new SecretKeySpec(messageKey.macKey(), HMAC),
                 new IvParameterSpec(messageKey.iv()),
                 messageKey.index());
     }

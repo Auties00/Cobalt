@@ -2,9 +2,11 @@ package it.auties.whatsapp.protobuf.signal.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.whatsapp.util.SignalKeyDeserializer;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -25,10 +27,11 @@ public final class SignalMessage implements SignalProtocolMessage {
     private static final int MAC_LENGTH = 8;
     private static final String HMAC = "HmacSHA256";
 
-    private int messageVersion;
+    private int version;
 
     @JsonProperty("1")
     @JsonPropertyDescription("bytes")
+    @JsonDeserialize(using = SignalKeyDeserializer.class)
     private byte[] ratchetKey;
 
     @JsonProperty("2")
@@ -45,16 +48,12 @@ public final class SignalMessage implements SignalProtocolMessage {
 
     private byte[] serialized;
 
-    public SignalMessage(byte[] serialized) {
+    public static SignalMessage ofSerialized(byte[] serialized) {
         try {
-            var deserialized = ProtobufDecoder.forType(getClass())
-                    .decode(copyOfRange(serialized, 1, serialized.length - MAC_LENGTH));
-            this.serialized = serialized;
-            this.ratchetKey = copyOfRange(deserialized.ratchetKey(), 1, deserialized.ratchetKey().length);
-            this.messageVersion = Byte.toUnsignedInt(serialized[0]) >> 4;
-            this.counter = deserialized.counter();
-            this.previousCounter = deserialized.previousCounter();
-            this.ciphertext = deserialized.ciphertext();
+            return ProtobufDecoder.forType(SignalMessage.class)
+                    .decode(copyOfRange(serialized, 1, serialized.length - MAC_LENGTH))
+                    .version(Byte.toUnsignedInt(serialized[0]) >> 4)
+                    .serialized(serialized);
         } catch (IOException exception) {
             throw new RuntimeException("Cannot decode SignalMessage", exception);
         }
@@ -69,7 +68,7 @@ public final class SignalMessage implements SignalProtocolMessage {
         this.counter = counter;
         this.previousCounter = previousCounter;
         this.ciphertext = ciphertext;
-        this.messageVersion = messageVersion;
+        this.version = messageVersion;
     }
 
     public boolean verifyMac(byte[] senderIdentityKey, byte[] receiverIdentityKey, SecretKeySpec macKey) {

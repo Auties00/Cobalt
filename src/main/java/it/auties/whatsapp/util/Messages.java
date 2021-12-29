@@ -6,6 +6,7 @@ import it.auties.whatsapp.crypto.SignalSession;
 import it.auties.whatsapp.exchange.Node;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
+import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.message.model.MessageKey;
 import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
@@ -68,14 +69,15 @@ public class Messages {
                     }
 
                     case "pkmsg" -> {
-                        var preKey = new SignalPreKeyMessage(encodedMessage);
+                        var preKey = SignalPreKeyMessage.ofSerialized(encodedMessage);
                         var session = new SignalSession(senderAddress, keys);
                         yield session.decipher(preKey);
                     }
 
                     case "msg" -> {
+                        var message = SignalMessage.ofSerialized(encodedMessage);
                         var session = new SignalSession(senderAddress, keys);
-                        yield session.decipher(new SignalMessage(encodedMessage));
+                        yield session.decipher(message);
                     }
 
 
@@ -84,32 +86,37 @@ public class Messages {
 
                 var bufferWithNoPadding = Arrays.copyOfRange(buffer, 0, buffer.length - buffer[buffer.length - 1]);
                 var info = ProtobufDecoder.forType(MessageInfo.class).decode(bufferWithNoPadding);
-                if(info.message().content() instanceof SenderKeyDistributionMessage distributionMessage) {
-                    var group = new SignalGroup(keys);
-                    var groupJid = from.toString().split("@")[0];
-                    var groupAddress = new ProtocolAddress(groupJid, 0);
-                    var groupName = new SenderKeyName(distributionMessage.groupId(), groupAddress);
-                    var signalDistributionMessage = new SignalDistributionMessage(0, 0, null, distributionMessage.axolotlSenderKeyDistributionMessage());
-                    var senderKey = keys.findSenderKeyByName(groupName);
-                    if(senderKey.isEmpty()){
-                        var structure = new SenderKeyStructure(groupName, new SenderKeyRecord());
-                        keys.senderKeyStructures().add(structure);
-                    }
-
-                    group.process(groupName, signalDistributionMessage);
-                }
+                handleSenderKeyMessage(keys, from, info);
 
                 info.key(modelMessage.key());
                 info.senderJid(modelMessage.senderJid());
                 results.add(info);
             } catch (Throwable throwable) {
-                log.warning("An exception occurred while processing a message");
+                log.warning("An exception occurred while processing a message: %s".formatted(throwable.getMessage()));
                 log.warning("This message will not be decoded and the application should continue running");
-                log.warning("Please report this issue on GitHub with the following stacktrace:");
                 throwable.printStackTrace();
             }
         });
 
         return results;
+    }
+
+    private void handleSenderKeyMessage(WhatsappKeys keys, ContactJid from, MessageInfo info) {
+        if (!(info.message().content() instanceof SenderKeyDistributionMessage distributionMessage)) {
+            return;
+        }
+
+        var group = new SignalGroup(keys);
+        var groupJid = from.toString().split("@")[0];
+        var groupAddress = new ProtocolAddress(groupJid, 0);
+        var groupName = new SenderKeyName(distributionMessage.groupId(), groupAddress);
+        var signalDistributionMessage = new SignalDistributionMessage(0, 0, null, distributionMessage.axolotlSenderKeyDistributionMessage());
+        var senderKey = keys.findSenderKeyByName(groupName);
+        if(senderKey.isEmpty()){
+            var structure = new SenderKeyStructure(groupName, new SenderKeyRecord());
+            keys.senderKeyStructures().add(structure);
+        }
+
+        group.process(groupName, signalDistributionMessage);
     }
 }

@@ -22,9 +22,9 @@ public record SignalSession(@NonNull ProtocolAddress address, @NonNull WhatsappK
         var sessionState = sessionRecord.currentSession();
         var chainKey = sessionState.senderChain().chainKey();
         var messageKeys = chainKey.messageKeys();
-        var senderEphemeral = sessionState.senderRatchetKeyPublic();
+        var senderEphemeral = sessionState.senderRatchetPublicKey();
         var previousCounter = sessionState.previousCounter();
-        var sessionVersion = sessionState.sessionVersion();
+        var sessionVersion = sessionState.version();
 
         var ciphertextBody = cipher(messageKeys, paddedMessage, true);
         var ciphertextMessage = getCipherTextMessage(sessionState, chainKey, messageKeys, senderEphemeral, previousCounter, sessionVersion, ciphertextBody);
@@ -42,9 +42,9 @@ public record SignalSession(@NonNull ProtocolAddress address, @NonNull WhatsappK
             return ciphertextMessage;
         }
 
-        var items = sessionState.unacknowledgedPreKeyMessageItems();
+        var preKey = sessionState.pendingPreKey();
         var localRegistrationId = sessionState.localRegistrationId();
-        return new SignalPreKeyMessage(sessionVersion, localRegistrationId, items.preKeyId(), items.signedPreKeyId(), items.baseKey(), sessionState.localIdentityPublic(), ciphertextMessage);
+        return new SignalPreKeyMessage(sessionVersion, localRegistrationId, preKey.preKeyId(), preKey.signedPreKeyId(), preKey.baseKey(), sessionState.localIdentityPublic(), ciphertextMessage);
     }
 
     public int process(SessionRecord sessionRecord, SignalPreKeyMessage message) {
@@ -56,7 +56,7 @@ public record SignalSession(@NonNull ProtocolAddress address, @NonNull WhatsappK
     }
 
     private int processV3(SessionRecord sessionRecord, SignalPreKeyMessage message) {
-        if (sessionRecord.hasSessionState(message.signalMessage().messageVersion(), message.baseKey())) {
+        if (sessionRecord.hasSessionState(message.signalMessage().version(), message.baseKey())) {
             return -1;
         }
 
@@ -122,30 +122,33 @@ public record SignalSession(@NonNull ProtocolAddress address, @NonNull WhatsappK
         });
 
         process(sessionRecord, ciphertext);
-        var plaintext = decipherCurrentOrPrevious(sessionRecord, ciphertext.signalMessage());
+        var plaintext = decipherWithCurrentSession(sessionRecord, ciphertext.signalMessage());
         keys.sessions().put(address, sessionRecord);
         return plaintext;
     }
 
     public byte[] decipher(SignalMessage ciphertext) {
         var sessionRecord = keys.findSessionByAddress(address);
-        var plaintext = decipherCurrentOrPrevious(sessionRecord, ciphertext);
+        var plaintext = decipherWithCurrentSession(sessionRecord, ciphertext);
         Validate.isTrue(keys.hasTrust(address, sessionRecord.currentSession().remoteIdentityKey()), "Untrusted key");
         keys.identities().put(address, sessionRecord.currentSession().remoteIdentityKey());
         keys.sessions().put(address, sessionRecord);
         return plaintext;
     }
 
-    private byte[] decipherCurrentOrPrevious(SessionRecord sessionRecord, SignalMessage ciphertext) {
+    private byte[] decipherWithCurrentSession(SessionRecord sessionRecord, SignalMessage ciphertext) {
         try {
             var sessionState = new SessionRecord(sessionRecord.currentSession());
             var plaintext = decipher(sessionState, ciphertext);
             sessionRecord.currentSession(sessionState.currentSession());
             return plaintext;
-        } catch (Exception ignored) {
-
+        } catch (Exception exception) {
+            exception.printStackTrace();
+            return decipherWithPreviousSessions(sessionRecord, ciphertext);
         }
+    }
 
+    private byte[] decipherWithPreviousSessions(SessionRecord sessionRecord, SignalMessage ciphertext) {
         var previousStates = sessionRecord.previousSessions().iterator();
         while (previousStates.hasNext()) {
             try {
@@ -163,10 +166,8 @@ public record SignalSession(@NonNull ProtocolAddress address, @NonNull WhatsappK
     }
 
     private byte[] decipher(SessionRecord sessionState, SignalMessage ciphertextMessage) {
-        var theirEphemeral = ciphertextMessage.ratchetKey();
-        var counter = ciphertextMessage.counter();
-        var chainKey = getOrCreateChainKey(sessionState, theirEphemeral);
-        var messageKeys = getOrCreateMessageKeys(sessionState, theirEphemeral, chainKey, counter);
+        var chainKey = getOrCreateChainKey(sessionState, ciphertextMessage.ratchetKey());
+        var messageKeys = getOrCreateMessageKeys(sessionState, ciphertextMessage.ratchetKey(), chainKey, ciphertextMessage.counter());
         ciphertextMessage.verifyMac(sessionState.currentSession().remoteIdentityKey(), sessionState.currentSession().localIdentityPublic(), messageKeys.macKey());
         var plaintext = cipher(messageKeys, ciphertextMessage.ciphertext(), false);
         sessionState.currentSession().pendingPreKey(null);

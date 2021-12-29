@@ -2,8 +2,10 @@ package it.auties.whatsapp.protobuf.signal.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.whatsapp.util.SignalKeyDeserializer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,9 +13,9 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
+import static java.util.Arrays.copyOfRange;
 
 
 @AllArgsConstructor
@@ -32,10 +34,12 @@ public final class SignalPreKeyMessage implements SignalProtocolMessage{
 
     @JsonProperty("2")
     @JsonPropertyDescription("bytes")
+    @JsonDeserialize(using = SignalKeyDeserializer.class)
     private byte[] baseKey;
 
     @JsonProperty("3")
     @JsonPropertyDescription("bytes")
+    @JsonDeserialize(using = SignalKeyDeserializer.class)
     private byte[] identityKey;
 
     @JsonProperty("4")
@@ -52,18 +56,12 @@ public final class SignalPreKeyMessage implements SignalProtocolMessage{
 
     private byte[] serialized;
 
-    public SignalPreKeyMessage(byte[] serialized) {
+    public static SignalPreKeyMessage ofSerialized(byte[] serialized) {
         try {
-            this.version = Byte.toUnsignedInt(serialized[0]) >> 4;
-            var decoded = ProtobufDecoder.forType(getClass())
-                    .decode(Arrays.copyOfRange(serialized, 1, serialized.length));
-            this.serialized = serialized;
-            this.registrationId = decoded.registrationId();
-            this.preKeyId = decoded.preKeyId();
-            this.signedPreKeyId = decoded.signedPreKeyId() == 0 ? -1 : decoded.signedPreKeyId();
-            this.baseKey = Arrays.copyOfRange(decoded.baseKey(), 1, decoded.baseKey().length);
-            this.identityKey = Arrays.copyOfRange(decoded.identityKey(), 1, decoded.identityKey().length);
-            this.serializedSignalMessage = decoded.serializedSignalMessage();
+            return ProtobufDecoder.forType(SignalPreKeyMessage.class)
+                    .decode(copyOfRange(serialized, 1, serialized.length))
+                    .version(Byte.toUnsignedInt(serialized[0]) >> 4)
+                    .serialized(serialized);
         } catch (IOException exception) {
             throw new RuntimeException("Cannot decode PreKeySignalMessage", exception);
         }
@@ -83,6 +81,6 @@ public final class SignalPreKeyMessage implements SignalProtocolMessage{
     }
 
     public SignalMessage signalMessage(){
-        return new SignalMessage(serializedSignalMessage);
+        return SignalMessage.ofSerialized(serializedSignalMessage);
     }
 }

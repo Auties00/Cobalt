@@ -283,12 +283,18 @@ public class WhatsappSocket {
         private void digest(@NonNull Node node) {
             switch (node.description()){
                 case "iq" -> digestIq(node);
+                case "ib" -> digestIb(node);
                 case "success" -> digestSuccess();
                 case "stream:error" -> digestError(node);
                 case "failure" -> digestFailure(node);
                 case "xmlstreamend" -> disconnect();
                 case "message" -> System.out.println("Deciphered: " + Messages.decodeMessages(node, store, keys));
             }
+        }
+
+        private void digestIb(Node node) {
+            Validate.isTrue(!node.hasNode("downgrade_webclient"),
+                    "Multi device beta is not enabled. Please enable it from Whatsapp");
         }
 
         private void digestFailure(Node node) {
