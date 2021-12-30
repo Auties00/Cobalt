@@ -1,6 +1,7 @@
 package it.auties.whatsapp.protobuf.message.model;
 
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.protobuf.message.payment.PaymentInvoiceMessage;
 import it.auties.whatsapp.protobuf.message.standard.*;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
@@ -15,7 +16,7 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @SuperBuilder(buildMethodName = "create")
 @NoArgsConstructor
-public abstract sealed class MediaMessage extends ContextualMessage permits it.auties.whatsapp.protobuf.message.payment.PaymentInvoiceMessage, AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoMessage {
+public abstract sealed class MediaMessage extends ContextualMessage permits PaymentInvoiceMessage, AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoMessage {
     /**
      * The cached decoded media, by default null
      */

@@ -5,7 +5,10 @@ import lombok.NonNull;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+
+import static java.util.Objects.requireNonNull;
 
 public record Attributes(Map<String, Object> map) {
     public static Attributes empty(){
@@ -47,6 +50,10 @@ public record Attributes(Map<String, Object> map) {
 
     public String getString(@NonNull String key){
         return getString(key, "unknown");
+    }
+
+    public String getRequiredString(@NonNull String key){
+        return requireNonNull(getString(key, null));
     }
 
     public String getString(@NonNull String key, String defaultValue){

@@ -16,6 +16,7 @@ import it.auties.whatsapp.protobuf.signal.sender.SenderKeyRecord;
 import it.auties.whatsapp.protobuf.signal.sender.SenderKeyStructure;
 import it.auties.whatsapp.protobuf.signal.session.ProtocolAddress;
 import it.auties.whatsapp.protobuf.signal.session.SessionRecord;
+import it.auties.whatsapp.protobuf.signal.session.SessionStructure;
 import it.auties.whatsapp.protobuf.signal.session.SignedPreKeyRecordStructure;
 import it.auties.whatsapp.util.Validate;
 import lombok.Data;
@@ -23,6 +24,7 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.java.Log;
+import org.whispersystems.libsignal.SignalProtocolAddress;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -307,5 +309,17 @@ public class WhatsappKeys {
     public boolean hasTrust(@NonNull ProtocolAddress address, byte[] identityKey) {
         var key = identities.get(address);
         return (key == null || Arrays.equals(key, identityKey));
+    }
+
+    /**
+     * Adds the provided address and record to the known sessions
+     *
+     * @param address the non-null address
+     * @param record the non-null record
+     * @return this
+     */
+    public WhatsappKeys addSession(@NonNull ProtocolAddress address, @NonNull SessionRecord record){
+        sessions.put(address, record.fresh(false));
+        return this;
     }
 }

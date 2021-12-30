@@ -8,6 +8,7 @@ import it.auties.whatsapp.protobuf.signal.message.SignalProtocolMessage;
 import it.auties.whatsapp.protobuf.signal.session.*;
 import it.auties.whatsapp.util.Sessions;
 import it.auties.whatsapp.util.Validate;
+import jakarta.websocket.Session;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import org.whispersystems.libsignal.SessionCipher;
@@ -33,7 +34,7 @@ public record SignalSession(@NonNull ProtocolAddress address, @NonNull WhatsappK
         sessionState.senderChain().chainKey(chainKey.nextChainKey());
         Validate.isTrue(keys.hasTrust(address, sessionState.remoteIdentityKey()), "Untrusted key");
         keys.identities().put(address, sessionState.remoteIdentityKey());
-        keys.sessions().put(address, sessionRecord);
+        keys.addSession(address, sessionRecord);
         return ciphertextMessage;
     }
 
@@ -46,42 +47,6 @@ public record SignalSession(@NonNull ProtocolAddress address, @NonNull WhatsappK
         var preKey = sessionState.pendingPreKey();
         var localRegistrationId = sessionState.localRegistrationId();
         return new SignalPreKeyMessage(sessionVersion, localRegistrationId, preKey.preKeyId(), preKey.signedPreKeyId(), preKey.baseKey(), sessionState.localIdentityPublic(), ciphertextMessage);
-    }
-
-    public int process(SessionRecord sessionRecord, SignalPreKeyMessage message) {
-        var theirIdentityKey = message.identityKey();
-        Validate.isTrue(keys.hasTrust(address, theirIdentityKey), "Untrusted key");
-        var unsignedPreKeyId = processV3(sessionRecord, message);
-        keys.identities().put(address, theirIdentityKey);
-        return unsignedPreKeyId;
-    }
-
-    private int processV3(SessionRecord sessionRecord, SignalPreKeyMessage message) {
-        if (sessionRecord.hasSessionState(message.signalMessage().version(), message.baseKey())) {
-            return -1;
-        }
-
-        var ourSignedPreKey = keys.findSignedIdentityByAddress(message.signedPreKeyId());
-        var parameters = new BobSignalProtocolParameters()
-                .theirBaseKey(message.baseKey())
-                .theirIdentityKey(message.identityKey())
-                .ourIdentityKey(keys.identityKeyPair())
-                .ourSignedPreKey(ourSignedPreKey.keyPair())
-                .ourRatchetKey(ourSignedPreKey.keyPair());
-        if(message.preKeyId() != 0){
-            var preKey = keys.findSignedIdentityByAddress(message.preKeyId());
-            parameters.ourOneTimePreKey(preKey.keyPair());
-        }
-
-        if (!sessionRecord.fresh()) {
-            sessionRecord.archiveCurrentState();
-        }
-
-        Sessions.initializeSession(sessionRecord.currentSession(), parameters);
-        sessionRecord.currentSession().localRegistrationId(keys.id());
-        sessionRecord.currentSession().remoteRegistrationId(message.registrationId());
-        sessionRecord.currentSession().aliceBaseKey(message.baseKey());
-        return message.preKeyId() != 0 ? message.preKeyId() : -1;
     }
 
     public void process(PreKeyBundle preKey)  {
@@ -113,7 +78,7 @@ public record SignalSession(@NonNull ProtocolAddress address, @NonNull WhatsappK
         sessionRecord.currentSession().aliceBaseKey(ourBaseKey.publicKey());
 
         keys.identities().put(address, preKey.identityKey().publicKey());
-        keys.sessions().put(address, sessionRecord);
+        keys.addSession(address, sessionRecord);
     }
 
     public byte[] decipher(SignalPreKeyMessage ciphertext) {
@@ -124,8 +89,40 @@ public record SignalSession(@NonNull ProtocolAddress address, @NonNull WhatsappK
 
         process(sessionRecord, ciphertext);
         var plaintext = decipherWithCurrentSession(sessionRecord, ciphertext.signalMessage());
-        keys.sessions().put(address, sessionRecord);
+        keys.addSession(address, sessionRecord);
         return plaintext;
+    }
+
+    public void process(SessionRecord sessionRecord, SignalPreKeyMessage message) {
+        Validate.isTrue(keys.hasTrust(address, message.identityKey()), "Untrusted key");
+        /*
+              if (sessionRecord.hasSessionState(message.signalMessage().version(), message.baseKey())) {
+            return -1;
+        }
+         */
+
+        var ourSignedPreKey = keys.findSignedIdentityByAddress(message.signedPreKeyId());
+        var parameters = new BobSignalProtocolParameters()
+                .theirBaseKey(message.baseKey())
+                .theirIdentityKey(message.identityKey())
+                .ourIdentityKey(keys.identityKeyPair())
+                .ourSignedPreKey(ourSignedPreKey.keyPair())
+                .ourRatchetKey(ourSignedPreKey.keyPair());
+        if(message.preKeyId() != 0){
+            var preKey = keys.findSignedIdentityByAddress(message.preKeyId());
+            parameters.ourOneTimePreKey(preKey.keyPair());
+        }
+
+        if (!sessionRecord.fresh()) {
+            sessionRecord.archiveCurrentState();
+        }
+
+        Sessions.initializeSession(sessionRecord.currentSession(), parameters);
+        sessionRecord.currentSession().localRegistrationId(keys.id());
+        sessionRecord.currentSession().remoteRegistrationId(message.registrationId());
+        sessionRecord.currentSession().aliceBaseKey(message.baseKey());
+        keys.identities().put(address, message.identityKey());
+        //return message.preKeyId() > 0 ? message.preKeyId() : -1;
     }
 
     public byte[] decipher(SignalMessage ciphertext) {
@@ -133,7 +130,7 @@ public record SignalSession(@NonNull ProtocolAddress address, @NonNull WhatsappK
         var plaintext = decipherWithCurrentSession(sessionRecord, ciphertext);
         Validate.isTrue(keys.hasTrust(address, sessionRecord.currentSession().remoteIdentityKey()), "Untrusted key");
         keys.identities().put(address, sessionRecord.currentSession().remoteIdentityKey());
-        keys.sessions().put(address, sessionRecord);
+        keys.addSession(address, sessionRecord);
         return plaintext;
     }
 

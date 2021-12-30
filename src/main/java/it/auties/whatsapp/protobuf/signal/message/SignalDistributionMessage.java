@@ -45,4 +45,17 @@ public final class SignalDistributionMessage implements SignalProtocolMessage {
   @JsonPropertyDescription("bytes")
   @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] signingKey;
+
+  /**
+   * Constructs a SignalDistributionMessage from a signing key
+   * @param signingKey the non-null signing key
+   */
+  public SignalDistributionMessage(byte[] signingKey){
+    this(
+      0,
+      0,
+      null,
+      signingKey
+    );
+  }
 }

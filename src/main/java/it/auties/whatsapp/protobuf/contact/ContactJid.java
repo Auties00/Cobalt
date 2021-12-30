@@ -3,12 +3,14 @@ package it.auties.whatsapp.protobuf.contact;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.protobuf.signal.session.ProtocolAddress;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.extern.java.Log;
+import org.whispersystems.libsignal.SignalProtocolAddress;
 
 import java.util.Arrays;
 import java.util.NoSuchElementException;
@@ -178,6 +180,11 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
         return Objects.hash(user, server, device, agent);
     }
 
+    /**
+     * Converts this jid to a String
+     *
+     * @return a non-null String
+     */
     @Override
     public String toString() {
         if (isCompanion()) {
@@ -193,6 +200,17 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
 
         return user == null ? Server.WHATSAPP.address()
                 : "%s@%s".formatted(user, Server.WHATSAPP);
+    }
+
+    /**
+     * Converts this jid to a signal address
+     *
+     * @return a non-null {@link SignalProtocolAddress}
+     */
+    public ProtocolAddress toSignalAddress(){
+        var name = agent == 0 ? user()
+                : "%s_%s".formatted(user(), agent());
+        return new ProtocolAddress(user, device);
     }
 
     /**

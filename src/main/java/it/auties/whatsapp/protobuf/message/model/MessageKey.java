@@ -24,6 +24,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder(builderMethodName = "newMessageKey", buildMethodName = "create")
 @Accessors(fluent = true)
+@ToString(exclude = {"storeUuid", "cachedStore"})
 public class MessageKey {
   /**
    * The jid of the contact or group that sent the message.

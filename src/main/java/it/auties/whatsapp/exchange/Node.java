@@ -67,6 +67,15 @@ public record Node(@NonNull String description,
         return new Node(description, Attributes.of(attributes), Nodes.orNull(Arrays.asList(children)));
     }
 
+    public byte[] bytes(){
+        if(content instanceof byte[] bytes){
+            return bytes;
+        }
+
+        var contentType = content == null ? null : content.getClass().getName();
+        throw new UnsupportedOperationException("Unsupported content type: %s".formatted(contentType));
+    }
+
     /**
      * Returns a list of child WhatsappNodes
      *

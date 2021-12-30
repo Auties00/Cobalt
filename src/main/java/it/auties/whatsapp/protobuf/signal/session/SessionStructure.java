@@ -33,7 +33,7 @@ public class SessionStructure {
 
     @JsonProperty("1")
     @JsonPropertyDescription("uint32")
-    private int version = 2;
+    private int version;
 
     @JsonProperty("2")
     @JsonPropertyDescription("bytes")

@@ -20,29 +20,33 @@ import it.auties.whatsapp.protobuf.signal.session.ProtocolAddress;
 import lombok.experimental.UtilityClass;
 import lombok.extern.java.Log;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.io.IOException;
+import java.util.*;
+
+import static java.util.Arrays.copyOfRange;
 
 @UtilityClass
 @Log
 public class Messages {
-    public List<MessageInfo> decodeMessages(Node node, WhatsappStore store, WhatsappKeys keys){
+    public List<MessageInfo> decodeMessages(Node node, WhatsappStore store, WhatsappKeys keys) {
+        var timestamp = node.attributes().getLong("t");
+        var id = node.attributes().getRequiredString("id");
         var from = node.attributes().getJid("from")
                 .orElseThrow(() -> new NoSuchElementException("Missing from"));
-        var recipient = node.attributes().getJid("recipient");
-        var participant = node.attributes().getJid("participant");
+        var recipient = node.attributes().getJid("recipient")
+                .orElse(from);
+        var participant = node.attributes().getJid("participant")
+                .orElse(null);
         var messageBuilder = MessageInfo.newMessageInfo();
         var keyBuilder = MessageKey.newMessageKey();
         switch (from.type()){
             case USER -> {
-                keyBuilder.chatJid(recipient.orElse(from));
+                keyBuilder.chatJid(recipient);
                 messageBuilder.senderJid(from);
             }
 
             case GROUP, BROADCAST -> {
-                var sender = participant.orElseThrow(() -> new NoSuchElementException("Missing participant in group message"));
+                var sender = Objects.requireNonNull(participant, "Missing participant in group message");
                 keyBuilder.chatJid(from);
                 messageBuilder.senderJid(sender);
             }
@@ -50,55 +54,63 @@ public class Messages {
             default -> throw new IllegalArgumentException("Unsupported message type: %s".formatted(from.type().name()));
         }
 
-        keyBuilder.storeUuid(store.uuid());
-        messageBuilder.key(keyBuilder.create());
-        var modelMessage = messageBuilder.create();
-        var encodedMessages = node.findNodes("enc");
-        var results = new ArrayList<MessageInfo>();
-        encodedMessages.forEach(messageNode -> {
-            try {
-                var encodedMessage = (byte[]) messageNode.content();
-                var sender = modelMessage.senderJid().toString().split("@")[0];
-                var senderAddress = new ProtocolAddress(sender, 0);
-                var messageType = messageNode.attributes().getString("type");
-                var buffer = switch (messageType) {
-                    case "skmsg" -> {
-                        var senderName = new SenderKeyName(from.toString(), senderAddress);
-                        var signalGroup = new SignalGroup(senderName, keys);
-                        yield signalGroup.decipher(encodedMessage);
-                    }
+        var key = keyBuilder.id(id)
+                .storeUuid(store.uuid())
+                .create();
+        var modelMessage = messageBuilder.key(key)
+                .timestamp(timestamp)
+                .create();
+        return node.findNodes("enc")
+                .stream()
+                .map(messageNode -> decodeMessage(modelMessage, messageNode, from, keys))
+                .toList();
+    }
 
-                    case "pkmsg" -> {
-                        var preKey = SignalPreKeyMessage.ofSerialized(encodedMessage);
-                        var session = new SignalSession(senderAddress, keys);
-                        yield session.decipher(preKey);
-                    }
+    private MessageInfo decodeMessage(MessageInfo model, Node node, ContactJid from, WhatsappKeys keys) {
+        try {
+            var encodedMessage = node.bytes();
+            var messageType = node.attributes().getString("type");
+            var buffer = decodeCipheredMessage(encodedMessage, messageType, from, keys);
+            var message = decodeMessageInfo(buffer);
+            handleSenderKeyMessage(keys, from, message);
+            return message.key(model.key())
+                    .senderJid(model.senderJid());
+        } catch (Throwable throwable) {
+            log.warning("An exception occurred while processing a message: %s".formatted(throwable.getMessage()));
+            log.warning("This message will not be decoded and the application should continue running");
+            throwable.printStackTrace();
+            return null;
+        }
+    }
 
-                    case "msg" -> {
-                        var message = SignalMessage.ofSerialized(encodedMessage);
-                        var session = new SignalSession(senderAddress, keys);
-                        yield session.decipher(message);
-                    }
-
-
-                    default -> throw new IllegalArgumentException("Unsupported message type: %s".formatted(messageType));
-                };
-
-                var bufferWithNoPadding = Arrays.copyOfRange(buffer, 0, buffer.length - buffer[buffer.length - 1]);
-                var info = ProtobufDecoder.forType(MessageInfo.class).decode(bufferWithNoPadding);
-                handleSenderKeyMessage(keys, from, info);
-
-                info.key(modelMessage.key());
-                info.senderJid(modelMessage.senderJid());
-                results.add(info);
-            } catch (Throwable throwable) {
-                log.warning("An exception occurred while processing a message: %s".formatted(throwable.getMessage()));
-                log.warning("This message will not be decoded and the application should continue running");
-                throwable.printStackTrace();
+    private byte[] decodeCipheredMessage(byte[] message, String type, ContactJid from, WhatsappKeys keys) {
+        return switch (type) {
+            case "skmsg" -> {
+                var senderName = new SenderKeyName(from.toString(), from.toSignalAddress());
+                var signalGroup = new SignalGroup(senderName, keys);
+                yield signalGroup.decipher(message);
             }
-        });
 
-        return results;
+            case "pkmsg" -> {
+                var session = new SignalSession(from.toSignalAddress(), keys);
+                var preKey = SignalPreKeyMessage.ofSerialized(message);
+                yield session.decipher(preKey);
+            }
+
+            case "msg" -> {
+                var session = new SignalSession(from.toSignalAddress(), keys);
+                var signalMessage = SignalMessage.ofSerialized(message);
+                yield session.decipher(signalMessage);
+            }
+
+            default -> throw new IllegalArgumentException("Unsupported message type: %s".formatted(type));
+        };
+    }
+
+    private MessageInfo decodeMessageInfo(byte[] buffer) throws IOException {
+        var bufferWithNoPadding = copyOfRange(buffer, 0, buffer.length - buffer[buffer.length - 1]);
+        return ProtobufDecoder.forType(MessageInfo.class)
+                .decode(bufferWithNoPadding);
     }
 
     private void handleSenderKeyMessage(WhatsappKeys keys, ContactJid from, MessageInfo info) {
@@ -107,10 +119,8 @@ public class Messages {
         }
 
         var group = new SignalGroup(keys);
-        var groupJid = from.toString().split("@")[0];
-        var groupAddress = new ProtocolAddress(groupJid, 0);
-        var groupName = new SenderKeyName(distributionMessage.groupId(), groupAddress);
-        var signalDistributionMessage = new SignalDistributionMessage(0, 0, null, distributionMessage.data());
+        var groupName = new SenderKeyName(distributionMessage.groupId(), from.toSignalAddress());
+        var signalDistributionMessage = new SignalDistributionMessage(distributionMessage.data());
         var senderKey = keys.findSenderKeyByName(groupName);
         if(senderKey.isEmpty()){
             var structure = new SenderKeyStructure(groupName, new SenderKeyRecord());

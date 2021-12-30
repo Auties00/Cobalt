@@ -54,12 +54,9 @@ public class SessionRecord {
   }
 
   public boolean hasSessionState(int version, byte[] aliceBaseKey) {
-    if (currentSession.version() == version && Arrays.equals(aliceBaseKey, currentSession.aliceBaseKey())) {
-      return true;
-    }
-
-    return previousSessions.stream()
-            .anyMatch(state -> state.version() == version && Arrays.equals(aliceBaseKey, state.aliceBaseKey()));
+    return aliceBaseKey != null
+            && currentSession.version() == version
+            && (Arrays.equals(aliceBaseKey, currentSession.aliceBaseKey()) || previousSessions.stream().anyMatch(state -> state.version() == version && Arrays.equals(aliceBaseKey, state.aliceBaseKey())));
   }
 
   public void removePreviousSessionStates() {

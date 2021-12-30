@@ -13,13 +13,11 @@ import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
 import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.protobuf.message.standard.*;
 import it.auties.whatsapp.protobuf.signal.message.SignalDistributionMessage;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -337,7 +335,7 @@ public class MessageContainer { // Not how I would design it, Whatsapp's choice 
   /**
    * Returns the first populated message inside this container
    *
-   * @return a non-null Message
+   * @return a nullable Message
    */
   public Message content(){
     if(this.senderKeyDistribution != null) return senderKeyDistribution;
@@ -370,7 +368,7 @@ public class MessageContainer { // Not how I would design it, Whatsapp's choice 
     if(buttons != null) return buttons;
     if(buttonsResponse != null) return buttonsResponse;
     if(paymentInvite != null) return paymentInvite;
-    throw new NoSuchElementException("MessageContainer has no content!");
+    return null;
   }
 
   /**
@@ -485,5 +483,15 @@ public class MessageContainer { // Not how I would design it, Whatsapp's choice 
      * Standard message
      */
     STANDARD
+  }
+
+  /**
+   * Converts this container into a String
+   *
+   * @return a non-null String
+   */
+  @Override
+  public String toString() {
+    return Objects.toString(content());
   }
 }
