@@ -1,5 +1,6 @@
 package it.auties.whatsapp.protobuf.signal.keypair;
 
+import it.auties.whatsapp.crypto.SignalHelper;
 import lombok.NonNull;
 import org.whispersystems.libsignal.ecc.DjbECPrivateKey;
 import org.whispersystems.libsignal.ecc.DjbECPublicKey;
@@ -18,6 +19,10 @@ public record SignalKeyPair(byte @NonNull [] publicKey, byte @NonNull [] private
         var publicKey = (DjbECPublicKey) pair.getPublicKey().getPublicKey();
         var privateKey = (DjbECPrivateKey) pair.getPrivateKey();
         return new SignalKeyPair(publicKey.getPublicKey(), privateKey.getPrivateKey());
+    }
+
+    public byte[] encodedPublicKey(){
+        return SignalHelper.appendKeyHeader(publicKey);
     }
 
     @Override

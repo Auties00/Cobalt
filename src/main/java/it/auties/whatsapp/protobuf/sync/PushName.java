@@ -14,11 +14,11 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class PushName {
-  @JsonProperty("2")
-  @JsonPropertyDescription("string")
-  private String pushname;
-
   @JsonProperty("1")
   @JsonPropertyDescription("string")
   private String id;
+
+  @JsonProperty("2")
+  @JsonPropertyDescription("string")
+  private String pushname;
 }

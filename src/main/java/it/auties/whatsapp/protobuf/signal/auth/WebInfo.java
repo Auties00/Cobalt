@@ -20,7 +20,7 @@ public class WebInfo {
 
   @JsonProperty("3")
   @JsonPropertyDescription("WebdPayload")
-  private WebdPayload webdPayload;
+  private WebPayload webdPayload;
 
   @JsonProperty("2")
   @JsonPropertyDescription("string")

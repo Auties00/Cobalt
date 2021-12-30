@@ -2,6 +2,8 @@ package it.auties.whatsapp.protobuf.signal.auth;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import it.auties.whatsapp.util.BytesDeserializer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,20 +15,14 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class ADVSignedDeviceIdentity {
-  @JsonProperty("4")
+public class SignedKeyIndexList {
+  @JsonProperty("1")
   @JsonPropertyDescription("bytes")
-  private byte[] deviceSignature;
-
-  @JsonProperty("3")
-  @JsonPropertyDescription("bytes")
-  private byte[] accountSignature;
+  @JsonDeserialize(using = BytesDeserializer.class)
+  private byte[] details;
 
   @JsonProperty("2")
   @JsonPropertyDescription("bytes")
-  private byte[] accountSignatureKey;
-
-  @JsonProperty("1")
-  @JsonPropertyDescription("bytes")
-  private byte[] details;
+  @JsonDeserialize(using = BytesDeserializer.class)
+  private byte[] accountSignature;
 }

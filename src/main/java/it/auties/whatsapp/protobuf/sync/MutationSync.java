@@ -13,25 +13,23 @@ import java.util.Arrays;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class SyncdMutation {
-  @JsonProperty("2")
-  @JsonPropertyDescription("SyncdRecord")
-  private SyncdRecord record;
-
+public class MutationSync {
   @JsonProperty("1")
   @JsonPropertyDescription("SyncdMutationSyncdOperation")
   private SyncdMutationSyncdOperation operation;
 
+  @JsonProperty("2")
+  @JsonPropertyDescription("SyncdRecord")
+  private RecordSync record;
+
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum SyncdMutationSyncdOperation {
     SET(0),
     REMOVE(1);
 
-    private final @Getter int index;
-
-    SyncdMutationSyncdOperation(int index) {
-      this.index = index;
-    }
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static SyncdMutationSyncdOperation forIndex(int index) {

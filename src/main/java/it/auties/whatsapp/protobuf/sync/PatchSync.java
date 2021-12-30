@@ -18,32 +18,39 @@ import java.util.List;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class DeviceListMetadata {
+public class PatchSync {
   @JsonProperty("1")
-  @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
-  private byte[] senderKeyHash;
+  @JsonPropertyDescription("SyncdVersion")
+  private VersionSync version;
 
   @JsonProperty("2")
-  @JsonPropertyDescription("uint64")
-  private long senderTimestamp;
+  @JsonPropertyDescription("SyncdMutation")
+  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  private List<MutationSync> mutations;
 
   @JsonProperty("3")
-  @JsonPropertyDescription("uint32")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  private List<Integer> senderKeyIndexes;
+  @JsonPropertyDescription("ExternalBlobReference")
+  private ExternalBlobReference externalMutations;
 
-  @JsonProperty("8")
+  @JsonProperty("4")
   @JsonPropertyDescription("bytes")
   @JsonDeserialize(using = BytesDeserializer.class)
-  private byte[] recipientKeyHash;
+  private byte[] snapshotMac;
 
-  @JsonProperty("9")
-  @JsonPropertyDescription("uint64")
-  private long recipientTimestamp;
+  @JsonProperty("5")
+  @JsonPropertyDescription("bytes")
+  @JsonDeserialize(using = BytesDeserializer.class)
+  private byte[] patchMac;
 
-  @JsonProperty("10")
+  @JsonProperty("6")
+  @JsonPropertyDescription("KeyId")
+  private KeyId keyId;
+
+  @JsonProperty("7")
+  @JsonPropertyDescription("ExitCode")
+  private ExitCode exitCode;
+
+  @JsonProperty("8")
   @JsonPropertyDescription("uint32")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  private List<Integer> recipientKeyIndexes;
+  private int deviceIndex;
 }

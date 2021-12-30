@@ -1,6 +1,7 @@
 package it.auties.whatsapp.protobuf.contact;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import it.auties.whatsapp.api.Whatsapp;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -290,6 +291,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
         }
 
         @Override
+        @JsonValue
         public String toString() {
             return address();
         }

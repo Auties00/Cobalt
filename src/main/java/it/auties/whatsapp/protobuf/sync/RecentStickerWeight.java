@@ -14,11 +14,11 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class RecentStickerWeight {
+  @JsonProperty("1")
+  @JsonPropertyDescription("string")
+  private String hash;
+
   @JsonProperty("2")
   @JsonPropertyDescription("float")
   private float weight;
-
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
-  private String filehash;
 }

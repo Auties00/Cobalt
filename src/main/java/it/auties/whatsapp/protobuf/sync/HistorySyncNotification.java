@@ -3,6 +3,8 @@ package it.auties.whatsapp.protobuf.sync;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import it.auties.whatsapp.util.BytesDeserializer;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -32,10 +34,12 @@ public class HistorySyncNotification {
 
   @JsonProperty("4")
   @JsonPropertyDescription("bytes")
+  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] fileEncSha256;
 
   @JsonProperty("3")
   @JsonPropertyDescription("bytes")
+  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] mediaKey;
 
   @JsonProperty("2")
@@ -44,8 +48,10 @@ public class HistorySyncNotification {
 
   @JsonProperty("1")
   @JsonPropertyDescription("bytes")
+  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] fileSha256;
 
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum HistorySyncNotificationHistorySyncType {
     INITIAL_BOOTSTRAP(0),
@@ -54,11 +60,8 @@ public class HistorySyncNotification {
     RECENT(3),
     PUSH_NAME(4);
 
-    private final @Getter int index;
-
-    HistorySyncNotificationHistorySyncType(int index) {
-      this.index = index;
-    }
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static HistorySyncNotificationHistorySyncType forIndex(int index) {

@@ -2,6 +2,8 @@ package it.auties.whatsapp.protobuf.signal.session;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import it.auties.whatsapp.util.BytesDeserializer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,13 +22,16 @@ public class MessageKey {
 
     @JsonProperty("2")
     @JsonPropertyDescription("bytes")
+    @JsonDeserialize(using = BytesDeserializer.class)
     private byte[] cipherKey;
 
     @JsonProperty("3")
     @JsonPropertyDescription("bytes")
+    @JsonDeserialize(using = BytesDeserializer.class)
     private byte[] macKey;
 
     @JsonProperty("4")
     @JsonPropertyDescription("bytes")
+    @JsonDeserialize(using = BytesDeserializer.class)
     private byte[] iv;
 }

@@ -2,6 +2,8 @@ package it.auties.whatsapp.protobuf.sync;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import it.auties.whatsapp.util.BytesDeserializer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,20 +15,22 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class SyncActionData {
-  @JsonProperty("4")
-  @JsonPropertyDescription("int32")
-  private int version;
-
-  @JsonProperty("3")
+public class ActionDataSync {
+  @JsonProperty("1")
   @JsonPropertyDescription("bytes")
-  private byte[] padding;
+  @JsonDeserialize(using = BytesDeserializer.class)
+  private byte[] index;
 
   @JsonProperty("2")
   @JsonPropertyDescription("SyncActionValue")
-  private SyncActionValue value;
+  private ActionValueSync value;
 
-  @JsonProperty("1")
+  @JsonProperty("3")
   @JsonPropertyDescription("bytes")
-  private byte[] index;
+  @JsonDeserialize(using = BytesDeserializer.class)
+  private byte[] padding;
+
+  @JsonProperty("4")
+  @JsonPropertyDescription("int32")
+  private int version;
 }

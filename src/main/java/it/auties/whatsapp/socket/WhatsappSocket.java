@@ -406,15 +406,14 @@ public class WhatsappSocket {
 
         @SneakyThrows
         private void confirmQrCode(Node node, Node container) {
-            var userIdentity = fetchJid(container);
-            keys().companion(userIdentity);
+            saveCompanion(container);
 
             var deviceIdentity = (byte[]) container.findNode("device-identity").content();
-            var advIdentity = ProtobufDecoder.forType(ADVSignedDeviceIdentityHMAC.class).decode(deviceIdentity);
+            var advIdentity = ProtobufDecoder.forType(SignedDeviceIdentityHMAC.class).decode(deviceIdentity);
             var advSign = Curve.verifyHmac(of(advIdentity.details()), of(keys().companionKey()));
             Validate.isTrue(Arrays.equals(advIdentity.hmac(), advSign.data()), "Cannot login: Hmac validation failed!", SecurityException.class);
 
-            var account = ProtobufDecoder.forType(ADVSignedDeviceIdentity.class).decode(advIdentity.details());
+            var account = ProtobufDecoder.forType(SignedDeviceIdentity.class).decode(advIdentity.details());
             var message = of(new byte[]{6, 0})
                     .append(account.details())
                     .append(keys().identityKeyPair().publicKey())
@@ -429,7 +428,7 @@ public class WhatsappSocket {
                     .data();
             var deviceSignature = Curve.calculateSignature(keys().identityKeyPair().privateKey(), deviceSignatureMessage);
 
-            var keyIndex = ProtobufDecoder.forType(ADVDeviceIdentity.class).decode(account.details()).keyIndex();
+            var keyIndex = ProtobufDecoder.forType(DeviceIdentity.class).decode(account.details()).keyIndex();
             var identity = encode(account.deviceSignature(deviceSignature).accountSignature(null));
             var identityNode = with("device-identity", of("key-index", keyIndex), identity);
             var content = withChildren("pair-device-sign", identityNode);
@@ -441,10 +440,12 @@ public class WhatsappSocket {
             send(withChildren("iq", of("id", WhatsappUtils.readNullableId(node), "to", ContactJid.SOCKET, "type", "result"), content));
         }
 
-        private ContactJid fetchJid(Node container) {
+        private void saveCompanion(Node container) {
             var node = Objects.requireNonNull(container.findNode("device"));
-            return node.attributes().getJid("jid")
+            var companion = node.attributes().getJid("jid")
                     .orElseThrow(() -> new NoSuchElementException("Missing identity jid for session"));
+            keys.companion(companion)
+                    .save();
         }
     }
 
@@ -455,7 +456,7 @@ public class WhatsappSocket {
             send(with("ack", of("id", message.key().id(), "to", message.senderJid()), null));
         }
 
-        private void retry(Node node, ADVSignedDeviceIdentity account) {
+        private void retry(Node node, SignedDeviceIdentity account) {
             var messageId = WhatsappUtils.readNullableId(node);
             var retryCount = retries.getOrDefault(messageId, 1);
             if (retryCount >= 5) {

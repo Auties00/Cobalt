@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
+import it.auties.whatsapp.util.BytesDeserializer;
 import it.auties.whatsapp.util.SignalKeyDeserializer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,6 +30,7 @@ public class Chain {
 
     @JsonProperty("2")
     @JsonPropertyDescription("bytes")
+    @JsonDeserialize(using = BytesDeserializer.class)
     private byte[] senderRatchetPrivateKey;
 
     @JsonProperty("3")

@@ -16,9 +16,17 @@ import java.util.List;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class SyncdMutations {
+public class ActionMessageRangeSync {
   @JsonProperty("1")
-  @JsonPropertyDescription("SyncdMutation")
+  @JsonPropertyDescription("int64")
+  private long lastMessageTimestamp;
+
+  @JsonProperty("2")
+  @JsonPropertyDescription("int64")
+  private long lastSystemMessageTimestamp;
+
+  @JsonProperty("3")
+  @JsonPropertyDescription("SyncActionMessage")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  private List<SyncdMutation> mutations;
+  private List<SyncActionMessage> messages;
 }

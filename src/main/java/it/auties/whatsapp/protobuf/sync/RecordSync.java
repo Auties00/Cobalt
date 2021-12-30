@@ -13,8 +13,16 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class SyncdValue {
+public class RecordSync {
   @JsonProperty("1")
-  @JsonPropertyDescription("bytes")
-  private byte[] blob;
+  @JsonPropertyDescription("SyncdIndex")
+  private IndexSync index;
+
+  @JsonProperty("2")
+  @JsonPropertyDescription("SyncdValue")
+  private ValueSync value;
+
+  @JsonProperty("3")
+  @JsonPropertyDescription("KeyId")
+  private KeyId keyId;
 }

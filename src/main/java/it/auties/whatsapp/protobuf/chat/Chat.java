@@ -4,12 +4,14 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.contact.ContactStatus;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
+import it.auties.whatsapp.util.BytesDeserializer;
 import it.auties.whatsapp.util.SortedMessageList;
 import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.*;
@@ -188,6 +190,7 @@ public class Chat {
      */
     @JsonProperty("21")
     @JsonPropertyDescription("bytes")
+    @JsonDeserialize(using = BytesDeserializer.class)
     @NonNull
     private byte[] token;
 
@@ -203,6 +206,7 @@ public class Chat {
      */
     @JsonProperty("23")
     @JsonPropertyDescription("bytes")
+    @JsonDeserialize(using = BytesDeserializer.class)
     @NonNull
     private byte[] identityKey;
 

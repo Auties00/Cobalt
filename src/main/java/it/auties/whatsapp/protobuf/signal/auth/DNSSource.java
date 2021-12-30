@@ -14,14 +14,15 @@ import java.util.Arrays;
 @Builder
 @Accessors(fluent = true)
 public class DNSSource {
-  @JsonProperty("16")
-  @JsonPropertyDescription("bool")
-  private boolean appCached;
-
   @JsonProperty("15")
   @JsonPropertyDescription("DNSSourceDNSResolutionMethod")
   private DNSSourceDNSResolutionMethod dnsMethod;
 
+  @JsonProperty("16")
+  @JsonPropertyDescription("bool")
+  private boolean appCached;
+
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum DNSSourceDNSResolutionMethod {
     SYSTEM(0),
@@ -30,11 +31,8 @@ public class DNSSource {
     OVERRIDE(3),
     FALLBACK(4);
 
-    private final @Getter int index;
-
-    DNSSourceDNSResolutionMethod(int index) {
-      this.index = index;
-    }
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static DNSSourceDNSResolutionMethod forIndex(int index) {

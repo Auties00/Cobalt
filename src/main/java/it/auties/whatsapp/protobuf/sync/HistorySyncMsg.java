@@ -15,11 +15,11 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class HistorySyncMsg {
-  @JsonProperty("2")
-  @JsonPropertyDescription("uint64")
-  private long msgOrderId;
-
   @JsonProperty("1")
   @JsonPropertyDescription("WebMessageInfo")
   private MessageInfo message;
+
+  @JsonProperty("2")
+  @JsonPropertyDescription("uint64")
+  private long msgOrderId;
 }

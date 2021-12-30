@@ -1,7 +1,9 @@
 package it.auties.whatsapp.manager;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.crypto.SignalHelper;
@@ -20,6 +22,7 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
+import lombok.extern.java.Log;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,6 +37,7 @@ import static java.util.Objects.requireNonNullElseGet;
  * This class is a data class used to hold the clientId, serverToken, clientToken, publicKey, privateKey, encryptionKey and macKey.
  * It can be serialized using Jackson and deserialized using the fromPreferences named constructor.
  */
+@Log
 @Data
 @Accessors(fluent = true, chain = true)
 public class WhatsappKeys {
@@ -45,7 +49,8 @@ public class WhatsappKeys {
     /**
      * An instance of Jackson
      */
-    private static final ObjectMapper JACKSON = new ObjectMapper();
+    private static final ObjectMapper JACKSON = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     /**
      * The client id
@@ -131,6 +136,7 @@ public class WhatsappKeys {
         try {
             return JACKSON.readValue(json, WhatsappKeys.class);
         }catch (Throwable throwable){
+            log.warning("Cannot read preferences: %s".formatted(throwable.getMessage()));
             Preferences.userRoot().clear();
             return null;
         }
@@ -179,10 +185,6 @@ public class WhatsappKeys {
         }
     }
 
-    public void initializeKeys(@NonNull BinaryArray writeKey, @NonNull BinaryArray readKey){
-        readKey(readKey).writeKey(writeKey).save();
-    }
-
     /**
      * Checks if the serverToken and clientToken are not null
      *
@@ -202,17 +204,22 @@ public class WhatsappKeys {
     }
 
     /**
-     * Queries the first {@link SenderKeyRecord} that matches {@code name}
+     * Queries the first {@link SenderKeyRecord} that matches {@code name}.
+     * Otherwise, creates a new one.
      *
      * @param name the non-null name to search
      * @return a non-null SenderKeyRecord
-     * @throws NoSuchElementException if no element can be found
      */
-    public Optional<SenderKeyRecord> findSenderKeyByName(@NonNull SenderKeyName name){
+    public SenderKeyRecord findSenderKeyByName(@NonNull SenderKeyName name){
         return senderKeyStructures.stream()
                 .filter(structure -> Objects.equals(structure.name(), name))
                 .findFirst()
-                .map(SenderKeyStructure::record);
+                .map(SenderKeyStructure::record)
+                .orElseGet(() -> {
+                    var structure = new SenderKeyStructure(name, new SenderKeyRecord());
+                    senderKeyStructures.add(structure);
+                    return structure.record();
+                });
     }
 
     /**

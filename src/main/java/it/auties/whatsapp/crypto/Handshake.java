@@ -51,7 +51,9 @@ public class Handshake {
 
     public void finish() {
         var expanded = extractAndExpandWithHash(new byte[0]);
-        keys.initializeKeys(expanded.cut(32), expanded.slice(32));
+        keys.writeKey(expanded.cut(32))
+                .readKey(expanded.slice(32))
+                .save();
     }
 
     public void mixIntoKey(byte @NonNull [] bytes) {

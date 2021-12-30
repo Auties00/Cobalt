@@ -1,4 +1,4 @@
-package it.auties.whatsapp.protobuf.sync;
+package it.auties.whatsapp.protobuf.signal.auth;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -13,8 +13,16 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class SyncdIndex {
+public class DeviceIdentity {
   @JsonProperty("1")
-  @JsonPropertyDescription("bytes")
-  private byte[] blob;
+  @JsonPropertyDescription("uint32")
+  private int rawId;
+
+  @JsonProperty("2")
+  @JsonPropertyDescription("uint64")
+  private long timestamp;
+
+  @JsonProperty("3")
+  @JsonPropertyDescription("uint32")
+  private int keyIndex;
 }

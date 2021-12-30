@@ -14,22 +14,23 @@ import java.util.Arrays;
 @Builder
 @Accessors(fluent = true)
 public class Companion {
-  @JsonProperty("4")
-  @JsonPropertyDescription("bool")
-  private boolean requireFullSync;
-
-  @JsonProperty("3")
-  @JsonPropertyDescription("CompanionPropsPlatformType")
-  private CompanionPropsPlatformType platformType;
+  @JsonProperty("1")
+  @JsonPropertyDescription("string")
+  private String os;
 
   @JsonProperty("2")
   @JsonPropertyDescription("AppVersion")
   private Version version;
 
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
-  private String os;
+  @JsonProperty("3")
+  @JsonPropertyDescription("CompanionPropsPlatformType")
+  private CompanionPropsPlatformType platformType;
 
+  @JsonProperty("4")
+  @JsonPropertyDescription("bool")
+  private boolean requireFullSync;
+
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum CompanionPropsPlatformType {
     UNKNOWN(0),
@@ -46,11 +47,8 @@ public class Companion {
     ALOHA(11),
     CATALINA(12);
 
-    private final @Getter int index;
-
-    CompanionPropsPlatformType(int index) {
-      this.index = index;
-    }
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static CompanionPropsPlatformType forIndex(int index) {

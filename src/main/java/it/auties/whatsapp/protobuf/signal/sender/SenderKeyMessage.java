@@ -2,10 +2,12 @@ package it.auties.whatsapp.protobuf.signal.sender;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.crypto.Curve;
+import it.auties.whatsapp.util.BytesDeserializer;
 import it.auties.whatsapp.util.Validate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,8 +15,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.whispersystems.libsignal.protocol.CiphertextMessage;
+import org.whispersystems.libsignal.util.ByteUtil;
 
 import java.io.IOException;
+import java.util.Arrays;
+
+import static java.util.Arrays.copyOfRange;
 
 
 @AllArgsConstructor
@@ -36,6 +42,7 @@ public class SenderKeyMessage {
 
   @JsonProperty("3")
   @JsonPropertyDescription("bytes")
+  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] cipherText;
   
   private int version;
@@ -46,17 +53,12 @@ public class SenderKeyMessage {
     this(id, iteration, ciphertext, 0, null);
   }
 
-  public SenderKeyMessage(byte[] serialized) {
+  public static SenderKeyMessage ofEncoded(byte[] serialized) {
     try {
-      var serializedBinary = BinaryArray.of(serialized);
-      var version = Byte.toUnsignedInt(serializedBinary.at(0)) >> 4;
-      var message = serializedBinary.slice(1, serialized.length - 1 - SIGNATURE_LENGTH).data();
-      var senderKeyMessage = ProtobufDecoder.forType(getClass()).decode(message);
-      this.serialized = serialized;
-      this.version = version;
-      this.id = senderKeyMessage.id();
-      this.iteration = senderKeyMessage.iteration();
-      this.cipherText = senderKeyMessage.cipherText();
+      return ProtobufDecoder.forType(SenderKeyMessage.class)
+              .decode(copyOfRange(serialized, 1, serialized.length - SIGNATURE_LENGTH))
+              .version(Byte.toUnsignedInt(serialized[0]) >> 4)
+              .serialized(serialized);
     } catch (IOException exception) {
       throw new RuntimeException("Cannot decode SenderKeyMessage", exception);
     }

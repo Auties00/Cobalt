@@ -24,7 +24,7 @@ public class SenderKeyRecord {
   @JsonProperty("1")
   @JsonPropertyDescription("SenderKeyStateStructure")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  private LinkedList<SenderKeyState> states;
+  private LinkedList<SenderKeyState> states = new LinkedList<>();
 
   public boolean isEmpty() {
     return states.isEmpty();

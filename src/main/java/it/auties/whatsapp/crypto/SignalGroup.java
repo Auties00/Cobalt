@@ -22,8 +22,7 @@ public record SignalGroup(SenderKeyName senderKeyId, @NonNull WhatsappKeys keys)
     }
 
     public SignalDistributionMessage create(SenderKeyName senderKeyName) {
-        var senderKeyRecord = keys.findSenderKeyByName(senderKeyName)
-                .orElseThrow(() -> new NoSuchElementException("Cannot find sender key for name %s".formatted(senderKeyName)));
+        var senderKeyRecord = keys.findSenderKeyByName(senderKeyName);
         if (senderKeyRecord.isEmpty()) {
             senderKeyRecord.senderKeyState(SignalHelper.randomSenderKeyId(), 0, SignalHelper.randomSenderKey(), SignalKeyPair.random().privateKey());
             keys.senderKeyStructures().add(new SenderKeyStructure(senderKeyName, senderKeyRecord));
@@ -35,15 +34,13 @@ public record SignalGroup(SenderKeyName senderKeyId, @NonNull WhatsappKeys keys)
     }
 
     public void process(SenderKeyName senderKeyName, SignalDistributionMessage senderKeyDistributionMessage) {
-        var senderKeyRecord = keys.findSenderKeyByName(senderKeyName)
-                .orElseThrow(() -> new NoSuchElementException("Cannot find sender key for name %s".formatted(senderKeyName)));
+        var senderKeyRecord = keys.findSenderKeyByName(senderKeyName);
         senderKeyRecord.addSenderKeyState(senderKeyDistributionMessage.id(), senderKeyDistributionMessage.iteration(), senderKeyDistributionMessage.chainKey(), senderKeyDistributionMessage.signingKey());
         keys.senderKeyStructures().add(new SenderKeyStructure(senderKeyName, senderKeyRecord));
     }
 
     public byte[] cipher(byte[] paddedPlaintext) {
-        var record = keys.findSenderKeyByName(senderKeyId)
-                .orElseThrow(() -> new NoSuchElementException("Cannot find sender key for name %s".formatted(senderKeyId)));
+        var record = keys.findSenderKeyByName(senderKeyId);
         var senderKeyState = record.senderKeyState();
         var senderKey = senderKeyState.senderChainKey().toSenderMessageKey();
         var ciphertext = cipherText(senderKey.iv(), senderKey.cipherKey(), paddedPlaintext);
@@ -54,10 +51,8 @@ public record SignalGroup(SenderKeyName senderKeyId, @NonNull WhatsappKeys keys)
     }
 
     public byte[] decipher(byte[] senderKeyMessageBytes) {
-        var record = keys.findSenderKeyByName(senderKeyId)
-                .orElseThrow(() -> new NoSuchElementException("Cannot find sender key for name %s".formatted(senderKeyId)));
-        Validate.isTrue(!record.isEmpty(), "No sender key for %s", senderKeyId);
-        var senderKeyMessage = new SenderKeyMessage(senderKeyMessageBytes);
+        var record = keys.findSenderKeyByName(senderKeyId);
+        var senderKeyMessage = SenderKeyMessage.ofEncoded(senderKeyMessageBytes);
         var senderKeyState = record.senderKeyState(senderKeyMessage.id());
         senderKeyMessage.verifySignature(senderKeyState.signingKeyPublic());
         var senderKey = senderKey(senderKeyState, senderKeyMessage.iteration());

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.whatsapp.util.BytesDeserializer;
 import it.auties.whatsapp.util.SignalKeyDeserializer;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -44,6 +45,7 @@ public final class SignalMessage implements SignalProtocolMessage {
 
     @JsonProperty("4")
     @JsonPropertyDescription("bytes")
+    @JsonDeserialize(using = BytesDeserializer.class)
     private byte[] ciphertext;
 
     private byte[] serialized;

@@ -17,16 +17,16 @@ import java.util.List;
 @Builder
 @Accessors(fluent = true)
 public class AppStateSyncKeyFingerprint {
-  @JsonProperty("3")
+  @JsonProperty("1")
   @JsonPropertyDescription("uint32")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  private List<Integer> deviceIndexes;
+  private int rawId;
 
   @JsonProperty("2")
   @JsonPropertyDescription("uint32")
   private int currentIndex;
 
-  @JsonProperty("1")
+  @JsonProperty("3")
   @JsonPropertyDescription("uint32")
-  private int rawId;
+  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  private List<Integer> deviceIndexes;
 }

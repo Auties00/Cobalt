@@ -2,7 +2,7 @@ package it.auties.whatsapp.protobuf.action;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import it.auties.whatsapp.protobuf.sync.SyncActionMessageRange;
+import it.auties.whatsapp.protobuf.sync.ActionMessageRangeSync;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,5 +17,5 @@ import lombok.experimental.Accessors;
 public class ClearChatAction {
   @JsonProperty("1")
   @JsonPropertyDescription("SyncActionMessageRange")
-  private SyncActionMessageRange messageRange;
+  private ActionMessageRangeSync messageRange;
 }

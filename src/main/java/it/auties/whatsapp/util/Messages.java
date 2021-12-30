@@ -110,7 +110,7 @@ public class Messages {
         var groupJid = from.toString().split("@")[0];
         var groupAddress = new ProtocolAddress(groupJid, 0);
         var groupName = new SenderKeyName(distributionMessage.groupId(), groupAddress);
-        var signalDistributionMessage = new SignalDistributionMessage(0, 0, null, distributionMessage.axolotlSenderKeyDistributionMessage());
+        var signalDistributionMessage = new SignalDistributionMessage(0, 0, null, distributionMessage.data());
         var senderKey = keys.findSenderKeyByName(groupName);
         if(senderKey.isEmpty()){
             var structure = new SenderKeyStructure(groupName, new SenderKeyRecord());

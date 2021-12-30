@@ -18,33 +18,34 @@ import java.util.List;
 @Builder
 @Accessors(fluent = true)
 public class HistorySync {
-  @JsonProperty("7")
-  @JsonPropertyDescription("Pushname")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  private List<PushName> pushNames;
-
-  @JsonProperty("6")
-  @JsonPropertyDescription("uint32")
-  private int progress;
-
-  @JsonProperty("5")
-  @JsonPropertyDescription("uint32")
-  private int chunkOrder;
-
-  @JsonProperty("3")
-  @JsonPropertyDescription("WebMessageInfo")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  private List<MessageInfo> statusV3Messages;
+  @JsonProperty(value = "1", required = true)
+  @JsonPropertyDescription("HistorySyncHistorySyncType")
+  private HistorySyncHistorySyncType syncType;
 
   @JsonProperty("2")
   @JsonPropertyDescription("Conversation")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<Chat> conversations;
 
-  @JsonProperty(value = "1", required = true)
-  @JsonPropertyDescription("HistorySyncHistorySyncType")
-  private HistorySyncHistorySyncType syncType;
+  @JsonProperty("3")
+  @JsonPropertyDescription("WebMessageInfo")
+  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  private List<MessageInfo> statusV3Messages;
 
+  @JsonProperty("5")
+  @JsonPropertyDescription("uint32")
+  private int chunkOrder;
+
+  @JsonProperty("6")
+  @JsonPropertyDescription("uint32")
+  private int progress;
+
+  @JsonProperty("7")
+  @JsonPropertyDescription("Pushname")
+  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  private List<PushName> pushNames;
+
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum HistorySyncHistorySyncType {
     INITIAL_BOOTSTRAP(0),
@@ -53,11 +54,8 @@ public class HistorySync {
     RECENT(3),
     PUSH_NAME(4);
 
-    private final @Getter int index;
-
-    HistorySyncHistorySyncType(int index) {
-      this.index = index;
-    }
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static HistorySyncHistorySyncType forIndex(int index) {

@@ -14,11 +14,11 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class ExitCode {
-  @JsonProperty("2")
-  @JsonPropertyDescription("string")
-  private String text;
-
   @JsonProperty("1")
   @JsonPropertyDescription("uint64")
   private long code;
+
+  @JsonProperty("2")
+  @JsonPropertyDescription("string")
+  private String text;
 }

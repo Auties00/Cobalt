@@ -1,4 +1,4 @@
-package it.auties.whatsapp.protobuf.signal.auth;
+package it.auties.whatsapp.protobuf.sync;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -13,12 +13,8 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class ADVSignedDeviceIdentityHMAC {
-  @JsonProperty("2")
-  @JsonPropertyDescription("bytes")
-  private byte[] hmac;
-
+public class VersionSync {
   @JsonProperty("1")
-  @JsonPropertyDescription("bytes")
-  private byte[] details;
+  @JsonPropertyDescription("uint64")
+  private long version;
 }

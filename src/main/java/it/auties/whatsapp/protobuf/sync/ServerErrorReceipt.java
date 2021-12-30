@@ -16,5 +16,5 @@ import lombok.experimental.Accessors;
 public class ServerErrorReceipt {
   @JsonProperty("1")
   @JsonPropertyDescription("string")
-  private String stanzaId;
+  private String jid;
 }

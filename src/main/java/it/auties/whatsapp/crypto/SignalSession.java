@@ -10,6 +10,7 @@ import it.auties.whatsapp.util.Sessions;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import org.whispersystems.libsignal.SessionCipher;
 
 import javax.crypto.Cipher;
 
@@ -143,7 +144,6 @@ public record SignalSession(@NonNull ProtocolAddress address, @NonNull WhatsappK
             sessionRecord.currentSession(sessionState.currentSession());
             return plaintext;
         } catch (Exception exception) {
-            exception.printStackTrace();
             return decipherWithPreviousSessions(sessionRecord, ciphertext);
         }
     }

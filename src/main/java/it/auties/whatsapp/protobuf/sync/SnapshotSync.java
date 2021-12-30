@@ -1,5 +1,6 @@
-package it.auties.whatsapp.protobuf.signal.sender;
+package it.auties.whatsapp.protobuf.sync;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -10,19 +11,29 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
+import java.util.List;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
 @Builder
 @Accessors(fluent = true)
-public class SenderSigningKey {
+public class SnapshotSync {
   @JsonProperty("1")
-  @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
-  private byte[] publicKey;
+  @JsonPropertyDescription("SyncdVersion")
+  private VersionSync version;
 
   @JsonProperty("2")
+  @JsonPropertyDescription("SyncdRecord")
+  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  private List<RecordSync> records;
+
+  @JsonProperty("3")
   @JsonPropertyDescription("bytes")
   @JsonDeserialize(using = BytesDeserializer.class)
-  private byte[] privateKey;
+  private byte[] mac;
+
+  @JsonProperty("4")
+  @JsonPropertyDescription("KeyId")
+  private KeyId keyId;
 }

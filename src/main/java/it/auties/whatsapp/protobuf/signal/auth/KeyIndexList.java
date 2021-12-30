@@ -1,4 +1,4 @@
-package it.auties.whatsapp.protobuf.sync;
+package it.auties.whatsapp.protobuf.signal.auth;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -16,21 +16,21 @@ import java.util.List;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class SyncdSnapshot {
-  @JsonProperty("4")
-  @JsonPropertyDescription("KeyId")
-  private KeyId keyId;
-
-  @JsonProperty("3")
-  @JsonPropertyDescription("bytes")
-  private byte[] mac;
+public class KeyIndexList {
+  @JsonProperty("1")
+  @JsonPropertyDescription("uint32")
+  private int rawId;
 
   @JsonProperty("2")
-  @JsonPropertyDescription("SyncdRecord")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  private List<SyncdRecord> records;
+  @JsonPropertyDescription("uint64")
+  private long timestamp;
 
-  @JsonProperty("1")
-  @JsonPropertyDescription("SyncdVersion")
-  private SyncdVersion version;
+  @JsonProperty("3")
+  @JsonPropertyDescription("uint32")
+  private int currentIndex;
+
+  @JsonProperty("4")
+  @JsonPropertyDescription("uint32")
+  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  private List<Integer> validIndexes;
 }

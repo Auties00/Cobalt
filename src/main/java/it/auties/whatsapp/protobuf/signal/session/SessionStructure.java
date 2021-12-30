@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
+import it.auties.whatsapp.util.BytesDeserializer;
 import it.auties.whatsapp.util.SignalKeyDeserializer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -46,6 +47,7 @@ public class SessionStructure {
 
     @JsonProperty("4")
     @JsonPropertyDescription("bytes")
+     @JsonDeserialize(using = BytesDeserializer.class)
     private byte[] rootKey;
 
     @JsonProperty("5")
@@ -84,6 +86,7 @@ public class SessionStructure {
 
     @JsonProperty("13")
     @JsonPropertyDescription("bytes")
+    @JsonDeserialize(using = BytesDeserializer.class)
     private byte[] aliceBaseKey;
 
     public Optional<Chain> receiverChain(byte[] senderEphemeral) {
