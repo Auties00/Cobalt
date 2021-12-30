@@ -21,13 +21,13 @@ public final class WebNotificationsInfo implements WhatsappInfo {
   @JsonPropertyDescription("uint64")
   private long timestamp;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("uint32")
-  private int notifyMessageCount;
-
   @JsonProperty("3")
   @JsonPropertyDescription("uint32")
   private int unreadChats;
+
+  @JsonProperty("4")
+  @JsonPropertyDescription("uint32")
+  private int notifyMessageCount;
 
   @JsonProperty("5")
   @JsonPropertyDescription("WebMessageInfo")

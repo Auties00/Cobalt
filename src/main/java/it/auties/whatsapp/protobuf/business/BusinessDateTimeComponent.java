@@ -14,34 +14,35 @@ import java.util.Arrays;
 @Builder
 @Accessors(fluent = true)
 public class BusinessDateTimeComponent {
-  @JsonProperty("7")
-  @JsonPropertyDescription("HSMDateTimeComponentCalendarType")
-  private HSMDateTimeComponentCalendarType calendar;
-
-  @JsonProperty("6")
-  @JsonPropertyDescription("uint32")
-  private int minute;
-
-  @JsonProperty("5")
-  @JsonPropertyDescription("uint32")
-  private int hour;
-
-  @JsonProperty("4")
-  @JsonPropertyDescription("uint32")
-  private int dayOfMonth;
-
-  @JsonProperty("3")
-  @JsonPropertyDescription("uint32")
-  private int month;
+  @JsonProperty("1")
+  @JsonPropertyDescription("HSMDateTimeComponentDayOfWeekType")
+  private HSMDateTimeComponentDayOfWeekType dayOfWeek;
 
   @JsonProperty("2")
   @JsonPropertyDescription("uint32")
   private int year;
 
-  @JsonProperty("1")
-  @JsonPropertyDescription("HSMDateTimeComponentDayOfWeekType")
-  private HSMDateTimeComponentDayOfWeekType dayOfWeek;
+  @JsonProperty("3")
+  @JsonPropertyDescription("uint32")
+  private int month;
 
+  @JsonProperty("4")
+  @JsonPropertyDescription("uint32")
+  private int dayOfMonth;
+
+  @JsonProperty("5")
+  @JsonPropertyDescription("uint32")
+  private int hour;
+
+  @JsonProperty("6")
+  @JsonPropertyDescription("uint32")
+  private int minute;
+
+  @JsonProperty("7")
+  @JsonPropertyDescription("HSMDateTimeComponentCalendarType")
+  private HSMDateTimeComponentCalendarType calendar;
+
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum HSMDateTimeComponentDayOfWeekType {
     MONDAY(1),
@@ -52,11 +53,8 @@ public class BusinessDateTimeComponent {
     SATURDAY(6),
     SUNDAY(7);
 
-    private final @Getter int index;
-
-    HSMDateTimeComponentDayOfWeekType(int index) {
-      this.index = index;
-    }
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static HSMDateTimeComponentDayOfWeekType forIndex(int index) {
@@ -67,16 +65,14 @@ public class BusinessDateTimeComponent {
     }
   }
 
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum HSMDateTimeComponentCalendarType {
     GREGORIAN(1),
     SOLAR_HIJRI(2);
 
-    private final @Getter int index;
-
-    HSMDateTimeComponentCalendarType(int index) {
-      this.index = index;
-    }
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static HSMDateTimeComponentCalendarType forIndex(int index) {

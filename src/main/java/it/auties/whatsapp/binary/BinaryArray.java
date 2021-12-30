@@ -4,6 +4,9 @@ import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 import org.bouncycastle.util.encoders.Hex;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -13,6 +16,7 @@ import java.util.Optional;
 import java.util.stream.IntStream;
 
 import static java.lang.System.arraycopy;
+import static java.lang.System.in;
 import static java.util.Arrays.copyOf;
 import static java.util.Arrays.copyOfRange;
 
@@ -74,6 +78,16 @@ public record BinaryArray(byte @NonNull [] data) {
      */
     public static BinaryArray ofBase64(@NonNull String input) {
         return of(Base64.getDecoder().decode(input));
+    }
+
+    /**
+     * Constructs a {@code BinaryArray} wrapping the array of bytes representing a Hex encoded string
+     *
+     * @param input the Hex encoded String to wrap
+     * @return a new {@code BinaryArray} wrapping {@param input}
+     */
+    public static BinaryArray ofHex(@NonNull String input) {
+        return of(Hex.decodeStrict(input));
     }
 
     /**
@@ -160,13 +174,19 @@ public record BinaryArray(byte @NonNull [] data) {
     }
 
     /**
-     * Constructs a new {@code BinaryArray} filled with zero values where needed
+     * Constructs a new {@code BinaryArray} filled with the values provided if the original entry was 0
      *
-     * @param size the new size of the array
+     * @param value the value to use to fill the array
      * @return a new {@code BinaryArray} with the above characteristics
      */
-    public BinaryArray fill(int size) {
-        return size() >= size ? this : append(allocate(size - size()));
+    public BinaryArray fill(byte value) {
+        var result = new byte[size()];
+        for(var i = 0; i < size(); i++){
+            var entry = at(i);
+            result[i] = entry == 0 ? value : entry;
+        }
+
+        return of(result);
     }
 
     /**
@@ -207,6 +227,21 @@ public record BinaryArray(byte @NonNull [] data) {
      */
     public ByteBuffer toBuffer() {
         return ByteBuffer.wrap(data);
+    }
+
+    /**
+     * Constructs a new OutputStream from this object's array of bytes
+     *
+     * @return an ByteBuffer with the above characteristics
+     */
+    public ByteArrayOutputStream toOutputStream() {
+        try {
+            var stream = new ByteArrayOutputStream(size());
+            stream.write(data);
+            return stream;
+        }catch (IOException exception){
+            throw new UnsupportedOperationException("Cannot transform BinaryArray to ByteArrayOutputStream", exception);
+        }
     }
 
     /**

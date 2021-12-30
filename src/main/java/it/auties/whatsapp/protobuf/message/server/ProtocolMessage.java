@@ -130,7 +130,8 @@ public final class ProtocolMessage implements ServerMessage {
      */
     EXCEPTION_NOTIFICATION(10);
 
-    private final @Getter int index;
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static ProtocolMessageType forIndex(int index) {

@@ -34,6 +34,7 @@ public class WebInfo {
     this.webSubPlatform = webSubPlatform;
   }
 
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum WebInfoWebSubPlatform {
     WEB_BROWSER(0),
@@ -42,11 +43,8 @@ public class WebInfo {
     DARWIN(3),
     WIN32(4);
 
-    private final @Getter int index;
-
-    WebInfoWebSubPlatform(int index) {
-      this.index = index;
-    }
+    @Getter
+    private int index;
 
     @JsonCreator
     public static WebInfoWebSubPlatform forIndex(int index) {

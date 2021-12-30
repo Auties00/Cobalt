@@ -14,11 +14,11 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class DeleteMessageForMeAction {
-  @JsonProperty("2")
-  @JsonPropertyDescription("int64")
-  private long messageTimestamp;
-
   @JsonProperty("1")
   @JsonPropertyDescription("bool")
   private boolean deleteMedia;
+
+  @JsonProperty("2")
+  @JsonPropertyDescription("int64")
+  private long messageTimestamp;
 }

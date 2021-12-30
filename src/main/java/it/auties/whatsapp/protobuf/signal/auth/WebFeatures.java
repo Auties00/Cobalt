@@ -182,6 +182,7 @@ public class WebFeatures {
   @JsonPropertyDescription("WebFeaturesFlag")
   private WebFeaturesFlag labelsDisplay;
 
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum WebFeaturesFlag {
     NOT_STARTED(0),
@@ -189,11 +190,8 @@ public class WebFeatures {
     DEVELOPMENT(2),
     PRODUCTION(3);
 
-    private final @Getter int index;
-
-    WebFeaturesFlag(int index) {
-      this.index = index;
-    }
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static WebFeaturesFlag forIndex(int index) {

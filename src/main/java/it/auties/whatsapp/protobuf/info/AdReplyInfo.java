@@ -23,11 +23,18 @@ import java.util.Arrays;
 @Accessors(fluent = true)
 public final class AdReplyInfo implements WhatsappInfo {
   /**
-   * The caption of the original companion
+   * The name of the advertiser that served the original companion
    */
-  @JsonProperty("17")
+  @JsonProperty("1")
   @JsonPropertyDescription("string")
-  private String caption;
+  private String advertiserName;
+
+  /**
+   * The type of original companion
+   */
+  @JsonProperty("2")
+  @JsonPropertyDescription("AdReplyInfoMediaType")
+  private AdReplyInfoMediaType mediaType;
 
   /**
    * The thumbnail of the original companion encoded as jpeg in an array of bytes
@@ -38,18 +45,11 @@ public final class AdReplyInfo implements WhatsappInfo {
   private byte[] thumbnail;
 
   /**
-   * The type of original companion
+   * The caption of the original companion
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("AdReplyInfoMediaType")
-  private AdReplyInfoMediaType mediaType;
-
-  /**
-   * The name of the advertiser that served the original companion
-   */
-  @JsonProperty("1")
+  @JsonProperty("17")
   @JsonPropertyDescription("string")
-  private String advertiserName;
+  private String caption;
 
   /**
    * The constants of this enumerated type describe the various types of companion that a {@link AdReplyInfo} can link to
@@ -72,7 +72,8 @@ public final class AdReplyInfo implements WhatsappInfo {
      */
     VIDEO(2);
 
-    private final @Getter int index;
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static AdReplyInfoMediaType forIndex(int index) {

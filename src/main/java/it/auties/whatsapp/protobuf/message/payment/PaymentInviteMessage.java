@@ -60,7 +60,8 @@ public final class PaymentInviteMessage implements PaymentMessage {
      */
     UPI(3);
 
-    private final @Getter int index;
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static PaymentInviteMessageServiceType forIndex(int index) {

@@ -14,15 +14,15 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class BusinessLocalizedName {
-  @JsonProperty("3")
+  @JsonProperty("1")
   @JsonPropertyDescription("string")
-  private String name;
+  private String lg;
 
   @JsonProperty("2")
   @JsonPropertyDescription("string")
   private String lc;
 
-  @JsonProperty("1")
+  @JsonProperty("3")
   @JsonPropertyDescription("string")
-  private String lg;
+  private String name;
 }

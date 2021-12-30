@@ -104,7 +104,8 @@ public final class PaymentOrderMessage extends ContextInfo implements PaymentMes
      */
     INQUIRY(1);
 
-    private final @Getter int index;
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static OrderMessageOrderStatus forIndex(int index) {
@@ -127,7 +128,8 @@ public final class PaymentOrderMessage extends ContextInfo implements PaymentMes
      */
     CATALOG(1);
 
-    private final @Getter int index;
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static OrderMessageOrderSurface forIndex(int index) {

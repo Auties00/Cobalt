@@ -56,16 +56,14 @@ public class InvoiceMessage {
   @JsonPropertyDescription("string")
   private String note;
 
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum InvoiceMessageAttachmentType {
     IMAGE(0),
     PDF(1);
 
-    private final @Getter int index;
-
-    InvoiceMessageAttachmentType(int index) {
-      this.index = index;
-    }
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static InvoiceMessageAttachmentType forIndex(int index) {

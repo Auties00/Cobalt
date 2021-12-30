@@ -14,11 +14,11 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class MuteAction {
-  @JsonProperty("2")
-  @JsonPropertyDescription("int64")
-  private long muteEndTimestamp;
-
   @JsonProperty("1")
   @JsonPropertyDescription("bool")
   private boolean muted;
+
+  @JsonProperty("2")
+  @JsonPropertyDescription("int64")
+  private long muteEndTimestamp;
 }

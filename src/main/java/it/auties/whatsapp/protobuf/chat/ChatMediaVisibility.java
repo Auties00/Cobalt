@@ -28,7 +28,8 @@ public enum ChatMediaVisibility {
      */
     ON(2);
 
-    private final @Getter int index;
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static ChatMediaVisibility forIndex(int index) {

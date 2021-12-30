@@ -41,7 +41,7 @@ public class Header {
   @JsonPropertyDescription("string")
   private String title;
 
-  public Media mediaCase() {
+  public Media mediaType() {
     if (documentMessage != null) return Media.DOCUMENT_MESSAGE;
     if (imageMessage != null) return Media.IMAGE_MESSAGE;
     if (jpegThumbnail != null) return Media.JPEG_THUMBNAIL;
@@ -49,6 +49,7 @@ public class Header {
     return Media.UNKNOWN;
   }
 
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum Media {
     UNKNOWN(0),
@@ -57,11 +58,8 @@ public class Header {
     JPEG_THUMBNAIL(6),
     VIDEO_MESSAGE(7);
 
-    private final @Getter int index;
-
-    Media(int index) {
-      this.index = index;
-    }
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static Media forIndex(int index) {

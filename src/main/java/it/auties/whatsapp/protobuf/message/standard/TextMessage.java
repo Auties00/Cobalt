@@ -136,7 +136,8 @@ public final class TextMessage extends ContextualMessage {
      */
     OSWALD_HEAVY(5);
 
-    private final @Getter int index;
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static TextMessageFontType forIndex(int index) {
@@ -163,7 +164,8 @@ public final class TextMessage extends ContextualMessage {
      */
     VIDEO(1);
 
-    private final @Getter int index;
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static TextMessagePreviewType forIndex(int index) {

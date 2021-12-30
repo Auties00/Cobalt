@@ -31,15 +31,55 @@ import java.util.stream.Collectors;
 @Data
 @Accessors(fluent = true)
 public class WhatsappStore {
+    /**
+     * Set of all known Whatsapp stores
+     */
     private static final Set<WhatsappStore> instances = new HashSet<>();
+
+    /**
+     * The non-null uuid of this store
+     */
     private final @NonNull UUID uuid;
+
+    /**
+     * The non-null service used to call listeners.
+     * This is needed in order to not block the socket.
+     */
     private final @NonNull ExecutorService requestsService;
+
+    /**
+     * The non-null list of chats
+     */
     private final @NonNull List<Chat> chats;
+
+    /**
+     * The non-null list of contacts
+     */
     private final @NonNull List<Contact> contacts;
+
+    /**
+     * The non-null list of requests that are waiting for a response from Whatsapp
+     */
     private final @NonNull List<Request> pendingRequests;
+
+    /**
+     * The non-null list of listeners
+     */
     private final @NonNull List<WhatsappListener> listeners;
-    private final AtomicLong readCounter;
-    private final AtomicLong writeCounter;
+
+    /**
+     * The non-null read counter
+     */
+    private final @NonNull AtomicLong readCounter;
+
+    /**
+     * The non-null write counter
+     */
+    private final @NonNull AtomicLong writeCounter;
+
+    /**
+     * The timestamp in milliseconds for the initialization of this object
+     */
     private final long initializationTimeStamp;
 
     /**
@@ -54,6 +94,13 @@ public class WhatsappStore {
         instances.add(this);
     }
 
+    /**
+     * Returns the first store that matches {@code uuid}
+     *
+     * @param uuid a nullable uuid to search
+     * @return a non null WhatsappStore
+     * @throws NoSuchElementException if no element can be found
+     */
     public static WhatsappStore findStoreById(UUID uuid){
         return instances.parallelStream()
                 .filter(entry -> Objects.equals(entry.uuid(), uuid))

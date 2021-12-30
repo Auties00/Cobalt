@@ -23,7 +23,8 @@ public enum BusinessAccountType {
      */
     PAGE(1);
 
-    private final @Getter int index;
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static BusinessAccountType forIndex(int index) {

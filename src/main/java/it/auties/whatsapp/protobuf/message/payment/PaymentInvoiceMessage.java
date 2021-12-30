@@ -132,7 +132,8 @@ public final class PaymentInvoiceMessage extends MediaMessage implements Payment
      */
     PDF(1);
 
-    private final @Getter int index;
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static AttachmentType forIndex(int index) {

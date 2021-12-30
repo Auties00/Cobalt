@@ -16,18 +16,18 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class BusinessCertificate {
-  @JsonProperty("3")
+  @JsonProperty("1")
   @JsonPropertyDescription("bytes")
   @JsonDeserialize(using = BytesDeserializer.class)
-  private byte[] serverSignature;
+  private byte[] details;
 
   @JsonProperty("2")
   @JsonPropertyDescription("bytes")
   @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] signature;
 
-  @JsonProperty("1")
+  @JsonProperty("3")
   @JsonPropertyDescription("bytes")
   @JsonDeserialize(using = BytesDeserializer.class)
-  private byte[] details;
+  private byte[] serverSignature;
 }

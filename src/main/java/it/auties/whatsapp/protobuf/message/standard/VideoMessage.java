@@ -257,7 +257,8 @@ public final class VideoMessage extends MediaMessage {
      */
     TENOR(2);
 
-    private final @Getter int index;
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static VideoMessageAttribution forIndex(int index) {

@@ -14,15 +14,15 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class ButtonRow {
-  @JsonProperty("3")
+  @JsonProperty("1")
   @JsonPropertyDescription("string")
-  private String rowId;
+  private String title;
 
   @JsonProperty("2")
   @JsonPropertyDescription("string")
   private String description;
 
-  @JsonProperty("1")
+  @JsonProperty("3")
   @JsonPropertyDescription("string")
-  private String title;
+  private String rowId;
 }

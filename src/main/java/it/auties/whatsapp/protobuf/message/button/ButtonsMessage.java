@@ -136,7 +136,8 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
      */
     LOCATION(5);
 
-    private final @Getter int index;
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static HeaderType forIndex(int index) {

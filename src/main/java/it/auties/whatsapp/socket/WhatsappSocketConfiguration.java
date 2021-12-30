@@ -11,6 +11,7 @@ import java.util.Map;
  * Without these, WhatsappWeb's WebSocket would respond with a 401 http status error code.
  */
 public class WhatsappSocketConfiguration extends ClientEndpointConfig.Configurator{
+    // Do we even need all of these headers?
     private static final Map<String, List<String>> HEADERS = Map.of(
             "Origin",  List.of("https://web.whatsapp.com"),
             "Host", List.of("web.whatsapp.com"),

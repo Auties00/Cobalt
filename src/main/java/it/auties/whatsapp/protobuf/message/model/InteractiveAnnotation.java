@@ -62,7 +62,8 @@ public class InteractiveAnnotation {
      */
     LOCATION(2);
 
-    private final @Getter int index;
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static Action forIndex(int index) {

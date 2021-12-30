@@ -28,7 +28,8 @@ public enum ChatDisappear {
      */
     INITIATED_BY_OTHER(2);
 
-    private final @Getter int index;
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static ChatDisappear forIndex(int index) {

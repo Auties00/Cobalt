@@ -328,7 +328,8 @@ public final class MessageInfo implements WhatsappInfo {
     GROUP_PARTICIPANT_ADD_REQUEST_JOIN(71),
     CHANGE_EPHEMERAL_SETTING(72);
 
-    private final @Getter int index;
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static StubType forIndex(int index) {

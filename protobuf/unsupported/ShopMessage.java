@@ -24,6 +24,7 @@ public class ShopMessage {
   @JsonPropertyDescription("string")
   private String id;
 
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum ShopMessageSurface {
     UNKNOWN_SURFACE(0),
@@ -31,11 +32,8 @@ public class ShopMessage {
     IG(2),
     WA(3);
 
-    private final @Getter int index;
-
-    ShopMessageSurface(int index) {
-      this.index = index;
-    }
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static ShopMessageSurface forIndex(int index) {

@@ -14,48 +14,46 @@ import java.util.Arrays;
 @Builder
 @Accessors(fluent = true)
 public class HydratedTemplateButton {
-  @JsonProperty("3")
-  @JsonPropertyDescription("HydratedCallButton")
-  private HydratedCallButton callButton;
+  @JsonProperty("1")
+  @JsonPropertyDescription("HydratedQuickReplyButton")
+  private HydratedQuickReplyButton quickReplyButton;
 
   @JsonProperty("2")
   @JsonPropertyDescription("HydratedURLButton")
   private HydratedURLButton urlButton;
 
-  @JsonProperty("1")
-  @JsonPropertyDescription("HydratedQuickReplyButton")
-  private HydratedQuickReplyButton quickReplyButton;
+  @JsonProperty("3")
+  @JsonPropertyDescription("HydratedCallButton")
+  private HydratedCallButton callButton;
 
   @JsonProperty("4")
   @JsonPropertyDescription("uint32")
   private int index;
 
-  public HydratedButton hydratedButtonCase() {
-    if (quickReplyButton != null) return HydratedButton.QUICK_REPLY_BUTTON;
-    if (urlButton != null) return HydratedButton.URL_BUTTON;
-    if (callButton != null) return HydratedButton.CALL_BUTTON;
-    return HydratedButton.UNKNOWN;
+  public HydratedButtonType hydratedButtonType() {
+    if (quickReplyButton != null) return HydratedButtonType.QUICK_REPLY_BUTTON;
+    if (urlButton != null) return HydratedButtonType.URL_BUTTON;
+    if (callButton != null) return HydratedButtonType.CALL_BUTTON;
+    return HydratedButtonType.UNKNOWN;
   }
 
+  @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum HydratedButton {
+  public enum HydratedButtonType {
     UNKNOWN(0),
     QUICK_REPLY_BUTTON(1),
     URL_BUTTON(2),
     CALL_BUTTON(3);
 
-    private final @Getter int index;
-
-    HydratedButton(int index) {
-      this.index = index;
-    }
+    @Getter
+    private final int index;
 
     @JsonCreator
-    public static HydratedButton forIndex(int index) {
+    public static HydratedButtonType forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
           .findFirst()
-          .orElse(HydratedButton.UNKNOWN);
+          .orElse(HydratedButtonType.UNKNOWN);
     }
   }
 }

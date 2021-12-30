@@ -14,36 +14,34 @@ import java.util.Arrays;
 @Builder
 @Accessors(fluent = true)
 public class BusinessLocalizableParameter {
-  @JsonProperty("3")
-  @JsonPropertyDescription("HSMDateTime")
-  private BusinessDateTime dateTime;
+  @JsonProperty("1")
+  @JsonPropertyDescription("string")
+  private String defaultValue;
 
   @JsonProperty("2")
   @JsonPropertyDescription("HSMCurrency")
   private BusinessCurrency currency;
+  
+  @JsonProperty("3")
+  @JsonPropertyDescription("HSMDateTime")
+  private BusinessDateTime dateTime;
 
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
-  private String _default;
-
-  public ParamOneof paramOneofCase() {
+  public ParamOneof paramOneofType() {
     if (currency != null) return ParamOneof.CURRENCY;
     if (dateTime != null) return ParamOneof.DATE_TIME;
     return ParamOneof.UNKNOWN;
   }
 
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum ParamOneof {
     UNKNOWN(0),
     CURRENCY(2),
     DATE_TIME(3);
 
-    private final @Getter int index;
-
-    ParamOneof(int index) {
-      this.index = index;
-    }
-
+    @Getter
+    private final int index;
+    
     @JsonCreator
     public static ParamOneof forIndex(int index) {
       return Arrays.stream(values())

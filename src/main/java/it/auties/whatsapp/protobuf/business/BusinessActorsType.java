@@ -22,7 +22,8 @@ public enum BusinessActorsType {
      */
     BSP(1);
 
-    private final @Getter int index;
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static BusinessActorsType forIndex(int index) {

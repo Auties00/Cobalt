@@ -40,6 +40,7 @@ import static java.util.Objects.requireNonNullElseGet;
 @Log
 @Data
 @Accessors(fluent = true, chain = true)
+@SuppressWarnings("UnusedReturnValue")
 public class WhatsappKeys {
     /**
      * The path used to serialize and deserialize this object
@@ -121,6 +122,18 @@ public class WhatsappKeys {
     private Map<ProtocolAddress, byte[]> identities;
 
     /**
+     * Clears all the keys from this machine's memory.
+     * This method doesn't clear this object's values.
+     */
+    public static void deleteAllKeys() {
+        try {
+            Preferences.userRoot().clear();
+        }catch (BackingStoreException exception){
+            throw new RuntimeException("Cannot delete keys from memory", exception);
+        }
+    }
+
+    /**
      * Returns the keys saved in memory or constructs a new clean instance
      *
      * @return a non-null instance of WhatsappKeys
@@ -142,6 +155,9 @@ public class WhatsappKeys {
         }
     }
 
+    /**
+     * Constructs new WhatsappKeys using random keys
+     */
     public WhatsappKeys() {
         this.id = SignalHelper.randomRegistrationId();
         this.companionKeyPair = SignalKeyPair.random();
@@ -157,10 +173,13 @@ public class WhatsappKeys {
 
     /**
      * Serializes this object to a json and saves it in memory
+     *
+     * @return this
      */
-    public void save(){
+    public WhatsappKeys save(){
         try {
             Preferences.userRoot().put(PREFERENCES_PATH, JACKSON.writeValueAsString(this));
+            return this;
         } catch (JsonProcessingException exception) {
             throw new RuntimeException("Cannot save keys to memory", exception);
         }
@@ -168,21 +187,23 @@ public class WhatsappKeys {
 
     /**
      * Clears the signal keys associated with this object
+     *
+     * @return this
      */
-    public void clear() {
+    public WhatsappKeys clear() {
         writeKey(null).readKey(null);
+        return this;
     }
 
     /**
      * Clears all the keys from this machine's memory.
      * This method doesn't clear this object's values.
+     *
+     * @return this
      */
-    public void delete() {
-        try {
-            Preferences.userRoot().clear();
-        }catch (BackingStoreException exception){
-            throw new RuntimeException("Cannot delete keys from memory", exception);
-        }
+    public WhatsappKeys delete() {
+        deleteAllKeys();
+        return this;
     }
 
     /**
@@ -215,11 +236,13 @@ public class WhatsappKeys {
                 .filter(structure -> Objects.equals(structure.name(), name))
                 .findFirst()
                 .map(SenderKeyStructure::record)
-                .orElseGet(() -> {
-                    var structure = new SenderKeyStructure(name, new SenderKeyRecord());
-                    senderKeyStructures.add(structure);
-                    return structure.record();
-                });
+                .orElseGet(() -> createSenderKey(name));
+    }
+
+    private SenderKeyRecord createSenderKey(SenderKeyName name) {
+        var structure = new SenderKeyStructure(name, new SenderKeyRecord());
+        senderKeyStructures.add(structure);
+        return structure.record();
     }
 
     /**
@@ -240,11 +263,14 @@ public class WhatsappKeys {
      * @return a nullable SessionRecord as {@code defaultValue} might supply a null value
      */
     public SessionRecord findSessionByAddress(@NonNull ProtocolAddress address, @NonNull Supplier<SessionRecord> defaultValue){
-        return requireNonNullElseGet(sessions.get(address), () -> {
-            var value = defaultValue.get();
-            sessions.put(address, value);
-            return value;
-        });
+        return requireNonNullElseGet(sessions.get(address),
+                () -> addSessionFallback(address, defaultValue));
+    }
+
+    private SessionRecord addSessionFallback(ProtocolAddress address, Supplier<SessionRecord> defaultValue) {
+        var value = defaultValue.get();
+        sessions.put(address, value);
+        return value;
     }
 
     /**
@@ -255,7 +281,8 @@ public class WhatsappKeys {
      * @throws NullPointerException if no element can be found
      */
     public byte[] findIdentityByAddress(@NonNull ProtocolAddress address) {
-        return requireNonNull(identities.get(address), "Cannot find any identity matching the provided address");
+        return requireNonNull(identities.get(address),
+                "Cannot find any identity matching the provided address");
     }
 
     /**
@@ -269,7 +296,6 @@ public class WhatsappKeys {
         Validate.isTrue(id == signedKeyPair.id(), "Id mismatch: %s != %s", id, signedKeyPair.id());
         return new SignedPreKeyRecordStructure(id, signedKeyPair.keyPair().publicKey(), signedKeyPair.keyPair().privateKey(), signedKeyPair.signature(), 0);
     }
-
 
     /**
      * Checks whether {@code identityKey} is trusted for {@code address}

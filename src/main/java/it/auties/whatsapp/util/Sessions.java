@@ -1,5 +1,6 @@
 package it.auties.whatsapp.util;
 
+import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.crypto.Curve;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
@@ -8,6 +9,7 @@ import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import static java.util.Arrays.copyOfRange;
@@ -46,21 +48,16 @@ public class Sessions {
         sessionState.localIdentityPublic(parameters.ourIdentityKey().publicKey());
 
         var sendingRatchetKey = SignalKeyPair.random();
-        var secrets = new ByteArrayOutputStream();
-
-        secrets.write(discontinuityBytes());
-
+        var secrets = createSecrets();
         secrets.write(Curve.calculateSharedSecret(parameters.theirSignedPreKey(), parameters.ourIdentityKey().privateKey()).data());
         secrets.write(Curve.calculateSharedSecret(parameters.theirIdentityKey(), parameters.ourBaseKey().privateKey()).data());
         secrets.write(Curve.calculateSharedSecret(parameters.theirSignedPreKey(), parameters.ourBaseKey().privateKey()).data());
-
         if (parameters.theirOneTimePreKey() != null) {
             secrets.write(Curve.calculateSharedSecret(parameters.theirOneTimePreKey(), parameters.ourBaseKey().privateKey()).data());
         }
 
         var derivedKeys = calculateDerivedKeys(secrets.toByteArray());
         var sendingChain = derivedKeys.rootKey().createChain(parameters.theirRatchetKey(), sendingRatchetKey);
-
         sessionState.addReceiverChain(parameters.theirRatchetKey(), derivedKeys.chainKey());
         sessionState.senderChain(sendingRatchetKey, sendingChain.chainKey());
         sessionState.rootKey(sendingChain.rootKey().key());
@@ -74,14 +71,10 @@ public class Sessions {
             sessionState.localIdentityPublic(parameters.ourOneTimePreKey().publicKey());
         }
 
-        var secrets = new ByteArrayOutputStream();
-
-        secrets.write(discontinuityBytes());
-
+        var secrets = createSecrets();
         secrets.write(Curve.calculateSharedSecret(parameters.theirIdentityKey(), parameters.ourSignedPreKey().privateKey()).data());
         secrets.write(Curve.calculateSharedSecret(parameters.theirBaseKey(), parameters.ourIdentityKey().privateKey()).data());
         secrets.write(Curve.calculateSharedSecret(parameters.theirBaseKey(), parameters.ourSignedPreKey().privateKey()).data());
-
         if (parameters.ourOneTimePreKey() != null) {
             secrets.write(Curve.calculateSharedSecret(parameters.theirBaseKey(), parameters.ourOneTimePreKey().privateKey()).data());
         }
@@ -91,14 +84,12 @@ public class Sessions {
         sessionState.rootKey(derivedKeys.rootKey().key());
     }
 
-    private byte[] discontinuityBytes() {
-        var discontinuity = new byte[32];
-        Arrays.fill(discontinuity, (byte) 0xFF);
-        return discontinuity;
+    private ByteArrayOutputStream createSecrets() {
+        return BinaryArray.allocate(32).fill((byte) 0xFF).toOutputStream();
     }
 
     private DerivedKeys calculateDerivedKeys(byte[] masterSecret) {
-        var derivedSecretBytes = Hkdf.deriveSecrets(masterSecret, "WhisperText".getBytes(), 64);
+        var derivedSecretBytes = Hkdf.deriveSecrets(masterSecret, "WhisperText".getBytes(StandardCharsets.UTF_8), 64);
         var root = new RootKey(copyOfRange(derivedSecretBytes, 0, 32));
         var chain = new ChainKey(0, copyOfRange(derivedSecretBytes, 32, 64));
         return new DerivedKeys(root, chain);

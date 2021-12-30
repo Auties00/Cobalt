@@ -40,13 +40,14 @@ public class InteractiveMessage {
   @JsonPropertyDescription("Header")
   private Header header;
 
-  public InteractiveMessage interactiveMessageCase() {
+  public InteractiveMessage interactiveMessageType() {
     if (shopStorefrontMessage != null) return InteractiveMessage.SHOP_STOREFRONT_MESSAGE;
     if (collectionMessage != null) return InteractiveMessage.COLLECTION_MESSAGE;
     if (nativeFlowMessage != null) return InteractiveMessage.NATIVE_FLOW_MESSAGE;
     return InteractiveMessage.UNKNOWN;
   }
 
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum InteractiveMessage {
     UNKNOWN(0),
@@ -54,11 +55,8 @@ public class InteractiveMessage {
     COLLECTION_MESSAGE(5),
     NATIVE_FLOW_MESSAGE(6);
 
-    private final @Getter int index;
-
-    InteractiveMessage(int index) {
-      this.index = index;
-    }
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static InteractiveMessage forIndex(int index) {

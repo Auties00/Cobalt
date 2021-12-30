@@ -28,7 +28,8 @@ public enum BusinessVerifiedLevel {
      */
     HIGH(2);
 
-    private final @Getter int index;
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static BusinessVerifiedLevel forIndex(int index) {

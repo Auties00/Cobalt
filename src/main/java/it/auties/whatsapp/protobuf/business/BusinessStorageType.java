@@ -23,7 +23,8 @@ public enum BusinessStorageType {
      */
     FACEBOOK(1);
 
-    private final @Getter int index;
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static BusinessStorageType forIndex(int index) {

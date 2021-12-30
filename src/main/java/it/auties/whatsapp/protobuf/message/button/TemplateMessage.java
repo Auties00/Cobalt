@@ -85,7 +85,8 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
      */
     HYDRATED_FOUR_ROW_TEMPLATE(2);
 
-    private final @Getter int index;
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static Format forIndex(int index) {

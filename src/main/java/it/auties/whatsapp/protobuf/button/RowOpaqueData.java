@@ -14,11 +14,11 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class RowOpaqueData {
-  @JsonProperty("2")
-  @JsonPropertyDescription("MsgOpaqueData")
-  private ButtonOpaqueData quotedMsg;
-
   @JsonProperty("1")
   @JsonPropertyDescription("MsgOpaqueData")
   private ButtonOpaqueData currentMsg;
+
+  @JsonProperty("2")
+  @JsonPropertyDescription("MsgOpaqueData")
+  private ButtonOpaqueData quotedMsg;
 }

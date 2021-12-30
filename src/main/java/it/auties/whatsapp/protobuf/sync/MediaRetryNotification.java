@@ -41,6 +41,7 @@ public class MediaRetryNotification {
   @JsonPropertyDescription("MediaRetryNotificationResultType")
   private Problem problem;
 
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum Problem {
     GENERAL_ERROR(0),
@@ -48,11 +49,8 @@ public class MediaRetryNotification {
     NOT_FOUND(2),
     DECRYPTION_ERROR(3);
 
-    private final @Getter int index;
-
-    Problem(int index) {
-      this.index = index;
-    }
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static Problem forIndex(int index) {

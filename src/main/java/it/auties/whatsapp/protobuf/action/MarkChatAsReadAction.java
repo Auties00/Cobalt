@@ -15,11 +15,11 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class MarkChatAsReadAction {
-  @JsonProperty("2")
-  @JsonPropertyDescription("SyncActionMessageRange")
-  private ActionMessageRangeSync messageRange;
-
   @JsonProperty("1")
   @JsonPropertyDescription("bool")
   private boolean read;
+
+  @JsonProperty("2")
+  @JsonPropertyDescription("SyncActionMessageRange")
+  private ActionMessageRangeSync messageRange;
 }

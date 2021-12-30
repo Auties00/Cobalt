@@ -14,31 +14,29 @@ import java.util.Arrays;
 @Builder
 @Accessors(fluent = true)
 public class BusinessDateTime {
+  @JsonProperty("1")
+  @JsonPropertyDescription("HSMDateTimeComponent")
+  private BusinessDateTimeComponent component;
+  
   @JsonProperty("2")
   @JsonPropertyDescription("HSMDateTimeUnixEpoch")
   private BusinessDateTimeUnixEpoch unixEpoch;
 
-  @JsonProperty("1")
-  @JsonPropertyDescription("HSMDateTimeComponent")
-  private BusinessDateTimeComponent component;
-
-  public DatetimeOneof datetimeOneofCase() {
+  public DatetimeOneof datetimeOneofType() {
     if (component != null) return DatetimeOneof.COMPONENT;
     if (unixEpoch != null) return DatetimeOneof.UNIX_EPOCH;
     return DatetimeOneof.UNKNOWN;
   }
 
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum DatetimeOneof {
     UNKNOWN(0),
     COMPONENT(1),
     UNIX_EPOCH(2);
 
-    private final @Getter int index;
-
-    DatetimeOneof(int index) {
-      this.index = index;
-    }
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static DatetimeOneof forIndex(int index) {

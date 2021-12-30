@@ -43,7 +43,8 @@ public enum MessageStatus {
      */
     PLAYED(5);
 
-    private final @Getter int index;
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static MessageStatus forName(String encoded){

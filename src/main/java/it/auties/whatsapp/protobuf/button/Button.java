@@ -15,33 +15,31 @@ import java.util.Arrays;
 @Builder
 @Accessors(fluent = true)
 public class Button {
-  @JsonProperty("4")
-  @JsonPropertyDescription("NativeFlowInfo")
-  private NativeFlowInfo nativeFlowInfo;
-
-  @JsonProperty("3")
-  @JsonPropertyDescription("ButtonType")
-  private ButtonType type;
+  @JsonProperty("1")
+  @JsonPropertyDescription("string")
+  private String buttonId;
 
   @JsonProperty("2")
   @JsonPropertyDescription("ButtonText")
   private ButtonText buttonText;
 
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
-  private String buttonId;
+  @JsonProperty("3")
+  @JsonPropertyDescription("ButtonType")
+  private ButtonType type;
 
+  @JsonProperty("4")
+  @JsonPropertyDescription("NativeFlowInfo")
+  private NativeFlowInfo nativeFlowInfo;
+
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum ButtonType {
     UNKNOWN(0),
     RESPONSE(1),
     NATIVE_FLOW(2);
 
-    private final @Getter int index;
-
-    ButtonType(int index) {
-      this.index = index;
-    }
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static ButtonType forIndex(int index) {

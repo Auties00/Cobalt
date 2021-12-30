@@ -98,7 +98,8 @@ public final class ListMessage extends ContextualMessage implements ButtonMessag
      */
     PRODUCT_LIST(2);
 
-    private final @Getter int index;
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static Type forIndex(int index) {

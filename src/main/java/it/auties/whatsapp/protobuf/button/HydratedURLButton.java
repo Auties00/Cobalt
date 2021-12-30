@@ -14,11 +14,11 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class HydratedURLButton {
-  @JsonProperty("2")
-  @JsonPropertyDescription("string")
-  private String url;
-
   @JsonProperty("1")
   @JsonPropertyDescription("string")
   private String displayText;
+
+  @JsonProperty("2")
+  @JsonPropertyDescription("string")
+  private String url;
 }

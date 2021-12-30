@@ -15,11 +15,11 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class CallButton {
-  @JsonProperty("2")
-  @JsonPropertyDescription("HighlyStructuredMessage")
-  private StructuredButtonMessage phoneNumber;
-
   @JsonProperty("1")
   @JsonPropertyDescription("HighlyStructuredMessage")
   private StructuredButtonMessage displayText;
+
+  @JsonProperty("2")
+  @JsonPropertyDescription("HighlyStructuredMessage")
+  private StructuredButtonMessage phoneNumber;
 }

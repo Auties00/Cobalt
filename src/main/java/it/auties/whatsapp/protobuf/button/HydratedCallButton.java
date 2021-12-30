@@ -14,11 +14,11 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class HydratedCallButton {
-  @JsonProperty("2")
-  @JsonPropertyDescription("string")
-  private String phoneNumber;
-
   @JsonProperty("1")
   @JsonPropertyDescription("string")
   private String displayText;
+
+  @JsonProperty("2")
+  @JsonPropertyDescription("string")
+  private String phoneNumber;
 }

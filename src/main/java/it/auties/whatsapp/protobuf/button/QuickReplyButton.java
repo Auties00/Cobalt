@@ -15,11 +15,11 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class QuickReplyButton {
-  @JsonProperty("2")
-  @JsonPropertyDescription("string")
-  private String id;
-
   @JsonProperty("1")
   @JsonPropertyDescription("HighlyStructuredMessage")
   private StructuredButtonMessage displayText;
+
+  @JsonProperty("2")
+  @JsonPropertyDescription("string")
+  private String id;
 }

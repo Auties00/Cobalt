@@ -104,7 +104,8 @@ public final class ExternalAdReplyInfo implements WhatsappInfo {
      */
     VIDEO(2);
 
-    private final @Getter int index;
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static ExternalAdReplyInfoMediaType forIndex(int index) {

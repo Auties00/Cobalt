@@ -14,48 +14,46 @@ import java.util.Arrays;
 @Builder
 @Accessors(fluent = true)
 public class ButtonTemplate {
-  @JsonProperty("3")
-  @JsonPropertyDescription("CallButton")
-  private CallButton callButton;
+  @JsonProperty("1")
+  @JsonPropertyDescription("QuickReplyButton")
+  private QuickReplyButton quickReplyButton;
 
   @JsonProperty("2")
   @JsonPropertyDescription("URLButton")
   private URLButton urlButton;
 
-  @JsonProperty("1")
-  @JsonPropertyDescription("QuickReplyButton")
-  private QuickReplyButton quickReplyButton;
+  @JsonProperty("3")
+  @JsonPropertyDescription("CallButton")
+  private CallButton callButton;
 
   @JsonProperty("4")
   @JsonPropertyDescription("uint32")
   private int index;
 
-  public Button buttonCase() {
-    if (quickReplyButton != null) return Button.QUICK_REPLY_BUTTON;
-    if (urlButton != null) return Button.URL_BUTTON;
-    if (callButton != null) return Button.CALL_BUTTON;
-    return Button.UNKNOWN;
+  public ButtonType buttonType() {
+    if (quickReplyButton != null) return ButtonType.QUICK_REPLY_BUTTON;
+    if (urlButton != null) return ButtonType.URL_BUTTON;
+    if (callButton != null) return ButtonType.CALL_BUTTON;
+    return ButtonType.UNKNOWN;
   }
 
+  @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum Button {
+  public enum ButtonType {
     UNKNOWN(0),
     QUICK_REPLY_BUTTON(1),
     URL_BUTTON(2),
     CALL_BUTTON(3);
 
-    private final @Getter int index;
-
-    Button(int index) {
-      this.index = index;
-    }
+    @Getter
+    private final int index;
 
     @JsonCreator
-    public static Button forIndex(int index) {
+    public static ButtonType forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
           .findFirst()
-          .orElse(Button.UNKNOWN);
+          .orElse(ButtonType.UNKNOWN);
     }
   }
 }

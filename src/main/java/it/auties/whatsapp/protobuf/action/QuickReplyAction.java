@@ -17,24 +17,24 @@ import java.util.List;
 @Builder
 @Accessors(fluent = true)
 public class QuickReplyAction {
-  @JsonProperty("5")
-  @JsonPropertyDescription("bool")
-  private boolean deleted;
+  @JsonProperty("1")
+  @JsonPropertyDescription("string")
+  private String shortcut;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("int32")
-  private int count;
+  @JsonProperty("2")
+  @JsonPropertyDescription("string")
+  private String message;
 
   @JsonProperty("3")
   @JsonPropertyDescription("string")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<String> keywords;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("string")
-  private String message;
+  @JsonProperty("4")
+  @JsonPropertyDescription("int32")
+  private int count;
 
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
-  private String shortcut;
+  @JsonProperty("5")
+  @JsonPropertyDescription("bool")
+  private boolean deleted;
 }

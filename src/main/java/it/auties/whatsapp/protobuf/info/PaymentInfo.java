@@ -98,7 +98,8 @@ public final class PaymentInfo implements WhatsappInfo {
      */
     INR(1);
 
-    private final @Getter int index;
+    @Getter
+    private final int index;
 
     PaymentInfoCurrency(int index) {
       this.index = index;
@@ -116,6 +117,7 @@ public final class PaymentInfo implements WhatsappInfo {
   /**
    * The constants of this enumerated type describe the status of a payment described by a {@link PaymentInfo}
    */
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum PaymentInfoStatus {
     /**
@@ -178,11 +180,8 @@ public final class PaymentInfo implements WhatsappInfo {
      */
     WAITING(11);
 
-    private final @Getter int index;
-
-    PaymentInfoStatus(int index) {
-      this.index = index;
-    }
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static PaymentInfoStatus forIndex(int index) {
@@ -193,6 +192,7 @@ public final class PaymentInfo implements WhatsappInfo {
     }
   }
 
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum PaymentInfoTxnStatus {
     UNKNOWN(0),
@@ -224,11 +224,8 @@ public final class PaymentInfo implements WhatsappInfo {
     COLLECT_CANCELED(26),
     COLLECT_CANCELLING(27);
 
-    private final @Getter int index;
-
-    PaymentInfoTxnStatus(int index) {
-      this.index = index;
-    }
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static PaymentInfoTxnStatus forIndex(int index) {

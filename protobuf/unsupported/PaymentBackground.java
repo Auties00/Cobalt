@@ -52,16 +52,14 @@ public class PaymentBackground {
   @JsonPropertyDescription("string")
   private String id;
 
+  @AllArgsConstructor
   @Accessors(fluent = true)
   public enum PaymentBackgroundType {
     UNKNOWN(0),
     DEFAULT(1);
 
-    private final @Getter int index;
-
-    PaymentBackgroundType(int index) {
-      this.index = index;
-    }
+    @Getter
+    private final int index;
 
     @JsonCreator
     public static PaymentBackgroundType forIndex(int index) {

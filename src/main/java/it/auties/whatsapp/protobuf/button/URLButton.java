@@ -15,11 +15,11 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class URLButton {
-  @JsonProperty("2")
-  @JsonPropertyDescription("HighlyStructuredMessage")
-  private StructuredButtonMessage url;
-
   @JsonProperty("1")
   @JsonPropertyDescription("HighlyStructuredMessage")
   private StructuredButtonMessage displayText;
+
+  @JsonProperty("2")
+  @JsonPropertyDescription("HighlyStructuredMessage")
+  private StructuredButtonMessage url;
 }

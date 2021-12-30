@@ -16,40 +16,40 @@ import java.util.Arrays;
 @Builder
 @Accessors(fluent = true)
 public class HistorySyncNotification {
-  @JsonProperty("8")
-  @JsonPropertyDescription("string")
-  private String originalMessageId;
-
-  @JsonProperty("7")
-  @JsonPropertyDescription("uint32")
-  private int chunkOrder;
-
-  @JsonProperty("6")
-  @JsonPropertyDescription("HistorySyncNotificationHistorySyncType")
-  private HistorySyncNotificationHistorySyncType syncType;
-
-  @JsonProperty("5")
-  @JsonPropertyDescription("string")
-  private String directPath;
-
-  @JsonProperty("4")
+  @JsonProperty("1")
   @JsonPropertyDescription("bytes")
   @JsonDeserialize(using = BytesDeserializer.class)
-  private byte[] fileEncSha256;
+  private byte[] fileSha256;
+
+  @JsonProperty("2")
+  @JsonPropertyDescription("uint64")
+  private long fileLength;
 
   @JsonProperty("3")
   @JsonPropertyDescription("bytes")
   @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] mediaKey;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("uint64")
-  private long fileLength;
-
-  @JsonProperty("1")
+  @JsonProperty("4")
   @JsonPropertyDescription("bytes")
   @JsonDeserialize(using = BytesDeserializer.class)
-  private byte[] fileSha256;
+  private byte[] fileEncSha256;
+
+  @JsonProperty("5")
+  @JsonPropertyDescription("string")
+  private String directPath;
+
+  @JsonProperty("6")
+  @JsonPropertyDescription("HistorySyncNotificationHistorySyncType")
+  private HistorySyncNotificationHistorySyncType syncType;
+
+  @JsonProperty("7")
+  @JsonPropertyDescription("uint32")
+  private int chunkOrder;
+
+  @JsonProperty("8")
+  @JsonPropertyDescription("string")
+  private String originalMessageId;
 
   @AllArgsConstructor
   @Accessors(fluent = true)

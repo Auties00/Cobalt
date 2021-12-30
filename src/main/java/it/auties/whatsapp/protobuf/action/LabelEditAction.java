@@ -14,19 +14,19 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public class LabelEditAction {
-  @JsonProperty("4")
-  @JsonPropertyDescription("bool")
-  private boolean deleted;
-
-  @JsonProperty("3")
-  @JsonPropertyDescription("int32")
-  private int predefinedId;
+  @JsonProperty("1")
+  @JsonPropertyDescription("string")
+  private String name;
 
   @JsonProperty("2")
   @JsonPropertyDescription("int32")
   private int color;
 
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
-  private String name;
+  @JsonProperty("3")
+  @JsonPropertyDescription("int32")
+  private int predefinedId;
+
+  @JsonProperty("4")
+  @JsonPropertyDescription("bool")
+  private boolean deleted;
 }
