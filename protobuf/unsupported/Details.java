@@ -14,7 +14,6 @@ public class Details {
 
   @JsonProperty(value = "5", required = false)
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] key;
 
   @JsonProperty(value = "4", required = false)

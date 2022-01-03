@@ -5,8 +5,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.whatsapp.binary.BinaryArray;
-import it.auties.whatsapp.util.BytesDeserializer;
-import it.auties.whatsapp.util.SignalKeyDeserializer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -35,17 +33,14 @@ public final class SignalPreKeyMessage implements SignalProtocolMessage{
 
     @JsonProperty("2")
     @JsonPropertyDescription("bytes")
-    @JsonDeserialize(using = SignalKeyDeserializer.class)
     private byte[] baseKey;
 
     @JsonProperty("3")
     @JsonPropertyDescription("bytes")
-    @JsonDeserialize(using = SignalKeyDeserializer.class)
     private byte[] identityKey;
 
     @JsonProperty("4")
     @JsonPropertyDescription("bytes")
-    @JsonDeserialize(using = BytesDeserializer.class)
     private byte[] serializedSignalMessage;
 
     @JsonProperty("5")

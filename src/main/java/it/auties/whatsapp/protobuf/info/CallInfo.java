@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.util.BytesDeserializer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,7 +26,6 @@ public final class CallInfo implements WhatsappInfo {
    */
   @JsonProperty("1")
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] key;
 
   /**
@@ -42,7 +40,6 @@ public final class CallInfo implements WhatsappInfo {
    */
   @JsonProperty("3")
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] data;
 
   /**

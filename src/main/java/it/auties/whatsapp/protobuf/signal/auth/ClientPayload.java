@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import it.auties.whatsapp.util.BytesDeserializer;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -90,12 +89,10 @@ public class ClientPayload {
 
   @JsonProperty("21")
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] fbCat;
 
   @JsonProperty("22")
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] fbUserAgent;
 
   @JsonProperty("23")

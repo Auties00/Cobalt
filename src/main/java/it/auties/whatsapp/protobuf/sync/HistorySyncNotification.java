@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import it.auties.whatsapp.util.BytesDeserializer;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -18,7 +17,6 @@ import java.util.Arrays;
 public class HistorySyncNotification {
   @JsonProperty("1")
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] fileSha256;
 
   @JsonProperty("2")
@@ -27,12 +25,10 @@ public class HistorySyncNotification {
 
   @JsonProperty("3")
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] mediaKey;
 
   @JsonProperty("4")
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] fileEncSha256;
 
   @JsonProperty("5")

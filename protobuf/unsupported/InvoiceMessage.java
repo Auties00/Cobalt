@@ -14,7 +14,6 @@ public class InvoiceMessage {
 
   @JsonProperty(value = "10", required = false)
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] attachmentJpegThumbnail;
 
   @JsonProperty(value = "9", required = false)
@@ -23,12 +22,10 @@ public class InvoiceMessage {
 
   @JsonProperty(value = "8", required = false)
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] attachmentFileEncSha256;
 
   @JsonProperty(value = "7", required = false)
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] attachmentFileSha256;
 
   @JsonProperty(value = "6", required = false)
@@ -37,7 +34,6 @@ public class InvoiceMessage {
 
   @JsonProperty(value = "5", required = false)
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] attachmentMediaKey;
 
   @JsonProperty(value = "4", required = false)

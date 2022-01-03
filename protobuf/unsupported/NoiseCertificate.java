@@ -14,11 +14,9 @@ public class NoiseCertificate {
 
   @JsonProperty(value = "2", required = false)
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] signature;
 
   @JsonProperty(value = "1", required = false)
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] details;
 }

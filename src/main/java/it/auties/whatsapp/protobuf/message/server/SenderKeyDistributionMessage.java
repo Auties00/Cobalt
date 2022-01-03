@@ -6,8 +6,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.message.model.ServerMessage;
-import it.auties.whatsapp.protobuf.signal.message.SignalDistributionMessage;
-import it.auties.whatsapp.util.BytesDeserializer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -40,7 +38,6 @@ public final class SenderKeyDistributionMessage implements ServerMessage {
    */
   @JsonProperty("2")
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] data;
 
   /**

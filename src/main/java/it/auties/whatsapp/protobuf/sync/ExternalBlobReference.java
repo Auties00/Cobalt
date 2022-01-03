@@ -3,7 +3,6 @@ package it.auties.whatsapp.protobuf.sync;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import it.auties.whatsapp.util.BytesDeserializer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,7 +17,6 @@ import lombok.experimental.Accessors;
 public class ExternalBlobReference {
   @JsonProperty("1")
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] mediaKey;
 
   @JsonProperty("2")
@@ -35,11 +33,9 @@ public class ExternalBlobReference {
 
   @JsonProperty("5")
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] fileSha256;
 
   @JsonProperty("6")
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] fileEncSha256;
 }

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import it.auties.whatsapp.util.BytesDeserializer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,7 +20,6 @@ import java.util.List;
 public class DeviceListMetadata {
   @JsonProperty("1")
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] senderKeyHash;
 
   @JsonProperty("2")
@@ -35,7 +33,6 @@ public class DeviceListMetadata {
 
   @JsonProperty("8")
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] recipientKeyHash;
 
   @JsonProperty("9")

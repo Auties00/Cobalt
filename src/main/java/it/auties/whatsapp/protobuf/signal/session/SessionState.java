@@ -5,8 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
-import it.auties.whatsapp.util.BytesDeserializer;
-import it.auties.whatsapp.util.SignalKeyDeserializer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,8 +12,6 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.experimental.Delegate;
 
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.util.*;
 
 @AllArgsConstructor
@@ -34,17 +30,14 @@ public class SessionState {
 
     @JsonProperty("2")
     @JsonPropertyDescription("bytes")
-    @JsonDeserialize(using = SignalKeyDeserializer.class)
     private byte[] localIdentityPublic;
 
     @JsonProperty("3")
     @JsonPropertyDescription("bytes")
-    @JsonDeserialize(using = SignalKeyDeserializer.class)
     private byte[] remoteIdentityKey;
 
     @JsonProperty("4")
     @JsonPropertyDescription("bytes")
-     @JsonDeserialize(using = BytesDeserializer.class)
     private byte[] rootKey;
 
     @JsonProperty("5")
@@ -83,7 +76,6 @@ public class SessionState {
 
     @JsonProperty("13")
     @JsonPropertyDescription("bytes")
-    @JsonDeserialize(using = BytesDeserializer.class)
     private byte[] baseKey;
 
     public SessionState senderChain(SignalKeyPair senderRatchetKeyPair, SessionChainKey chainKey) {

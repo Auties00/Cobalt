@@ -18,12 +18,10 @@ public class MediaData {
 
   @JsonProperty(value = "4", required = false)
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] fileEncSha256;
 
   @JsonProperty(value = "3", required = false)
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] fileSha256;
 
   @JsonProperty(value = "2", required = false)
@@ -32,6 +30,5 @@ public class MediaData {
 
   @JsonProperty(value = "1", required = false)
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] mediaKey;
 }

@@ -4,17 +4,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import it.auties.protobuf.decoder.ProtobufDecoder;
-import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp.binary.BinaryArray;
-import it.auties.whatsapp.util.BytesDeserializer;
-import it.auties.whatsapp.util.SignalKeyDeserializer;
 import lombok.*;
 import lombok.experimental.Accessors;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
-import java.util.Arrays;
 
 import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
 import static java.util.Arrays.copyOfRange;
@@ -33,7 +27,6 @@ public final class SignalMessage implements SignalProtocolMessage {
 
     @JsonProperty("1")
     @JsonPropertyDescription("bytes")
-    @JsonDeserialize(using = SignalKeyDeserializer.class)
     private byte[] ratchetKey;
 
     @JsonProperty("2")
@@ -46,7 +39,6 @@ public final class SignalMessage implements SignalProtocolMessage {
 
     @JsonProperty("4")
     @JsonPropertyDescription("bytes")
-    @JsonDeserialize(using = BytesDeserializer.class)
     private byte[] ciphertext;
 
     private byte[] serialized;

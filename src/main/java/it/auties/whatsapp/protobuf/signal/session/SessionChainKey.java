@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import it.auties.whatsapp.crypto.Hkdf;
-import it.auties.whatsapp.util.BytesDeserializer;
 import it.auties.whatsapp.util.Validate;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -33,7 +32,6 @@ public class SessionChainKey {
 
     @JsonProperty("2")
     @JsonPropertyDescription("bytes")
-    @JsonDeserialize(using = BytesDeserializer.class)
     private byte[] key;
 
     private byte[] cipherKey;

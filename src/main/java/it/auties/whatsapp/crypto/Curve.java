@@ -29,14 +29,14 @@ public class Curve {
     public BinaryArray calculateSharedSecret(byte @NonNull [] publicKey, byte @NonNull [] privateKey) {
         var keyAgreement = KeyAgreement.getInstance(CURVE_25519);
         keyAgreement.init(toPKCS8Encoded(privateKey));
-        keyAgreement.doPhase(toX509Encoded(publicKey), true);
+        keyAgreement.doPhase(toX509Encoded(SignalHelper.removeKeyHeader(publicKey)), true);
         return BinaryArray.of(keyAgreement.generateSecret());
     }
 
     @SneakyThrows
     public boolean verifySignature(byte @NonNull [] publicKey, byte @NonNull [] message, byte @NonNull [] signature) {
         return Curve25519.getInstance(Curve25519.BEST)
-                .verifySignature(publicKey, message, signature);
+                .verifySignature(SignalHelper.removeKeyHeader(publicKey), message, signature);
     }
 
     @SneakyThrows
@@ -48,7 +48,7 @@ public class Curve {
     @SneakyThrows
     private PublicKey toX509Encoded(byte @NonNull [] rawPublicKey) {
         var keyFactory = KeyFactory.getInstance(CURVE_25519);
-        var publicKeyInfo = new SubjectPublicKeyInfo(new AlgorithmIdentifier(EdECObjectIdentifiers.id_X25519), rawPublicKey);
+        var publicKeyInfo = new SubjectPublicKeyInfo(new AlgorithmIdentifier(EdECObjectIdentifiers.id_X25519), SignalHelper.removeKeyHeader(rawPublicKey));
         var publicKeySpec = new X509EncodedKeySpec(publicKeyInfo.getEncoded());
         return keyFactory.generatePublic(publicKeySpec);
     }

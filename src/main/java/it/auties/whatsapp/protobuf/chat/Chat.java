@@ -11,7 +11,6 @@ import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.contact.ContactStatus;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
-import it.auties.whatsapp.util.BytesDeserializer;
 import it.auties.whatsapp.util.SortedMessageList;
 import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.*;
@@ -190,8 +189,7 @@ public class Chat {
      */
     @JsonProperty("21")
     @JsonPropertyDescription("bytes")
-    @JsonDeserialize(using = BytesDeserializer.class)
-    @NonNull
+@NonNull
     private byte[] token;
 
     /**
@@ -206,8 +204,7 @@ public class Chat {
      */
     @JsonProperty("23")
     @JsonPropertyDescription("bytes")
-    @JsonDeserialize(using = BytesDeserializer.class)
-    @NonNull
+@NonNull
     private byte[] identityKey;
 
     /**

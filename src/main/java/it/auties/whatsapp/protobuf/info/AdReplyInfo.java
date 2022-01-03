@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.util.BytesDeserializer;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -41,7 +40,6 @@ public final class AdReplyInfo implements WhatsappInfo {
    */
   @JsonProperty("16")
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] thumbnail;
 
   /**

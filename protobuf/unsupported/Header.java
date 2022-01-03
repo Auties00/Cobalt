@@ -18,7 +18,6 @@ public class Header {
 
   @JsonProperty(value = "6", required = false)
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] jpegThumbnail;
 
   @JsonProperty(value = "4", required = false)

@@ -4,11 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import it.auties.protobuf.decoder.ProtobufDecoder;
-import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp.binary.BinaryArray;
-import it.auties.whatsapp.crypto.Curve;
-import it.auties.whatsapp.util.BytesDeserializer;
-import it.auties.whatsapp.util.Validate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -42,12 +38,10 @@ public class SenderKeyMessage {
 
   @JsonProperty("3")
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] cipherText;
 
   @JsonProperty("4")
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] signingKey;
   
   private byte[] serialized;

@@ -8,7 +8,6 @@ import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.protobuf.info.BusinessAccountInfo;
-import it.auties.whatsapp.util.BytesDeserializer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -40,7 +39,6 @@ public class BusinessAccountPayload {
    */
   @JsonProperty("2")
   @JsonPropertyDescription("bytes")
-  @JsonDeserialize(using = BytesDeserializer.class)
   private BusinessAccountInfo info;
 
   /**
