@@ -3,7 +3,7 @@ package it.auties.whatsapp.protobuf.contact;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.protobuf.signal.session.ProtocolAddress;
+import it.auties.whatsapp.protobuf.signal.session.SessionAddress;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -207,10 +207,10 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      *
      * @return a non-null {@link SignalProtocolAddress}
      */
-    public ProtocolAddress toSignalAddress(){
+    public SessionAddress toSignalAddress(){
         var name = agent == 0 ? user()
                 : "%s_%s".formatted(user(), agent());
-        return new ProtocolAddress(user, device);
+        return new SessionAddress(user, device);
     }
 
     /**

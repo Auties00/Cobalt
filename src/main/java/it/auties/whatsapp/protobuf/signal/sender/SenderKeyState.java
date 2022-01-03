@@ -23,54 +23,54 @@ public class SenderKeyState {
 
   @JsonProperty("1")
   @JsonPropertyDescription("uint32")
-  private int senderKeyId;
+  private int id;
 
   @JsonProperty("2")
   @JsonPropertyDescription("SenderChainKey")
-  private SenderChainKey senderChainKey;
+  private SenderChainKey chainKey;
 
   @JsonProperty("3")
   @JsonPropertyDescription("SenderSigningKey")
-  private SenderSigningKey senderSigningKey;
+  private SenderSigningKey signingKey;
 
   @JsonProperty("4")
   @JsonPropertyDescription("SenderMessageKey")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  private List<SenderMessageKey> senderMessageKeys = new ArrayList<>();
+  private List<SenderMessageKey> messageKeys = new ArrayList<>();
 
   public SenderKeyState(int id, int iteration, byte[] chainKey, byte[] signatureKeyPublic, byte[] signatureKeyPrivate) {
-    this.senderKeyId = id;
-    this.senderChainKey = new SenderChainKey(iteration, chainKey);
-    this.senderSigningKey = new SenderSigningKey(BinaryArray.of((byte) 5).append(signatureKeyPublic).data(), signatureKeyPrivate);
+    this.id = id;
+    this.chainKey = new SenderChainKey(iteration, chainKey);
+    this.signingKey = new SenderSigningKey(BinaryArray.of((byte) 5).append(signatureKeyPublic).data(), signatureKeyPrivate);
   }
 
   public byte[] signingKeyPublic() {
-    return BinaryArray.of(senderSigningKey().publicKey()).slice(1).data();
+    return signingKey().publicKey();
   }
 
   public byte[] signingKeyPrivate() {
-    return senderSigningKey().privateKey();
+    return signingKey().privateKey();
   }
 
   public boolean hasSenderMessageKey(int iteration) {
-    return senderMessageKeys.stream()
+    return messageKeys.stream()
             .anyMatch(senderMessageKey -> senderMessageKey.iteration() == iteration);
   }
 
   public void addSenderMessageKey(SenderMessageKey senderMessageKey) {
-    senderMessageKeys.add(senderMessageKey);
-    if (senderMessageKeys.size() <= MAX_MESSAGE_KEYS) {
+    messageKeys.add(senderMessageKey);
+    if (messageKeys.size() <= MAX_MESSAGE_KEYS) {
       return;
     }
 
-    senderMessageKeys.remove(0);
+    messageKeys.remove(0);
   }
 
   public SenderMessageKey removeSenderMessageKey(int iteration) {
-    return senderMessageKeys.stream()
+    return messageKeys.stream()
             .filter(key -> key.iteration() == iteration)
-            .mapToInt(senderMessageKeys::indexOf)
-            .mapToObj(senderMessageKeys::remove)
+            .mapToInt(messageKeys::indexOf)
+            .mapToObj(messageKeys::remove)
             .findFirst()
             .orElse(null);
   }

@@ -36,7 +36,7 @@ public class SenderKeyRecord {
 
   public SenderKeyState senderKeyState(int keyId) {
     return states().stream()
-            .filter(key -> key.senderKeyId() == keyId)
+            .filter(key -> key.id() == keyId)
             .findFirst()
             .orElseThrow(() -> new NoSuchElementException("Cannot find key with id %s".formatted(keyId)));
   }

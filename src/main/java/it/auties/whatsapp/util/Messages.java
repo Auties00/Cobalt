@@ -1,8 +1,8 @@
 package it.auties.whatsapp.util;
 
 import it.auties.protobuf.decoder.ProtobufDecoder;
-import it.auties.whatsapp.crypto.SignalGroup;
-import it.auties.whatsapp.crypto.SignalSession;
+import it.auties.whatsapp.crypto.GroupCipher;
+import it.auties.whatsapp.crypto.SessionCipher;
 import it.auties.whatsapp.exchange.Node;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
@@ -15,8 +15,6 @@ import it.auties.whatsapp.protobuf.signal.message.SignalMessage;
 import it.auties.whatsapp.protobuf.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.protobuf.signal.sender.SenderKeyName;
 import it.auties.whatsapp.protobuf.signal.sender.SenderKeyRecord;
-import it.auties.whatsapp.protobuf.signal.sender.SenderKeyStructure;
-import it.auties.whatsapp.protobuf.signal.session.ProtocolAddress;
 import lombok.experimental.UtilityClass;
 import lombok.extern.java.Log;
 
@@ -87,20 +85,20 @@ public class Messages {
         return switch (type) {
             case "skmsg" -> {
                 var senderName = new SenderKeyName(from.toString(), from.toSignalAddress());
-                var signalGroup = new SignalGroup(senderName, keys);
-                yield signalGroup.decipher(message);
+                var signalGroup = new GroupCipher(senderName, keys);
+                yield signalGroup.decrypt(message);
             }
 
             case "pkmsg" -> {
-                var session = new SignalSession(from.toSignalAddress(), keys);
+                var session = new SessionCipher(from.toSignalAddress(), keys);
                 var preKey = SignalPreKeyMessage.ofSerialized(message);
-                yield session.decipher(preKey);
+                yield session.decrypt(preKey);
             }
 
             case "msg" -> {
-                var session = new SignalSession(from.toSignalAddress(), keys);
+                var session = new SessionCipher(from.toSignalAddress(), keys);
                 var signalMessage = SignalMessage.ofSerialized(message);
-                yield session.decipher(signalMessage);
+                yield session.decrypt(signalMessage);
             }
 
             default -> throw new IllegalArgumentException("Unsupported message type: %s".formatted(type));
@@ -118,15 +116,13 @@ public class Messages {
             return;
         }
 
-        var group = new SignalGroup(keys);
         var groupName = new SenderKeyName(distributionMessage.groupId(), from.toSignalAddress());
-        var signalDistributionMessage = new SignalDistributionMessage(distributionMessage.data());
+        var group = new GroupCipher(groupName, keys);
         var senderKey = keys.findSenderKeyByName(groupName);
         if(senderKey.isEmpty()){
-            var structure = new SenderKeyStructure(groupName, new SenderKeyRecord());
-            keys.senderKeyStructures().add(structure);
+            keys.addSenderKey(groupName, new SenderKeyRecord());
         }
 
-        group.process(groupName, signalDistributionMessage);
+        group.decrypt(distributionMessage.data());
     }
 }

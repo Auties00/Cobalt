@@ -6,6 +6,7 @@ import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.binary.BinaryMessage;
 import it.auties.whatsapp.crypto.Curve;
 import it.auties.whatsapp.crypto.Handshake;
+import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.exchange.Node;
 import it.auties.whatsapp.exchange.Request;
 import it.auties.whatsapp.manager.WhatsappKeys;
@@ -14,7 +15,7 @@ import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
 import it.auties.whatsapp.protobuf.signal.auth.*;
-import it.auties.whatsapp.protobuf.signal.keypair.SignalPreKey;
+import it.auties.whatsapp.protobuf.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.util.Messages;
 import it.auties.whatsapp.util.Qr;
 import it.auties.whatsapp.util.Validate;
@@ -211,16 +212,16 @@ public class WhatsappSocket {
             var sharedEphemeral = Curve.calculateSharedSecret(serverHello.ephemeral(), keys.ephemeralKeyPair().privateKey());
             handshake.mixIntoKey(sharedEphemeral.data());
 
-            var decodedStaticText = handshake.cypher(serverHello.staticText(), false);
+            var decodedStaticText = handshake.cipher(serverHello.staticText(), false);
             var sharedStatic = Curve.calculateSharedSecret(decodedStaticText, keys.ephemeralKeyPair().privateKey());
             handshake.mixIntoKey(sharedStatic.data());
-            handshake.cypher(serverHello.payload(), false);
+            handshake.cipher(serverHello.payload(), false);
 
-            var encodedKey = handshake.cypher(keys.companionKeyPair().publicKey(), true);
+            var encodedKey = handshake.cipher(keys.companionKeyPair().publicKey(), true);
             var sharedPrivate = Curve.calculateSharedSecret(serverHello.ephemeral(), keys.companionKeyPair().privateKey());
             handshake.mixIntoKey(sharedPrivate.data());
 
-            var encodedPayload = handshake.cypher(createUserPayload(), true);
+            var encodedPayload = handshake.cipher(createUserPayload(), true);
             var clientFinish = new ClientFinish(encodedKey, encodedPayload);
             Request.with(new HandshakeMessage(clientFinish))
                     .sendWithNoResponse(session(), keys(), store());
@@ -353,7 +354,7 @@ public class WhatsappSocket {
 
         private Node[] createPreKeysContent() {
             return new Node[]{createPreKeysRegistration(), createPreKeysType(),
-                    createPreKeysIdentity(), createPreKeys(), keys().signedKeyPair().encode()};
+                    createPreKeysIdentity(), createPreKeys(), keys().signedKeyPair().toNode()};
         }
 
         private Node createPreKeysIdentity() {
@@ -370,9 +371,9 @@ public class WhatsappSocket {
 
         private Node createPreKeys(){
             var nodes = IntStream.range(0, 30)
-                    .mapToObj(SignalPreKey::fromIndex)
+                    .mapToObj(SignalPreKeyPair::fromIndex)
                     .peek(keys.preKeys()::add)
-                    .map(SignalPreKey::encode)
+                    .map(SignalPreKeyPair::toNode)
                     .toList();
 
             return with("list", nodes);
@@ -408,9 +409,9 @@ public class WhatsappSocket {
         private void confirmQrCode(Node node, Node container) {
             saveCompanion(container);
 
-            var deviceIdentity = (byte[]) container.findNode("device-identity").content();
-            var advIdentity = ProtobufDecoder.forType(SignedDeviceIdentityHMAC.class).decode(deviceIdentity);
-            var advSign = Curve.verifyHmac(of(advIdentity.details()), of(keys().companionKey()));
+            var advIdentity = ProtobufDecoder.forType(SignedDeviceIdentityHMAC.class)
+                    .decode(container.findNode("device-identity").bytes());
+            var advSign = Hmac.calculate(advIdentity.details(), keys().companionKey());
             Validate.isTrue(Arrays.equals(advIdentity.hmac(), advSign.data()), "Cannot login: Hmac validation failed!", SecurityException.class);
 
             var account = ProtobufDecoder.forType(SignedDeviceIdentity.class).decode(advIdentity.details());

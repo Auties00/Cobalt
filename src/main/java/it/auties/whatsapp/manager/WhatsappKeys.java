@@ -1,7 +1,6 @@
 package it.auties.whatsapp.manager;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,31 +8,25 @@ import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
-import it.auties.whatsapp.protobuf.signal.keypair.SignalPreKey;
+import it.auties.whatsapp.protobuf.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.protobuf.signal.sender.SenderKeyName;
 import it.auties.whatsapp.protobuf.signal.sender.SenderKeyRecord;
-import it.auties.whatsapp.protobuf.signal.sender.SenderKeyStructure;
-import it.auties.whatsapp.protobuf.signal.session.ProtocolAddress;
-import it.auties.whatsapp.protobuf.signal.session.SessionRecord;
-import it.auties.whatsapp.protobuf.signal.session.SessionStructure;
-import it.auties.whatsapp.protobuf.signal.session.SignedPreKeyRecordStructure;
+import it.auties.whatsapp.protobuf.signal.session.SessionAddress;
+import it.auties.whatsapp.protobuf.signal.session.Session;
 import it.auties.whatsapp.util.Validate;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.java.Log;
-import org.whispersystems.libsignal.SignalProtocolAddress;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.Objects.requireNonNullElseGet;
 
 /**
  * This class is a data class used to hold the clientId, serverToken, clientToken, publicKey, privateKey, encryptionKey and macKey.
@@ -95,7 +88,7 @@ public class WhatsappKeys {
      * Whether these keys have generated pre keys assigned to them
      */
     @JsonProperty
-    private @NonNull LinkedList<@NonNull SignalPreKey> preKeys;
+    private @NonNull LinkedList<@NonNull SignalPreKeyPair> preKeys;
 
     /**
      * The user using these keys
@@ -111,17 +104,17 @@ public class WhatsappKeys {
     /**
      * Sender keys for signal implementation
      */
-    private List<SenderKeyStructure> senderKeyStructures;
+    private Map<SenderKeyName, SenderKeyRecord> senderKeys;
 
     /**
      * Sessions map
      */
-    private Map<ProtocolAddress, SessionRecord> sessions;
+    private Map<SessionAddress, Session> sessions;
 
     /**
      * Trusted keys
      */
-    private Map<ProtocolAddress, byte[]> identities;
+    private Map<SessionAddress, byte[]> identities;
 
     /**
      * Clears all the keys from this machine's memory.
@@ -167,7 +160,7 @@ public class WhatsappKeys {
         this.identityKeyPair = SignalKeyPair.random();
         this.signedKeyPair = SignalSignedKeyPair.with(id, identityKeyPair());
         this.companionKey = SignalHelper.randomSenderKey();
-        this.senderKeyStructures = new ArrayList<>();
+        this.senderKeys = new ConcurrentHashMap<>();
         this.preKeys = new LinkedList<>();
         this.sessions = new ConcurrentHashMap<>();
         this.identities = new ConcurrentHashMap<>();
@@ -233,58 +226,18 @@ public class WhatsappKeys {
      * @param name the non-null name to search
      * @return a non-null SenderKeyRecord
      */
-    public SenderKeyRecord findSenderKeyByName(@NonNull SenderKeyName name){
-        return senderKeyStructures.stream()
-                .filter(structure -> Objects.equals(structure.name(), name))
-                .findFirst()
-                .map(SenderKeyStructure::record)
-                .orElseGet(() -> createSenderKey(name));
-    }
-
-    private SenderKeyRecord createSenderKey(SenderKeyName name) {
-        var structure = new SenderKeyStructure(name, new SenderKeyRecord());
-        senderKeyStructures.add(structure);
-        return structure.record();
+    public Optional<SenderKeyRecord> findSenderKeyByName(@NonNull SenderKeyName name) {
+        return Optional.ofNullable(senderKeys.get(name));
     }
 
     /**
-     * Queries the {@link SessionRecord} that matches {@code address}
+     * Queries the {@link Session} that matches {@code address}
      *
      * @param address the non-null address to search
      * @return a non-null SessionRecord
      */
-    public SessionRecord findSessionByAddress(@NonNull ProtocolAddress address){
-        return requireNonNull(sessions.get(address), "Cannot find record for address %s".formatted(address));
-    }
-
-    /**
-     * Queries the {@link SessionRecord} that matches {@code address}
-     *
-     * @param address the non-null address to search
-     * @param defaultValue the non-null default value supplier, may supply a null a value
-     * @return a nullable SessionRecord as {@code defaultValue} might supply a null value
-     */
-    public SessionRecord findSessionByAddress(@NonNull ProtocolAddress address, @NonNull Supplier<SessionRecord> defaultValue){
-        return requireNonNullElseGet(sessions.get(address),
-                () -> addSessionFallback(address, defaultValue));
-    }
-
-    private SessionRecord addSessionFallback(ProtocolAddress address, Supplier<SessionRecord> defaultValue) {
-        var value = defaultValue.get();
-        sessions.put(address, value);
-        return value;
-    }
-
-    /**
-     * Queries the trusted key that matches {@code address}
-     *
-     * @param address the non-null address to search
-     * @return a non-null array of bytes
-     * @throws NullPointerException if no element can be found
-     */
-    public byte[] findIdentityByAddress(@NonNull ProtocolAddress address) {
-        return requireNonNull(identities.get(address),
-                "Cannot find any identity matching the provided address");
+    public Optional<Session> findSessionByAddress(@NonNull SessionAddress address){
+        return Optional.ofNullable(sessions.get(address));
     }
 
     /**
@@ -294,9 +247,22 @@ public class WhatsappKeys {
      * @return a non-null array of bytes
      * @throws NullPointerException if no element can be found
      */
-    public SignedPreKeyRecordStructure findSignedIdentityByAddress(int id) {
+    public SignalSignedKeyPair findSignedKeyPairById(int id) {
         Validate.isTrue(id == signedKeyPair.id(), "Id mismatch: %s != %s", id, signedKeyPair.id());
-        return new SignedPreKeyRecordStructure(id, signedKeyPair.keyPair().publicKey(), signedKeyPair.keyPair().privateKey(), signedKeyPair.signature(), 0);
+        return signedKeyPair;
+    }
+
+    /**
+     * Queries the trusted key that matches {@code id}
+     *
+     * @param id the non-null id to search
+     * @return a non-null array of bytes
+     * @throws NullPointerException if no element can be found
+     */
+    public Optional<SignalPreKeyPair> findPreKeyById(int id) {
+        return preKeys.stream()
+                .filter(preKey -> preKey.id() == id)
+                .findFirst();
     }
 
     /**
@@ -306,9 +272,8 @@ public class WhatsappKeys {
      * @param identityKey the nullable identity key
      * @return true if any match is found
      */
-    public boolean hasTrust(@NonNull ProtocolAddress address, byte[] identityKey) {
-        var key = identities.get(address);
-        return (key == null || Arrays.equals(key, identityKey));
+    public boolean hasTrust(@NonNull SessionAddress address, byte[] identityKey) {
+        return true; // At least for now
     }
 
     /**
@@ -318,8 +283,20 @@ public class WhatsappKeys {
      * @param record the non-null record
      * @return this
      */
-    public WhatsappKeys addSession(@NonNull ProtocolAddress address, @NonNull SessionRecord record){
-        sessions.put(address, record.fresh(false));
+    public WhatsappKeys addSession(@NonNull SessionAddress address, @NonNull Session record){
+        sessions.put(address, record);
+        return this;
+    }
+
+    /**
+     * Adds the provided name and key record to the known sender keys
+     *
+     * @param name the non-null name
+     * @param record the non-null record
+     * @return this
+     */
+    public WhatsappKeys addSenderKey(@NonNull SenderKeyName name, @NonNull SenderKeyRecord record){
+        senderKeys.put(name, record);
         return this;
     }
 }

@@ -16,6 +16,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.util.Arrays;
 
+import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
 import static java.util.Arrays.copyOfRange;
 
 @AllArgsConstructor
@@ -61,31 +62,16 @@ public final class SignalMessage implements SignalProtocolMessage {
         }
     }
 
-    public SignalMessage(int messageVersion, SecretKeySpec macKey, byte[] senderRatchetKey, int counter, int previousCounter, byte[] ciphertext, byte[] senderIdentityKey, byte[] receiverIdentityKey) {
-        var version = (byte) (messageVersion << 4 | CURRENT_VERSION);
-        var message = ProtobufEncoder.encode(this);
-        var mac = getMac(senderIdentityKey, receiverIdentityKey, macKey, BinaryArray.of(version).append(message).data());
-        this.serialized = BinaryArray.of(version).append(message).append(mac).data();
-        this.ratchetKey = senderRatchetKey;
-        this.counter = counter;
-        this.previousCounter = previousCounter;
-        this.ciphertext = ciphertext;
-        this.version = messageVersion;
-    }
+    // This does not include the signature(length = 8)
+    public byte[] serialized() {
+        if(serialized == null){
+            var versionBytes = (byte) (version() << 4 | CURRENT_VERSION);
+            var messageBytes = encode(this);
+            this.serialized = BinaryArray.of(versionBytes)
+                    .append(messageBytes)
+                    .data();
+        }
 
-    public boolean verifyMac(byte[] senderIdentityKey, byte[] receiverIdentityKey, SecretKeySpec macKey) {
-        var binary = BinaryArray.of(serialized);
-        var divider = serialized.length - MAC_LENGTH;
-        var ourMac = getMac(senderIdentityKey, receiverIdentityKey, macKey, binary.cut(divider).data());
-        return Arrays.equals(ourMac, binary.slice(divider).data());
-    }
-
-    @SneakyThrows
-    private byte[] getMac(byte[] senderIdentityKey, byte[] receiverIdentityKey, SecretKeySpec macKey, byte[] serialized) {
-        var mac = Mac.getInstance(HMAC);
-        mac.init(macKey);
-        mac.update(senderIdentityKey);
-        mac.update(receiverIdentityKey);
-        return Arrays.copyOf(mac.doFinal(serialized), MAC_LENGTH);
+        return serialized;
     }
 }

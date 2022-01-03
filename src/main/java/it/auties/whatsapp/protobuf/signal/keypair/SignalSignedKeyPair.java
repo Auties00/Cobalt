@@ -7,16 +7,21 @@ import lombok.NonNull;
 
 import static it.auties.whatsapp.binary.BinaryArray.of;
 
-public record SignalSignedKeyPair(int id, @NonNull SignalKeyPair keyPair, byte @NonNull [] signature) {
+public record SignalSignedKeyPair(int id, @NonNull SignalKeyPair keyPair, byte @NonNull [] signature) implements ISignalKeyPair{
     public static SignalSignedKeyPair with(int id, @NonNull SignalKeyPair identityKeyPair){
         var keyPair = SignalKeyPair.random();
         var signature = Curve.calculateSignature(identityKeyPair.privateKey(), keyPair.encodedPublicKey());
         return new SignalSignedKeyPair(id, keyPair, signature);
     }
 
-    public Node encode(){
+    @Override
+    public SignalKeyPair toGenericKeyPair() {
+        return keyPair;
+    }
+
+    public Node toNode(){
         return Node.withChildren("skey",
-                Node.with("id", id),
+                Node.with("id", encodedId()),
                 Node.with("value", keyPair.publicKey()),
                 Node.with("signature", signature)
         );

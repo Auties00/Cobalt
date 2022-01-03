@@ -2,6 +2,7 @@ package it.auties.whatsapp.crypto;
 
 import it.auties.whatsapp.binary.BinaryArray;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.modes.GCMBlockCipher;
@@ -28,15 +29,12 @@ public record AesGmc(@NonNull GCMBlockCipher cipher) {
         return ByteBuffer.allocate(12).putLong(4, count).array();
     }
 
+    @SneakyThrows
     public synchronized byte[] process(byte[] bytes) {
-        try {
-            var outputLength = cipher.getOutputSize(bytes.length);
-            var output = new byte[outputLength];
-            var outputOffset = cipher.processBytes(bytes, 0, bytes.length, output, 0);
-            cipher.doFinal(output, outputOffset);
-            return output;
-        } catch (InvalidCipherTextException exception) {
-            throw new IllegalArgumentException("Cannot process provided bytes", exception);
-        }
+        var outputLength = cipher.getOutputSize(bytes.length);
+        var output = new byte[outputLength];
+        var outputOffset = cipher.processBytes(bytes, 0, bytes.length, output, 0);
+        cipher.doFinal(output, outputOffset);
+        return output;
     }
 }

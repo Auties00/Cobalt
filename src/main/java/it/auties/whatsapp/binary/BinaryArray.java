@@ -288,13 +288,25 @@ public record BinaryArray(byte @NonNull [] data) {
     }
 
     /**
-     * Checks if this object and {@param o} are equal
+     * Checks if this object and {@param other} are equal
      *
-     * @return true if {@param o} is an instance of {@code BinaryArray} and if they wrap two arrays considered equal
+     * @param other other
+     * @return true if {@param other} is an instance of {@code BinaryArray} and/or if they wrap two arrays considered equal
      */
     @Override
-    public boolean equals(Object o) {
-        return o instanceof BinaryArray that
-                && Arrays.equals(data, that.data);
+    public boolean equals(Object other) {
+        return (other instanceof byte[] bytes && Arrays.equals(data, bytes))
+                || (other instanceof BinaryArray that && Arrays.equals(data, that.data));
+    }
+
+    /**
+     * Checks if this object and {@param other} are equal
+     *
+     * @param other other
+     * @return true if {@param other} is an instance of {@code BinaryArray} and/or if they wrap two arrays considered equal
+     */
+    public boolean contentEquals(Object other) {
+        return (other instanceof byte[] bytes && Arrays.equals(data, bytes))
+                || (other instanceof BinaryArray that && Arrays.equals(data, that.data));
     }
 }

@@ -69,20 +69,19 @@ public final class SignalPreKeyMessage implements SignalProtocolMessage{
         }
     }
 
-    public SignalPreKeyMessage(int messageVersion, int registrationId, int preKeyId, int signedPreKeyId, byte[] baseKey, byte[] identityKey, SignalMessage message) {
-        this.version = messageVersion;
-        this.registrationId = registrationId;
-        this.preKeyId = preKeyId;
-        this.signedPreKeyId = signedPreKeyId;
-        this.baseKey = baseKey;
-        this.identityKey = identityKey;
-        this.serializedSignalMessage = encode(message);
-        var versionBytes = (byte) (version() << 4 | CURRENT_VERSION);
-        var messageBytes = encode(this);
-        this.serialized = BinaryArray.of(versionBytes).append(messageBytes).data();
-    }
-
     public SignalMessage signalMessage(){
         return SignalMessage.ofSerialized(serializedSignalMessage);
+    }
+
+    public byte[] serialized(){
+        if(serialized == null){
+            var versionBytes = (byte) (version() << 4 | CURRENT_VERSION);
+            var messageBytes = encode(this);
+            this.serialized = BinaryArray.of(versionBytes)
+                    .append(messageBytes)
+                    .data();
+        }
+
+        return serialized;
     }
 }

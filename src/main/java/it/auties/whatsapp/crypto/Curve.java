@@ -24,7 +24,6 @@ import java.security.spec.X509EncodedKeySpec;
 @UtilityClass
 public class Curve {
     private final String CURVE_25519 = "X25519";
-    private final String HMAC_SHA256 = "HmacSHA256";
 
     @SneakyThrows
     public BinaryArray calculateSharedSecret(byte @NonNull [] publicKey, byte @NonNull [] privateKey) {
@@ -38,13 +37,6 @@ public class Curve {
     public boolean verifySignature(byte @NonNull [] publicKey, byte @NonNull [] message, byte @NonNull [] signature) {
         return Curve25519.getInstance(Curve25519.BEST)
                 .verifySignature(publicKey, message, signature);
-    }
-
-    @SneakyThrows
-    public BinaryArray verifyHmac(@NonNull BinaryArray plain, @NonNull BinaryArray key) {
-        var localMac = Mac.getInstance(HMAC_SHA256);
-        localMac.init(new SecretKeySpec(key.data(), HMAC_SHA256));
-        return BinaryArray.of(localMac.doFinal(plain.data()));
     }
 
     @SneakyThrows

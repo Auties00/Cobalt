@@ -1,10 +1,10 @@
 package it.auties.whatsapp.protobuf.signal.sender;
 
-import it.auties.whatsapp.protobuf.signal.session.ProtocolAddress;
+import it.auties.whatsapp.protobuf.signal.session.SessionAddress;
 
 import java.util.Objects;
 
-public record SenderKeyName(String groupId, ProtocolAddress sender) {
+public record SenderKeyName(String groupId, SessionAddress sender) {
   public String serialize() {
     return "%s::%s::%s".formatted(groupId(), sender.name(), sender.deviceId());
   }

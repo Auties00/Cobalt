@@ -14,12 +14,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
-import org.whispersystems.libsignal.protocol.CiphertextMessage;
-import org.whispersystems.libsignal.util.ByteUtil;
 
 import java.io.IOException;
-import java.util.Arrays;
 
+import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
 import static java.util.Arrays.copyOfRange;
 
 
@@ -31,6 +29,8 @@ import static java.util.Arrays.copyOfRange;
 public class SenderKeyMessage {
   private static final int SIGNATURE_LENGTH = 64;
   private static final int CURRENT_VERSION = 3;
+
+  private int version;
 
   @JsonProperty("1")
   @JsonPropertyDescription("uint32")
@@ -44,13 +44,16 @@ public class SenderKeyMessage {
   @JsonPropertyDescription("bytes")
   @JsonDeserialize(using = BytesDeserializer.class)
   private byte[] cipherText;
-  
-  private int version;
+
+  @JsonProperty("4")
+  @JsonPropertyDescription("bytes")
+  @JsonDeserialize(using = BytesDeserializer.class)
+  private byte[] signingKey;
   
   private byte[] serialized;
 
-  public SenderKeyMessage(int id, int iteration, byte[] ciphertext) {
-    this(id, iteration, ciphertext, 0, null);
+  public SenderKeyMessage(int id, int iteration, byte[] ciphertext, byte[] signingKey) {
+    this(CURRENT_VERSION, id, iteration, ciphertext, signingKey, null);
   }
 
   public static SenderKeyMessage ofEncoded(byte[] serialized) {
@@ -64,25 +67,15 @@ public class SenderKeyMessage {
     }
   }
 
-  public SenderKeyMessage(int keyId, int iteration, byte[] ciphertext, byte[] signatureKey) {
-    var version = (byte) ((CURRENT_VERSION << 4 | CURRENT_VERSION) & 0xFF);
-    var message = ProtobufEncoder.encode(new SenderKeyMessage(keyId, iteration, ciphertext));
-    var signature = Curve.calculateSignature(signatureKey, BinaryArray.of(version).append(message).data());
-    this.serialized = BinaryArray.of(version).append(message).append(signature).data();
-    this.version = CURRENT_VERSION;
-    this.id = keyId;
-    this.iteration = iteration;
-    this.cipherText = ciphertext;
-  }
+  public byte[] serialized(){
+    if(serialized == null){
+      var versionBytes = (byte) (version() << 4 | CURRENT_VERSION);
+      var messageBytes = encode(this);
+      this.serialized = BinaryArray.of(versionBytes)
+              .append(messageBytes)
+              .data();
+    }
 
-  public void verifySignature(byte[] signatureKey) {
-    var signatureKeyBinary = BinaryArray.of(signatureKey);
-    var message = signatureKeyBinary.slice(serialized.length - SIGNATURE_LENGTH);
-    var signature = signatureKeyBinary.slice(serialized.length - SIGNATURE_LENGTH, SIGNATURE_LENGTH);
-    Validate.isTrue(Curve.verifySignature(signatureKey, message.data(), signature.data()), "Invalid signature");
-  }
-
-  public int type() {
-    return CiphertextMessage.SENDERKEY_TYPE;
+    return serialized;
   }
 }

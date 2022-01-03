@@ -1,6 +1,7 @@
 package it.auties.whatsapp.protobuf.signal.keypair;
 
 import it.auties.whatsapp.crypto.SignalHelper;
+import it.auties.whatsapp.exchange.Node;
 import lombok.NonNull;
 import org.whispersystems.libsignal.ecc.DjbECPrivateKey;
 import org.whispersystems.libsignal.ecc.DjbECPublicKey;
@@ -8,7 +9,7 @@ import org.whispersystems.libsignal.util.KeyHelper;
 
 import java.util.Arrays;
 
-public record SignalKeyPair(byte @NonNull [] publicKey, byte @NonNull [] privateKey) {
+public record SignalKeyPair(byte @NonNull [] publicKey, byte @NonNull [] privateKey) implements ISignalKeyPair{
     public static SignalKeyPair random(){
         // TODO: Why doesn't this work?
         // var pair = KeyPairGenerator.getInstance("X25519").generateKeyPair();
@@ -29,5 +30,15 @@ public record SignalKeyPair(byte @NonNull [] publicKey, byte @NonNull [] private
     public boolean equals(Object other) {
         return other instanceof SignalKeyPair that
                 && Arrays.equals(publicKey, that.publicKey) && Arrays.equals(privateKey, that.privateKey);
+    }
+
+    @Override
+    public Node toNode() {
+        throw new UnsupportedOperationException("Cannot serialize generic signal key pair");
+    }
+
+    @Override
+    public SignalKeyPair toGenericKeyPair() {
+        return this;
     }
 }

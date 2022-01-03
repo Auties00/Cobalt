@@ -15,23 +15,38 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class MessageKey {
+public class SessionPendingKey {
     @JsonProperty("1")
     @JsonPropertyDescription("uint32")
-    private int index;
+    private int sequence;
 
     @JsonProperty("2")
     @JsonPropertyDescription("bytes")
     @JsonDeserialize(using = BytesDeserializer.class)
-    private byte[] cipherKey;
+    private byte[] localBaseKey;
 
     @JsonProperty("3")
     @JsonPropertyDescription("bytes")
     @JsonDeserialize(using = BytesDeserializer.class)
-    private byte[] macKey;
+    private byte[] localBaseKeyPrivate;
 
     @JsonProperty("4")
     @JsonPropertyDescription("bytes")
     @JsonDeserialize(using = BytesDeserializer.class)
-    private byte[] iv;
+    private byte[] localRatchetKey;
+
+    @JsonProperty("5")
+    @JsonPropertyDescription("bytes")
+    @JsonDeserialize(using = BytesDeserializer.class)
+    private byte[] localRatchetKeyPrivate;
+
+    @JsonProperty("7")
+    @JsonPropertyDescription("bytes")
+    @JsonDeserialize(using = BytesDeserializer.class)
+    private byte[] localIdentityKey;
+
+    @JsonProperty("8")
+    @JsonPropertyDescription("bytes")
+    @JsonDeserialize(using = BytesDeserializer.class)
+    private byte[] localIdentityKeyPrivate;
 }
