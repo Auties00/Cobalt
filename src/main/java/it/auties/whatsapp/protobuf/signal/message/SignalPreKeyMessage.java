@@ -24,8 +24,6 @@ import static java.util.Arrays.copyOfRange;
 @Builder
 @Accessors(fluent = true)
 public final class SignalPreKeyMessage implements SignalProtocolMessage{
-    private static int CURRENT_VERSION = 3;
-
     private int version;
 
     @JsonProperty("1")

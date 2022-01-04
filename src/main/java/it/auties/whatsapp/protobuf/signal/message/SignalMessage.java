@@ -20,9 +20,7 @@ import static java.util.Arrays.copyOfRange;
 @Builder
 @Accessors(fluent = true)
 public final class SignalMessage implements SignalProtocolMessage {
-    private static final int CURRENT_VERSION = 3;
     private static final int MAC_LENGTH = 8;
-    private static final String HMAC = "HmacSHA256";
 
     private int version;
 
