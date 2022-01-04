@@ -86,7 +86,6 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
         var state = new SessionState()
                 .version(version)
                 .localRegistrationId(registrationId)
-                .remoteRegistrationId(registrationId)
                 .rootKey(masterKey[0])
                 .senderChain(isInitiator ? SignalKeyPair.random() : ourSignedKey, chainKey)
                 .localIdentityPublic(theirSignedPubKey)

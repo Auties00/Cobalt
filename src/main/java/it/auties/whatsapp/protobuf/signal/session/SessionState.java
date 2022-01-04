@@ -1,5 +1,6 @@
 package it.auties.whatsapp.protobuf.signal.session;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -14,16 +15,12 @@ import lombok.experimental.Delegate;
 
 import java.util.*;
 
-@AllArgsConstructor
-@NoArgsConstructor
+import static java.util.Objects.requireNonNullElseGet;
+
 @Data
 @Builder
 @Accessors(fluent = true)
 public class SessionState {
-    private static final int MAX_MESSAGE_KEYS = 2000;
-    private static final String AES = "AES";
-    private static final String HMAC = "HmacSHA256";
-
     @JsonProperty("1")
     @JsonPropertyDescription("uint32")
     private int version;
@@ -52,7 +49,7 @@ public class SessionState {
     @JsonProperty("7")
     @JsonPropertyDescription("Chain")
     @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-    private List<SessionChain> receiverChains = new ArrayList<>();
+    private List<SessionChain> receiverChains;
 
     @JsonProperty("8")
     @JsonPropertyDescription("PendingKeyExchange")
@@ -77,6 +74,38 @@ public class SessionState {
     @JsonProperty("13")
     @JsonPropertyDescription("bytes")
     private byte[] baseKey;
+
+    public SessionState(){
+        this.receiverChains = new ArrayList<>();
+    }
+
+    public SessionState(int version,
+                        byte[] localIdentityPublic,
+                        byte[] remoteIdentityKey,
+                        byte[] rootKey,
+                        int previousCounter,
+                        SessionChain senderChain,
+                        List<SessionChain> receiverChains,
+                        SessionPendingKey pendingKeyExchange,
+                        SessionPreKey pendingPreKey,
+                        int remoteRegistrationId,
+                        int localRegistrationId,
+                        boolean needsRefresh,
+                        byte[] baseKey) {
+        this.version = version;
+        this.localIdentityPublic = localIdentityPublic;
+        this.remoteIdentityKey = remoteIdentityKey;
+        this.rootKey = rootKey;
+        this.previousCounter = previousCounter;
+        this.senderChain = senderChain;
+        this.receiverChains = requireNonNullElseGet(receiverChains, ArrayList::new);
+        this.pendingKeyExchange = pendingKeyExchange;
+        this.pendingPreKey = pendingPreKey;
+        this.remoteRegistrationId = remoteRegistrationId;
+        this.localRegistrationId = localRegistrationId;
+        this.needsRefresh = needsRefresh;
+        this.baseKey = baseKey;
+    }
 
     public SessionState senderChain(SignalKeyPair senderRatchetKeyPair, SessionChainKey chainKey) {
         this.senderChain = new SessionChain(senderRatchetKeyPair, chainKey);
@@ -111,6 +140,7 @@ public class SessionState {
     }
 
     public boolean contentEquals(int version, byte[] baseKey){
-        return version() == version && Arrays.equals(baseKey(), baseKey);
+        return version() == version
+                && Arrays.equals(baseKey(), baseKey);
     }
 }

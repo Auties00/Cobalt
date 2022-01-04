@@ -3,17 +3,15 @@ package it.auties.whatsapp.protobuf.signal.session;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.crypto.Hmac;
-import it.auties.whatsapp.util.Validate;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 import static java.util.Arrays.copyOfRange;
 
@@ -39,8 +37,8 @@ public class SessionChainKey {
     private byte[] macKey;
     private byte[] iv;
 
-    @JsonCreator
-    public SessionChainKey(@JsonProperty("1") int index, @JsonProperty("2") byte[] key) {
+    public SessionChainKey(@JsonProperty("1") int index,
+                           @JsonProperty("2") byte[] key) {
         this.index = index;
         this.key = key;
         var mac = Hmac.calculate(MESSAGE_KEY_SEED, key);
@@ -51,16 +49,13 @@ public class SessionChainKey {
         this.iv = copyOfRange(keyMaterialBytes[2], 0, 16);
     }
 
-    @JsonCreator
-    public SessionChainKey(@JsonProperty("1") int index, @JsonProperty("2") byte[] cipherKey, @JsonProperty("3") byte[] macKey, @JsonProperty("4") byte[] iv) {
+    public SessionChainKey(@JsonProperty("1") int index,
+                           @JsonProperty("2") byte[] cipherKey,
+                           @JsonProperty("3") byte[] macKey,
+                           @JsonProperty("4") byte[] iv) {
         this.index = index;
         this.cipherKey = cipherKey;
         this.macKey = macKey;
         this.iv = iv;
-    }
-
-    public SessionChainKey next() {
-        return new SessionChainKey(index + 1,
-                Hmac.calculate(CHAIN_KEY_SEED, key).data());
     }
 }

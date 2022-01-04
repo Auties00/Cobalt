@@ -1,5 +1,6 @@
 package it.auties.whatsapp.protobuf.signal.session;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -15,9 +16,11 @@ import javax.swing.plaf.nimbus.State;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.Objects;
 import java.util.Optional;
 
-@AllArgsConstructor
+import static java.util.Objects.requireNonNullElseGet;
+
 @Data
 @Builder
 @Accessors(fluent = true)
@@ -34,13 +37,16 @@ public class Session {
   private LinkedList<SessionState> previousStates;
 
   public Session() {
-    this.state = new SessionState();
-    this.previousStates = new LinkedList<>();
+    this(new SessionState());
   }
 
   public Session(SessionState state) {
+    this(state, new LinkedList<>());
+  }
+
+  public Session(SessionState state, LinkedList<SessionState> previousStates) {
     this.state = state;
-    this.previousStates = new LinkedList<>();
+    this.previousStates = requireNonNullElseGet(previousStates, LinkedList::new);
   }
 
   public boolean hasState(int version, byte[] baseKey) {
