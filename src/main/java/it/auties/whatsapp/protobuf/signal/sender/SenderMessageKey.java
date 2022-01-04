@@ -3,6 +3,7 @@ package it.auties.whatsapp.protobuf.signal.sender;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.crypto.Hkdf;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,8 +12,10 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import static it.auties.whatsapp.binary.BinaryArray.of;
+import static java.util.Arrays.copyOfRange;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -20,8 +23,6 @@ import static it.auties.whatsapp.binary.BinaryArray.of;
 @Builder
 @Accessors(fluent = true)
 public class SenderMessageKey {
-    private static final byte[] WHISPER_GROUP = "WhisperGroup".getBytes(StandardCharsets.UTF_8);
-
     @JsonProperty("1")
     @JsonPropertyDescription("uint32")
     private int iteration;
@@ -35,10 +36,13 @@ public class SenderMessageKey {
     private byte[] iv;
 
     public SenderMessageKey(int iteration, byte[] seed) {
-        var derivative = of(Hkdf.deriveSecrets(seed, WHISPER_GROUP, 48));
+        var derivative = Hkdf.deriveSecrets(seed, "WhisperGroup".getBytes(StandardCharsets.UTF_8));
         this.iteration = iteration;
         this.seed = seed;
-        this.iv = derivative.slice(16, 32).data();
-        this.cipherKey = derivative.slice(32).data();
+        this.iv = copyOfRange(derivative[0], 0, 16);
+        var cipherKey = new byte[32];
+        System.arraycopy(derivative[0], 0, cipherKey, 0, 16);
+        System.arraycopy(derivative[1], 0, cipherKey, 16, 16);
+        this.cipherKey = cipherKey;
     }
 }

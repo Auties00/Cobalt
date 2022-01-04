@@ -13,7 +13,6 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 
 import static it.auties.whatsapp.binary.BinaryArray.allocate;
-import static java.util.Arrays.copyOfRange;
 
 public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) {
     private static final int CURRENT_VERSION = 3;
@@ -30,7 +29,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
         var sessionPreKey = new SessionPreKey(preKey == null ? 0 : preKey.id(), baseKey.publicKey(), signedPreKey.id());
         state.pendingPreKey(sessionPreKey);
         var session = keys.findSessionByAddress(address)
-                .map(lastSession -> lastSession.fresh(false).promoteState(state))
+                .map(lastSession -> lastSession.promoteState(state))
                 .orElseGet(Session::new);
         keys.addSession(address, session);
     }
@@ -46,9 +45,11 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
                 .orElse(null);
         Validate.isTrue(message.preKeyId() == 0 || preKeyPair != null,
                 "Invalid pre key id: %s", message.preKeyId());
+
         var signedKeyPair = keys.findSignedKeyPairById(message.signedPreKeyId());
-        session.fresh(false);
-        var nextState = createState(false, preKeyPair == null ? null : preKeyPair.toGenericKeyPair(), signedKeyPair.toGenericKeyPair(),
+        var genericPreKeyPair = preKeyPair != null ? preKeyPair.toGenericKeyPair()
+                : null;
+        var nextState = createState(false, genericPreKeyPair, signedKeyPair.toGenericKeyPair(),
                 message.identityKey(), message.baseKey(),
                 null, message.registrationId(), message.version());
         session.promoteState(nextState);
@@ -68,44 +69,46 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
 
         var sharedSecret = createSharedSecret(ourEphemeralKey, theirEphemeralPubKey);
         var ourIdentityKey = keys.identityKeyPair();
-        var a1 = Curve.calculateSharedSecret(theirSignedPubKey, ourIdentityKey.privateKey());
-        var a2 = Curve.calculateSharedSecret(theirIdentityPubKey, ourSignedKey.privateKey());
-        var a3 = Curve.calculateSharedSecret(theirSignedPubKey, ourSignedKey.privateKey());
-        sharedSecret.write(a1.data());
-        sharedSecret.write(a2.data());
-        sharedSecret.write(a3.data());
+        var first = Curve.calculateSharedSecret(theirSignedPubKey, ourIdentityKey.privateKey());
+        var second = Curve.calculateSharedSecret(theirIdentityPubKey, ourSignedKey.privateKey());
+        var third = Curve.calculateSharedSecret(theirSignedPubKey, ourSignedKey.privateKey());
+        sharedSecret.write(isInitiator ? first.data() : second.data());
+        sharedSecret.write(isInitiator ? second.data() : first.data());
+        sharedSecret.write(third.data());
         if (ourEphemeralKey != null && theirEphemeralPubKey != null) {
-            var a4 = Curve.calculateSharedSecret(theirEphemeralPubKey, ourEphemeralKey.privateKey());
-            sharedSecret.write(a4.data());
+            var fourth = Curve.calculateSharedSecret(theirEphemeralPubKey, ourEphemeralKey.privateKey());
+            sharedSecret.write(fourth.data());
         }
 
-        var masterKey = Hkdf.deriveSecrets(sharedSecret.toByteArray(), "WhisperText".getBytes(StandardCharsets.UTF_8), 96);
+        var masterKey = Hkdf.deriveSecrets(sharedSecret.toByteArray(),
+                "WhisperText".getBytes(StandardCharsets.UTF_8));
+        var chainKey = new SessionChainKey();
         var state = new SessionState()
                 .version(version)
-                .localIdentityPublic(theirSignedPubKey)
                 .localRegistrationId(registrationId)
-                .rootKey(copyOfRange(masterKey,0, 32))
-                .senderChain(isInitiator ? SignalKeyPair.random() : ourSignedKey, new SessionChainKey())
+                .remoteRegistrationId(registrationId)
+                .rootKey(masterKey[0])
+                .senderChain(isInitiator ? SignalKeyPair.random() : ourSignedKey, chainKey)
+                .localIdentityPublic(theirSignedPubKey)
                 .baseKey(isInitiator ? ourEphemeralKey.publicKey() : theirEphemeralPubKey)
-                .remoteIdentityKey(theirIdentityPubKey)
-                .previousCounter(0);
+                .remoteIdentityKey(theirIdentityPubKey);
         if (!isInitiator) {
             return state;
         }
 
         var initSecret = Curve.calculateSharedSecret(theirSignedPubKey, state.senderChain().privateKey());
-        var initKey =  Hkdf.deriveSecrets(initSecret.data(), state.rootKey(),
-                "WhisperRatchet".getBytes(StandardCharsets.UTF_8), 96);
-        var initChain = new SessionChainKey(-1, copyOfRange(initKey, 32, 64));
+        var initKey = Hkdf.deriveSecrets(initSecret.data(), state.rootKey(),
+                "WhisperRatchet".getBytes(StandardCharsets.UTF_8));
+        var initChain = new SessionChainKey(-1, initKey[1]);
         state.addReceiverChain(state.senderChain().publicKey(), initChain);
-        state.rootKey(copyOfRange(initKey, 0, 32));
+        state.rootKey(initKey[0]);
         return state;
     }
 
     private ByteArrayOutputStream createSharedSecret(SignalKeyPair ourEphemeralKey, byte[] theirEphemeralPubKey){
         var size = ourEphemeralKey == null || theirEphemeralPubKey == null ? 128 : 160;
         return allocate(size)
-                .fill((byte) 0xff)
+                .fill((byte) 0xff, 32)
                 .toOutputStream();
     }
 }

@@ -32,27 +32,15 @@ public class Session {
   @JsonPropertyDescription("SessionStructure")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private LinkedList<SessionState> previousStates;
-  
-  private boolean fresh;
 
   public Session() {
     this.state = new SessionState();
     this.previousStates = new LinkedList<>();
-    this.fresh = true;
   }
 
   public Session(SessionState state) {
     this.state = state;
     this.previousStates = new LinkedList<>();
-  }
-
-  public static Session ofEncoded(byte[] serialized) {
-    try {
-      return ProtobufDecoder.forType(Session.class)
-              .decode(serialized);
-    } catch (IOException exception) {
-      throw new IllegalArgumentException("Cannot decode %s".formatted(BinaryArray.of(serialized).toBase64()), exception);
-    }
   }
 
   public boolean hasState(int version, byte[] baseKey) {
@@ -83,9 +71,5 @@ public class Session {
     }
 
     return this;
-  }
-
-  public byte[] serialize() {
-    return ProtobufEncoder.encode(this);
   }
 }

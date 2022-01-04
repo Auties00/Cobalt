@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import it.auties.whatsapp.crypto.Hkdf;
+import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.util.Validate;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -14,6 +15,8 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+import static java.util.Arrays.copyOfRange;
+
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -21,8 +24,6 @@ import java.util.Arrays;
 @Builder
 @Accessors(fluent = true)
 public class SessionChainKey {
-    private static final String HMAC = "HmacSHA256";
-    private static final String WHISPER = "WhisperMessageKeys";
     private static final byte[] MESSAGE_KEY_SEED = {0x01};
     private static final byte[] CHAIN_KEY_SEED = {0x02};
 
@@ -42,11 +43,12 @@ public class SessionChainKey {
     public SessionChainKey(@JsonProperty("1") int index, @JsonProperty("2") byte[] key) {
         this.index = index;
         this.key = key;
-        var inputKeyMaterial = getBaseMaterial(MESSAGE_KEY_SEED);
-        var keyMaterialBytes = Hkdf.deriveSecrets(inputKeyMaterial, WHISPER.getBytes(StandardCharsets.UTF_8), 80);
-        this.cipherKey = Arrays.copyOfRange(keyMaterialBytes, 0, 32);
-        this.macKey = Arrays.copyOfRange(keyMaterialBytes, 32, 64);
-        this.iv = Arrays.copyOfRange(keyMaterialBytes, 64, 80);
+        var mac = Hmac.calculate(MESSAGE_KEY_SEED, key);
+        var keyMaterialBytes = Hkdf.deriveSecrets(mac.data(),
+                "WhisperMessageKeys".getBytes(StandardCharsets.UTF_8));
+        this.cipherKey = keyMaterialBytes[0];
+        this.macKey = keyMaterialBytes[1];
+        this.iv = copyOfRange(keyMaterialBytes[2], 0, 16);
     }
 
     @JsonCreator
@@ -58,14 +60,7 @@ public class SessionChainKey {
     }
 
     public SessionChainKey next() {
-        return new SessionChainKey(index + 1, getBaseMaterial(CHAIN_KEY_SEED));
-    }
-
-    @SneakyThrows
-    private byte[] getBaseMaterial(byte[] seed) {
-        Validate.isTrue(key != null, "This operation is not supported", UnsupportedOperationException.class);
-        var mac = Mac.getInstance(HMAC);
-        mac.init(new SecretKeySpec(key, "HmacSHA256"));
-        return mac.doFinal(seed);
+        return new SessionChainKey(index + 1,
+                Hmac.calculate(CHAIN_KEY_SEED, key).data());
     }
 }

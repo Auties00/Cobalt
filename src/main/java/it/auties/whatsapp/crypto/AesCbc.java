@@ -22,7 +22,10 @@ public class AesCbc {
     @SneakyThrows
     public byte[] cipher(byte[] key, byte[] data, byte[] iv, boolean encrypt) {
         var cipher = Cipher.getInstance(AES_CBC);
-        cipher.init(encrypt ? Cipher.ENCRYPT_MODE : Cipher.DECRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(iv));
+        var mode = encrypt ? Cipher.ENCRYPT_MODE : Cipher.DECRYPT_MODE;
+        var keySpec = new SecretKeySpec(key, "AES");
+        var ivSpec = new IvParameterSpec(iv);
+        cipher.init(mode, keySpec, ivSpec);
         return cipher.doFinal(data);
     }
 }

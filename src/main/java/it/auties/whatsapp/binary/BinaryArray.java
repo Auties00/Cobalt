@@ -6,7 +6,6 @@ import org.bouncycastle.util.encoders.Hex;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -16,7 +15,6 @@ import java.util.Optional;
 import java.util.stream.IntStream;
 
 import static java.lang.System.arraycopy;
-import static java.lang.System.in;
 import static java.util.Arrays.copyOf;
 import static java.util.Arrays.copyOfRange;
 
@@ -174,16 +172,19 @@ public record BinaryArray(byte @NonNull [] data) {
     }
 
     /**
-     * Constructs a new {@code BinaryArray} filled with the values provided if the original entry was 0
+     * Constructs a new {@code BinaryArray} filled with the values provided.
+     * This operation is only applied if the original value was unset.
+     * This operation is applied on the length provided.
      *
-     * @param value the value to use to fill the array
+     * @param value  the value to use to fill the array
+     * @param length the length where the fill should be applied
      * @return a new {@code BinaryArray} with the above characteristics
      */
-    public BinaryArray fill(byte value) {
+    public BinaryArray fill(byte value, int length) {
         var result = new byte[size()];
         for(var i = 0; i < size(); i++){
             var entry = at(i);
-            result[i] = entry == 0 ? value : entry;
+            result[i] = i < length && entry == 0 ? value : entry;
         }
 
         return of(result);
@@ -295,17 +296,6 @@ public record BinaryArray(byte @NonNull [] data) {
      */
     @Override
     public boolean equals(Object other) {
-        return (other instanceof byte[] bytes && Arrays.equals(data, bytes))
-                || (other instanceof BinaryArray that && Arrays.equals(data, that.data));
-    }
-
-    /**
-     * Checks if this object and {@param other} are equal
-     *
-     * @param other other
-     * @return true if {@param other} is an instance of {@code BinaryArray} and/or if they wrap two arrays considered equal
-     */
-    public boolean contentEquals(Object other) {
         return (other instanceof byte[] bytes && Arrays.equals(data, bytes))
                 || (other instanceof BinaryArray that && Arrays.equals(data, that.data));
     }
