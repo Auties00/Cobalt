@@ -1,6 +1,5 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.whatsapp.binary.BinaryArray;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
@@ -13,6 +12,7 @@ import java.util.Arrays;
  */
 @UtilityClass
 public class SignalHelper {
+    private final int CURRENT_VERSION = 3;
     private final String SHA_PRNG = "SHA1PRNG";
 
     public byte[] appendKeyHeader(byte[] key){
@@ -22,14 +22,16 @@ public class SignalHelper {
 
         return switch (key.length){
             case 33 -> key;
-            case 32 -> {
-                var result = new byte[33];
-                System.arraycopy(key, 0, result, 1, key.length);
-                result[0] = 5;
-                yield result;
-            }
+            case 32 -> writeKeyHeader(key);
             default -> throw new IllegalArgumentException("Invalid key size: %s".formatted(key.length));
         };
+    }
+
+    private byte[] writeKeyHeader(byte[] key) {
+        var result = new byte[33];
+        System.arraycopy(key, 0, result, 1, key.length);
+        result[0] = 5;
+        return result;
     }
 
     public byte[] removeKeyHeader(byte[] key) {
@@ -62,5 +64,13 @@ public class SignalHelper {
     public int randomSenderKeyId() {
         var secureRandom = SecureRandom.getInstance(SHA_PRNG);
         return secureRandom.nextInt(2147483647);
+    }
+
+    public byte serialize(int version){
+        return (byte) (version << 4 | CURRENT_VERSION);
+    }
+
+    public int deserialize(byte version){
+        return Byte.toUnsignedInt(version) >> 4;
     }
 }

@@ -19,8 +19,19 @@ import static it.auties.whatsapp.binary.BinaryArray.of;
  */
 @UtilityClass
 public class Qr {
+    /**
+     * Margin between the qr code and the border
+     */
     private final int MARGIN = 5;
+
+    /**
+     * Size of the QR code, only affects files
+     */
     private final int SIZE = 500;
+
+    /**
+     * QR code writer
+     */
     private final MultiFormatWriter WRITER = new MultiFormatWriter();
 
     /**

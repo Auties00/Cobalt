@@ -41,7 +41,6 @@ public class WhatsappAPITest {
 
         @Override
         public void onLoggedIn() {
-
             System.out.println("Logged in!");
             whatsapp.changePresence(ContactStatus.UNAVAILABLE)
                     .whenCompleteAsync((result, exception) -> {

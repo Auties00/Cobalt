@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.whatsapp.crypto.SignalHelper;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -47,7 +48,7 @@ public final class SignalMessage implements SignalProtocolMessage {
         try {
             return ProtobufDecoder.forType(SignalMessage.class)
                     .decode(copyOfRange(serialized, 1, serialized.length - MAC_LENGTH))
-                    .version(Byte.toUnsignedInt(serialized[0]) >> 4)
+                    .version(SignalHelper.deserialize(serialized[0]))
                     .serialized(serialized);
         } catch (IOException exception) {
             throw new RuntimeException("Cannot decode SignalMessage", exception);
@@ -57,10 +58,8 @@ public final class SignalMessage implements SignalProtocolMessage {
     // This does not include the signature(length = 8)
     public byte[] serialized() {
         if(serialized == null){
-            var versionBytes = (byte) (version() << 4 | CURRENT_VERSION);
-            var messageBytes = encode(this);
-            this.serialized = BinaryArray.of(versionBytes)
-                    .append(messageBytes)
+            this.serialized = BinaryArray.of(SignalHelper.serialize(version))
+                    .append(encode(this))
                     .data();
         }
 

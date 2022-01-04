@@ -17,7 +17,6 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 public class SenderChainKey {
   private static final byte[] MESSAGE_KEY_SEED = {0x01};
-
   private static final byte[] CHAIN_KEY_SEED   = {0x02};
 
   @JsonProperty("1")
