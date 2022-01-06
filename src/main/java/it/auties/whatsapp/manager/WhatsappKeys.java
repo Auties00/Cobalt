@@ -158,7 +158,7 @@ public class WhatsappKeys {
         this.companionKeyPair = SignalKeyPair.random();
         this.ephemeralKeyPair = SignalKeyPair.random();
         this.identityKeyPair = SignalKeyPair.random();
-        this.signedKeyPair = SignalSignedKeyPair.with(id, identityKeyPair());
+        this.signedKeyPair = SignalSignedKeyPair.of(id, identityKeyPair());
         this.companionKey = SignalHelper.randomSenderKey();
         this.senderKeys = new ConcurrentHashMap<>();
         this.preKeys = new LinkedList<>();

@@ -12,11 +12,10 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys key
         var record = keys.findSenderKeyByName(name)
                 .orElseThrow(() -> new NoSuchElementException("Missing record"));
         var messageKey = record.senderKeyState().chainKey().toSenderMessageKey();
-        var ciphertext = AesCbc.cipher(
+        var ciphertext = AesCbc.encrypt(
                 messageKey.iv(),
-                messageKey.cipherKey(),
                 data,
-                true
+                messageKey.cipherKey()
         );
 
         var senderKeyMessage = new SenderKeyMessage(
@@ -37,11 +36,10 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys key
         var senderKeyMessage = SenderKeyMessage.ofEncoded(data);
         var senderKeyState = record.senderKeyState(senderKeyMessage.id());
         var senderKey = getSenderKey(senderKeyState, senderKeyMessage.iteration());
-        var plaintext = AesCbc.cipher(
+        var plaintext = AesCbc.decrypt(
                 senderKey.iv(),
-                senderKey.cipherKey(),
                 senderKeyMessage.cipherText(),
-                false
+                senderKey.cipherKey()
         );
 
 

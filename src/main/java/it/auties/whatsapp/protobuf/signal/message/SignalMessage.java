@@ -26,7 +26,7 @@ public final class SignalMessage implements SignalProtocolMessage {
 
     @JsonProperty("1")
     @JsonPropertyDescription("bytes")
-    private byte[] ratchetKey;
+    private byte[] ephemeralPublicKey;
 
     @JsonProperty("2")
     @JsonPropertyDescription("uint32")

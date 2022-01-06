@@ -40,22 +40,4 @@ public class SenderKeyRecord {
             .findFirst()
             .orElseThrow(() -> new NoSuchElementException("Cannot find key with id %s".formatted(keyId)));
   }
-
-  public void senderKeyState(int id, int iteration, byte[] chainKey, byte[] signatureKey) {
-    states.clear();
-    states.add(new SenderKeyState(id, iteration, chainKey, signatureKey, null));
-  }
-
-  public void addSenderKeyState(int id, int iteration, byte[] chainKey, byte[] signatureKey) {
-    states.addFirst(new SenderKeyState(id, iteration, chainKey, signatureKey, null));
-    if (states.size() <= MAX_STATES) {
-      return;
-    }
-
-    states.removeLast();
-  }
-
-  public byte[] serialize() {
-    return ProtobufEncoder.encode(this);
-  }
 }

@@ -371,7 +371,7 @@ public class WhatsappSocket {
 
         private Node createPreKeys(){
             var nodes = IntStream.range(0, 30)
-                    .mapToObj(SignalPreKeyPair::fromIndex)
+                    .mapToObj(SignalPreKeyPair::ofIndex)
                     .peek(keys.preKeys()::add)
                     .map(SignalPreKeyPair::toNode)
                     .toList();

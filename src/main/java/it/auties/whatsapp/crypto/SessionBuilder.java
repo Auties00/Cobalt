@@ -22,15 +22,19 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
                 "Untrusted key", SecurityException.class);
         Validate.isTrue(Curve.verifySignature(identityKey, signedPreKey.keyPair().publicKey(), signedPreKey.signature()),
                 "Signature mismatch", SecurityException.class);
+
         var baseKey = SignalKeyPair.random();
         var state = createState(true, baseKey, null,
                 identityKey, preKey == null ? null : preKey.keyPair().publicKey(),
                 signedPreKey.keyPair().publicKey(), id, CURRENT_VERSION);
-        var sessionPreKey = new SessionPreKey(preKey == null ? 0 : preKey.id(), baseKey.publicKey(), signedPreKey.id());
-        state.pendingPreKey(sessionPreKey);
+
+        var pendingPreKey = new SessionPreKey(preKey == null ? 0 : preKey.id(), baseKey.publicKey(), signedPreKey.id());
+        state.pendingPreKey(pendingPreKey);
+
         var session = keys.findSessionByAddress(address)
-                .map(lastSession -> lastSession.promoteState(state))
-                .orElseGet(Session::new);
+                .map(Session::closeCurrentState)
+                .orElseGet(Session::new)
+                .addState(state);
         keys.addSession(address, session);
     }
 
@@ -46,13 +50,13 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
         Validate.isTrue(message.preKeyId() == 0 || preKeyPair != null,
                 "Invalid pre key id: %s", message.preKeyId());
 
-        var signedKeyPair = keys.findSignedKeyPairById(message.signedPreKeyId());
-        var genericPreKeyPair = preKeyPair != null ? preKeyPair.toGenericKeyPair()
-                : null;
-        var nextState = createState(false, genericPreKeyPair, signedKeyPair.toGenericKeyPair(),
+        session.closeCurrentState();
+        var nextState = createState(false, preKeyPair != null ? preKeyPair.toGenericKeyPair() : null,
+                keys.findSignedKeyPairById(message.signedPreKeyId()).toGenericKeyPair(),
                 message.identityKey(), message.baseKey(),
                 null, message.registrationId(), message.version());
-        session.promoteState(nextState);
+
+        session.addState(nextState);
         return message.preKeyId();
     }
 
@@ -82,26 +86,24 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
 
         var masterKey = Hkdf.deriveSecrets(sharedSecret.toByteArray(),
                 "WhisperText".getBytes(StandardCharsets.UTF_8));
-        var chainKey = new SessionChainKey();
-        var state = new SessionState()
+        var state = SessionState.builder()
                 .version(version)
-                .localRegistrationId(registrationId)
                 .rootKey(masterKey[0])
-                .senderChain(isInitiator ? SignalKeyPair.random() : ourSignedKey, chainKey)
-                .localIdentityPublic(theirSignedPubKey)
+                .ephemeralKeyPair(isInitiator ? SignalKeyPair.random() : ourSignedKey.toGenericKeyPair())
+                .lastRemoteEphemeralKey(theirSignedPubKey)
+                .remoteIdentityKey(theirIdentityPubKey)
                 .baseKey(isInitiator ? ourEphemeralKey.publicKey() : theirEphemeralPubKey)
-                .remoteIdentityKey(theirIdentityPubKey);
+                .build();
         if (!isInitiator) {
             return state;
         }
 
-        var initSecret = Curve.calculateSharedSecret(theirSignedPubKey, state.senderChain().privateKey());
+        var initSecret = Curve.calculateSharedSecret(theirSignedPubKey, state.ephemeralKeyPair().privateKey());
         var initKey = Hkdf.deriveSecrets(initSecret.data(), state.rootKey(),
                 "WhisperRatchet".getBytes(StandardCharsets.UTF_8));
-        var initChain = new SessionChainKey(-1, initKey[1]);
-        state.addReceiverChain(state.senderChain().publicKey(), initChain);
-        state.rootKey(initKey[0]);
-        return state;
+        var chain = new SessionChain(-1, masterKey[1], state.ephemeralKeyPair().publicKey());
+        return state.addChain(chain)
+                .rootKey(initKey[0]);
     }
 
     private ByteArrayOutputStream createSharedSecret(SignalKeyPair ourEphemeralKey, byte[] theirEphemeralPubKey){
