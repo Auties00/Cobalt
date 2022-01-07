@@ -13,6 +13,7 @@ import lombok.SneakyThrows;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
@@ -71,22 +72,6 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
                 .serialized();
     }
 
-    //     fillMessageKeys(chain, counter) {
-    //        if (chain.chainKey.counter >= counter) {
-    //            return;
-    //        }
-    //        if (counter - chain.chainKey.counter > 2000) {
-    //            throw new errors.SessionError('Over 2000 messages into the future!');
-    //        }
-    //        if (chain.chainKey.key === undefined) {
-    //            throw new errors.SessionError('Chain closed');
-    //        }
-    //        const key = chain.chainKey.key;
-    //        chain.messageKeys[chain.chainKey.counter + 1] = crypto.calculateMAC(key, Buffer.from([1]));
-    //        chain.chainKey.key = crypto.calculateMAC(key, Buffer.from([2]));
-    //        chain.chainKey.counter += 1;
-    //        return this.fillMessageKeys(chain, counter);
-    //    }
     private void fillMessageKeys(SessionChain chain, int counter) {
         if (chain.counter() >= counter) {
             return;
@@ -105,23 +90,6 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         chain.key(keyHmac.data());
         chain.incrementCounter();
         fillMessageKeys(chain, counter);
-    }
-
-    public byte[] decrypt(SignalMessage message) {
-        var session = loadSession();
-        for(var state : session.states()){
-            try {
-                Validate.isTrue(keys.hasTrust(address, state.remoteIdentityKey()),
-                        "Untrusted key");
-                var result = decrypt(message, state);
-                keys.addSession(address, session);
-                return result;
-            }catch (Throwable ignored){
-
-            }
-        }
-
-        throw new RuntimeException("Cannot decrypt message");
     }
 
     public byte[] decrypt(SignalPreKeyMessage message) {
@@ -143,18 +111,49 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         return plaintext;
     }
 
+    public byte[] decrypt(SignalMessage message) {
+        var session = loadSession();
+        for(var state : session.states()){
+            try {
+                Validate.isTrue(keys.hasTrust(address, state.remoteIdentityKey()),
+                        "Untrusted key");
+                var result = decrypt(message, state);
+                keys.addSession(address, session);
+                return result;
+            }catch (Throwable ignored){
+
+            }
+        }
+
+        throw new RuntimeException("Cannot decrypt message");
+    }
+
     @SneakyThrows
     private byte[] decrypt(SignalMessage message, SessionState state) {
         maybeStepRatchet(message, state);
+
         var chain = state.findChain(message.ephemeralPublicKey())
                 .orElseThrow(() -> new NoSuchElementException("Invalid chain"));
         fillMessageKeys(chain, message.counter());
+
         Validate.isTrue(chain.hasMessageKey(message.counter()),
                 "Key used already or never filled");
         var messageKey = chain.messageKeys().get(message.counter());
         chain.messageKeys().remove(message.counter());
+
         var secrets = Hkdf.deriveSecrets(messageKey.publicKey(),
                 "WhisperMessageKeys".getBytes(StandardCharsets.UTF_8));
+
+        var hmacInput = BinaryArray.of(state.remoteIdentityKey())
+                .append(keys.identityKeyPair().encodedPublicKey())
+                .append(message.serialized())
+                .data();
+        var hmac = Hmac.calculate(hmacInput, secrets[1])
+                .cut(8)
+                .data();
+        Validate.isTrue(Arrays.equals(message.signature(), hmac),
+                "Hmac validation failed", SecurityException.class);
+
         var plaintext = AesCbc.decrypt(copyOfRange(secrets[2], 0, 16), message.ciphertext(), secrets[0]);
         state.pendingPreKey(null);
         return plaintext;

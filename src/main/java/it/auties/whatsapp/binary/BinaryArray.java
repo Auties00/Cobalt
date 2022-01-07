@@ -154,6 +154,10 @@ public record BinaryArray(byte @NonNull [] data) {
      * @return a new {@code BinaryArray} wrapping a bytes array obtained by concatenating this object's bytes array and {@param array}'s bytes array
      */
     public BinaryArray append(BinaryArray array) {
+        if(array == null){
+            return this;
+        }
+
         var result = copyOf(data, size() + array.size());
         arraycopy(array.data, 0, result, size(), array.size());
         return of(result);
@@ -166,6 +170,10 @@ public record BinaryArray(byte @NonNull [] data) {
      * @return a new {@code BinaryArray} wrapping a bytes array obtained by concatenating this object's bytes array and {@param array}
      */
     public BinaryArray append(byte... array) {
+        if(array == null){
+            return this;
+        }
+
         var result = copyOf(data, size() + array.length);
         arraycopy(array, 0, result, size(), array.length);
         return of(result);

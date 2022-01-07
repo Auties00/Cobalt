@@ -40,6 +40,8 @@ public final class SignalMessage implements SignalProtocolMessage {
     @JsonPropertyDescription("bytes")
     private byte[] ciphertext;
 
+    private byte[] signature;
+
     private byte[] serialized;
 
     public static SignalMessage ofSerialized(byte[] serialized) {
@@ -47,6 +49,7 @@ public final class SignalMessage implements SignalProtocolMessage {
             return ProtobufDecoder.forType(SignalMessage.class)
                     .decode(copyOfRange(serialized, 1, serialized.length - MAC_LENGTH))
                     .version(SignalHelper.deserialize(serialized[0]))
+                    .signature(copyOfRange(serialized, serialized.length - MAC_LENGTH, serialized.length))
                     .serialized(serialized);
         } catch (IOException exception) {
             throw new RuntimeException("Cannot decode SignalMessage", exception);
@@ -58,6 +61,7 @@ public final class SignalMessage implements SignalProtocolMessage {
         if(serialized == null){
             this.serialized = BinaryArray.of(SignalHelper.serialize(version))
                     .append(encode(this))
+                    .append(signature)
                     .data();
         }
 

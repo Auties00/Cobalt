@@ -50,11 +50,20 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
         Validate.isTrue(message.preKeyId() == 0 || preKeyPair != null,
                 "Invalid pre key id: %s", message.preKeyId());
 
+        var signedPreKeyPair = keys.findSignedKeyPairById(message.signedPreKeyId())
+                .toGenericKeyPair();
+
         session.closeCurrentState();
-        var nextState = createState(false, preKeyPair != null ? preKeyPair.toGenericKeyPair() : null,
-                keys.findSignedKeyPairById(message.signedPreKeyId()).toGenericKeyPair(),
-                message.identityKey(), message.baseKey(),
-                null, message.registrationId(), message.version());
+        var nextState = createState(
+                false,
+                preKeyPair != null ? preKeyPair.toGenericKeyPair() : null,
+                signedPreKeyPair,
+                message.identityKey(),
+                message.baseKey(),
+                null,
+                message.registrationId(),
+                message.version()
+        );
 
         session.addState(nextState);
         return message.preKeyId();
@@ -103,6 +112,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
                 "WhisperRatchet".getBytes(StandardCharsets.UTF_8));
         var chain = new SessionChain(-1, masterKey[1], state.ephemeralKeyPair().publicKey());
         return state.addChain(chain)
+                .registrationId(registrationId)
                 .rootKey(initKey[0]);
     }
 

@@ -20,6 +20,8 @@ public class SessionState {
 
     private int version;
 
+    private int registrationId;
+
     @NonNull
     private byte[] rootKey;
 

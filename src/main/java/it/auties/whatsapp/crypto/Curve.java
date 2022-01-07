@@ -48,7 +48,7 @@ public class Curve {
     @SneakyThrows
     private PublicKey toX509Encoded(byte @NonNull [] rawPublicKey) {
         var keyFactory = KeyFactory.getInstance(CURVE_25519);
-        var publicKeyInfo = new SubjectPublicKeyInfo(new AlgorithmIdentifier(EdECObjectIdentifiers.id_X25519), SignalHelper.removeKeyHeader(rawPublicKey));
+        var publicKeyInfo = new SubjectPublicKeyInfo(new AlgorithmIdentifier(EdECObjectIdentifiers.id_X25519), rawPublicKey);
         var publicKeySpec = new X509EncodedKeySpec(publicKeyInfo.getEncoded());
         return keyFactory.generatePublic(publicKeySpec);
     }

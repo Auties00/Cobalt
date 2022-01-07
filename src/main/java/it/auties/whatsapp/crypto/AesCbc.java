@@ -25,16 +25,16 @@ public class AesCbc {
 
     @SneakyThrows
     public byte[] encrypt(byte[] iv, byte [] decrypted, byte[] encKey) {
-        final var cipher = Cipher.getInstance(AES_CBC);
-        final var keySpec = new SecretKeySpec(encKey, AES);
+        var cipher = Cipher.getInstance(AES_CBC);
+        var keySpec = new SecretKeySpec(encKey, AES);
         cipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(iv));
         return cipher.doFinal(decrypted);
     }
 
     @SneakyThrows
     public byte[] decrypt(byte[] iv, byte[] encrypted, byte[] secretKey) {
-        final var cipher = Cipher.getInstance(AES_CBC);
-        final var keySpec = new SecretKeySpec(secretKey, AES);
+        var cipher = Cipher.getInstance(AES_CBC);
+        var keySpec = new SecretKeySpec(secretKey, AES);
         cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(iv));
         return cipher.doFinal(encrypted);
     }
