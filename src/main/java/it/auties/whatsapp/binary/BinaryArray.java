@@ -1,5 +1,6 @@
 package it.auties.whatsapp.binary;
 
+import it.auties.whatsapp.protobuf.chat.GroupAction;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 import org.bouncycastle.util.encoders.Hex;
@@ -182,6 +183,17 @@ public record BinaryArray(byte @NonNull [] data) {
     /**
      * Constructs a new {@code BinaryArray} filled with the values provided.
      * This operation is only applied if the original value was unset.
+     *
+     * @param value  the value to use to fill the array
+     * @return a new {@code BinaryArray} with the above characteristics
+     */
+    public BinaryArray fill(byte value) {
+        return fill(value, size());
+    }
+
+    /**
+     * Constructs a new {@code BinaryArray} filled with the values provided.
+     * This operation is only applied if the original value was unset.
      * This operation is applied on the length provided.
      *
      * @param value  the value to use to fill the array
@@ -218,6 +230,20 @@ public record BinaryArray(byte @NonNull [] data) {
      */
     public byte at(int index) {
         return data[index];
+    }
+
+    /**
+     * Asserts that the size of this array is equal to the one provided
+     *
+     * @param size the expected size
+     * @throws IllegalArgumentException if the size of this array doesn't match the provided one
+     * @return this array
+     */
+    public BinaryArray assertSize(int size) {
+        Validate.isTrue(size() == size,
+                "Invalid size: expected %s, got %s",
+                size, size());
+        return this;
     }
 
     /**

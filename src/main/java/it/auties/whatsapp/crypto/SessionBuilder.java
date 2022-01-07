@@ -1,5 +1,6 @@
 package it.auties.whatsapp.crypto;
 
+import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalSignedKeyPair;
@@ -41,6 +42,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
     public int createIncoming(Session session, SignalPreKeyMessage message){
         Validate.isTrue(keys.hasTrust(address, message.identityKey()),
                 "Untrusted key", SecurityException.class);
+
         if(session.hasState(message.version(), message.baseKey())){
             return 0;
         }
@@ -80,20 +82,22 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
             theirSignedPubKey = theirEphemeralPubKey;
         }
 
-        var sharedSecret = createSharedSecret(ourEphemeralKey, theirEphemeralPubKey);
-        var ourIdentityKey = keys.identityKeyPair();
-        var first = Curve.calculateSharedSecret(theirSignedPubKey, ourIdentityKey.privateKey());
-        var second = Curve.calculateSharedSecret(theirIdentityPubKey, ourSignedKey.privateKey());
-        var third = Curve.calculateSharedSecret(theirSignedPubKey, ourSignedKey.privateKey());
-        sharedSecret.write(isInitiator ? first.data() : second.data());
-        sharedSecret.write(isInitiator ? second.data() : first.data());
-        sharedSecret.write(third.data());
+        var signedSecret = Curve.calculateSharedSecret(theirSignedPubKey, keys.identityKeyPair().privateKey());
+        var identitySecret = Curve.calculateSharedSecret(theirIdentityPubKey, ourSignedKey.privateKey());
+        var sharedSecret = BinaryArray.allocate(32)
+                .fill((byte) 0xff)
+                .append(isInitiator ? signedSecret : identitySecret)
+                .append(isInitiator ? identitySecret : signedSecret)
+                .append(Curve.calculateSharedSecret(theirSignedPubKey, ourSignedKey.privateKey()));
         if (ourEphemeralKey != null && theirEphemeralPubKey != null) {
-            var fourth = Curve.calculateSharedSecret(theirEphemeralPubKey, ourEphemeralKey.privateKey());
-            sharedSecret.write(fourth.data());
+            var ephemeralSecret = Curve.calculateSharedSecret(theirEphemeralPubKey, ourEphemeralKey.privateKey());
+            sharedSecret = sharedSecret.append(ephemeralSecret);
         }
 
-        var masterKey = Hkdf.deriveSecrets(sharedSecret.toByteArray(),
+        var masterKeyInput = sharedSecret
+                .assertSize(ourEphemeralKey == null || theirEphemeralPubKey == null ? 128 : 160)
+                .data();
+        var masterKey = Hkdf.deriveSecrets(masterKeyInput,
                 "WhisperText".getBytes(StandardCharsets.UTF_8));
         var state = SessionState.builder()
                 .version(version)
@@ -101,7 +105,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
                 .ephemeralKeyPair(isInitiator ? SignalKeyPair.random() : ourSignedKey.toGenericKeyPair())
                 .lastRemoteEphemeralKey(theirSignedPubKey)
                 .remoteIdentityKey(theirIdentityPubKey)
-                .baseKey(isInitiator ? ourEphemeralKey.publicKey() : theirEphemeralPubKey)
+                .baseKey(isInitiator ? ourEphemeralKey.encodedPublicKey() : theirEphemeralPubKey)
                 .build();
         if (!isInitiator) {
             return state;
@@ -114,12 +118,5 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
         return state.addChain(chain)
                 .registrationId(registrationId)
                 .rootKey(initKey[0]);
-    }
-
-    private ByteArrayOutputStream createSharedSecret(SignalKeyPair ourEphemeralKey, byte[] theirEphemeralPubKey){
-        var size = ourEphemeralKey == null || theirEphemeralPubKey == null ? 128 : 160;
-        return allocate(size)
-                .fill((byte) 0xff, 32)
-                .toOutputStream();
     }
 }

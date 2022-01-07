@@ -11,7 +11,6 @@ import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
@@ -28,7 +27,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
                 "Untrusted key", SecurityException.class);
 
         var chain = session.currentState()
-                .findChain(session.currentState().ephemeralKeyPair().publicKey())
+                .findChain(session.currentState().ephemeralKeyPair().encodedPublicKey())
                 .orElseThrow(() -> new NoSuchElementException("Missing chain for %s".formatted(address)));
         fillMessageKeys(chain, chain.counter() + 1);
 
@@ -40,19 +39,19 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
 
         var encrypted = AesCbc.encrypt(copyOfRange(whisperKeys[2], 0, 16), data, whisperKeys[0]);
         var message = SignalMessage.builder()
-                .ephemeralPublicKey(session.currentState().ephemeralKeyPair().publicKey())
+                .ephemeralPublicKey(session.currentState().ephemeralKeyPair().encodedPublicKey())
                 .counter(chain.counter())
                 .previousCounter(session.currentState().previousCounter())
                 .ciphertext(encrypted)
                 .build()
                 .serialized();
 
-        var macStream = new ByteArrayOutputStream();
-        macStream.write(SignalHelper.appendKeyHeader(keys.identityKeyPair().publicKey()));
-        macStream.write(SignalHelper.appendKeyHeader(session.currentState().remoteIdentityKey()));
-        macStream.write(message);
-
-        var mac = Hmac.calculate(macStream.toByteArray(), whisperKeys[1]);
+        var macInput = BinaryArray.of(SignalHelper.appendKeyHeader(keys.identityKeyPair().encodedPublicKey()))
+                .append(session.currentState().remoteIdentityKey())
+                .append(message)
+                .assertSize(message.length + 33 + 33)
+                .data();
+        var mac = Hmac.calculate(macInput, whisperKeys[1]);
         var result = BinaryArray.of(message)
                 .append(mac.cut(8))
                 .data();
@@ -62,7 +61,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         }
 
         return SignalPreKeyMessage.builder()
-                .identityKey(keys.identityKeyPair().publicKey())
+                .identityKey(keys.identityKeyPair().encodedPublicKey())
                 .registrationId(keys.id())
                 .baseKey(session.currentState().pendingPreKey().baseKey())
                 .signedPreKeyId(session.currentState().pendingPreKey().signedPreKeyId())
@@ -147,12 +146,13 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         var hmacInput = BinaryArray.of(state.remoteIdentityKey())
                 .append(keys.identityKeyPair().encodedPublicKey())
                 .append(message.serialized())
+                .assertSize(message.serialized().length + 33 + 33)
                 .data();
         var hmac = Hmac.calculate(hmacInput, secrets[1])
                 .cut(8)
                 .data();
         Validate.isTrue(Arrays.equals(message.signature(), hmac),
-                "Hmac validation failed", SecurityException.class);
+                "Cannot decode message: Hmac validation failed", SecurityException.class);
 
         var plaintext = AesCbc.decrypt(copyOfRange(secrets[2], 0, 16), message.ciphertext(), secrets[0]);
         state.pendingPreKey(null);
@@ -171,7 +171,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         });
 
         calculateRatchet(message, state, false);
-        var previousCounter = state.findChain(state.ephemeralKeyPair().publicKey());
+        var previousCounter = state.findChain(state.ephemeralKeyPair().encodedPublicKey());
         previousCounter.ifPresent(chain -> {
             state.previousCounter(chain.counter());
             state.chains().remove(chain);
@@ -187,7 +187,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
                 state.ephemeralKeyPair().privateKey());
         var masterKey = Hkdf.deriveSecrets(sharedSecret.data(), state.rootKey(),
                 "WhisperRatchet".getBytes(StandardCharsets.UTF_8), 2);
-        var chainKey = sending ? state.ephemeralKeyPair().publicKey() : message.ephemeralPublicKey();
+        var chainKey = sending ? state.ephemeralKeyPair().encodedPublicKey() : message.ephemeralPublicKey();
         state.addChain(new SessionChain(-1, masterKey[1], chainKey));
         state.rootKey(masterKey[0]);
     }

@@ -50,18 +50,18 @@ public final class SignalMessage implements SignalProtocolMessage {
                     .decode(copyOfRange(serialized, 1, serialized.length - MAC_LENGTH))
                     .version(SignalHelper.deserialize(serialized[0]))
                     .signature(copyOfRange(serialized, serialized.length - MAC_LENGTH, serialized.length))
-                    .serialized(serialized);
+                    .serialized(copyOfRange(serialized, 0, serialized.length - MAC_LENGTH));
         } catch (IOException exception) {
             throw new RuntimeException("Cannot decode SignalMessage", exception);
         }
     }
 
-    // This does not include the signature(length = 8)
     public byte[] serialized() {
         if(serialized == null){
-            this.serialized = BinaryArray.of(SignalHelper.serialize(version))
-                    .append(encode(this))
-                    .append(signature)
+            var encodedVersion = SignalHelper.serialize(version);
+            var encodedObject = encode(this);
+            this.serialized = BinaryArray.of(encodedVersion)
+                    .append(encodedObject)
                     .data();
         }
 
