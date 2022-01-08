@@ -69,8 +69,9 @@ public final class SignalPreKeyMessage implements SignalProtocolMessage{
 
     public byte[] serialized(){
         if(serialized == null){
-            this.serialized = BinaryArray.of(SignalHelper.serialize(version))
-                    .append(encode(this))
+            var encodedMessage = encode(this);
+            this.serialized = BinaryArray.of(serializedVersion())
+                    .append(encodedMessage)
                     .data();
         }
 

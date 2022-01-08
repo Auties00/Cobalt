@@ -11,7 +11,7 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys key
     public byte[] encrypt(byte[] data) {
         var record = keys.findSenderKeyByName(name)
                 .orElseThrow(() -> new NoSuchElementException("Missing record"));
-        var messageKey = record.senderKeyState().chainKey().toSenderMessageKey();
+        var messageKey = record.currentState().chainKey().toSenderMessageKey();
         var ciphertext = AesCbc.encrypt(
                 messageKey.iv(),
                 data,
@@ -19,13 +19,13 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys key
         );
 
         var senderKeyMessage = new SenderKeyMessage(
-                record.senderKeyState().id(),
+                record.currentState().id(),
                 messageKey.iteration(),
                 ciphertext,
-                record.senderKeyState().signingKeyPrivate()
+                record.currentState().signingKeyPrivate()
         );
 
-        record.senderKeyState().chainKey(record.senderKeyState().chainKey().next());
+        record.currentState().chainKey(record.currentState().chainKey().next());
         keys.addSenderKey(name, record);
         return senderKeyMessage.serialized();
     }
@@ -34,14 +34,13 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys key
         var record = keys.findSenderKeyByName(name)
                 .orElseThrow(() -> new NoSuchElementException("Missing record"));
         var senderKeyMessage = SenderKeyMessage.ofEncoded(data);
-        var senderKeyState = record.senderKeyState(senderKeyMessage.id());
+        var senderKeyState = record.findStateById(senderKeyMessage.id());
         var senderKey = getSenderKey(senderKeyState, senderKeyMessage.iteration());
         var plaintext = AesCbc.decrypt(
                 senderKey.iv(),
                 senderKeyMessage.cipherText(),
                 senderKey.cipherKey()
         );
-
 
         keys.addSenderKey(name, record);
         return plaintext;

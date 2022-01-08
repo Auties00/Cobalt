@@ -39,16 +39,4 @@ public final class SenderKeyDistributionMessage implements ServerMessage {
   @JsonProperty("2")
   @JsonPropertyDescription("bytes")
   private byte[] data;
-
-  /**
-   * Constructs a new {@link SenderKeyDistributionMessage} using an encoded message
-   *
-   * @param groupId the group id
-   * @param encodedMessage the encoded message
-   */
-  @JsonCreator
-  public SenderKeyDistributionMessage(@JsonProperty("1") String groupId, @JsonProperty("2") String encodedMessage){
-    this.groupId = groupId;
-    this.data = encodedMessage.getBytes(StandardCharsets.UTF_8);
-  }
 }

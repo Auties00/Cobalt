@@ -3,11 +3,19 @@ package it.auties.whatsapp.protobuf.signal.message;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import it.auties.protobuf.decoder.ProtobufDecoder;
+import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.whatsapp.crypto.SignalHelper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+
+import java.io.IOException;
+import java.util.Arrays;
+
+import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -15,6 +23,11 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 public final class SignalDistributionMessage implements SignalProtocolMessage {
+  /**
+   * The version of this message
+   */
+  private int version;
+
   /**
    * The id of the sender
    */
@@ -44,15 +57,33 @@ public final class SignalDistributionMessage implements SignalProtocolMessage {
   private byte[] signingKey;
 
   /**
-   * Constructs a SignalDistributionMessage from a signing key
-   * @param signingKey the non-null signing key
+   * This message in a serialized form
    */
-  public SignalDistributionMessage(byte[] signingKey){
-    this(
-      0,
-      0,
-      null,
-      signingKey
-    );
+  private byte[] serialized;
+
+  public SignalDistributionMessage(int id, int iteration, byte[] chainKey, byte[] signingKey) {
+    this(CURRENT_VERSION, id, iteration, chainKey, signingKey, null);
+  }
+
+  public static SignalDistributionMessage ofSerialized(byte[] serialized){
+    try {
+      return ProtobufDecoder.forType(SignalDistributionMessage.class)
+              .decode(Arrays.copyOfRange(serialized, 1, serialized.length))
+              .version(SignalHelper.deserialize(serialized[0]))
+              .serialized(serialized);
+    } catch (IOException exception) {
+      throw new RuntimeException("Cannot decode SenderKeyMessage", exception);
+    }
+  }
+
+  public byte[] serialized() {
+    if(serialized == null){
+      var encodedMessage = encode(this);
+      this.serialized = BinaryArray.of(serializedVersion())
+              .append(encodedMessage)
+              .data();
+    }
+
+    return serialized;
   }
 }

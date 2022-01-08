@@ -58,9 +58,8 @@ public final class SignalMessage implements SignalProtocolMessage {
 
     public byte[] serialized() {
         if(serialized == null){
-            var encodedVersion = SignalHelper.serialize(version);
             var encodedObject = encode(this);
-            this.serialized = BinaryArray.of(encodedVersion)
+            this.serialized = BinaryArray.of(serializedVersion())
                     .append(encodedObject)
                     .data();
         }

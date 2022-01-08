@@ -41,7 +41,7 @@ public class SenderKeyState {
   public SenderKeyState(int id, int iteration, byte[] chainKey, byte[] signatureKeyPublic, byte[] signatureKeyPrivate) {
     this.id = id;
     this.chainKey = new SenderChainKey(iteration, chainKey);
-    this.signingKey = new SenderSigningKey(BinaryArray.of((byte) 5).append(signatureKeyPublic).data(), signatureKeyPrivate);
+    this.signingKey = new SenderSigningKey(signatureKeyPublic, signatureKeyPrivate);
   }
 
   public byte[] signingKeyPublic() {

@@ -44,11 +44,13 @@ public class SenderKeyMessage {
   @JsonProperty("4")
   @JsonPropertyDescription("bytes")
   private byte[] signingKey;
-  
+
+  private byte[] signature;
+
   private byte[] serialized;
 
   public SenderKeyMessage(int id, int iteration, byte[] ciphertext, byte[] signingKey) {
-    this(CURRENT_VERSION, id, iteration, ciphertext, signingKey, null);
+    this(CURRENT_VERSION, id, iteration, ciphertext, signingKey, null, null);
   }
 
   public static SenderKeyMessage ofEncoded(byte[] serialized) {
@@ -56,7 +58,8 @@ public class SenderKeyMessage {
       return ProtobufDecoder.forType(SenderKeyMessage.class)
               .decode(copyOfRange(serialized, 1, serialized.length - SIGNATURE_LENGTH))
               .version(SignalHelper.deserialize(serialized[0]))
-              .serialized(serialized);
+              .signature(copyOfRange(serialized, serialized.length - SIGNATURE_LENGTH, serialized.length))
+              .serialized(copyOfRange(serialized, 0, serialized.length - SIGNATURE_LENGTH));
     } catch (IOException exception) {
       throw new RuntimeException("Cannot decode SenderKeyMessage", exception);
     }

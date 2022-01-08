@@ -2,19 +2,20 @@ package it.auties.whatsapp.util;
 
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.whatsapp.crypto.GroupCipher;
+import it.auties.whatsapp.crypto.GroupSessionBuilder;
 import it.auties.whatsapp.crypto.SessionCipher;
 import it.auties.whatsapp.exchange.Node;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
+import it.auties.whatsapp.protobuf.message.model.MessageContainer;
 import it.auties.whatsapp.protobuf.message.model.MessageKey;
 import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.protobuf.signal.message.SignalDistributionMessage;
 import it.auties.whatsapp.protobuf.signal.message.SignalMessage;
 import it.auties.whatsapp.protobuf.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.protobuf.signal.sender.SenderKeyName;
-import it.auties.whatsapp.protobuf.signal.sender.SenderKeyRecord;
 import lombok.experimental.UtilityClass;
 import lombok.extern.java.Log;
 
@@ -55,24 +56,23 @@ public class Messages {
         var key = keyBuilder.id(id)
                 .storeUuid(store.uuid())
                 .create();
-        var modelMessage = messageBuilder.key(key)
+        var info = messageBuilder.key(key)
                 .timestamp(timestamp)
                 .create();
         return node.findNodes("enc")
                 .stream()
-                .map(messageNode -> decodeMessage(modelMessage, messageNode, from, keys))
+                .map(messageNode -> decodeMessage(info, messageNode, from, keys))
                 .toList();
     }
 
-    private MessageInfo decodeMessage(MessageInfo model, Node node, ContactJid from, WhatsappKeys keys) {
+    private MessageInfo decodeMessage(MessageInfo info, Node node, ContactJid from, WhatsappKeys keys) {
         try {
             var encodedMessage = node.bytes();
             var messageType = node.attributes().getString("type");
             var buffer = decodeCipheredMessage(encodedMessage, messageType, from, keys);
-            var message = decodeMessageInfo(buffer);
+            var message = decodeMessageContainer(buffer);
             handleSenderKeyMessage(keys, from, message);
-            return message.key(model.key())
-                    .senderJid(model.senderJid());
+            return info.message(message);
         } catch (Throwable throwable) {
             log.warning("An exception occurred while processing a message: %s".formatted(throwable.getMessage()));
             log.warning("This message will not be decoded and the application should continue running");
@@ -105,24 +105,20 @@ public class Messages {
         };
     }
 
-    private MessageInfo decodeMessageInfo(byte[] buffer) throws IOException {
+    private MessageContainer decodeMessageContainer(byte[] buffer) throws IOException {
         var bufferWithNoPadding = copyOfRange(buffer, 0, buffer.length - buffer[buffer.length - 1]);
-        return ProtobufDecoder.forType(MessageInfo.class)
+        return ProtobufDecoder.forType(MessageContainer.class)
                 .decode(bufferWithNoPadding);
     }
 
-    private void handleSenderKeyMessage(WhatsappKeys keys, ContactJid from, MessageInfo info) {
-        if (!(info.message().content() instanceof SenderKeyDistributionMessage distributionMessage)) {
+    private void handleSenderKeyMessage(WhatsappKeys keys, ContactJid from, MessageContainer container) {
+        if (!(container.content() instanceof SenderKeyDistributionMessage distributionMessage)) {
             return;
         }
 
         var groupName = new SenderKeyName(distributionMessage.groupId(), from.toSignalAddress());
-        var group = new GroupCipher(groupName, keys);
-        var senderKey = keys.findSenderKeyByName(groupName);
-        if(senderKey.isEmpty()){
-            keys.addSenderKey(groupName, new SenderKeyRecord());
-        }
-
-        group.decrypt(distributionMessage.data());
+        var builder = new GroupSessionBuilder(keys);
+        var message = SignalDistributionMessage.ofSerialized(distributionMessage.data());
+        builder.process(groupName, message);
     }
 }

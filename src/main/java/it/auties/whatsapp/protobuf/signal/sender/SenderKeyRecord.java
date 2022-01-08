@@ -26,18 +26,27 @@ public class SenderKeyRecord {
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private LinkedList<SenderKeyState> states = new LinkedList<>();
 
-  public boolean isEmpty() {
-    return states.isEmpty();
-  }
-
-  public SenderKeyState senderKeyState() {
+  public SenderKeyState currentState() {
     return states.getFirst();
   }
 
-  public SenderKeyState senderKeyState(int keyId) {
+  public SenderKeyState findStateById(int keyId) {
     return states().stream()
             .filter(key -> key.id() == keyId)
             .findFirst()
             .orElseThrow(() -> new NoSuchElementException("Cannot find key with id %s".formatted(keyId)));
+  }
+
+  public void addState(int id, int iteration, byte[] chainKey, byte[] signatureKey){
+    addState(id, iteration, chainKey, signatureKey, null);
+  }
+
+  public void addState(int id, int iteration, byte[] chainKey, byte[] signaturePublic, byte[] signaturePrivate){
+    var state = new SenderKeyState(id, iteration, chainKey, signaturePublic, signaturePrivate);
+    states.add(state);
+  }
+
+  public boolean isEmpty() {
+    return states.isEmpty();
   }
 }
