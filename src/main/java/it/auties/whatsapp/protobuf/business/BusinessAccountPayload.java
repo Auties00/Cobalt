@@ -3,7 +3,6 @@ package it.auties.whatsapp.protobuf.business;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.binary.BinaryArray;

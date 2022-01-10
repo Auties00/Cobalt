@@ -5,7 +5,6 @@ import lombok.NonNull;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
@@ -34,13 +33,27 @@ public record Attributes(Map<String, Object> map) {
                 .map(clazz::cast);
     }
 
+    public int getInt(@NonNull String key){
+        return get(key, Object.class)
+                .map(this::parseInt)
+                .orElse(0);
+    }
+
+    private int parseInt(Object value) {
+        return switch (value) {
+            case Number number -> number.intValue();
+            case String string -> Integer.parseInt(string);
+            default -> throw new IllegalStateException("Unexpected value: " + value);
+        };
+    }
+
     public long getLong(@NonNull String key){
         return get(key, Object.class)
-                .map(this::parseNumber)
+                .map(this::parseLong)
                 .orElse(0L);
     }
 
-    private long parseNumber(Object value) {
+    private long parseLong(Object value) {
         return switch (value) {
             case Number number -> number.longValue();
             case String string -> Long.parseLong(string);

@@ -12,8 +12,9 @@ import it.auties.whatsapp.protobuf.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.protobuf.signal.sender.SenderKeyName;
 import it.auties.whatsapp.protobuf.signal.sender.SenderKeyRecord;
-import it.auties.whatsapp.protobuf.signal.session.SessionAddress;
 import it.auties.whatsapp.protobuf.signal.session.Session;
+import it.auties.whatsapp.protobuf.signal.session.SessionAddress;
+import it.auties.whatsapp.protobuf.sync.AppStateSyncKey;
 import it.auties.whatsapp.util.Validate;
 import lombok.Data;
 import lombok.NonNull;
@@ -21,12 +22,13 @@ import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.java.Log;
 
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * This class is a data class used to hold the clientId, serverToken, clientToken, publicKey, privateKey, encryptionKey and macKey.
@@ -117,6 +119,11 @@ public class WhatsappKeys {
     private Map<SessionAddress, byte[]> identities;
 
     /**
+     * App state keys
+     */
+    private List<AppStateSyncKey> appStateKeys;
+
+    /**
      * Clears all the keys from this machine's memory.
      * This method doesn't clear this object's values.
      */
@@ -164,6 +171,7 @@ public class WhatsappKeys {
         this.preKeys = new LinkedList<>();
         this.sessions = new ConcurrentHashMap<>();
         this.identities = new ConcurrentHashMap<>();
+        this.appStateKeys = new LinkedList<>();
     }
 
     /**

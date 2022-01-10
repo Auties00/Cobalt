@@ -63,7 +63,7 @@ public final class AudioMessage extends MediaMessage {
    * The media key of the audio that this object wraps.
    */
   @JsonProperty("7")
-  private byte[] mediaKey;
+  private byte[] key; 
 
   /**
    * The sha256 of the encoded media that this object wraps
@@ -78,7 +78,7 @@ public final class AudioMessage extends MediaMessage {
   private String directPath;
 
   /**
-   * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link AudioMessage#mediaKey()}
+   * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link AudioMessage#key()}
    */
   @JsonProperty("10")
   private long mediaKeyTimestamp;

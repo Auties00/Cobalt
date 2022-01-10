@@ -264,7 +264,7 @@ message LocalizedName {
 
 message SyncActionData {
     optional bytes index = 1;
-    optional SyncActionValue 2;
+    optional SyncActionValue value = 2;
     optional bytes padding = 3;
     optional int32 version = 4;
 }
@@ -476,7 +476,7 @@ message ExternalBlobReference {
 
 message SyncdRecord {
     optional SyncdIndex index = 1;
-    optional SyncdValue 2;
+    optional SyncdValue value = 2;
     optional KeyId keyId = 3;
 }
 
@@ -1508,7 +1508,7 @@ message PaymentBackground {
 }
 
 message Money {
-    optional int64 1;
+    optional int64 value = 1;
     optional uint32 offset = 2;
     optional string currencyCode = 3;
 }

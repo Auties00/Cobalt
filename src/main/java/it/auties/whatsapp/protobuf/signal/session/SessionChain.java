@@ -2,7 +2,6 @@ package it.auties.whatsapp.protobuf.signal.session;
 
 import it.auties.whatsapp.protobuf.signal.keypair.SignalPreKeyPair;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.Accessors;

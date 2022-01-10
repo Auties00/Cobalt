@@ -81,7 +81,7 @@ public record Node(@NonNull String description,
      *
      * @return a non-null list containing WhatsappNodes extracted from this body's content
      */
-    public LinkedList<Node> childNodes() {
+    public LinkedList<Node> children() {
         return Nodes.findAll(content);
     }
 
@@ -91,7 +91,7 @@ public record Node(@NonNull String description,
      * @return true if a child node with the given description exists
      */
     public boolean hasNode(String description) {
-        return childNodes().stream()
+        return children().stream()
                 .anyMatch(node -> Objects.equals(node.description(), description));
     }
 
@@ -101,7 +101,7 @@ public record Node(@NonNull String description,
      * @return a nullable node
      */
     public Node findNode(String description) {
-        return childNodes().stream()
+        return children().stream()
                 .filter(node -> Objects.equals(node.description(), description))
                 .findFirst()
                 .orElse(null);
@@ -113,7 +113,7 @@ public record Node(@NonNull String description,
      * @return an optional body, present if a result was found
      */
     public List<Node> findNodes(String description) {
-        return childNodes().stream()
+        return children().stream()
                 .filter(node -> Objects.equals(node.description(), description))
                 .toList();
     }

@@ -12,8 +12,6 @@ import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.whispersystems.curve25519.Curve25519;
 
 import javax.crypto.KeyAgreement;
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.PublicKey;

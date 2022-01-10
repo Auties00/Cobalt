@@ -2,7 +2,7 @@ package it.auties.whatsapp.protobuf.message.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.info.CallInfo;
 import it.auties.whatsapp.protobuf.message.button.*;
@@ -13,10 +13,12 @@ import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
 import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.protobuf.message.standard.*;
 import it.auties.whatsapp.protobuf.signal.message.SignalDistributionMessage;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.experimental.Accessors;
 
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -43,12 +45,10 @@ import java.util.Optional;
 @NoArgsConstructor
 @Builder
 @Accessors(fluent = true)
-public class MessageContainer { // Not how I would design it, Whatsapp's choice obviously
-  // Just a linker
-  @JsonSetter("1")
-  private void fromText(String textMessageWithNoContext){
-    this.text = new TextMessage(textMessageWithNoContext);
-  }
+public class MessageContainer { // TODO: Find a way to refactor this while keeping compatibility with Whatsapp
+  @JsonProperty("1")
+  @JsonPropertyDescription("string")
+  private String textWithNoContext;
   
   /**
    * Sender key distribution message

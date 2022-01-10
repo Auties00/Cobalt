@@ -63,7 +63,7 @@ public final class DocumentMessage extends MediaMessage {
    * The media key of the document that this object wraps.
    */
   @JsonProperty("7")
-  private byte[] mediaKey;
+  private byte[] key; 
 
   /**
    * The name of the document that this object wraps
@@ -84,7 +84,7 @@ public final class DocumentMessage extends MediaMessage {
   private String directPath;
 
   /**
-   * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link DocumentMessage#mediaKey()}
+   * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link DocumentMessage#key()}
    */
   @JsonProperty("11")
   private long mediaKeyTimestamp;

@@ -3,7 +3,6 @@ package it.auties.whatsapp.protobuf.signal.sender;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import it.auties.whatsapp.binary.BinaryArray;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

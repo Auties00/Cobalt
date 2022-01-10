@@ -2,9 +2,7 @@ package it.auties.whatsapp.protobuf.message.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.protobuf.info.ContextInfo;
-import it.auties.whatsapp.protobuf.message.button.ButtonsMessage;
-import it.auties.whatsapp.protobuf.message.button.TemplateButtonReplyMessage;
-import it.auties.whatsapp.protobuf.message.button.TemplateMessage;
+import it.auties.whatsapp.protobuf.message.button.*;
 import it.auties.whatsapp.protobuf.message.standard.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -21,7 +19,11 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder(buildMethodName = "create")
 @Data
 @Accessors(fluent = true)
-public sealed abstract class ContextualMessage implements Message permits ButtonsMessage, it.auties.whatsapp.protobuf.message.button.ButtonsResponseMessage, it.auties.whatsapp.protobuf.message.button.ListMessage, TemplateButtonReplyMessage, TemplateMessage, MediaMessage, ContactMessage, ContactsArrayMessage, GroupInviteMessage, LiveLocationMessage, LocationMessage, ProductMessage, TextMessage {
+public sealed abstract class ContextualMessage implements Message
+        permits ButtonsMessage, ButtonsResponseMessage, ListMessage,
+        TemplateButtonReplyMessage, TemplateMessage, MediaMessage,
+        ContactMessage, ContactsArrayMessage, GroupInviteMessage,
+        LiveLocationMessage, LocationMessage, ProductMessage, TextMessage {
     /**
      * The context info of this message
      */

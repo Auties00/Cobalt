@@ -1,7 +1,10 @@
 package it.auties.whatsapp.crypto;
 
 import it.auties.whatsapp.manager.WhatsappKeys;
-import it.auties.whatsapp.protobuf.signal.sender.*;
+import it.auties.whatsapp.protobuf.signal.sender.SenderKeyMessage;
+import it.auties.whatsapp.protobuf.signal.sender.SenderKeyName;
+import it.auties.whatsapp.protobuf.signal.sender.SenderKeyState;
+import it.auties.whatsapp.protobuf.signal.sender.SenderMessageKey;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 
@@ -10,7 +13,7 @@ import java.util.NoSuchElementException;
 public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys keys) {
     public byte[] encrypt(byte[] data) {
         var record = keys.findSenderKeyByName(name)
-                .orElseThrow(() -> new NoSuchElementException("Missing record"));
+                .orElseThrow(() -> new NoSuchElementException("Missing record for name: %s".formatted(name)));
         var messageKey = record.currentState().chainKey().toSenderMessageKey();
         var ciphertext = AesCbc.encrypt(
                 messageKey.iv(),
@@ -32,7 +35,7 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys key
 
     public byte[] decrypt(byte[] data) {
         var record = keys.findSenderKeyByName(name)
-                .orElseThrow(() -> new NoSuchElementException("Missing record"));
+                .orElseThrow(() -> new NoSuchElementException("Missing record for name: %s".formatted(name)));
         var senderKeyMessage = SenderKeyMessage.ofEncoded(data);
         var senderKeyState = record.findStateById(senderKeyMessage.id());
         var senderKey = getSenderKey(senderKeyState, senderKeyMessage.iteration());

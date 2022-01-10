@@ -12,8 +12,7 @@ import it.auties.whatsapp.exchange.Request;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
-import it.auties.whatsapp.protobuf.info.MessageInfo;
-import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
+import it.auties.whatsapp.protobuf.media.MediaConnection;
 import it.auties.whatsapp.protobuf.signal.auth.*;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.util.Messages;
@@ -108,7 +107,7 @@ public class WhatsappSocket {
         var deciphered = decipherMessage(message);
         var currentCounter = store.readCounter().get();
         if(currentCounter - oldCounter != 1){
-            log.warning("Skipped %s IVs to decipher message with length %s".formatted(currentCounter - oldCounter, message.length()));
+            log.warning("Skipped %s IVs to decipher message with length %s".formatted(currentCounter - oldCounter - 1, message.length()));
         }
 
         System.out.printf("Received: %s%n", deciphered);
@@ -163,6 +162,9 @@ public class WhatsappSocket {
 
     @OnClose
     public void onClose(){
+        if(loggedIn) {
+            reconnect();
+        }
         System.out.println("Closed");
     }
 
@@ -181,7 +183,7 @@ public class WhatsappSocket {
                 .sendWithNoResponse(session(), keys(), store());
     }
 
-    public CompletableFuture<Node> sendQuery(Map<String, Object> query, Node body){
+    public CompletableFuture<Node> sendQuery(Map<String, Object> query, Node... body){
         return send(withChildren("iq", query, body));
     }
 
@@ -306,26 +308,51 @@ public class WhatsappSocket {
         }
 
         private void digestError(Node node) {
-            var code = node.attributes().getLong("code");
-            if(code == 515){
-                reconnect();
-                return;
-            }
+            switch (node.attributes().getInt("code")) {
+                case 401 -> {
+                    var child = node.children().getFirst();
+                    var reason = child.attributes().getString("type");
+                    disconnect();
+                    throw new IllegalStateException("Conflict detected: %s".formatted(reason));
+                }
 
-            node.childNodes()
-                    .forEach(error -> store.resolvePendingRequest(error, true));
+                case 515 -> reconnect();
+
+                default -> {
+                    Validate.isTrue(node.findNode("xml-not-well-formed") == null,
+                            "An invalid node was sent to Whatsapp");
+                    node.children().forEach(error -> store.resolvePendingRequest(error, true));
+                }
+            }
         }
 
         private void digestSuccess() {
             sendPreKeys();
             confirmConnection();
             Executors.newSingleThreadScheduledExecutor()
-                    .scheduleAtFixedRate(this::ping, 0L, 20L, TimeUnit.SECONDS);
+                    .scheduleAtFixedRate(() -> sendQuery(of("xmlns", "w:p", "to", ContactJid.SOCKET, "type", "get"), with("ping")), 0L, 20L, TimeUnit.SECONDS);
             store.callListeners(WhatsappListener::onLoggedIn);
         }
 
+        private void createMediaConnection(){
+            if(!loggedIn){
+                return;
+            }
+
+            sendQuery(of("xmlns", "w:m", "to", ContactJid.SOCKET, "type", "set"), with("media_conn"))
+                    .thenApplyAsync(MediaConnection::ofNode)
+                    .thenApplyAsync(this::scheduleMediaConnection)
+                    .thenApplyAsync(store::mediaConnection);
+        }
+
+        private MediaConnection scheduleMediaConnection(MediaConnection connection) {
+            CompletableFuture.delayedExecutor(connection.ttl(), TimeUnit.SECONDS)
+                    .execute(this::createMediaConnection);
+            return connection;
+        }
+
         private void digestIq(Node node) {
-            var children = node.childNodes();
+            var children = node.children();
             if(children.isEmpty()){
                 return;
             }
@@ -339,8 +366,8 @@ public class WhatsappSocket {
         }
 
         private void confirmConnection() {
-            send(withChildren("iq", of("to", ContactJid.SOCKET, "xmlns", "passive", "type", "set"),
-                    with("active")));
+            sendQuery(of("xmlns", "passive", "to", ContactJid.SOCKET, "type", "set"), with("active"))
+                    .thenRunAsync(this::createMediaConnection);
         }
 
         private void sendPreKeys() {
@@ -348,8 +375,7 @@ public class WhatsappSocket {
                 return;
             }
 
-            send(withChildren("iq", of("xmlns", "encrypt", "type", "set", "to", ContactJid.SOCKET),
-                    createPreKeysContent()));
+            sendQuery(of("xmlns", "encrypt", "type", "set", "to", ContactJid.SOCKET), createPreKeysContent());
         }
 
         private Node[] createPreKeysContent() {
@@ -382,11 +408,6 @@ public class WhatsappSocket {
         private void generateQrCode(Node node, Node container) {
             printQrCode(container);
             sendConfirmNode(node, null);
-        }
-
-        private void ping() {
-            var ping = with("ping");
-            send(withChildren("iq", of("to", ContactJid.SOCKET, "type", "get", "xmlns", "w:p"), ping));
         }
 
         private void printQrCode(Node container) {
@@ -438,7 +459,7 @@ public class WhatsappSocket {
         }
 
         private void sendConfirmNode(Node node, Node content) {
-            send(withChildren("iq", of("id", WhatsappUtils.readNullableId(node), "to", ContactJid.SOCKET, "type", "result"), content));
+            sendQuery(of("id", WhatsappUtils.readNullableId(node), "to", ContactJid.SOCKET, "type", "result"), content);
         }
 
         private void saveCompanion(Node container) {
@@ -447,79 +468,6 @@ public class WhatsappSocket {
                     .orElseThrow(() -> new NoSuchElementException("Missing identity jid for session"));
             keys.companion(companion)
                     .save();
-        }
-    }
-
-    private class MessageHandler {
-        private final Map<String, Integer> retries = new HashMap<>();
-
-        private void acknowledge(MessageInfo message) {
-            send(with("ack", of("id", message.key().id(), "to", message.senderJid()), null));
-        }
-
-        private void retry(Node node, SignedDeviceIdentity account) {
-            var messageId = WhatsappUtils.readNullableId(node);
-            var retryCount = retries.getOrDefault(messageId, 1);
-            if (retryCount >= 5) {
-                log.warning("Cannot send message with id %s: out of attempts!".formatted(messageId));
-                retries.remove(messageId);
-                return;
-            }
-
-            retries.put(messageId, retryCount + 1);
-            var isGroup = node.attributes().get("participant", Object.class).isPresent();
-            var key = keys.preKeys().getFirst();
-            var from = ContactJid.ofEncoded(node.attributes().getString("from", null));
-            var to = isGroup ? node.attributes().getJid("from").orElseThrow() : from.toString();
-            var receipt = withChildren("receipt", of("id", messageId, "type", "retry", "to", to), with("retry", of("count", retryCount.toString(), "id", WhatsappUtils.readNullableId(node), "t", node.attributes().getString("t"), "v", "1"), null), with("registration", of(keys.id(), 4)), withChildren("keys", with("type", (byte) 5), with("identity", keys.identityKeyPair().publicKey()), withChildren("key", with("id", of(key.id(), 3)), with("value", key.publicKey())), withChildren("skey", with("id", keys.signedKeyPair().id()), with("value", keys.signedKeyPair().keyPair().publicKey()), with("signature", keys.signedKeyPair().signature())), with("device-identity", encode(account))));
-            node.attributes().put("recipient", node.attributes().get("recipient", Object.class).orElse(null));
-            node.attributes().put("participant", node.attributes().get("participant", Object.class).orElse(null));
-            send(receipt);
-        }
-
-        private void handle(MessageInfo message) {
-            if (message.message().isServer()) {
-                var protocolMessage = (ProtocolMessage) message.message().content();
-                switch (protocolMessage.type()) {
-                    case HISTORY_SYNC_NOTIFICATION -> {
-                        var sync = protocolMessage.historySyncNotification();
-                        // TODO: Download history and process
-                        var confirmation = with("receipt", of("id", message.key().id(), "type", "hist_sync", "to", keys.companion().toString()));
-                        send(confirmation);
-                    }
-
-                    case APP_STATE_SYNC_KEY_SHARE -> {
-                        var keys = protocolMessage.appStateSyncKeyShare().keys();
-                        if (keys.isEmpty()) {
-                            return;
-                        }
-
-
-                        // TODO: Handle keys
-                    }
-
-                    case REVOKE -> {
-                        // TODO: Handle message deletion
-                        throw new UnsupportedOperationException("revoke");
-                    }
-
-                    case EPHEMERAL_SETTING -> {
-                        // TODO: Update ephemeral change
-                        throw new UnsupportedOperationException("ephemeral");
-                    }
-
-                    default -> throw new UnsupportedOperationException("Unsupported protocol message: %s".formatted(protocolMessage.type().name()));
-                }
-
-                return;
-            }
-
-            if (message.hasStub()) {
-                return;
-            }
-
-            // TODO: Handle event
-            throw new UnsupportedOperationException();
         }
     }
 }

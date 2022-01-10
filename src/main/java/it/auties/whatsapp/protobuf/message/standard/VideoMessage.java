@@ -65,7 +65,7 @@ public final class VideoMessage extends MediaMessage {
    * The media key of the video that this object wraps.
    */
   @JsonProperty("6")
-  private byte[] mediaKey;
+  private byte[] key; 
 
   /**
    * The caption, that is the text below the video, of this video message
@@ -111,7 +111,7 @@ public final class VideoMessage extends MediaMessage {
   private String directPath;
 
   /**
-   * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link VideoMessage#mediaKey()}
+   * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link VideoMessage#key()}
    */
   @JsonProperty("14")
   private long mediaKeyTimestamp;

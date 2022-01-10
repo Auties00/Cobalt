@@ -3,7 +3,6 @@ package it.auties.whatsapp.protobuf.signal.sender;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import it.auties.protobuf.encoder.ProtobufEncoder;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -34,7 +33,7 @@ public class SenderKeyRecord {
     return states().stream()
             .filter(key -> key.id() == keyId)
             .findFirst()
-            .orElseThrow(() -> new NoSuchElementException("Cannot find key with id %s".formatted(keyId)));
+            .orElseThrow(() -> new NoSuchElementException("Cannot find state with id %s".formatted(keyId)));
   }
 
   public void addState(int id, int iteration, byte[] chainKey, byte[] signatureKey){

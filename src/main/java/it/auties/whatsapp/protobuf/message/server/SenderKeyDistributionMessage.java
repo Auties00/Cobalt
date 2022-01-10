@@ -1,9 +1,7 @@
 package it.auties.whatsapp.protobuf.message.server;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.message.model.ServerMessage;
 import lombok.AllArgsConstructor;
@@ -11,8 +9,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
-
-import java.nio.charset.StandardCharsets;
 
 /**
  * A model class that represents a WhatsappMessage sent by WhatsappWeb for security purposes.

@@ -1,12 +1,15 @@
 package it.auties.whatsapp.protobuf.message.model;
 
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.protobuf.media.AttachmentProvider;
 import it.auties.whatsapp.protobuf.message.payment.PaymentInvoiceMessage;
 import it.auties.whatsapp.protobuf.message.standard.*;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
+
+import java.util.Locale;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds media inside.
@@ -16,7 +19,8 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @SuperBuilder(buildMethodName = "create")
 @NoArgsConstructor
-public abstract sealed class MediaMessage extends ContextualMessage permits PaymentInvoiceMessage, AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoMessage {
+public abstract sealed class MediaMessage extends ContextualMessage implements AttachmentProvider
+        permits PaymentInvoiceMessage, AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoMessage {
     /**
      * The cached decoded media, by default null
      */
@@ -75,10 +79,10 @@ public abstract sealed class MediaMessage extends ContextualMessage permits Paym
      *
      * @return a non-null array of bytes
      */
-    public abstract byte @NonNull [] mediaKey();
+    public abstract byte @NonNull [] key();
 
     /**
-     * Returns the timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link MediaMessage#mediaKey()}
+     * Returns the timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link MediaMessage#key()}
      *
      * @return an unsigned long
      */
@@ -107,4 +111,14 @@ public abstract sealed class MediaMessage extends ContextualMessage permits Paym
      * @return an unsigned int
      */
     public abstract long fileLength();
+
+    @Override
+    public String name() {
+        return type().name().toLowerCase(Locale.ROOT);
+    }
+
+    @Override
+    public String keyName() {
+        return type().whatsappName();
+    }
 }

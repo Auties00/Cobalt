@@ -3,7 +3,7 @@ package it.auties.whatsapp.protobuf.sync;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import it.auties.whatsapp.protobuf.media.AttachmentProvider;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -14,7 +14,7 @@ import java.util.Arrays;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class HistorySyncNotification {
+public final class HistorySyncNotification implements AttachmentProvider {
   @JsonProperty("1")
   @JsonPropertyDescription("bytes")
   private byte[] fileSha256;
@@ -25,7 +25,7 @@ public class HistorySyncNotification {
 
   @JsonProperty("3")
   @JsonPropertyDescription("bytes")
-  private byte[] mediaKey;
+  private byte[] key;
 
   @JsonProperty("4")
   @JsonPropertyDescription("bytes")
@@ -46,6 +46,21 @@ public class HistorySyncNotification {
   @JsonProperty("8")
   @JsonPropertyDescription("string")
   private String originalMessageId;
+
+  @Override
+  public String url() {
+    return null;
+  }
+
+  @Override
+  public String name() {
+    return "md-msg-hist";
+  }
+
+  @Override
+  public String keyName() {
+    return "WhatsApp History Keys";
+  }
 
   @AllArgsConstructor
   @Accessors(fluent = true)

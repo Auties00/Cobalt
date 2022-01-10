@@ -3,7 +3,6 @@ package it.auties.whatsapp.crypto;
 import it.auties.whatsapp.binary.BinaryArray;
 import lombok.NonNull;
 import lombok.SneakyThrows;
-import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.modes.GCMBlockCipher;
 import org.bouncycastle.crypto.params.AEADParameters;

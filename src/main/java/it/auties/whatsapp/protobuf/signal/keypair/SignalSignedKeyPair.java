@@ -5,8 +5,6 @@ import it.auties.whatsapp.crypto.Curve;
 import it.auties.whatsapp.exchange.Node;
 import lombok.NonNull;
 
-import static it.auties.whatsapp.binary.BinaryArray.of;
-
 public record SignalSignedKeyPair(int id, @NonNull SignalKeyPair keyPair, byte @NonNull [] signature) implements ISignalKeyPair{
     public static SignalSignedKeyPair of(int id, @NonNull SignalKeyPair identityKeyPair){
         var keyPair = SignalKeyPair.random();

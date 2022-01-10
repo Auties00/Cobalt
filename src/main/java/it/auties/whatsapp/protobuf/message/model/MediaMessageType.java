@@ -2,7 +2,6 @@ package it.auties.whatsapp.protobuf.message.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.experimental.Accessors;
 
 /**
@@ -45,16 +44,18 @@ public enum MediaMessageType {
      * The default mime type for this enumerated type.
      * Might be right, might be wrong, who knows.
      */
-    private final @NonNull @Getter String defaultMimeType;
+    private final @Getter String defaultMimeType;
 
     /**
      * Returns the key used to encrypt a media message
      *
      * @return a non-null array of bytes
      */
-    public byte @NonNull [] key() {
-        var name = whatsappName();
-        return "WhatsApp %s Keys".formatted(Character.toUpperCase(name.charAt(0)) + name.substring(1)).getBytes();
+    public byte[] keyName() {
+        var name = Character.toUpperCase(whatsappName().charAt(0))
+                + whatsappName().substring(1);
+        return "WhatsApp %s Keys".formatted(name)
+                .getBytes();
     }
 
 
@@ -63,7 +64,7 @@ public enum MediaMessageType {
      *
      * @return a non-null string
      */
-    public @NonNull String url() {
+    public String url() {
         return WHATSAPP_URL.formatted(whatsappName());
     }
 
@@ -73,7 +74,7 @@ public enum MediaMessageType {
      *
      * @return a non-null string
      */
-    public @NonNull String whatsappName() {
+    public String whatsappName() {
         return this == STICKER ? IMAGE.whatsappName() : this.name().toLowerCase();
     }
 }

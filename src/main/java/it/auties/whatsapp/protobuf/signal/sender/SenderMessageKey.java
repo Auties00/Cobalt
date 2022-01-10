@@ -2,8 +2,6 @@ package it.auties.whatsapp.protobuf.signal.sender;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.crypto.Hkdf;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,9 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
-import static it.auties.whatsapp.binary.BinaryArray.of;
 import static java.util.Arrays.copyOfRange;
 
 @AllArgsConstructor

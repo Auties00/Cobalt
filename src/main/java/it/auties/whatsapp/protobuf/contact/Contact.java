@@ -24,25 +24,26 @@ public class Contact {
     /**
      * The non-null unique jid used to identify this contact
      */
-    private final @NonNull ContactJid jid;
+    @NonNull
+    private final ContactJid jid;
 
     /**
      * The nullable name specified by this contact when he created a Whatsapp account.
      * Theoretically, it should not be possible for this field to be null as it's required when registering for Whatsapp.
      * Though it looks that it can be removed later, so it's nullable.
      */
-    private final String chosenName;
+    private String chosenName;
 
     /**
      * The nullable name associated with this contact on the phone connected with Whatsapp
      */
-    private final String name;
+    private String name;
 
     /**
      * The nullable short name associated with this contact on the phone connected with Whatsapp
      * If a name is available, theoretically, also a short name should be
      */
-    private final String shortName;
+    private String shortName;
 
     /**
      * The nullable last known presence of this contact.

@@ -73,7 +73,7 @@ public final class ImageMessage extends MediaMessage {
    * The media key of the image that this object wraps
    */
   @JsonProperty("8")
-  private byte[] mediaKey;
+  private byte[] key; 
 
   /**
    * The sha256 of the encoded image that this object wraps
@@ -95,7 +95,7 @@ public final class ImageMessage extends MediaMessage {
   private String directPath;
 
   /**
-   * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link ImageMessage#mediaKey()}
+   * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link ImageMessage#key()}
    */
   @JsonProperty("12")
   private long mediaKeyTimestamp;

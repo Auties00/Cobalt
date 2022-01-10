@@ -5,13 +5,10 @@ import it.auties.whatsapp.exchange.Node;
 import it.auties.whatsapp.exchange.Request;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
-import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
+import it.auties.whatsapp.protobuf.media.MediaConnection;
 import it.auties.whatsapp.util.WhatsappUtils;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.util.*;
@@ -39,48 +36,62 @@ public class WhatsappStore {
     /**
      * The non-null uuid of this store
      */
-    private final @NonNull UUID uuid;
+    @NonNull
+    private final UUID uuid;
 
     /**
      * The non-null service used to call listeners.
      * This is needed in order to not block the socket.
      */
-    private final @NonNull ExecutorService requestsService;
+    @NonNull
+    private final ExecutorService requestsService;
 
     /**
      * The non-null list of chats
      */
-    private final @NonNull List<Chat> chats;
+    @NonNull
+    private final List<Chat> chats;
 
     /**
      * The non-null list of contacts
      */
-    private final @NonNull List<Contact> contacts;
+    @NonNull
+    private final List<Contact> contacts;
 
     /**
      * The non-null list of requests that are waiting for a response from Whatsapp
      */
-    private final @NonNull List<Request> pendingRequests;
+    @NonNull
+    private final List<Request> pendingRequests;
 
     /**
      * The non-null list of listeners
      */
-    private final @NonNull List<WhatsappListener> listeners;
+    @NonNull
+    private final List<WhatsappListener> listeners;
 
     /**
      * The non-null read counter
      */
-    private final @NonNull AtomicLong readCounter;
+    @NonNull
+    private final AtomicLong readCounter;
 
     /**
      * The non-null write counter
      */
-    private final @NonNull AtomicLong writeCounter;
+    @NonNull
+    private final AtomicLong writeCounter;
 
     /**
      * The timestamp in milliseconds for the initialization of this object
      */
     private final long initializationTimeStamp;
+
+    /**
+     * The media connection associated with this store
+     */
+    @Getter(onMethod = @__(@NonNull))
+    private MediaConnection mediaConnection;
 
     /**
      * Constructs a new default instance of WhatsappDataManager
@@ -116,7 +127,7 @@ public class WhatsappStore {
      */
     public @NonNull Optional<Contact> findContactByJid(@NonNull String jid) {
         return contacts.parallelStream()
-                .filter(contact -> Objects.equals(contact.jid().toString(), ContactJid.withoutServer(jid)))
+                .filter(contact -> Objects.equals(contact.jid().toString(), jid))
                 .findAny();
     }
 
@@ -152,7 +163,7 @@ public class WhatsappStore {
      */
     public @NonNull Optional<Chat> findChatByJid(@NonNull String jid) {
         return chats.parallelStream()
-                .filter(chat -> Objects.equals(chat.jid().toString(), ContactJid.withoutServer(jid)))
+                .filter(chat -> Objects.equals(chat.jid().toString(), jid))
                 .findAny();
     }
 
@@ -237,6 +248,17 @@ public class WhatsappStore {
     public @NonNull Chat addChat(@NonNull Chat chat) {
         chats.add(chat);
         return chat;
+    }
+
+    /**
+     * Adds a contact in memory
+     *
+     * @param contact the contact to add
+     * @return the input contact
+     */
+    public @NonNull Contact addContact(@NonNull Contact contact) {
+        contacts.add(contact);
+        return contact;
     }
 
     /**

@@ -2,7 +2,6 @@ package it.auties.whatsapp.protobuf.sync;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,7 +16,7 @@ import lombok.experimental.Accessors;
 public class ExternalBlobReference {
   @JsonProperty("1")
   @JsonPropertyDescription("bytes")
-  private byte[] mediaKey;
+  private byte[] key; 
 
   @JsonProperty("2")
   @JsonPropertyDescription("string")

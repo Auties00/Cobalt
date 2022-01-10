@@ -28,21 +28,24 @@ public class WhatsappOptions {
      * The url of the multi device beta socket
      */
     @Default
-    private final @NonNull String whatsappUrlBeta = "wss://web.whatsapp.com/ws/chat";
+    @NonNull
+    private final String whatsappUrlBeta = "wss://web.whatsapp.com/ws/chat";
 
     /**
      * The description provided to Whatsapp during the authentication process
      * This should be, for example, the name of your service
      */
     @Default
-    private final @NonNull String description = "Whatsapp4j";
+    @NonNull
+    private final String description = "Whatsapp4j";
 
     /**
      * The short description provided to Whatsapp during the authentication process
      * This should be, for example, an acronym for your service
      */
     @Default
-    private final @NonNull String shortDescription = "W4J";
+    @NonNull
+    private final String shortDescription = "W4J";
 
     /**
      * Constructs a new instance of WhatsappConfiguration with default options

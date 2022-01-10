@@ -2,13 +2,13 @@ package it.auties.whatsapp.protobuf.signal.session;
 
 import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
 import lombok.*;
+import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import lombok.Builder.Default;
 
 @AllArgsConstructor
 @NoArgsConstructor

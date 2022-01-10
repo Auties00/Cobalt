@@ -210,7 +210,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
     public SessionAddress toSignalAddress(){
         var name = agent == 0 ? user()
                 : "%s_%s".formatted(user(), agent());
-        return new SessionAddress(user, device);
+        return new SessionAddress(name, device);
     }
 
     /**

@@ -233,11 +233,10 @@ public interface WhatsappListener {
     /**
      * Called when a message is deleted
      *
-     * @param chat     the chat where the message is
      * @param message  the message that was deleted
      * @param everyone whether this message was deleted by you only for yourself or whether the message was permanently removed
      */
-    default void onMessageDeleted(@NonNull Chat chat, @NonNull MessageInfo message, boolean everyone) {
+    default void onMessageDeleted(@NonNull MessageInfo message, boolean everyone) {
     }
 
     /**

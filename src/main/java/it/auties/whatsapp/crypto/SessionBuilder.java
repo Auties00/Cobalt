@@ -10,10 +10,7 @@ import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
-
-import static it.auties.whatsapp.binary.BinaryArray.allocate;
 
 public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) {
     private static final int CURRENT_VERSION = 3;

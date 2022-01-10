@@ -44,7 +44,7 @@ public final class StickerMessage extends MediaMessage {
    * The media key of the sticker that this object wraps
    */
   @JsonProperty("4")
-  private byte[] mediaKey;
+  private byte[] key; 
 
   /**
    * The mime type of the sticker that this object wraps.
@@ -78,7 +78,7 @@ public final class StickerMessage extends MediaMessage {
   private long fileLength;
 
   /**
-   * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link StickerMessage#mediaKey()}
+   * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link StickerMessage#key()}
    */
   @JsonProperty("10")
   private long mediaKeyTimestamp;

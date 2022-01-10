@@ -30,5 +30,5 @@ public class MediaData {
 
   @JsonProperty(value = "1", required = false)
   @JsonPropertyDescription("bytes")
-  private byte[] mediaKey;
+  private byte[] key; 
 }

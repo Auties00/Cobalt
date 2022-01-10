@@ -7,8 +7,6 @@ import it.auties.whatsapp.protobuf.signal.sender.SenderKeyName;
 import it.auties.whatsapp.protobuf.signal.sender.SenderKeyRecord;
 import lombok.NonNull;
 
-import java.util.NoSuchElementException;
-
 public record GroupSessionBuilder(@NonNull WhatsappKeys keys) {
     public void process(SenderKeyName name, SignalDistributionMessage message) {
         var senderKeyRecord = keys.findSenderKeyByName(name)

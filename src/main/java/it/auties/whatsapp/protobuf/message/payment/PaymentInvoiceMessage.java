@@ -51,7 +51,7 @@ public final class PaymentInvoiceMessage extends MediaMessage implements Payment
    * The media key of the attachment that this invoice provides
    */
   @JsonProperty("5")
-  private byte[] mediaKey;
+  private byte[] key; 
 
   /**
    * The media key timestamp of the attachment that this invoice provides
