@@ -101,15 +101,11 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         });
 
         var builder = new SessionBuilder(address, keys);
-        var preKeyId = builder.createIncoming(session, message);
+        builder.createIncoming(session, message);
         var state = session.findState(message.version(), message.baseKey())
                 .orElseThrow(() -> new NoSuchElementException("Missing state"));
         var plaintext = decrypt(message.signalMessage(), state);
         keys.addSession(address, session);
-        if(preKeyId != 0) {
-            keys.preKeys().remove(preKeyId);
-        }
-
         return plaintext;
     }
 

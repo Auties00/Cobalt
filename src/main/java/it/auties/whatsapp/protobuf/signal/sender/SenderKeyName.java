@@ -5,14 +5,19 @@ import it.auties.whatsapp.protobuf.signal.session.SessionAddress;
 import java.util.Objects;
 
 public record SenderKeyName(String groupId, SessionAddress sender) {
-  public String serialize() {
-    return "%s::%s::%s".formatted(groupId(), sender.name(), sender.deviceId());
-  }
-
   @Override
   public boolean equals(Object other) {
     return other instanceof SenderKeyName keyName
-            && Objects.equals(keyName.groupId(), groupId())
-            && Objects.equals(keyName.sender(), sender());
+            && Objects.equals(keyName.groupId(), groupId());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(groupId);
+  }
+
+  @Override
+  public String toString() {
+    return "%s::%s::%s".formatted(groupId(), sender.name(), sender.deviceId());
   }
 }

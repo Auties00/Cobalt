@@ -14,9 +14,9 @@ import java.util.Arrays;
 @Accessors(fluent = true)
 public enum MessageStatus {
     /**
-     * Error
+     * Unknown
      */
-    ERROR(0),
+    UNKNOWN(0),
 
     /**
      * Pending

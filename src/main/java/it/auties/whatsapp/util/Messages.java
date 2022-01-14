@@ -84,6 +84,7 @@ public class Messages {
             var buffer = decodeCipheredMessage(info, encodedMessage, messageType, keys);
             info.message(decodeMessageContainer(buffer));
             handleSenderKeyMessage(store, keys, from, info);
+            log.info("Deciphered: " + info);
             return info;
         } catch (Throwable throwable) {
             log.warning("An exception occurred while processing a message: %s".formatted(throwable.getMessage()));

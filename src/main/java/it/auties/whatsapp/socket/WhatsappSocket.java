@@ -323,7 +323,7 @@ public class WhatsappSocket {
                 case "stream:error" -> digestError(node);
                 case "failure" -> digestFailure(node);
                 case "xmlstreamend" -> disconnect();
-                case "message" -> System.out.println("Deciphered: " + Messages.decodeMessages(node, store, keys));
+                case "message" -> Messages.decodeMessages(node, store, keys);
             }
         }
 

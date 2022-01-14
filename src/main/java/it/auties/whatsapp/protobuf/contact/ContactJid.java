@@ -46,7 +46,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      */
     @JsonCreator
     public static ContactJid ofUser(@NonNull String jid) {
-        return new ContactJid(withoutServer(jid), Server.WHATSAPP, 0, 0);
+        return new ContactJid(withoutServer(jid), Server.forAddress(jid), 0, 0);
     }
 
     /**
@@ -198,11 +198,11 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
         }
 
         if (agent != 0) {
-            return "%s.%s@%s".formatted(user, agent, Server.WHATSAPP);
+            return "%s.%s@%s".formatted(user, agent, server());
         }
 
         return user == null ? Server.WHATSAPP.address()
-                : "%s@%s".formatted(user, Server.WHATSAPP);
+                : "%s@%s".formatted(user, server());
     }
 
     /**
@@ -328,7 +328,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
         @JsonCreator
         public static Server forAddress(String address) {
             return Arrays.stream(values())
-                    .filter(entry -> Objects.equals(entry.address(), address))
+                    .filter(entry -> address != null && address.endsWith(entry.address()))
                     .findFirst()
                     .orElseThrow(() -> new NoSuchElementException("No known server matches %s".formatted(address)));
         }

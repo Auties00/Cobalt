@@ -64,7 +64,7 @@ public final class MessageInfo implements WhatsappInfo {
   @JsonProperty("4")
   @NonNull
   @Builder.Default
-  private MessageStatus globalStatus = MessageStatus.ERROR;
+  private MessageStatus globalStatus = MessageStatus.PENDING;
 
   /**
    * The timestamp, that is the seconds since {@link java.time.Instant#EPOCH}, when this message was sent
