@@ -57,10 +57,10 @@ public class Handshake {
     }
 
     public void mixIntoKey(byte @NonNull [] bytes) {
-        this.counter = 0;
         var expanded = extractAndExpandWithHash(bytes);
         this.salt = expanded.cut(32);
         this.cryptoKey = expanded.slice(32);
+        this.counter = 0;
     }
 
     private BinaryArray extractAndExpandWithHash(byte @NonNull [] key) {

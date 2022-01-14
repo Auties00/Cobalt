@@ -25,7 +25,9 @@ public record AesGmc(@NonNull GCMBlockCipher cipher) {
     }
 
     private static byte[] createIv(long count) {
-        return ByteBuffer.allocate(12).putLong(4, count).array();
+        return ByteBuffer.allocate(12)
+                .putLong(4, count)
+                .array();
     }
 
     @SneakyThrows

@@ -68,6 +68,15 @@ public class Hkdf {
         return signed.toArray(byte[][]::new);
     }
 
+    public byte[] extractAndExpand(byte[] inputKeyMaterial, byte[] info, int outputLength) {
+        return extractAndExpand(inputKeyMaterial, new byte[HASH_OUTPUT_SIZE], info, outputLength);
+    }
+
+    public byte[] extractAndExpand(byte[] inputKeyMaterial, byte[] salt, byte[] info, int outputLength) {
+        var prk = extract(salt, inputKeyMaterial);
+        return expand(prk, info, outputLength);
+    }
+
     public byte[] extract(byte[] salt, byte[] inputKeyMaterial) {
         try {
             var mac = Mac.getInstance(HMAC_SHA_256);

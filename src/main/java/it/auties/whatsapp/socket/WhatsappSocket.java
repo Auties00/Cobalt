@@ -1,12 +1,16 @@
 package it.auties.whatsapp.socket;
 
 import it.auties.protobuf.decoder.ProtobufDecoder;
+import it.auties.protobuf.encoder.ProtobufEncoder;
+import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.api.WhatsappOptions;
+import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.binary.BinaryMessage;
 import it.auties.whatsapp.crypto.Curve;
 import it.auties.whatsapp.crypto.Handshake;
 import it.auties.whatsapp.crypto.Hmac;
+import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.exchange.Node;
 import it.auties.whatsapp.exchange.Request;
 import it.auties.whatsapp.manager.WhatsappKeys;
@@ -35,7 +39,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
-import static it.auties.whatsapp.binary.BinaryArray.of;
 import static it.auties.whatsapp.binary.BinaryArray.ofBase64;
 import static it.auties.whatsapp.exchange.Node.with;
 import static it.auties.whatsapp.exchange.Node.withChildren;
@@ -76,6 +79,7 @@ public class WhatsappSocket {
     }
 
     @OnOpen
+    @SneakyThrows
     public void onOpen(@NonNull Session session) {
         session(session);
         if(loggedIn){
@@ -84,7 +88,9 @@ public class WhatsappSocket {
 
         handshake.start(keys());
         handshake.updateHash(keys.ephemeralKeyPair().publicKey());
-        Request.with(new HandshakeMessage(new ClientHello(keys.ephemeralKeyPair().publicKey())))
+        var clientHello = new ClientHello(keys.ephemeralKeyPair().publicKey());
+        var handshakeMessage = new HandshakeMessage(clientHello);
+        Request.with(handshakeMessage)
                 .sendWithPrologue(session(), keys(), store());
     }
 
@@ -99,7 +105,6 @@ public class WhatsappSocket {
 
         if(!loggedIn){
             authenticator.sendUserPayload(message.decoded().data());
-            lock.countDown();
             return;
         }
 
@@ -128,7 +133,7 @@ public class WhatsappSocket {
 
     public void connect() {
         try{
-            container.connectToServer(this, URI.create(options.whatsappUrlBeta()));
+            container.connectToServer(this, URI.create(options.whatsappUrl()));
             lock.await();
         }catch (IOException | DeploymentException | InterruptedException exception){
             throw new RuntimeException("Cannot connect to WhatsappWeb's WebServer", exception);
@@ -136,17 +141,13 @@ public class WhatsappSocket {
     }
 
     public void reconnect(){
-        try {
-            changeState(false);
-            session().close();
-            connect();
-        }catch (IOException exception){
-            throw new RuntimeException("Cannot reconnect to WhatsappWeb's WebServer", exception);
-        }
+        disconnect();
+        connect();
     }
 
     public void disconnect(){
         try{
+            changeState(false);
             session.close();
         }catch (IOException exception){
             throw new RuntimeException("Cannot close connection to WhatsappWeb's WebServer", exception);
@@ -165,6 +166,7 @@ public class WhatsappSocket {
         if(loggedIn) {
             reconnect();
         }
+
         System.out.println("Closed");
     }
 
@@ -183,8 +185,35 @@ public class WhatsappSocket {
                 .sendWithNoResponse(session(), keys(), store());
     }
 
-    public CompletableFuture<Node> sendQuery(Map<String, Object> query, Node... body){
-        return send(withChildren("iq", query, body));
+    public CompletableFuture<Node> sendQuery(String method, String category, Node... body){
+        return sendQuery(null, ContactJid.SOCKET, method, category, null, body);
+    }
+
+    public CompletableFuture<Node> sendQuery(String method, String category, Map<String, Object> metadata, Node... body){
+        return sendQuery(null, ContactJid.SOCKET, method, category, metadata, body);
+    }
+
+    public CompletableFuture<Node> sendQuery(ContactJid to, String method, String category, Node... body){
+        return sendQuery(null, to, method, category, null, body);
+    }
+
+    public CompletableFuture<Node> sendQuery(String id, ContactJid to, String method, String category, Map<String, Object> metadata, Node... body){
+        var attributes = new HashMap<String, Object>();
+        if(id != null){
+            attributes.put("id", id);
+        }
+
+        attributes.put("type", method);
+        attributes.put("to", to);
+        if(category != null) {
+            attributes.put("xmlns", category);
+        }
+
+        if(metadata != null){
+            attributes.putAll(metadata);
+        }
+
+        return send(withChildren("iq", attributes, body));
     }
 
     public CompletableFuture<List<Node>> sendQuery(Node queryNode, Node... queryBody) {
@@ -193,7 +222,7 @@ public class WhatsappSocket {
         var sync = withChildren("usync",
                 of("sid", WhatsappUtils.buildRequestTag(), "mode", "query", "last", "true", "index", "0", "context", "interactive"),
                 query, list);
-        return sendQuery(of("to", ContactJid.SOCKET, "type", "get", "xmlns", "usync"), sync)
+        return sendQuery("get", "usync", sync)
                 .thenApplyAsync(this::parseQueryResult);
     }
 
@@ -209,7 +238,9 @@ public class WhatsappSocket {
     private class Authenticator {
         @SneakyThrows
         private void sendUserPayload(byte[] message) {
-            var serverHello = ProtobufDecoder.forType(HandshakeMessage.class).decode(message).serverHello();
+            var serverHello = ProtobufDecoder.forType(HandshakeMessage.class)
+                    .decode(message)
+                    .serverHello();
             handshake.updateHash(serverHello.ephemeral());
             var sharedEphemeral = Curve.calculateSharedSecret(serverHello.ephemeral(), keys.ephemeralKeyPair().privateKey());
             handshake.mixIntoKey(sharedEphemeral.data());
@@ -225,10 +256,11 @@ public class WhatsappSocket {
 
             var encodedPayload = handshake.cipher(createUserPayload(), true);
             var clientFinish = new ClientFinish(encodedKey, encodedPayload);
-            Request.with(new HandshakeMessage(clientFinish))
-                    .sendWithNoResponse(session(), keys(), store());
-            changeState(true);
-            handshake.finish();
+            var handshakeMessage = new HandshakeMessage(clientFinish);
+            Request.with(handshakeMessage)
+                    .sendWithNoResponse(session(), keys(), store())
+                    .thenRunAsync(() -> changeState(true))
+                    .thenRunAsync(handshake::finish);
         }
 
         private byte[] createUserPayload() {
@@ -263,8 +295,8 @@ public class WhatsappSocket {
             return CompanionData.builder()
                     .buildHash(ofBase64(BUILD_HASH).data())
                     .companion(encode(createCompanionProps()))
-                    .id(of(keys().id(), 4).data())
-                    .keyType(of(KEY_TYPE, 1).data())
+                    .id(SignalHelper.toBytes(keys().id(), 4))
+                    .keyType(SignalHelper.toBytes(KEY_TYPE, 1))
                     .identifier(keys().identityKeyPair().publicKey())
                     .signatureId(keys().signedKeyPair().encodedId())
                     .signaturePublicKey(keys().signedKeyPair().keyPair().publicKey())
@@ -329,9 +361,20 @@ public class WhatsappSocket {
         private void digestSuccess() {
             sendPreKeys();
             confirmConnection();
-            Executors.newSingleThreadScheduledExecutor()
-                    .scheduleAtFixedRate(() -> sendQuery(of("xmlns", "w:p", "to", ContactJid.SOCKET, "type", "get"), with("ping")), 0L, 20L, TimeUnit.SECONDS);
+            createPingService();
             store.callListeners(WhatsappListener::onLoggedIn);
+        }
+
+        private void createPingService() {
+            var scheduler = Executors.newSingleThreadScheduledExecutor();
+            scheduler.scheduleAtFixedRate(() -> {
+                if(loggedIn){
+                    scheduler.shutdown();
+                    return;
+                }
+
+                sendQuery("get", "w:p", with("ping"));
+            }, 0L, 20L, TimeUnit.SECONDS);
         }
 
         private void createMediaConnection(){
@@ -339,7 +382,7 @@ public class WhatsappSocket {
                 return;
             }
 
-            sendQuery(of("xmlns", "w:m", "to", ContactJid.SOCKET, "type", "set"), with("media_conn"))
+            sendQuery("set", "w:m", with("media_conn"))
                     .thenApplyAsync(MediaConnection::ofNode)
                     .thenApplyAsync(this::scheduleMediaConnection)
                     .thenApplyAsync(store::mediaConnection);
@@ -366,7 +409,7 @@ public class WhatsappSocket {
         }
 
         private void confirmConnection() {
-            sendQuery(of("xmlns", "passive", "to", ContactJid.SOCKET, "type", "set"), with("active"))
+            sendQuery("set", "passive", with("active"))
                     .thenRunAsync(this::createMediaConnection);
         }
 
@@ -375,7 +418,7 @@ public class WhatsappSocket {
                 return;
             }
 
-            sendQuery(of("xmlns", "encrypt", "type", "set", "to", ContactJid.SOCKET), createPreKeysContent());
+            sendQuery("set", "encrypt", createPreKeysContent());
         }
 
         private Node[] createPreKeysContent() {
@@ -392,7 +435,7 @@ public class WhatsappSocket {
         }
 
         private Node createPreKeysRegistration() {
-            return with("registration", of(keys().id(), 4).data());
+            return with("registration", SignalHelper.toBytes(keys().id(), 4));
         }
 
         private Node createPreKeys(){
@@ -411,7 +454,8 @@ public class WhatsappSocket {
         }
 
         private void printQrCode(Node container) {
-            var qr = decodeQrCode(container);
+            var ref = container.findNode("ref");
+            var qr = new String(ref.bytes(), StandardCharsets.UTF_8);
             var matrix = Qr.generate(keys(), qr);
             if (!store.listeners().isEmpty()) {
                 store().callListeners(listener -> listener.onQRCode(matrix));
@@ -421,37 +465,37 @@ public class WhatsappSocket {
             Qr.print(matrix);
         }
 
-        private String decodeQrCode(Node container) {
-            var bytes = (byte[]) container.findNode("ref").content();
-            return new String(bytes, StandardCharsets.UTF_8);
-        }
-
         @SneakyThrows
         private void confirmQrCode(Node node, Node container) {
+            lock.countDown();
             saveCompanion(container);
 
+            var deviceIdentity = Objects.requireNonNull(container.findNode("device-identity"), "Missing device identity");
             var advIdentity = ProtobufDecoder.forType(SignedDeviceIdentityHMAC.class)
-                    .decode(container.findNode("device-identity").bytes());
+                    .decode(deviceIdentity.bytes());
             var advSign = Hmac.calculate(advIdentity.details(), keys().companionKey());
             Validate.isTrue(Arrays.equals(advIdentity.hmac(), advSign.data()), "Cannot login: Hmac validation failed!", SecurityException.class);
 
-            var account = ProtobufDecoder.forType(SignedDeviceIdentity.class).decode(advIdentity.details());
-            var message = of(new byte[]{6, 0})
+            var account = ProtobufDecoder.forType(SignedDeviceIdentity.class)
+                    .decode(advIdentity.details());
+            var message = BinaryArray.of(new byte[]{6, 0})
                     .append(account.details())
                     .append(keys().identityKeyPair().publicKey())
                     .data();
             Validate.isTrue(Curve.verifySignature(account.accountSignatureKey(), message, account.accountSignature()),
                     "Cannot login: Hmac validation failed!", SecurityException.class);
 
-            var deviceSignatureMessage = of(new byte[]{6, 1})
+            var deviceSignatureMessage = BinaryArray.of(new byte[]{6, 1})
                     .append(account.details())
                     .append(keys().identityKeyPair().publicKey())
                     .append(account.accountSignature())
                     .data();
             var deviceSignature = Curve.calculateSignature(keys().identityKeyPair().privateKey(), deviceSignatureMessage);
 
-            var keyIndex = ProtobufDecoder.forType(DeviceIdentity.class).decode(account.details()).keyIndex();
-            var identity = encode(account.deviceSignature(deviceSignature).accountSignature(null));
+            var keyIndex = ProtobufDecoder.forType(DeviceIdentity.class)
+                    .decode(account.details())
+                    .keyIndex();
+            var identity = ProtobufEncoder.encode(account.deviceSignature(deviceSignature).accountSignature(null));
             var identityNode = with("device-identity", of("key-index", keyIndex), identity);
             var content = withChildren("pair-device-sign", identityNode);
 
@@ -459,13 +503,14 @@ public class WhatsappSocket {
         }
 
         private void sendConfirmNode(Node node, Node content) {
-            sendQuery(of("id", WhatsappUtils.readNullableId(node), "to", ContactJid.SOCKET, "type", "result"), content);
+            var id = WhatsappUtils.readNullableId(node);
+            sendQuery(id, ContactJid.SOCKET, "result", null, of(), content);
         }
 
         private void saveCompanion(Node container) {
-            var node = Objects.requireNonNull(container.findNode("device"));
+            var node = Objects.requireNonNull(container.findNode("device"), "Missing device");
             var companion = node.attributes().getJid("jid")
-                    .orElseThrow(() -> new NoSuchElementException("Missing identity jid for session"));
+                    .orElseThrow(() -> new NoSuchElementException("Missing companion"));
             keys.companion(companion)
                     .save();
         }

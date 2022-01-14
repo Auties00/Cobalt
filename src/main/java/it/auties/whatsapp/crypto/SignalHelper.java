@@ -1,10 +1,13 @@
 package it.auties.whatsapp.crypto;
 
+import it.auties.whatsapp.binary.BinaryArray;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
+import java.io.ByteArrayOutputStream;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.zip.Inflater;
 
 /**
  * This utility class provides helper functionality to easily encrypt and decrypt data
@@ -72,5 +75,29 @@ public class SignalHelper {
 
     public int deserialize(byte version){
         return Byte.toUnsignedInt(version) >> 4;
+    }
+
+    @SneakyThrows
+    public byte[] deflate(byte[] compressed){
+        var decompressor = new Inflater();
+        decompressor.setInput(compressed);
+        var result = new ByteArrayOutputStream();
+        var buffer = new byte[1024];
+        while (!decompressor.finished()) {
+            var count = decompressor.inflate(buffer);
+            result.write(buffer, 0, count);
+        }
+
+        return result.toByteArray();
+    }
+
+    public byte[] toBytes(int input, int length) {
+        var result = new byte[length];
+        for(var i = length - 1; i >= 0; i--){
+            result[i] = (byte) (255 & input);
+            input >>>= 8;
+        }
+
+        return result;
     }
 }

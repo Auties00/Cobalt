@@ -26,7 +26,7 @@ public class DeviceListMetadata {
   private long senderTimestamp;
 
   @JsonProperty("3")
-  @JsonPropertyDescription("uint32")
+  @JsonPropertyDescription("uint32[packed]")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<Integer> senderKeyIndexes;
 
@@ -39,7 +39,7 @@ public class DeviceListMetadata {
   private long recipientTimestamp;
 
   @JsonProperty("10")
-  @JsonPropertyDescription("uint32")
+  @JsonPropertyDescription("uint32[packed]")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<Integer> recipientKeyIndexes;
 }

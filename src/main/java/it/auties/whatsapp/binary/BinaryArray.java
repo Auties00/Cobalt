@@ -42,23 +42,6 @@ public record BinaryArray(byte @NonNull [] data) {
     }
 
     /**
-     * Constructs a new non-empty {@code BinaryArray} of a fixed size representing an integer
-     *
-     * @param integer the int to wrap
-     * @param length  the length of the array
-     * @return a new non-empty {@code BinaryArray} wrapping a bytes array that only contains {@param in}
-     */
-    public static BinaryArray of(int integer, int length) {
-        var result = new byte[length];
-        for(var i = length - 1; i >= 0; i--){
-            result[i] = (byte) (255 & integer);
-            integer >>>= 8;
-        }
-
-        return of(result);
-    }
-
-    /**
      * Constructs a new {@code BinaryArray} wrapping the array of bytes representing a UTF-8 string
      *
      * @param in the String to wrap

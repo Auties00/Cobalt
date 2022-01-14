@@ -1,7 +1,9 @@
 package it.auties.whatsapp.protobuf.contact;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+import it.auties.protobuf.decoder.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.signal.session.SessionAddress;
 import lombok.AllArgsConstructor;
@@ -22,6 +24,7 @@ import java.util.Objects;
  * Instead, methods inside {@link Whatsapp} should be used.
  * This class also offers a builder, accessible using {@link ContactJid#builder()}.
  */
+@ProtobufType(String.class)
 @Builder
 @Log
 public record ContactJid(String user, @NonNull Server server, int device, int agent) {
@@ -116,7 +119,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
         }
 
         for(var server : Server.values()) {
-            jid = jid.replaceAll(server.toString(), "");
+            jid = jid.replaceAll("@%s".formatted(server), "");
         }
 
         return jid;
@@ -288,13 +291,35 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
         UNKNOWN
     }
 
+    /**
+     * The constants of this enumerated type describe the various servers that a jid might be linked to
+     */
     @AllArgsConstructor
     @Accessors(fluent = true)
     public enum Server {
+        /**
+         * User
+         */
         USER("c.us"),
+
+        /**
+         * Group
+         */
         GROUP("g.us"),
+
+        /**
+         * Broadcast group
+         */
         BROADCAST("broadcast"),
+
+        /**
+         * Group call
+         */
         GROUP_CALL("call"),
+
+        /**
+         * Whatsapp
+         */
         WHATSAPP("s.whatsapp.net");
 
         @Getter

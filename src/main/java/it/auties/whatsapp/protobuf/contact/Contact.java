@@ -62,6 +62,18 @@ public class Contact {
     private ZonedDateTime lastSeen;
 
     /**
+     * Constructs a new Contact from a provided jid
+     *
+     * @param jid the non-null jid
+     * @return a non-null Contact
+     */
+    public static Contact ofJid(@NonNull ContactJid jid){
+        return Contact.builder()
+                .jid(jid)
+                .build();
+    }
+
+    /**
      * Returns an optional String representing the first valid(non-null) name for this contact.
      * If no valid name is found, an empty optional is returned.
      * In this case, consider using the phone number of this contact as a name.

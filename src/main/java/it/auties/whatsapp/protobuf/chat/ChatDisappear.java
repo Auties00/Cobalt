@@ -1,8 +1,9 @@
 package it.auties.whatsapp.protobuf.chat;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.util.Arrays;
@@ -32,10 +33,29 @@ public enum ChatDisappear {
     private final int index;
 
     @JsonCreator
-    public static ChatDisappear forIndex(int index) {
+    public static ChatDisappear forJson(Linker linker) {
+        return linker.disappear();
+    }
+
+    private static ChatDisappear forIndex(int index) {
         return Arrays.stream(values())
                 .filter(entry -> entry.index() == index)
                 .findFirst()
                 .orElse(null);
+    }
+
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Data
+    @Builder
+    @Accessors(fluent = true)
+    public static class Linker {
+        @JsonProperty("1")
+        @JsonPropertyDescription("enum")
+        private ChatDisappear disappear;
+
+        public Linker(long index){
+            this.disappear = ChatDisappear.forIndex((int) index);
+        }
     }
 }

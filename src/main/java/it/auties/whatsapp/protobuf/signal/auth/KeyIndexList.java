@@ -30,7 +30,7 @@ public class KeyIndexList {
   private int currentIndex;
 
   @JsonProperty("4")
-  @JsonPropertyDescription("uint32")
+  @JsonPropertyDescription("uint32[packed]")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<Integer> validIndexes;
 }

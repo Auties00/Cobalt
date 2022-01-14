@@ -58,8 +58,8 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @param session the WhatsappWeb's WebSocket session
      * @param store   the store
      */
-    public void sendWithPrologue(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store) {
-        send(session, keys, store, true, false);
+    public @NonNull CompletableFuture<Node> sendWithPrologue(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store) {
+        return send(session, keys, store, true, false);
     }
 
     /**

@@ -47,15 +47,6 @@ public enum MessageStatus {
     private final int index;
 
     @JsonCreator
-    public static MessageStatus forName(String encoded){
-        return switch (encoded) {
-            case null -> DELIVERED;
-            case "read", "read-self" -> READ;
-            default -> throw new IllegalStateException("Unexpected value: " + encoded);
-        };
-    }
-
-    @JsonCreator
     public static MessageStatus forIndex(int index) {
         return Arrays.stream(values())
                 .filter(entry -> entry.index() == index)

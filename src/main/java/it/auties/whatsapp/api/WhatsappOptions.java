@@ -29,7 +29,7 @@ public class WhatsappOptions {
      */
     @Default
     @NonNull
-    private final String whatsappUrlBeta = "wss://web.whatsapp.com/ws/chat";
+    private final String whatsappUrl = "wss://web.whatsapp.com/ws/chat";
 
     /**
      * The description provided to Whatsapp during the authentication process

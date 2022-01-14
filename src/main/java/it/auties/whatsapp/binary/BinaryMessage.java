@@ -17,22 +17,24 @@ public class BinaryMessage {
     /**
      * The node decoder
      */
-    static BinaryDecoder decoder = new BinaryDecoder();
+    private static BinaryDecoder decoder = new BinaryDecoder();
 
     /**
      * The raw buffer array used to construct this object
      */
-    @NonNull BinaryArray raw;
+    @NonNull
+    BinaryArray raw;
 
     /**
      * The raw buffer array sliced at [3, {@code length})
      */
-    @NonNull BinaryArray decoded;
+    @NonNull
+    BinaryArray decoded;
 
     /**
      * The length of the decoded message
      */
-    int length;
+     int length;
 
     /**
      * Constructs a new instance of this wrapper from a buffer array

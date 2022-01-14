@@ -86,7 +86,7 @@
         <nexus.staging.maven.plugin.version>1.6.7</nexus.staging.maven.plugin.version>
         <bouncy.castle.version>1.69</bouncy.castle.version>
         <zxing.version>3.4.1</zxing.version>
-        <protoc.version>1.6-SNAPSHOT</protoc.version>
+        <protoc.version>1.6</protoc.version>
         <tyrus.version>2.0.0</tyrus.version>
         <lombok.version>1.18.22</lombok.version>
         <junit.version>5.8.2</junit.version>
@@ -217,6 +217,11 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>4.0.0-rc-2</version>
         </dependency>
         <dependency>
             <groupId>org.whispersystems</groupId>

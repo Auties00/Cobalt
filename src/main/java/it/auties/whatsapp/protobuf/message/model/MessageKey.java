@@ -1,6 +1,7 @@
 package it.auties.whatsapp.protobuf.message.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.chat.Chat;
@@ -22,7 +23,6 @@ import java.util.UUID;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @RequiredArgsConstructor
 @NoArgsConstructor
-@Builder(builderMethodName = "newMessageKey", buildMethodName = "create")
 @Accessors(fluent = true)
 @ToString(exclude = {"storeUuid", "cachedStore"})
 public class MessageKey {
@@ -30,13 +30,16 @@ public class MessageKey {
    * The jid of the contact or group that sent the message.
    */
   @JsonProperty("1")
+  @JsonPropertyDescription("string")
+  @NonNull
   @Getter
-  private @NonNull ContactJid chatJid;
+  private ContactJid chatJid;
 
   /**
    * Determines whether the message was sent by you or by someone else
    */
   @JsonProperty("2")
+  @JsonPropertyDescription("bool")
   @Getter
   private boolean fromMe;
 
@@ -44,19 +47,39 @@ public class MessageKey {
    * The id of the message
    */
   @JsonProperty("3")
-  @Builder.Default
+  @JsonPropertyDescription("string")
+  @NonNull
   @Getter
-  private String id = WhatsappUtils.randomId();
+  private String id;
 
   /**
    * The id of the session that owns this contact
    */
-  private @NonNull UUID storeUuid;
+  @Setter
+  @NonNull
+  private UUID storeUuid;
 
   /**
    * The cached value of the store
    */
   private WhatsappStore cachedStore;
+
+
+  /**
+   * Constructs a new message key from the input values
+   *
+   * @param storeUuid the non-null uuid of the store that holds this message
+   * @param chatJid the non-null chat jid
+   * @param id the id of this message
+   * @param fromMe whether this message was sent by this client
+   */
+  @Builder(builderMethodName = "newMessageKey", buildMethodName = "create")
+  public MessageKey(@NonNull UUID storeUuid, @NonNull ContactJid chatJid, String id, boolean fromMe) {
+    this.chatJid = chatJid;
+    this.fromMe = fromMe;
+    this.id = Objects.requireNonNullElseGet(id, WhatsappUtils::randomId);
+    this.storeUuid = storeUuid;
+  }
 
   /**
    * Returns the chat where the message was sent
@@ -68,6 +91,11 @@ public class MessageKey {
             .findChatByJid(Objects.toString(chatJid()));
   }
 
+  /**
+   * Returns the store where the message is stored
+   *
+   * @return a non-null store
+   */
   public WhatsappStore store(){
     return Objects.requireNonNullElseGet(cachedStore,
             () -> this.cachedStore = WhatsappStore.findStoreById(storeUuid));

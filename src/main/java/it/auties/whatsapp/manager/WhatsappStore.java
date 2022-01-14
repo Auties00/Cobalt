@@ -246,6 +246,7 @@ public class WhatsappStore {
      * @return the input chat
      */
     public @NonNull Chat addChat(@NonNull Chat chat) {
+        chat.messages().forEach(message -> message.storeUuid(uuid()));
         chats.add(chat);
         return chat;
     }

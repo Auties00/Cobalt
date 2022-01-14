@@ -11,7 +11,7 @@ import java.util.*;
  * An immutable model class that represents the primary unit used by WhatsappWeb's WebSocket to communicate with the client.
  *
  * @param description a non-null String that describes the content of this node
- * @param attributes  a non-null Map of object map
+ * @param attributes  a non-null Map that describes the metadata of this object
  * @param content     a nullable object, usually a List of {@link Node}, a {@link String} or a {@link Number}
  */
 public record Node(@NonNull String description,
@@ -20,66 +20,88 @@ public record Node(@NonNull String description,
      * Constructs a Node that only provides a non-null tag
      *
      * @param description a non-null String that describes the data that this object holds
+     * @return a new node with the above characteristics
      */
     public static Node with(@NonNull String description){
         return new Node(description, Attributes.empty(), null);
     }
 
     /**
-     * Constructs a Node that only provides a non-null tag
+     * Constructs a Node that provides a non-null tag and a nullable content
      *
      * @param description a non-null String that describes the data that this object holds
      * @param content     a nullable object, usually a List of {@link Node}, a {@link String} or a {@link Number}
+     * @return a new node with the above characteristics
      */
     public static Node with(@NonNull String description, Object content) {
         return new Node(description, Attributes.empty(), content);
     }
 
     /**
-     * Constructs a Node that only provides a non-null tag
+     * Constructs a Node that provides a non-null tag, a non-null map of attributes and a nullable content
      *
      * @param description a non-null String that describes the data that this object holds
-     * @param attributes  a non-null Map of object map
+     * @param attributes  a non-null Map that describes the metadata of this object
      * @param content     a nullable object, usually a List of {@link Node}, a {@link String} or a {@link Number}
+     * @return a new node with the above characteristics
      */
     public static Node with(@NonNull String description, @NonNull Map<String, Object> attributes, Object content) {
         return new Node(description,  Attributes.of(attributes), content);
     }
 
     /**
-     * Constructs a Node that only provides a non-null tag
+     * Constructs a Node that provides a non-null tag and a non-null map of attributes
      *
      * @param description a non-null String that describes the data that this object holds
-     * @param children    the non-null children of this node
+     * @param attributes  a non-null Map that describes the metadata of this object
+     * @return a new node with the above characteristics
+     */
+    public static Node withAttributes(@NonNull String description, @NonNull Map<String, Object> attributes) {
+        return new Node(description, Attributes.of(attributes), null);
+    }
+
+    /**
+     * Constructs a Node that provides a non-null tag and a nullable var-args of children
+     *
+     * @param description a non-null String that describes the data that this object holds
+     * @param children    the nullable children of this node
+     * @return a new node with the above characteristics
      */
     public static Node withChildren(@NonNull String description, Node... children) {
         return new Node(description, Attributes.empty(), Nodes.orNull(Arrays.asList(children)));
     }
 
     /**
-     * Constructs a Node that only provides a non-null tag
+     * Constructs a Node that provides a non-null tag, a non-null map of attributes and a nullable var-args of children
      *
      * @param description a non-null String that describes the data that this object holds
-     * @param attributes  a non-null Map of object map
-     * @param children    the non-null children of this node
+     * @param attributes  a non-null Map that describes the metadata of this object
+     * @param children    the nullable children of this node
+     * @return a new node with the above characteristics
      */
     public static Node withChildren(@NonNull String description, @NonNull Map<String, Object> attributes, Node... children) {
         return new Node(description, Attributes.of(attributes), Nodes.orNull(Arrays.asList(children)));
     }
 
+    /**
+     * Returns the content of this object as bytes
+     *
+     * @throws UnsupportedOperationException if this node doesn't wrap an array of bytes
+     * @return a non-null array of bytes
+     */
     public byte[] bytes(){
         if(content instanceof byte[] bytes){
             return bytes;
         }
 
-        var contentType = content == null ? null : content.getClass().getName();
-        throw new UnsupportedOperationException("Unsupported content type: %s".formatted(contentType));
+        throw new UnsupportedOperationException("Unsupported content type: %s"
+                .formatted(content == null ? null : content.getClass().getName()));
     }
 
     /**
-     * Returns a list of child WhatsappNodes
+     * Returns a non-null list of children of this node
      *
-     * @return a non-null list containing WhatsappNodes extracted from this body's content
+     * @return a non-null list
      */
     public LinkedList<Node> children() {
         return Nodes.findAll(content);

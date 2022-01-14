@@ -1623,7 +1623,7 @@ message ADVKeyIndexList {
     optional uint32 rawId = 1;
     optional uint64 timestamp = 2;
     optional uint32 currentIndex = 3;
-    repeated uint32 validIndexes = 4;
+    repeated string validIndexes = 4 [packed = true];
 }
 
 message MessageKey {

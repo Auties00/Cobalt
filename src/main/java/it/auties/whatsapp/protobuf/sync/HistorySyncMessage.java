@@ -14,7 +14,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class HistorySyncMsg {
+public class HistorySyncMessage {
   @JsonProperty("1")
   @JsonPropertyDescription("WebMessageInfo")
   private MessageInfo message;

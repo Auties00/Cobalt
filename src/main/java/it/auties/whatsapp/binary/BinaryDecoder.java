@@ -1,6 +1,7 @@
 package it.auties.whatsapp.binary;
 
 import io.netty.buffer.ByteBuf;
+import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.exchange.Node;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.util.Buffers;
@@ -36,15 +37,8 @@ public record BinaryDecoder(@NonNull ByteBuf buffer){
             return Buffers.readBytes(data);
         }
 
-        try {
-            var decompressor = new Inflater();
-            decompressor.setInput(Buffers.readBytes(data));
-            var temp = new byte[2048];
-            var length = decompressor.inflate(temp);
-            return Arrays.copyOf(temp, length);
-        }catch (Exception exception){
-            throw new RuntimeException("Cannot inflate data", exception);
-        }
+        var bytes = Buffers.readBytes(data);
+        return SignalHelper.deflate(bytes);
     }
 
     private Node readNode() {
@@ -175,11 +169,8 @@ public record BinaryDecoder(@NonNull ByteBuf buffer){
     }
 
     private int readSize(int token) {
-        if (token == LIST_8.data()){
-            return buffer.readUnsignedByte();
-        }
-
-        return buffer.readUnsignedShort();
+        return token == LIST_8.data() ? buffer.readUnsignedByte()
+                : buffer.readUnsignedShort();
     }
 
     private Map<String, Object> readAttributes(int size) {

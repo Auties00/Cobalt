@@ -3,13 +3,14 @@ package it.auties.whatsapp.protobuf.chat;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.annotation.JsonSetter;
+import it.auties.protobuf.decoder.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.contact.ContactStatus;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
+import it.auties.whatsapp.protobuf.sync.HistorySyncMessage;
 import it.auties.whatsapp.util.SortedMessageList;
 import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.*;
@@ -49,6 +50,7 @@ public class Chat {
     @JsonProperty("2")
     @JsonPropertyDescription("HistorySyncMsg")
     @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+    @ProtobufType(HistorySyncMessage.class)
     @Default
     @NonNull
     private SortedMessageList messages = new SortedMessageList();
@@ -136,7 +138,6 @@ public class Chat {
      */
     @JsonProperty("14")
     @JsonPropertyDescription("string")
-    @NonNull
     private String hash;
 
     /**
@@ -158,6 +159,7 @@ public class Chat {
      */
     @JsonProperty("17")
     @JsonPropertyDescription("DisappearingMode")
+    @ProtobufType(ChatDisappear.Linker.class)
     private ChatDisappear disappearInitiator;
 
     /**
@@ -188,7 +190,6 @@ public class Chat {
      */
     @JsonProperty("21")
     @JsonPropertyDescription("bytes")
-@NonNull
     private byte[] token;
 
     /**
@@ -203,7 +204,6 @@ public class Chat {
      */
     @JsonProperty("23")
     @JsonPropertyDescription("bytes")
-@NonNull
     private byte[] identityKey;
 
     /**
@@ -399,11 +399,5 @@ public class Chat {
      */
     public Optional<MessageInfo> firstMessage() {
         return messages.isEmpty() ? Optional.empty() : Optional.of(messages.get(0));
-    }
-
-    // Just a linker
-    @JsonSetter("17")
-    private void unwrapDisappearingMode(Map<String, Object> wrapper) {
-        this.disappearInitiator = (ChatDisappear) wrapper.get("1");
     }
 }

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.message.model.Message;
-import it.auties.whatsapp.protobuf.sync.HistorySyncMsg;
+import it.auties.whatsapp.protobuf.sync.HistorySyncMessage;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
@@ -31,7 +31,7 @@ public class SortedMessageList extends ArrayList<MessageInfo> {
      * @param data the non-null list of HistorySyncMsg to use as a model
      */
     @JsonCreator
-    public SortedMessageList(@NonNull Collection<HistorySyncMsg> data) {
+    public SortedMessageList(@NonNull Collection<HistorySyncMessage> data) {
         super();
         data.forEach(sync -> add(sync.message()));
     }

@@ -1,7 +1,7 @@
 package it.auties.whatsapp.protobuf.signal.keypair;
 
-import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.crypto.Curve;
+import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.exchange.Node;
 import lombok.NonNull;
 
@@ -26,6 +26,6 @@ public record SignalSignedKeyPair(int id, @NonNull SignalKeyPair keyPair, byte @
     }
 
     public byte[] encodedId(){
-        return BinaryArray.of(id, 3).data();
+        return SignalHelper.toBytes(id, 3);
     }
 }

@@ -9,7 +9,7 @@ import java.util.Arrays;
 public record MediaKeys(byte[] iv, byte[] cipherKey, byte[] macKey, byte[] ref) {
     public static MediaKeys ofProvider(@NonNull AttachmentProvider provider){
         var keyName = provider.keyName().getBytes(StandardCharsets.UTF_8);
-        var expanded = Hkdf.expand(provider.key(), keyName, 112);
+        var expanded = Hkdf.extractAndExpand(provider.key(), keyName, 112);
         var iv = Arrays.copyOfRange(expanded, 0, 16);
         var cipherKey = Arrays.copyOfRange(expanded, 16, 48);
         var macKey = Arrays.copyOfRange(expanded, 48, 80);

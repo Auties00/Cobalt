@@ -4,9 +4,13 @@ import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.whatsapp.crypto.GroupCipher;
 import it.auties.whatsapp.crypto.GroupSessionBuilder;
 import it.auties.whatsapp.crypto.SessionCipher;
+import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.exchange.Node;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
+import it.auties.whatsapp.protobuf.chat.Chat;
+import it.auties.whatsapp.protobuf.chat.ChatMute;
+import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.message.model.MessageContainer;
@@ -18,6 +22,7 @@ import it.auties.whatsapp.protobuf.signal.message.SignalMessage;
 import it.auties.whatsapp.protobuf.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.protobuf.signal.sender.SenderKeyName;
 import it.auties.whatsapp.protobuf.sync.HistorySync;
+import it.auties.whatsapp.protobuf.sync.PushName;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import lombok.extern.java.Log;
@@ -83,6 +88,7 @@ public class Messages {
         } catch (Throwable throwable) {
             log.warning("An exception occurred while processing a message: %s".formatted(throwable.getMessage()));
             log.warning("This message will not be decoded and the application should continue running");
+            throwable.printStackTrace();
             return null;
         }
     }
@@ -133,21 +139,27 @@ public class Messages {
         builder.process(groupName, message);
     }
 
-    private void handleProtocolMessage(WhatsappStore store, WhatsappKeys keys, MessageInfo info, ProtocolMessage protocolMessage) throws IOException {
+    @SneakyThrows
+    private void handleProtocolMessage(WhatsappStore store, WhatsappKeys keys, MessageInfo info, ProtocolMessage protocolMessage){
         switch(protocolMessage.type()) {
             case HISTORY_SYNC_NOTIFICATION -> {
-                    var historyBytes = Downloader.download(protocolMessage.historySyncNotification(), store);
-                    var history = ProtobufDecoder.forType(HistorySync.class)
-                            .decode(historyBytes);
+                var compressed = Downloader.download(protocolMessage.historySyncNotification(), store);
+                var decompressed = SignalHelper.deflate(compressed);
+                var history = ProtobufDecoder.forType(HistorySync.class)
+                        .decode(decompressed);
                     switch(history.syncType()) {
-                        case INITIAL_BOOTSTRAP -> history.conversations().forEach(store::addChat);
+                        case FULL, INITIAL_BOOTSTRAP -> history.conversations()
+                                .forEach(store::addChat);
+                        case INITIAL_STATUS_V3 -> {
+                            history.statusV3Messages()
+                                    .stream()
+                                    .peek(message -> message.storeUuid(store.uuid()))
+                                    .forEach(status -> handleStatusMessage(store, status));
+                        }
                         case RECENT -> history.conversations()
-                                .forEach(recent -> store.findChatByJid(recent.jid().toString())
-                                        .ifPresent(oldChat -> oldChat.messages().addAll(recent.messages())));
+                                .forEach(recent -> handleRecentMessage(store, recent));
                         case PUSH_NAME -> history.pushNames()
-                                .forEach(pushName -> store.findContactByJid(pushName.id())
-                                        .ifPresent(contact -> contact.chosenName(pushName.pushname())));
-                        case INITIAL_STATUS_V3 -> log.info("Got %s status".formatted(history.statusV3Messages()));
+                                .forEach(pushName -> handNewPushName(store, pushName));
                     }
 
                 // Send receipt
@@ -171,5 +183,42 @@ public class Messages {
                       .ephemeralMessagesToggleTime(info.timestamp())
                       .ephemeralMessageDuration(protocolMessage.ephemeralExpiration());
         }
+    }
+
+    private void handleStatusMessage(WhatsappStore store, MessageInfo status) {
+        var chat = status.chat().orElseGet(() -> {
+            var newChat = Chat.builder()
+                    .name("status")
+                    .jid(status.chatJid())
+                    .mute(new ChatMute(-1))
+                    .build();
+            store.addChat(newChat);
+            return newChat;
+        });
+
+        chat.messages().add(status);
+    }
+
+    private void handNewPushName(WhatsappStore store, PushName pushName) {
+        var oldContact = store.findContactByJid(pushName.id()).orElseGet(() -> {
+            var jid = ContactJid.ofUser(pushName.id());
+            var newContact = Contact.ofJid(jid);
+            store.addContact(newContact);
+            return newContact;
+        });
+
+        oldContact.chosenName(pushName.pushname());
+    }
+
+    private void handleRecentMessage(WhatsappStore store, Chat recent) {
+        var oldChat = store.findChatByJid(recent.jid().toString());
+        if(oldChat.isEmpty()){
+            return;
+        }
+
+        recent.messages()
+                .stream()
+                .peek(message -> message.storeUuid(store.uuid()))
+                .forEach(oldChat.get().messages()::add);
     }
 }

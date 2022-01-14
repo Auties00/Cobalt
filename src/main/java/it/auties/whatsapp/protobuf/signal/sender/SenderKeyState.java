@@ -35,6 +35,7 @@ public class SenderKeyState {
   @JsonProperty("4")
   @JsonPropertyDescription("SenderMessageKey")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  @Builder.Default
   private List<SenderMessageKey> messageKeys = new ArrayList<>();
 
   public SenderKeyState(int id, int iteration, byte[] chainKey, byte[] signatureKeyPublic, byte[] signatureKeyPrivate) {

@@ -1,9 +1,8 @@
 package it.auties.whatsapp.protobuf.signal.keypair;
 
+import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.exchange.Node;
 import lombok.NonNull;
-
-import static it.auties.whatsapp.binary.BinaryArray.of;
 
 public record SignalPreKeyPair(int id, byte @NonNull [] publicKey, byte[] privateKey) implements ISignalKeyPair{
     public static SignalPreKeyPair ofIndex(int index){
@@ -23,6 +22,6 @@ public record SignalPreKeyPair(int id, byte @NonNull [] publicKey, byte[] privat
     }
 
     public byte[] encodedId(){
-        return of(id, 3).data();
+        return SignalHelper.toBytes(id, 3);
     }
 }
