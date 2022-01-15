@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.zip.Inflater;
 
 import static it.auties.whatsapp.binary.BinaryTag.*;
 import static it.auties.whatsapp.protobuf.contact.ContactJid.Server.forAddress;

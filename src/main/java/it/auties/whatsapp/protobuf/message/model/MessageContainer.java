@@ -1,8 +1,8 @@
 package it.auties.whatsapp.protobuf.message.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.info.CallInfo;
 import it.auties.whatsapp.protobuf.message.button.*;
@@ -49,6 +49,12 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
   @JsonProperty("1")
   @JsonPropertyDescription("string")
   private String textWithNoContext;
+
+  @JsonSetter("1")
+  private void mapToMessage(String textWithNoContext){
+    this.textWithNoContext = textWithNoContext;
+    this.text = new TextMessage(textWithNoContext);
+  }
   
   /**
    * Sender key distribution message
@@ -320,16 +326,6 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
       case PaymentInviteMessage paymentInvite -> this.paymentInvite = paymentInvite;
       default -> throw new IllegalStateException("Unsupported message: " + message);
     }
-  }
-
-  /**
-   * Constructs a new MessageContainer from a simple text message
-   *
-   * @param text the text message that the new container should wrap
-   */
-  @JsonCreator
-  public MessageContainer(String text){
-    this.text = new TextMessage(text);
   }
 
   /**

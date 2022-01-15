@@ -37,7 +37,8 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         var currentKey = chain.messageKeys()
                 .get(chain.counter())
                 .publicKey();
-        var whisperKeys = Hkdf.deriveSecrets(currentKey, "WhisperMessageKeys".getBytes(StandardCharsets.UTF_8));
+        var whisperKeys = Hkdf.deriveSecrets(currentKey,
+                "WhisperMessageKeys".getBytes(StandardCharsets.UTF_8));
         chain.messageKeys().remove(chain.counter());
 
         var encrypted = AesCbc.encrypt(copyOfRange(whisperKeys[2], 0, 16), data, whisperKeys[0]);

@@ -129,7 +129,7 @@ public class Messages {
         switch (info.message().content()){
             case SenderKeyDistributionMessage distributionMessage -> handleDistributionMessage(keys, from, distributionMessage);
             case ProtocolMessage protocolMessage -> handleProtocolMessage(store, keys, info, protocolMessage);
-            default -> {}
+            case null, default -> {}
         }
     }
 

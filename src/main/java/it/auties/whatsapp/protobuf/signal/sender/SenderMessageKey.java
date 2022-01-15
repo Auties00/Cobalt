@@ -38,7 +38,7 @@ public class SenderMessageKey {
         this.seed = seed;
         this.iv = copyOfRange(derivative[0], 0, 16);
         var cipherKey = new byte[32];
-        System.arraycopy(derivative[0], 0, cipherKey, 0, 16);
+        System.arraycopy(derivative[0], 16, cipherKey, 0, 16);
         System.arraycopy(derivative[1], 0, cipherKey, 16, 16);
         this.cipherKey = cipherKey;
     }

@@ -1,6 +1,5 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.whatsapp.binary.BinaryArray;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 

@@ -14,7 +14,9 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys key
     public byte[] encrypt(byte[] data) {
         var record = keys.findSenderKeyByName(name)
                 .orElseThrow(() -> new NoSuchElementException("Missing record for name: %s".formatted(name)));
-        var messageKey = record.currentState().chainKey().toSenderMessageKey();
+        var messageKey = record.currentState()
+                .chainKey()
+                .toSenderMessageKey();
         var ciphertext = AesCbc.encrypt(
                 messageKey.iv(),
                 data,
@@ -28,7 +30,8 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys key
                 record.currentState().signingKeyPrivate()
         );
 
-        record.currentState().chainKey(record.currentState().chainKey().next());
+        var next = record.currentState().chainKey().next();
+        record.currentState().chainKey(next);
         keys.addSenderKey(name, record);
         return senderKeyMessage.serialized();
     }

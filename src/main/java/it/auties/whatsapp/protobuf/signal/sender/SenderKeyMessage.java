@@ -23,8 +23,8 @@ import static java.util.Arrays.copyOfRange;
 @Builder
 @Accessors(fluent = true)
 public class SenderKeyMessage {
-  private static final int SIGNATURE_LENGTH = 64;
   private static final int CURRENT_VERSION = 3;
+  private static final int SIGNATURE_LENGTH = 64;
 
   private int version;
 

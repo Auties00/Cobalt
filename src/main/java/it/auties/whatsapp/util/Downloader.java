@@ -6,11 +6,9 @@ import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.media.AttachmentProvider;
 import it.auties.whatsapp.protobuf.media.MediaKeys;
-import lombok.experimental.ExtensionMethod;
 import lombok.experimental.UtilityClass;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

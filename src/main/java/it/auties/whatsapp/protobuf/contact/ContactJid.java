@@ -1,7 +1,6 @@
 package it.auties.whatsapp.protobuf.contact;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import it.auties.protobuf.decoder.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;

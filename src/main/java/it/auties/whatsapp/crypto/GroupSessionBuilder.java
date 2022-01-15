@@ -27,7 +27,6 @@ public record GroupSessionBuilder(@NonNull WhatsappKeys keys) {
             keys.addSenderKey(name, senderKeyRecord);
         }
 
-
         var state = senderKeyRecord.currentState();
         return new SignalDistributionMessage(state.id(), state.chainKey().iteration(),
                 state.chainKey().seed(), state.signingKeyPublic());
