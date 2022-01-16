@@ -65,6 +65,7 @@ public class Handshake {
 
     private BinaryArray extractAndExpandWithHash(byte @NonNull [] key) {
         var extracted = Hkdf.extract(salt.data(), key);
-        return of(Hkdf.expand(extracted, null, 64));
+        var expanded = Hkdf.expand(extracted, null, 64);
+        return of(expanded);
     }
 }

@@ -47,30 +47,19 @@ public class SortedMessageList extends ArrayList<MessageInfo> {
     }
 
     /**
-     * Adds {@code message} to this collection in the right position in order to respect the contract explained previously
+     * Adds {@code message} to this collection in the right position in order to respect the contract explained previously.
+     * If this message already exists, it is removed automatically.
      *
      * @param message the non-null message to add to this collection
      * @return true if {@code message} was added successfully
      */
     @Override
     public boolean add(@NonNull MessageInfo message) {
+        remove(message);
         var initialSize = size();
         var insertionPoint = Collections.binarySearch(this, message, ENTRY_COMPARATOR);
         super.add(insertionPoint > -1 ? insertionPoint : -insertionPoint - 1, message);
         return size() != initialSize;
-    }
-
-    /**
-     * Adds {@code message} if no other entry in this collection has an jid that matches the one of {@code message}.
-     * Otherwise, it removes said entry and adds {@code message}.
-     *
-     * @param message the non-null message to add to this collection
-     * @return true if {@code message} was replaced
-     */
-    public boolean addOrReplace(@NonNull MessageInfo message) {
-        var result = remove(message);
-        add(message);
-        return result;
     }
 
     /**
@@ -82,7 +71,7 @@ public class SortedMessageList extends ArrayList<MessageInfo> {
     @Override
     public boolean addAll(Collection<? extends MessageInfo> collection) {
         return collection.stream()
-                .map(this::addOrReplace)
+                .map(this::add)
                 .reduce(true, (first, second) -> first && second);
     }
 

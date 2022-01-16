@@ -9,7 +9,6 @@ import it.auties.whatsapp.exchange.Node;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.chat.Chat;
-import it.auties.whatsapp.protobuf.chat.ChatMute;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
@@ -25,7 +24,6 @@ import it.auties.whatsapp.protobuf.sync.HistorySync;
 import it.auties.whatsapp.protobuf.sync.PushName;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
-import lombok.extern.java.Log;
 
 import java.io.IOException;
 import java.util.List;
@@ -35,7 +33,6 @@ import java.util.Objects;
 import static java.util.Arrays.copyOfRange;
 
 @UtilityClass
-@Log
 public class Messages {
     public List<MessageInfo> decodeMessages(Node node, WhatsappStore store, WhatsappKeys keys) {
         var timestamp = node.attributes().getLong("t");
@@ -70,7 +67,6 @@ public class Messages {
                 .timestamp(timestamp)
                 .create();
 
-        log.info("Starting to deserialize %s messages".formatted(node.findNodes("enc").size()));
         return node.findNodes("enc")
                 .stream()
                 .map(messageNode -> decodeMessage(info, messageNode, from, store, keys))
@@ -78,20 +74,12 @@ public class Messages {
     }
 
     private MessageInfo decodeMessage(MessageInfo info, Node node, ContactJid from, WhatsappStore store, WhatsappKeys keys) {
-        try {
-            var encodedMessage = node.bytes();
-            var messageType = node.attributes().getString("type");
-            var buffer = decodeCipheredMessage(info, encodedMessage, messageType, keys);
-            info.message(decodeMessageContainer(buffer));
-            handleSenderKeyMessage(store, keys, from, info);
-            log.info("Deciphered: " + info);
-            return info;
-        } catch (Throwable throwable) {
-            log.warning("An exception occurred while processing a message: %s".formatted(throwable.getMessage()));
-            log.warning("This message will not be decoded and the application should continue running");
-            throwable.printStackTrace();
-            return null;
-        }
+        var encodedMessage = node.bytes();
+        var messageType = node.attributes().getString("type");
+        var buffer = decodeCipheredMessage(info, encodedMessage, messageType, keys);
+        info.message(decodeMessageContainer(buffer));
+        handleSenderKeyMessage(store, keys, from, info);
+        return info;
     }
 
     private byte[] decodeCipheredMessage(MessageInfo info, byte[] message, String type, WhatsappKeys keys) {
@@ -118,10 +106,14 @@ public class Messages {
         };
     }
 
-    private MessageContainer decodeMessageContainer(byte[] buffer) throws IOException {
-        var bufferWithNoPadding = copyOfRange(buffer, 0, buffer.length - buffer[buffer.length - 1]);
-        return ProtobufDecoder.forType(MessageContainer.class)
-                .decode(bufferWithNoPadding);
+    private MessageContainer decodeMessageContainer(byte[] buffer) {
+        try {
+            var bufferWithNoPadding = copyOfRange(buffer, 0, buffer.length - buffer[buffer.length - 1]);
+            return ProtobufDecoder.forType(MessageContainer.class)
+                    .decode(bufferWithNoPadding);
+        }catch (IOException exception){
+            throw new IllegalArgumentException("Cannot decode message", exception);
+        }
     }
 
     @SneakyThrows
@@ -151,12 +143,10 @@ public class Messages {
                     switch(history.syncType()) {
                         case FULL, INITIAL_BOOTSTRAP -> history.conversations()
                                 .forEach(store::addChat);
-                        case INITIAL_STATUS_V3 -> {
-                            history.statusV3Messages()
-                                    .stream()
-                                    .peek(message -> message.storeUuid(store.uuid()))
-                                    .forEach(status -> handleStatusMessage(store, status));
-                        }
+                        case INITIAL_STATUS_V3 -> history.statusV3Messages()
+                                .stream()
+                                .peek(message -> message.storeUuid(store.uuid()))
+                                .forEach(status -> handleStatusMessage(store, status));
                         case RECENT -> history.conversations()
                                 .forEach(recent -> handleRecentMessage(store, recent));
                         case PUSH_NAME -> history.pushNames()
@@ -167,7 +157,9 @@ public class Messages {
             }
 
             case APP_STATE_SYNC_KEY_SHARE -> {
-                keys.appStateKeys().addAll(protocolMessage.appStateSyncKeyShare().keys());
+                var newKeys = protocolMessage.appStateSyncKeyShare()
+                        .keys();
+                keys.appStateKeys().addAll(newKeys);
                 // Re-sync app state
             }
 
@@ -176,13 +168,17 @@ public class Messages {
                         .orElseThrow(() -> new NoSuchElementException("Missing chat"));
                 var message = store.findMessageById(chat, protocolMessage.key().id())
                         .orElseThrow(() -> new NoSuchElementException("Missing message"));
+                chat.messages().add(message);
                 store.callListeners(listener -> listener.onMessageDeleted(message, true));
             }
 
-            case EPHEMERAL_SETTING -> protocolMessage.key().chat()
-                      .orElseThrow(() -> new NoSuchElementException("Missing chat"))
-                      .ephemeralMessagesToggleTime(info.timestamp())
-                      .ephemeralMessageDuration(protocolMessage.ephemeralExpiration());
+            case EPHEMERAL_SETTING -> {
+                var chat = protocolMessage.key().chat()
+                        .orElseThrow(() -> new NoSuchElementException("Missing chat"));
+                chat.ephemeralMessagesToggleTime(info.timestamp())
+                        .ephemeralMessageDuration(protocolMessage.ephemeralExpiration());
+                store.callListeners(listener -> listener.onChatEphemeralStatusChange(chat));
+            }
         }
     }
 
@@ -191,7 +187,6 @@ public class Messages {
             var newChat = Chat.builder()
                     .name("status")
                     .jid(status.chatJid())
-                    .mute(new ChatMute(-1))
                     .build();
             store.addChat(newChat);
             return newChat;

@@ -30,7 +30,7 @@ public final class DocumentMessage extends MediaMessage {
 
   /**
    * The mime type of the audio that this object wraps.
-   * Most of the time this is {@link MediaMessageType#defaultMimeType()}
+   * Most of the endTimeStamp this is {@link MediaMessageType#defaultMimeType()}
    */
   @JsonProperty("2")
   private String mimetype;

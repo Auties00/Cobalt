@@ -56,7 +56,7 @@ public class Contact {
     private ContactStatus lastKnownPresence;
 
     /**
-     * The nullable last time this contact was seen available.
+     * The nullable last endTimeStamp this contact was seen available.
      * Any contact can decide to hide this information in their privacy settings.
      */
     private ZonedDateTime lastSeen;
@@ -106,10 +106,10 @@ public class Contact {
     }
 
     /**
-     * Returns an optional object wrapping the last time this contact was seen.
+     * Returns an optional object wrapping the last endTimeStamp this contact was seen.
      * If this information isn't available, an empty optional is returned.
      *
-     * @return an optional object wrapping the last time this contact was seen available
+     * @return an optional object wrapping the last endTimeStamp this contact was seen available
      */
     public @NonNull Optional<ZonedDateTime> lastSeen() {
         return Optional.ofNullable(lastSeen);

@@ -5,20 +5,20 @@ package it.auties.whatsapp.protobuf.chat;
  */
 public enum ChatMuteType {
     /**
-     * This constant describes a {@link ChatMute} that holds a time greater than 0
-     * Simply put, {@link ChatMute#time()} > 0
+     * This constant describes a {@link ChatMute} that holds a endTimeStamp greater than 0
+     * Simply put, {@link ChatMute#endTimeStamp()} > 0
      */
     MUTED_FOR_TIMEFRAME,
 
     /**
-     * This constant describes a {@link ChatMute} that holds a time equal to -1
-     * Simply put, {@link ChatMute#time()} == -1
+     * This constant describes a {@link ChatMute} that holds a endTimeStamp equal to -1
+     * Simply put, {@link ChatMute#endTimeStamp()} == -1
      */
     MUTED_INDEFINITELY,
 
     /**
-     * This constant describes a {@link ChatMute} that holds a time equal to 0
-     * Simply put, {@link ChatMute#time()} == 0
+     * This constant describes a {@link ChatMute} that holds a endTimeStamp equal to 0
+     * Simply put, {@link ChatMute#endTimeStamp()} == 0
      */
     NOT_MUTED,
 }

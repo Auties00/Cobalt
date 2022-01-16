@@ -48,7 +48,7 @@ public final class StickerMessage extends MediaMessage {
 
   /**
    * The mime type of the sticker that this object wraps.
-   * Most of the time this is {@link MediaMessageType#defaultMimeType()}
+   * Most of the endTimeStamp this is {@link MediaMessageType#defaultMimeType()}
    */
   @JsonProperty("5")
   private String mimetype;

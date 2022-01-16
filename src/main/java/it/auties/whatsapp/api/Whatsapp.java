@@ -2,6 +2,7 @@ package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.compiler.RegisterListenerScanner;
+import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.exchange.GroupResponse;
 import it.auties.whatsapp.exchange.HasWhatsappResponse;
 import it.auties.whatsapp.exchange.Node;
@@ -34,7 +35,9 @@ import java.util.concurrent.CompletableFuture;
 
 import static it.auties.whatsapp.exchange.Node.with;
 import static it.auties.whatsapp.exchange.Node.withChildren;
+import static it.auties.whatsapp.manager.WhatsappKeys.knownIds;
 import static java.util.Map.of;
+import static java.util.Objects.requireNonNullElseGet;
 
 /**
  * A class used to interface a user to WhatsappWeb's WebSocket.
@@ -46,10 +49,14 @@ import static java.util.Map.of;
 public class Whatsapp {
     private WhatsappSocket socket;
 
-    public Whatsapp(){
-        this(new WhatsappSocket(WhatsappOptions.defaultOptions(), new WhatsappStore(), WhatsappKeys.fromMemory()));
+    public Whatsapp(int id){
+        this(new WhatsappSocket(WhatsappOptions.defaultOptions(), new WhatsappStore(), WhatsappKeys.fromMemory(id)));
         RegisterListenerScanner.scan(this)
                 .forEach(this::registerListener);
+    }
+
+    public Whatsapp(){
+        this(requireNonNullElseGet(knownIds().peekFirst(), SignalHelper::randomRegistrationId));
     }
 
     /**
@@ -118,7 +125,7 @@ public class Whatsapp {
 
     /**
      * Disconnects from Whatsapp Web's WebSocket and logs out of WhatsappWeb invalidating the previous saved credentials
-     * The next time the API is used, the QR code will need to be scanned again
+     * The next endTimeStamp the API is used, the QR code will need to be scanned again
      *
      * @return the same instance
      */
@@ -144,7 +151,7 @@ public class Whatsapp {
 
     /**
      * Sends a request to Whatsapp in order to receive updates when the status of a contact changes.
-     * These changes include the last known presence and the time the contact was last seen.
+     * These changes include the last known presence and the endTimeStamp the contact was last seen.
      * To listen to these updates implement;.
      *
      * @param contact the contact whose status the api should receive updates on
@@ -609,10 +616,10 @@ public class Whatsapp {
     }
 
     /**
-     * Changes the ephemeral status of a chat, this means that messages will be automatically cancelled in said chat after the provided time
+     * Changes the ephemeral status of a chat, this means that messages will be automatically cancelled in said chat after the provided endTimeStamp
      *
      * @param chat the target chat
-     * @param time the time to live for a message expressed in seconds
+     * @param time the endTimeStamp to live for a message expressed in seconds
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> changeEphemeralStatus(@NonNull Chat chat, int time) {

@@ -5,7 +5,6 @@ import com.google.zxing.common.BitMatrix;
 import it.auties.whatsapp.api.RegisterListener;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappListener;
-import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.protobuf.contact.ContactStatus;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
@@ -21,7 +20,6 @@ import java.util.UUID;
 public class WhatsappAPITest {
     @Test
     public void login() {
-        WhatsappKeys.deleteAllKeys();
         var api = new Whatsapp();
         api.connect();
     }

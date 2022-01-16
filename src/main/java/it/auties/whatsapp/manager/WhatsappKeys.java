@@ -2,6 +2,7 @@ package it.auties.whatsapp.manager;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.whatsapp.binary.BinaryArray;
@@ -18,31 +19,32 @@ import it.auties.whatsapp.protobuf.sync.AppStateSyncKey;
 import it.auties.whatsapp.util.Validate;
 import lombok.Data;
 import lombok.NonNull;
-import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.java.Log;
 
+import java.io.UncheckedIOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.prefs.BackingStoreException;
-import java.util.prefs.Preferences;
+
+import static java.util.prefs.Preferences.userRoot;
 
 /**
  * This class is a data class used to hold the clientId, serverToken, clientToken, publicKey, privateKey, encryptionKey and macKey.
  * It can be serialized using Jackson and deserialized using the fromPreferences named constructor.
  */
-@Log
 @Data
 @Accessors(fluent = true, chain = true)
+@Log
 @SuppressWarnings("UnusedReturnValue")
 public class WhatsappKeys {
     /**
      * The path used to serialize and deserialize this object
      */
-    public static final String PREFERENCES_PATH = WhatsappKeys.class.getName();
+    private static final String PREFERENCES_PATH = WhatsappKeys.class.getName();
 
     /**
      * An instance of Jackson
@@ -60,25 +62,29 @@ public class WhatsappKeys {
      * The secret key pair used for buffer messages
      */
     @JsonProperty
-    private @NonNull SignalKeyPair companionKeyPair;
+    @NonNull
+    private SignalKeyPair companionKeyPair;
 
     /**
      * The ephemeral key pair
      */
     @JsonProperty
-    private @NonNull SignalKeyPair ephemeralKeyPair;
+    @NonNull
+    private SignalKeyPair ephemeralKeyPair;
 
     /**
      * The signed identity key
      */
     @JsonProperty
-    private @NonNull SignalKeyPair identityKeyPair;
+    @NonNull
+    private SignalKeyPair identityKeyPair;
 
     /**
      * The signed pre key
      */
     @JsonProperty
-    private @NonNull SignalSignedKeyPair signedKeyPair;
+    @NonNull
+    private SignalSignedKeyPair signedKeyPair;
 
     /**
      * The adv secret key
@@ -90,7 +96,8 @@ public class WhatsappKeys {
      * Whether these keys have generated pre keys assigned to them
      */
     @JsonProperty
-    private @NonNull LinkedList<@NonNull SignalPreKeyPair> preKeys;
+    @NonNull
+    private LinkedList<@NonNull SignalPreKeyPair> preKeys;
 
     /**
      * The user using these keys
@@ -124,43 +131,74 @@ public class WhatsappKeys {
     private List<AppStateSyncKey> appStateKeys;
 
     /**
+     * Returns a list containing all known IDs
+     *
+     * @return a non-null list of ints
+     */
+    public static LinkedList<Integer> knownIds() {
+        try {
+            var json = userRoot().get(PREFERENCES_PATH, "[]");
+            return JACKSON.readValue(json, new TypeReference<>() {});
+        }catch (JsonProcessingException exception){
+            throw new UncheckedIOException("Cannot read IDs", exception);
+        }
+    }
+
+    /**
      * Clears all the keys from this machine's memory.
      * This method doesn't clear this object's values.
      */
     public static void deleteAllKeys() {
         try {
-            Preferences.userRoot().clear();
+            userRoot().clear();
         }catch (BackingStoreException exception){
             throw new RuntimeException("Cannot delete keys from memory", exception);
         }
     }
 
     /**
-     * Returns the keys saved in memory or constructs a new clean instance
+     * Clears the keys associated with the provided id
      *
-     * @return a non-null instance of WhatsappKeys
+     * @param id the id of the keys
      */
-    public static WhatsappKeys fromMemory(){
-        return Optional.ofNullable(Preferences.userRoot().get(PREFERENCES_PATH, null))
-                .map(WhatsappKeys::deserializeOrThrow)
-                .orElse(new WhatsappKeys());
+    public static void deleteKeys(int id) {
+        var path = pathForId(id);
+        userRoot().put(path, null);
     }
 
-    @SneakyThrows
-    private static WhatsappKeys deserializeOrThrow(String json) {
+    /**
+     * Returns the keys saved in memory or constructs a new clean instance
+     *
+     * @param id the id of this session
+     * @return a non-null instance of WhatsappKeys
+     */
+    public static WhatsappKeys fromMemory(int id){
+        var json = userRoot().get(pathForId(id), null);
+        return Optional.ofNullable(json)
+                .map(value -> deserialize(id, value))
+                .orElseGet(() -> new WhatsappKeys(id));
+    }
+
+    private static String pathForId(int id) {
+        return "%s$%s".formatted(PREFERENCES_PATH, id);
+    }
+
+    private static WhatsappKeys deserialize(int id, String json) {
         try {
             return JACKSON.readValue(json, WhatsappKeys.class);
-        }catch (Throwable throwable){
-            log.warning("Cannot read preferences: %s".formatted(throwable.getMessage()));
-            Preferences.userRoot().clear();
+        } catch (JsonProcessingException exception) {
+            log.warning("Cannot read keys for id %s: defaulting to new keys".formatted(id));
+            log.warning(exception.getMessage());
+            log.warning(json);
             return null;
         }
     }
 
-    /**
-     * Constructs new WhatsappKeys using random keys
-     */
-    public WhatsappKeys() {
+    private WhatsappKeys(){
+        this(-1);
+    }
+
+    private WhatsappKeys(int id) {
         this.id = SignalHelper.randomRegistrationId();
         this.companionKeyPair = SignalKeyPair.random();
         this.ephemeralKeyPair = SignalKeyPair.random();
@@ -172,6 +210,18 @@ public class WhatsappKeys {
         this.sessions = new ConcurrentHashMap<>();
         this.identities = new ConcurrentHashMap<>();
         this.appStateKeys = new LinkedList<>();
+        this.id = saveId(id);
+    }
+
+    private int saveId(int id){
+        try {
+            var knownIds = knownIds();
+            knownIds.add(id);
+            userRoot().put(PREFERENCES_PATH, JACKSON.writeValueAsString(knownIds));
+            return id;
+        }catch (JsonProcessingException exception){
+            throw new UncheckedIOException("Cannot serialize IDs", exception);
+        }
     }
 
     /**
@@ -181,7 +231,8 @@ public class WhatsappKeys {
      */
     public WhatsappKeys save(){
         try {
-            Preferences.userRoot().put(PREFERENCES_PATH, JACKSON.writeValueAsString(this));
+            var path = pathForId(id);
+            userRoot().put(path, JACKSON.writeValueAsString(this));
             return this;
         } catch (JsonProcessingException exception) {
             throw new RuntimeException("Cannot save keys to memory", exception);
@@ -205,7 +256,7 @@ public class WhatsappKeys {
      * @return this
      */
     public WhatsappKeys delete() {
-        deleteAllKeys();
+        deleteKeys(id);
         return this;
     }
 

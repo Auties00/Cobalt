@@ -103,7 +103,7 @@ public class Chat {
     private boolean complete;
 
     /**
-     * The time in seconds before a message is automatically deleted from this chat both locally and from WhatsappWeb's servers.
+     * The endTimeStamp in seconds before a message is automatically deleted from this chat both locally and from WhatsappWeb's servers.
      * If ephemeral messages aren't enabled, this field has a value of 0
      */
     @JsonProperty("9")
@@ -111,7 +111,7 @@ public class Chat {
     private long ephemeralMessageDuration;
 
     /**
-     * The time in seconds since {@link java.time.Instant#EPOCH} when ephemeral messages were turned on.
+     * The endTimeStamp in seconds since {@link java.time.Instant#EPOCH} when ephemeral messages were turned on.
      * If ephemeral messages aren't enabled, this field has a value of 0.
      */
     @JsonProperty("10")
@@ -207,7 +207,7 @@ public class Chat {
     private byte[] identityKey;
 
     /**
-     * The time in seconds since {@link java.time.Instant#EPOCH} when this chat was pinned to the top.
+     * The endTimeStamp in seconds since {@link java.time.Instant#EPOCH} when this chat was pinned to the top.
      * If the chat isn't pinned, this field has a value of 0.
      */
     @JsonProperty("24")
@@ -220,7 +220,8 @@ public class Chat {
     @JsonProperty("25")
     @JsonPropertyDescription("uint64")
     @NonNull
-    private ChatMute mute;
+    @Default
+    private ChatMute mute = ChatMute.notMuted();
 
     /**
      * The wallpaper of this chat
@@ -357,7 +358,7 @@ public class Chat {
     }
 
     /**
-     * Returns an optional value containing the time this chat was pinned
+     * Returns an optional value containing the endTimeStamp this chat was pinned
      *
      * @return a non-empty optional if the chat is pinned
      */
@@ -366,7 +367,7 @@ public class Chat {
     }
 
     /**
-     * Returns an optional value containing the time in seconds before a message is automatically deleted from this chat both locally and from WhatsappWeb's servers
+     * Returns an optional value containing the endTimeStamp in seconds before a message is automatically deleted from this chat both locally and from WhatsappWeb's servers
      *
      * @return a non-empty optional if ephemeral messages are enabled for this chat
      */
@@ -375,7 +376,7 @@ public class Chat {
     }
 
     /**
-     * Returns an optional value containing the time in seconds since {@link java.time.Instant#EPOCH} when ephemeral messages were turned on
+     * Returns an optional value containing the endTimeStamp in seconds since {@link java.time.Instant#EPOCH} when ephemeral messages were turned on
      *
      * @return a non-empty optional if ephemeral messages are enabled for this chat
      */

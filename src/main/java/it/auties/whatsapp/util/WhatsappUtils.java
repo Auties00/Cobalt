@@ -49,10 +49,10 @@ public class WhatsappUtils {
     }
 
     /**
-     * Returns a ZoneDateTime for {@code time}
+     * Returns a ZoneDateTime for {@code endTimeStamp}
      *
-     * @param input the time in seconds since {@link Instant#EPOCH}
-     * @return a non-null empty optional if the {@code time} isn't 0
+     * @param input the endTimeStamp in seconds since {@link Instant#EPOCH}
+     * @return a non-null empty optional if the {@code endTimeStamp} isn't 0
      */
     public Optional<ZonedDateTime> parseWhatsappTime(long input) {
         return Optional.of(input)

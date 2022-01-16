@@ -35,14 +35,14 @@ public final class ProtocolMessage implements ServerMessage {
   private ProtocolMessageType type;
 
   /**
-   * The expiration, that is the time in seconds after which a message is automatically deleted, of messages in an ephemeral chat.
+   * The expiration, that is the endTimeStamp in seconds after which a message is automatically deleted, of messages in an ephemeral chat.
    * This property is defined only if {@link ProtocolMessage#type} == {@link ProtocolMessageType#EPHEMERAL_SETTING} || @link ProtocolMessageType#EPHEMERAL_SYNC_RESPONSE}.
    */
   @JsonProperty("4")
   private long ephemeralExpiration;
 
   /**
-   * The timestamp, that is the time in seconds since {@link java.time.Instant#EPOCH}, of the last modification to the ephemeral settings of a chat.
+   * The timestamp, that is the endTimeStamp in seconds since {@link java.time.Instant#EPOCH}, of the last modification to the ephemeral settings of a chat.
    * This property is defined only if {@link ProtocolMessage#type} == {@link ProtocolMessageType#EPHEMERAL_SETTING} || @link ProtocolMessageType#EPHEMERAL_SYNC_RESPONSE}.
    */
   @JsonProperty("5")

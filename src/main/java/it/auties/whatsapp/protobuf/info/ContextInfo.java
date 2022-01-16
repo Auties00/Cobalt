@@ -117,7 +117,7 @@ public non-sealed class ContextInfo implements WhatsappInfo {
   private int expiration;
 
   /**
-   * The timestamp, that is the time in seconds since {@link java.time.Instant#EPOCH}, of the last modification to the ephemeral settings
+   * The timestamp, that is the endTimeStamp in seconds since {@link java.time.Instant#EPOCH}, of the last modification to the ephemeral settings
    * for the chat where this ContextualMessage was sent.
    */
   @JsonProperty("26")
