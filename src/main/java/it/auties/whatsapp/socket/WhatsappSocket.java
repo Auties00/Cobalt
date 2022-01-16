@@ -107,9 +107,9 @@ public class WhatsappSocket {
             return;
         }
 
-        var oldCounter = store.readCounter().get();
+        var oldCounter = keys.readCounter().get();
         var deciphered = decipherMessage(message);
-        var currentCounter = store.readCounter().get();
+        var currentCounter = keys.readCounter().get();
         if(currentCounter - oldCounter != 1){
             log.warning("Skipped %s IVs to decipher message with length %s".formatted(currentCounter - oldCounter - 1, message.length()));
         }
@@ -124,7 +124,7 @@ public class WhatsappSocket {
 
     private Node decipherMessage(BinaryMessage message) {
         try {
-            return message.toNode(keys.readKey(), store.readCounter().getAndIncrement());
+            return message.toNode(keys.readKey(), keys.readCounter().getAndIncrement());
         }catch (Throwable throwable){
             return decipherMessage(message);
         }
@@ -157,7 +157,6 @@ public class WhatsappSocket {
         this.loggedIn = loggedIn;
         this.lock = new CountDownLatch(1);
         keys().clear();
-        store().clearCounters();
     }
 
     @OnClose

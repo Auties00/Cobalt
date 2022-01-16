@@ -144,7 +144,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
             return body;
         }
 
-        return AesGmc.with(keys.writeKey(), store.writeCounter().getAndIncrement(), true)
+        return AesGmc.with(keys.writeKey(), keys.writeCounter().getAndIncrement(), true)
                 .process(body);
     }
 }

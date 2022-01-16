@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.prefs.BackingStoreException;
 
 import static java.util.prefs.Preferences.userRoot;
@@ -130,6 +131,21 @@ public class WhatsappKeys {
     private List<AppStateSyncKey> appStateKeys;
 
     /**
+     * The non-null read counter
+     */
+    @NonNull
+    @JsonProperty
+    private AtomicLong readCounter;
+
+    /**
+     * The non-null write counter
+     */
+    @NonNull
+    @JsonProperty
+    private AtomicLong writeCounter;
+
+
+    /**
      * Session dependent keys to write and read cyphered messages
      */
     private BinaryArray writeKey, readKey;
@@ -203,7 +219,7 @@ public class WhatsappKeys {
     }
 
     private WhatsappKeys(int id) {
-        this.id = SignalHelper.randomRegistrationId();
+        this.id = saveId(id);
         this.companionKeyPair = SignalKeyPair.random();
         this.ephemeralKeyPair = SignalKeyPair.random();
         this.identityKeyPair = SignalKeyPair.random();
@@ -214,7 +230,8 @@ public class WhatsappKeys {
         this.sessions = new ConcurrentHashMap<>();
         this.identities = new ConcurrentHashMap<>();
         this.appStateKeys = new LinkedList<>();
-        this.id = saveId(id);
+        this.readCounter = new AtomicLong();
+        this.writeCounter = new AtomicLong();
     }
 
     private int saveId(int id){
@@ -249,8 +266,10 @@ public class WhatsappKeys {
      * @return this
      */
     public WhatsappKeys clear() {
-        writeKey(null).readKey(null);
-        return this;
+        return writeKey(null)
+                .readKey(null)
+                .writeCounter(new AtomicLong())
+                .readCounter(new AtomicLong());
     }
 
     /**

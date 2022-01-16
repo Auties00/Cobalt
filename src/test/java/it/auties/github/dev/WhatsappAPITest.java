@@ -21,7 +21,6 @@ import java.util.UUID;
 public class WhatsappAPITest {
     @Test
     public void login() {
-        WhatsappKeys.deleteAllKeys();
         var api = new Whatsapp();
         api.connect();
     }

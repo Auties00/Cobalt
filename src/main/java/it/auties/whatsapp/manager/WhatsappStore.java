@@ -60,18 +60,6 @@ public class WhatsappStore {
     private final List<WhatsappListener> listeners;
 
     /**
-     * The non-null read counter
-     */
-    @NonNull
-    private final AtomicLong readCounter;
-
-    /**
-     * The non-null write counter
-     */
-    @NonNull
-    private final AtomicLong writeCounter;
-
-    /**
      * The timestamp in milliseconds for the initialization of this object
      */
     private final long initializationTimeStamp;
@@ -89,7 +77,6 @@ public class WhatsappStore {
         this(Executors.newSingleThreadExecutor(),
                 new Vector<>(), new Vector<>(),
                 new Vector<>(), new Vector<>(),
-                new AtomicLong(), new AtomicLong(),
                 System.currentTimeMillis());
     }
 
@@ -239,20 +226,12 @@ public class WhatsappStore {
     /**
      * Returns the chats pinned to the top
      *
-     * @return a non null list of chats
+     * @return a non-null list of chats
      */
     public List<Chat> pinnedChats(){
         return chats.parallelStream()
                 .filter(Chat::isPinned)
                 .toList();
-    }
-
-    /**
-     * Resets to zero both the read and write counter
-     */
-    public void clearCounters(){
-        this.readCounter.set(0);
-        this.writeCounter.set(0);
     }
 
     /**
@@ -262,7 +241,6 @@ public class WhatsappStore {
         chats.clear();
         contacts.clear();
         pendingRequests.clear();
-        clearCounters();
     }
 
     /**
