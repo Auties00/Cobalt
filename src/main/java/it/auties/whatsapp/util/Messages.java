@@ -12,6 +12,7 @@ import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
+import it.auties.whatsapp.protobuf.message.device.DeviceSentMessage;
 import it.auties.whatsapp.protobuf.message.model.MessageContainer;
 import it.auties.whatsapp.protobuf.message.model.MessageKey;
 import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
@@ -121,8 +122,16 @@ public class Messages {
         switch (info.message().content()){
             case SenderKeyDistributionMessage distributionMessage -> handleDistributionMessage(keys, from, distributionMessage);
             case ProtocolMessage protocolMessage -> handleProtocolMessage(store, keys, info, protocolMessage);
-            case null, default -> {}
+            case DeviceSentMessage deviceSentMessage -> saveMessage(info.message(deviceSentMessage.message()));
+            default -> saveMessage(info);
         }
+    }
+
+    private void saveMessage(MessageInfo info) {
+        info.chat()
+                .orElseThrow(() -> new NoSuchElementException("Missing chat: %s".formatted(info.chatJid())))
+                .messages()
+                .add(info);
     }
 
     private void handleDistributionMessage(WhatsappKeys keys, ContactJid from, SenderKeyDistributionMessage distributionMessage) {
@@ -183,16 +192,18 @@ public class Messages {
     }
 
     private void handleStatusMessage(WhatsappStore store, MessageInfo status) {
-        var chat = status.chat().orElseGet(() -> {
-            var newChat = Chat.builder()
-                    .name("status")
-                    .jid(status.chatJid())
-                    .build();
-            store.addChat(newChat);
-            return newChat;
-        });
-
+        var chat = status.chat()
+                .orElseGet(() -> createStatusChat(status.chatJid(), store));
         chat.messages().add(status);
+    }
+
+    private Chat createStatusChat(ContactJid jid, WhatsappStore store) {
+        var chat = Chat.builder()
+                .name("Official Whatsapp Status")
+                .jid(jid)
+                .build();
+        store.addChat(chat);
+        return chat;
     }
 
     private void handNewPushName(WhatsappStore store, PushName pushName) {
