@@ -5,14 +5,11 @@ import it.auties.whatsapp.manager.WhatsappKeys;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 
-import java.security.MessageDigest;
-
 import static it.auties.whatsapp.binary.BinaryArray.of;
 
 public class Handshake {
     public static final byte[] PROLOGUE = new byte[]{87, 65, 5, 2};
     private static final BinaryArray PROTOCOL = BinaryArray.of("Noise_XX_25519_AESGCM_SHA256\0\0\0\0");
-    private static final String HASH_ALGORITHM = "SHA-256";
 
     private WhatsappKeys keys;
     private BinaryArray hash;
@@ -32,8 +29,7 @@ public class Handshake {
     @SneakyThrows
     public void updateHash(byte @NonNull [] data) {
         var input = hash.append(data);
-        var digest = MessageDigest.getInstance(HASH_ALGORITHM);
-        this.hash = of(digest.digest(input.data()));
+        this.hash = Sha256.calculate(input.data());
     }
 
     @SneakyThrows

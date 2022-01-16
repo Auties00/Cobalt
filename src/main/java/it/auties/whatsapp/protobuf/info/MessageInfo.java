@@ -5,12 +5,15 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.api.Unsupported;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.manager.WhatsappStore;
+import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.message.model.*;
 import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
 import it.auties.whatsapp.protobuf.message.standard.LiveLocationMessage;
 import lombok.*;
+import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.experimental.Delegate;
 
@@ -27,7 +30,14 @@ import java.util.*;
 @Data
 @Builder(builderMethodName = "newMessageInfo", buildMethodName = "create")
 @Accessors(fluent = true)
+@ToString(exclude = "store")
 public final class MessageInfo implements WhatsappInfo {
+  /**
+   * The location where this message is stored
+   */
+  @NonNull
+  private WhatsappStore store;
+  
   /**
    * The MessageKey of this message
    */
@@ -41,7 +51,7 @@ public final class MessageInfo implements WhatsappInfo {
    */
   @JsonProperty("2")
   @NonNull
-  @Builder.Default
+  @Default
   private MessageContainer message = new MessageContainer();
 
   /**
@@ -53,7 +63,7 @@ public final class MessageInfo implements WhatsappInfo {
    * It is important to remember that it is guaranteed that every participant will be present as a key.
    */
   @NonNull
-  @Builder.Default
+  @Default
   private Map<Contact, MessageStatus> individualReadStatus = new HashMap<>();
 
   /**
@@ -63,7 +73,7 @@ public final class MessageInfo implements WhatsappInfo {
    */
   @JsonProperty("4")
   @NonNull
-  @Builder.Default
+  @Default
   private MessageStatus globalStatus = MessageStatus.PENDING;
 
   /**
@@ -207,6 +217,16 @@ public final class MessageInfo implements WhatsappInfo {
     this.message = container;
     this.individualReadStatus = new HashMap<>();
   }
+  
+  /**
+   * Returns the chat where the message was sent
+   *
+   * @return an optional wrapping a {@link Chat}
+   */
+  public Optional<Chat> chat(){
+    var chat = Objects.toString(key.chatJid());
+    return store.findChatByJid(chat);
+  }
 
   /**
    * Checks whether this message wraps a stub type
@@ -232,8 +252,8 @@ public final class MessageInfo implements WhatsappInfo {
    * @return an optional wrapping a {@link Contact}
    */
   public Optional<Contact> sender(){
-    return key.store()
-            .findContactByJid(senderJid().toString());
+    var sender = Objects.toString(senderJid());
+    return store.findContactByJid(sender);
   }
 
   /**
@@ -245,7 +265,12 @@ public final class MessageInfo implements WhatsappInfo {
     return Optional.of(message)
             .flatMap(MessageContainer::contentWithContext)
             .map(ContextualMessage::contextInfo)
-            .flatMap(contextualMessage -> key.store().findMessageById(key.chat().orElseThrow(), contextualMessage.quotedMessageId()));
+            .flatMap(this::quotedMessage);
+  }
+
+  private Optional<MessageInfo> quotedMessage(ContextInfo contextualMessage) {
+    var chat = chat().orElseThrow(() -> new NoSuchElementException("Cannot get quoted message: missing chat"));
+    return store.findMessageById(chat, contextualMessage.quotedMessageId());
   }
 
   /**

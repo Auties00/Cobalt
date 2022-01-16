@@ -13,61 +13,41 @@ public enum MediaMessageType {
     /**
      * The message is an image
      */
-    IMAGE("image/jpeg"),
+    IMAGE("image/jpeg", "mms/image"),
 
     /**
      * The message is a document
      */
-    DOCUMENT("application/octet-stream"),
+    DOCUMENT("application/octet-stream", "mms/document"),
 
     /**
      * The message is an audio
      */
-    AUDIO("audio/mpeg"),
+    AUDIO("audio/mpeg", "mms/audio"),
 
     /**
      * The message is a video
      */
-    VIDEO("video/mp4"),
+    VIDEO("video/mp4", "mms/video"),
 
     /**
      * The message is a sticker
      */
-    STICKER("image/webp");
+    STICKER("image/webp", "mms/image");
 
-    /**
-     * The URL used to build the media request
-     */
-    private static final String WHATSAPP_URL = "https://media-mxp1-1.cdn.whatsapp.net/mms/%s";
 
     /**
      * The default mime type for this enumerated type.
      * Might be right, might be wrong, who knows.
      */
-    private final @Getter String defaultMimeType;
+    @Getter
+    private final String defaultMimeType;
 
     /**
-     * Returns the key used to encrypt a media message
-     *
-     * @return a non-null array of bytes
+     * The path used with a Whatsapp upload host
      */
-    public byte[] keyName() {
-        var name = Character.toUpperCase(whatsappName().charAt(0))
-                + whatsappName().substring(1);
-        return "WhatsApp %s Keys".formatted(name)
-                .getBytes();
-    }
-
-
-    /**
-     * Returns the URL used to upload this enumerated type to Whatsapp Web's servers
-     *
-     * @return a non-null string
-     */
-    public String url() {
-        return WHATSAPP_URL.formatted(whatsappName());
-    }
-
+    @Getter
+    private final String uploadPath;
 
     /**
      * Returns a name that can be interpreted by Whatsapp Web's servers

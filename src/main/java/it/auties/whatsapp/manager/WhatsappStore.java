@@ -29,17 +29,6 @@ import java.util.stream.Collectors;
 @Accessors(fluent = true)
 public class WhatsappStore {
     /**
-     * Set of all known Whatsapp stores
-     */
-    private static final Set<WhatsappStore> instances = new HashSet<>();
-
-    /**
-     * The non-null uuid of this store
-     */
-    @NonNull
-    private final UUID uuid;
-
-    /**
      * The non-null service used to call listeners.
      * This is needed in order to not block the socket.
      */
@@ -97,26 +86,11 @@ public class WhatsappStore {
      * Constructs a new default instance of WhatsappDataManager
      */
     public WhatsappStore(){
-        this(UUID.randomUUID(), Executors.newSingleThreadExecutor(),
+        this(Executors.newSingleThreadExecutor(),
                 new Vector<>(), new Vector<>(),
                 new Vector<>(), new Vector<>(),
                 new AtomicLong(), new AtomicLong(),
                 System.currentTimeMillis());
-        instances.add(this);
-    }
-
-    /**
-     * Returns the first store that matches {@code uuid}
-     *
-     * @param uuid a nullable uuid to search
-     * @return a non null WhatsappStore
-     * @throws NoSuchElementException if no element can be found
-     */
-    public static WhatsappStore findStoreById(UUID uuid){
-        return instances.parallelStream()
-                .filter(entry -> Objects.equals(entry.uuid(), uuid))
-                .findFirst()
-                .orElseThrow(() -> new NoSuchElementException("Missing session: %s".formatted(uuid)));
     }
 
     /**
@@ -246,7 +220,7 @@ public class WhatsappStore {
      * @return the input chat
      */
     public @NonNull Chat addChat(@NonNull Chat chat) {
-        chat.messages().forEach(message -> message.storeUuid(uuid()));
+        chat.messages().forEach(message -> message.store(this));
         chats.add(chat);
         return chat;
     }

@@ -13,6 +13,7 @@ import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.message.device.DeviceSentMessage;
+import it.auties.whatsapp.protobuf.message.model.MediaMessage;
 import it.auties.whatsapp.protobuf.message.model.MessageContainer;
 import it.auties.whatsapp.protobuf.message.model.MessageKey;
 import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
@@ -47,24 +48,23 @@ public class Messages {
         var messageBuilder = MessageInfo.newMessageInfo();
         var keyBuilder = MessageKey.newMessageKey();
         switch (from.type()){
-            case USER -> {
+            case USER, OFFICIAL_BUSINESS_ACCOUNT, STATUS, ANNOUNCEMENT -> {
                 keyBuilder.chatJid(recipient);
                 messageBuilder.senderJid(from);
             }
 
-            case GROUP, BROADCAST -> {
+            case GROUP, GROUP_CALL, BROADCAST -> {
                 var sender = Objects.requireNonNull(participant, "Missing participant in group message");
                 keyBuilder.chatJid(from);
                 messageBuilder.senderJid(sender);
             }
 
-            default -> throw new IllegalArgumentException("Unsupported message type: %s".formatted(from.type().name()));
+            default -> throw new IllegalArgumentException("Cannot decode message, unsupported type: %s".formatted(from.type().name()));
         }
 
-        var key = keyBuilder.id(id)
-                .storeUuid(store.uuid())
-                .create();
-        var info = messageBuilder.key(key)
+        var key = keyBuilder.id(id).create();
+        var info = messageBuilder.store(store)
+                .key(key)
                 .timestamp(timestamp)
                 .create();
 
@@ -123,6 +123,10 @@ public class Messages {
             case SenderKeyDistributionMessage distributionMessage -> handleDistributionMessage(keys, from, distributionMessage);
             case ProtocolMessage protocolMessage -> handleProtocolMessage(store, keys, info, protocolMessage);
             case DeviceSentMessage deviceSentMessage -> saveMessage(info.message(deviceSentMessage.message()));
+            case MediaMessage mediaMessage -> {
+                mediaMessage.store(store);
+                saveMessage(info);
+            }
             default -> saveMessage(info);
         }
     }
@@ -145,7 +149,7 @@ public class Messages {
     private void handleProtocolMessage(WhatsappStore store, WhatsappKeys keys, MessageInfo info, ProtocolMessage protocolMessage){
         switch(protocolMessage.type()) {
             case HISTORY_SYNC_NOTIFICATION -> {
-                var compressed = Downloader.download(protocolMessage.historySyncNotification(), store);
+                var compressed = Medias.download(protocolMessage.historySyncNotification(), store);
                 var decompressed = SignalHelper.deflate(compressed);
                 var history = ProtobufDecoder.forType(HistorySync.class)
                         .decode(decompressed);
@@ -154,7 +158,7 @@ public class Messages {
                                 .forEach(store::addChat);
                         case INITIAL_STATUS_V3 -> history.statusV3Messages()
                                 .stream()
-                                .peek(message -> message.storeUuid(store.uuid()))
+                                .peek(message -> message.store(store))
                                 .forEach(status -> handleStatusMessage(store, status));
                         case RECENT -> history.conversations()
                                 .forEach(recent -> handleRecentMessage(store, recent));
@@ -173,7 +177,7 @@ public class Messages {
             }
 
             case REVOKE -> {
-                var chat = protocolMessage.key().chat()
+                var chat = info.chat()
                         .orElseThrow(() -> new NoSuchElementException("Missing chat"));
                 var message = store.findMessageById(chat, protocolMessage.key().id())
                         .orElseThrow(() -> new NoSuchElementException("Missing message"));
@@ -182,7 +186,7 @@ public class Messages {
             }
 
             case EPHEMERAL_SETTING -> {
-                var chat = protocolMessage.key().chat()
+                var chat = info.chat()
                         .orElseThrow(() -> new NoSuchElementException("Missing chat"));
                 chat.ephemeralMessagesToggleTime(info.timestamp())
                         .ephemeralMessageDuration(protocolMessage.ephemeralExpiration());
@@ -225,7 +229,7 @@ public class Messages {
 
         recent.messages()
                 .stream()
-                .peek(message -> message.storeUuid(store.uuid()))
+                .peek(message -> message.store(store))
                 .forEach(oldChat.get().messages()::add);
     }
 }

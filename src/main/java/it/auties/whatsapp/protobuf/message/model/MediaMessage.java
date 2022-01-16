@@ -1,15 +1,17 @@
 package it.auties.whatsapp.protobuf.message.model;
 
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.media.AttachmentProvider;
 import it.auties.whatsapp.protobuf.message.payment.PaymentInvoiceMessage;
 import it.auties.whatsapp.protobuf.message.standard.*;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import it.auties.whatsapp.util.Medias;
+import lombok.*;
+import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 
 import java.util.Locale;
+import java.util.Objects;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds media inside.
@@ -19,6 +21,7 @@ import java.util.Locale;
 @AllArgsConstructor
 @SuperBuilder(buildMethodName = "create")
 @NoArgsConstructor
+@Accessors(fluent = true)
 public abstract sealed class MediaMessage extends ContextualMessage implements AttachmentProvider
         permits PaymentInvoiceMessage, AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoMessage {
     /**
@@ -27,18 +30,26 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
     private byte[] decodedMedia;
 
     /**
+     * The store where this message is located.
+     *
+     * @apiNote even though the same instance is in the wrapping message info(MessageInfo -> MessageContainer -> MediaMessage),
+     *          there is currently no way to navigate the tree upwards or any reason to do so considering that this is a special use case.
+     *          Considering that passing the same instance to {@link MediaMessage#decodedMedia()} is verbose and unnecessary, there is a copy here.
+     */
+    @NonNull
+    @Getter
+    @Setter
+    private WhatsappStore store;
+
+    /**
      * Returns the cached decoded media wrapped by this object if available.
-     * Otherwise the encoded media that this object wraps is decoded, cached and returned.
+     * Otherwise, the encoded media that this object wraps is decoded, cached and returned.
      *
      * @return a non-null array of bytes
      */
     public byte @NonNull [] decodedMedia(){
-        if(decodedMedia == null){
-            // this.decodedMedia = CypherUtils.mediaDecrypt(this);
-            throw new UnsupportedOperationException("Work in progress");
-        }
-
-        return decodedMedia;
+        return Objects.requireNonNullElseGet(decodedMedia,
+                () -> (this.decodedMedia = Medias.download(this, store)));
     }
 
     /**
@@ -47,8 +58,8 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
      * @return a non-null array of bytes
      */
     public byte @NonNull [] refreshMedia(){
-        throw new UnsupportedOperationException("Work in progress");
-        // return this.decodedMedia = CypherUtils.mediaDecrypt(this);
+       this.decodedMedia = null;
+       return decodedMedia();
     }
 
     /**

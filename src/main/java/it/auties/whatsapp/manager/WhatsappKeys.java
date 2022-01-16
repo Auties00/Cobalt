@@ -106,29 +106,33 @@ public class WhatsappKeys {
     private ContactJid companion;
 
     /**
-     * Session dependent keys to write and read cyphered messages
-     */
-    private BinaryArray writeKey, readKey;
-
-    /**
      * Sender keys for signal implementation
      */
+    @JsonProperty
     private Map<SenderKeyName, SenderKeyRecord> senderKeys;
 
     /**
      * Sessions map
      */
+    @JsonProperty
     private Map<SessionAddress, Session> sessions;
 
     /**
      * Trusted keys
      */
+    @JsonProperty
     private Map<SessionAddress, byte[]> identities;
 
     /**
      * App state keys
      */
+    @JsonProperty
     private List<AppStateSyncKey> appStateKeys;
+
+    /**
+     * Session dependent keys to write and read cyphered messages
+     */
+    private BinaryArray writeKey, readKey;
 
     /**
      * Returns a list containing all known IDs
