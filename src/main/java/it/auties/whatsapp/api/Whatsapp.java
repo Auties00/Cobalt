@@ -30,13 +30,16 @@ import lombok.NonNull;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import static it.auties.whatsapp.api.WhatsappOptions.defaultOptions;
 import static it.auties.whatsapp.exchange.Node.with;
 import static it.auties.whatsapp.exchange.Node.withChildren;
+import static it.auties.whatsapp.manager.WhatsappKeys.fromMemory;
 import static it.auties.whatsapp.manager.WhatsappKeys.knownIds;
-import static java.util.Map.of;
+import static it.auties.whatsapp.manager.WhatsappStore.newStore;
 import static java.util.Objects.requireNonNullElseGet;
 
 /**
@@ -47,16 +50,59 @@ import static java.util.Objects.requireNonNullElseGet;
  */
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class Whatsapp {
-    private WhatsappSocket socket;
+    /**
+     * The socket associated with this session
+     */
+    private final WhatsappSocket socket;
 
-    public Whatsapp(int id){
-        this(new WhatsappSocket(WhatsappOptions.defaultOptions(), new WhatsappStore(), WhatsappKeys.fromMemory(id)));
-        RegisterListenerScanner.scan(this)
-                .forEach(this::registerListener);
+    /**
+     * Constructs a new instance of the API from a known id.
+     * If the id is not associated with any session, a new one will be created.
+     *
+     * @param id the id of the session
+     * @return a non-null Whatsapp instance
+     */
+    public static Whatsapp of(int id){
+        return new Whatsapp(id);
     }
 
+    /**
+     * Constructs a new instance of the API from the last session opened.
+     * If no sessions are available, a new one will be created.
+     *
+     * @return a non-null Whatsapp instance
+     */
+    public static Whatsapp ofLast(){
+        return new Whatsapp();
+    }
+
+    /**
+     * Constructs a new instance of the API from a fresh connection using a random id.
+     *
+     * @return a non-null Whatsapp instance
+     */
+    public static Whatsapp newConnection(){
+        return new Whatsapp(SignalHelper.randomRegistrationId());
+    }
+
+    /**
+     * Constructs a new instance of the API from the last session opened.
+     * If no sessions are available, a new one will be created.
+     */
     public Whatsapp(){
-        this(requireNonNullElseGet(knownIds().peekFirst(), SignalHelper::randomRegistrationId));
+        this(requireNonNullElseGet(knownIds().peekLast(), SignalHelper::randomRegistrationId));
+    }
+
+    /**
+     * Constructs a new instance of the API from a known id.
+     * If the id is not associated with any session, a new one will be created.
+     *
+     * @param id the id of the session
+     */
+    public Whatsapp(int id){
+        this(new WhatsappSocket(defaultOptions(), newStore(), fromMemory(id)));
+        RegisterListenerScanner.scan(this)
+                .forEach(this::registerListener);
     }
 
     /**
@@ -124,28 +170,23 @@ public class Whatsapp {
     }
 
     /**
-     * Disconnects from Whatsapp Web's WebSocket and logs out of WhatsappWeb invalidating the previous saved credentials
-     * The next endTimeStamp the API is used, the QR code will need to be scanned again
-     *
-     * @return the same instance
-     */
-    public Whatsapp logout() {
-        if(keys().hasCompanion()) {
-            var metadata = of("jid", keys().companion(), "reason", "user_initiated");
-            var device = with("remove-companion-device", metadata, null);
-            socket.sendQuery("set", "md", device);
-        }
-
-        return this;
-    }
-
-    /**
      * Disconnects and reconnects to Whatsapp Web's WebSocket if a previous connection exists
      *
      * @return the same instance
      */
     public Whatsapp reconnect() {
         socket.reconnect();
+        return this;
+    }
+
+    /**
+     * Disconnects from Whatsapp Web's WebSocket and logs out of WhatsappWeb invalidating the previous saved credentials
+     * The next endTimeStamp the API is used, the QR code will need to be scanned again
+     *
+     * @return the same instance
+     */
+    public Whatsapp logout() {
+        socket.logout();
         return this;
     }
 
@@ -158,7 +199,7 @@ public class Whatsapp {
      * @return a CompletableFuture    
      */
     public CompletableFuture<?> subscribeToContactPresence(@NonNull Contact contact) {
-        var metadata = of("to", contact.jid(), "type", "subscribe");
+        var metadata = Map.of("to", contact.jid(), "type", "subscribe");
         return socket.sendWithNoResponse(with("presence", metadata, null));
     }
 
@@ -270,7 +311,7 @@ public class Whatsapp {
      */
     public CompletableFuture<List<StatusResponse>> queryUserStatus(@NonNull Contact contact) {
         var query = with("status");
-        var body = with("user", of("jid", contact.jid()), null);
+        var body = with("user", Map.of("jid", contact.jid()), null);
         return socket.sendQuery(query, body)
                 .thenApplyAsync(response -> Nodes.findAll(response, "status"))
                 .thenApplyAsync(nodes -> nodes.stream().map(StatusResponse::new).toList());
@@ -303,8 +344,8 @@ public class Whatsapp {
      * @return a CompletableFuture that wraps nullable jpg url hosted on Whatsapp's servers
      */
     public CompletableFuture<String> queryChatPicture(@NonNull ContactJid jid) {
-        var body = Node.with("picture", of("query", "url"), null);
-        return socket.sendQuery("get", "w:profile:picture", of("target", jid), body)
+        var body = Node.with("picture", Map.of("query", "url"), null);
+        return socket.sendQuery("get", "w:profile:picture", Map.of("target", jid), body)
                 .thenApplyAsync(this::parseChatPicture);
     }
 
@@ -322,7 +363,7 @@ public class Whatsapp {
      * @throws IllegalArgumentException if the provided chat is not a group
      */
     public CompletableFuture<GroupResponse> queryGroupMetadata(@NonNull Chat chat) {
-        var query = with("query", of("request", "interactive"), null);
+        var query = with("query", Map.of("request", "interactive"), null);
         return socket.sendQuery(chat.jid(), "get", "w:g2", query)
                 .thenApplyAsync(result -> result.findNode("group"))
                 .thenApplyAsync(GroupResponse::new);
@@ -371,7 +412,7 @@ public class Whatsapp {
      */
     @Unsupported
     public CompletableFuture<?> changePresence(@NonNull ContactStatus presence) {
-        return socket.sendWithNoResponse(with("presence", of("type", presence.data()), null));
+        return socket.sendWithNoResponse(with("presence", Map.of("type", presence.data()), null));
     }
 
     /**
@@ -382,7 +423,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> changePresence(@NonNull Chat chat, @NonNull ContactStatus presence) {
-        return socket.sendWithNoResponse(with("presence", of("to", chat.jid(), "type", presence.data()), null));
+        return socket.sendWithNoResponse(with("presence", Map.of("to", chat.jid(), "type", presence.data()), null));
     }
 
     /**
@@ -727,9 +768,9 @@ public class Whatsapp {
      */
     public CompletableFuture<GroupResponse> createGroup(@NonNull String subject, @NonNull Contact... contacts) {
         var participants = Arrays.stream(contacts)
-                .map(contact -> with("participant", of("jid", contact.jid()), null))
+                .map(contact -> with("participant", Map.of("jid", contact.jid()), null))
                 .toArray(Node[]::new);
-        var body = withChildren("create", of("subject", subject, "key", BinaryArray.random(12).toHex()), participants);
+        var body = withChildren("create", Map.of("subject", subject, "key", BinaryArray.random(12).toHex()), participants);
         return socket.sendQuery(ContactJid.ofServer(ContactJid.Server.GROUP), "set", "w:g2", body)
                 .thenApplyAsync(response -> response.findNode("group"))
                 .thenApplyAsync(GroupResponse::new);

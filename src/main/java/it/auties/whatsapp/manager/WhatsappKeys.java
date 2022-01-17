@@ -1,5 +1,6 @@
 package it.auties.whatsapp.manager;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -40,7 +41,7 @@ import static java.util.prefs.Preferences.userRoot;
 @Data
 @Accessors(fluent = true, chain = true)
 @Log
-@SuppressWarnings("UnusedReturnValue")
+@SuppressWarnings("UnusedReturnValue") // Chaining
 public class WhatsappKeys {
     /**
      * The path used to serialize and deserialize this object
@@ -144,7 +145,6 @@ public class WhatsappKeys {
     @JsonProperty
     private AtomicLong writeCounter;
 
-
     /**
      * Session dependent keys to write and read cyphered messages
      */
@@ -183,7 +183,16 @@ public class WhatsappKeys {
      */
     public static void deleteKeys(int id) {
         var path = pathForId(id);
-        userRoot().put(path, null);
+        userRoot().remove(path);
+    }
+
+    /**
+     * Returns a new instance of random keys
+     *
+     * @return a non-null instance of WhatsappKeys
+     */
+    public static WhatsappKeys random(){
+        return new WhatsappKeys(SignalHelper.randomRegistrationId());
     }
 
     /**
@@ -208,8 +217,6 @@ public class WhatsappKeys {
             return JACKSON.readValue(json, WhatsappKeys.class);
         } catch (JsonProcessingException exception) {
             log.warning("Cannot read keys for id %s: defaulting to new keys".formatted(id));
-            log.warning(exception.getMessage());
-            log.warning(json);
             return null;
         }
     }
@@ -266,10 +273,11 @@ public class WhatsappKeys {
      * @return this
      */
     public WhatsappKeys clear() {
-        return writeKey(null)
-                .readKey(null)
-                .writeCounter(new AtomicLong())
-                .readCounter(new AtomicLong());
+        this.writeKey = null;
+        this.readKey = null;
+        this.writeCounter.set(0);
+        this.readCounter.set(0);
+        return this;
     }
 
     /**
@@ -380,5 +388,15 @@ public class WhatsappKeys {
     public WhatsappKeys addSenderKey(@NonNull SenderKeyName name, @NonNull SenderKeyRecord record){
         senderKeys.put(name, record);
         return this;
+    }
+
+    public long writeCounter(boolean increment){
+        return increment ? writeCounter.getAndIncrement()
+                : writeCounter.get();
+    }
+
+    public long readCounter(boolean increment){
+        return increment ? readCounter.getAndIncrement()
+                : readCounter.get();
     }
 }

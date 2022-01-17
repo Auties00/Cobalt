@@ -73,6 +73,13 @@ public class WhatsappStore {
     /**
      * Constructs a new default instance of WhatsappDataManager
      */
+    public static WhatsappStore newStore(){
+        return new WhatsappStore();
+    }
+
+    /**
+     * Constructs a new default instance of WhatsappDataManager
+     */
     public WhatsappStore(){
         this(Executors.newSingleThreadExecutor(),
                 new Vector<>(), new Vector<>(),

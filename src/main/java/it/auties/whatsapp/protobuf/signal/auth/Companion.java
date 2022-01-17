@@ -36,16 +36,16 @@ public class Companion {
     UNKNOWN(0),
     CHROME(1),
     FIREFOX(2),
-    IE(3),
+    INTERNET_EXPLORER(3),
     OPERA(4),
     SAFARI(5),
     EDGE(6),
     DESKTOP(7),
     IPAD(8),
     ANDROID_TABLET(9),
-    OHANA(10),
-    ALOHA(11),
-    CATALINA(12);
+    PORTAL(10),
+    PORTAL_PLUS(11),
+    PORTAL_TV(12);
 
     @Getter
     private final int index;

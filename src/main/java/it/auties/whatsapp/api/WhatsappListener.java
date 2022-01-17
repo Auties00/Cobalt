@@ -19,6 +19,7 @@ import java.util.List;
  * A WhatsappListener can be registered manually using {@link Whatsapp#registerListener(WhatsappListener)}.
  * Otherwise, it can be registered by annotating it with the {@link RegisterListener} annotation.
  */
+@SuppressWarnings("unused")
 public interface WhatsappListener {
     /**
      * Called when {@link WhatsappSocket} successfully establishes a connection with new secrets.
@@ -45,6 +46,19 @@ public interface WhatsappListener {
      */
     default void onDisconnected() {
     }
+
+    /**
+     * Called when {@link WhatsappSocket} receives a failure from Whatsapp.
+     * This usually indicates that the pair device has been disconnect forcefully.
+     *
+     * @param statusCode the status code for the failure
+     * @param reason the reason for the failure, might be null
+     * @return whether the keys should be deleted and a new session should be opened
+     */
+    default boolean onFailure(long statusCode, String reason) {
+        return true;
+    }
+
 
     /**
      * Called when new information regarding this session is available.

@@ -41,10 +41,10 @@ import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
 import static it.auties.whatsapp.binary.BinaryArray.ofBase64;
 import static it.auties.whatsapp.exchange.Node.with;
 import static it.auties.whatsapp.exchange.Node.withChildren;
+import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
 import static java.lang.Long.parseLong;
 import static java.util.Map.of;
 
-@RequiredArgsConstructor
 @Data
 @Accessors(fluent = true)
 @ClientEndpoint(configurator = WhatsappSocketConfiguration.class)
@@ -52,7 +52,6 @@ import static java.util.Map.of;
 public class WhatsappSocket {
     private static final int ERROR_CONSTANT = 8913411;
     private static final String BUILD_HASH = "S9Kdc4pc4EJryo21snc5cg==";
-    private static final String SYSTEM = "Windows";
     private static final int KEY_TYPE = 5;
 
     private @Getter(onMethod = @__(@NonNull)) Session session;
@@ -61,14 +60,14 @@ public class WhatsappSocket {
     private final WebSocketContainer container;
     private final WhatsappOptions options;
     private final WhatsappStore store;
-    private final WhatsappKeys keys;
     private final Authenticator authenticator;
     private final StreamHandler handler;
     private CountDownLatch lock;
+    private WhatsappKeys keys;
 
     public WhatsappSocket(@NonNull WhatsappOptions options, @NonNull WhatsappStore store, @NonNull WhatsappKeys keys) {
         this.handshake = new Handshake();
-        this.container = ContainerProvider.getWebSocketContainer();
+        this.container = getWebSocketContainer();
         this.options = options;
         this.store = store;
         this.keys = keys;
@@ -107,11 +106,11 @@ public class WhatsappSocket {
             return;
         }
 
-        var oldCounter = keys.readCounter().get();
+        var lastCounter = keys.readCounter(false);
         var deciphered = decipherMessage(message);
-        var currentCounter = keys.readCounter().get();
-        if(currentCounter - oldCounter != 1){
-            log.warning("Skipped %s IVs to decipher message with length %s".formatted(currentCounter - oldCounter - 1, message.length()));
+        var currentCounter = keys.readCounter(false);
+        if(currentCounter - lastCounter > 1){
+            log.info("Skipped %s IVs to read a message".formatted(currentCounter - lastCounter - 1));
         }
 
         System.out.printf("Received: %s%n", deciphered);
@@ -124,7 +123,7 @@ public class WhatsappSocket {
 
     private Node decipherMessage(BinaryMessage message) {
         try {
-            return message.toNode(keys.readKey(), keys.readCounter().getAndIncrement());
+            return message.toNode(keys.readKey(), keys.readCounter(true));
         }catch (Throwable throwable){
             return decipherMessage(message);
         }
@@ -151,6 +150,17 @@ public class WhatsappSocket {
         }catch (IOException exception){
             throw new RuntimeException("Cannot close connection to WhatsappWeb's WebServer", exception);
         }
+    }
+
+    public void logout(){
+        changeKeys();
+        if (!keys().hasCompanion()) {
+            return;
+        }
+
+        var metadata = of("jid", keys().companion(), "reason", "user_initiated");
+        var device = with("remove-companion-device", metadata, null);
+        sendQuery("set", "md", device);
     }
 
     private void changeState(boolean loggedIn){
@@ -233,6 +243,11 @@ public class WhatsappSocket {
                 .toList();
     }
 
+    private void changeKeys() {
+        keys.delete();
+        keys(WhatsappKeys.random());
+    }
+
     private class Authenticator {
         @SneakyThrows
         private void sendUserPayload(byte[] message) {
@@ -273,19 +288,10 @@ public class WhatsappSocket {
         }
 
         private UserAgent createUserAgent() {
-            Validate.isTrue(options.whatsappVersion().length == 3, "Invalid version: %s", Arrays.toString(options.whatsappVersion()));
             return UserAgent.builder()
-                    .appVersion(new Version(options.whatsappVersion()[0], options.whatsappVersion()[1], options.whatsappVersion()[2]))
+                    .appVersion(new Version(options.whatsappVersion()))
                     .platform(UserAgent.UserAgentPlatform.WEB)
                     .releaseChannel(UserAgent.UserAgentReleaseChannel.RELEASE)
-                    .mcc("000")
-                    .mnc("000")
-                    .osVersion("0.1")
-                    .manufacturer("")
-                    .device("Desktop")
-                    .osBuildNumber("0.1")
-                    .localeLanguageIso6391("en")
-                    .localeCountryIso31661Alpha2("en")
                     .build();
         }
 
@@ -304,10 +310,8 @@ public class WhatsappSocket {
 
         private Companion createCompanionProps() {
             return Companion.builder()
-                    .os(SYSTEM)
-                    .version(new Version(10))
-                    .platformType(Companion.CompanionPropsPlatformType.CHROME)
-                    .requireFullSync(false)
+                    .os(options.description())
+                    .platformType(Companion.CompanionPropsPlatformType.DESKTOP)
                     .build();
         }
     }
@@ -331,10 +335,19 @@ public class WhatsappSocket {
         }
 
         private void digestFailure(Node node) {
-            Validate.isTrue(node.attributes().getLong("reason") == 401,
-                    "Socket failed at %s with status code %s",
-                    node.attributes().getString("location"), node.attributes().getLong("reason"));
+            var statusCode = node.attributes().getLong("reason");
+            var reason = node.attributes().getString("location");
+            Validate.isTrue(handleFailure(statusCode, reason),
+                    "Invalid or expired credentials: socket failed with status code %s at %s",
+                    statusCode, reason);
+            changeKeys();
             reconnect();
+        }
+
+        private boolean handleFailure(long statusCode, String reason) {
+            return store.listeners()
+                    .stream()
+                    .allMatch(listener -> listener.onFailure(statusCode, reason));
         }
 
         private void digestError(Node node) {

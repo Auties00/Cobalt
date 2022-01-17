@@ -21,8 +21,8 @@ import java.util.UUID;
 public class WhatsappAPITest {
     @Test
     public void login() {
-        var api = new Whatsapp();
-        api.connect();
+        Whatsapp.ofLast()
+                .connect();
     }
 
     @AllArgsConstructor
