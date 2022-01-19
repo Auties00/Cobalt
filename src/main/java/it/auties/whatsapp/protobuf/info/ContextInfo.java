@@ -59,7 +59,6 @@ public non-sealed class ContextInfo implements WhatsappInfo {
    */
   @JsonProperty("18")
   @JsonPropertyDescription("string")
-  @Unsupported
   private String conversionSource;
 
   /**
@@ -67,7 +66,6 @@ public non-sealed class ContextInfo implements WhatsappInfo {
    */
   @JsonProperty("19")
   @JsonPropertyDescription("bytes")
-  @Unsupported
   private byte[] conversionData;
 
   /**
@@ -75,7 +73,6 @@ public non-sealed class ContextInfo implements WhatsappInfo {
    */
   @JsonProperty("20")
   @JsonPropertyDescription("uint32")
-  @Unsupported
   private int conversionDelaySeconds;
 
   /**
@@ -97,7 +94,6 @@ public non-sealed class ContextInfo implements WhatsappInfo {
    */
   @JsonProperty("23")
   @JsonPropertyDescription("AdReplyInfo")
-  @Unsupported
   private AdReplyInfo quotedAd;
 
   /**
@@ -105,7 +101,6 @@ public non-sealed class ContextInfo implements WhatsappInfo {
    */
   @JsonProperty("24")
   @JsonPropertyDescription("MessageKey")
-  @Unsupported
   private MessageKey placeholderKey;
 
   /**
@@ -129,7 +124,6 @@ public non-sealed class ContextInfo implements WhatsappInfo {
    */
   @JsonProperty("27")
   @JsonPropertyDescription("bytes")
-  @Unsupported
   private byte[] ephemeralSharedSecret;
 
   /**
@@ -137,7 +131,6 @@ public non-sealed class ContextInfo implements WhatsappInfo {
    */
   @JsonProperty("28")
   @JsonPropertyDescription("ExternalAdReplyInfo")
-  @Unsupported
   private ExternalAdReplyInfo externalAdReply;
 
   /**
@@ -145,7 +138,6 @@ public non-sealed class ContextInfo implements WhatsappInfo {
    */
   @JsonProperty("29")
   @JsonPropertyDescription("string")
-  @Unsupported
   private String entryPointConversionSource;
 
   /**
@@ -153,7 +145,6 @@ public non-sealed class ContextInfo implements WhatsappInfo {
    */
   @JsonProperty("30")
   @JsonPropertyDescription("string")
-  @Unsupported
   private String entryPointConversionApp;
 
   /**
@@ -161,7 +152,6 @@ public non-sealed class ContextInfo implements WhatsappInfo {
    */
   @JsonProperty("31")
   @JsonPropertyDescription("uint32")
-  @Unsupported
   private int entryPointConversionDelaySeconds;
 
   /**

@@ -1,6 +1,5 @@
 package it.auties.whatsapp.manager;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -18,16 +17,14 @@ import it.auties.whatsapp.protobuf.signal.session.Session;
 import it.auties.whatsapp.protobuf.signal.session.SessionAddress;
 import it.auties.whatsapp.protobuf.sync.AppStateSyncKey;
 import it.auties.whatsapp.util.Validate;
-import lombok.Data;
-import lombok.NonNull;
+import lombok.*;
+import lombok.Builder.Default;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 import lombok.extern.java.Log;
 
 import java.io.UncheckedIOException;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.prefs.BackingStoreException;
@@ -38,6 +35,9 @@ import static java.util.prefs.Preferences.userRoot;
  * This class is a data class used to hold the clientId, serverToken, clientToken, publicKey, privateKey, encryptionKey and macKey.
  * It can be serialized using Jackson and deserialized using the fromPreferences named constructor.
  */
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
+@Builder(access = AccessLevel.PROTECTED)
+@Jacksonized
 @Data
 @Accessors(fluent = true, chain = true)
 @Log
@@ -132,18 +132,18 @@ public class WhatsappKeys {
     private List<AppStateSyncKey> appStateKeys;
 
     /**
-     * The non-null read counter
+     * Write counter for IV
      */
     @NonNull
-    @JsonProperty
-    private AtomicLong readCounter;
+    @Default
+    private AtomicLong writeCounter = new AtomicLong();
 
     /**
-     * The non-null write counter
+     * Read counter for IV
      */
     @NonNull
-    @JsonProperty
-    private AtomicLong writeCounter;
+    @Default
+    private AtomicLong readCounter = new AtomicLong();
 
     /**
      * Session dependent keys to write and read cyphered messages
@@ -182,7 +182,7 @@ public class WhatsappKeys {
      * @param id the id of the keys
      */
     public static void deleteKeys(int id) {
-        var path = pathForId(id);
+        var path = getPath(id);
         userRoot().remove(path);
     }
 
@@ -202,27 +202,26 @@ public class WhatsappKeys {
      * @return a non-null instance of WhatsappKeys
      */
     public static WhatsappKeys fromMemory(int id){
-        var json = userRoot().get(pathForId(id), null);
+        var json = userRoot().get(getPath(id), null);
         return Optional.ofNullable(json)
                 .map(value -> deserialize(id, value))
                 .orElseGet(() -> new WhatsappKeys(id));
     }
 
-    private static String pathForId(int id) {
-        return "%s$%s".formatted(PREFERENCES_PATH, id);
+    private static String getPath(Object... path) {
+        var joined = new ArrayList<>(Arrays.asList(path));
+        joined.add(0, PREFERENCES_PATH);
+        return "%s$%s".formatted(joined.toArray());
     }
 
     private static WhatsappKeys deserialize(int id, String json) {
         try {
             return JACKSON.readValue(json, WhatsappKeys.class);
         } catch (JsonProcessingException exception) {
+            exception.printStackTrace();
             log.warning("Cannot read keys for id %s: defaulting to new keys".formatted(id));
             return null;
         }
-    }
-
-    private WhatsappKeys(){
-        this(-1);
     }
 
     private WhatsappKeys(int id) {
@@ -259,7 +258,7 @@ public class WhatsappKeys {
      */
     public WhatsappKeys save(){
         try {
-            var path = pathForId(id);
+            var path = getPath(id);
             userRoot().put(path, JACKSON.writeValueAsString(this));
             return this;
         } catch (JsonProcessingException exception) {
@@ -273,8 +272,8 @@ public class WhatsappKeys {
      * @return this
      */
     public WhatsappKeys clear() {
-        this.writeKey = null;
         this.readKey = null;
+        this.writeKey = null;
         this.writeCounter.set(0);
         this.readCounter.set(0);
         return this;

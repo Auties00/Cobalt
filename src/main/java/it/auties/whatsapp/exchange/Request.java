@@ -36,8 +36,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * Constructs a new request with the provided body expecting a response
      */
     public static Request with(@NonNull Node body) {
-        System.out.printf("Sending %s%n", body);
-        return new Request(WhatsappUtils.readNullableId(body), ENCODER.encode(body), createTimedFuture());
+        return new Request(WhatsappUtils.readNullableId(body), body, createTimedFuture());
     }
 
     private static CompletableFuture<Node> createTimedFuture() {
@@ -94,9 +93,9 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @return this request
      */
     public @NonNull CompletableFuture<Node> send(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store, boolean prologue, boolean response) {
-        var ciphered = cipherMessage(keys, store);
-        var buffer = Buffers.newBuffer()
-                .writeBytes(prologue ? PROLOGUE : new byte[0])
+        System.out.printf("Sending %s%n", body);
+        var ciphered = cipherMessage(keys);
+        var buffer = Buffers.newBuffer(prologue ? PROLOGUE : new byte[0])
                 .writeInt(ciphered.length >> 16)
                 .writeShort(65535 & ciphered.length)
                 .writeBytes(ciphered);
@@ -134,12 +133,13 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
         store.pendingRequests().add(this);
     }
 
-    private byte[] cipherMessage(WhatsappKeys keys, WhatsappStore store) {
+    private byte[] cipherMessage(WhatsappKeys keys) {
         var body = switch (body()) {
             case byte[] bytes -> bytes;
             case Node node -> ENCODER.encode(node);
             default -> throw new IllegalStateException("Illegal body: " + body());
         };
+
         if (keys.writeKey() == null) {
             return body;
         }

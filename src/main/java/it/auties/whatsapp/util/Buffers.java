@@ -21,13 +21,46 @@ public class Buffers {
     }
 
     /**
+     * Constructs a new buffer from an input
+     *
+     * @param data a non-null input
+     * @return a non-null byte buffer
+     */
+    public ByteBuf newBuffer(@NonNull BinaryArray data){
+        return newBuffer(data.data());
+    }
+
+    /**
+     * Constructs a new buffer from an input
+     *
+     * @param data a non-null input
+     * @return a non-null byte buffer
+     */
+    public ByteBuf newBuffer(byte @NonNull [] data){
+        var buffer = newBuffer();
+        buffer.writeBytes(data);
+        return buffer;
+    }
+
+    /**
      * Reads the readable bytes of the provided buffer
      *
      * @param buffer the non-null byte buffer to read
-     * @return a non-null buffer array
+     * @return a non-null binary array
      */
     public BinaryArray readBinary(@NonNull ByteBuf buffer){
         return BinaryArray.of(readBytes(buffer));
+    }
+
+    /**
+     * Reads a specified amount of bytes from the provided buffer
+     *
+     * @param buffer the non-null byte buffer to read
+     * @param length the number of bytes to read
+     * @return a non-null binary array
+     */
+    public BinaryArray readBinary(@NonNull ByteBuf buffer, int length){
+        return BinaryArray.of(readBytes(buffer, length));
     }
 
     /**

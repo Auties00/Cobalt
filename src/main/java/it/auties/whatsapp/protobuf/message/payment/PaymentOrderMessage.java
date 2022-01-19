@@ -97,7 +97,6 @@ public final class PaymentOrderMessage extends ContextInfo implements PaymentMes
    */
   @AllArgsConstructor
   @Accessors(fluent = true)
-  @Unsupported
   public enum OrderMessageOrderStatus {
     /**
      * Inquiry
@@ -121,7 +120,6 @@ public final class PaymentOrderMessage extends ContextInfo implements PaymentMes
    */
   @AllArgsConstructor
   @Accessors(fluent = true)
-  @Unsupported
   public enum OrderMessageOrderSurface {
     /**
      * Catalog

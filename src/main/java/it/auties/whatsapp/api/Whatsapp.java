@@ -410,7 +410,6 @@ public class Whatsapp {
      * @param presence the new status
      * @return a CompletableFuture 
      */
-    @Unsupported
     public CompletableFuture<?> changePresence(@NonNull ContactStatus presence) {
         return socket.sendWithNoResponse(with("presence", Map.of("type", presence.data()), null));
     }

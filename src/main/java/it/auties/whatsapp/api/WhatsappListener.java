@@ -10,6 +10,7 @@ import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.socket.WhatsappSocket;
 import it.auties.whatsapp.util.Qr;
+import it.auties.whatsapp.util.QrHandler;
 import lombok.NonNull;
 
 import java.util.List;
@@ -24,11 +25,14 @@ public interface WhatsappListener {
     /**
      * Called when {@link WhatsappSocket} successfully establishes a connection with new secrets.
      * By default, the QR code is printed to the console.
+     * If no enum supports your intended functionality, define the logic inside this method and return {@link QrHandler#CUSTOM}.
      *
      * @param qr the generator code to consume
+     * @return a non-null handler to process the qr code
      */
-    default void onQRCode(@NonNull BitMatrix qr){
-        Qr.print(qr);
+    @NonNull
+    default QrHandler onQRCode(@NonNull BitMatrix qr){
+        return QrHandler.TERMINAL;
     }
 
     /**

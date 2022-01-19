@@ -180,28 +180,24 @@ public final class MessageInfo implements WhatsappInfo {
    * PaymentInfo
    */
   @JsonProperty("29")
-  @Unsupported
   private PaymentInfo paymentInfo;
 
   /**
    * Final live location
    */
   @JsonProperty("30")
-  @Unsupported
   private LiveLocationMessage finalLiveLocation;
 
   /**
    * Quoted payment info
    */
   @JsonProperty("31")
-  @Unsupported
   private PaymentInfo quotedPaymentInfo;
 
   /**
    * Media Cipher Text SHA256
    */
   @JsonProperty("20")
-  @Unsupported
   private byte[] mediaCiphertextSha256;
 
   /**

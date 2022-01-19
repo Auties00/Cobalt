@@ -1,15 +1,14 @@
 package it.auties.whatsapp.socket;
 
+import io.netty.buffer.ByteBuf;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.whatsapp.binary.BinaryDecoder;
 import it.auties.whatsapp.binary.BinaryMessage;
-import it.auties.whatsapp.crypto.Curve;
-import it.auties.whatsapp.crypto.Handshake;
-import it.auties.whatsapp.crypto.Hmac;
-import it.auties.whatsapp.crypto.SignalHelper;
+import it.auties.whatsapp.crypto.*;
 import it.auties.whatsapp.exchange.Node;
 import it.auties.whatsapp.exchange.Request;
 import it.auties.whatsapp.manager.WhatsappKeys;
@@ -18,12 +17,12 @@ import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.media.MediaConnection;
 import it.auties.whatsapp.protobuf.signal.auth.*;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalPreKeyPair;
-import it.auties.whatsapp.util.Messages;
-import it.auties.whatsapp.util.Qr;
-import it.auties.whatsapp.util.Validate;
-import it.auties.whatsapp.util.WhatsappUtils;
+import it.auties.whatsapp.util.*;
 import jakarta.websocket.*;
-import lombok.*;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.java.Log;
 
@@ -41,6 +40,7 @@ import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
 import static it.auties.whatsapp.binary.BinaryArray.ofBase64;
 import static it.auties.whatsapp.exchange.Node.with;
 import static it.auties.whatsapp.exchange.Node.withChildren;
+import static it.auties.whatsapp.util.QrHandler.TERMINAL;
 import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
 import static java.lang.Long.parseLong;
 import static java.util.Map.of;
@@ -92,41 +92,40 @@ public class WhatsappSocket {
                 .sendWithPrologue(session(), keys(), store());
     }
 
+
     @OnMessage
     @SneakyThrows
     public void onBinary(byte @NonNull [] raw) {
         var message = new BinaryMessage(raw);
-        if(message.length() == ERROR_CONSTANT){
+        if(message.decoded().isEmpty()){
+            return;
+        }
+
+        var header = message.decoded().getFirst();
+        if(header.size() == ERROR_CONSTANT){
             disconnect();
             return;
         }
 
         if(!loggedIn){
-            authenticator.sendUserPayload(message.decoded().data());
+            authenticator.sendUserPayload(header.data());
             return;
         }
 
-        var lastCounter = keys.readCounter(false);
-        var deciphered = decipherMessage(message);
-        var currentCounter = keys.readCounter(false);
-        if(currentCounter - lastCounter > 1){
-            log.info("Skipped %s IVs to read a message".formatted(currentCounter - lastCounter - 1));
-        }
-
-        System.out.printf("Received: %s%n", deciphered);
-        if(store().resolvePendingRequest(deciphered, false)){
-            return;
-        }
-
-        handler.digest(deciphered);
+        System.out.printf("Received %s nodes%n", message.decoded().size());
+        message.toNodes(keys)
+                .forEach(this::handleNode);
     }
 
-    private Node decipherMessage(BinaryMessage message) {
-        try {
-            return message.toNode(keys.readKey(), keys.readCounter(true));
-        }catch (Throwable throwable){
-            return decipherMessage(message);
+    private void handleNode(Node deciphered) {
+        System.out.printf("Received: %s%n", deciphered);
+        if(store().resolvePendingRequest(deciphered, false)){
+            System.out.println("Handled!");
+            return;
         }
+
+        System.out.println("Processing");
+        handler.digest(deciphered);
     }
 
     public void connect() {
@@ -171,11 +170,8 @@ public class WhatsappSocket {
 
     @OnClose
     public void onClose(){
-        if(loggedIn) {
-            reconnect();
-        }
-
         System.out.println("Closed");
+        reconnect();
     }
 
     @OnError
@@ -330,6 +326,11 @@ public class WhatsappSocket {
         }
 
         private void digestIb(Node node) {
+            var offlinePreview = node.findNode("offline_preview");
+            if(offlinePreview == null){
+                return;
+            }
+
             Validate.isTrue(!node.hasNode("downgrade_webclient"),
                     "Multi device beta is not enabled. Please enable it from Whatsapp");
         }
@@ -351,29 +352,28 @@ public class WhatsappSocket {
         }
 
         private void digestError(Node node) {
-            switch (node.attributes().getInt("code")) {
-                case 401 -> {
-                    var child = node.children().getFirst();
-                    var reason = child.attributes().getString("type");
-                    disconnect();
-                    throw new IllegalStateException("Conflict detected: %s".formatted(reason));
-                }
-
-                case 515 -> reconnect();
-
-                default -> {
-                    Validate.isTrue(node.findNode("xml-not-well-formed") == null,
-                            "An invalid node was sent to Whatsapp");
-                    node.children().forEach(error -> store.resolvePendingRequest(error, true));
-                }
+            if (node.attributes().getInt("code") == 401) {
+                var child = node.children().getFirst();
+                var reason = child.attributes().getString("type");
+                disconnect();
+                throw new IllegalStateException("Conflict detected: %s".formatted(reason));
             }
+
+            Validate.isTrue(node.findNode("xml-not-well-formed") == null, "An invalid node was sent to Whatsapp");
+            node.children().forEach(error -> store.resolvePendingRequest(error, true));
         }
 
         private void digestSuccess() {
             sendPreKeys();
             confirmConnection();
             createPingService();
+            sendStatusUpdate();
             store.callListeners(WhatsappListener::onLoggedIn);
+        }
+
+        private void sendStatusUpdate() {
+            var presence = with("presence", of("type", "available"), null);
+            send(presence);
         }
 
         private void createPingService() {
@@ -469,11 +469,11 @@ public class WhatsappSocket {
             var qr = new String(ref.bytes(), StandardCharsets.UTF_8);
             var matrix = Qr.generate(keys(), qr);
             if (!store.listeners().isEmpty()) {
-                store().callListeners(listener -> listener.onQRCode(matrix));
+                store().callListeners(listener -> listener.onQRCode(matrix).accept(matrix));
                 return;
             }
 
-            Qr.print(matrix);
+            TERMINAL.accept(matrix);
         }
 
         @SneakyThrows

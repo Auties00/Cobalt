@@ -2,11 +2,14 @@ package it.auties.github.dev;
 
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.encoder.QRCode;
 import it.auties.whatsapp.api.RegisterListener;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.protobuf.contact.ContactStatus;
+import it.auties.whatsapp.util.Qr;
+import it.auties.whatsapp.util.QrHandler;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -14,6 +17,7 @@ import lombok.extern.java.Log;
 import org.junit.jupiter.api.Test;
 
 import java.awt.*;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.util.UUID;
 
@@ -21,6 +25,7 @@ import java.util.UUID;
 public class WhatsappAPITest {
     @Test
     public void login() {
+        WhatsappKeys.deleteAllKeys();
         Whatsapp.ofLast()
                 .connect();
     }
@@ -32,10 +37,8 @@ public class WhatsappAPITest {
 
         @Override
         @SneakyThrows
-        public void onQRCode(@NonNull BitMatrix qr) {
-            var path = Files.createTempFile(UUID.randomUUID().toString(), ".jpg");
-            MatrixToImageWriter.writeToPath(qr, "jpg", path);
-            Desktop.getDesktop().open(path.toFile());
+        public QrHandler onQRCode(@NonNull BitMatrix qr) {
+            return QrHandler.FILE;
         }
 
         @Override

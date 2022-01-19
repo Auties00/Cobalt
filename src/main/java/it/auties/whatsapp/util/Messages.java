@@ -26,6 +26,7 @@ import it.auties.whatsapp.protobuf.sync.HistorySync;
 import it.auties.whatsapp.protobuf.sync.PushName;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
+import lombok.extern.java.Log;
 
 import java.io.IOException;
 import java.util.List;
@@ -35,6 +36,7 @@ import java.util.Objects;
 import static java.util.Arrays.copyOfRange;
 
 @UtilityClass
+@Log
 public class Messages {
     public List<MessageInfo> decodeMessages(Node node, WhatsappStore store, WhatsappKeys keys) {
         var timestamp = node.attributes().getLong("t");
@@ -68,6 +70,7 @@ public class Messages {
                 .timestamp(timestamp)
                 .create();
 
+        System.out.printf("Decrypting %s messages%n", node.findNodes("enc").size());
         return node.findNodes("enc")
                 .stream()
                 .map(messageNode -> decodeMessage(info, messageNode, from, store, keys))
@@ -75,12 +78,19 @@ public class Messages {
     }
 
     private MessageInfo decodeMessage(MessageInfo info, Node node, ContactJid from, WhatsappStore store, WhatsappKeys keys) {
-        var encodedMessage = node.bytes();
-        var messageType = node.attributes().getString("type");
-        var buffer = decodeCipheredMessage(info, encodedMessage, messageType, keys);
-        info.message(decodeMessageContainer(buffer));
-        handleSenderKeyMessage(store, keys, from, info);
-        return info;
+        try {
+            var encodedMessage = node.bytes();
+            var messageType = node.attributes().getString("type");
+            var buffer = decodeCipheredMessage(info, encodedMessage, messageType, keys);
+            info.message(decodeMessageContainer(buffer));
+            handleSenderKeyMessage(store, keys, from, info);
+            return info;
+        }catch (Throwable throwable){
+            log.warning("An exception occurred while processing a message: " + throwable.getMessage());
+            log.warning("The application will continue running normally, but submit an issue on GitHub");
+            throwable.printStackTrace();
+            return null;
+        }
     }
 
     private byte[] decodeCipheredMessage(MessageInfo info, byte[] message, String type, WhatsappKeys keys) {
@@ -119,6 +129,7 @@ public class Messages {
 
     @SneakyThrows
     private void handleSenderKeyMessage(WhatsappStore store, WhatsappKeys keys, ContactJid from, MessageInfo info) {
+        System.out.println("Handling: " + info.message().content());
         switch (info.message().content()){
             case SenderKeyDistributionMessage distributionMessage -> handleDistributionMessage(keys, from, distributionMessage);
             case ProtocolMessage protocolMessage -> handleProtocolMessage(store, keys, info, protocolMessage);
