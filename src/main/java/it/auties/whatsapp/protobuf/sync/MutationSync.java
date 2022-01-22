@@ -14,7 +14,7 @@ import java.util.Arrays;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class MutationSync implements ParsableMutation {
+public final class MutationSync implements ParsableMutation {
   @JsonProperty("1")
   @JsonPropertyDescription("SyncdMutationSyncdOperation")
   private Operation operation;

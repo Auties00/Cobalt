@@ -1,6 +1,7 @@
 package it.auties.whatsapp.protobuf.contact;
 
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.protobuf.action.ContactAction;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -113,5 +114,16 @@ public class Contact {
      */
     public @NonNull Optional<ZonedDateTime> lastSeen() {
         return Optional.ofNullable(lastSeen);
+    }
+
+
+    /**
+     * Updates this contact using the information from the provided action
+     *
+     * @param action the non-null action
+     */
+    public void update(@NonNull ContactAction action) {
+        this.name = action.fullName();
+        this.shortName = action.firstName();
     }
 }

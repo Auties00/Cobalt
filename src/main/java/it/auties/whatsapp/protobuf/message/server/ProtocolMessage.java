@@ -49,7 +49,7 @@ public final class ProtocolMessage implements ServerMessage {
   private long ephemeralSettingTimestamp;
 
   /**
-   * History sync notification.
+   * History dataSync notification.
    * This property is defined only if {@link ProtocolMessage#type} == {@link ProtocolMessageType#HISTORY_SYNC_NOTIFICATION}.
    */
   @JsonProperty("6")
@@ -96,22 +96,22 @@ public final class ProtocolMessage implements ServerMessage {
     EPHEMERAL_SETTING(3),
 
     /**
-     * A {@link ProtocolMessage} that notifies that a sync in an ephemeral chat
+     * A {@link ProtocolMessage} that notifies that a dataSync in an ephemeral chat
      */
     EPHEMERAL_SYNC_RESPONSE(4),
 
     /**
-     * A {@link ProtocolMessage} that notifies that a history sync in any chat
+     * A {@link ProtocolMessage} that notifies that a history dataSync in any chat
      */
     HISTORY_SYNC_NOTIFICATION(5),
 
     /**
-     * App state sync key share
+     * App state dataSync key share
      */
     APP_STATE_SYNC_KEY_SHARE(6),
 
     /**
-     * App state sync key request
+     * App state dataSync key request
      */
     APP_STATE_SYNC_KEY_REQUEST(7),
 
@@ -121,7 +121,7 @@ public final class ProtocolMessage implements ServerMessage {
     MESSAGE_BACK_FILL_REQUEST(8),
 
     /**
-     * Initial security notification setting sync
+     * Initial security notification setting dataSync
      */
     INITIAL_SECURITY_NOTIFICATION_SETTING_SYNC(9),
 

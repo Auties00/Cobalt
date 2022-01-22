@@ -1,4 +1,4 @@
 package it.auties.whatsapp.protobuf.sync;
 
-public interface GenericSync {
+public sealed interface GenericSync permits ActionDataSync, ActionValueSync, ParsableMutation {
 }

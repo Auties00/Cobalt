@@ -1,4 +1,4 @@
 package it.auties.whatsapp.protobuf.sync;
 
-public record ActionSyncRecord(ActionDataSync sync, String index) {
+public record ActionSyncRecord(MessageSync messageSync, ActionDataSync dataSync) {
 }

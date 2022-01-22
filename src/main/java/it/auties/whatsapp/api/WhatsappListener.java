@@ -2,12 +2,14 @@ package it.auties.whatsapp.api;
 
 import com.google.zxing.common.BitMatrix;
 import it.auties.whatsapp.manager.WhatsappStore;
+import it.auties.whatsapp.protobuf.action.Action;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.chat.GroupAction;
 import it.auties.whatsapp.protobuf.chat.GroupPolicy;
 import it.auties.whatsapp.protobuf.chat.GroupSetting;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
+import it.auties.whatsapp.protobuf.setting.Setting;
 import it.auties.whatsapp.socket.Socket;
 import it.auties.whatsapp.util.QrHandler;
 import lombok.NonNull;
@@ -60,6 +62,33 @@ public interface WhatsappListener {
      */
     default boolean onFailure(long statusCode, String reason) {
         return true;
+    }
+
+    /**
+     * Called when {@link Socket} receives an action from Whatsapp.
+     *
+     * @param action the action that was executed
+     */
+    default void onAction(@NonNull Action action) {
+
+    }
+
+    /**
+     * Called when {@link Socket} receives a setting change from Whatsapp.
+     *
+     * @param setting the setting that was toggled
+     */
+    default void onSetting(@NonNull Setting setting) {
+
+    }
+
+    /**
+     * Called when {@link Socket} receives new features from Whatsapp.
+     *
+     * @param features the non-null features that were sent
+     */
+    default void onFeatures(@NonNull List<String> features) {
+
     }
 
 

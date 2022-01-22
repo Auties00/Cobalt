@@ -13,7 +13,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class MuteAction {
+public final class MuteAction implements Action {
   @JsonProperty("1")
   @JsonPropertyDescription("bool")
   private boolean muted;

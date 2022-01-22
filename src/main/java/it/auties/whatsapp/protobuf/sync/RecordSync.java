@@ -14,7 +14,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class RecordSync implements ParsableMutation {
+public final class RecordSync implements ParsableMutation {
   @JsonProperty("1")
   @JsonPropertyDescription("SyncdIndex")
   private IndexSync index;

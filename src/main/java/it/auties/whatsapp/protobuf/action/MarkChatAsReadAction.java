@@ -14,7 +14,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class MarkChatAsReadAction {
+public final class MarkChatAsReadAction implements Action {
   @JsonProperty("1")
   @JsonPropertyDescription("bool")
   private boolean read;

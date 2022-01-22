@@ -13,7 +13,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class LabelEditAction {
+public final class LabelEditAction implements Action {
   @JsonProperty("1")
   @JsonPropertyDescription("string")
   private String name;

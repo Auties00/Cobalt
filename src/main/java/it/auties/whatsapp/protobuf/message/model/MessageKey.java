@@ -1,5 +1,6 @@
 package it.auties.whatsapp.protobuf.message.model;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
@@ -26,6 +27,7 @@ public class MessageKey {
    */
   @JsonProperty("1")
   @JsonPropertyDescription("string")
+  @JsonAlias("remoteJid")
   @NonNull
   @Getter
   private ContactJid chatJid;
@@ -35,6 +37,7 @@ public class MessageKey {
    */
   @JsonProperty("2")
   @JsonPropertyDescription("bool")
+  @JsonAlias("fromMe")
   @Getter
   private boolean fromMe;
 
@@ -43,6 +46,7 @@ public class MessageKey {
    */
   @JsonProperty("3")
   @JsonPropertyDescription("string")
+  @JsonAlias("id")
   @NonNull
   @Getter
   @Default

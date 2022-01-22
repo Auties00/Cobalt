@@ -201,7 +201,7 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
   private DeviceSentMessage deviceSent;
   
   /**
-   * Device sync message
+   * Device dataSync message
    */
   @JsonProperty("32")
   private DeviceSyncMessage deviceSync;

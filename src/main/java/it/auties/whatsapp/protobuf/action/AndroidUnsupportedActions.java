@@ -1,4 +1,4 @@
-package it.auties.whatsapp.protobuf.signal.session;
+package it.auties.whatsapp.protobuf.action;
 
 import com.fasterxml.jackson.annotation.*;
 import java.util.*;
@@ -10,9 +10,8 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class AndroidUnsupportedActions {
-
-  @JsonProperty(value = "1", required = false)
+public final class AndroidUnsupportedActions implements Action {
+  @JsonProperty("1")
   @JsonPropertyDescription("bool")
   private boolean allowed;
 }

@@ -13,7 +13,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class SecurityNotificationSetting {
+public final class SecurityNotificationSetting implements Setting {
   @JsonProperty("1")
   @JsonPropertyDescription("bool")
   private boolean showNotification;

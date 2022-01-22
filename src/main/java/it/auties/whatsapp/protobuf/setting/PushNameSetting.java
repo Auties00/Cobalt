@@ -13,7 +13,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class PushNameSetting {
+public final class PushNameSetting implements Setting {
   @JsonProperty("1")
   @JsonPropertyDescription("string")
   private String name;

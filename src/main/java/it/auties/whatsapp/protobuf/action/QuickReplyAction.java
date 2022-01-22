@@ -16,7 +16,7 @@ import java.util.List;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class QuickReplyAction {
+public final class QuickReplyAction implements Action {
   @JsonProperty("1")
   @JsonPropertyDescription("string")
   private String shortcut;

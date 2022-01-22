@@ -13,7 +13,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class DeleteMessageForMeAction {
+public final class DeleteMessageForMeAction implements Action {
   @JsonProperty("1")
   @JsonPropertyDescription("bool")
   private boolean deleteMedia;

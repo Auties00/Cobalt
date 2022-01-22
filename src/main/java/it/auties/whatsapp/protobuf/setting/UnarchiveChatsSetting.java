@@ -13,7 +13,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class UnarchiveChatsSetting {
+public final class UnarchiveChatsSetting implements Setting {
   @JsonProperty("1")
   @JsonPropertyDescription("bool")
   private boolean unarchiveChats;

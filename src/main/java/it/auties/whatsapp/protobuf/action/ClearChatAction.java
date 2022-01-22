@@ -14,7 +14,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class ClearChatAction {
+public final class ClearChatAction implements Action {
   @JsonProperty("1")
   @JsonPropertyDescription("SyncActionMessageRange")
   private ActionMessageRangeSync messageRange;

@@ -13,7 +13,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class EphemeralSetting {
+public final class EphemeralSetting implements Setting {
   @JsonProperty("1")
   @JsonPropertyDescription("sfixed32")
   private int duration;

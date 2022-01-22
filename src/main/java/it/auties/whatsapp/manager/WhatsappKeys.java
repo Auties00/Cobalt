@@ -340,7 +340,7 @@ public class WhatsappKeys {
      * Queries the trusted key that matches {@code id}
      *
      * @param id the id to search
-     * @return a non-null array of bytes
+     * @return a non-null signed key pair
      * @throws IllegalArgumentException if no element can be found
      */
     public SignalSignedKeyPair findSignedKeyPairById(int id) {
@@ -352,7 +352,7 @@ public class WhatsappKeys {
      * Queries the trusted key that matches {@code id}
      *
      * @param id the non-null id to search
-     * @return a non-null array of bytes
+     * @return a non-null Optional singal pre key
      */
     public Optional<SignalPreKeyPair> findPreKeyById(int id) {
         return preKeys.stream()
@@ -364,12 +364,22 @@ public class WhatsappKeys {
      * Queries the app state key that matches {@code id}
      *
      * @param id the non-null id to search
-     * @return a non-null array of bytes
+     * @return a non-null Optional app state dataSync key
      */
     public Optional<AppStateSyncKey> findAppKeyById(byte[] id) {
         return appStateKeys.stream()
                 .filter(preKey -> preKey.keyId() != null && Arrays.equals(preKey.keyId().keyId(), id))
                 .findFirst();
+    }
+
+    /**
+     * Queries the hash state that matches {@code name}
+     *
+     * @param name the non-null name to search
+     * @return a non-null Optional hash state
+     */
+    public Optional<LTHashState> findHashStateByName(@NonNull String name) {
+        return Optional.ofNullable(hashStates.get(name));
     }
 
     /**

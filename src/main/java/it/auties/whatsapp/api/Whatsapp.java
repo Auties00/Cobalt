@@ -775,13 +775,13 @@ public class Whatsapp {
     }
 
     private void starMessagePlaceholder() {
-        // Sent Binary Message Node[description=iq, attributes={xmlns=w:sync:app:state, to=s.whatsapp.net, id=54595.12796-297, type=set}, content=[Node[description=sync, attributes={}, content=[Node[description=collection, attributes={name=regular_high, return_snapshot=false, version=13}, content=[Node[description=patch, attributes={}, content=[B@1cd3e518]]]]]]]
-        // Received Binary Message Node[description=iq, attributes={from=s.whatsapp.net, id=54595.12796-297, type=result}, content=[Node[description=sync, attributes={}, content=[Node[description=collection, attributes={name=regular_high, version=14}, content=null]]]]]
+        // Sent Binary Message Node[description=iq, attributes={xmlns=w:dataSync:app:state, to=s.whatsapp.net, id=54595.12796-297, type=set}, content=[Node[description=dataSync, attributes={}, content=[Node[description=collection, attributes={name=regular_high, return_snapshot=false, version=13}, content=[Node[description=patch, attributes={}, content=[B@1cd3e518]]]]]]]
+        // Received Binary Message Node[description=iq, attributes={from=s.whatsapp.net, id=54595.12796-297, type=result}, content=[Node[description=dataSync, attributes={}, content=[Node[description=collection, attributes={name=regular_high, version=14}, content=null]]]]]
     }
 
     private void unstarMessagePlaceholder() {
-        // Sent Binary Message Node[description=iq, attributes={xmlns=w:sync:app:state, to=s.whatsapp.net, id=54595.12796-301, type=set}, content=[Node[description=sync, attributes={}, content=[Node[description=collection, attributes={name=regular_high, return_snapshot=false, version=14}, content=[Node[description=patch, attributes={}, content=[B@73ce9a0b]]]]]]]
-        // Received Binary Message Node[description=iq, attributes={from=s.whatsapp.net, id=54595.12796-301, type=result}, content=[Node[description=sync, attributes={}, content=[Node[description=collection, attributes={name=regular_high, version=15}, content=null]]]]]
+        // Sent Binary Message Node[description=iq, attributes={xmlns=w:dataSync:app:state, to=s.whatsapp.net, id=54595.12796-301, type=set}, content=[Node[description=dataSync, attributes={}, content=[Node[description=collection, attributes={name=regular_high, return_snapshot=false, version=14}, content=[Node[description=patch, attributes={}, content=[B@73ce9a0b]]]]]]]
+        // Received Binary Message Node[description=iq, attributes={from=s.whatsapp.net, id=54595.12796-301, type=result}, content=[Node[description=dataSync, attributes={}, content=[Node[description=collection, attributes={name=regular_high, version=15}, content=null]]]]]
     }
 
     private void createMediaConnectionPlaceholder(){

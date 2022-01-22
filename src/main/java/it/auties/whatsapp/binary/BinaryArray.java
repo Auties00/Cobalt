@@ -28,7 +28,7 @@ public record BinaryArray(byte @NonNull [] data) {
      * @return a new {@code BinaryArray} wrapping an empty bytes array
      */
     public static BinaryArray empty() {
-        return of();
+        return of(new byte[0]);
     }
 
     /**
