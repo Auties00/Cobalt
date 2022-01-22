@@ -1,4 +1,4 @@
-package it.auties.whatsapp.exchange;
+package it.auties.whatsapp.socket;
 
 import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp.binary.BinaryEncoder;

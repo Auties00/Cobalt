@@ -2,15 +2,14 @@ package it.auties.whatsapp.binary;
 
 import io.netty.buffer.ByteBuf;
 import it.auties.whatsapp.crypto.AesGmc;
-import it.auties.whatsapp.exchange.Node;
 import it.auties.whatsapp.manager.WhatsappKeys;
+import it.auties.whatsapp.socket.Node;
 import it.auties.whatsapp.util.Buffers;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 

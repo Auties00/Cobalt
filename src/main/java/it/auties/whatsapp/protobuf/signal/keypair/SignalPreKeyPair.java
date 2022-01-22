@@ -1,7 +1,7 @@
 package it.auties.whatsapp.protobuf.signal.keypair;
 
 import it.auties.whatsapp.crypto.SignalHelper;
-import it.auties.whatsapp.exchange.Node;
+import it.auties.whatsapp.socket.Node;
 import lombok.NonNull;
 
 public record SignalPreKeyPair(int id, byte @NonNull [] publicKey, byte[] privateKey) implements ISignalKeyPair{

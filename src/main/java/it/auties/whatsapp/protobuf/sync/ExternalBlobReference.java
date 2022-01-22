@@ -2,6 +2,7 @@ package it.auties.whatsapp.protobuf.sync;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.whatsapp.protobuf.media.AttachmentProvider;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,7 +14,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class ExternalBlobReference {
+public final class ExternalBlobReference implements AttachmentProvider {
   @JsonProperty("1")
   @JsonPropertyDescription("bytes")
   private byte[] key; 
@@ -37,4 +38,24 @@ public class ExternalBlobReference {
   @JsonProperty("6")
   @JsonPropertyDescription("bytes")
   private byte[] fileEncSha256;
+
+  @Override
+  public String url() {
+    return null;
+  }
+
+  @Override
+  public long fileLength() {
+    return 0;
+  }
+
+  @Override
+  public String name() {
+    return "md-app-state";
+  }
+
+  @Override
+  public String keyName() {
+    return "App State";
+  }
 }

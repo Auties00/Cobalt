@@ -2,7 +2,6 @@ package it.auties.whatsapp.protobuf.message.payment;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.whatsapp.api.Unsupported;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.info.ContextInfo;

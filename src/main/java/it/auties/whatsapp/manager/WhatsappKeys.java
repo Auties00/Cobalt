@@ -16,6 +16,7 @@ import it.auties.whatsapp.protobuf.signal.sender.SenderKeyRecord;
 import it.auties.whatsapp.protobuf.signal.session.Session;
 import it.auties.whatsapp.protobuf.signal.session.SessionAddress;
 import it.auties.whatsapp.protobuf.sync.AppStateSyncKey;
+import it.auties.whatsapp.protobuf.sync.LTHashState;
 import it.auties.whatsapp.util.Validate;
 import lombok.*;
 import lombok.Builder.Default;
@@ -124,6 +125,12 @@ public class WhatsappKeys {
      */
     @JsonProperty
     private Map<SessionAddress, byte[]> identities;
+
+    /**
+     * Hash state
+     */
+    @JsonProperty
+    private Map<String, LTHashState> hashStates;
 
     /**
      * App state keys
@@ -235,6 +242,7 @@ public class WhatsappKeys {
         this.preKeys = new LinkedList<>();
         this.sessions = new ConcurrentHashMap<>();
         this.identities = new ConcurrentHashMap<>();
+        this.hashStates = new ConcurrentHashMap<>();
         this.appStateKeys = new LinkedList<>();
         this.readCounter = new AtomicLong();
         this.writeCounter = new AtomicLong();
@@ -309,11 +317,10 @@ public class WhatsappKeys {
     }
 
     /**
-     * Queries the first {@link SenderKeyRecord} that matches {@code name}.
-     * Otherwise, creates a new one.
+     * Queries the first {@link SenderKeyRecord} that matches {@code name}
      *
      * @param name the non-null name to search
-     * @return a non-null SenderKeyRecord
+     * @return a non-null Optional SenderKeyRecord
      */
     public Optional<SenderKeyRecord> findSenderKeyByName(@NonNull SenderKeyName name) {
         return Optional.ofNullable(senderKeys.get(name));
@@ -323,7 +330,7 @@ public class WhatsappKeys {
      * Queries the {@link Session} that matches {@code address}
      *
      * @param address the non-null address to search
-     * @return a non-null SessionRecord
+     * @return a non-null Optional SessionRecord
      */
     public Optional<Session> findSessionByAddress(@NonNull SessionAddress address){
         return Optional.ofNullable(sessions.get(address));
@@ -334,7 +341,7 @@ public class WhatsappKeys {
      *
      * @param id the id to search
      * @return a non-null array of bytes
-     * @throws NullPointerException if no element can be found
+     * @throws IllegalArgumentException if no element can be found
      */
     public SignalSignedKeyPair findSignedKeyPairById(int id) {
         Validate.isTrue(id == signedKeyPair.id(), "Id mismatch: %s != %s", id, signedKeyPair.id());
@@ -346,11 +353,22 @@ public class WhatsappKeys {
      *
      * @param id the non-null id to search
      * @return a non-null array of bytes
-     * @throws NullPointerException if no element can be found
      */
     public Optional<SignalPreKeyPair> findPreKeyById(int id) {
         return preKeys.stream()
                 .filter(preKey -> preKey.id() == id)
+                .findFirst();
+    }
+
+    /**
+     * Queries the app state key that matches {@code id}
+     *
+     * @param id the non-null id to search
+     * @return a non-null array of bytes
+     */
+    public Optional<AppStateSyncKey> findAppKeyById(byte[] id) {
+        return appStateKeys.stream()
+                .filter(preKey -> preKey.keyId() != null && Arrays.equals(preKey.keyId().keyId(), id))
                 .findFirst();
     }
 

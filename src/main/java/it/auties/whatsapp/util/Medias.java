@@ -107,7 +107,7 @@ public class Medias {
                     SecurityException.class);
 
             var decrypted = AesCbc.decrypt(keys.iv(), encryptedMedia, keys.cipherKey());
-            Validate.isTrue(provider.fileLength() == decrypted.length,
+            Validate.isTrue(provider.fileLength() <= 0 || provider.fileLength() == decrypted.length,
                     "Cannot decode media: invalid size");
 
             return Optional.of(decrypted);
@@ -118,7 +118,7 @@ public class Medias {
 
     private byte[] calculateMac(byte[] encryptedMedia, MediaKeys keys) {
         var hmacInput = BinaryArray.of(keys.iv()).append(encryptedMedia).data();
-        return Hmac.calculate(hmacInput, keys.macKey())
+        return Hmac.calculateSha256(hmacInput, keys.macKey())
                 .cut(10)
                 .data();
     }

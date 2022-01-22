@@ -8,8 +8,7 @@ import it.auties.whatsapp.protobuf.chat.GroupPolicy;
 import it.auties.whatsapp.protobuf.chat.GroupSetting;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
-import it.auties.whatsapp.socket.WhatsappSocket;
-import it.auties.whatsapp.util.Qr;
+import it.auties.whatsapp.socket.Socket;
 import it.auties.whatsapp.util.QrHandler;
 import lombok.NonNull;
 
@@ -23,7 +22,7 @@ import java.util.List;
 @SuppressWarnings("unused")
 public interface WhatsappListener {
     /**
-     * Called when {@link WhatsappSocket} successfully establishes a connection with new secrets.
+     * Called when {@link Socket} successfully establishes a connection with new secrets.
      * By default, the QR code is printed to the console.
      * If no enum supports your intended functionality, define the logic inside this method and return {@link QrHandler#CUSTOM}.
      *
@@ -36,7 +35,7 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when {@link WhatsappSocket} successfully establishes a connection and logs in into an account.
+     * Called when {@link Socket} successfully establishes a connection and logs in into an account.
      * When this event is called, any data, including chats and contact, is not guaranteed to be already in memory.
      * Instead, {@link WhatsappListener#onChats()} and {@link WhatsappListener#onContacts()} should be used.
      *
@@ -45,14 +44,14 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when {@link WhatsappSocket} successfully disconnects from WhatsappWeb's WebSocket.
+     * Called when {@link Socket} successfully disconnects from WhatsappWeb's WebSocket.
      * When this event is called, any data, including chats and contact, is guaranteed to not be available anymore.
      */
     default void onDisconnected() {
     }
 
     /**
-     * Called when {@link WhatsappSocket} receives a failure from Whatsapp.
+     * Called when {@link Socket} receives a failure from Whatsapp.
      * This usually indicates that the pair device has been disconnect forcefully.
      *
      * @param statusCode the status code for the failure
@@ -74,23 +73,23 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when {@link WhatsappSocket} receives a plain text list.
+     * Called when {@link Socket} receives a plain text list.
      * This data is usually not very useful, but it may be necessary for particular use cases.
      *
-     * @param response the list received as plain text by {@link WhatsappSocket}
+     * @param response the list received as plain text by {@link Socket}
      */
     default void onListResponse(@NonNull List<Object> response) {
     }
 
     /**
-     * Called when {@link WhatsappSocket} receives all the contacts from WhatsappWeb's WebSocket.
+     * Called when {@link Socket} receives all the contacts from WhatsappWeb's WebSocket.
      * To access this data use {@link WhatsappStore#contacts()}.
      */
     default void onContacts() {
     }
 
     /**
-     * Called when {@link WhatsappSocket} receives an update regarding a contact
+     * Called when {@link Socket} receives an update regarding a contact
      *
      * @param contact the updated contact
      */
@@ -98,7 +97,7 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when {@link WhatsappSocket} receives a new contact
+     * Called when {@link Socket} receives a new contact
      *
      * @param contact the new contact
      */
@@ -106,7 +105,7 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when {@link WhatsappSocket} receives an update regarding the presence of a contact.
+     * Called when {@link Socket} receives an update regarding the presence of a contact.
      * If {@code chat} is a conversation with {@code contact}, the new presence is available by calling {@link Contact#lastKnownPresence()}.
      * Otherwise, it should be queried using {@link Chat#presences()}.
      *
@@ -117,7 +116,7 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when {@link WhatsappSocket} receives all the chats from WhatsappWeb's WebSocket.
+     * Called when {@link Socket} receives all the chats from WhatsappWeb's WebSocket.
      * When this event is fired, it is guaranteed that all metadata excluding messages will be present.
      * To access this data use {@link WhatsappStore#chats()}.
      * If you also need the messages to be loaded, please refer to {@link WhatsappListener#onChatRecentMessages(Chat)}.
@@ -126,14 +125,14 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when {@link WhatsappSocket} receives the recent message for a chat already in memory.
+     * Called when {@link Socket} receives the recent message for a chat already in memory.
      * When this event is fired, it is guaranteed that all metadata excluding messages will be present.
      */
     default void onChatRecentMessages(@NonNull Chat chat) {
     }
 
     /**
-     * Called when {@link WhatsappSocket} receives a new chat
+     * Called when {@link Socket} receives a new chat
      *
      * @param chat the new chat
      */

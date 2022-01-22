@@ -32,30 +32,42 @@ public record BinaryArray(byte @NonNull [] data) {
     }
 
     /**
-     * Constructs a new {@code BinaryArray} wrapping {@param in}
+     * Constructs a new {@code BinaryArray} wrapping {@param input}
      *
-     * @param in the array of bytes to wrap
-     * @return a new {@code BinaryArray} wrapping {@code in}
+     * @param input the array of bytes to wrap
+     * @return a new {@code BinaryArray} wrapping {@code input}
      */
-    public static BinaryArray of(byte... in) {
-        return new BinaryArray(in);
+    public static BinaryArray of(byte... input) {
+        return new BinaryArray(input);
+    }
+
+    /**
+     * Constructs a new {@code BinaryArray} wrapping {@param input}
+     *
+     * @param input the array of bytes to wrap
+     * @return a new {@code BinaryArray} wrapping {@code input}
+     */
+    public static BinaryArray of(byte[]... input) {
+        return Arrays.stream(input)
+                .map(BinaryArray::of)
+                .reduce(empty(), BinaryArray::append);
     }
 
     /**
      * Constructs a new {@code BinaryArray} wrapping the array of bytes representing a UTF-8 string
      *
-     * @param in the String to wrap
-     * @return a new {@code BinaryArray} wrapping {@param in}
+     * @param input the String to wrap
+     * @return a new {@code BinaryArray} wrapping {@code input}
      */
-    public static BinaryArray of(@NonNull String in) {
-        return of(in.getBytes(StandardCharsets.UTF_8));
+    public static BinaryArray of(@NonNull String input) {
+        return of(input.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
      * Constructs a {@code BinaryArray} wrapping the array of bytes representing a Base64 encoded String in UTF-8 format
      *
      * @param input the Base64 encoded String to wrap
-     * @return a new {@code BinaryArray} wrapping {@param input}
+     * @return a new {@code BinaryArray} wrapping {@code input}
      */
     public static BinaryArray ofBase64(@NonNull String input) {
         return of(Base64.getDecoder().decode(input));
@@ -65,17 +77,17 @@ public record BinaryArray(byte @NonNull [] data) {
      * Constructs a {@code BinaryArray} wrapping the array of bytes representing a Hex encoded string
      *
      * @param input the Hex encoded String to wrap
-     * @return a new {@code BinaryArray} wrapping {@param input}
+     * @return a new {@code BinaryArray} wrapping {@code input}
      */
     public static BinaryArray ofHex(@NonNull String input) {
         return of(Hex.decodeStrict(input));
     }
 
     /**
-     * Constructs a {@code BinaryArray} wrapping a generated array of {@param length}pseudo random bytes
+     * Constructs a {@code BinaryArray} wrapping a generated array of {@code length} pseudo random bytes
      *
      * @param length the length of the array to generate and wrap
-     * @return a new {@code BinaryArray} of length {@param length}
+     * @return a new {@code BinaryArray} of length {@code length}
      */
     public static BinaryArray random(int length) {
         var result = allocate(length);
@@ -87,7 +99,7 @@ public record BinaryArray(byte @NonNull [] data) {
      * Constructs a {@code BinaryArray} wrapping an array of a fixed size
      *
      * @param length the length of the array to generate and wrap
-     * @return a new {@code BinaryArray} of length {@param length}
+     * @return a new {@code BinaryArray} of length {@code length}
      */
     public static BinaryArray allocate(int length) {
         return of(new byte[length]);
@@ -128,6 +140,42 @@ public record BinaryArray(byte @NonNull [] data) {
      */
     public BinaryArray slice(int start, int end) {
         return of(copyOfRange(data, start >= 0 ? start : size() + start, end >= 0 ? end : size() + end));
+    }
+
+    /**
+     * Constructs a new {@code BinaryArray} by setting {@code value} at the starting position
+     *
+     * @param value the value to insert
+     * @return a new {@code BinaryArray} wrapping a bytes array obtained by setting an input value at the starting position
+     */
+    public BinaryArray withFirst(byte value){
+        return with(0, value);
+    }
+
+    /**
+     * Constructs a new {@code BinaryArray} by setting {@code value} at the ending position
+     *
+     * @param value the value to insert
+     * @return a new {@code BinaryArray} wrapping a bytes array obtained by setting an input value at the ending position
+     */
+    public BinaryArray withLast(byte value){
+        return with(size() - 1, value);
+    }
+
+    /**
+     * Constructs a new {@code BinaryArray} by setting {@code value} at {@code index}
+     *
+     * @param index the index where the new value should be placed
+     * @param value the value to insert
+     * @return a new {@code BinaryArray} wrapping a bytes array obtained by setting an input value at the input index
+     */
+    public BinaryArray with(int index, byte value){
+        Validate.isTrue(index < size(),
+                "Cannot set byte at index %s: maximum capacity is %s",
+                index, size());
+        var result = copyOf(data, data.length);
+        result[index] = value;
+        return of(result);
     }
 
     /**

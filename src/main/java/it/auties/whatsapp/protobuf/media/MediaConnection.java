@@ -1,6 +1,6 @@
 package it.auties.whatsapp.protobuf.media;
 
-import it.auties.whatsapp.exchange.Node;
+import it.auties.whatsapp.socket.Node;
 import lombok.NonNull;
 
 import java.util.List;

@@ -55,7 +55,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
                 .append(message)
                 .assertSize(message.length + 33 + 33)
                 .data();
-        var mac = Hmac.calculate(macInput, whisperKeys[1]);
+        var mac = Hmac.calculateSha256(macInput, whisperKeys[1]);
         var result = BinaryArray.of(message)
                 .append(mac.cut(8))
                 .data();
@@ -85,11 +85,11 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         Validate.isTrue(chain.key() != null,
                 "Closed chain");
 
-        var messagesHmac = Hmac.calculate(new byte[]{1}, chain.key());
+        var messagesHmac = Hmac.calculateSha256(new byte[]{1}, chain.key());
         var keyPair = new SignalPreKeyPair(chain.counter() + 1, messagesHmac.data(), null);
         chain.messageKeys().put(chain.counter() + 1, keyPair);
 
-        var keyHmac = Hmac.calculate(new byte[]{2}, chain.key());
+        var keyHmac = Hmac.calculateSha256(new byte[]{2}, chain.key());
         chain.key(keyHmac.data());
         chain.incrementCounter();
         fillMessageKeys(chain, counter);
@@ -148,7 +148,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
                 .append(message.serialized())
                 .assertSize(message.serialized().length + 33 + 33)
                 .data();
-        var hmac = Hmac.calculate(hmacInput, secrets[1])
+        var hmac = Hmac.calculateSha256(hmacInput, secrets[1])
                 .cut(8)
                 .data();
         Validate.isTrue(Arrays.equals(message.signature(), hmac),
@@ -183,7 +183,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
     }
 
     private void calculateRatchet(SignalMessage message, SessionState state, boolean sending) {
-        var sharedSecret = Curve.calculateSharedSecret(message.ephemeralPublicKey(),
+        var sharedSecret = Curve.calculateAgreement(message.ephemeralPublicKey(),
                 state.ephemeralKeyPair().privateKey());
         var masterKey = Hkdf.deriveSecrets(sharedSecret.data(), state.rootKey(),
                 "WhisperRatchet".getBytes(StandardCharsets.UTF_8), 2);

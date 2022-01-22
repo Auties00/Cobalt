@@ -48,12 +48,15 @@ public enum ContactStatus {
      *
      * @return a lowercase non-null String
      */
-    public @NonNull String data() {
+    public String data() {
         return name().toLowerCase();
     }
 
     @JsonCreator
     public static ContactStatus forValue(@NonNull String jsonValue) {
-        return Arrays.stream(values()).filter(entry -> entry.name().equalsIgnoreCase(jsonValue)).findFirst().orElseThrow();
+        return Arrays.stream(values())
+                .filter(entry -> entry.name().equalsIgnoreCase(jsonValue))
+                .findFirst()
+                .orElseThrow();
     }
 }

@@ -10,12 +10,21 @@ import javax.crypto.spec.SecretKeySpec;
 
 @UtilityClass
 public class Hmac {
-    private final String HMAC_SHA256 = "HmacSHA256";
+    private final String HMAC_SHA_256 = "HmacSHA256";
+    private final String HMAC_SHA_512 = "HmacSHA512";
+
+    public BinaryArray calculateSha256(@NonNull byte[] plain, @NonNull byte[] key) {
+        return calculate(HMAC_SHA_256, plain, key);
+    }
+
+    public BinaryArray calculateSha512(@NonNull byte[] plain, @NonNull byte[] key) {
+        return calculate(HMAC_SHA_512, plain, key);
+    }
 
     @SneakyThrows
-    public BinaryArray calculate(@NonNull byte[] plain, @NonNull byte[] key) {
-        var localMac = Mac.getInstance(HMAC_SHA256);
-        localMac.init(new SecretKeySpec(key, HMAC_SHA256));
+    private static BinaryArray calculate(String algorithm, byte[] plain, byte[] key)  {
+        var localMac = Mac.getInstance(algorithm);
+        localMac.init(new SecretKeySpec(key, algorithm));
         return BinaryArray.of(localMac.doFinal(plain));
     }
 }

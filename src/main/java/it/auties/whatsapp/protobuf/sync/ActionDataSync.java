@@ -13,7 +13,7 @@ import lombok.experimental.Accessors;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class ActionDataSync {
+public class ActionDataSync implements GenericSync {
   @JsonProperty("1")
   @JsonPropertyDescription("bytes")
   private byte[] index;

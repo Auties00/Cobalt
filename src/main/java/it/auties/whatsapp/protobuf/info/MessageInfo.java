@@ -3,7 +3,6 @@ package it.auties.whatsapp.protobuf.info;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.whatsapp.api.Unsupported;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.chat.Chat;

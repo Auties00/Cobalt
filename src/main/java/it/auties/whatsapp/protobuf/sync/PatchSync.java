@@ -49,4 +49,12 @@ public class PatchSync {
   @JsonProperty("8")
   @JsonPropertyDescription("uint32")
   private int deviceIndex;
+
+  public boolean hasVersion(){
+    return version != null && version.version() != 0;
+  }
+
+  public boolean hasExternalMutations(){
+    return externalMutations != null;
+  }
 }

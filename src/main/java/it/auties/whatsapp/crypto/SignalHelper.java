@@ -1,5 +1,6 @@
 package it.auties.whatsapp.crypto;
 
+import it.auties.whatsapp.util.Validate;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
@@ -30,6 +31,8 @@ public class SignalHelper {
     }
 
     private byte[] writeKeyHeader(byte[] key) {
+        Validate.isTrue(key.length == 32,
+                "Invalid key size: %s", key.length);
         var result = new byte[33];
         System.arraycopy(key, 0, result, 1, key.length);
         result[0] = 5;

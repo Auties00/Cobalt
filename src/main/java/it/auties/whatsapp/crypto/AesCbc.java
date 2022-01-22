@@ -1,5 +1,6 @@
 package it.auties.whatsapp.crypto;
 
+import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.util.Validate;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
@@ -20,6 +21,15 @@ public class AesCbc {
         var keySpec = new SecretKeySpec(encKey, AES);
         cipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(iv));
         return cipher.doFinal(decrypted);
+    }
+
+    public byte[] decrypt(byte[] encrypted, byte[] secretKey) {
+        var binary = BinaryArray.of(encrypted);
+        var iv = binary.cut(16)
+                .data();
+        var encryptedNoIv = binary.slice(16)
+                .data();
+        return decrypt(iv, encryptedNoIv, secretKey);
     }
 
     @SneakyThrows

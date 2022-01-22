@@ -1,12 +1,12 @@
 package it.auties.whatsapp.manager;
 
 import it.auties.whatsapp.api.WhatsappListener;
-import it.auties.whatsapp.exchange.Node;
-import it.auties.whatsapp.exchange.Request;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.media.MediaConnection;
+import it.auties.whatsapp.socket.Node;
+import it.auties.whatsapp.socket.Request;
 import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -14,7 +14,6 @@ import lombok.experimental.Accessors;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 

@@ -24,7 +24,7 @@ public class Curve {
     private final String CURVE_25519 = "X25519";
 
     @SneakyThrows
-    public BinaryArray calculateSharedSecret(byte @NonNull [] publicKey, byte @NonNull [] privateKey) {
+    public BinaryArray calculateAgreement(byte @NonNull [] publicKey, byte @NonNull [] privateKey) {
         var keyAgreement = KeyAgreement.getInstance(CURVE_25519);
         keyAgreement.init(toPKCS8Encoded(privateKey));
         keyAgreement.doPhase(toX509Encoded(SignalHelper.removeKeyHeader(publicKey)), true);

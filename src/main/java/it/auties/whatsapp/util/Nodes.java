@@ -1,6 +1,6 @@
 package it.auties.whatsapp.util;
 
-import it.auties.whatsapp.exchange.Node;
+import it.auties.whatsapp.socket.Node;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 

@@ -38,7 +38,7 @@ public class Hkdf {
         Validate.isTrue(chunks >= 1 && chunks <= 3,
                 "Incorrect number of chunks: %s", chunks);
 
-       var prk = Hmac.calculate(input, salt);
+       var prk = Hmac.calculateSha256(input, salt);
        var resultStream = new ByteArrayOutputStream();
         resultStream.write(new byte[32]);
         resultStream.write(info);
@@ -46,14 +46,14 @@ public class Hkdf {
         var result = resultStream.toByteArray();
 
        var signed = new ArrayList<byte[]>();
-       var first = Hmac.calculate(copyOfRange(result, 32, result.length), prk.data());
+       var first = Hmac.calculateSha256(copyOfRange(result, 32, result.length), prk.data());
        signed.add(first.data());
 
         if (chunks > 1) {
             var source = signed.get(0);
             System.arraycopy(source, 0, result, 0, source.length);
             result[result.length - 1] = 2;
-            var second = Hmac.calculate(result, prk.data());
+            var second = Hmac.calculateSha256(result, prk.data());
             signed.add(second.data());
         }
 
@@ -61,7 +61,7 @@ public class Hkdf {
             var source = signed.get(1);
             System.arraycopy(source, 0, result, 0, source.length);
             result[result.length - 1] = 3;
-            var third = Hmac.calculate(result, prk.data());
+            var third = Hmac.calculateSha256(result, prk.data());
             signed.add(third.data());
         }
 

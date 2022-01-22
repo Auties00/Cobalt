@@ -21,7 +21,7 @@ import java.util.List;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class ActionValueSync {
+public class ActionValueSync implements GenericSync {
     @JsonProperty("1")
     @JsonPropertyDescription("int64")
     private long timestamp;

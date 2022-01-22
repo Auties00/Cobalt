@@ -79,15 +79,15 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
             theirSignedPubKey = theirEphemeralPubKey;
         }
 
-        var signedSecret = Curve.calculateSharedSecret(theirSignedPubKey, keys.identityKeyPair().privateKey());
-        var identitySecret = Curve.calculateSharedSecret(theirIdentityPubKey, ourSignedKey.privateKey());
+        var signedSecret = Curve.calculateAgreement(theirSignedPubKey, keys.identityKeyPair().privateKey());
+        var identitySecret = Curve.calculateAgreement(theirIdentityPubKey, ourSignedKey.privateKey());
         var sharedSecret = BinaryArray.allocate(32)
                 .fill((byte) 0xff)
                 .append(isInitiator ? signedSecret : identitySecret)
                 .append(isInitiator ? identitySecret : signedSecret)
-                .append(Curve.calculateSharedSecret(theirSignedPubKey, ourSignedKey.privateKey()));
+                .append(Curve.calculateAgreement(theirSignedPubKey, ourSignedKey.privateKey()));
         if (ourEphemeralKey != null && theirEphemeralPubKey != null) {
-            var ephemeralSecret = Curve.calculateSharedSecret(theirEphemeralPubKey, ourEphemeralKey.privateKey());
+            var ephemeralSecret = Curve.calculateAgreement(theirEphemeralPubKey, ourEphemeralKey.privateKey());
             sharedSecret = sharedSecret.append(ephemeralSecret);
         }
 
@@ -108,7 +108,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
             return state;
         }
 
-        var initSecret = Curve.calculateSharedSecret(theirSignedPubKey, state.ephemeralKeyPair().privateKey());
+        var initSecret = Curve.calculateAgreement(theirSignedPubKey, state.ephemeralKeyPair().privateKey());
         var initKey = Hkdf.deriveSecrets(initSecret.data(), state.rootKey(),
                 "WhisperRatchet".getBytes(StandardCharsets.UTF_8));
         var chain = new SessionChain(-1, masterKey[1], state.ephemeralKeyPair().publicKey());

@@ -2,8 +2,8 @@ package it.auties.whatsapp.binary;
 
 import io.netty.buffer.ByteBuf;
 import it.auties.whatsapp.crypto.SignalHelper;
-import it.auties.whatsapp.exchange.Node;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
+import it.auties.whatsapp.socket.Node;
 import it.auties.whatsapp.util.Buffers;
 import lombok.NonNull;
 
@@ -49,7 +49,7 @@ public record BinaryDecoder(@NonNull ByteBuf buffer){
 
         var description = readString();
         var attrs = readAttributes(size);
-        return size % 2 != 0 ? Node.with(description, attrs, null)
+        return size % 2 != 0 ? Node.withAttributes(description, attrs)
                 : Node.with(description, attrs, read(false));
     }
 

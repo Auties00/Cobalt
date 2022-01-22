@@ -27,13 +27,13 @@ public class SenderChainKey {
   private byte[] seed;
 
   public SenderMessageKey toSenderMessageKey() {
-    var hmac = Hmac.calculate(MESSAGE_KEY_SEED, seed)
+    var hmac = Hmac.calculateSha256(MESSAGE_KEY_SEED, seed)
             .data();
     return new SenderMessageKey(iteration, hmac);
   }
 
   public SenderChainKey next() {
-    var hmac = Hmac.calculate(CHAIN_KEY_SEED, seed)
+    var hmac = Hmac.calculateSha256(CHAIN_KEY_SEED, seed)
             .data();
     return new SenderChainKey(iteration + 1, hmac);
   }

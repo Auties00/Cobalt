@@ -3,10 +3,6 @@ package it.auties.whatsapp.api;
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.compiler.RegisterListenerScanner;
 import it.auties.whatsapp.crypto.SignalHelper;
-import it.auties.whatsapp.exchange.GroupResponse;
-import it.auties.whatsapp.exchange.HasWhatsappResponse;
-import it.auties.whatsapp.exchange.Node;
-import it.auties.whatsapp.exchange.StatusResponse;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.chat.Chat;
@@ -20,7 +16,7 @@ import it.auties.whatsapp.protobuf.info.ContextInfo;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
 import it.auties.whatsapp.protobuf.message.model.Message;
-import it.auties.whatsapp.socket.WhatsappSocket;
+import it.auties.whatsapp.socket.*;
 import it.auties.whatsapp.util.Nodes;
 import it.auties.whatsapp.util.Validate;
 import lombok.AccessLevel;
@@ -35,11 +31,10 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import static it.auties.whatsapp.api.WhatsappOptions.defaultOptions;
-import static it.auties.whatsapp.exchange.Node.with;
-import static it.auties.whatsapp.exchange.Node.withChildren;
 import static it.auties.whatsapp.manager.WhatsappKeys.fromMemory;
 import static it.auties.whatsapp.manager.WhatsappKeys.knownIds;
 import static it.auties.whatsapp.manager.WhatsappStore.newStore;
+import static it.auties.whatsapp.socket.Node.*;
 import static java.util.Objects.requireNonNullElseGet;
 
 /**
@@ -53,7 +48,7 @@ public class Whatsapp {
     /**
      * The socket associated with this session
      */
-    private final WhatsappSocket socket;
+    private final Socket socket;
 
     /**
      * Constructs a new instance of the API from a known id.
@@ -100,7 +95,7 @@ public class Whatsapp {
      * @param id the id of the session
      */
     public Whatsapp(int id){
-        this(new WhatsappSocket(defaultOptions(), newStore(), fromMemory(id)));
+        this(new Socket(defaultOptions(), newStore(), fromMemory(id)));
         RegisterListenerScanner.scan(this)
                 .forEach(this::registerListener);
     }
@@ -199,8 +194,9 @@ public class Whatsapp {
      * @return a CompletableFuture    
      */
     public CompletableFuture<?> subscribeToContactPresence(@NonNull Contact contact) {
-        var metadata = Map.of("to", contact.jid(), "type", "subscribe");
-        return socket.sendWithNoResponse(with("presence", metadata, null));
+        var node = withAttributes("presence",
+                Map.of("to", contact.jid(), "type", "subscribe"));
+        return socket.sendWithNoResponse(node);
     }
 
     /**
@@ -311,7 +307,7 @@ public class Whatsapp {
      */
     public CompletableFuture<List<StatusResponse>> queryUserStatus(@NonNull Contact contact) {
         var query = with("status");
-        var body = with("user", Map.of("jid", contact.jid()), null);
+        var body = withAttributes("user", Map.of("jid", contact.jid()));
         return socket.sendQuery(query, body)
                 .thenApplyAsync(response -> Nodes.findAll(response, "status"))
                 .thenApplyAsync(nodes -> nodes.stream().map(StatusResponse::new).toList());
@@ -344,7 +340,7 @@ public class Whatsapp {
      * @return a CompletableFuture that wraps nullable jpg url hosted on Whatsapp's servers
      */
     public CompletableFuture<String> queryChatPicture(@NonNull ContactJid jid) {
-        var body = Node.with("picture", Map.of("query", "url"), null);
+        var body = withAttributes("picture", Map.of("query", "url"));
         return socket.sendQuery("get", "w:profile:picture", Map.of("target", jid), body)
                 .thenApplyAsync(this::parseChatPicture);
     }
@@ -363,7 +359,7 @@ public class Whatsapp {
      * @throws IllegalArgumentException if the provided chat is not a group
      */
     public CompletableFuture<GroupResponse> queryGroupMetadata(@NonNull Chat chat) {
-        var query = with("query", Map.of("request", "interactive"), null);
+        var query = withAttributes("query", Map.of("request", "interactive"));
         return socket.sendQuery(chat.jid(), "get", "w:g2", query)
                 .thenApplyAsync(result -> result.findNode("group"))
                 .thenApplyAsync(GroupResponse::new);
@@ -407,11 +403,13 @@ public class Whatsapp {
     /**
      * Changes your presence for everyone on Whatsapp
      *
-     * @param presence the new status
+     * @param available whether you are online or not
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> changePresence(@NonNull ContactStatus presence) {
-        return socket.sendWithNoResponse(with("presence", Map.of("type", presence.data()), null));
+    public CompletableFuture<?> changePresence(boolean available) {
+        var presence = available ? ContactStatus.AVAILABLE : ContactStatus.UNAVAILABLE;
+        var node = withAttributes("presence", Map.of("type", presence.data()));
+        return socket.sendWithNoResponse(node);
     }
 
     /**
@@ -422,7 +420,8 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> changePresence(@NonNull Chat chat, @NonNull ContactStatus presence) {
-        return socket.sendWithNoResponse(with("presence", Map.of("to", chat.jid(), "type", presence.data()), null));
+        var node = withAttributes("presence", Map.of("to", chat.jid(), "type", presence.data()));
+        return socket.sendWithNoResponse(node);
     }
 
     /**
@@ -767,7 +766,7 @@ public class Whatsapp {
      */
     public CompletableFuture<GroupResponse> createGroup(@NonNull String subject, @NonNull Contact... contacts) {
         var participants = Arrays.stream(contacts)
-                .map(contact -> with("participant", Map.of("jid", contact.jid()), null))
+                .map(contact -> withAttributes("participant", Map.of("jid", contact.jid())))
                 .toArray(Node[]::new);
         var body = withChildren("create", Map.of("subject", subject, "key", BinaryArray.random(12).toHex()), participants);
         return socket.sendQuery(ContactJid.ofServer(ContactJid.Server.GROUP), "set", "w:g2", body)

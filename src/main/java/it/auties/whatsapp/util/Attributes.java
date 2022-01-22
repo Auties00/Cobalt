@@ -75,6 +75,21 @@ public record Attributes(Map<String, Object> map) {
                 .orElse(defaultValue);
     }
 
+    public boolean getBool(@NonNull String key){
+        return get(key, Object.class)
+                .map(this::parseBool)
+                .orElse(false);
+    }
+
+    private boolean parseBool(Object value) {
+        return switch (value) {
+            case Boolean bool -> bool;
+            case String string -> Boolean.parseBoolean(string);
+            default -> throw new IllegalStateException("Unexpected value: " + value);
+        };
+    }
+
+
     public Optional<ContactJid> getJid(@NonNull String key){
         return get(key, Object.class)
                 .map(this::parseJid);

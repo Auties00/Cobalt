@@ -3,7 +3,6 @@ package it.auties.whatsapp.util;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
 import com.google.zxing.MultiFormatWriter;
-import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import it.auties.whatsapp.manager.WhatsappKeys;
@@ -11,17 +10,9 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
-import java.awt.*;
-import java.nio.file.Files;
 import java.util.Map;
-import java.util.UUID;
-import java.util.function.Consumer;
 
-import static com.google.zxing.client.j2se.MatrixToImageWriter.writeToPath;
 import static it.auties.whatsapp.binary.BinaryArray.of;
-import static java.awt.Desktop.getDesktop;
-import static java.awt.Desktop.isDesktopSupported;
-import static java.nio.file.Files.createTempFile;
 
 /**
  * A utility class used to generate QR codes to authenticate with whatsapp
