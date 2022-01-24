@@ -2,6 +2,7 @@ package it.auties.whatsapp.protobuf.message.payment;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.message.model.PaymentMessage;
 import lombok.AllArgsConstructor;
@@ -29,12 +30,14 @@ public final class PaymentInviteMessage implements PaymentMessage {
    * The type of service used for this payment
    */
   @JsonProperty("1")
+  @JsonPropertyDescription("type")
   private PaymentInviteMessageServiceType serviceType;
 
   /**
    * The timestamp of expiration for this message
    */
   @JsonProperty("2")
+  @JsonPropertyDescription("uint64")
   private long expiryTimestamp;
 
   @AllArgsConstructor

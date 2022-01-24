@@ -1,6 +1,7 @@
 package it.auties.whatsapp.protobuf.message.device;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.message.model.DeviceMessage;
 import it.auties.whatsapp.protobuf.message.model.MessageContainer;
@@ -25,11 +26,13 @@ public final class DeviceSentMessage implements DeviceMessage {
    * The unique identifier that this message update regards.
    */
   @JsonProperty("1")
+  @JsonPropertyDescription("string")
   private String destinationJid;
 
   /**
    * The message container that this object wraps.
    */
   @JsonProperty("2")
+  @JsonPropertyDescription("message")
   private MessageContainer message;
 }

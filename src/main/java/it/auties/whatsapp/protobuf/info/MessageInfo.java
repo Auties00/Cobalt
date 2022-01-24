@@ -3,6 +3,7 @@ package it.auties.whatsapp.protobuf.info;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.chat.Chat;
@@ -41,6 +42,7 @@ public final class MessageInfo implements WhatsappInfo {
    * The MessageKey of this message
    */
   @JsonProperty(value = "1", required = true)
+  @JsonPropertyDescription("key")
   @NonNull
   @Delegate
   private MessageKey key;
@@ -49,6 +51,7 @@ public final class MessageInfo implements WhatsappInfo {
    * The container of this message
    */
   @JsonProperty("2")
+  @JsonPropertyDescription("message")
   @NonNull
   @Default
   private MessageContainer message = new MessageContainer();
@@ -71,6 +74,7 @@ public final class MessageInfo implements WhatsappInfo {
    * Otherwise, this field is guaranteed to be equal to the single value stored by {@link MessageInfo#individualReadStatus()} for the contact associated with the chat associated with this message.
    */
   @JsonProperty("4")
+  @JsonPropertyDescription("status")
   @NonNull
   @Default
   private MessageStatus globalStatus = MessageStatus.PENDING;
@@ -79,6 +83,7 @@ public final class MessageInfo implements WhatsappInfo {
    * The timestamp, that is the seconds since {@link java.time.Instant#EPOCH}, when this message was sent
    */
   @JsonProperty("3")
+  @JsonPropertyDescription("uint64")
   private long timestamp;
 
   /**
@@ -86,72 +91,84 @@ public final class MessageInfo implements WhatsappInfo {
    * This property is only populated if {@link MessageInfo#chat()} refers to a group.
    */
   @JsonProperty("5")
+  @JsonPropertyDescription("jid")
   private ContactJid senderJid;
 
   /**
    * Duration
    */
   @JsonProperty("27")
+  @JsonPropertyDescription("uint32")
   private int duration;
 
   /**
    * Whether this message should be ignored or counted as an unread message
    */
   @JsonProperty("16")
+  @JsonPropertyDescription("bool")
   private boolean ignore;
 
   /**
    * Whether this message is starred
    */
   @JsonProperty("17")
+  @JsonPropertyDescription("bool")
   private boolean starred;
 
   /**
    * Whether this message was sent using a broadcast list
    */
   @JsonProperty("18")
+  @JsonPropertyDescription("bool")
   private boolean broadcast;
 
   /**
    * Multicast
    */
   @JsonProperty("21")
+  @JsonPropertyDescription("bool")
   private boolean multicast;
 
   /**
    * Url text
    */
   @JsonProperty("22")
+  @JsonPropertyDescription("bool")
   private boolean urlText;
 
   /**
    * Url number
    */
   @JsonProperty("23")
+  @JsonPropertyDescription("bool")
   private boolean urlNumber;
 
   /**
    * Clear media
    */
   @JsonProperty("25")
+  @JsonPropertyDescription("bool")
   private boolean clearMedia;
 
   /**
    * Push name
    */
   @JsonProperty("19")
+  @JsonPropertyDescription("string")
   private String pushName;
 
   /**
    * Ephemeral start timestamp
    */
   @JsonProperty("32")
+  @JsonPropertyDescription("uint64")
   private long ephemeralStartTimestamp;
 
   /**
    * Ephemeral duration
    */
   @JsonProperty("33")
+  @JsonPropertyDescription("uint32")
   private int ephemeralDuration;
 
   /**
@@ -159,12 +176,14 @@ public final class MessageInfo implements WhatsappInfo {
    * This property is populated only if the message that {@link MessageInfo#message} wraps is a {@link ProtocolMessage}.
    */
   @JsonProperty("24")
+  @JsonPropertyDescription("stub")
   private StubType stubType;
 
   /**
    * Message stub parameters
    */
   @JsonProperty("26")
+  @JsonPropertyDescription("string")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<String> stubParameters;
 
@@ -172,6 +191,7 @@ public final class MessageInfo implements WhatsappInfo {
    * Labels
    */
   @JsonProperty("28")
+  @JsonPropertyDescription("string")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<String> labels;
 
@@ -179,24 +199,28 @@ public final class MessageInfo implements WhatsappInfo {
    * PaymentInfo
    */
   @JsonProperty("29")
+  @JsonPropertyDescription("info")
   private PaymentInfo paymentInfo;
 
   /**
    * Final live location
    */
   @JsonProperty("30")
+  @JsonPropertyDescription("location")
   private LiveLocationMessage finalLiveLocation;
 
   /**
    * Quoted payment info
    */
   @JsonProperty("31")
+  @JsonPropertyDescription("payment")
   private PaymentInfo quotedPaymentInfo;
 
   /**
    * Media Cipher Text SHA256
    */
   @JsonProperty("20")
+  @JsonPropertyDescription("bytes")
   private byte[] mediaCiphertextSha256;
 
   /**

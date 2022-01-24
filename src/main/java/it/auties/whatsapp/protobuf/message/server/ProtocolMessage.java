@@ -2,6 +2,7 @@ package it.auties.whatsapp.protobuf.message.server;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.message.model.MessageKey;
 import it.auties.whatsapp.protobuf.message.model.ServerMessage;
@@ -26,12 +27,14 @@ public final class ProtocolMessage implements ServerMessage {
    * The key of message that this server message regards
    */
   @JsonProperty("1")
+  @JsonPropertyDescription("key")
   private MessageKey key;
 
   /**
    * The type of this server message
    */
   @JsonProperty("2")
+  @JsonPropertyDescription("type")
   private ProtocolMessageType type;
 
   /**
@@ -39,6 +42,7 @@ public final class ProtocolMessage implements ServerMessage {
    * This property is defined only if {@link ProtocolMessage#type} == {@link ProtocolMessageType#EPHEMERAL_SETTING} || @link ProtocolMessageType#EPHEMERAL_SYNC_RESPONSE}.
    */
   @JsonProperty("4")
+  @JsonPropertyDescription("uint64")
   private long ephemeralExpiration;
 
   /**
@@ -46,6 +50,7 @@ public final class ProtocolMessage implements ServerMessage {
    * This property is defined only if {@link ProtocolMessage#type} == {@link ProtocolMessageType#EPHEMERAL_SETTING} || @link ProtocolMessageType#EPHEMERAL_SYNC_RESPONSE}.
    */
   @JsonProperty("5")
+  @JsonPropertyDescription("uint64")
   private long ephemeralSettingTimestamp;
 
   /**
@@ -53,30 +58,35 @@ public final class ProtocolMessage implements ServerMessage {
    * This property is defined only if {@link ProtocolMessage#type} == {@link ProtocolMessageType#HISTORY_SYNC_NOTIFICATION}.
    */
   @JsonProperty("6")
+  @JsonPropertyDescription("historySyncNotification")
   private HistorySyncNotification historySyncNotification;
 
   /**
    * Unknown
    */
   @JsonProperty("7")
+  @JsonPropertyDescription("appStateSyncKeyShare")
   private AppStateSyncKeyShare appStateSyncKeyShare;
 
   /**
    * Unknown
    */
   @JsonProperty("8")
+  @JsonPropertyDescription("appStateSyncKeyRequest")
   private AppStateSyncKeyRequest appStateSyncKeyRequest;
 
   /**
    * Unknown
    */
   @JsonProperty("9")
+  @JsonPropertyDescription("initialSecurityNotificationSettingSync")
   private InitialSecurityNotificationSettingSync initialSecurityNotificationSettingSync;
 
   /**
    * Unknown
    */
   @JsonProperty("10")
+  @JsonPropertyDescription("appStateFatalExceptionNotification")
   private AppStateFatalExceptionNotification appStateFatalExceptionNotification;
 
   /**

@@ -22,6 +22,7 @@ import it.auties.whatsapp.protobuf.message.model.MessageContainer;
 import it.auties.whatsapp.protobuf.message.model.MessageKey;
 import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
 import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
+import it.auties.whatsapp.protobuf.setting.EphemeralSetting;
 import it.auties.whatsapp.protobuf.signal.auth.*;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.protobuf.signal.message.SignalDistributionMessage;
@@ -43,11 +44,13 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
@@ -106,6 +109,10 @@ public class Socket {
     @NonNull
     private CountDownLatch lock;
 
+    static {
+        getWebSocketContainer().setDefaultMaxSessionIdleTimeout(0);
+    }
+
     public Socket(@NonNull WhatsappOptions options, @NonNull WhatsappStore store, @NonNull WhatsappKeys keys) {
         this.handshake = new Handshake();
         this.container = getWebSocketContainer();
@@ -135,7 +142,6 @@ public class Socket {
                 .sendWithPrologue(session(), keys, store);
     }
 
-
     @OnMessage
     @SneakyThrows
     public void onBinary(byte @NonNull [] raw) {
@@ -155,7 +161,6 @@ public class Socket {
             return;
         }
 
-        System.out.printf("Received %s nodes%n", message.decoded().size());
         message.toNodes(keys)
                 .forEach(this::handleNode);
     }
@@ -163,11 +168,9 @@ public class Socket {
     private void handleNode(Node deciphered) {
         System.out.printf("Received: %s%n", deciphered);
         if(store.resolvePendingRequest(deciphered, false)){
-            System.out.println("Handled!");
             return;
         }
 
-        System.out.println("Processing");
         streamHandler.digest(deciphered);
     }
 
@@ -283,9 +286,48 @@ public class Socket {
                 .toList();
     }
 
-    private void sendReceipt(String id, String type, String to) {
-        var receipt = withAttributes("receipt",
-                of("id", id, "type", type, "to", to));
+    private void sendReceipt(String jid, String participant, List<String> messages, String type) {
+        if(messages.isEmpty()){
+            return;
+        }
+
+        var receipt = withChildren("receipt",
+                of("id", messages.get(0), "t", Instant.now().toEpochMilli(), "to", jid),
+                toMessagesNode(messages));
+        if(type != null){
+            receipt.attributes().put("type", type);
+        }
+
+        if(participant != null){
+            receipt.attributes().put("participant", participant);
+        }
+
+        send(receipt);
+    }
+
+    private Node[] toMessagesNode(List<String> messages) {
+        if (messages.size() <= 1) {
+            return null;
+        }
+
+        return messages.subList(1, messages.size())
+                .stream()
+                .map(id -> withAttributes("item", of("id", id)))
+                .toArray(Node[]::new);
+    }
+
+    private void sendMessageAck(Node node, Map<String, Object> attributes){
+        var to = node.attributes().getJid("from")
+                .orElseThrow();
+        var receipt = withAttributes("ack",
+                of("id", WhatsappUtils.readNullableId(node), "to", to));
+        receipt.attributes().putAll(attributes);
+        var participant = node.attributes()
+                .getString("participant", null);
+        if(participant != null){
+            node.attributes().put("participant", participant);
+        }
+
         send(receipt);
     }
 
@@ -373,19 +415,59 @@ public class Socket {
     private class StreamHandler {
         private void digest(@NonNull Node node) {
             switch (node.description()) {
+                case "ack" -> digestAck(node);
+                case "call" -> digestCall(node);
                 case "failure" -> digestFailure(node);
                 case "ib" -> digestIb(node);
                 case "iq" -> digestIq(node);
+                case "receipt" -> digestReceipt(node);
                 case "stream:error" -> digestError(node);
                 case "success" -> digestSuccess();
-                case "message" -> messageHandler.decode(node);
+                case "message" -> digestMessage(node);
                 case "notification" -> digestNotification(node);
                 case "xmlstreamend" -> disconnect();
             }
         }
 
+        private void digestReceipt(Node node) {
+            var type = node.attributes().getString("type", "null");
+            sendMessageAck(node, of("class", "receipt", "type", type));
+        }
+
+        private void digestCall(Node node) {
+            var call = node.children()
+                    .peekFirst();
+            if(call == null){
+                return;
+            }
+
+            sendMessageAck(node, of("class", "call", "type", call.description()));
+        }
+
+        private void digestAck(Node node) {
+            var clazz = node.attributes().getString("class");
+            if (!Objects.equals(clazz, "message")) {
+                return;
+            }
+
+            var from = node.attributes().getJid("from")
+                    .orElseThrow(() -> new NoSuchElementException("Cannot digest ack: missing from"));
+            var receipt = with("ack",
+                    of("class", "receipt", "id", WhatsappUtils.readNullableId(node), "from", from));
+            send(receipt);
+        }
+
+        private void digestMessage(Node node) {
+            var messages = messageHandler.decode(node);
+            messages.forEach(message -> {
+                sendMessageAck(node, of("class", "receipt"));
+                sendReceipt(message.chatJid().toString(), message.senderJid().toString(), List.of(message.key().id()), null);
+            });
+        }
+
         private void digestNotification(Node node) {
-            var type = node.attributes().getString("server_sync");
+            var type = node.attributes().getString("type", null);
+            sendMessageAck(node, of("class", "notification", "type", type));
             if (!Objects.equals(type, "server_sync")) {
                 return;
             }
@@ -400,13 +482,21 @@ public class Socket {
         }
 
         private void digestIb(Node node) {
-            var offlinePreview = node.findNode("offline_preview");
-            if(offlinePreview == null){
+            var dirty = node.findNode("dirty");
+            if(dirty == null){
+                Validate.isTrue(!node.hasNode("downgrade_webclient"),
+                        "Multi device beta is not enabled. Please enable it from Whatsapp");
                 return;
             }
 
-            Validate.isTrue(!node.hasNode("downgrade_webclient"),
-                    "Multi device beta is not enabled. Please enable it from Whatsapp");
+            var type = dirty.attributes().getString("type");
+            if(Objects.equals(type, "account_sync")){
+                return;
+            }
+
+            var timestamp = dirty.attributes().getString("timestamp");
+            sendQuery("set", "urn:xmpp:whatsapp:dirty",
+                    withAttributes("clean", of("type", type, "timestamp", timestamp)));
         }
 
         private void digestFailure(Node node) {
@@ -426,20 +516,25 @@ public class Socket {
         }
 
         private void digestError(Node node) {
-            switch (node.attributes().getInt("code")) {
+            var statusCode = node.attributes().getInt("code");
+            switch (statusCode) {
                 case 515 -> reconnect();
-                case 401 -> {
-                    var child = node.children().getFirst();
-                    var reason = child.attributes().getString("type");
-                    disconnect();
-                    throw new IllegalStateException("Conflict detected: %s".formatted(reason));
-                }
-
+                case 401 -> handleFailure(node, statusCode);
                 default -> {
                     Validate.isTrue(node.findNode("xml-not-well-formed") == null, "An invalid node was sent to Whatsapp");
                     node.children().forEach(error -> store.resolvePendingRequest(error, true));
                 }
             }
+        }
+
+        private void handleFailure(Node node, int statusCode) {
+            var child = node.children().getFirst();
+            var type = child.attributes().getString("type");
+            var reason = child.attributes().getString("reason", null);
+            Validate.isTrue(handleFailure(statusCode, requireNonNullElse(reason, type)),
+                    "Invalid or expired credentials: socket failed with status code %s at %s", statusCode, requireNonNullElse(reason, type));
+            changeKeys();
+            reconnect();
         }
 
         private void digestSuccess() {
@@ -453,6 +548,20 @@ public class Socket {
         private void sendStatusUpdate() {
             var presence = withAttributes("presence", of("type", "available"));
             send(presence);
+            sendQuery("get", "blocklist");
+            sendQuery("get", "privacy", with("privacy"));
+            sendQuery("get", "abt", withAttributes("props", of("protocol", "1")));
+            sendQuery("get", "w", with("props"))
+                    .thenAcceptAsync(this::parseProps);
+        }
+
+        private void parseProps(Node result) {
+            var properties = result.findNode("props")
+                    .findNodes("prop")
+                    .stream()
+                    .map(node -> Map.entry(node.attributes().getString("name"), node.attributes().getString("value")))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            store.callListeners(listener -> listener.onProps(properties));
         }
 
         private void createPingService() {
@@ -586,7 +695,7 @@ public class Socket {
                     .decode(account.details())
                     .keyIndex();
             var identity = ProtobufEncoder.encode(account.deviceSignature(deviceSignature).accountSignature(null));
-            var identityNode = with("device-identity", of("key-index", keyIndex), identity);
+            var identityNode = with("device-identity", of("key-index", String.valueOf(keyIndex)), identity);
             var content = withChildren("pair-device-sign", identityNode);
 
             sendConfirmNode(node, content);
@@ -607,7 +716,7 @@ public class Socket {
     }
 
     private class MessageHandler {
-        public void decode(Node node) {
+        public List<MessageInfo> decode(Node node) {
             var timestamp = node.attributes().getLong("t");
             var id = node.attributes().getRequiredString("id");
             var from = node.attributes().getJid("from")
@@ -640,21 +749,24 @@ public class Socket {
                     .create();
 
             var messages = node.findNodes("enc");
-            System.out.printf("Decrypting %s messages%n", messages.size());
-            messages.forEach(messageNode -> decodeMessage(info, messageNode, from));
+            return messages.stream()
+                    .map(messageNode -> decodeMessage(info, messageNode, from))
+                    .filter(Objects::nonNull)
+                    .toList();
         }
 
-        private void decodeMessage(MessageInfo info, Node node, ContactJid from) {
+        private MessageInfo decodeMessage(MessageInfo info, Node node, ContactJid from) {
             try {
                 var encodedMessage = node.bytes();
                 var messageType = node.attributes().getString("type");
                 var buffer = decodeCipheredMessage(info, encodedMessage, messageType);
                 info.message(decodeMessageContainer(buffer));
                 handleSenderKeyMessage(from, info);
+                return info;
             }catch (Throwable throwable){
                 log.warning("An exception occurred while processing a message: " + throwable.getMessage());
                 log.warning("The application will continue running normally, but submit an issue on GitHub");
-                throwable.printStackTrace();
+                return null;
             }
         }
 
@@ -694,7 +806,6 @@ public class Socket {
 
         @SneakyThrows
         private void handleSenderKeyMessage(ContactJid from, MessageInfo info) {
-            System.out.println("Handling: " + info.message().content());
             switch (info.message().content()){
                 case SenderKeyDistributionMessage distributionMessage -> handleDistributionMessage(distributionMessage, from);
                 case ProtocolMessage protocolMessage -> handleProtocolMessage(info, protocolMessage);
@@ -742,15 +853,18 @@ public class Socket {
                                 .forEach(this::handNewPushName);
                     }
 
-                    sendReceipt(info.key().id(), "hist_sync",
-                            "%s@c.us".formatted(keys.companion().user()));
+                    var receipt = withAttributes("receipt",
+                            of("id", info.key().id(), "type", "hist_sync", "to","%s@c.us".formatted(keys.companion().user())));
+                    send(receipt);
                 }
 
                 case APP_STATE_SYNC_KEY_SHARE -> {
                     var newKeys = protocolMessage.appStateSyncKeyShare()
                             .keys();
                     keys.appStateKeys().addAll(newKeys);
-                    appStateHandler.sync();
+                    // TODO: Obv this is not how it's supposed to be written, it's just for testing
+                    CompletableFuture.delayedExecutor(2, TimeUnit.SECONDS)
+                            .execute(appStateHandler::sync);
                 }
 
                 case REVOKE -> {
@@ -767,7 +881,8 @@ public class Socket {
                             .orElseThrow(() -> new NoSuchElementException("Missing chat"));
                     chat.ephemeralMessagesToggleTime(info.timestamp())
                             .ephemeralMessageDuration(protocolMessage.ephemeralExpiration());
-                    store.callListeners(listener -> listener.onChatEphemeralStatusChange(chat));
+                    var setting = new EphemeralSetting(info.ephemeralDuration(), info.timestamp());
+                    store.callListeners(listener -> listener.onSetting(setting));
                 }
             }
         }
@@ -816,77 +931,69 @@ public class Socket {
     private class AppStateHandler {
         private static final int MAX_SYNC_ATTEMPTS = 5;
 
-        public AppStateChunk sync(){
-            return sync("critical_block", "critical_unblock_low",
+        public void sync(){
+            sync("critical_block", "critical_unblock_low",
                     "regular_high", "regular_low", "regular");
         }
 
         @SneakyThrows
-        public AppStateChunk sync(String... requests) {
-            var appStateChunk = new AppStateChunk();
-            var initialVersionMap = new HashMap<String, Long>();
-            var collectionsToHandle = new HashSet<>(Set.of(requests));
-            var attemptsMap = new HashMap<String, Integer>();
-            while(collectionsToHandle.size() > 0) {
-                var states = new HashMap<String, LTHashState>();
-                var nodes = new ArrayList<Node>();
-                for(var name : collectionsToHandle) {
-                    var result = keys.findHashStateByName(name)
-                            .map(state -> computeVersion(initialVersionMap, name, state))
-                            .orElseGet(LTHashState::new);
-                    states.put(name, result);
-                    nodes.add(result.toNode(name));
+        public void sync(String... requests) {
+            var states = Arrays.stream(requests)
+                    .map(name -> keys.findHashStateByName(name))
+                    .toList();
+            var nodes = states.stream()
+                    .map(LTHashState::toNode)
+                    .toArray(Node[]::new);
+
+            sendQuery("set", "w:sync:app:state", withChildren("sync", nodes))
+                    .thenApplyAsync(this::parseSyncRequest)
+                    .thenApplyAsync(this::parsePatches)
+                    .thenAcceptAsync(actions -> actions.forEach(this::processSyncActions))
+                    .exceptionallyAsync(this::handleSyncFailure);
+        }
+
+        private Void handleSyncFailure(Throwable throwable){
+            throwable.printStackTrace();
+            return null;
+        }
+
+        private List<ActionDataSync> parsePatches(List<SnapshotSyncRecord> patches) {
+            return patches.stream()
+                    .map(patch -> parsePatch(patch, 0))
+                    .flatMap(Collection::stream)
+                    .toList();
+        }
+
+        private List<ActionDataSync> parsePatch(SnapshotSyncRecord patch, int tries) {
+            var results = new ArrayList<ActionDataSync>();
+            var name = patch.name();
+            var state = keys.findHashStateByName(name);
+            try {
+                if (patch.hasSnapshot()) {
+                    var decodedSnapshot = decodeSnapshot(name, patch.snapshot(), state.version(), false);
+                    keys.hashStates().put(name, decodedSnapshot.state());
+                    results.addAll(decodedSnapshot.mutations().records());
                 }
 
-                var lock = new CountDownLatch(1);
-                sendQuery("set", "w:dataSync:app:state", withChildren("dataSync", nodes.toArray(Node[]::new)))
-                        .thenApplyAsync(this::parseSyncRequest)
-                        .thenAcceptAsync(patches -> patches.forEach(patch -> {
-                            var name = patch.name();
-                            try {
-                                if (patch.hasSnapshot()) {
-                                    var version = initialVersionMap.get(name);
-                                    var decodedSnapshot = decodeSnapshot(name, patch.snapshot(), version, true);
-                                    states.put(patch.name(), decodedSnapshot.state());
-                                    keys.hashStates().put(name, decodedSnapshot.state());
-                                    appStateChunk.mutations().addAll(decodedSnapshot.mutations().records());
-                                }
+                if (!patch.patches().isEmpty()) {
+                    var decodedPatches = decodePatches(name, patch.patches(), state, state.version(), false);
+                    decodedPatches.mutations()
+                            .stream()
+                            .map(MutationsRecord::records)
+                            .flatMap(Collection::stream)
+                            .forEach(results::add);
+                }
 
-                                if (!patch.patches().isEmpty()) {
-                                    var oldState = states.get(name);
-                                    var version = initialVersionMap.get(name);
-                                    var decodedPatches = decodePatches(name, patch.patches(), oldState, version, true);
-                                    states.put(patch.name(), decodedPatches.state());
-                                    decodedPatches.mutations().stream().map(MutationsRecord::records).flatMap(Collection::stream).forEach(appStateChunk.mutations()::add);
-                                }
+                return results;
+            } catch (Throwable throwable) {
+                throwable.printStackTrace();
+                keys.hashStates().remove(name);
+                if (tries > MAX_SYNC_ATTEMPTS) {
+                    throw new RuntimeException("Cannot parse patch", throwable);
+                }
 
-                                if (!patch.hasMore()) {
-                                    collectionsToHandle.remove(name);
-                                }
-                            } catch (Throwable throwable) {
-                                log.warning("An exception occurred while syncing the app state: retrying...");
-                                keys.hashStates().remove(name);
-                                var attempts = attemptsMap.getOrDefault(name, 0);
-                                if (attempts >= MAX_SYNC_ATTEMPTS) {
-                                    collectionsToHandle.remove(name);
-                                } else {
-                                    attemptsMap.put(name, attempts + 1);
-                                }
-                            }finally {
-                                lock.countDown();
-                            }
-                        }))
-                        .exceptionallyAsync(exception -> {
-                            exception.printStackTrace();
-                            lock.countDown();
-                            return null;
-                        });
-                lock.await();
+                return parsePatch(patch, tries + 1);
             }
-
-            appStateChunk.mutations()
-                    .forEach(this::processSyncActions);
-            return appStateChunk;
         }
 
         private List<SnapshotSyncRecord> parseSyncRequest(Node node) {
@@ -933,40 +1040,38 @@ public class Socket {
             return patchSync;
         }
 
-        private void processSyncActions(ActionSyncRecord mutation) {
-            var dataSync = mutation.dataSync().value();
-            var targetContact = store.findContactByJid(mutation.messageSync().chatJid());
-            var targetChat = store.findChatByJid(mutation.messageSync().chatJid());
-            var targetMessage = targetChat.flatMap(chat -> store.findMessageById(chat, mutation.messageSync().messageId()));
-            if (dataSync.hasAction()){
-                switch (dataSync.action()) {
+        private void processSyncActions(ActionDataSync mutation) {
+            var targetContact = store.findContactByJid(mutation.messageIndex().chatJid());
+            var targetChat = store.findChatByJid(mutation.messageIndex().chatJid());
+            var targetMessage = targetChat.flatMap(chat -> store.findMessageById(chat, mutation.messageIndex().messageId()));
+            var action = mutation.value().action();
+            if (action != null){
+                switch (action) {
                     case AndroidUnsupportedActions ignored -> {}
-                    case ClearChatAction ignored -> targetChat.map(Chat::messages).ifPresent(List::clear);
+                    case ClearChatAction ignored -> targetChat.map(Chat::messages).ifPresent(Collection::clear);
                     case ContactAction contactAction -> targetContact.ifPresent(contact -> contact.update(contactAction));
                     case DeleteChatAction ignored -> targetChat.ifPresent(store.chats()::remove);
                     case DeleteMessageForMeAction ignored -> targetMessage.ifPresent(message -> targetChat.ifPresent(chat -> chat.messages().remove(message)));
                     case MarkChatAsReadAction markAction -> targetChat.ifPresent(chat -> chat.unreadMessages(markAction.read() ? 0 : -1));
                     case MuteAction muteAction -> targetChat.ifPresent(chat -> chat.mute(ChatMute.muted(muteAction.muteEndTimestamp())));
-                    case PinAction pinAction -> targetChat.ifPresent(chat -> chat.pinned(pinAction.pinned() ? dataSync.timestamp() : 0));
+                    case PinAction pinAction -> targetChat.ifPresent(chat -> chat.pinned(pinAction.pinned() ? mutation.value().timestamp() : 0));
                     case StarAction starAction -> targetMessage.ifPresent(message -> message.starred(starAction.starred()));
-                    default -> log.info("Unsupported action: " + dataSync.action());
+                    case ArchiveChatAction archiveChatAction -> targetChat.ifPresent(chat -> chat.archived(archiveChatAction.archived()));
+                    default -> log.info("Unsupported action: " + mutation.value().action());
                 }
 
-                store.callListeners(listener -> listener.onAction(dataSync.action()));
+                store.callListeners(listener -> listener.onAction(action));
             }
 
-            if(dataSync.hasSetting()){
-                store.callListeners(listener -> listener.onSetting(dataSync.setting()));
+            var setting = mutation.value().setting();
+            if(setting != null){
+                store.callListeners(listener -> listener.onSetting(setting));
             }
 
-            if(dataSync.hasFeature()){
-                store.callListeners(listener -> listener.onFeatures(dataSync.feature().flags()));
+            var features = mutation.value().primaryFeature();
+            if(features != null && !features.flags().isEmpty()){
+                store.callListeners(listener -> listener.onFeatures(features.flags()));
             }
-        }
-
-        private LTHashState computeVersion(HashMap<String, Long> initialVersionMap, String name, LTHashState state) {
-            initialVersionMap.computeIfAbsent(name, key -> state.version());
-            return state;
         }
 
         @SneakyThrows
@@ -1058,7 +1163,7 @@ public class Socket {
         }
 
         @SneakyThrows
-        private ActionSyncRecord decodeMutation(boolean validateMacs, LTHash generator, ParsableMutation mutation) {
+        private ActionDataSync decodeMutation(boolean validateMacs, LTHash generator, ParsableMutation mutation) {
             var appStateSyncKey = keys.findAppKeyById(mutation.id())
                     .orElseThrow(() -> new NoSuchElementException("No keys available for mutation"));
 
@@ -1080,12 +1185,9 @@ public class Socket {
                     "Cannot decode mutations: Hmac validation failed",
                     SecurityException.class);
 
-            var jsonIndex = new String(actionSync.index(), StandardCharsets.UTF_8);
-            var messageKey = MessageSync.ofJson(jsonIndex);
-            var blob = mutation.valueBlob()
-                    .data();
+            var blob = mutation.valueBlob().data();
             generator.mix(blob, encryptedMac, MutationSync.Operation.SET);
-            return new ActionSyncRecord(messageKey, actionSync);
+            return actionSync;
         }
 
         private byte[] generateMac(MutationSync.Operation operation, byte[] data, byte[] keyId, byte[] key) {

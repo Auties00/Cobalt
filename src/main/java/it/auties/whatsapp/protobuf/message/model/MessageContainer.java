@@ -3,6 +3,7 @@ package it.auties.whatsapp.protobuf.message.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import it.auties.protobuf.decoder.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.info.CallInfo;
 import it.auties.whatsapp.protobuf.message.button.*;
@@ -60,204 +61,257 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
    * Sender key distribution message
    */
   @JsonProperty("2")
+  @JsonPropertyDescription("distribution")
   private SenderKeyDistributionMessage senderKeyDistribution;
   
   /**
    * Image message
    */
   @JsonProperty("3")
+  @JsonPropertyDescription("image")
   private ImageMessage image;
   
   /**
    * Contact message
    */
   @JsonProperty("4")
+  @JsonPropertyDescription("contact")
   private ContactMessage contact;
 
   /**
    * Location message
    */
   @JsonProperty("5")
+  @JsonPropertyDescription("location")
   private LocationMessage location;
 
   /**
    * Text message
    */
   @JsonProperty("6")
+  @JsonPropertyDescription("text")
   private TextMessage text;
 
   /**
    * Document message
    */
   @JsonProperty("7")
+  @JsonPropertyDescription("document")
   private DocumentMessage document;
   
   /**
    * Audio message
    */
   @JsonProperty("8")
+  @JsonPropertyDescription("audio")
   private AudioMessage audio;
 
   /**
    * Video message
    */
   @JsonProperty("9")
+  @JsonPropertyDescription("video")
   private VideoMessage video;
   
   /**
    * Call message
    */
   @JsonProperty("10")
+  @JsonPropertyDescription("call")
   private CallInfo call;
 
   /**
    * Sever message
    */
   @JsonProperty("12")
+  @JsonPropertyDescription("protocol")
   private ProtocolMessage protocol;
   
   /**
    * Contact array message
    */
   @JsonProperty("13")
+  @JsonPropertyDescription("contacts")
   private ContactsArrayMessage contactsArray;
 
   /**
    * Highly structured message
    */
   @JsonProperty("14")
+  @JsonPropertyDescription("highlyStructured")
   private StructuredButtonMessage highlyStructured;
   
   /**
    * Fast ratchet key sender key distribution message
    */
   @JsonProperty("15")
+  @JsonPropertyDescription("fastRatchetKeySenderKeyDistribution")
   private SignalDistributionMessage fastRatchetKeySenderKeyDistribution;
   
   /**
    * Send payment message
    */
   @JsonProperty("16")
+  @JsonPropertyDescription("sendPayment")
   private SendPaymentMessage sendPayment;
 
   /**
    * Live location message
    */
   @JsonProperty("18")
+  @JsonPropertyDescription("liveLocation")
   private LiveLocationMessage liveLocation;
   
   /**
    * Request payment message
    */
   @JsonProperty("22")
+  @JsonPropertyDescription("requestPayment")
   private RequestPaymentMessage requestPayment;
 
   /**
    * Decline payment request message
    */
   @JsonProperty("23")
+  @JsonPropertyDescription("declinePaymentRequest")
   private DeclinePaymentRequestMessage declinePaymentRequest;
   
   /**
    * Cancel payment request message
    */
   @JsonProperty("24")
+  @JsonPropertyDescription("cancelPaymentRequest")
   private CancelPaymentRequestMessage cancelPaymentRequest;
   
   /**
    * Template message
    */
   @JsonProperty("25")
+  @JsonPropertyDescription("template")
   private TemplateMessage template;
 
   /**
    * Sticker message
    */
   @JsonProperty("26")
+  @JsonPropertyDescription("sticker")
   private StickerMessage sticker;
 
   /**
    * Group invite message
    */
   @JsonProperty("28")
+  @JsonPropertyDescription("groupInvite")
   private GroupInviteMessage groupInvite;
 
   /**
    * Template button reply message
    */
   @JsonProperty("29")
+  @JsonPropertyDescription("templateButtonReply")
   private TemplateButtonReplyMessage templateButtonReply;
   
   /**
    * Product message
    */
   @JsonProperty("30")
+  @JsonPropertyDescription("product")
   private ProductMessage product;
 
   /**
    * Device sent message
    */
   @JsonProperty("31")
+  @JsonPropertyDescription("deviceSent")
   private DeviceSentMessage deviceSent;
   
   /**
    * Device dataSync message
    */
   @JsonProperty("32")
+  @JsonPropertyDescription("deviceSync")
   private DeviceSyncMessage deviceSync;
 
   /**
    * List message
    */
   @JsonProperty("36")
+  @JsonPropertyDescription("buttonsList")
   private ListMessage buttonsList;
 
   /**
    * View once message
    */
   @JsonProperty("37")
+  @JsonPropertyDescription("viewOnce")
+  @ProtobufType(MessageContainer.class)
   private Message viewOnce;
+
+  @JsonSetter("37")
+  private void mapViewOnce(MessageContainer container){
+    if(container == null){
+      return;
+    }
+
+    this.viewOnce = container.content();
+  }
 
   /**
    * Order message
    */
   @JsonProperty("38")
+  @JsonPropertyDescription("order")
   private PaymentOrderMessage order;
 
   /**
    * List response message
    */
   @JsonProperty("39")
+  @JsonPropertyDescription("listResponse")
   private ListResponseMessage listResponse;
 
   /**
    * Ephemeral message
    */
   @JsonProperty("40")
+  @JsonPropertyDescription("ephemeral")
   private Message ephemeral;
+
+  @JsonSetter("40")
+  private void mapEphemeral(MessageContainer container){
+    if(container == null){
+      return;
+    }
+
+    this.ephemeral = container.content();
+  }
 
   /**
    * Invoice message
    */
   @JsonProperty("41")
+  @JsonPropertyDescription("invoice")
   private PaymentInvoiceMessage invoice;
 
   /**
    * Buttons message
    */
   @JsonProperty("42")
+  @JsonPropertyDescription("buttons")
   private ButtonsMessage buttons;
 
   /**
    * Buttons response message
    */
   @JsonProperty("43")
+  @JsonPropertyDescription("buttonsResponse")
   private ButtonsResponseMessage buttonsResponse;
 
   /**
    * Payment invite message
    */
   @JsonProperty("44")
+  @JsonPropertyDescription("paymentInvite")
   private PaymentInviteMessage paymentInvite;
 
   // Unsupported for now: MessageContextInfo(35), InteractiveMessage(45), ReactionMessage(46), StickerSyncRMRMessage(47)

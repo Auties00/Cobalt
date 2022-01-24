@@ -1,6 +1,7 @@
 package it.auties.whatsapp.protobuf.message.payment;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.message.model.MessageKey;
 import it.auties.whatsapp.protobuf.message.model.PaymentMessage;
@@ -23,5 +24,6 @@ public final class CancelPaymentRequestMessage implements PaymentMessage {
    * The key of the original {@link RequestPaymentMessage} that this message cancels
    */
   @JsonProperty("1")
+  @JsonPropertyDescription("key")
   private MessageKey key;
 }

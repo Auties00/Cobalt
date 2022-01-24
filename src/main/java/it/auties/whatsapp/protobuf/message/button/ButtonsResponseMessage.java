@@ -1,6 +1,7 @@
 package it.auties.whatsapp.protobuf.message.button;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.info.ContextInfo;
 import it.auties.whatsapp.protobuf.message.model.ButtonMessage;
@@ -25,17 +26,20 @@ public final class ButtonsResponseMessage extends ContextualMessage implements B
    * The id of the button that was selected
    */
   @JsonProperty("1")
+  @JsonPropertyDescription("string")
   private String buttonId;
 
   /**
    * The display text of the button that was selected
    */
   @JsonProperty("2")
+  @JsonPropertyDescription("string")
   private String displayText;
 
   /**
    * The context info of this message
    */
   @JsonProperty("3")
+  @JsonPropertyDescription("context")
   private ContextInfo contextInfo; // Overrides ContextualMessage's context info
 }

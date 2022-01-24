@@ -5,10 +5,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @AllArgsConstructor
@@ -24,7 +26,8 @@ public class PatchSync {
   @JsonProperty("2")
   @JsonPropertyDescription("SyncdMutation")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  private List<MutationSync> mutations;
+  @Default
+  private List<MutationSync> mutations = new ArrayList<>();
 
   @JsonProperty("3")
   @JsonPropertyDescription("ExternalBlobReference")

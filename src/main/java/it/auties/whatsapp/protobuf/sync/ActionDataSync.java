@@ -8,6 +8,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
+import java.nio.charset.StandardCharsets;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
@@ -29,4 +31,9 @@ public final class ActionDataSync implements GenericSync {
   @JsonProperty("4")
   @JsonPropertyDescription("int32")
   private int version;
+
+  public MessageSync messageIndex(){
+    var jsonIndex = new String(index, StandardCharsets.UTF_8);
+    return MessageSync.ofJson(jsonIndex);
+  }
 }

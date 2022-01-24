@@ -1,6 +1,7 @@
 package it.auties.whatsapp.protobuf.message.device;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.message.model.DeviceMessage;
 import lombok.AllArgsConstructor;
@@ -24,5 +25,6 @@ public final class DeviceSyncMessage implements DeviceMessage {
    * The data that this synchronization wraps encoded as xml and stored in an array of bytes
    */
   @JsonProperty("1")
+  @JsonPropertyDescription("bytes")
   private byte[] serializedXmlBytes;
 }

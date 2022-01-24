@@ -373,13 +373,21 @@ public class WhatsappKeys {
     }
 
     /**
-     * Queries the hash state that matches {@code name}
+     * Queries the hash state that matches {@code name}.
+     * Otherwise, creates a new one.
      *
      * @param name the non-null name to search
-     * @return a non-null Optional hash state
+     * @return a non-null hash state
      */
-    public Optional<LTHashState> findHashStateByName(@NonNull String name) {
-        return Optional.ofNullable(hashStates.get(name));
+    public LTHashState findHashStateByName(@NonNull String name) {
+        return Objects.requireNonNullElseGet(hashStates.get(name),
+                () -> createHashState(name));
+    }
+
+    private LTHashState createHashState(String name) {
+        var state = new LTHashState(name);
+        hashStates.put(name, state);
+        return state;
     }
 
     /**

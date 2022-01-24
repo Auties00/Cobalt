@@ -1,6 +1,7 @@
 package it.auties.whatsapp.protobuf.message.payment;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.message.model.MessageContainer;
 import it.auties.whatsapp.protobuf.message.model.MessageKey;
@@ -26,11 +27,13 @@ public final class SendPaymentMessage implements PaymentMessage {
    * The caption message, that is the message below the payment confirmation
    */
   @JsonProperty("2")
+  @JsonPropertyDescription("note")
   private MessageContainer noteMessage;
 
   /**
    * The key of the original {@link RequestPaymentMessage} that this message confirms
    */
   @JsonProperty("3")
+  @JsonPropertyDescription("key")
   private MessageKey requestMessageKey;
 }

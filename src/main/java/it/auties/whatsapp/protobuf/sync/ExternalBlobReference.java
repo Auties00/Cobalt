@@ -29,7 +29,7 @@ public final class ExternalBlobReference implements AttachmentProvider {
 
   @JsonProperty("4")
   @JsonPropertyDescription("uint64")
-  private long fileSizeBytes;
+  private long fileLength;
 
   @JsonProperty("5")
   @JsonPropertyDescription("bytes")
@@ -45,17 +45,12 @@ public final class ExternalBlobReference implements AttachmentProvider {
   }
 
   @Override
-  public long fileLength() {
-    return 0;
-  }
-
-  @Override
   public String name() {
     return "md-app-state";
   }
 
   @Override
   public String keyName() {
-    return "App State";
+    return "WhatsApp App State Keys";
   }
 }

@@ -4,10 +4,7 @@ import it.auties.whatsapp.socket.Node;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -22,9 +19,9 @@ public class Nodes {
      * @param nodes the nullable list of nodes to check
      * @return a nullable list of nodes
      */
-    public static List<Node> orNull(List<Node> nodes) {
-        return nodes == null || nodes.stream().allMatch(Objects::isNull) ? null
-                : nodes;
+    public static List<Node> orNull(Node... nodes) {
+        return nodes == null || Arrays.stream(nodes).allMatch(Objects::isNull) ? null
+                : Arrays.asList(nodes);
     }
 
     /**

@@ -1,6 +1,7 @@
 package it.auties.whatsapp.protobuf.message.button;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.button.SingleSelectReply;
 import it.auties.whatsapp.protobuf.info.ContextInfo;
@@ -27,23 +28,27 @@ public final class ListResponseMessage implements ButtonMessage {
    * The title of this message
    */
   @JsonProperty("1")
+  @JsonPropertyDescription("string")
   private String title;
 
   /**
    * The selected option
    */
   @JsonProperty("3")
+  @JsonPropertyDescription("reply")
   private SingleSelectReply reply;
 
   /**
    * The context info of this message
    */
   @JsonProperty("4")
+  @JsonPropertyDescription("context")
   private ContextInfo contextInfo; // Overrides ContextualMessage's context info
 
   /**
    * The description of this message
    */
   @JsonProperty("5")
+  @JsonPropertyDescription("string")
   private String description;
 }

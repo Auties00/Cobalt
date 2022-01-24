@@ -1,6 +1,7 @@
 package it.auties.whatsapp.protobuf.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.info.ContextInfo;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
@@ -26,6 +27,7 @@ public final class AudioMessage extends MediaMessage {
    * The upload url of the encoded media that this object wraps
    */
   @JsonProperty("1")
+  @JsonPropertyDescription("string")
   private String url;
 
   /**
@@ -33,54 +35,63 @@ public final class AudioMessage extends MediaMessage {
    * Most of the endTimeStamp this is {@link MediaMessageType#defaultMimeType()}
    */
   @JsonProperty("2")
+  @JsonPropertyDescription("string")
   private String mimetype;
 
   /**
    * The sha256 of the decoded media that this object wraps
    */
   @JsonProperty("3")
+  @JsonPropertyDescription("bytes")
   private byte[] fileSha256;
 
   /**
    * The unsigned size of the decoded media that this object wraps
    */
   @JsonProperty("4")
+  @JsonPropertyDescription("uint64")
   private long fileLength;
 
   /**
    * The unsigned length of the decoded audio in seconds
    */
   @JsonProperty("5")
+  @JsonPropertyDescription("uint32")
   private int seconds;
 
   /**
    * Determines whether this object is a normal audio message, which might contain for example music, or a voice message
    */
   @JsonProperty("6")
+  @JsonPropertyDescription("bool")
   private boolean voiceMessage;
 
   /**
    * The media key of the audio that this object wraps.
    */
   @JsonProperty("7")
+  @JsonPropertyDescription("bytes")
   private byte[] key; 
 
   /**
    * The sha256 of the encoded media that this object wraps
    */
   @JsonProperty("8")
+  @JsonPropertyDescription("bytes")
   private byte[] fileEncSha256;
 
   /**
    * The direct path to the encoded media that this object wraps
    */
   @JsonProperty("9")
+  @JsonPropertyDescription("string")
   private String directPath;
 
   /**
    * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link AudioMessage#key()}
    */
   @JsonProperty("10")
+  @JsonPropertyDescription("int64")
   private long mediaKeyTimestamp;
 
   /**
@@ -89,6 +100,7 @@ public final class AudioMessage extends MediaMessage {
    * Source: <a href="https://github.com/sigalor/whatsapp-web-reveng#encryption">WhatsApp Web reverse engineered</a>
    */
   @JsonProperty("18")
+  @JsonPropertyDescription("bytes")
   private byte[] streamingSidecar;
 
   /**

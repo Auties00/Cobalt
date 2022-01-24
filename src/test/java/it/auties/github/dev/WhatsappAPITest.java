@@ -25,7 +25,7 @@ public class WhatsappAPITest {
 
         @Override
         public void onLoggedIn() {
-
+            System.out.println("Connected");
         }
 
         @Override

@@ -3,6 +3,7 @@ package it.auties.whatsapp.protobuf.message.button;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.button.Button;
 import it.auties.whatsapp.protobuf.info.ContextInfo;
@@ -35,48 +36,56 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
    * The text of this message
    */
   @JsonProperty("1")
+  @JsonPropertyDescription("string")
   private String text;
 
   /**
    * The document message attached to this message
    */
   @JsonProperty("2")
+  @JsonPropertyDescription("document")
   private DocumentMessage document;
 
   /**
    * The image message attached to this message
    */
   @JsonProperty("3")
+  @JsonPropertyDescription("image")
   private ImageMessage image;
 
   /**
    * The video message attached to this message
    */
   @JsonProperty("4")
+  @JsonPropertyDescription("video")
   private VideoMessage video;
 
   /**
    * The location message attached to this message
    */
   @JsonProperty("5")
+  @JsonPropertyDescription("location")
   private LocationMessage location;
 
   /**
    * The image message attached to this message
    */
   @JsonProperty("6")
+  @JsonPropertyDescription("string")
   private String contentText;
 
   /**
    * The footer text of this message
    */
   @JsonProperty("7")
+  @JsonPropertyDescription("string")
   private String footerText;
 
   /**
    * The context info of this message
    */
   @JsonProperty("8")
+  @JsonPropertyDescription("context")
   private ContextInfo contextInfo; // Overrides ContextualMessage's context info
 
   /**
@@ -84,6 +93,7 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
    */
   @JsonProperty("9")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  @JsonPropertyDescription("button")
   private List<Button> buttons;
 
   /**

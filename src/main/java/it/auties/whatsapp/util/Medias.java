@@ -21,7 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 
 import static java.net.http.HttpRequest.BodyPublishers.ofByteArray;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
@@ -32,19 +32,15 @@ public class Medias {
     public MediaUpload upload(byte[] file, MediaMessageType type, WhatsappStore store) {
         var client = HttpClient.newHttpClient();
         var auth = URLEncoder.encode(store.mediaConnection().auth(), StandardCharsets.UTF_8);
-        for(var host : store.mediaConnection().hosts()) {
-            var uploaded = upload(file, type, client, auth, host);
-            if (uploaded.isEmpty()) {
-                continue;
-            }
-
-            return uploaded.get();
-        }
-
-        throw new IllegalStateException("Cannot upload media: no suitable host found");
+        return store.mediaConnection().hosts()
+                .stream()
+                .map(host -> upload(file, type, client, auth, host))
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Cannot upload media: no suitable host found"));
     }
 
-    private Optional<MediaUpload> upload(byte[] file, MediaMessageType type, HttpClient client, String auth, String host) {
+    private MediaUpload upload(byte[] file, MediaMessageType type, HttpClient client, String auth, String host) {
         try {
             var keys = MediaKeys.random(type.whatsappName());
             var encryptedMedia = AesCbc.encrypt(keys.iv(), file, keys.cipherKey());
@@ -64,27 +60,22 @@ public class Medias {
             var response = client.send(request, ofString());
             Validate.isTrue(response.statusCode() == 200,
                     "Invalid status code: %s", response.statusCode());
-            var result = JACKSON.readValue(response.body(), MediaUpload.class);
-            return Optional.of(result);
+            return JACKSON.readValue(response.body(), MediaUpload.class);
         }catch (Throwable ignored){
-            return Optional.empty();
+            return null;
         }
     }
 
     public byte[] download(AttachmentProvider provider, WhatsappStore store) {
-        for(var url : collectDownloadUrls(provider, store)){
-            var decrypted = download(provider, url);
-            if (decrypted.isEmpty()) {
-                continue;
-            }
-
-            return decrypted.get();
-        }
-
-        throw new IllegalStateException("Cannot download encrypted media: no suitable host found");
+        return collectDownloadUrls(provider, store)
+                .stream()
+                .map(url -> download(provider, url))
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Cannot download encrypted media: no suitable host found"));
     }
 
-    private Optional<byte[]> download(AttachmentProvider provider, String url) {
+    private byte[] download(AttachmentProvider provider, String url) {
         try {
             var stream = BinaryArray.of(new URL(url)
                     .openStream()
@@ -110,9 +101,9 @@ public class Medias {
             Validate.isTrue(provider.fileLength() <= 0 || provider.fileLength() == decrypted.length,
                     "Cannot decode media: invalid size");
 
-            return Optional.of(decrypted);
+            return decrypted;
         } catch (Throwable ignored) {
-            return Optional.empty();
+            return null;
         }
     }
 

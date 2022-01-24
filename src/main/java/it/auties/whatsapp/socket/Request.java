@@ -57,7 +57,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @param session the WhatsappWeb's WebSocket session
      * @param store   the store
      */
-    public @NonNull CompletableFuture<Node> sendWithPrologue(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store) {
+    public CompletableFuture<Node> sendWithPrologue(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store) {
         return send(session, keys, store, true, false);
     }
 
@@ -68,7 +68,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @param session the WhatsappWeb's WebSocket session
      * @return this request
      */
-    public @NonNull CompletableFuture<Node> send(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store) {
+    public CompletableFuture<Node> send(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store) {
         return send(session, keys, store, false, true);
     }
 
@@ -79,7 +79,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @param session the WhatsappWeb's WebSocket session
      * @return this request
      */
-    public @NonNull CompletableFuture<Node> sendWithNoResponse(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store) {
+    public CompletableFuture<Node> sendWithNoResponse(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store) {
         return send(session, keys, store, false, false);
     }
 
@@ -92,15 +92,16 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @param response whether the request expects a response
      * @return this request
      */
-    public @NonNull CompletableFuture<Node> send(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store, boolean prologue, boolean response) {
+    public CompletableFuture<Node> send(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store, boolean prologue, boolean response) {
         System.out.printf("Sending %s%n", body);
         var ciphered = cipherMessage(keys);
         var buffer = Buffers.newBuffer(prologue ? PROLOGUE : new byte[0])
                 .writeInt(ciphered.length >> 16)
                 .writeShort(65535 & ciphered.length)
                 .writeBytes(ciphered);
-        session.getAsyncRemote().sendBinary(Buffers.readBinary(buffer).toBuffer(),
-                result -> handleSendResult(store, result, response));
+        var read = Buffers.readBinary(buffer);
+        session.getAsyncRemote()
+                .sendBinary(read.toBuffer(), result -> handleSendResult(store, result, response));
         return future;
     }
 

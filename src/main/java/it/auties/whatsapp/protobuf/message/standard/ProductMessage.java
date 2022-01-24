@@ -1,6 +1,7 @@
 package it.auties.whatsapp.protobuf.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
@@ -30,17 +31,20 @@ public final class ProductMessage extends ContextualMessage implements Message {
    * The product that this message wraps
    */
   @JsonProperty("1")
+  @JsonPropertyDescription("product")
   private ProductSnapshot product;
 
   /**
    * The jid of the WhatsappBusiness account that owns the product that this message wraps
    */
   @JsonProperty("2")
+  @JsonPropertyDescription("businessOwnerId")
   private ContactJid businessOwnerId;
 
   /**
    * The catalog where the product that this message wraps is
    */
   @JsonProperty("4")
+  @JsonPropertyDescription("catalog")
   private ProductCatalog catalog;
 }

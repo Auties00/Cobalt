@@ -1,6 +1,7 @@
 package it.auties.whatsapp.protobuf.message.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.protobuf.info.ContextInfo;
 import it.auties.whatsapp.protobuf.message.button.*;
 import it.auties.whatsapp.protobuf.message.standard.*;
@@ -28,5 +29,6 @@ public sealed abstract class ContextualMessage implements Message
      * The context info of this message
      */
     @JsonProperty("17")
+    @JsonPropertyDescription("context")
     private ContextInfo contextInfo;
 }

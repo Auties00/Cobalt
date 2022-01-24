@@ -23,6 +23,11 @@ public record Attributes(Map<String, Object> map) {
         return this;
     }
 
+    public Attributes putAll(@NonNull Map<String, Object> values){
+        map.putAll(values);
+        return this;
+    }
+
     public <T> T get(@NonNull String key, @NonNull T defaultValue, @NonNull Class<T> clazz){
         return get(key, clazz)
                 .orElse(defaultValue);

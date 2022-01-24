@@ -3,6 +3,7 @@ package it.auties.whatsapp.protobuf.message.button;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.button.ButtonSection;
 import it.auties.whatsapp.protobuf.info.ContextInfo;
@@ -32,30 +33,35 @@ public final class ListMessage extends ContextualMessage implements ButtonMessag
    * The title of this message
    */
   @JsonProperty("1")
+  @JsonPropertyDescription("string")
   private String title;
 
   /**
    * The description of this message
    */
   @JsonProperty("2")
+  @JsonPropertyDescription("string")
   private String description;
 
   /**
    * The text of the button of this message
    */
   @JsonProperty("3")
+  @JsonPropertyDescription("string")
   private String buttonText;
 
   /**
    * The type of this message
    */
   @JsonProperty("4")
+  @JsonPropertyDescription("type")
   private Type type;
 
   /**
    * The button sections of this message
    */
   @JsonProperty("5")
+  @JsonPropertyDescription("section")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<ButtonSection> sections;
 
@@ -63,18 +69,21 @@ public final class ListMessage extends ContextualMessage implements ButtonMessag
    * The product info of this message
    */
   @JsonProperty("6")
+  @JsonPropertyDescription("products")
   private ProductListInfo productListInfo;
 
   /**
    * The footer text of this message
    */
   @JsonProperty("7")
+  @JsonPropertyDescription("string")
   private String footerText;
 
   /**
    * The context info of this message
    */
   @JsonProperty("8")
+  @JsonPropertyDescription("context")
   private ContextInfo contextInfo; // Overrides ContextualMessage's context info
 
   /**

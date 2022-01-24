@@ -1,6 +1,7 @@
 package it.auties.whatsapp.protobuf.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.info.ContextInfo;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
@@ -26,6 +27,7 @@ public final class DocumentMessage extends MediaMessage {
    * The upload url of the encoded document that this object wraps
    */
   @JsonProperty("1")
+  @JsonPropertyDescription("string")
   private String url;
 
   /**
@@ -33,66 +35,77 @@ public final class DocumentMessage extends MediaMessage {
    * Most of the endTimeStamp this is {@link MediaMessageType#defaultMimeType()}
    */
   @JsonProperty("2")
+  @JsonPropertyDescription("string")
   private String mimetype;
 
   /**
    * The title of the document that this object wraps
    */
   @JsonProperty("3")
+  @JsonPropertyDescription("string")
   private String title;
 
   /**
    * The sha256 of the decoded media that this object wraps
    */
   @JsonProperty("4")
+  @JsonPropertyDescription("bytes")
   private byte[] fileSha256;
 
   /**
    * The unsigned size of the decoded media that this object wraps
    */
   @JsonProperty("5")
+  @JsonPropertyDescription("uint64")
   private long fileLength;
 
   /**
    * The unsigned length in pages of the document that this object wraps
    */
   @JsonProperty("6")
+  @JsonPropertyDescription("uint32")
   private int pageCount;
 
   /**
    * The media key of the document that this object wraps.
    */
   @JsonProperty("7")
+  @JsonPropertyDescription("bytes")
   private byte[] key; 
 
   /**
    * The name of the document that this object wraps
    */
   @JsonProperty("8")
+  @JsonPropertyDescription("string")
   private String fileName;
 
   /**
    * The sha256 of the encoded media that this object wraps
    */
   @JsonProperty("9")
+  @JsonPropertyDescription("bytes")
   private byte[] fileEncSha256;
 
   /**
    * The direct path to the encoded media that this object wraps
    */
   @JsonProperty("10")
+  @JsonPropertyDescription("string")
   private String directPath;
 
   /**
    * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link DocumentMessage#key()}
    */
   @JsonProperty("11")
+  @JsonPropertyDescription("uint64")
   private long mediaKeyTimestamp;
   
   /**
    * The thumbnail for this document encoded as jpeg in an array of bytes
    */
   @JsonProperty("16")
+  @JsonPropertyDescription("bytes")
   private byte[] thumbnail;
 
   /**

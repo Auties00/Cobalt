@@ -1,6 +1,7 @@
 package it.auties.whatsapp.protobuf.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.info.ContextInfo;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
@@ -25,12 +26,14 @@ public final class ContactMessage extends ContextualMessage {
    * The name of the contact that this message wraps
    */
   @JsonProperty("1")
+  @JsonPropertyDescription("string")
   private String name;
 
   /**
    * The info about the contact that this message wraps encoded as a vcard
    */
   @JsonProperty("16")
+  @JsonPropertyDescription("string")
   private String vcard;
 
   /**

@@ -2,6 +2,7 @@ package it.auties.whatsapp.protobuf.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
 import lombok.*;
@@ -26,48 +27,56 @@ public final class TextMessage extends ContextualMessage {
    * The text that this message wraps
    */
   @JsonProperty("1")
+  @JsonPropertyDescription("string")
   private String text;
 
   /**
    * The substring of this text message that links to {@link TextMessage#canonicalUrl}, if available
    */
   @JsonProperty("2")
+  @JsonPropertyDescription("string")
   private String matchedText;
 
   /**
    * The canonical url of the link that this text message wraps, if available
    */
   @JsonProperty("4")
+  @JsonPropertyDescription("string")
   private String canonicalUrl;
 
   /**
    * The description of the link that this text message wraps, if available
    */
   @JsonProperty("5")
+  @JsonPropertyDescription("string")
   private String description;
 
   /**
    * The title of the link that this text message wraps, if available
    */
   @JsonProperty("6")
+  @JsonPropertyDescription("string")
   private String title;
 
   /**
    * The color of this text message encoded as ARGB
    */
   @JsonProperty("7")
+  @JsonPropertyDescription("fixed32")
   private int textArgb;
 
   /**
    * The background color of this text message encoded as ARGB
    */
   @JsonProperty("8")
+  @JsonPropertyDescription("fixed32")
   private int backgroundArgb;
 
   /**
    * The type of font used for the text message.
    */
   @JsonProperty("9")
+  @JsonPropertyDescription("font")
   private TextMessageFontType font;
 
   /**
@@ -76,18 +85,21 @@ public final class TextMessage extends ContextualMessage {
    * Not all links, though, produce a preview.
    */
   @JsonProperty("10")
+  @JsonPropertyDescription("previewType")
   private TextMessagePreviewType previewType;
 
   /**
    * The thumbnail for this text message encoded as jpeg in an array of bytes
    */
   @JsonProperty("16")
+  @JsonPropertyDescription("bytes")
   private byte[] thumbnail;
 
   /**
    * Determines whether the preview can be played inline
    */
   @JsonProperty("18")
+  @JsonPropertyDescription("bool")
   private boolean doNotPlayInline;
 
   /**

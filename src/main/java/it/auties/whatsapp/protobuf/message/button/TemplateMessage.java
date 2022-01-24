@@ -2,6 +2,7 @@ package it.auties.whatsapp.protobuf.message.button;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.button.FourRowTemplate;
 import it.auties.whatsapp.protobuf.button.HydratedFourRowTemplate;
@@ -31,6 +32,7 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
    * This property is defined only if {@link TemplateMessage#type()} == {@link Format#FOUR_ROW_TEMPLATE}.
    */
   @JsonProperty("1")
+  @JsonPropertyDescription("template")
   private FourRowTemplate fourRowTemplate;
 
   /**
@@ -38,12 +40,14 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
    * This property is defined only if {@link TemplateMessage#type()} == {@link Format#HYDRATED_FOUR_ROW_TEMPLATE}.
    */
   @JsonProperty("2")
+  @JsonPropertyDescription("template")
   private HydratedFourRowTemplate hydratedFourRowTemplate;
 
   /**
    * The context info of this message
    */
   @JsonProperty("3")
+  @JsonPropertyDescription("context")
   private ContextInfo contextInfo; // Overrides ContextualMessage's context info
 
   /**
@@ -51,6 +55,7 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
    * This property is defined only if {@link TemplateMessage#type()} == {@link Format#HYDRATED_FOUR_ROW_TEMPLATE}.
    */
   @JsonProperty("4")
+  @JsonPropertyDescription("template")
   private HydratedFourRowTemplate hydratedTemplate;
 
   /**

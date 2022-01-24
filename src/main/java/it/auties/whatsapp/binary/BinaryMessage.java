@@ -5,7 +5,6 @@ import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.socket.Node;
 import it.auties.whatsapp.util.Buffers;
-import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.Accessors;
@@ -49,13 +48,14 @@ public class BinaryMessage {
         var decoded = new LinkedList<BinaryArray>();
         while (buffer.readableBytes() >= 3) {
             var size = decodeLength(buffer);
+            if(size < 0){
+                continue;
+            }
+
             var frame = Buffers.readBinary(buffer, size);
             decoded.add(frame);
         }
 
-        Validate.isTrue(buffer.readableBytes() == 0,
-                "Incomplete message with a delta of %s bytes",
-                buffer.readableBytes());
         this.decoded = decoded;
     }
 

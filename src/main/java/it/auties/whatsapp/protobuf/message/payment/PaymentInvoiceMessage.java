@@ -2,6 +2,7 @@ package it.auties.whatsapp.protobuf.message.payment;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.message.model.MediaMessage;
 import it.auties.whatsapp.protobuf.message.model.MediaMessageType;
@@ -27,60 +28,70 @@ public final class PaymentInvoiceMessage extends MediaMessage implements Payment
    * The note of this invoice
    */
   @JsonProperty("1")
+  @JsonPropertyDescription("string")
   private String note;
 
   /**
    * The token of this invoice
    */
   @JsonProperty("2")
+  @JsonPropertyDescription("string")
   private String token;
 
   /**
    * The type of attachment that this invoice provides
    */
   @JsonProperty("3")
+  @JsonPropertyDescription("type")
   private AttachmentType type;
 
   /**
    * The mime type of the attachment that this invoice provides
    */
   @JsonProperty("4")
+  @JsonPropertyDescription("string")
   private String mimeType;
 
   /**
    * The media key of the attachment that this invoice provides
    */
   @JsonProperty("5")
+  @JsonPropertyDescription("bytes")
   private byte[] key; 
 
   /**
    * The media key timestamp of the attachment that this invoice provides
    */
   @JsonProperty("6")
+  @JsonPropertyDescription("uint64")
   private long mediaKeyTimestamp;
 
   /**
    * The sha256 of the attachment that this invoice provides
    */
   @JsonProperty("7")
+  @JsonPropertyDescription("bytes")
   private byte[] fileSha256;
 
   /**
    * The sha256 of the encrypted attachment that this invoice provides
    */
   @JsonProperty("8")
+  @JsonPropertyDescription("bytes")
   private byte[] fileEncSha256;
 
   /**
    * The direct path to the attachment that this invoice provides
    */
   @JsonProperty("9")
+  @JsonPropertyDescription("string")
   private String directPath;
 
   /**
    * The thumbnail of the attachment that this invoice provides
    */
   @JsonProperty("10")
+  @JsonPropertyDescription("bytes")
   private byte[] thumbnail;
 
   /**

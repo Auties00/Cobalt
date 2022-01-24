@@ -2,6 +2,7 @@ package it.auties.whatsapp.protobuf.message.payment;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.info.ContextInfo;
@@ -27,60 +28,70 @@ public final class PaymentOrderMessage extends ContextInfo implements PaymentMes
    * The id of this order
    */
   @JsonProperty("1")
+  @JsonPropertyDescription("string")
   private String id;
 
   /**
    * The thumbnail of this order
    */
   @JsonProperty("2")
+  @JsonPropertyDescription("bytes")
   private byte[] thumbnail;
 
   /**
    * The total number of items that was ordered
    */
   @JsonProperty("3")
+  @JsonPropertyDescription("uint32")
   private int itemCount;
 
   /**
    * The status of this order
    */
   @JsonProperty("4")
+  @JsonPropertyDescription("status")
   private OrderMessageOrderStatus status;
 
   /**
    * The surface of this order
    */
   @JsonProperty("5")
+  @JsonPropertyDescription("surface")
   private OrderMessageOrderSurface surface;
 
   /**
    * The message of this order
    */
   @JsonProperty("6")
+  @JsonPropertyDescription("string")
   private String message;
 
   /**
    * The title of this order
    */
   @JsonProperty("7")
+  @JsonPropertyDescription("string")
   private String title;
 
   /**
    * The id of the seller associated with this order
    */
   @JsonProperty("8")
+  @JsonPropertyDescription("seller")
   private ContactJid sellerId;
 
   /**
    * The token of this order
    */
   @JsonProperty("9")
+  @JsonPropertyDescription("string")
   private String token;
 
   /**
    * The amount of money being paid for this order
    */
   @JsonProperty("10")
+  @JsonPropertyDescription("uint64")
   private long amount;
 
   /**
@@ -89,6 +100,7 @@ public final class PaymentOrderMessage extends ContextInfo implements PaymentMes
    * For a list of valid currency codes click <a href="https://en.wikipedia.org/wiki/ISO_4217">here</a>
    */
   @JsonProperty("11")
+  @JsonPropertyDescription("string")
   private String currency;
 
   /**

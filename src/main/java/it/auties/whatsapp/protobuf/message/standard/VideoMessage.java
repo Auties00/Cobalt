@@ -3,6 +3,7 @@ package it.auties.whatsapp.protobuf.message.standard;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.info.ContextInfo;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
@@ -34,6 +35,7 @@ public final class VideoMessage extends MediaMessage {
    * The upload url of the encoded video that this object wraps
    */
   @JsonProperty("1")
+  @JsonPropertyDescription("string")
   private String url;
 
   /**
@@ -41,66 +43,77 @@ public final class VideoMessage extends MediaMessage {
    * Most of the endTimeStamp this is {@link MediaMessageType#defaultMimeType()}
    */
   @JsonProperty("2")
+  @JsonPropertyDescription("string")
   private String mimetype;
 
   /**
    * The sha256 of the decoded video that this object wraps
    */
   @JsonProperty("3")
+  @JsonPropertyDescription("bytes")
   private byte[] fileSha256;
 
   /**
    * The unsigned size of the decoded video that this object wraps
    */
   @JsonProperty("4")
+  @JsonPropertyDescription("uint64")
   private long fileLength;
 
   /**
    * The length in seconds of the video that this message wraps
    */
   @JsonProperty("5")
+  @JsonPropertyDescription("uint32")
   private int seconds;
 
   /**
    * The media key of the video that this object wraps.
    */
   @JsonProperty("6")
+  @JsonPropertyDescription("bytes")
   private byte[] key; 
 
   /**
    * The caption, that is the text below the video, of this video message
    */
   @JsonProperty("7")
+  @JsonPropertyDescription("string")
   private String caption;
 
   /**
    * Determines whether this object wraps a video that must be played as a gif
    */
   @JsonProperty("8")
+  @JsonPropertyDescription("bool")
   private boolean gifPlayback;
 
   /**
    * The unsigned height of the decoded video that this object wraps
    */
   @JsonProperty("9")
+  @JsonPropertyDescription("uint32")
   private int height;
 
   /**
    * The unsigned width of the decoded video that this object wraps
    */
   @JsonProperty("10")
+  @JsonPropertyDescription("uint32")
   private int width;
 
   /**
    * The sha256 of the encoded video that this object wraps
    */
   @JsonProperty("11")
+  @JsonPropertyDescription("bytes")
   private byte[] fileEncSha256;
 
   /**
    * Interactive annotations
    */
   @JsonProperty("12")
+  @JsonPropertyDescription("interactiveAnnotations")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
   private List<InteractiveAnnotation> interactiveAnnotations;
 
@@ -108,24 +121,28 @@ public final class VideoMessage extends MediaMessage {
    * The direct path to the encoded image that this object wraps
    */
   @JsonProperty("13")
+  @JsonPropertyDescription("string")
   private String directPath;
 
   /**
    * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link VideoMessage#key()}
    */
   @JsonProperty("14")
+  @JsonPropertyDescription("int64")
   private long mediaKeyTimestamp;
 
   /**
    * The thumbnail for this video message encoded as jpeg in an array of bytes
    */
   @JsonProperty("16")
+  @JsonPropertyDescription("bytes")
   private byte[] thumbnail;
 
   /**
    * The sidecar for the decoded video that this message wraps
    */
   @JsonProperty("18")
+  @JsonPropertyDescription("bytes")
   private byte[] streamingSidecar;
 
   /**
@@ -133,6 +150,7 @@ public final class VideoMessage extends MediaMessage {
    * This property is defined only if {@link VideoMessage#gifPlayback}.
    */
   @JsonProperty("19")
+  @JsonPropertyDescription("gifAttribution")
   private VideoMessageAttribution gifAttribution;
 
   /**

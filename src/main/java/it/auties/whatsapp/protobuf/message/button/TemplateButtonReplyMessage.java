@@ -1,6 +1,7 @@
 package it.auties.whatsapp.protobuf.message.button;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.info.ContextInfo;
 import it.auties.whatsapp.protobuf.message.model.ButtonMessage;
@@ -29,12 +30,14 @@ public final class TemplateButtonReplyMessage extends ContextualMessage implemen
    * The id of the button that was selected from the previous template message
    */
   @JsonProperty("1")
+  @JsonPropertyDescription("string")
   private String id;
 
   /**
    * The text of the button that was selected from the previous template message
    */
   @JsonProperty("2")
+  @JsonPropertyDescription("string")
   private String displayText;
 
   /**
@@ -47,5 +50,6 @@ public final class TemplateButtonReplyMessage extends ContextualMessage implemen
    * The index of the button that was selected from the previous template message
    */
   @JsonProperty("4")
+  @JsonPropertyDescription("uint32")
   private int index;
 }

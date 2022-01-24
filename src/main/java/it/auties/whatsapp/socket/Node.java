@@ -68,7 +68,7 @@ public record Node(@NonNull String description,
      * @return a new node with the above characteristics
      */
     public static Node withChildren(@NonNull String description, Node... children) {
-        return new Node(description, Attributes.empty(), Nodes.orNull(Arrays.asList(children)));
+        return new Node(description, Attributes.empty(), Nodes.orNull(children));
     }
 
     /**
@@ -80,7 +80,7 @@ public record Node(@NonNull String description,
      * @return a new node with the above characteristics
      */
     public static Node withChildren(@NonNull String description, @NonNull Map<String, Object> attributes, Node... children) {
-        return new Node(description, Attributes.of(attributes), Nodes.orNull(Arrays.asList(children)));
+        return new Node(description, Attributes.of(attributes), Nodes.orNull(children));
     }
 
     /**
