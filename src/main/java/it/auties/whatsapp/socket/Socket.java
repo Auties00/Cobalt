@@ -567,7 +567,7 @@ public class Socket {
         private void createPingService() {
             var scheduler = Executors.newSingleThreadScheduledExecutor();
             scheduler.scheduleAtFixedRate(() -> {
-                if(loggedIn){
+                if(!loggedIn){
                     scheduler.shutdown();
                     return;
                 }
@@ -904,27 +904,35 @@ public class Socket {
 
         private void handNewPushName(PushName pushName) {
             var oldContact = store.findContactByJid(pushName.id())
-                    .orElseGet(() -> createContact(pushName));
+                    .orElseGet(() -> createContact(pushName.id()));
             oldContact.chosenName(pushName.pushname());
+            var name = oldContact.bestName("unknown");
+            store.findChatByJid(oldContact.jid().toString())
+                    .ifPresentOrElse(chat -> chat.name(name), () -> createChat(oldContact));
         }
 
-        private Contact createContact(PushName pushName) {
-            var jid = ContactJid.ofUser(pushName.id());
+        private void createChat(Contact oldContact){
+            var newChat = Chat.builder()
+                    .jid(oldContact.jid())
+                    .name(oldContact.bestName("missing"))
+                    .build();
+            store.addChat(newChat);
+        }
+
+        private Contact createContact(String id) {
+            var jid = ContactJid.ofUser(id);
             var newContact = Contact.ofJid(jid);
             store.addContact(newContact);
             return newContact;
         }
 
         private void handleRecentMessage(Chat recent) {
-            var oldChat = store.findChatByJid(recent.jid().toString());
-            if(oldChat.isEmpty()){
-                return;
-            }
-
+            var oldChat = store.findChatByJid(recent.jid().toString())
+                    .orElseThrow(() -> new NoSuchElementException("Cannot handle recent messages: missing chat"));
             recent.messages()
                     .stream()
                     .peek(message -> message.store(store))
-                    .forEach(oldChat.get().messages()::add);
+                    .forEach(oldChat.messages()::add);
         }
     }
 
@@ -1044,12 +1052,18 @@ public class Socket {
             var targetContact = store.findContactByJid(mutation.messageIndex().chatJid());
             var targetChat = store.findChatByJid(mutation.messageIndex().chatJid());
             var targetMessage = targetChat.flatMap(chat -> store.findMessageById(chat, mutation.messageIndex().messageId()));
-            var action = mutation.value().action();
+
+            var value = mutation.value();
+            if(value == null){
+                return;
+            }
+
+            var action = value.action();
             if (action != null){
                 switch (action) {
                     case AndroidUnsupportedActions ignored -> {}
                     case ClearChatAction ignored -> targetChat.map(Chat::messages).ifPresent(Collection::clear);
-                    case ContactAction contactAction -> targetContact.ifPresent(contact -> contact.update(contactAction));
+                    case ContactAction contactAction -> targetContact.ifPresent(contact -> updateContactName(contact, contactAction));
                     case DeleteChatAction ignored -> targetChat.ifPresent(store.chats()::remove);
                     case DeleteMessageForMeAction ignored -> targetMessage.ifPresent(message -> targetChat.ifPresent(chat -> chat.messages().remove(message)));
                     case MarkChatAsReadAction markAction -> targetChat.ifPresent(chat -> chat.unreadMessages(markAction.read() ? 0 : -1));
@@ -1063,7 +1077,7 @@ public class Socket {
                 store.callListeners(listener -> listener.onAction(action));
             }
 
-            var setting = mutation.value().setting();
+            var setting = value.setting();
             if(setting != null){
                 store.callListeners(listener -> listener.onSetting(setting));
             }
@@ -1072,6 +1086,13 @@ public class Socket {
             if(features != null && !features.flags().isEmpty()){
                 store.callListeners(listener -> listener.onFeatures(features.flags()));
             }
+        }
+
+        private void updateContactName(Contact contact, ContactAction action) {
+            contact.update(action);
+            var name = contact.bestName("unknown");
+            store.findChatByJid(contact.jid().toString())
+                    .ifPresent(chat -> chat.name(name));
         }
 
         @SneakyThrows

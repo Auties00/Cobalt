@@ -216,26 +216,6 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
     }
 
     /**
-     * Checks if the input user is equal to the one wrapped by this jid
-     *
-     * @param user the user to check, maybe null
-     * @return true if the user matches
-     */
-    public boolean contentEquals(String user){
-        return Objects.equals(user(), user);
-    }
-
-    /**
-     * Checks if the input server is equal to the one wrapped by this jid
-     *
-     * @param server the server to check, maybe null
-     * @return true if the server matches
-     */
-    public boolean contentEquals(Server server){
-        return Objects.equals(server(), server);
-    }
-
-    /**
      * The constants of this enumerated type describe the various types of jids currently supported
      */
     public enum Type {

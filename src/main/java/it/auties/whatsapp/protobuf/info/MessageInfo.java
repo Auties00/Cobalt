@@ -31,6 +31,7 @@ import java.util.*;
 @Builder(builderMethodName = "newMessageInfo", buildMethodName = "create")
 @Accessors(fluent = true)
 @ToString(exclude = "store")
+@EqualsAndHashCode(exclude = "store")
 public final class MessageInfo implements WhatsappInfo {
   /**
    * The location where this message is stored

@@ -130,7 +130,7 @@ public class Chat {
      */
     @JsonProperty("13")
     @JsonPropertyDescription("string")
-    @NonNull
+    @Getter(onMethod = @__(@NonNull))
     private String name;
 
     /**

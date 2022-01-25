@@ -82,7 +82,7 @@ public class Contact {
      * @return an optional String
      */
     public @NonNull Optional<String> bestName() {
-        return Optional.ofNullable(name != null ? name : chosenName);
+        return Optional.ofNullable(shortName != null ? shortName : name != null ? name : chosenName);
     }
 
     /**

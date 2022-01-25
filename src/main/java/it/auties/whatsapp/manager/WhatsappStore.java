@@ -17,6 +17,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This class holds all the data regarding a session with WhatsappWeb's WebSocket.
@@ -93,12 +94,8 @@ public class WhatsappStore {
      * @param jid the jid to search
      * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
-    public @NonNull Optional<Contact> findContactByJid(String jid) {
-        if(jid == null){
-            return Optional.empty();
-        }
-
-        return contacts.parallelStream()
+    public Optional<Contact> findContactByJid(String jid) {
+        return jid == null ? Optional.empty() : contacts.parallelStream()
                 .filter(contact -> Objects.equals(contact.jid().toString(), jid))
                 .findAny();
     }
@@ -109,13 +106,8 @@ public class WhatsappStore {
      * @param name the name to search
      * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
-    public @NonNull Optional<Contact> findContactByName(String name) {
-        if(name == null){
-            return Optional.empty();
-        }
-
-        return contacts.parallelStream()
-                .filter(contact -> contact.bestName().filter(name::equals).isPresent())
+    public Optional<Contact> findContactByName(String name) {
+        return findContactsStream(name)
                 .findAny();
     }
 
@@ -125,14 +117,16 @@ public class WhatsappStore {
      * @param name the name to search
      * @return a Set containing every result
      */
-    public @NonNull Set<Contact> findContactsByName(String name) {
-        if(name == null){
-            return Set.of();
-        }
-
-        return contacts.parallelStream()
-                .filter(contact -> contact.bestName().filter(name::equals).isPresent())
+    public Set<Contact> findContactsByName(String name) {
+        return findContactsStream(name)
                 .collect(Collectors.toUnmodifiableSet());
+    }
+
+    private Stream<Contact> findContactsStream(String name) {
+        return name == null ? Stream.empty() : contacts.parallelStream()
+                .filter(contact -> Objects.equals(contact.name(), name)
+                        || Objects.equals(contact.shortName(), name)
+                        || Objects.equals(contact.chosenName(), name));
     }
 
     /**
@@ -141,12 +135,8 @@ public class WhatsappStore {
      * @param jid the jid to search
      * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
-    public @NonNull Optional<Chat> findChatByJid(String jid) {
-        if(jid == null){
-            return Optional.empty();
-        }
-
-        return chats.parallelStream()
+    public Optional<Chat> findChatByJid(String jid) {
+        return jid == null ? Optional.empty() : chats.parallelStream()
                 .filter(chat -> Objects.equals(chat.jid().toString(), jid))
                 .findAny();
     }
@@ -158,12 +148,8 @@ public class WhatsappStore {
      * @param id   the jid to search
      * @return a non-empty Optional containing the result if it is found otherwise an empty Optional empty
      */
-    public @NonNull Optional<MessageInfo> findMessageById(Chat chat, String id) {
-        if(chat == null || id == null){
-            return Optional.empty();
-        }
-
-        return chat.messages()
+    public Optional<MessageInfo> findMessageById(Chat chat, String id) {
+        return chat == null || id == null ? Optional.empty() : chat.messages()
                 .parallelStream()
                 .filter(message -> Objects.equals(message.key().id(), id))
                 .findAny();
@@ -175,13 +161,8 @@ public class WhatsappStore {
      * @param name the name to search
      * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
-    public @NonNull Optional<Chat> findChatByName(String name) {
-        if(name == null){
-            return Optional.empty();
-        }
-
-        return chats.parallelStream()
-                .filter(chat -> Objects.equals(chat.name(), name))
+    public Optional<Chat> findChatByName(String name) {
+        return findChatsStream(name)
                 .findAny();
     }
 
@@ -191,14 +172,14 @@ public class WhatsappStore {
      * @param name the name to search
      * @return a Set containing every result
      */
-    public @NonNull Set<Chat> findChatsByName(String name) {
-        if(name == null){
-            return Set.of();
-        }
-
-        return chats.parallelStream()
-                .filter(chat -> Objects.equals(chat.name(), name))
+    public Set<Chat> findChatsByName(String name) {
+        return findChatsStream(name)
                 .collect(Collectors.toUnmodifiableSet());
+    }
+
+    private Stream<Chat> findChatsStream(String name) {
+        return name == null ? Stream.empty() : chats.parallelStream()
+                .filter(chat -> chat.name().equalsIgnoreCase(name));
     }
 
     /**
@@ -207,12 +188,8 @@ public class WhatsappStore {
      * @param id the id to search, can be null
      * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
-    public @NonNull Optional<Request> findPendingRequest(String id) {
-        if(id == null){
-            return Optional.empty();
-        }
-
-        return pendingRequests.parallelStream()
+    public Optional<Request> findPendingRequest(String id) {
+        return id == null ? Optional.empty() : pendingRequests.parallelStream()
                 .filter(request -> Objects.equals(request.id(), id))
                 .findAny();
     }
@@ -235,7 +212,7 @@ public class WhatsappStore {
      * @param chat the chat to add
      * @return the input chat
      */
-    public @NonNull Chat addChat(@NonNull Chat chat) {
+    public Chat addChat(@NonNull Chat chat) {
         chat.messages().forEach(message -> message.store(this));
         chats.add(chat);
         return chat;
@@ -247,7 +224,7 @@ public class WhatsappStore {
      * @param contact the contact to add
      * @return the input contact
      */
-    public @NonNull Contact addContact(@NonNull Contact contact) {
+    public Contact addContact(@NonNull Contact contact) {
         contacts.add(contact);
         return contact;
     }
