@@ -54,10 +54,11 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when {@link Socket} successfully disconnects from WhatsappWeb's WebSocket.
-     * When this event is called, any data, including chats and contact, is guaranteed to not be available anymore.
+     * Called when {@link Socket} successfully disconnects from WhatsappWeb's WebSocket
+     *
+     * @param reconnect whether the connection is going to be re-established
      */
-    default void onDisconnected() {
+    default void onDisconnected(boolean reconnect) {
     }
 
     /**
@@ -152,10 +153,9 @@ public interface WhatsappListener {
     /**
      * Called when a new message is received in a chat
      *
-     * @param chat    the chat where the message was sent
      * @param message the message that was sent
      */
-    default void onNewMessage(@NonNull Chat chat, @NonNull MessageInfo message) {
+    default void onNewMessage(@NonNull MessageInfo message) {
     }
 
     /**
@@ -165,5 +165,13 @@ public interface WhatsappListener {
      * @param everyone whether this message was deleted by you only for yourself or whether the message was permanently removed
      */
     default void onMessageDeleted(@NonNull MessageInfo message, boolean everyone) {
+    }
+
+    /**
+     * Called when {@link Socket} receives all the status updated from WhatsappWeb's Socket
+     * To access this data use {@link WhatsappStore#status()}.
+     * If you also need the messages to be loaded, please refer to {@link WhatsappListener#onChatRecentMessages(Chat)}.
+     */
+    default void onStatus() {
     }
 }

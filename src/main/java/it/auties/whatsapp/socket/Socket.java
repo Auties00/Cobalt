@@ -71,11 +71,9 @@ public class Socket {
     @Setter(onParam = @__(@NonNull))
     private Session session;
 
-    @Getter(onMethod = @__(@NonNull))
-    @Setter(onParam = @__(@NonNull))
-    private ScheduledExecutorService pingService;
-
     private boolean loggedIn;
+
+    private ScheduledExecutorService pingService;
 
     @NonNull
     private final Handshake handshake;
@@ -213,10 +211,12 @@ public class Socket {
     public void onClose(){
         System.out.println("Closed");
         if(loggedIn) {
+            store.callListeners(listener -> listener.onDisconnected(true));
             reconnect();
             return;
         }
 
+        store.callListeners(listener -> listener.onDisconnected(false));
         store.dispose();
         dispose();
     }
@@ -466,6 +466,11 @@ public class Socket {
             messages.forEach(message -> {
                 sendMessageAck(node, of("class", "receipt"));
                 sendReceipt(message.chatJid().toString(), message.senderJid().toString(), List.of(message.key().id()), null);
+                if (message.ignore()) {
+                    return;
+                }
+
+                store.callListeners(listener -> listener.onNewMessage(message));
             });
         }
 
@@ -851,12 +856,17 @@ public class Socket {
                     var history = ProtobufDecoder.forType(HistorySync.class)
                             .decode(decompressed);
                     switch(history.syncType()) {
-                        case FULL, INITIAL_BOOTSTRAP -> history.conversations()
-                                .forEach(store::addChat);
-                        case INITIAL_STATUS_V3 -> history.statusV3Messages()
-                                .stream()
-                                .peek(message -> message.store(store))
-                                .forEach(this::handleStatusMessage);
+                        case FULL, INITIAL_BOOTSTRAP -> {
+                            store.chats().addAll(history.conversations());
+                            store.callListeners(WhatsappListener::onChats);
+                        }
+                        case INITIAL_STATUS_V3 -> {
+                            history.statusV3Messages()
+                                    .stream()
+                                    .peek(message -> message.store(store))
+                                    .forEach(store.status()::add);
+                            store.callListeners(WhatsappListener::onStatus);
+                        }
                         case RECENT -> history.conversations()
                                 .forEach(this::handleRecentMessage);
                         case PUSH_NAME -> history.pushNames()
@@ -872,8 +882,7 @@ public class Socket {
                     var newKeys = protocolMessage.appStateSyncKeyShare()
                             .keys();
                     keys.appStateKeys().addAll(newKeys);
-                    // TODO: Obv this is not how it's supposed to be written, it's just for testing
-                    CompletableFuture.delayedExecutor(2, TimeUnit.SECONDS)
+                    CompletableFuture.delayedExecutor(2, TimeUnit.SECONDS) // FIXME: 26/01/2022 transaction
                             .execute(appStateHandler::sync);
                 }
 
@@ -897,21 +906,6 @@ public class Socket {
             }
         }
 
-        private void handleStatusMessage(MessageInfo status) {
-            var chat = status.chat()
-                    .orElseGet(() -> createStatusChat(status.chatJid()));
-            chat.messages().add(status);
-        }
-
-        private Chat createStatusChat(ContactJid jid) {
-            var chat = Chat.builder()
-                    .name("Official Whatsapp Status")
-                    .jid(jid)
-                    .build();
-            store.addChat(chat);
-            return chat;
-        }
-
         private void handNewPushName(PushName pushName) {
             var oldContact = store.findContactByJid(pushName.id())
                     .orElseGet(() -> createContact(pushName.id()));
@@ -919,6 +913,10 @@ public class Socket {
             var name = oldContact.bestName("unknown");
             store.findChatByJid(oldContact.jid().toString())
                     .ifPresentOrElse(chat -> chat.name(name), () -> createChat(oldContact));
+            var firstName = pushName.pushname().contains(" ")  ? pushName.pushname().split(" ")[0]
+                    : null;
+            var action = new ContactAction(pushName.pushname(), firstName);
+            store.callListeners(listener -> listener.onAction(action));
         }
 
         private void createChat(Contact oldContact){
@@ -943,6 +941,7 @@ public class Socket {
                     .stream()
                     .peek(message -> message.store(store))
                     .forEach(oldChat.messages()::add);
+            store.callListeners(listener -> listener.onChatRecentMessages(oldChat));
         }
     }
 

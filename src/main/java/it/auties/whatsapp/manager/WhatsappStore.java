@@ -5,6 +5,7 @@ import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.media.MediaConnection;
+import it.auties.whatsapp.protobuf.message.model.MediaMessage;
 import it.auties.whatsapp.socket.Node;
 import it.auties.whatsapp.socket.Request;
 import it.auties.whatsapp.util.WhatsappUtils;
@@ -33,25 +34,31 @@ public class WhatsappStore {
      * The non-null list of chats
      */
     @NonNull
-    private final List<Chat> chats;
+    private final List<@NonNull Chat> chats;
+
+    /**
+     * The non-null list of status messages
+     */
+    @NonNull
+    private final List<@NonNull MessageInfo> status;
 
     /**
      * The non-null list of contacts
      */
     @NonNull
-    private final List<Contact> contacts;
+    private final List<@NonNull Contact> contacts;
 
     /**
      * The non-null list of requests that are waiting for a response from Whatsapp
      */
     @NonNull
-    private final List<Request> pendingRequests;
+    private final List<@NonNull Request> pendingRequests;
 
     /**
      * The non-null list of listeners
      */
     @NonNull
-    private final List<WhatsappListener> listeners;
+    private final List<@NonNull WhatsappListener> listeners;
 
     /**
      * The timestamp in seconds for the initialization of this object
@@ -84,7 +91,7 @@ public class WhatsappStore {
     public WhatsappStore(){
         this(new Vector<>(), new Vector<>(),
                 new Vector<>(), new Vector<>(),
-                Instant.now().getEpochSecond(),
+                new Vector<>(), Instant.now().getEpochSecond(),
                 Executors.newSingleThreadExecutor());
     }
 
