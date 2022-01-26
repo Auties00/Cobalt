@@ -46,10 +46,7 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -67,13 +64,16 @@ import static java.util.Objects.requireNonNullElse;
 @ClientEndpoint(configurator = Socket.OriginPatcher.class)
 @Log
 public class Socket {
-    private static final int ERROR_CONSTANT = 8913411;
     private static final String BUILD_HASH = "S9Kdc4pc4EJryo21snc5cg==";
     private static final int KEY_TYPE = 5;
 
     @Getter(onMethod = @__(@NonNull))
     @Setter(onParam = @__(@NonNull))
     private Session session;
+
+    @Getter(onMethod = @__(@NonNull))
+    @Setter(onParam = @__(@NonNull))
+    private ScheduledExecutorService pingService;
 
     private boolean loggedIn;
 
@@ -114,6 +114,7 @@ public class Socket {
     }
 
     public Socket(@NonNull WhatsappOptions options, @NonNull WhatsappStore store, @NonNull WhatsappKeys keys) {
+        this.pingService = Executors.newSingleThreadScheduledExecutor();
         this.handshake = new Handshake();
         this.container = getWebSocketContainer();
         this.options = options;
@@ -151,11 +152,6 @@ public class Socket {
         }
 
         var header = message.decoded().getFirst();
-        if(header.size() == ERROR_CONSTANT){
-            disconnect();
-            return;
-        }
-
         if(!loggedIn){
             authHandler.sendUserPayload(header.data());
             return;
@@ -218,7 +214,11 @@ public class Socket {
         System.out.println("Closed");
         if(loggedIn) {
             reconnect();
+            return;
         }
+
+        store.dispose();
+        dispose();
     }
 
     @OnError
@@ -334,6 +334,10 @@ public class Socket {
     private void changeKeys() {
         keys.delete();
         this.keys = WhatsappKeys.random();
+    }
+
+    private void dispose(){
+        pingService.shutdownNow();
     }
 
     public static class OriginPatcher extends Configurator{
@@ -565,15 +569,21 @@ public class Socket {
         }
 
         private void createPingService() {
-            var scheduler = Executors.newSingleThreadScheduledExecutor();
-            scheduler.scheduleAtFixedRate(() -> {
-                if(!loggedIn){
-                    scheduler.shutdown();
-                    return;
-                }
+            if(pingService.isShutdown()){
+                pingService = Executors.newSingleThreadScheduledExecutor();
+            }
 
-                sendQuery("get", "w:p", with("ping"));
-            }, 0L, 20L, TimeUnit.SECONDS);
+            pingService.scheduleAtFixedRate(this::sendPing,
+                    0L, 20L, TimeUnit.SECONDS);
+        }
+
+        private void sendPing() {
+            if(!loggedIn){
+                pingService.shutdownNow();
+                return;
+            }
+
+            sendQuery("get", "w:p", with("ping"));
         }
 
         private void createMediaConnection(){

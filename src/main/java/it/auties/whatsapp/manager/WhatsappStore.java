@@ -30,13 +30,6 @@ import java.util.stream.Stream;
 @Accessors(fluent = true)
 public class WhatsappStore {
     /**
-     * The non-null service used to call listeners.
-     * This is needed in order to not block the socket.
-     */
-    @NonNull
-    private final ExecutorService requestsService;
-
-    /**
      * The non-null list of chats
      */
     @NonNull
@@ -72,6 +65,13 @@ public class WhatsappStore {
     private MediaConnection mediaConnection;
 
     /**
+     * The non-null service used to call listeners.
+     * This is needed in order to not block the socket.
+     */
+    @NonNull
+    private ExecutorService requestsService;
+
+    /**
      * Constructs a new default instance of WhatsappDataManager
      */
     public static WhatsappStore newStore(){
@@ -82,10 +82,10 @@ public class WhatsappStore {
      * Constructs a new default instance of WhatsappDataManager
      */
     public WhatsappStore(){
-        this(Executors.newSingleThreadExecutor(),
+        this(new Vector<>(), new Vector<>(),
                 new Vector<>(), new Vector<>(),
-                new Vector<>(), new Vector<>(),
-                Instant.now().getEpochSecond());
+                Instant.now().getEpochSecond(),
+                Executors.newSingleThreadExecutor());
     }
 
     /**
@@ -250,6 +250,13 @@ public class WhatsappStore {
     }
 
     /**
+     * Terminate the service associated with this store
+     */
+    public void dispose(){
+        requestsService.shutdownNow();
+    }
+
+    /**
      * Executes an operation on every registered listener on the listener thread
      * This should be used to be sure that when a listener should be called it's called on a thread that is not the WebSocket's.
      * If this condition isn't met, if the thread is put on hold to wait for a response for a pending request, the WebSocket will freeze.
@@ -257,8 +264,15 @@ public class WhatsappStore {
      * @param consumer the operation to execute
      */
     public void callListeners(@NonNull Consumer<WhatsappListener> consumer){
-        listeners.forEach(listener ->
-                requestsService.execute(() -> consumer.accept(listener)));
+        listeners.forEach(listener -> callListener(consumer, listener));
+    }
+
+    private void callListener(Consumer<WhatsappListener> consumer, WhatsappListener listener) {
+        if(requestsService.isShutdown()){
+            this.requestsService = Executors.newSingleThreadExecutor();
+        }
+
+        requestsService.execute(() -> consumer.accept(listener));
     }
 
     private Request deleteAndComplete(Node response, Request request, boolean exceptionally) {
