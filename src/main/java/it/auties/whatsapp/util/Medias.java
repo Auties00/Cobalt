@@ -27,8 +27,7 @@ import static java.net.http.HttpRequest.BodyPublishers.ofByteArray;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
 @UtilityClass
-public class Medias {
-    private static final ObjectMapper JACKSON = new ObjectMapper();
+public class Medias implements JacksonProvider {
     public MediaUpload upload(byte[] file, MediaMessageType type, WhatsappStore store) {
         var client = HttpClient.newHttpClient();
         var auth = URLEncoder.encode(store.mediaConnection().auth(), StandardCharsets.UTF_8);

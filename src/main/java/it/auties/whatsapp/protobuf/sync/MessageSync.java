@@ -3,14 +3,14 @@ package it.auties.whatsapp.protobuf.sync;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.auties.whatsapp.util.JacksonProvider;
 import lombok.NonNull;
 
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
-public record MessageSync(@NonNull String type, String chatJid, String messageId, boolean fromMe) {
-    private static final ObjectMapper JACKSON = new ObjectMapper();
+public record MessageSync(@NonNull String type, String chatJid, String messageId, boolean fromMe) implements JacksonProvider {
     public static MessageSync ofJson(@NonNull String json){
         try {
             var array = JACKSON.readValue(json, new TypeReference<List<String>>() {});

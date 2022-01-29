@@ -3,8 +3,6 @@ package it.auties.whatsapp.manager;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
@@ -17,7 +15,9 @@ import it.auties.whatsapp.protobuf.signal.session.Session;
 import it.auties.whatsapp.protobuf.signal.session.SessionAddress;
 import it.auties.whatsapp.protobuf.sync.AppStateSyncKey;
 import it.auties.whatsapp.protobuf.sync.LTHashState;
+import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.Validate;
+import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
@@ -42,18 +42,11 @@ import static java.util.prefs.Preferences.userRoot;
 @Data
 @Accessors(fluent = true, chain = true)
 @Log
-@SuppressWarnings("UnusedReturnValue") // Chaining
-public class WhatsappKeys {
+public class WhatsappKeys implements JacksonProvider {
     /**
      * The path used to serialize and deserialize this object
      */
     private static final String PREFERENCES_PATH = WhatsappKeys.class.getName();
-
-    /**
-     * An instance of Jackson
-     */
-    private static final ObjectMapper JACKSON = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     /**
      * The client id
@@ -158,20 +151,6 @@ public class WhatsappKeys {
     private BinaryArray writeKey, readKey;
 
     /**
-     * Returns a list containing all known IDs
-     *
-     * @return a non-null list of ints
-     */
-    public static LinkedList<Integer> knownIds() {
-        try {
-            var json = userRoot().get(PREFERENCES_PATH, "[]");
-            return JACKSON.readValue(json, new TypeReference<>() {});
-        }catch (JsonProcessingException exception){
-            throw new UncheckedIOException("Cannot read IDs", exception);
-        }
-    }
-
-    /**
      * Clears all the keys from this machine's memory.
      * This method doesn't clear this object's values.
      */
@@ -189,17 +168,18 @@ public class WhatsappKeys {
      * @param id the id of the keys
      */
     public static void deleteKeys(int id) {
-        var path = getPath(id);
+        var path = WhatsappUtils.createPreferencesPath(PREFERENCES_PATH, id);
         userRoot().remove(path);
     }
 
     /**
      * Returns a new instance of random keys
      *
+     * @param id the unsigned id of these keys
      * @return a non-null instance of WhatsappKeys
      */
-    public static WhatsappKeys random(){
-        return new WhatsappKeys(SignalHelper.randomRegistrationId());
+    public static WhatsappKeys newKeys(int id){
+        return new WhatsappKeys(id);
     }
 
     /**
@@ -209,16 +189,11 @@ public class WhatsappKeys {
      * @return a non-null instance of WhatsappKeys
      */
     public static WhatsappKeys fromMemory(int id){
-        var json = userRoot().get(getPath(id), null);
+        var path = WhatsappUtils.createPreferencesPath(PREFERENCES_PATH, id);
+        var json = userRoot().get(path, null);
         return Optional.ofNullable(json)
                 .map(value -> deserialize(id, value))
-                .orElseGet(() -> new WhatsappKeys(id));
-    }
-
-    private static String getPath(Object... path) {
-        var joined = new ArrayList<>(Arrays.asList(path));
-        joined.add(0, PREFERENCES_PATH);
-        return "%s$%s".formatted(joined.toArray());
+                .orElseGet(() -> newKeys(id));
     }
 
     private static WhatsappKeys deserialize(int id, String json) {
@@ -232,7 +207,7 @@ public class WhatsappKeys {
     }
 
     private WhatsappKeys(int id) {
-        this.id = saveId(id);
+        this.id = WhatsappUtils.saveId(id);
         this.companionKeyPair = SignalKeyPair.random();
         this.ephemeralKeyPair = SignalKeyPair.random();
         this.identityKeyPair = SignalKeyPair.random();
@@ -248,17 +223,6 @@ public class WhatsappKeys {
         this.writeCounter = new AtomicLong();
     }
 
-    private int saveId(int id){
-        try {
-            var knownIds = knownIds();
-            knownIds.add(id);
-            userRoot().put(PREFERENCES_PATH, JACKSON.writeValueAsString(knownIds));
-            return id;
-        }catch (JsonProcessingException exception){
-            throw new UncheckedIOException("Cannot serialize IDs", exception);
-        }
-    }
-
     /**
      * Serializes this object to a json and saves it in memory
      *
@@ -266,7 +230,7 @@ public class WhatsappKeys {
      */
     public WhatsappKeys save(){
         try {
-            var path = getPath(id);
+            var path = WhatsappUtils.createPreferencesPath(PREFERENCES_PATH, id);
             userRoot().put(path, JACKSON.writeValueAsString(this));
             return this;
         } catch (JsonProcessingException exception) {
@@ -425,11 +389,23 @@ public class WhatsappKeys {
         return this;
     }
 
+    /**
+     * Returns write counter
+     *
+     * @param increment whether the counter should be incremented after the call
+     * @return an unsigned long
+     */
     public long writeCounter(boolean increment){
         return increment ? writeCounter.getAndIncrement()
                 : writeCounter.get();
     }
 
+    /**
+     * Returns read counter
+     *
+     * @param increment whether the counter should be incremented after the call
+     * @return an unsigned long
+     */
     public long readCounter(boolean increment){
         return increment ? readCounter.getAndIncrement()
                 : readCounter.get();

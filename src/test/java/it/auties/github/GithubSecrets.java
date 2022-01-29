@@ -1,6 +1,7 @@
 package it.auties.github;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.auties.whatsapp.util.JacksonProvider;
 import lombok.experimental.UtilityClass;
 import lombok.extern.java.Log;
 
@@ -18,14 +19,13 @@ import static java.net.http.HttpRequest.BodyPublishers.ofString;
 
 @Log
 @UtilityClass
-public class GithubSecrets {
+public class GithubSecrets implements JacksonProvider {
     private final String REQUEST_PATH = "https://api.github.com/repos/Auties00/WhatsappWeb4j";
     private final String PUBLIC_KEY_PATH = "actions/secrets/public-key";
     private final String UPDATE_SECRET_PATH = "actions/secrets/%s".formatted(GithubActions.CREDENTIALS_NAME);
 
     private final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
     private final Preferences PREFERENCES = Preferences.userRoot();
-    private final ObjectMapper JACKSON = new ObjectMapper();
 
     public void updateCredentials() throws IOException, InterruptedException {
         var credentials = getCredentialsAsJson();

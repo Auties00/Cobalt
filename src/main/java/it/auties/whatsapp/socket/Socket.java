@@ -84,10 +84,6 @@ public class Socket {
     @NonNull
     private final WhatsappOptions options;
 
-    @Getter
-    @NonNull
-    private final WhatsappStore store;
-
     @NonNull
     private final AuthHandler authHandler;
 
@@ -103,6 +99,10 @@ public class Socket {
     @Getter
     @NonNull
     private WhatsappKeys keys;
+
+    @Getter
+    @NonNull
+    private WhatsappStore store;
 
     @NonNull
     private CountDownLatch lock;
@@ -333,11 +333,15 @@ public class Socket {
 
     private void changeKeys() {
         keys.delete();
-        this.keys = WhatsappKeys.random();
+        var newId = SignalHelper.randomRegistrationId();
+        this.keys = WhatsappKeys.newKeys(newId);
+        this.store = WhatsappStore.newStore(newId);
     }
 
     private void dispose(){
         pingService.shutdownNow();
+        store.save();
+        keys.save();
     }
 
     public static class OriginPatcher extends Configurator{

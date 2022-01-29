@@ -19,6 +19,7 @@ import it.auties.whatsapp.protobuf.message.model.Message;
 import it.auties.whatsapp.socket.*;
 import it.auties.whatsapp.util.Nodes;
 import it.auties.whatsapp.util.Validate;
+import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
@@ -31,9 +32,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import static it.auties.whatsapp.api.WhatsappOptions.defaultOptions;
-import static it.auties.whatsapp.manager.WhatsappKeys.fromMemory;
-import static it.auties.whatsapp.manager.WhatsappKeys.knownIds;
-import static it.auties.whatsapp.manager.WhatsappStore.newStore;
 import static it.auties.whatsapp.socket.Node.*;
 import static java.util.Objects.requireNonNullElseGet;
 
@@ -85,7 +83,7 @@ public class Whatsapp {
      * If no sessions are available, a new one will be created.
      */
     public Whatsapp(){
-        this(requireNonNullElseGet(knownIds().peekLast(), SignalHelper::randomRegistrationId));
+        this(requireNonNullElseGet(WhatsappUtils.knownIds().peekLast(), SignalHelper::randomRegistrationId));
     }
 
     /**
@@ -95,7 +93,7 @@ public class Whatsapp {
      * @param id the id of the session
      */
     public Whatsapp(int id){
-        this(new Socket(defaultOptions(), newStore(), fromMemory(id)));
+        this(new Socket(defaultOptions(), WhatsappStore.fromMemory(id), WhatsappKeys.fromMemory(id)));
         RegisterListenerScanner.scan(this)
                 .forEach(this::registerListener);
     }

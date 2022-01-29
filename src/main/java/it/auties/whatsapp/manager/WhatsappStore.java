@@ -1,16 +1,23 @@
 package it.auties.whatsapp.manager;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.media.MediaConnection;
 import it.auties.whatsapp.socket.Node;
 import it.auties.whatsapp.socket.Request;
+import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.extern.java.Log;
 
 import java.time.Instant;
 import java.util.*;
@@ -21,6 +28,8 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.prefs.Preferences.userRoot;
+
 /**
  * This class holds all the data regarding a session with WhatsappWeb's WebSocket.
  * It also provides various methods to query this data.
@@ -30,23 +39,38 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Data
 @Accessors(fluent = true)
-public class WhatsappStore {
+@Log
+public class WhatsappStore implements JacksonProvider {
+    /**
+     * The path used to serialize and deserialize this object
+     */
+    private static final String PREFERENCES_PATH = WhatsappStore.class.getName();
+
+    /**
+     * The unsigned id
+     */
+    @JsonProperty
+    private final int id;
+
     /**
      * The non-null list of chats
      */
     @NonNull
+    @JsonProperty
     private final List<@NonNull Chat> chats;
 
     /**
      * The non-null list of status messages
      */
     @NonNull
+    @JsonProperty
     private final List<@NonNull MessageInfo> status;
 
     /**
      * The non-null list of contacts
      */
     @NonNull
+    @JsonProperty
     private final List<@NonNull Contact> contacts;
 
     /**
@@ -90,17 +114,41 @@ public class WhatsappStore {
     private ExecutorService requestsService;
 
     /**
-     * Constructs a new default instance of WhatsappDataManager
+     * Constructs a new default instance of WhatsappStore
+     *
+     * @param id the unsigned id of this store
+     * @return a non-null instance of WhatsappStore
      */
-    public static WhatsappStore newStore(){
-        return new WhatsappStore();
+    public static WhatsappStore newStore(int id){
+        return new WhatsappStore(WhatsappUtils.saveId(id));
     }
 
     /**
-     * Constructs a new default instance of WhatsappDataManager
+     * Returns the store saved in memory or constructs a new clean instance
+     *
+     * @param id the id of this session
+     * @return a non-null instance of WhatsappStore
      */
-    public WhatsappStore(){
-        this(new Vector<>(), new Vector<>(),
+    public static WhatsappStore fromMemory(int id){
+        var path = WhatsappUtils.createPreferencesPath(PREFERENCES_PATH, id);
+        var json = userRoot().get(path, null);
+        return Optional.ofNullable(json)
+                .map(value -> deserialize(id, value))
+                .orElseGet(() -> newStore(id));
+    }
+
+    private static WhatsappStore deserialize(int id, String json) {
+        try {
+            return JACKSON.readValue(json, WhatsappStore.class);
+        } catch (JsonProcessingException exception) {
+            exception.printStackTrace();
+            log.warning("Cannot read store for id %s: defaulting to new keys".formatted(id));
+            return null;
+        }
+    }
+
+    private WhatsappStore(int id){
+        this(WhatsappUtils.saveId(id), new Vector<>(), new Vector<>(),
                 new Vector<>(), new Vector<>(),
                 new Vector<>(), new AtomicLong(),
                 BinaryArray.random(12).toHex().toLowerCase(Locale.ROOT),
@@ -308,5 +356,20 @@ public class WhatsappStore {
      */
     public String nextTag() {
         return "%s-%s".formatted(tag, counter.getAndIncrement());
+    }
+
+    /**
+     * Serializes this object to a json and saves it in memory
+     *
+     * @return this
+     */
+    public WhatsappStore save(){
+        try {
+            var path = WhatsappUtils.createPreferencesPath(PREFERENCES_PATH, id);
+            userRoot().put(path, JACKSON.writeValueAsString(this));
+            return this;
+        } catch (JsonProcessingException exception) {
+            throw new RuntimeException("Cannot save keys to memory", exception);
+        }
     }
 }
