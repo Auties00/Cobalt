@@ -79,11 +79,11 @@
         <nexus.staging.maven.plugin.version>1.6.7</nexus.staging.maven.plugin.version>
         <lombok.version>1.18.22</lombok.version>
         <maven.jmod.version>3.0.0-alpha.1</maven.jmod.version>
-        <jackson.version>2.13.0</jackson.version>
-        <junit.version>5.8.1</junit.version>
+        <jackson.version>2.13.1</jackson.version>
+        <junit.version>5.8.2</junit.version>
         <bouncy.castle.version>1.69</bouncy.castle.version>
         <zxing.version>3.4.1</zxing.version>
-        <protoc.version>1.4</protoc.version>
+        <protoc.version>1.8</protoc.version>
         <tyrus.version>2.0.0</tyrus.version>
         <jna.version>5.9.0</jna.version>
         <delombok.output>${project.build.directory}\delomboked-sources</delombok.output>
