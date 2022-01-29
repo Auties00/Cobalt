@@ -21,31 +21,12 @@ import static java.time.ZonedDateTime.ofInstant;
 @UtilityClass
 public class WhatsappUtils {
     /**
-     * Request counter, decoupled from {@link it.auties.whatsapp.manager.WhatsappStore}
-     */
-    private final AtomicLong requestCounter = new AtomicLong();
-
-    /**
-     * The request tag, used to create messages
-     */
-    private final String requestTag = BinaryArray.random(12).toHex().toLowerCase(Locale.ROOT);
-
-    /**
      * Returns a random message id
      *
      * @return a non-null ten character String
      */
     public String randomId() {
         return BinaryArray.random(10).toHex();
-    }
-
-    /**
-     * Returns a request tag built using {@code configuration}
-     *
-     * @return a non-null String
-     */
-    public String buildRequestTag() {
-        return "%s-%s".formatted(requestTag, requestCounter.getAndIncrement());
     }
 
     /**
@@ -58,15 +39,5 @@ public class WhatsappUtils {
         return Optional.of(input)
                 .filter(time -> time != 0)
                 .map(time -> ofInstant(Instant.ofEpochSecond(time), systemDefault()));
-    }
-
-    /**
-     * Reads the nullable id of the provided node
-     *
-     * @param node the input node
-     * @return a nullable string
-     */
-    public String readNullableId(@NonNull Node node){
-        return node.attributes().getString("id", null);
     }
 }

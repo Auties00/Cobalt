@@ -1,11 +1,11 @@
 package it.auties.whatsapp.manager;
 
 import it.auties.whatsapp.api.WhatsappListener;
+import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.media.MediaConnection;
-import it.auties.whatsapp.protobuf.message.model.MediaMessage;
 import it.auties.whatsapp.socket.Node;
 import it.auties.whatsapp.socket.Request;
 import it.auties.whatsapp.util.WhatsappUtils;
@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -61,6 +62,16 @@ public class WhatsappStore {
     private final List<@NonNull WhatsappListener> listeners;
 
     /**
+     * Request counter
+     */
+    private final AtomicLong counter;
+
+    /**
+     * The request tag, used to create messages
+     */
+    private final String tag;
+
+    /**
      * The timestamp in seconds for the initialization of this object
      */
     private final long initializationTimeStamp;
@@ -91,7 +102,9 @@ public class WhatsappStore {
     public WhatsappStore(){
         this(new Vector<>(), new Vector<>(),
                 new Vector<>(), new Vector<>(),
-                new Vector<>(), Instant.now().getEpochSecond(),
+                new Vector<>(), new AtomicLong(),
+                BinaryArray.random(12).toHex().toLowerCase(Locale.ROOT),
+                Instant.now().getEpochSecond(),
                 Executors.newSingleThreadExecutor());
     }
 
@@ -208,7 +221,7 @@ public class WhatsappStore {
      * @return true if any request matching {@code response} is found
      */
     public boolean resolvePendingRequest(@NonNull Node response, boolean exceptionally) {
-        return findPendingRequest(WhatsappUtils.readNullableId(response))
+        return findPendingRequest(response.id())
                 .map(request -> deleteAndComplete(response, request, exceptionally))
                 .isPresent();
     }
@@ -286,5 +299,14 @@ public class WhatsappStore {
         pendingRequests.remove(request);
         request.complete(response, exceptionally);
         return request;
+    }
+
+    /**
+     * Returns a request tag
+     *
+     * @return a non-null String
+     */
+    public String nextTag() {
+        return "%s-%s".formatted(tag, counter.getAndIncrement());
     }
 }

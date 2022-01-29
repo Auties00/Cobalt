@@ -7,6 +7,8 @@ import lombok.NonNull;
 
 import java.util.*;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * An immutable model class that represents the primary unit used by WhatsappWeb's WebSocket to communicate with the client.
  *
@@ -81,6 +83,15 @@ public record Node(@NonNull String description,
      */
     public static Node withChildren(@NonNull String description, @NonNull Map<String, Object> attributes, Node... children) {
         return new Node(description, Attributes.of(attributes), Nodes.orNull(children));
+    }
+
+    /**
+     * Returns the nullable id of this node
+     *
+     * @return a nullable String
+     */
+    public String id(){
+        return attributes.getString("id", null);
     }
 
     /**
@@ -162,23 +173,16 @@ public record Node(@NonNull String description,
     }
 
     /**
-     * Constructs a new request from this node
+     * Constructs a new request from this node.
+     * If this node doesn't provide an id, the one provided as a parameter will be used.
      *
+     * @param id the nullable id of this request
+     * @throws NullPointerException if no valid id can be found
      * @return a non null request
      */
-    public Request toRequest(){
-        return toRequest(true);
-    }
-
-    /**
-     * Constructs a new request from this node
-     *
-     * @param needsId       whether an id attribute should be added if missing
-     * @return a non null request
-     */
-    public Request toRequest(boolean needsId){
-        if (needsId && WhatsappUtils.readNullableId(this) == null) {
-            attributes.map().put("id", WhatsappUtils.buildRequestTag());
+    public Request toRequest(String id){
+        if (id() == null) {
+            attributes.map().put("id", requireNonNull(id, "No valid id can be used to create a request"));
         }
 
         return Request.with(this);

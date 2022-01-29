@@ -36,7 +36,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * Constructs a new request with the provided body expecting a response
      */
     public static Request with(@NonNull Node body) {
-        return new Request(WhatsappUtils.readNullableId(body), body, createTimedFuture());
+        return new Request(body.id(), body, createTimedFuture());
     }
 
     private static CompletableFuture<Node> createTimedFuture() {

@@ -227,12 +227,12 @@ public class Socket {
     }
 
     public CompletableFuture<Node> send(Node node){
-        return node.toRequest()
+        return node.toRequest(store.nextTag())
                 .send(session(), keys, store);
     }
 
     public CompletableFuture<Node> sendWithNoResponse(Node node){
-        return node.toRequest(false)
+        return node.toRequest(store.nextTag())
                 .sendWithNoResponse(session(), keys, store);
     }
 
@@ -271,7 +271,7 @@ public class Socket {
         var query = withChildren("query", queryNode);
         var list = withChildren("list", queryBody);
         var sync = withChildren("usync",
-                of("sid", WhatsappUtils.buildRequestTag(), "mode", "query", "last", "true", "index", "0", "context", "interactive"),
+                of("sid", store.nextTag(), "mode", "query", "last", "true", "index", "0", "context", "interactive"),
                 query, list);
         return sendQuery("get", "usync", sync)
                 .thenApplyAsync(this::parseQueryResult);
@@ -320,7 +320,7 @@ public class Socket {
         var to = node.attributes().getJid("from")
                 .orElseThrow();
         var receipt = withAttributes("ack",
-                of("id", WhatsappUtils.readNullableId(node), "to", to));
+                of("id", node.id(), "to", to));
         receipt.attributes().putAll(attributes);
         var participant = node.attributes()
                 .getString("participant", null);
@@ -457,7 +457,7 @@ public class Socket {
             var from = node.attributes().getJid("from")
                     .orElseThrow(() -> new NoSuchElementException("Cannot digest ack: missing from"));
             var receipt = with("ack",
-                    of("class", "receipt", "id", WhatsappUtils.readNullableId(node), "from", from));
+                    of("class", "receipt", "id", node.id(), "from", from));
             send(receipt);
         }
 
@@ -717,8 +717,8 @@ public class Socket {
         }
 
         private void sendConfirmNode(Node node, Node content) {
-            var id = WhatsappUtils.readNullableId(node);
-            sendQuery(id, ContactJid.SOCKET, "result", null, of(), content);
+            sendQuery(node.id(), ContactJid.SOCKET,
+                    "result", null, of(), content);
         }
 
         private void saveCompanion(Node container) {
