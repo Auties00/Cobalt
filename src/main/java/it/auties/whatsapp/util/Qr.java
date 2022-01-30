@@ -10,6 +10,7 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
+import java.lang.constant.Constable;
 import java.util.Map;
 
 import static it.auties.whatsapp.binary.BinaryArray.of;
@@ -50,6 +51,14 @@ public class Qr {
                 of(keys.companionKey()).toBase64()
         );
 
-        return WRITER.encode(qr, BarcodeFormat.QR_CODE, SIZE, SIZE, Map.of(EncodeHintType.MARGIN, MARGIN, EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.L));
+        return WRITER.encode(qr, BarcodeFormat.QR_CODE,
+                SIZE, SIZE, createOptions());
+    }
+
+    private Map<EncodeHintType, ? extends Constable> createOptions() {
+        return Map.of(
+                EncodeHintType.MARGIN, MARGIN,
+                EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.L
+        );
     }
 }

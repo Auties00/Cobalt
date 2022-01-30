@@ -4,6 +4,7 @@ import com.google.zxing.common.BitMatrix;
 import it.auties.whatsapp.api.RegisterListener;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappListener;
+import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.util.QrHandler;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
@@ -31,6 +32,11 @@ public class WhatsappAPITest {
         @Override
         public QrHandler onQRCode(@NonNull BitMatrix qr) {
             return QrHandler.FILE;
+        }
+
+        @Override
+        public void onNewMessage(@NonNull MessageInfo message) {
+            System.out.printf("Received a new message: %s", message);
         }
     }
 }

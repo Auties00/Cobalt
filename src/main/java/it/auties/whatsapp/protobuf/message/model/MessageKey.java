@@ -19,6 +19,7 @@ import lombok.experimental.Accessors;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @RequiredArgsConstructor
 @NoArgsConstructor
+@Data
 @Accessors(fluent = true)
 @Builder(builderMethodName = "newMessageKey", buildMethodName = "create")
 public class MessageKey {
@@ -27,9 +28,7 @@ public class MessageKey {
    */
   @JsonProperty("1")
   @JsonPropertyDescription("string")
-  @JsonAlias("remoteJid")
   @NonNull
-  @Getter
   private ContactJid chatJid;
 
   /**
@@ -37,8 +36,6 @@ public class MessageKey {
    */
   @JsonProperty("2")
   @JsonPropertyDescription("bool")
-  @JsonAlias("fromMe")
-  @Getter
   private boolean fromMe;
 
   /**
@@ -46,9 +43,7 @@ public class MessageKey {
    */
   @JsonProperty("3")
   @JsonPropertyDescription("string")
-  @JsonAlias("id")
   @NonNull
-  @Getter
   @Default
   private String id = WhatsappUtils.randomId();
 }

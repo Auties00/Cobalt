@@ -56,6 +56,7 @@ import static it.auties.whatsapp.socket.Node.*;
 import static it.auties.whatsapp.util.QrHandler.TERMINAL;
 import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
 import static java.lang.Long.parseLong;
+import static java.time.Instant.now;
 import static java.util.Arrays.copyOfRange;
 import static java.util.Map.of;
 import static java.util.Objects.requireNonNullElse;
@@ -155,8 +156,9 @@ public class Socket {
             return;
         }
 
-        message.toNodes(keys)
-                .forEach(this::handleNode);
+        var nodes = message.toNodes(keys);
+        System.out.printf("Received %s nodes%n", nodes.size());
+        nodes.forEach(this::handleNode);
     }
 
     private void handleNode(Node deciphered) {
@@ -286,19 +288,19 @@ public class Socket {
                 .toList();
     }
 
-    private void sendReceipt(String jid, String participant, List<String> messages, String type) {
+    private void sendReceipt(ContactJid jid, ContactJid participant, List<String> messages, String type) {
         if(messages.isEmpty()){
             return;
         }
 
         var receipt = withChildren("receipt",
-                of("id", messages.get(0), "t", Instant.now().toEpochMilli(), "to", jid),
+                of("id", messages.get(0), "t", now().toEpochMilli(), "to", jid),
                 toMessagesNode(messages));
         if(type != null){
             receipt.attributes().put("type", type);
         }
 
-        if(participant != null){
+        if(participant != null && !Objects.equals(jid, participant)){
             receipt.attributes().put("participant", participant);
         }
 
@@ -335,7 +337,9 @@ public class Socket {
         keys.delete();
         var newId = SignalHelper.randomRegistrationId();
         this.keys = WhatsappKeys.newKeys(newId);
-        this.store = WhatsappStore.newStore(newId);
+        var newStore = WhatsappStore.newStore(newId);
+        store.listeners().addAll(store.listeners());
+        this.store = newStore;
     }
 
     private void dispose(){
@@ -438,8 +442,15 @@ public class Socket {
         }
 
         private void digestReceipt(Node node) {
-            var type = node.attributes().getString("type", "null");
-            sendMessageAck(node, of("class", "receipt", "type", type));
+            var attributes = new HashMap<String, Object>();
+            attributes.put("class", "receipt");
+            var type = node.attributes()
+                    .getString("type", null);
+            if(type != null){
+                attributes.put("type", type);
+            }
+
+            sendMessageAck(node, attributes);
         }
 
         private void digestCall(Node node) {
@@ -469,7 +480,8 @@ public class Socket {
             var messages = messageHandler.decode(node);
             messages.forEach(message -> {
                 sendMessageAck(node, of("class", "receipt"));
-                sendReceipt(message.chatJid().toString(), message.senderJid().toString(), List.of(message.key().id()), null);
+                sendReceipt(message.chatJid(), message.senderJid(),
+                        List.of(message.key().id()), null);
                 if (message.ignore()) {
                     return;
                 }
@@ -503,7 +515,7 @@ public class Socket {
             }
 
             var type = dirty.attributes().getString("type");
-            if(Objects.equals(type, "account_sync")){
+            if(!Objects.equals(type, "account_sync")){
                 return;
             }
 
@@ -560,7 +572,7 @@ public class Socket {
 
         private void sendStatusUpdate() {
             var presence = withAttributes("presence", of("type", "available"));
-            send(presence);
+            sendWithNoResponse(presence);
             sendQuery("get", "blocklist");
             sendQuery("get", "privacy", with("privacy"));
             sendQuery("get", "abt", withAttributes("props", of("protocol", "1")));
@@ -886,7 +898,7 @@ public class Socket {
                     var newKeys = protocolMessage.appStateSyncKeyShare()
                             .keys();
                     keys.appStateKeys().addAll(newKeys);
-                    CompletableFuture.delayedExecutor(2, TimeUnit.SECONDS) // FIXME: 26/01/2022 transaction
+                    CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS) // FIXME: 26/01/2022 transaction
                             .execute(appStateHandler::sync);
                 }
 

@@ -173,6 +173,17 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
     }
 
     /**
+     * Checks if the input object equals this jid.
+     * The equality is determined based on all factors.
+     *
+     * @param other the object to check, maybe null
+     * @return true if the object matches
+     */
+    public boolean contentEquals(Object other) {
+        return Objects.equals(Objects.toString(this), Objects.toString(other));
+    }
+
+    /**
      * Returns a hash code value for the object
      *
      * @return a hash code value for this object

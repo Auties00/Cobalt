@@ -17,14 +17,15 @@ import java.util.stream.IntStream;
 
 import static it.auties.whatsapp.binary.BinaryTag.*;
 import static it.auties.whatsapp.protobuf.contact.ContactJid.Server.forAddress;
+import static it.auties.whatsapp.socket.Node.with;
+import static it.auties.whatsapp.socket.Node.withAttributes;
 
 public record BinaryDecoder(@NonNull ByteBuf buffer){
     public BinaryDecoder(){
         this(Buffers.newBuffer());
     }
     public Node decode(byte @NonNull [] input){
-        buffer.clear()
-                .writeBytes(unpack(input));
+        buffer.clear().writeBytes(unpack(input));
         return readNode();
     }
 
@@ -49,8 +50,8 @@ public record BinaryDecoder(@NonNull ByteBuf buffer){
 
         var description = readString();
         var attrs = readAttributes(size);
-        return size % 2 != 0 ? Node.withAttributes(description, attrs)
-                : Node.with(description, attrs, read(false));
+        return size % 2 != 0 ? withAttributes(description, attrs)
+                : with(description, attrs, read(false));
     }
 
     public String readString() {
@@ -105,12 +106,12 @@ public record BinaryDecoder(@NonNull ByteBuf buffer){
     }
 
     private String readStringFromToken(int token) {
-        if (token >= DICTIONARY_0.data() && token <= DICTIONARY_3.data()) {
-            var delta = (BinaryTokens.DOUBLE_BYTE.size() / 4) * (token - DICTIONARY_0.data());
-            return BinaryTokens.DOUBLE_BYTE.get(buffer.readUnsignedByte() + delta);
+        if (token < DICTIONARY_0.data() || token > DICTIONARY_3.data()) {
+            return BinaryTokens.SINGLE_BYTE.get(token - 1);
         }
 
-        return BinaryTokens.SINGLE_BYTE.get(token - 1);
+        var delta = (BinaryTokens.DOUBLE_BYTE.size() / 4) * (token - DICTIONARY_0.data());
+        return BinaryTokens.DOUBLE_BYTE.get(buffer.readUnsignedByte() + delta);
     }
 
     private String readNibble() {
@@ -119,32 +120,34 @@ public record BinaryDecoder(@NonNull ByteBuf buffer){
     }
 
     private Object readString32(boolean parseBytes) {
-        if (parseBytes) {
-            var buffer = this.buffer.readBytes(this.buffer.readUnsignedShort());
-            return new String(Buffers.readBytes(buffer), StandardCharsets.UTF_8);
+        if (!parseBytes) {
+            return Buffers.readBytes(buffer, buffer.readUnsignedShort());
         }
 
-        return Buffers.readBytes(buffer, buffer.readUnsignedShort());
+        var bytes = buffer.readBytes(buffer.readUnsignedShort());
+        return new String(Buffers.readBytes(bytes), StandardCharsets.UTF_8);
     }
 
     private Object readString16(boolean parseBytes) {
-        var size = ((15 & buffer.readUnsignedByte()) << 16) + (buffer.readUnsignedByte() << 8) + buffer.readUnsignedByte();
-        if (parseBytes) {
-            var buffer = this.buffer.readBytes(size);
-            return new String(Buffers.readBytes(buffer), StandardCharsets.UTF_8);
+        var size = ((15 & buffer.readUnsignedByte()) << 16)
+                + (buffer.readUnsignedByte() << 8)
+                + buffer.readUnsignedByte();
+        if (!parseBytes) {
+            return Buffers.readBytes(buffer, size);
         }
 
-        return Buffers.readBytes(buffer, size);
+        var bytes = buffer.readBytes(size);
+        return new String(Buffers.readBytes(bytes), StandardCharsets.UTF_8);
     }
 
     private Object readString(boolean parseBytes) {
         var size = buffer.readUnsignedByte();
-        if (parseBytes) {
-            var buffer = this.buffer.readBytes(size);
-            return new String(Buffers.readBytes(buffer), StandardCharsets.UTF_8);
+        if (!parseBytes) {
+            return Buffers.readBytes(buffer, size);
         }
 
-        return Buffers.readBytes(buffer, size);
+        var bytes = buffer.readBytes(size);
+        return new String(Buffers.readBytes(bytes), StandardCharsets.UTF_8);
     }
 
     private String readHexString() {
