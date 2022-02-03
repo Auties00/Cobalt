@@ -244,8 +244,7 @@ public final class MessageInfo implements WhatsappInfo {
    * @return an optional wrapping a {@link Chat}
    */
   public Optional<Chat> chat(){
-    var chat = Objects.toString(key.chatJid());
-    return store.findChatByJid(chat);
+    return store.findChatByJid(chatJid());
   }
 
   /**
@@ -272,8 +271,7 @@ public final class MessageInfo implements WhatsappInfo {
    * @return an optional wrapping a {@link Contact}
    */
   public Optional<Contact> sender(){
-    var sender = Objects.toString(senderJid());
-    return store.findContactByJid(sender);
+    return store.findContactByJid(senderJid());
   }
 
   /**

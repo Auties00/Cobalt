@@ -16,6 +16,7 @@ import org.whispersystems.libsignal.SignalProtocolAddress;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * A model class that represents a jid.
@@ -79,31 +80,6 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      */
     public static ContactJid ofCompanion(String jid, int device, int agent) {
         return new ContactJid(withoutServer(jid), Server.WHATSAPP, device, agent);
-    }
-
-    /**
-     * Constructs a new ContactId from an encoded value
-     *
-     * @param encoded the nullable encoded value
-     * @return a non-null optional ContactId
-     */
-    public static ContactJid ofEncoded(String encoded) {
-        if(encoded == null || !encoded.contains("@")){
-            throw new IllegalArgumentException("Cannot decode %s".formatted(encoded));
-        }
-
-        try {
-            var atIndex = encoded.indexOf("@");
-            var server = encoded.substring(atIndex + 1);
-            var userAndDevice = encoded.substring(0, atIndex).split(":", 2);
-            var userAndAgent = userAndDevice[0].split("_");
-            var user = userAndAgent[0];
-            var agent = Integer.parseInt(userAndAgent[1]);
-            var device = Integer.parseInt(userAndDevice[1]);
-            return new ContactJid(user, Server.forAddress(server), device, agent);
-        }catch (Exception exception){
-            throw new RuntimeException("Cannot decode %s: %s".formatted(encoded, exception.getMessage()));
-        }
     }
 
     /**

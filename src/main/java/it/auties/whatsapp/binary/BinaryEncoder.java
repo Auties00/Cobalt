@@ -9,6 +9,7 @@ import lombok.NonNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.Objects;
 
 import static it.auties.whatsapp.binary.BinaryTag.*;
 
@@ -37,22 +38,43 @@ public record BinaryEncoder(@NonNull ByteBuf buffer){
     private void writeString(String input, BinaryTag token) {
         buffer.writeByte(token.data());
         writeStringLength(input);
-        for (int index = 0, charCode = 0; index < input.length(); index++) {
-            var codePoint = Character.codePointAt(input, index);
-            var parsedCodePoint = parseCodePoint(token.data(), codePoint);
+
+        for(int charCode = 0, index = 0; index < input.length(); index++){
+            var stringCodePoint = Character.codePointAt(input, index);
+            var binaryCodePoint = getStringCodePoint(token, stringCodePoint);
+
             if (index % 2 != 0) {
-                buffer.writeByte(charCode |= parsedCodePoint);
+                buffer.writeByte(charCode |= binaryCodePoint);
                 continue;
             }
 
-            charCode = parsedCodePoint << 4;
+            charCode = binaryCodePoint << 4;
             if (index != input.length() - 1) {
                 continue;
             }
 
-            charCode |= 15;
-            buffer.writeByte(charCode);
+            buffer.writeByte(charCode |= 15);
         }
+    }
+
+    private int getStringCodePoint(BinaryTag token, int codePoint) {
+        if(codePoint >= 48 && codePoint <= 57){
+            return codePoint - 48;
+        }
+
+        if(token == NIBBLE_8 && codePoint == 45) {
+            return 10;
+        }
+
+        if(token == NIBBLE_8 && codePoint == 46){
+            return 11;
+        }
+
+        if(token == HEX_8 && codePoint >= 65 && codePoint <= 70){
+            return codePoint - 55;
+        }
+
+        throw new IllegalArgumentException("Cannot parse codepoint %s with token %s".formatted(codePoint, token));
     }
 
     private void writeStringLength(String input) {
@@ -63,26 +85,6 @@ public record BinaryEncoder(@NonNull ByteBuf buffer){
         }
 
         buffer.writeByte(roundedLength);
-    }
-
-    private int parseCodePoint(int token, int codePoint) {
-        if(codePoint >= 48 && codePoint <= 67){
-            return codePoint - 48;
-        }
-
-        if(NIBBLE_8.contentEquals(token) && codePoint == 45){
-            return 10;
-        }
-
-        if(NIBBLE_8.contentEquals(token) && codePoint == 46){
-            return 11;
-        }
-
-        if(HEX_8.contentEquals(token) && codePoint >= 65 && codePoint <= 70){
-            return codePoint - 55;
-        }
-
-        throw new IllegalArgumentException("Cannot parse codepoint %s with token %s".formatted(codePoint, token));
     }
 
     private void writeLong(long input) {
@@ -122,16 +124,14 @@ public record BinaryEncoder(@NonNull ByteBuf buffer){
         }
 
         var length = length(input);
-        if (length < 128) {
-            if (BinaryTokens.checkRegex(input, BinaryTokens.NUMBERS_REGEX)) {
-                writeString(input, NIBBLE_8);
+        if (length < 128 && BinaryTokens.checkRegex(input, BinaryTokens.NUMBERS_REGEX)) {
+            writeString(input, NIBBLE_8);
                 return;
-            }
+        }
 
-            if (BinaryTokens.checkRegex(input, BinaryTokens.HEX_REGEX)) {
+        if (length < 128 && BinaryTokens.checkRegex(input, BinaryTokens.HEX_REGEX)) {
                 writeString(input, HEX_8);
                 return;
-            }
         }
 
         writeLong(length);

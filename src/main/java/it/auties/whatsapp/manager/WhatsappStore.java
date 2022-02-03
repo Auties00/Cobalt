@@ -9,6 +9,7 @@ import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
+import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.media.MediaConnection;
 import it.auties.whatsapp.socket.Node;
@@ -162,9 +163,9 @@ public class WhatsappStore implements JacksonProvider {
      * @param jid the jid to search
      * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
-    public Optional<Contact> findContactByJid(String jid) {
+    public Optional<Contact> findContactByJid(ContactJid jid) {
         return jid == null ? Optional.empty() : contacts.parallelStream()
-                .filter(contact -> Objects.equals(contact.jid().toString(), jid))
+                .filter(contact -> contact.jid().contentEquals(jid))
                 .findAny();
     }
 
@@ -203,9 +204,9 @@ public class WhatsappStore implements JacksonProvider {
      * @param jid the jid to search
      * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
-    public Optional<Chat> findChatByJid(String jid) {
+    public Optional<Chat> findChatByJid(ContactJid jid) {
         return jid == null ? Optional.empty() : chats.parallelStream()
-                .filter(chat -> Objects.equals(chat.jid().toString(), jid))
+                .filter(chat -> chat.jid().contentEquals(jid))
                 .findAny();
     }
 

@@ -5,6 +5,7 @@ import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.socket.Node;
 import it.auties.whatsapp.util.Buffers;
+import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 
 import java.nio.charset.StandardCharsets;
@@ -44,10 +45,8 @@ public record BinaryDecoder(@NonNull ByteBuf buffer){
     private Node readNode() {
         var token = buffer.readUnsignedByte();
         var size = readSize(token);
-        if (size == 0) {
-            throw new IllegalArgumentException("Failed to decode body: body cannot be empty");
-        }
-
+        Validate.isTrue(size != 0,
+                "Cannot decode node with empty body");
         var description = readString();
         var attrs = readAttributes(size);
         return size % 2 != 0 ? withAttributes(description, attrs)
@@ -70,19 +69,17 @@ public record BinaryDecoder(@NonNull ByteBuf buffer){
     }
 
     private String readString(List<Character> permitted, int start, int end) {
-        var string = new int[2 * end - start];
+        var string = new char[2 * end - start];
         IntStream.iterate(0, index -> index < string.length - 1, n -> n + 2)
                 .forEach(index -> readChar(permitted, string, index));
         if (start != 0) {
             string[string.length - 1] = permitted.get(buffer.readUnsignedByte() >>> 4);
         }
 
-        return Arrays.stream(string)
-                .mapToObj(e -> String.valueOf((char) e))
-                .collect(Collectors.joining());
+        return String.valueOf(string);
     }
 
-    private void readChar(List<Character> permitted, int[] string, int index) {
+    private void readChar(List<Character> permitted, char[] string, int index) {
         var token = buffer.readUnsignedByte();
         string[index] = permitted.get(token >>> 4);
         string[index + 1] = permitted.get(15 & token);

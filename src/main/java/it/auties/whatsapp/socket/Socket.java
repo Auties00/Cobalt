@@ -56,6 +56,7 @@ import static it.auties.whatsapp.socket.Node.*;
 import static it.auties.whatsapp.util.QrHandler.TERMINAL;
 import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
 import static java.lang.Long.parseLong;
+import static java.lang.String.valueOf;
 import static java.time.Instant.now;
 import static java.util.Arrays.copyOfRange;
 import static java.util.Map.of;
@@ -257,7 +258,7 @@ public class Socket {
         }
 
         attributes.put("type", method);
-        attributes.put("to", to);
+        attributes.put("to", to.toString());
         if(category != null) {
             attributes.put("xmlns", category);
         }
@@ -294,14 +295,14 @@ public class Socket {
         }
 
         var receipt = withChildren("receipt",
-                of("id", messages.get(0), "t", now().toEpochMilli(), "to", jid),
+                of("id", messages.get(0), "t", valueOf(now().toEpochMilli()), "to", jid.toString()),
                 toMessagesNode(messages));
         if(type != null){
             receipt.attributes().put("type", type);
         }
 
         if(participant != null && !Objects.equals(jid, participant)){
-            receipt.attributes().put("participant", participant);
+            receipt.attributes().put("participant", participant.toString());
         }
 
         send(receipt);
@@ -322,12 +323,12 @@ public class Socket {
         var to = node.attributes().getJid("from")
                 .orElseThrow();
         var receipt = withAttributes("ack",
-                of("id", node.id(), "to", to));
+                of("id", node.id(), "to", to.toString()));
         receipt.attributes().putAll(attributes);
         var participant = node.attributes()
                 .getString("participant", null);
         if(participant != null){
-            node.attributes().put("participant", participant);
+            receipt.attributes().put("participant", participant);
         }
 
         send(receipt);
@@ -355,6 +356,12 @@ public class Socket {
             headers.put("Host", List.of("web.whatsapp.com"));
         }
     }
+
+    // Sending: {"tag":"ack","attrs":{"id":"BCB511457694C90D69932BB0DF4294EB","to":"393495089819@s.whatsapp.net","class":"receipt"}}
+    //Sending: {"tag":"receipt","attrs":{"id":"BCB511457694C90D69932BB0DF4294EB","t":"1643919547423","to":"393495089819@s.whatsapp.net"}}
+
+    //Sending Node[description=ack, attributes={class=receipt, id=C5B281E1810888300119A8A9AE07DEEA, to=393495089819@s.whatsapp.net}]
+    //Sending Node[description=receipt, attributes={to=393495089819@s.whatsapp.net, id=C5B281E1810888300119A8A9AE07DEEA, t=1643920230923}]
 
     private class AuthHandler {
         @SneakyThrows
@@ -479,9 +486,6 @@ public class Socket {
         private void digestMessage(Node node) {
             var messages = messageHandler.decode(node);
             messages.forEach(message -> {
-                sendMessageAck(node, of("class", "receipt"));
-                sendReceipt(message.chatJid(), message.senderJid(),
-                        List.of(message.key().id()), null);
                 if (message.ignore()) {
                     return;
                 }
@@ -726,7 +730,7 @@ public class Socket {
                     .decode(account.details())
                     .keyIndex();
             var identity = ProtobufEncoder.encode(account.deviceSignature(deviceSignature).accountSignature(null));
-            var identityNode = with("device-identity", of("key-index", String.valueOf(keyIndex)), identity);
+            var identityNode = with("device-identity", of("key-index", valueOf(keyIndex)), identity);
             var content = withChildren("pair-device-sign", identityNode);
 
             sendConfirmNode(node, content);
@@ -781,17 +785,20 @@ public class Socket {
 
             var messages = node.findNodes("enc");
             return messages.stream()
-                    .map(messageNode -> decodeMessage(info, messageNode, from))
+                    .map(messageNode -> decodeMessage(info, node, messageNode, from))
                     .filter(Objects::nonNull)
                     .toList();
         }
 
-        private MessageInfo decodeMessage(MessageInfo info, Node node, ContactJid from) {
+        private MessageInfo decodeMessage(MessageInfo info, Node container, Node messageNode, ContactJid from) {
             try {
-                var encodedMessage = node.bytes();
-                var messageType = node.attributes().getString("type");
+                var encodedMessage = messageNode.bytes();
+                var messageType = messageNode.attributes().getString("type");
                 var buffer = decodeCipheredMessage(info, encodedMessage, messageType);
                 info.message(decodeMessageContainer(buffer));
+                sendMessageAck(container, of("class", "receipt"));
+                sendReceipt(info.chatJid(), info.senderJid(),
+                        List.of(info.key().id()), null);
                 handleSenderKeyMessage(from, info);
                 return info;
             }catch (Throwable throwable){
@@ -889,9 +896,13 @@ public class Socket {
                                 .forEach(this::handNewPushName);
                     }
 
+                    var recipient = ContactJid.ofUser(keys.companion().user(), ContactJid.Server.USER);
                     var receipt = withAttributes("receipt",
-                            of("id", info.key().id(), "type", "hist_sync", "to","%s@c.us".formatted(keys.companion().user())));
+                            of("to", recipient.toString(), "type", "hist_sync", "id", info.key().id()));
                     send(receipt);
+
+                    //Sending: {"tag":"receipt","attrs":{"id":"BCB511457694C90D69932BB0DF4294EB","type":"hist_sync","to":"393495089819@c.us"}}
+                    //Sending Node[description=receipt, attributes={to=393495089819@c.us, id=C5B281E1810888300119A8A9AE07DEEA, type=hist_sync}]
                 }
 
                 case APP_STATE_SYNC_KEY_SHARE -> {
@@ -923,11 +934,12 @@ public class Socket {
         }
 
         private void handNewPushName(PushName pushName) {
-            var oldContact = store.findContactByJid(pushName.id())
-                    .orElseGet(() -> createContact(pushName.id()));
+            var jid = ContactJid.ofUser(pushName.id());
+            var oldContact = store.findContactByJid(jid)
+                    .orElseGet(() -> createContact(jid));
             oldContact.chosenName(pushName.pushname());
             var name = oldContact.bestName("unknown");
-            store.findChatByJid(oldContact.jid().toString())
+            store.findChatByJid(oldContact.jid())
                     .ifPresentOrElse(chat -> chat.name(name), () -> createChat(oldContact));
             var firstName = pushName.pushname().contains(" ")  ? pushName.pushname().split(" ")[0]
                     : null;
@@ -943,21 +955,24 @@ public class Socket {
             store.addChat(newChat);
         }
 
-        private Contact createContact(String id) {
-            var jid = ContactJid.ofUser(id);
+        private Contact createContact(ContactJid jid) {
             var newContact = Contact.ofJid(jid);
             store.addContact(newContact);
             return newContact;
         }
 
         private void handleRecentMessage(Chat recent) {
-            var oldChat = store.findChatByJid(recent.jid().toString())
-                    .orElseThrow(() -> new NoSuchElementException("Cannot handle recent messages: missing chat"));
+            var oldChat = store.findChatByJid(recent.jid());
+            if (oldChat.isEmpty()) {
+                store.addChat(recent);
+                return;
+            }
+
             recent.messages()
                     .stream()
                     .peek(message -> message.store(store))
-                    .forEach(oldChat.messages()::add);
-            store.callListeners(listener -> listener.onChatRecentMessages(oldChat));
+                    .forEach(oldChat.get().messages()::add);
+            store.callListeners(listener -> listener.onChatRecentMessages(oldChat.get()));
         }
     }
 
@@ -1054,6 +1069,7 @@ public class Socket {
                     .findNodes("patch")
                     .stream()
                     .map(patch -> decodePatch(patch, versionCode))
+                    .filter(Objects::nonNull)
                     .toList();
         }
 
@@ -1074,10 +1090,6 @@ public class Socket {
         }
 
         private void processSyncActions(ActionDataSync mutation) {
-            var targetContact = store.findContactByJid(mutation.messageIndex().chatJid());
-            var targetChat = store.findChatByJid(mutation.messageIndex().chatJid());
-            var targetMessage = targetChat.flatMap(chat -> store.findMessageById(chat, mutation.messageIndex().messageId()));
-
             var value = mutation.value();
             if(value == null){
                 return;
@@ -1085,6 +1097,10 @@ public class Socket {
 
             var action = value.action();
             if (action != null){
+                var jid = ContactJid.ofUser(mutation.messageIndex().chatJid());
+                var targetContact = store.findContactByJid(jid);
+                var targetChat = store.findChatByJid(jid);
+                var targetMessage = targetChat.flatMap(chat -> store.findMessageById(chat, mutation.messageIndex().messageId()));
                 switch (action) {
                     case AndroidUnsupportedActions ignored -> {}
                     case ClearChatAction ignored -> targetChat.map(Chat::messages).ifPresent(Collection::clear);
@@ -1116,7 +1132,7 @@ public class Socket {
         private void updateContactName(Contact contact, ContactAction action) {
             contact.update(action);
             var name = contact.bestName("unknown");
-            store.findChatByJid(contact.jid().toString())
+            store.findChatByJid(contact.jid())
                     .ifPresent(chat -> chat.name(name));
         }
 

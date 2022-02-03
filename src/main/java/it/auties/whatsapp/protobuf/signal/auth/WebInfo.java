@@ -44,7 +44,7 @@ public class WebInfo {
     WIN32(4);
 
     @Getter
-    private int index;
+    private final int index;
 
     @JsonCreator
     public static WebInfoWebSubPlatform forIndex(int index) {
