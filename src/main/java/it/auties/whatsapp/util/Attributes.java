@@ -94,7 +94,6 @@ public record Attributes(Map<String, Object> map) {
         };
     }
 
-
     public Optional<ContactJid> getJid(@NonNull String key){
         return get(key, Object.class)
                 .map(this::parseJid);

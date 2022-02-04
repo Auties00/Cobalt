@@ -93,7 +93,6 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @return this request
      */
     public CompletableFuture<Node> send(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store, boolean prologue, boolean response) {
-        System.out.printf("Sending %s%n", body);
         var ciphered = cipherMessage(keys);
         var buffer = Buffers.newBuffer(prologue ? PROLOGUE : new byte[0])
                 .writeInt(ciphered.length >> 16)
@@ -122,6 +121,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
 
     private void handleSendResult(WhatsappStore store, SendResult result, boolean response) {
         if (!result.isOK()) {
+            log.warning("Whatsapp could not send %s: %s".formatted(this, response));
             future.completeExceptionally(new IllegalArgumentException("Cannot send %s".formatted(this), result.getException()));
             return;
         }
@@ -135,10 +135,11 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     }
 
     private byte[] cipherMessage(WhatsappKeys keys) {
-        var body = switch (body()) {
+        var encodedBody = body();
+        var body = switch (encodedBody) {
             case byte[] bytes -> bytes;
             case Node node -> ENCODER.encode(node);
-            default -> throw new IllegalStateException("Illegal body: " + body());
+            default -> throw new IllegalStateException("Illegal body: %s".formatted(encodedBody));
         };
 
         if (keys.writeKey() == null) {

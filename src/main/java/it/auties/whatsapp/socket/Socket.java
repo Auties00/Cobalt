@@ -163,7 +163,10 @@ public class Socket {
     }
 
     private void handleNode(Node deciphered) {
-        System.out.printf("Received: %s%n", deciphered);
+        if(deciphered.description().equals("message")){
+            System.out.printf("Received: %s%n", deciphered);
+        }
+
         if(store.resolvePendingRequest(deciphered, false)){
             return;
         }
@@ -442,7 +445,7 @@ public class Socket {
                 case "receipt" -> digestReceipt(node);
                 case "stream:error" -> digestError(node);
                 case "success" -> digestSuccess();
-                case "message" -> digestMessage(node);
+                case "message" -> messageHandler.decode(node);
                 case "notification" -> digestNotification(node);
                 case "xmlstreamend" -> disconnect();
             }
@@ -481,17 +484,6 @@ public class Socket {
             var receipt = with("ack",
                     of("class", "receipt", "id", node.id(), "from", from));
             send(receipt);
-        }
-
-        private void digestMessage(Node node) {
-            var messages = messageHandler.decode(node);
-            messages.forEach(message -> {
-                if (message.ignore()) {
-                    return;
-                }
-
-                store.callListeners(listener -> listener.onNewMessage(message));
-            });
         }
 
         private void digestNotification(Node node) {
@@ -751,7 +743,7 @@ public class Socket {
     }
 
     private class MessageHandler {
-        public List<MessageInfo> decode(Node node) {
+        public void decode(Node node) {
             var timestamp = node.attributes().getLong("t");
             var id = node.attributes().getRequiredString("id");
             var from = node.attributes().getJid("from")
@@ -783,14 +775,11 @@ public class Socket {
                     .timestamp(timestamp)
                     .create();
 
-            var messages = node.findNodes("enc");
-            return messages.stream()
-                    .map(messageNode -> decodeMessage(info, node, messageNode, from))
-                    .filter(Objects::nonNull)
-                    .toList();
+            node.findNodes("enc")
+                    .forEach(messageNode -> decodeMessage(info, node, messageNode, from));
         }
 
-        private MessageInfo decodeMessage(MessageInfo info, Node container, Node messageNode, ContactJid from) {
+        private void decodeMessage(MessageInfo info, Node container, Node messageNode, ContactJid from) {
             try {
                 var encodedMessage = messageNode.bytes();
                 var messageType = messageNode.attributes().getString("type");
@@ -799,12 +788,19 @@ public class Socket {
                 sendMessageAck(container, of("class", "receipt"));
                 sendReceipt(info.chatJid(), info.senderJid(),
                         List.of(info.key().id()), null);
-                handleSenderKeyMessage(from, info);
-                return info;
+                handleMessage(info, from);
             }catch (Throwable throwable){
                 log.warning("An exception occurred while processing a message: " + throwable.getMessage());
                 log.warning("The application will continue running normally, but submit an issue on GitHub");
-                return null;
+            }
+        }
+
+        private void handleMessage(MessageInfo info, ContactJid from) {
+            switch (info.message().content()){
+                case SenderKeyDistributionMessage distributionMessage -> handleDistributionMessage(distributionMessage, from);
+                case ProtocolMessage protocolMessage -> handleProtocolMessage(info, protocolMessage);
+                case DeviceSentMessage deviceSentMessage -> saveMessage(info.message(deviceSentMessage.message()));
+                default -> saveMessage(info);
             }
         }
 
@@ -842,25 +838,19 @@ public class Socket {
             }
         }
 
-        @SneakyThrows
-        private void handleSenderKeyMessage(ContactJid from, MessageInfo info) {
-            switch (info.message().content()){
-                case SenderKeyDistributionMessage distributionMessage -> handleDistributionMessage(distributionMessage, from);
-                case ProtocolMessage protocolMessage -> handleProtocolMessage(info, protocolMessage);
-                case DeviceSentMessage deviceSentMessage -> saveMessage(info.message(deviceSentMessage.message()));
-                case MediaMessage mediaMessage -> {
-                    mediaMessage.store(store);
-                    saveMessage(info);
-                }
-                default -> saveMessage(info);
-            }
-        }
-
         private void saveMessage(MessageInfo info) {
-            info.chat()
-                    .orElseThrow(() -> new NoSuchElementException("Missing chat: %s".formatted(info.chatJid())))
-                    .messages()
-                    .add(info);
+            if(info.message().content() instanceof MediaMessage mediaMessage){
+                mediaMessage.store(info.store());
+            }
+
+            var chat = info.chat()
+                    .orElseThrow(() -> new NoSuchElementException("Missing chat: %s".formatted(info.chatJid())));
+            chat.messages().add(info);
+            if(info.timestamp() <= store.initializationTimeStamp()){
+                return;
+            }
+
+            store.callListeners(listener -> listener.onNewMessage(info));
         }
 
         private void handleDistributionMessage(SenderKeyDistributionMessage distributionMessage, ContactJid from) {
@@ -880,7 +870,7 @@ public class Socket {
                             .decode(decompressed);
                     switch(history.syncType()) {
                         case FULL, INITIAL_BOOTSTRAP -> {
-                            store.chats().addAll(history.conversations());
+                            history.conversations().forEach(store::addChat);
                             store.callListeners(WhatsappListener::onChats);
                         }
                         case INITIAL_STATUS_V3 -> {
@@ -950,7 +940,7 @@ public class Socket {
         private void createChat(Contact oldContact){
             var newChat = Chat.builder()
                     .jid(oldContact.jid())
-                    .name(oldContact.bestName("missing"))
+                    .name(oldContact.bestName("<missing>"))
                     .build();
             store.addChat(newChat);
         }
@@ -1069,14 +1059,14 @@ public class Socket {
                     .findNodes("patch")
                     .stream()
                     .map(patch -> decodePatch(patch, versionCode))
-                    .filter(Objects::nonNull)
+                    .flatMap(Optional::stream)
                     .toList();
         }
 
         @SneakyThrows
-        private PatchSync decodePatch(Node patch, int versionCode) {
+        private Optional<PatchSync> decodePatch(Node patch, int versionCode) {
             if (!patch.hasContent()) {
-                return null;
+                return Optional.empty();
             }
 
             var patchSync = ProtobufDecoder.forType(PatchSync.class)
@@ -1086,7 +1076,7 @@ public class Socket {
                 patchSync.version(version);
             }
 
-            return patchSync;
+            return Optional.of(patchSync);
         }
 
         private void processSyncActions(ActionDataSync mutation) {
@@ -1106,7 +1096,7 @@ public class Socket {
                     case ClearChatAction ignored -> targetChat.map(Chat::messages).ifPresent(Collection::clear);
                     case ContactAction contactAction -> targetContact.ifPresent(contact -> updateContactName(contact, contactAction));
                     case DeleteChatAction ignored -> targetChat.ifPresent(store.chats()::remove);
-                    case DeleteMessageForMeAction ignored -> targetMessage.ifPresent(message -> targetChat.ifPresent(chat -> chat.messages().remove(message)));
+                    case DeleteMessageForMeAction ignored -> targetMessage.ifPresent(message -> targetChat.ifPresent(chat -> deleteMessage(message, chat)));
                     case MarkChatAsReadAction markAction -> targetChat.ifPresent(chat -> chat.unreadMessages(markAction.read() ? 0 : -1));
                     case MuteAction muteAction -> targetChat.ifPresent(chat -> chat.mute(ChatMute.muted(muteAction.muteEndTimestamp())));
                     case PinAction pinAction -> targetChat.ifPresent(chat -> chat.pinned(pinAction.pinned() ? mutation.value().timestamp() : 0));
@@ -1129,6 +1119,11 @@ public class Socket {
             }
         }
 
+        private void deleteMessage(MessageInfo message, Chat chat) {
+            chat.messages().remove(message);
+            store.callListeners(listener -> listener.onMessageDeleted(message, false));
+        }
+
         private void updateContactName(Contact contact, ContactAction action) {
             contact.update(action);
             var name = contact.bestName("unknown");
@@ -1141,8 +1136,7 @@ public class Socket {
             var newState = initial.copy();
             var snapshots = patches.stream()
                     .map(patch -> decodePatch(name, minimumVersionNumber, validateMacs, newState, patch))
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
+                    .flatMap(Optional::stream)
                     .toList();
             return new SnapshotsRecord(newState, snapshots);
         }

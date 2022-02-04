@@ -18,10 +18,7 @@ import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 
 import java.time.ZonedDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * A model class that represents a Chat.
@@ -130,7 +127,6 @@ public class Chat {
      */
     @JsonProperty("13")
     @JsonPropertyDescription("string")
-    @Getter(onMethod = @__(@NonNull))
     private String name;
 
     /**
@@ -266,6 +262,16 @@ public class Chat {
      */
     @Default
     private Map<Contact, ContactStatus> presences = new HashMap<>();
+
+    /**
+     * Returns the name of this chat
+     *
+     * @return a non-null string
+     */
+    public String name(){
+        return Objects.requireNonNullElseGet(name,
+                () -> this.name = "+%s".formatted(jid()));
+    }
 
     /**
      * Returns a boolean to represent whether this chat is a group or not

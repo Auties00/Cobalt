@@ -58,8 +58,6 @@ public class BinaryMessage {
             decoded.add(frame);
         }
 
-        Validate.isTrue(buffer.readableBytes() == 0,
-                "Cannot decode %s bytes: underflow", buffer.readableBytes());
         this.decoded = decoded;
     }
 
@@ -91,7 +89,6 @@ public class BinaryMessage {
     private Node toNode(BinaryArray encoded, WhatsappKeys keys) {
         var plainText = AesGmc.with(keys.readKey(), keys.readCounter(true), false)
                 .process(encoded.data());
-        System.out.println("Raw message: " + HexFormat.of().formatHex(plainText));
         return decoder.decode(plainText);
     }
 }
