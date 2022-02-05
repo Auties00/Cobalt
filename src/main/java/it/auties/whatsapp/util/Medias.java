@@ -18,13 +18,12 @@ import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static java.net.http.HttpRequest.BodyPublishers.ofByteArray;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
+import static java.util.Optional.empty;
+import static java.util.Optional.ofNullable;
 
 @UtilityClass
 public class Medias implements JacksonProvider {
@@ -34,12 +33,12 @@ public class Medias implements JacksonProvider {
         return store.mediaConnection().hosts()
                 .stream()
                 .map(host -> upload(file, type, client, auth, host))
-                .filter(Objects::nonNull)
+                .flatMap(Optional::stream)
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Cannot upload media: no suitable host found"));
     }
 
-    private MediaUpload upload(byte[] file, MediaMessageType type, HttpClient client, String auth, String host) {
+    private Optional<MediaUpload> upload(byte[] file, MediaMessageType type, HttpClient client, String auth, String host) {
         try {
             var keys = MediaKeys.random(type.whatsappName());
             var encryptedMedia = AesCbc.encrypt(keys.iv(), file, keys.cipherKey());
@@ -59,9 +58,9 @@ public class Medias implements JacksonProvider {
             var response = client.send(request, ofString());
             Validate.isTrue(response.statusCode() == 200,
                     "Invalid status code: %s", response.statusCode());
-            return JACKSON.readValue(response.body(), MediaUpload.class);
+            return ofNullable(JACKSON.readValue(response.body(), MediaUpload.class));
         }catch (Throwable ignored){
-            return null;
+            return empty();
         }
     }
 
@@ -69,12 +68,12 @@ public class Medias implements JacksonProvider {
         return collectDownloadUrls(provider, store)
                 .stream()
                 .map(url -> download(provider, url))
-                .filter(Objects::nonNull)
+                .flatMap(Optional::stream)
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Cannot download encrypted media: no suitable host found"));
     }
 
-    private byte[] download(AttachmentProvider provider, String url) {
+    private Optional<byte[]> download(AttachmentProvider provider, String url) {
         try {
             var stream = BinaryArray.of(new URL(url)
                     .openStream()
@@ -100,9 +99,9 @@ public class Medias implements JacksonProvider {
             Validate.isTrue(provider.fileLength() <= 0 || provider.fileLength() == decrypted.length,
                     "Cannot decode media: invalid size");
 
-            return decrypted;
+            return Optional.ofNullable(decrypted);
         } catch (Throwable ignored) {
-            return null;
+            return empty();
         }
     }
 

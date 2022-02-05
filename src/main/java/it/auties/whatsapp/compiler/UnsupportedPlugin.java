@@ -1,13 +1,12 @@
 package it.auties.whatsapp.compiler;
 
-import com.sun.source.tree.CompilationUnitTree;
-import com.sun.source.tree.ExpressionTree;
-import com.sun.source.tree.MethodInvocationTree;
-import com.sun.source.tree.MethodTree;
+import com.sun.source.tree.*;
 import com.sun.source.util.*;
 import it.auties.whatsapp.api.Unsupported;
 
 import javax.tools.Diagnostic;
+import java.util.Collection;
+import java.util.Optional;
 
 public class UnsupportedPlugin implements Plugin, TaskListener {
     private Trees trees;
@@ -42,26 +41,33 @@ public class UnsupportedPlugin implements Plugin, TaskListener {
         @Override
         public Void visitMethodInvocation(MethodInvocationTree invocation, CompilationUnitTree parameter) {
             var invoked = invocation.getMethodSelect();
-            var unsupported = getUnsupported(invoked);
-            if(unsupported != null){
-                trees.printMessage(Diagnostic.Kind.MANDATORY_WARNING,
-                        unsupported.warning(), invocation, parameter);
-            }
-
+            getUnsupported(invoked)
+                    .ifPresent(unsupported -> printWarning(invocation, parameter, unsupported));
             return super.visitMethodInvocation(invocation, parameter);
         }
 
-        private Unsupported getUnsupported(ExpressionTree invoked) {
-            if(!(invoked instanceof MethodTree method)){
-                return null;
-            }
-
-            return (Unsupported) method.getModifiers()
-                    .getAnnotations()
+        private Optional<Unsupported> getUnsupported(ExpressionTree invoked) {
+            return Optional.ofNullable(invoked)
+                    .filter(tree -> tree instanceof MethodTree)
+                    .map(tree -> (MethodTree) tree)
+                    .map(MethodTree::getModifiers)
+                    .map(ModifiersTree::getAnnotations)
                     .stream()
-                    .filter(annotation -> annotation.getAnnotationType().toString().equals(Unsupported.class.getSimpleName()))
+                    .flatMap(Collection::stream)
+                    .filter(this::isUnsupported)
                     .findFirst()
-                    .orElse(null);
+                    .map(annotation -> (Unsupported) annotation);
+        }
+
+        private boolean isUnsupported(AnnotationTree annotation) {
+            return annotation.getAnnotationType()
+                    .toString()
+                    .equals(Unsupported.class.getSimpleName());
+        }
+
+        private void printWarning(MethodInvocationTree invocation, CompilationUnitTree parameter, Unsupported unsupported) {
+            trees.printMessage(Diagnostic.Kind.MANDATORY_WARNING,
+                    unsupported.warning(), invocation, parameter);
         }
     }
 }

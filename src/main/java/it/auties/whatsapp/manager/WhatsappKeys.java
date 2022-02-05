@@ -212,7 +212,7 @@ public class WhatsappKeys implements JacksonProvider {
         this.ephemeralKeyPair = SignalKeyPair.random();
         this.identityKeyPair = SignalKeyPair.random();
         this.signedKeyPair = SignalSignedKeyPair.of(id, identityKeyPair());
-        this.companionKey = SignalHelper.randomSenderKey();
+        this.companionKey = SignalKeyPair.random().publicKey();
         this.senderKeys = new ConcurrentHashMap<>();
         this.preKeys = new LinkedList<>();
         this.sessions = new ConcurrentHashMap<>();

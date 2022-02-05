@@ -21,7 +21,7 @@ public class LTHash {
 
     @NonNull
     @Getter
-    private final Map<String, byte[]> data;
+    private final Map<String, byte[]> indexValueMap;
 
     @NonNull
     private final Blake2b512 digest;
@@ -32,7 +32,7 @@ public class LTHash {
 
     public LTHash(byte[] hash){
         this.hash = hash;
-        this.data = new HashMap<>();
+        this.indexValueMap = new HashMap<>();
         this.digest = new Blake2b512();
         this.add = new ArrayList<>();
         this.subtract = new ArrayList<>();
@@ -41,35 +41,33 @@ public class LTHash {
 
     public void mix(byte[] indexMac, byte[] valueMac, MutationSync.Operation operation) {
         var indexMacBase64 = BinaryArray.of(indexMac).toBase64();
-        var prevOp = data.get(indexMacBase64);
+        var prevOp = indexValueMap.get(indexMacBase64);
         if (operation == MutationSync.Operation.REMOVE) {
             Validate.isTrue(prevOp != null, "No previous operation");
-            data.remove(indexMacBase64);
-        } else {
-            add.add(valueMac);
-            data.put(indexMacBase64, valueMac);
+            indexValueMap.remove(indexMacBase64);
+            subtract.add(prevOp);
+            return;
         }
 
-        if (prevOp != null) {
-            subtract.add(prevOp);
+        add.add(valueMac);
+        indexValueMap.put(indexMacBase64, valueMac);
+        if (prevOp == null) {
+            return;
         }
+
+        subtract.add(prevOp);
     }
 
     public byte[] finish() {
         subtract.add(0, hash);
-        return update(toArray(subtract), toArray(add));
+        executeOperation((first, second) -> first - second, toArray(subtract));
+        executeOperation(Integer::sum, toArray(add));
+        return Arrays.copyOf(checksum, checksum.length);
     }
 
     public void reset() {
         this.checksum = BinaryArray.allocate(CHECKSUM_SIZE)
-                .fill((byte) 0)
                 .data();
-    }
-
-    private byte[] update(byte[][] oldValues, byte[][] newValues) {
-        executeOperation((first, second) -> first - second, oldValues);
-        executeOperation(Integer::sum, newValues);
-        return Arrays.copyOf(checksum, checksum.length);
     }
 
     private void executeOperation(BiFunction<Integer, Integer, Integer> function, byte[]... inputs) {

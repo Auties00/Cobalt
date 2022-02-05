@@ -138,7 +138,10 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
         var encodedBody = body();
         var body = switch (encodedBody) {
             case byte[] bytes -> bytes;
-            case Node node -> ENCODER.encode(node);
+            case Node node -> {
+                System.out.println("Sending: " + node);
+                yield ENCODER.encode(node);
+            }
             default -> throw new IllegalStateException("Illegal body: %s".formatted(encodedBody));
         };
 

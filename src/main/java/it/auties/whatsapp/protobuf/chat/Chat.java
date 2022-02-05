@@ -93,13 +93,6 @@ public class Chat {
     private boolean readOnly;
 
     /**
-     * Marks whether Whatsapp has synced all messages for this chat
-     */
-    @JsonProperty("8")
-    @JsonPropertyDescription("bool")
-    private boolean complete;
-
-    /**
      * The endTimeStamp in seconds before a message is automatically deleted from this chat both locally and from WhatsappWeb's servers.
      * If ephemeral messages aren't enabled, this field has a value of 0
      */
@@ -270,7 +263,7 @@ public class Chat {
      */
     public String name(){
         return Objects.requireNonNullElseGet(name,
-                () -> this.name = "+%s".formatted(jid()));
+                () -> this.name = jid.user());
     }
 
     /**

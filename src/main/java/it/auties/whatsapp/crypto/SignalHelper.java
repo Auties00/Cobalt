@@ -5,6 +5,7 @@ import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.zip.Inflater;
@@ -91,6 +92,12 @@ public class SignalHelper {
         }
 
         return result.toByteArray();
+    }
+
+    public byte[] toBytes(long number){
+        return ByteBuffer.allocate(Long.BYTES)
+                .putLong(number)
+                .array();
     }
 
     public byte[] toBytes(int input, int length) {

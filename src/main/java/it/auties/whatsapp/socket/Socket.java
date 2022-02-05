@@ -42,15 +42,14 @@ import lombok.extern.java.Log;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
+import static it.auties.whatsapp.binary.BinaryArray.empty;
 import static it.auties.whatsapp.binary.BinaryArray.ofBase64;
 import static it.auties.whatsapp.socket.Node.*;
 import static it.auties.whatsapp.util.QrHandler.TERMINAL;
@@ -163,10 +162,7 @@ public class Socket {
     }
 
     private void handleNode(Node deciphered) {
-        if(deciphered.description().equals("message")){
-            System.out.printf("Received: %s%n", deciphered);
-        }
-
+        System.out.printf("Received: %s%n", deciphered);
         if(store.resolvePendingRequest(deciphered, false)){
             return;
         }
@@ -342,7 +338,7 @@ public class Socket {
         var newId = SignalHelper.randomRegistrationId();
         this.keys = WhatsappKeys.newKeys(newId);
         var newStore = WhatsappStore.newStore(newId);
-        store.listeners().addAll(store.listeners());
+        newStore.listeners().addAll(store.listeners());
         this.store = newStore;
     }
 
@@ -359,12 +355,6 @@ public class Socket {
             headers.put("Host", List.of("web.whatsapp.com"));
         }
     }
-
-    // Sending: {"tag":"ack","attrs":{"id":"BCB511457694C90D69932BB0DF4294EB","to":"393495089819@s.whatsapp.net","class":"receipt"}}
-    //Sending: {"tag":"receipt","attrs":{"id":"BCB511457694C90D69932BB0DF4294EB","t":"1643919547423","to":"393495089819@s.whatsapp.net"}}
-
-    //Sending Node[description=ack, attributes={class=receipt, id=C5B281E1810888300119A8A9AE07DEEA, to=393495089819@s.whatsapp.net}]
-    //Sending Node[description=receipt, attributes={to=393495089819@s.whatsapp.net, id=C5B281E1810888300119A8A9AE07DEEA, t=1643920230923}]
 
     private class AuthHandler {
         @SneakyThrows
@@ -523,14 +513,18 @@ public class Socket {
         private void digestFailure(Node node) {
             var statusCode = node.attributes().getLong("reason");
             var reason = node.attributes().getString("location");
-            Validate.isTrue(handleFailure(statusCode, reason),
-                    "Invalid or expired credentials: socket failed with status code %s at %s",
-                    statusCode, reason);
+            handleFailure(statusCode, reason, reason);
+        }
+
+        private void handleFailure(long statusCode, String reason, String location) {
+            Validate.isTrue(shouldHandleFailure(statusCode, reason),
+                    "Invalid or expired credentials: socket failed with status code %s at %s", statusCode, location);
+            log.warning("Handling failure caused by %s at %s with status code %s: restoring session".formatted(reason, location, statusCode));
             changeKeys();
             reconnect();
         }
 
-        private boolean handleFailure(long statusCode, String reason) {
+        private boolean shouldHandleFailure(long statusCode, String reason) {
             return store.listeners()
                     .stream()
                     .allMatch(listener -> listener.onFailure(statusCode, reason));
@@ -540,27 +534,27 @@ public class Socket {
             var statusCode = node.attributes().getInt("code");
             switch (statusCode) {
                 case 515 -> reconnect();
-                case 401 -> handleFailure(node, statusCode);
-                default -> {
-                    Validate.isTrue(node.findNode("xml-not-well-formed") == null, "An invalid node was sent to Whatsapp");
-                    node.children().forEach(error -> store.resolvePendingRequest(error, true));
-                }
+                case 401 -> handleStreamError(node, statusCode);
+                default -> handleStreamError(node);
             }
         }
 
-        private void handleFailure(Node node, int statusCode) {
+        private void handleStreamError(Node node) {
+            Validate.isTrue(node.findNode("xml-not-well-formed") == null,
+                    "An invalid node was sent to Whatsapp");
+            node.children().forEach(error -> store.resolvePendingRequest(error, true));
+        }
+
+        private void handleStreamError(Node node, int statusCode) {
             var child = node.children().getFirst();
             var type = child.attributes().getString("type");
             var reason = child.attributes().getString("reason", null);
-            Validate.isTrue(handleFailure(statusCode, requireNonNullElse(reason, type)),
-                    "Invalid or expired credentials: socket failed with status code %s at %s", statusCode, requireNonNullElse(reason, type));
-            changeKeys();
-            reconnect();
+            handleFailure(statusCode, requireNonNullElse(reason, type), requireNonNullElse(reason, type));
         }
 
         private void digestSuccess() {
-            sendPreKeys();
             confirmConnection();
+            sendPreKeys();
             createPingService();
             sendStatusUpdate();
             store.callListeners(WhatsappListener::onLoggedIn);
@@ -700,7 +694,10 @@ public class Socket {
             var advIdentity = ProtobufDecoder.forType(SignedDeviceIdentityHMAC.class)
                     .decode(deviceIdentity.bytes());
             var advSign = Hmac.calculateSha256(advIdentity.details(), keys.companionKey());
-            Validate.isTrue(Arrays.equals(advIdentity.hmac(), advSign.data()), "Cannot login: Hmac validation failed!", SecurityException.class);
+            if(!Arrays.equals(advIdentity.hmac(), advSign.data())) {
+                handleFailure(503, "hmac_validation", "login_adv_sign");
+                return;
+            }
 
             var account = ProtobufDecoder.forType(SignedDeviceIdentity.class)
                     .decode(advIdentity.details());
@@ -708,21 +705,24 @@ public class Socket {
                     .append(account.details())
                     .append(keys.identityKeyPair().publicKey())
                     .data();
-            Validate.isTrue(Curve.verifySignature(account.accountSignatureKey(), message, account.accountSignature()),
-                    "Cannot login: Hmac validation failed!", SecurityException.class);
+            if(!Curve.verifySignature(account.accountSignatureKey(), message, account.accountSignature())) {
+                handleFailure(503, "hmac_validation", "login_verify_signature");
+                return;
+            }
 
             var deviceSignatureMessage = BinaryArray.of(new byte[]{6, 1})
                     .append(account.details())
                     .append(keys.identityKeyPair().publicKey())
-                    .append(account.accountSignature())
+                    .append(account.accountSignatureKey())
                     .data();
             var deviceSignature = Curve.calculateSignature(keys.identityKeyPair().privateKey(), deviceSignatureMessage);
+            account.deviceSignature(deviceSignature);
+            account.accountSignatureKey(null);
 
             var keyIndex = ProtobufDecoder.forType(DeviceIdentity.class)
                     .decode(account.details())
                     .keyIndex();
-            var identity = ProtobufEncoder.encode(account.deviceSignature(deviceSignature).accountSignature(null));
-            var identityNode = with("device-identity", of("key-index", valueOf(keyIndex)), identity);
+            var identityNode = with("device-identity", of("key-index", valueOf(keyIndex)), ProtobufEncoder.encode(account));
             var content = withChildren("pair-device-sign", identityNode);
 
             sendConfirmNode(node, content);
@@ -890,9 +890,6 @@ public class Socket {
                     var receipt = withAttributes("receipt",
                             of("to", recipient.toString(), "type", "hist_sync", "id", info.key().id()));
                     send(receipt);
-
-                    //Sending: {"tag":"receipt","attrs":{"id":"BCB511457694C90D69932BB0DF4294EB","type":"hist_sync","to":"393495089819@c.us"}}
-                    //Sending Node[description=receipt, attributes={to=393495089819@c.us, id=C5B281E1810888300119A8A9AE07DEEA, type=hist_sync}]
                 }
 
                 case APP_STATE_SYNC_KEY_SHARE -> {
@@ -1008,14 +1005,13 @@ public class Socket {
             var state = keys.findHashStateByName(name);
             try {
                 if (patch.hasSnapshot()) {
-                    var decodedSnapshot = decodeSnapshot(name, patch.snapshot(), state.version(), false);
+                    var decodedSnapshot = decodeSnapshot(name, patch.snapshot(), state.version());
                     keys.hashStates().put(name, decodedSnapshot.state());
                     results.addAll(decodedSnapshot.mutations().records());
                 }
 
                 if (!patch.patches().isEmpty()) {
-                    var decodedPatches = decodePatches(name, patch.patches(), state, state.version(), false);
-                    decodedPatches.mutations()
+                    decodePatches(name, patch.patches(), state, state.version())
                             .stream()
                             .map(MutationsRecord::records)
                             .flatMap(Collection::stream)
@@ -1042,7 +1038,6 @@ public class Socket {
                     .toList();
         }
 
-        @SneakyThrows
         private SnapshotSyncRecord parseSync(Node sync) {
             var snapshot = sync.findNode("snapshot");
             var name = sync.attributes().getString("name");
@@ -1053,6 +1048,18 @@ public class Socket {
         }
 
         @SneakyThrows
+        private SnapshotSync decodeSnapshot(Node snapshot)  {
+            if(snapshot == null){
+                return null;
+            }
+
+            var blob = ProtobufDecoder.forType(ExternalBlobReference.class)
+                    .decode(snapshot.bytes());
+            var syncedData = Medias.download(blob, store);
+            return ProtobufDecoder.forType(SnapshotSync.class)
+                    .decode(syncedData);
+        }
+
         private List<PatchSync> decodePatches(Node sync) {
             var versionCode = sync.attributes().getInt("version");
             return requireNonNullElse(sync.findNode("patches"), sync)
@@ -1131,18 +1138,15 @@ public class Socket {
                     .ifPresent(chat -> chat.name(name));
         }
 
-        @SneakyThrows
-        private SnapshotsRecord decodePatches(String name, List<PatchSync> patches, LTHashState initial, long minimumVersionNumber, boolean validateMacs) {
-            var newState = initial.copy();
-            var snapshots = patches.stream()
-                    .map(patch -> decodePatch(name, minimumVersionNumber, validateMacs, newState, patch))
+        private List<MutationsRecord> decodePatches(String name, List<PatchSync> patches, LTHashState initial, long minimumVersionNumber) {
+            return patches.stream()
+                    .map(patch -> decodePatch(name, minimumVersionNumber, initial.copy(), patch))
                     .flatMap(Optional::stream)
                     .toList();
-            return new SnapshotsRecord(newState, snapshots);
         }
 
         @SneakyThrows
-        private Optional<MutationsRecord> decodePatch(String name, long minimumVersionNumber, boolean validateMacs, LTHashState newState, PatchSync patch) {
+        private Optional<MutationsRecord> decodePatch(String name, long minimumVersionNumber, LTHashState newState, PatchSync patch) {
             if(patch.hasExternalMutations()) {
                 var blob = Medias.download(patch.externalMutations(), store);
                 var mutationsSync = ProtobufDecoder.forType(MutationsSync.class)
@@ -1151,14 +1155,14 @@ public class Socket {
             }
 
             newState.version(patch.version().version());
-            Validate.isTrue(!validateMacs || Arrays.equals(calculateSyncMac(patch, name), patch.patchMac()),
+            Validate.isTrue(Arrays.equals(calculateSyncMac(patch, name), patch.patchMac()),
                     "Cannot decode mutations: Hmac validation failed",
                     SecurityException.class);
 
-            var decoded = decodeMutations(patch.mutations(), newState, validateMacs);
+            var decoded = decodeMutations(patch.mutations(), newState);
             newState.hash(decoded.hash());
             newState.indexValueMap(decoded.indexValueMap());
-            Validate.isTrue(!validateMacs || Arrays.equals(generatePatchMac(name, newState, patch), patch.snapshotMac()),
+            Validate.isTrue(Arrays.equals(generatePatchMac(name, newState, patch), patch.snapshotMac()),
                     "Cannot decode mutations: Hmac validation failed",
                     SecurityException.class);
 
@@ -1179,19 +1183,20 @@ public class Socket {
             var mutationKeys = MutationKeys.of(appStateSyncKey.keyData().keyData());
             var mutationMacs = sync.mutations()
                     .stream()
-                    .map(mutation -> BinaryArray.of(mutation.record().value().blob()).cut(-32).data())
-                    .toArray(byte[][]::new);
+                    .map(mutation -> mutation.record().value().blob())
+                    .map(BinaryArray::of)
+                    .map(binary -> binary.slice(-32))
+                    .reduce(empty(), BinaryArray::append);
             return generatePatchMac(sync.snapshotMac(), mutationMacs, sync.version().version(), name, mutationKeys.patchMacKey());
         }
 
-
-        private SnapshotRecord decodeSnapshot(String name, SnapshotSync snapshot, long minimumVersion, boolean validateMacs) {
+        private SnapshotRecord decodeSnapshot(String name, SnapshotSync snapshot, long minimumVersion) {
             var newState = new LTHashState(snapshot.version().version());
-            var mutations = decodeMutations(snapshot.records(), newState, validateMacs);
+            var mutations = decodeMutations(snapshot.records(), newState);
             newState.hash(mutations.hash());
             newState.indexValueMap(mutations.indexValueMap());
 
-            Validate.isTrue(!validateMacs || Arrays.equals(snapshot.mac(), computeSnapshotMac(name, snapshot, newState)),
+            Validate.isTrue(Arrays.equals(snapshot.mac(), computeSnapshotMac(name, snapshot, newState)),
                     "Cannot decode mutations: Hmac validation failed",
                     SecurityException.class);
 
@@ -1210,16 +1215,16 @@ public class Socket {
             return generateSnapshotMac(newState.hash(), newState.version(), name, mutationKeys.snapshotMacKey());
         }
 
-        private MutationsRecord decodeMutations(List<? extends ParsableMutation> syncs, LTHashState initialState, boolean validateMacs) {
+        private MutationsRecord decodeMutations(List<? extends ParsableMutation> syncs, LTHashState initialState) {
             var generator = new LTHash(initialState.hash());
             var mutations = syncs.stream()
-                    .map(mutation -> decodeMutation(validateMacs, generator, mutation))
+                    .map(mutation -> decodeMutation(generator, mutation))
                     .toList();
-            return new MutationsRecord(generator.finish(), generator.data(), mutations);
+            return new MutationsRecord(generator.finish(), generator.indexValueMap(), mutations);
         }
 
         @SneakyThrows
-        private ActionDataSync decodeMutation(boolean validateMacs, LTHash generator, ParsableMutation mutation) {
+        private ActionDataSync decodeMutation(LTHash generator, ParsableMutation mutation) {
             var appStateSyncKey = keys.findAppKeyById(mutation.id())
                     .orElseThrow(() -> new NoSuchElementException("No keys available for mutation"));
 
@@ -1230,14 +1235,14 @@ public class Socket {
             var encryptedMac = mutation.valueBlob()
                     .slice(-32)
                     .data();
-            Validate.isTrue(!validateMacs || Arrays.equals(generateMac(MutationSync.Operation.SET, encryptedBlob, mutation.id(), mutationKeys.macKey()), encryptedMac),
+            Validate.isTrue(Arrays.equals(generateMac(MutationSync.Operation.SET, encryptedBlob, mutation.id(), mutationKeys.macKey()), encryptedMac),
                     "Cannot decode mutations: Hmac validation failed",
                     SecurityException.class);
 
             var result = AesCbc.decrypt(encryptedBlob, mutationKeys.encKey());
             var actionSync = ProtobufDecoder.forType(ActionDataSync.class)
                     .decode(result);
-            Validate.isTrue(!validateMacs || Objects.equals(Hmac.calculateSha256(actionSync.index(), mutationKeys.indexKey()), mutation.indexBlob()),
+            Validate.isTrue(Objects.equals(Hmac.calculateSha256(actionSync.index(), mutationKeys.indexKey()), mutation.indexBlob()),
                     "Cannot decode mutations: Hmac validation failed",
                     SecurityException.class);
 
@@ -1260,7 +1265,9 @@ public class Socket {
                     .withLast((byte) encodedKey.length)
                     .data();
 
-            var total = BinaryArray.of(encodedKey, data, last)
+            var total = BinaryArray.of(encodedKey)
+                    .append(data)
+                    .append(last)
                     .data();
 
             return Hmac.calculateSha512(total, key)
@@ -1269,43 +1276,22 @@ public class Socket {
         }
 
         private byte[] generateSnapshotMac(byte[] ltHash, long version, String patchName, byte[] key) {
-            var order = to64BitNetworkOrder(version);
-            var patchBytes = patchName.getBytes(StandardCharsets.UTF_8);
-            var total = BinaryArray.of(ltHash, order, patchBytes)
+            var total = BinaryArray.of(ltHash)
+                    .append(SignalHelper.toBytes(version))
+                    .append(patchName.getBytes(StandardCharsets.UTF_8))
                     .data();
             return Hmac.calculateSha256(total, key)
                     .data();
         }
 
-        private byte[] generatePatchMac(byte[] snapshotMac, byte[][] valueMacs, long version, String type, byte[] key) {
-            var macs = BinaryArray.of(valueMacs);
+        private byte[] generatePatchMac(byte[] snapshotMac, BinaryArray valueMacs, long version, String type, byte[] key) {
             var total = BinaryArray.of(snapshotMac)
-                    .append(macs)
-                    .append(to64BitNetworkOrder(version))
+                    .append(valueMacs)
+                    .append(SignalHelper.toBytes(version))
                     .append(type.getBytes(StandardCharsets.UTF_8))
                     .data();
             return Hmac.calculateSha256(total, key)
                     .data();
-        }
-
-        private byte[] to64BitNetworkOrder(long number) {
-            var binary = Buffers.newBuffer()
-                    .order(ByteOrder.BIG_ENDIAN)
-                    .writeBytes(new byte[4])
-                    .writeLong(number);
-            return Buffers.readBytes(binary);
-        }
-
-        private SnapshotSync decodeSnapshot(Node snapshot) throws IOException {
-            if(snapshot == null){
-                return null;
-            }
-
-            var blob = ProtobufDecoder.forType(ExternalBlobReference.class)
-                    .decode(snapshot.bytes());
-            var syncedData = Medias.download(blob, store);
-            return ProtobufDecoder.forType(SnapshotSync.class)
-                    .decode(syncedData);
         }
     }
 }

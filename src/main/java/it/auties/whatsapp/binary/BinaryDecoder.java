@@ -55,11 +55,12 @@ public record BinaryDecoder(@NonNull ByteBuf buffer){
 
     public String readString() {
         var read = read(true);
-        if (!(read instanceof String string)) {
-            throw new IllegalArgumentException("Strict decoding failed: expected string, got %s with type %s".formatted(read, read.getClass().getName()));
+        if (read instanceof String string) {
+            return string;
         }
 
-        return string;
+        throw new IllegalArgumentException("Strict decoding failed: expected string, got %s with type %s"
+                .formatted(read, read == null ? null : read.getClass().getName()));
     }
 
     private List<Node> readList(int size){
@@ -94,12 +95,18 @@ public record BinaryDecoder(@NonNull ByteBuf buffer){
             case LIST_16 -> readList(buffer.readUnsignedShort());
             case JID_PAIR -> readJidPair();
             case HEX_8 -> readHexString();
-            case BINARY_8 -> readString(parseBytes);
-            case BINARY_20 -> readString16(parseBytes);
-            case BINARY_32 -> readString32(parseBytes);
+            case BINARY_8 -> readString(buffer.readUnsignedByte(), parseBytes);
+            case BINARY_20 -> readString(readString20Length(), parseBytes);
+            case BINARY_32 -> readString(buffer.readUnsignedShort(), parseBytes);
             case NIBBLE_8 -> readNibble();
             default -> readStringFromToken(tag);
         };
+    }
+
+    private int readString20Length() {
+        return ((15 & buffer.readUnsignedByte()) << 16)
+                + (buffer.readUnsignedByte() << 8)
+                + buffer.readUnsignedByte();
     }
 
     private String readStringFromToken(int token) {
@@ -116,35 +123,10 @@ public record BinaryDecoder(@NonNull ByteBuf buffer){
         return readString(BinaryTokens.NUMBERS, number >>> 7, 127 & number);
     }
 
-    private Object readString32(boolean parseBytes) {
-        if (!parseBytes) {
-            return Buffers.readBytes(buffer, buffer.readUnsignedShort());
-        }
-
-        var bytes = buffer.readBytes(buffer.readUnsignedShort());
-        return new String(Buffers.readBytes(bytes), StandardCharsets.UTF_8);
-    }
-
-    private Object readString16(boolean parseBytes) {
-        var size = ((15 & buffer.readUnsignedByte()) << 16)
-                + (buffer.readUnsignedByte() << 8)
-                + buffer.readUnsignedByte();
-        if (!parseBytes) {
-            return Buffers.readBytes(buffer, size);
-        }
-
-        var bytes = buffer.readBytes(size);
-        return new String(Buffers.readBytes(bytes), StandardCharsets.UTF_8);
-    }
-
-    private Object readString(boolean parseBytes) {
-        var size = buffer.readUnsignedByte();
-        if (!parseBytes) {
-            return Buffers.readBytes(buffer, size);
-        }
-
-        var bytes = buffer.readBytes(size);
-        return new String(Buffers.readBytes(bytes), StandardCharsets.UTF_8);
+    private Object readString(int size, boolean parseBytes) {
+        var data = Buffers.readBytes(buffer, size);
+        return parseBytes ? new String(data, StandardCharsets.UTF_8)
+                : data;
     }
 
     private String readHexString() {
@@ -168,7 +150,7 @@ public record BinaryDecoder(@NonNull ByteBuf buffer){
     }
 
     private int readSize(int token) {
-        return token == LIST_8.data() ? buffer.readUnsignedByte()
+        return LIST_8.contentEquals(token) ? buffer.readUnsignedByte()
                 : buffer.readUnsignedShort();
     }
 

@@ -28,7 +28,7 @@ public record BinaryArray(byte @NonNull [] data) {
      * @return a new {@code BinaryArray} wrapping an empty bytes array
      */
     public static BinaryArray empty() {
-        return of(new byte[0]);
+        return of();
     }
 
     /**
@@ -39,18 +39,6 @@ public record BinaryArray(byte @NonNull [] data) {
      */
     public static BinaryArray of(byte... input) {
         return new BinaryArray(input);
-    }
-
-    /**
-     * Constructs a new {@code BinaryArray} wrapping {@param input}
-     *
-     * @param input the array of bytes to wrap
-     * @return a new {@code BinaryArray} wrapping {@code input}
-     */
-    public static BinaryArray of(byte[]... input) {
-        return Arrays.stream(input)
-                .map(BinaryArray::of)
-                .reduce(empty(), BinaryArray::append);
     }
 
     /**

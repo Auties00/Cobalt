@@ -169,7 +169,9 @@ public record BinaryEncoder(@NonNull ByteBuf buffer){
         writeInt(input.size());
         writeString(input.description());
         writeAttributes(input);
-        if(input.hasContent()) write(input.content());
+        if(input.hasContent()) {
+            write(input.content());
+        }
         return Buffers.readAllBytes(buffer);
     }
 

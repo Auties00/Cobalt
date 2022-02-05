@@ -13,6 +13,7 @@ import lombok.experimental.Accessors;
 import java.util.HexFormat;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static it.auties.whatsapp.binary.BinaryArray.of;
 
