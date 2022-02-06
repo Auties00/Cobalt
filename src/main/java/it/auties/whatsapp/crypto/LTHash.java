@@ -6,37 +6,33 @@ import it.auties.whatsapp.util.Buffers;
 import it.auties.whatsapp.util.Validate;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Value;
 import lombok.experimental.Accessors;
 import org.bouncycastle.jcajce.provider.digest.Blake2b.Blake2b512;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.BiFunction;
 
-@Accessors(fluent = true)
 public class LTHash {
-    private static final int INT_SIZE_IN_BYTES = Integer.SIZE / Byte.SIZE;
-    private static final int CHECKSUM_SIZE = 2048;
-
-    private final byte @NonNull [] hash;
+    @NonNull
+    private final LTHashImplementation implementation;
 
     @NonNull
-    @Getter
+    private final byte[] hash;
+
+    @NonNull
     private final Map<String, byte[]> indexValueMap;
 
     @NonNull
-    private final Blake2b512 digest;
-
     private final List<byte[]> add, subtract;
 
-    private byte[] checksum;
-
     public LTHash(byte[] hash){
+        this.implementation = new LTHashImplementation("WhatsApp Patch Integrity");
         this.hash = hash;
         this.indexValueMap = new HashMap<>();
-        this.digest = new Blake2b512();
         this.add = new ArrayList<>();
         this.subtract = new ArrayList<>();
-        reset();
     }
 
     public void mix(byte[] indexMac, byte[] valueMac, MutationSync.Operation operation) {
@@ -58,58 +54,58 @@ public class LTHash {
         subtract.add(prevOp);
     }
 
-    public byte[] finish() {
-        subtract.add(0, hash);
-        executeOperation((first, second) -> first - second, toArray(subtract));
-        executeOperation(Integer::sum, toArray(add));
-        return Arrays.copyOf(checksum, checksum.length);
+    public Result finish() {
+        var result = implementation.subtractThenAdd(hash,
+                add.toArray(byte[][]::new), subtract.toArray(byte[][]::new));
+        return new Result(result, indexValueMap);
     }
 
-    public void reset() {
-        this.checksum = BinaryArray.allocate(CHECKSUM_SIZE)
-                .data();
+    public record Result(byte[] hash, Map<String, byte[]> indexValueMap){
+
     }
 
-    private void executeOperation(BiFunction<Integer, Integer, Integer> function, byte[]... inputs) {
-        Arrays.stream(inputs)
-                .forEach(input -> executeOperation(function, input));
-    }
+    private record LTHashImplementation(@NonNull String salt) {
+        public byte[] add(byte[] input, byte[][] buffers) {
+            for(var item : buffers) {
+                input = addSingle(input, item);
+            }
 
-    private void executeOperation(BiFunction<Integer, Integer, Integer> function, byte[] input) {
-        var hash = hash(input);
-        var result = Buffers.newBuffer();
-        var checksumWrap = Buffers.newBuffer(checksum);
-        var newHashWrap = Buffers.newBuffer(hash);
-        for(var index = 0; index < hash.length; index += INT_SIZE_IN_BYTES) {
-            var operation = function.apply(checksumWrap.readInt(), newHashWrap.readInt());
-            result.writeInt(operation);
+            return input;
         }
 
-        this.checksum = Buffers.readBytes(result);
-    }
+        public byte[] subtract(byte[] input, byte[][] buffers) {
+            for(var item : buffers) {
+                input = subtractSingle(input, item);
+            }
 
-    private byte[] hash(byte[] input) {
-        digest.update(input);
-        return digest.digest();
-    }
-
-    private byte[][] toArray(List<byte[]> input) {
-        var array = new byte[input.size()][];
-        for(var index = 0; index < input.size(); index++){
-            array[index] = input.get(index);
+            return input;
         }
 
-        return array;
-    }
+        public byte[] subtractThenAdd(byte[] input, byte[][] addBuffers, byte[][] removeBuffers) {
+            return add(subtract(input, removeBuffers), addBuffers);
+        }
 
-    @Override
-    public boolean equals(Object other) {
-        return other instanceof LTHash that
-                && Arrays.equals(checksum, that.checksum);
-    }
+        public byte[] addSingle(byte[] input, byte[] addBuffer) {
+            var expanded = Hkdf.expand(addBuffer, salt.getBytes(StandardCharsets.UTF_8), 128);
+            return performPointWiseWithOverflow(input, expanded, Integer::sum);
+        }
 
-    @Override
-    public int hashCode() {
-        return Arrays.hashCode(checksum);
+        public byte[] subtractSingle(byte[] input, byte[] removeBuffer) {
+            var expanded = Hkdf.expand(removeBuffer, salt.getBytes(StandardCharsets.UTF_8), 128);
+            return performPointWiseWithOverflow(input, expanded, (first, second) -> first - second);
+        }
+
+        public byte[] performPointWiseWithOverflow(byte[] input, byte[] buffer, BiFunction<Integer, Integer, Integer> function) {
+            var eRead = Buffers.newBuffer(input);
+            var tRead = Buffers.newBuffer(buffer);
+            var write = Buffers.newBuffer();
+            while (eRead.isReadable()){
+                var first = eRead.readUnsignedShort();
+                var second = tRead.readUnsignedShort();
+                write.writeShort(function.apply(first, second));
+            }
+
+            return Buffers.readBytes(write);
+        }
     }
 }

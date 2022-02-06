@@ -5,7 +5,9 @@ import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.action.Action;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
+import it.auties.whatsapp.protobuf.contact.ContactStatus;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
+import it.auties.whatsapp.protobuf.message.model.MessageStatus;
 import it.auties.whatsapp.protobuf.setting.Setting;
 import it.auties.whatsapp.socket.Socket;
 import it.auties.whatsapp.util.QrHandler;
@@ -30,7 +32,7 @@ public interface WhatsappListener {
      * @return a non-null handler to process the qr code
      */
     @NonNull
-    default QrHandler onQRCode(@NonNull BitMatrix qr){
+    default QrHandler onQRCode(BitMatrix qr){
         return QrHandler.TERMINAL;
     }
 
@@ -50,7 +52,7 @@ public interface WhatsappListener {
      *
      * @param props the updated list of properties
      */
-    default void onProps(@NonNull Map<String, String> props) {
+    default void onProps(Map<String, String> props) {
     }
 
     /**
@@ -78,7 +80,7 @@ public interface WhatsappListener {
      *
      * @param action the action that was executed
      */
-    default void onAction(@NonNull Action action) {
+    default void onAction(Action action) {
 
     }
 
@@ -87,7 +89,7 @@ public interface WhatsappListener {
      *
      * @param setting the setting that was toggled
      */
-    default void onSetting(@NonNull Setting setting) {
+    default void onSetting(Setting setting) {
 
     }
 
@@ -96,7 +98,7 @@ public interface WhatsappListener {
      *
      * @param features the non-null features that were sent
      */
-    default void onFeatures(@NonNull List<String> features) {
+    default void onFeatures(List<String> features) {
 
     }
 
@@ -112,18 +114,17 @@ public interface WhatsappListener {
      *
      * @param contact the new contact
      */
-    default void onNewContact(@NonNull Contact contact) {
+    default void onNewContact(Contact contact) {
     }
 
     /**
-     * Called when {@link Socket} receives an update regarding the presence of a contact.
-     * If {@code chat} is a conversation with {@code contact}, the new presence is available by calling {@link Contact#lastKnownPresence()}.
-     * Otherwise, it should be queried using {@link Chat#presences()}.
+     * Called when {@link Socket} receives an update regarding the presence of a contact
      *
      * @param chat    the chat that this update regards
      * @param contact the contact that this update regards
+     * @param status  the new status of the contact
      */
-    default void onContactPresenceUpdate(@NonNull Chat chat, @NonNull Contact contact) {
+    default void onContactPresence(Chat chat, Contact contact, ContactStatus status) {
     }
 
     /**
@@ -139,7 +140,7 @@ public interface WhatsappListener {
      * Called when {@link Socket} receives the recent message for a chat already in memory.
      * When this event is fired, it is guaranteed that all metadata excluding messages will be present.
      */
-    default void onChatRecentMessages(@NonNull Chat chat) {
+    default void onChatRecentMessages(Chat chat) {
     }
 
     /**
@@ -147,7 +148,7 @@ public interface WhatsappListener {
      *
      * @param chat the new chat
      */
-    default void onNewChat(@NonNull Chat chat) {
+    default void onNewChat(Chat chat) {
     }
 
     /**
@@ -155,7 +156,7 @@ public interface WhatsappListener {
      *
      * @param message the message that was sent
      */
-    default void onNewMessage(@NonNull MessageInfo message) {
+    default void onNewMessage(MessageInfo message) {
     }
 
     /**
@@ -164,7 +165,32 @@ public interface WhatsappListener {
      * @param message  the message that was deleted
      * @param everyone whether this message was deleted by you only for yourself or whether the message was permanently removed
      */
-    default void onMessageDeleted(@NonNull MessageInfo message, boolean everyone) {
+    default void onMessageDeleted(MessageInfo message, boolean everyone) {
+    }
+
+    /**
+     * Called when the status of a message changes inside a conversation.
+     * This means that the status change can be considered global as the only other participant is the contact.
+     * If you need updates regarding any chat, implement {@link WhatsappListener#onMessageStatus(Chat, Contact, MessageInfo, MessageStatus)}
+     *
+     * @param info   the message whose status changed
+     * @param status the new status of the message
+     */
+    default void onMessageStatus(MessageInfo info, MessageStatus status) {
+    }
+
+    /**
+     * Called when the status of a message changes inside any type of chat.
+     * If {@code chat} is a conversation with {@code contact}, the new read status can be considered valid for the message itself(global status).
+     * Otherwise, it should be considered valid only for {@code contact}.
+     * If you only need updates regarding conversation, implement {@link WhatsappListener#onMessageStatus(MessageInfo, MessageStatus)}
+     *
+     * @param chat    the chat that triggered a status change
+     * @param contact the contact that triggered a status change
+     * @param message the message whose status changed
+     * @param status  the new status of the message
+     */
+    default void onMessageStatus(Chat chat, Contact contact, MessageInfo message, MessageStatus status) {
     }
 
     /**

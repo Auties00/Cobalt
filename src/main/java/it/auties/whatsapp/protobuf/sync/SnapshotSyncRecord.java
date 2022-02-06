@@ -6,4 +6,9 @@ public record SnapshotSyncRecord(String name, SnapshotSync snapshot, List<PatchS
     public boolean hasSnapshot(){
         return snapshot != null;
     }
+
+    public boolean hasPatches(){
+        return patches != null
+                && !patches.isEmpty();
+    }
 }

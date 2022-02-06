@@ -5,7 +5,10 @@ import it.auties.whatsapp.api.RegisterListener;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.protobuf.chat.Chat;
+import it.auties.whatsapp.protobuf.contact.Contact;
+import it.auties.whatsapp.protobuf.contact.ContactStatus;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
+import it.auties.whatsapp.protobuf.message.model.MessageStatus;
 import it.auties.whatsapp.util.QrHandler;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
@@ -33,12 +36,12 @@ public class WhatsappAPITest {
         }
 
         @Override
-        public QrHandler onQRCode(@NonNull BitMatrix qr) {
+        public QrHandler onQRCode(BitMatrix qr) {
             return QrHandler.FILE;
         }
 
         @Override
-        public void onNewMessage(@NonNull MessageInfo message) {
+        public void onNewMessage(MessageInfo message) {
             if(message.chat().isEmpty()){
                 System.out.println("Empty: " + message);
             }
@@ -46,8 +49,18 @@ public class WhatsappAPITest {
         }
 
         @Override
-        public void onChatRecentMessages(@NonNull Chat chat) {
+        public void onChatRecentMessages(Chat chat) {
             System.out.printf("Received %s messages at %s%n", chat.messages().size(), chat.name());
+        }
+
+        @Override
+        public void onContactPresence(Chat chat, Contact contact, ContactStatus contactStatus) {
+            System.out.printf("%s is now %s in %s%n", contact.name(), contactStatus.name(), chat.name());
+        }
+
+        @Override
+        public void onMessageStatus(Chat chat, Contact contact, MessageInfo message, MessageStatus status) {
+            System.out.printf("Message with id %s in chat %s%s has now status %s%n", message.id(), chat.name(), contact == null ? "" : "sent by %s".formatted(contact.name()), status.name());
         }
     }
 }

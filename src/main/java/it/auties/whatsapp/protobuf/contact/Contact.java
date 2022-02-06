@@ -38,7 +38,7 @@ public class Contact {
     /**
      * The nullable name associated with this contact on the phone connected with Whatsapp
      */
-    private String name;
+    private String fullName;
 
     /**
      * The nullable short name associated with this contact on the phone connected with Whatsapp
@@ -75,25 +75,15 @@ public class Contact {
     }
 
     /**
-     * Returns an optional String representing the first valid(non-null) name for this contact.
-     * If no valid name is found, an empty optional is returned.
-     * In this case, consider using the phone number of this contact as a name.
+     * Returns the best name available for this contact
      *
-     * @return an optional String
+     * @return a non-null String
      */
-    public @NonNull Optional<String> bestName() {
-        return Optional.ofNullable(shortName != null ? shortName : name != null ? name : chosenName);
-    }
-
-    /**
-     * Returns a nullable String representing the first valid(non-null) name for this contact.
-     * If no valid name is found, {@code orElse} is returned.
-     *
-     * @param orElse a nullable String returned if no valid name is present for this contact
-     * @return a nullable String
-     */
-    public String bestName(String orElse) {
-        return bestName().orElse(orElse);
+    public String name() {
+        return shortName != null ? shortName 
+                : fullName != null ? fullName
+                : chosenName != null ? chosenName
+                : jid().user();
     }
 
     /**
@@ -102,7 +92,7 @@ public class Contact {
      *
      * @return an optional object wrapping this contact's last known presence
      */
-    public @NonNull Optional<ContactStatus> lastKnownPresence() {
+    public Optional<ContactStatus> lastKnownPresence() {
         return Optional.ofNullable(lastKnownPresence);
     }
 
@@ -112,7 +102,7 @@ public class Contact {
      *
      * @return an optional object wrapping the last endTimeStamp this contact was seen available
      */
-    public @NonNull Optional<ZonedDateTime> lastSeen() {
+    public Optional<ZonedDateTime> lastSeen() {
         return Optional.ofNullable(lastSeen);
     }
 
@@ -123,7 +113,7 @@ public class Contact {
      * @param action the non-null action
      */
     public void update(@NonNull ContactAction action) {
-        this.name = action.fullName();
+        this.fullName = action.fullName();
         this.shortName = action.firstName();
     }
 }

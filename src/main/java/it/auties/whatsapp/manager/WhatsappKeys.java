@@ -344,14 +344,7 @@ public class WhatsappKeys implements JacksonProvider {
      * @return a non-null hash state
      */
     public LTHashState findHashStateByName(@NonNull String name) {
-        return Objects.requireNonNullElseGet(hashStates.get(name),
-                () -> createHashState(name));
-    }
-
-    private LTHashState createHashState(String name) {
-        var state = new LTHashState(name);
-        hashStates.put(name, state);
-        return state;
+        return Objects.requireNonNull(hashStates.get(name), "Missing hash state");
     }
 
     /**

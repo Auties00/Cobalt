@@ -18,6 +18,10 @@ public record Attributes(Map<String, Object> map) {
         return new Attributes(new HashMap<>(map));
     }
 
+    public boolean hasKey(@NonNull String key){
+        return map.containsKey(key);
+    }
+
     public Attributes put(@NonNull String key, Object value){
         map.put(key, value);
         return this;
@@ -72,6 +76,10 @@ public record Attributes(Map<String, Object> map) {
 
     public String getRequiredString(@NonNull String key){
         return requireNonNull(getString(key, null));
+    }
+
+    public Optional<String> getOptionalString(@NonNull String key){
+        return Optional.ofNullable(getString(key, null));
     }
 
     public String getString(@NonNull String key, String defaultValue){

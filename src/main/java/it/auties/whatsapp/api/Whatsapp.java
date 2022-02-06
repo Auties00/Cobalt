@@ -268,11 +268,11 @@ public class Whatsapp {
     /**
      * Executes a query to determine whether any number of jids have an account on Whatsapp
      *
-     * @param jids the contacts to check
+     * @param contacts the contacts to check
      * @return a CompletableFuture that wraps a non-null list of HasWhatsappResponse
      */
-    public CompletableFuture<List<HasWhatsappResponse>> hasWhatsapp(@NonNull ContactJid... jids) {
-        var contactNodes = Arrays.stream(jids)
+    public CompletableFuture<List<HasWhatsappResponse>> hasWhatsapp(@NonNull ContactJid... contacts) {
+        var contactNodes = Arrays.stream(contacts)
                 .map(jid -> with("contact", "+%s".formatted(jid.user())))
                 .toArray(Node[]::new);
         return socket.sendQuery(with("contact"), withChildren("user", contactNodes))

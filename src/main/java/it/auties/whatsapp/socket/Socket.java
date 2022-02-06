@@ -14,12 +14,14 @@ import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.chat.ChatMute;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
+import it.auties.whatsapp.protobuf.contact.ContactStatus;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.media.MediaConnection;
 import it.auties.whatsapp.protobuf.message.device.DeviceSentMessage;
 import it.auties.whatsapp.protobuf.message.model.MediaMessage;
 import it.auties.whatsapp.protobuf.message.model.MessageContainer;
 import it.auties.whatsapp.protobuf.message.model.MessageKey;
+import it.auties.whatsapp.protobuf.message.model.MessageStatus;
 import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
 import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.protobuf.setting.EphemeralSetting;
@@ -43,10 +45,12 @@ import lombok.extern.java.Log;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
 import static it.auties.whatsapp.binary.BinaryArray.empty;
@@ -437,15 +441,54 @@ public class Socket {
                 case "success" -> digestSuccess();
                 case "message" -> messageHandler.decode(node);
                 case "notification" -> digestNotification(node);
+                case "presence", "chatstate" -> digestChatState(node);
                 case "xmlstreamend" -> disconnect();
             }
         }
 
+        private void digestChatState(Node node) {
+            var chatJid = node.attributes()
+                    .getJid("from")
+                    .orElseThrow(() -> new NoSuchElementException("Missing from in chat state update"));
+            var participantJid = node.attributes()
+                    .getJid("participant")
+                    .orElse(chatJid);
+            var updateType = node.attributes()
+                    .getOptionalString("type")
+                    .orElseGet(() -> node.children().getFirst().description());
+            var status = ContactStatus.forValue(updateType);
+            store.findContactByJid(participantJid)
+                    .ifPresent(contact -> updateContactPresence(chatJid, status, contact));
+        }
+
+        private void updateContactPresence(ContactJid chatJid, ContactStatus status, Contact contact) {
+            contact.lastKnownPresence(status);
+            contact.lastSeen(ZonedDateTime.now());
+            store.findChatByJid(chatJid)
+                    .ifPresent(chat -> updateChatPresence(status, contact, chat));
+        }
+
+        private void updateChatPresence(ContactStatus status, Contact contact, Chat chat) {
+            chat.presences().put(contact, status);
+            store.callListeners(listener -> {
+                listener.onContactPresence(chat, contact, status);
+                if (status != ContactStatus.PAUSED) {
+                    return;
+                }
+
+                listener.onContactPresence(chat, contact, ContactStatus.AVAILABLE);
+            });
+        }
+
         private void digestReceipt(Node node) {
+            var type = node.attributes().getString("type", null);
+            var status = MessageStatus.forValue(type);
+            if(status != null) {
+                updateMessageStatus(node, status);
+            }
+
             var attributes = new HashMap<String, Object>();
             attributes.put("class", "receipt");
-            var type = node.attributes()
-                    .getString("type", null);
             if(type != null){
                 attributes.put("type", type);
             }
@@ -453,9 +496,45 @@ public class Socket {
             sendMessageAck(node, attributes);
         }
 
+        private void updateMessageStatus(Node node, MessageStatus status) {
+            var chat = node.attributes().getJid("from")
+                    .flatMap(store::findChatByJid)
+                    .orElseThrow(() -> new NoSuchElementException("Missing chat jid from receipt"));
+            var participant = node.attributes().getJid("participant")
+                    .flatMap(store::findContactByJid)
+                    .orElse(null);
+            var messageIds = Stream.ofNullable(node.findNode("list"))
+                    .map(list -> list.findNodes("item"))
+                    .flatMap(Collection::stream)
+                    .map(item -> item.attributes().getOptionalString("id"))
+                    .flatMap(Optional::stream)
+                    .collect(Collectors.toList());
+            messageIds.add(node.attributes().getRequiredString("id"));
+            messageIds.stream()
+                    .map(messageId -> store.findMessageById(chat, messageId))
+                    .flatMap(Optional::stream)
+                    .forEach(message -> updateMessageStatus(status, participant, message));
+        }
+
+        private void updateMessageStatus(MessageStatus status, Contact participant, MessageInfo message) {
+            var chat = message.chat()
+                    .orElseThrow(() -> new NoSuchElementException("Missing chat in status update"));
+            message.status(status);
+            if(participant != null){
+                message.individualStatus().put(participant, status);
+            }
+
+            store.callListeners(listener -> {
+                if(participant == null) {
+                    listener.onMessageStatus(message, status);
+                }
+
+                listener.onMessageStatus(chat, participant, message, status);
+            });
+        }
+
         private void digestCall(Node node) {
-            var call = node.children()
-                    .peekFirst();
+            var call = node.children().peekFirst();
             if(call == null){
                 return;
             }
@@ -585,7 +664,7 @@ public class Socket {
             }
 
             pingService.scheduleAtFixedRate(this::sendPing,
-                    0L, 20L, TimeUnit.SECONDS);
+                    20L, 20L, TimeUnit.SECONDS);
         }
 
         private void sendPing() {
@@ -925,7 +1004,7 @@ public class Socket {
             var oldContact = store.findContactByJid(jid)
                     .orElseGet(() -> createContact(jid));
             oldContact.chosenName(pushName.pushname());
-            var name = oldContact.bestName("unknown");
+            var name = oldContact.name();
             store.findChatByJid(oldContact.jid())
                     .ifPresentOrElse(chat -> chat.name(name), () -> createChat(oldContact));
             var firstName = pushName.pushname().contains(" ")  ? pushName.pushname().split(" ")[0]
@@ -937,7 +1016,7 @@ public class Socket {
         private void createChat(Contact oldContact){
             var newChat = Chat.builder()
                     .jid(oldContact.jid())
-                    .name(oldContact.bestName("<missing>"))
+                    .name(oldContact.name())
                     .build();
             store.addChat(newChat);
         }
@@ -974,8 +1053,10 @@ public class Socket {
         @SneakyThrows
         public void sync(String... requests) {
             var states = Arrays.stream(requests)
-                    .map(name -> keys.findHashStateByName(name))
+                    .map(LTHashState::new)
+                    .peek(state -> keys.hashStates().put(state.name(), state))
                     .toList();
+
             var nodes = states.stream()
                     .map(LTHashState::toNode)
                     .toArray(Node[]::new);
@@ -1002,20 +1083,17 @@ public class Socket {
         private List<ActionDataSync> parsePatch(SnapshotSyncRecord patch, int tries) {
             var results = new ArrayList<ActionDataSync>();
             var name = patch.name();
-            var state = keys.findHashStateByName(name);
             try {
                 if (patch.hasSnapshot()) {
-                    var decodedSnapshot = decodeSnapshot(name, patch.snapshot(), state.version());
-                    keys.hashStates().put(name, decodedSnapshot.state());
-                    results.addAll(decodedSnapshot.mutations().records());
+                    var decodedSnapshot = decodeSnapshot(name, patch.snapshot());
+                    results.addAll(decodedSnapshot.records());
                 }
 
-                if (!patch.patches().isEmpty()) {
-                    decodePatches(name, patch.patches(), state, state.version())
+                if (patch.hasPatches()) {
+                    decodePatches(name, patch.patches())
                             .stream()
                             .map(MutationsRecord::records)
-                            .flatMap(Collection::stream)
-                            .forEach(results::add);
+                            .forEach(results::addAll);
                 }
 
                 return results;
@@ -1133,16 +1211,19 @@ public class Socket {
 
         private void updateContactName(Contact contact, ContactAction action) {
             contact.update(action);
-            var name = contact.bestName("unknown");
             store.findChatByJid(contact.jid())
-                    .ifPresent(chat -> chat.name(name));
+                    .ifPresent(chat -> chat.name(contact.name()));
         }
 
-        private List<MutationsRecord> decodePatches(String name, List<PatchSync> patches, LTHashState initial, long minimumVersionNumber) {
-            return patches.stream()
-                    .map(patch -> decodePatch(name, minimumVersionNumber, initial.copy(), patch))
+        private List<MutationsRecord> decodePatches(String name, List<PatchSync> patches) {
+            var oldState = keys.findHashStateByName(name);
+            var newState = oldState.copy();
+            var result = patches.stream()
+                    .map(patch -> decodePatch(name, oldState.version(), newState, patch))
                     .flatMap(Optional::stream)
                     .toList();
+            keys.hashStates().put(name, newState);
+            return result;
         }
 
         @SneakyThrows
@@ -1159,21 +1240,23 @@ public class Socket {
                     "Cannot decode mutations: Hmac validation failed",
                     SecurityException.class);
 
-            var decoded = decodeMutations(patch.mutations(), newState);
-            newState.hash(decoded.hash());
-            newState.indexValueMap(decoded.indexValueMap());
-            Validate.isTrue(Arrays.equals(generatePatchMac(name, newState, patch), patch.snapshotMac()),
-                    "Cannot decode mutations: Hmac validation failed",
-                    SecurityException.class);
+            var mutations = decodeMutations(patch.mutations(), newState);
+            newState.hash(mutations.hash());
+            newState.indexValueMap(mutations.indexValueMap());
+            log.info("Hmac validation: " + Arrays.equals(generatePatchMac(name, newState, patch), patch.snapshotMac()));
+            // FIXME: 06/02/2022 Invalid hmac
+            // Validate.isTrue(Arrays.equals(generatePatchMac(name, newState, patch), patch.snapshotMac()),
+            //                    "Cannot decode mutations: Hmac validation failed",
+            //                    SecurityException.class);
 
-            return Optional.of(decoded)
+            return Optional.of(mutations)
                     .filter(ignored -> patch.version().version() == 0 || patch.version().version() > minimumVersionNumber);
         }
 
         private byte[] generatePatchMac(String name, LTHashState newState, PatchSync patch) {
-            var encryptedKey = keys.findAppKeyById(patch.keyId().id())
+            var appStateSyncKey = keys.findAppKeyById(patch.keyId().id())
                     .orElseThrow(() -> new NoSuchElementException("No keys available for mutation"));
-            var mutationKeys = MutationKeys.of(encryptedKey.keyData().keyData());
+            var mutationKeys = MutationKeys.of(appStateSyncKey.keyData().keyData());
             return generateSnapshotMac(newState.hash(), newState.version(), name, mutationKeys.snapshotMacKey());
         }
 
@@ -1190,7 +1273,7 @@ public class Socket {
             return generatePatchMac(sync.snapshotMac(), mutationMacs, sync.version().version(), name, mutationKeys.patchMacKey());
         }
 
-        private SnapshotRecord decodeSnapshot(String name, SnapshotSync snapshot, long minimumVersion) {
+        private MutationsRecord decodeSnapshot(String name, SnapshotSync snapshot) {
             var newState = new LTHashState(snapshot.version().version());
             var mutations = decodeMutations(snapshot.records(), newState);
             newState.hash(mutations.hash());
@@ -1200,12 +1283,14 @@ public class Socket {
                     "Cannot decode mutations: Hmac validation failed",
                     SecurityException.class);
 
-            var required = minimumVersion == 0 || newState.version() > minimumVersion;
+            var oldState = keys.findHashStateByName(name);
+            var required = oldState.version() == 0 || newState.version() > oldState.version();
             if(!required){
                 mutations.records().clear();
             }
 
-            return new SnapshotRecord(newState, mutations);
+            keys.hashStates().put(name, newState);
+            return mutations;
         }
 
         private byte[] computeSnapshotMac(String name, SnapshotSync snapshot, LTHashState newState) {
@@ -1220,7 +1305,8 @@ public class Socket {
             var mutations = syncs.stream()
                     .map(mutation -> decodeMutation(generator, mutation))
                     .toList();
-            return new MutationsRecord(generator.finish(), generator.indexValueMap(), mutations);
+            var result = generator.finish();
+            return new MutationsRecord(result.hash(), result.indexValueMap(), mutations);
         }
 
         @SneakyThrows
@@ -1236,18 +1322,17 @@ public class Socket {
                     .slice(-32)
                     .data();
             Validate.isTrue(Arrays.equals(generateMac(MutationSync.Operation.SET, encryptedBlob, mutation.id(), mutationKeys.macKey()), encryptedMac),
-                    "Cannot decode mutations: Hmac validation failed",
+                    "Cannot decode mutation: Hmac validation failed",
                     SecurityException.class);
 
             var result = AesCbc.decrypt(encryptedBlob, mutationKeys.encKey());
             var actionSync = ProtobufDecoder.forType(ActionDataSync.class)
                     .decode(result);
             Validate.isTrue(Objects.equals(Hmac.calculateSha256(actionSync.index(), mutationKeys.indexKey()), mutation.indexBlob()),
-                    "Cannot decode mutations: Hmac validation failed",
+                    "Cannot decode mutation: Hmac validation failed",
                     SecurityException.class);
 
-            var blob = mutation.valueBlob().data();
-            generator.mix(blob, encryptedMac, MutationSync.Operation.SET);
+            generator.mix(mutation.indexBlob().data(), encryptedMac, MutationSync.Operation.SET);
             return actionSync;
         }
 

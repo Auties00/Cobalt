@@ -60,25 +60,25 @@ public final class MessageInfo implements WhatsappInfo {
   /**
    * A map that holds the read status of this message for each participant.
    * If the chat associated with this chat is not a group, this map's size will always be 1.
-   * In this case it is guaranteed that the value stored in this map for the contact associated with this chat equals {@link MessageInfo#globalStatus()}.
+   * In this case it is guaranteed that the value stored in this map for the contact associated with this chat equals {@link MessageInfo#status()}.
    * Otherwise, it is guaranteed to have a size of participants - 1.
-   * In this case it is guaranteed that every value stored in this map for each participant of this chat is equal or higher hierarchically then {@link MessageInfo#globalStatus()}.
+   * In this case it is guaranteed that every value stored in this map for each participant of this chat is equal or higher hierarchically then {@link MessageInfo#status()}.
    * It is important to remember that it is guaranteed that every participant will be present as a key.
    */
   @NonNull
   @Default
-  private Map<Contact, MessageStatus> individualReadStatus = new HashMap<>();
+  private Map<Contact, MessageStatus> individualStatus = new HashMap<>();
 
   /**
    * The global status of this message.
-   * If the chat associated with this message is a group it is guaranteed that this field is equal or lower hierarchically then every value stored by {@link MessageInfo#individualReadStatus()}.
-   * Otherwise, this field is guaranteed to be equal to the single value stored by {@link MessageInfo#individualReadStatus()} for the contact associated with the chat associated with this message.
+   * If the chat associated with this message is a group it is guaranteed that this field is equal or lower hierarchically then every value stored by {@link MessageInfo#individualStatus()}.
+   * Otherwise, this field is guaranteed to be equal to the single value stored by {@link MessageInfo#individualStatus()} for the contact associated with the chat associated with this message.
    */
   @JsonProperty("4")
   @JsonPropertyDescription("status")
   @NonNull
   @Default
-  private MessageStatus globalStatus = MessageStatus.PENDING;
+  private MessageStatus status = MessageStatus.PENDING;
 
   /**
    * The timestamp, that is the seconds since {@link java.time.Instant#EPOCH}, when this message was sent
@@ -233,9 +233,9 @@ public final class MessageInfo implements WhatsappInfo {
   public MessageInfo(@NonNull MessageKey key, @NonNull MessageContainer container) {
     this.key = key;
     this.timestamp = Instant.now().getEpochSecond();
-    this.globalStatus = MessageStatus.PENDING;
+    this.status = MessageStatus.PENDING;
     this.message = container;
-    this.individualReadStatus = new HashMap<>();
+    this.individualStatus = new HashMap<>();
   }
   
   /**

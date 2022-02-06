@@ -2,11 +2,8 @@ package it.auties.whatsapp.manager;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.binary.BinaryArray;
-import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
@@ -193,7 +190,7 @@ public class WhatsappStore implements JacksonProvider {
 
     private Stream<Contact> findContactsStream(String name) {
         return name == null ? Stream.empty() : contacts.parallelStream()
-                .filter(contact -> Objects.equals(contact.name(), name)
+                .filter(contact -> Objects.equals(contact.fullName(), name)
                         || Objects.equals(contact.shortName(), name)
                         || Objects.equals(contact.chosenName(), name));
     }
