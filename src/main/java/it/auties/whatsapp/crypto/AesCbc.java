@@ -9,11 +9,17 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import static it.auties.whatsapp.binary.BinaryArray.random;
+
 @UtilityClass
 public class AesCbc {
     private final String AES_CBC = "AES/CBC/PKCS5Padding";
     private final String AES = "AES";
     private final int AES_BLOCK_SIZE = 16;
+
+    public byte[] encrypt(byte [] decrypted, byte[] encKey) {
+        return encrypt(random(AES_BLOCK_SIZE).data(), decrypted, encKey);
+    }
 
     @SneakyThrows
     public byte[] encrypt(byte[] iv, byte [] decrypted, byte[] encKey) {

@@ -972,9 +972,7 @@ public class Socket {
                 }
 
                 case APP_STATE_SYNC_KEY_SHARE -> {
-                    var newKeys = protocolMessage.appStateSyncKeyShare()
-                            .keys();
-                    keys.appStateKeys().addAll(newKeys);
+                    keys.addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
                     CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS) // FIXME: 26/01/2022 transaction
                             .execute(appStateHandler::sync);
                 }
@@ -1044,6 +1042,64 @@ public class Socket {
 
     private class AppStateHandler {
         private static final int MAX_SYNC_ATTEMPTS = 5;
+
+        public void patch(PatchRequest patch) {
+            var index = patch.index().getBytes(StandardCharsets.UTF_8);
+            var key = keys.appStateKeys().getLast();
+            var hashState = keys.findHashStateByName(patch.type()).copy();
+            var actionData = ActionDataSync.builder()
+                    .index(index)
+                    .value(patch.action())
+                    .padding(new byte[0])
+                    .version(patch.version())
+                    .build();
+            var encodedActionData = ProtobufEncoder.encode(actionData);
+            var mutationKeys = MutationKeys.of(key.keyData().keyData());
+            var encrypted = AesCbc.encrypt(encodedActionData, mutationKeys.macKey());
+            var valueMac = generateMac(patch.operation(), encrypted, key.keyId().keyId(), mutationKeys.macKey());
+            var indexMac = Hmac.calculateSha256(index, mutationKeys.indexKey());
+
+            var generator = new LTHash(hashState);
+            generator.mix(indexMac.data(), valueMac, patch.operation());
+
+            var result = generator.finish();
+            hashState.hash(result.hash());
+            hashState.indexValueMap(result.indexValueMap());
+            hashState.version(hashState.version() + 1);
+
+            var snapshotMac = generateSnapshotMac(hashState.hash(), hashState.version(), patch.type(), mutationKeys.snapshotMacKey());
+            var syncId = new KeyId(key.keyId().keyId());
+            var patchMac = generatePatchMac(snapshotMac, BinaryArray.of(valueMac), hashState.version(), patch.type(), mutationKeys.patchMacKey());
+            var record = RecordSync.builder()
+                    .index(new IndexSync(indexMac.data()))
+                    .value(new ValueSync(BinaryArray.of(encrypted, valueMac).data()))
+                    .keyId(syncId)
+                    .build();
+            var mutation = MutationSync.builder()
+                    .operation(patch.operation())
+                    .record(record)
+                    .build();
+            var sync = PatchSync.builder()
+                    .patchMac(patchMac)
+                    .keyId(syncId)
+                    .mutations(List.of(mutation))
+                    .build();
+            hashState.indexValueMap().put(indexMac.toBase64(), valueMac);
+
+            var collectionNode = withAttributes("collection",
+                    of("name", patch.type(), "version", valueOf(hashState.version() - 1)));
+            var patchNode = with("patch",
+                    ProtobufEncoder.encode(sync));
+            sendQuery("set", "w:sync:app:state",
+                    withChildren("sync", collectionNode, patchNode));
+            keys.hashStates().put(patch.type(), hashState);
+
+            decodePatch(patch.type(), hashState.version(), hashState, sync)
+                    .stream()
+                    .map(MutationsRecord::records)
+                    .flatMap(Collection::stream)
+                    .forEach(this::processSyncActions);
+        }
 
         public void sync(){
             sync("critical_block", "critical_unblock_low",
@@ -1301,7 +1357,7 @@ public class Socket {
         }
 
         private MutationsRecord decodeMutations(List<? extends ParsableMutation> syncs, LTHashState initialState) {
-            var generator = new LTHash(initialState.hash());
+            var generator = new LTHash(initialState);
             var mutations = syncs.stream()
                     .map(mutation -> decodeMutation(generator, mutation))
                     .toList();

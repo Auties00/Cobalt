@@ -129,7 +129,7 @@ public class WhatsappKeys implements JacksonProvider {
      * App state keys
      */
     @JsonProperty
-    private List<AppStateSyncKey> appStateKeys;
+    private LinkedList<AppStateSyncKey> appStateKeys;
 
     /**
      * Write counter for IV
@@ -316,7 +316,7 @@ public class WhatsappKeys implements JacksonProvider {
      * Queries the trusted key that matches {@code id}
      *
      * @param id the non-null id to search
-     * @return a non-null Optional singal pre key
+     * @return a non-null Optional signal pre key
      */
     public Optional<SignalPreKeyPair> findPreKeyById(int id) {
         return preKeys.stream()
@@ -379,6 +379,17 @@ public class WhatsappKeys implements JacksonProvider {
      */
     public WhatsappKeys addSenderKey(@NonNull SenderKeyName name, @NonNull SenderKeyRecord record){
         senderKeys.put(name, record);
+        return this;
+    }
+
+    /**
+     * Adds the provided keys to the app state keys
+     *
+     * @param keys the keys to add
+     * @return this
+     */
+    public WhatsappKeys addAppKeys(@NonNull Collection<AppStateSyncKey> keys){
+        appStateKeys.addAll(keys);
         return this;
     }
 

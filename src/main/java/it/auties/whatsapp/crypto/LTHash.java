@@ -1,6 +1,7 @@
 package it.auties.whatsapp.crypto;
 
 import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.whatsapp.protobuf.sync.LTHashState;
 import it.auties.whatsapp.protobuf.sync.MutationSync;
 import it.auties.whatsapp.util.Buffers;
 import it.auties.whatsapp.util.Validate;
@@ -27,10 +28,10 @@ public class LTHash {
     @NonNull
     private final List<byte[]> add, subtract;
 
-    public LTHash(byte[] hash){
+    public LTHash(LTHashState hash){
         this.implementation = new LTHashImplementation("WhatsApp Patch Integrity");
-        this.hash = hash;
-        this.indexValueMap = new HashMap<>();
+        this.hash = hash.hash();
+        this.indexValueMap = hash.indexValueMap();
         this.add = new ArrayList<>();
         this.subtract = new ArrayList<>();
     }
