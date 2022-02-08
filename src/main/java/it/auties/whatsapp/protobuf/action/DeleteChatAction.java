@@ -18,4 +18,9 @@ public final class DeleteChatAction implements Action {
   @JsonProperty("1")
   @JsonPropertyDescription("SyncActionMessageRange")
   private ActionMessageRangeSync messageRange;
+
+  @Override
+  public String indexName() {
+    return "unknown";
+  }
 }

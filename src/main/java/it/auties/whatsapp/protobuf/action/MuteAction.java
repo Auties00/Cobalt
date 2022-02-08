@@ -21,4 +21,9 @@ public final class MuteAction implements Action {
   @JsonProperty("2")
   @JsonPropertyDescription("int64")
   private long muteEndTimestamp;
+
+  @Override
+  public String indexName() {
+    return "mute";
+  }
 }

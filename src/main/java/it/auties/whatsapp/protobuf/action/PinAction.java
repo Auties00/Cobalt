@@ -17,4 +17,9 @@ public final class PinAction implements Action {
   @JsonProperty("1")
   @JsonPropertyDescription("bool")
   private boolean pinned;
+
+  @Override
+  public String indexName() {
+    return "pin_v1";
+  }
 }

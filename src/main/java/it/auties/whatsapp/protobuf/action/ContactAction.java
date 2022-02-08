@@ -21,4 +21,9 @@ public final class ContactAction implements Action {
   @JsonProperty("2")
   @JsonPropertyDescription("string")
   private String firstName;
+
+  @Override
+  public String indexName() {
+    return "unknown";
+  }
 }

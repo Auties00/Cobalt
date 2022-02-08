@@ -45,4 +45,9 @@ public final class FavoriteStickerAction implements Action {
   @JsonProperty("8")
   @JsonPropertyDescription("bool")
   private boolean isFavourite;
+
+  @Override
+  public String indexName() {
+    return "unknown";
+  }
 }

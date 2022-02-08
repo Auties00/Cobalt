@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.crypto.SignalHelper;
+import it.auties.whatsapp.util.VersionProvider;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,8 +23,7 @@ import static java.util.Arrays.copyOfRange;
 @Data
 @Builder
 @Accessors(fluent = true)
-public class SenderKeyMessage {
-  private static final int CURRENT_VERSION = 3;
+public class SenderKeyMessage implements VersionProvider {
   private static final int SIGNATURE_LENGTH = 64;
 
   private int version;

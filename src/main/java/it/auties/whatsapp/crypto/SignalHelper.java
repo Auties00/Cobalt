@@ -1,6 +1,7 @@
 package it.auties.whatsapp.crypto;
 
 import it.auties.whatsapp.util.Validate;
+import it.auties.whatsapp.util.VersionProvider;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
@@ -15,8 +16,7 @@ import java.util.zip.Inflater;
  * This class should only be used for WhatsappWeb's WebSocket buffer operations
  */
 @UtilityClass
-public class SignalHelper {
-    private final int CURRENT_VERSION = 3;
+public class SignalHelper implements VersionProvider {
     private final String SHA_PRNG = "SHA1PRNG";
 
     public byte[] appendKeyHeader(byte[] key){
@@ -50,6 +50,14 @@ public class SignalHelper {
             case 33 -> Arrays.copyOfRange(key, 1, key.length);
             default -> throw new IllegalArgumentException("Invalid key size: %s".formatted(key.length));
         };
+    }
+
+    @SneakyThrows
+    public int randomHeader() {
+        var key = new byte[1];
+        var secureRandom = SecureRandom.getInstance(SHA_PRNG);
+        secureRandom.nextBytes(key);
+        return 1 + (15 & key[0]);
     }
 
     @SneakyThrows

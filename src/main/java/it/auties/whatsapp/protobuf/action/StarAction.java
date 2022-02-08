@@ -17,4 +17,9 @@ public final class StarAction implements Action {
   @JsonProperty("1")
   @JsonPropertyDescription("bool")
   private boolean starred;
+
+  @Override
+  public String indexName() {
+    return "star";
+  }
 }

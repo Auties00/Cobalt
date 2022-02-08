@@ -22,4 +22,9 @@ public final class ArchiveChatAction implements Action {
   @JsonProperty("2")
   @JsonPropertyDescription("SyncActionMessageRange")
   private ActionMessageRangeSync messageRange;
+
+  @Override
+  public String indexName() {
+    return "archive";
+  }
 }

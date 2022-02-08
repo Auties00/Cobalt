@@ -7,13 +7,13 @@ import it.auties.whatsapp.protobuf.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.protobuf.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.protobuf.signal.session.*;
 import it.auties.whatsapp.util.Validate;
+import it.auties.whatsapp.util.VersionProvider;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 
 import java.nio.charset.StandardCharsets;
 
-public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) {
-    private static final int CURRENT_VERSION = 3;
+public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) implements VersionProvider {
 
     public void createOutgoing(int id, byte[] identityKey, SignalSignedKeyPair signedPreKey, SignalSignedKeyPair preKey){
         Validate.isTrue(keys.hasTrust(address, identityKey),

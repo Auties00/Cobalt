@@ -23,4 +23,9 @@ public final class RecentStickerWeightsAction implements Action {
     @JsonPropertyDescription("RecentStickerWeight")
     @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
     private List<RecentStickerWeight> weights;
+
+    @Override
+    public String indexName() {
+        return "unknown";
+    }
 }

@@ -38,7 +38,7 @@ public class InteractiveAnnotation {
   private Location location;
 
   /**
-   * Returns the type of action
+   * Returns the type of sync
    *
    * @return a non-null Action
    */
@@ -47,7 +47,7 @@ public class InteractiveAnnotation {
   }
 
   /**
-   * The constants of this enumrated type describe the various types of action that an interactive annotation can provide
+   * The constants of this enumrated type describe the various types of sync that an interactive annotation can provide
    */
   @AllArgsConstructor
   @Accessors(fluent = true)

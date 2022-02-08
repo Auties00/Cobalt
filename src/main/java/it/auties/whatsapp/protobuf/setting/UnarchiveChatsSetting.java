@@ -17,4 +17,9 @@ public final class UnarchiveChatsSetting implements Setting {
   @JsonProperty("1")
   @JsonPropertyDescription("bool")
   private boolean unarchiveChats;
+
+  @Override
+  public String indexName() {
+    return "unknown";
+  }
 }

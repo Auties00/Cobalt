@@ -471,11 +471,11 @@ public class Whatsapp {
     }
 
     /**
-     * Executes an action on any number of contacts represented by a raw list of WhatsappNodes
+     * Executes an sync on any number of contacts represented by a raw list of WhatsappNodes
      *
      * @param group  the target group
-     * @param action the action to execute
-     * @param jids   the raw WhatsappNodes representing the contacts the action should be executed on
+     * @param action the sync to execute
+     * @param jids   the raw WhatsappNodes representing the contacts the sync should be executed on
      * @return a CompletableFuture     
      * @throws IllegalArgumentException if the provided chat is not a group
      * @throws IllegalArgumentException if no jids are provided
@@ -780,10 +780,5 @@ public class Whatsapp {
     private void unstarMessagePlaceholder() {
         // Sent Binary Message Node[description=iq, attributes={xmlns=w:dataSync:app:state, to=s.whatsapp.net, id=54595.12796-301, type=set}, content=[Node[description=dataSync, attributes={}, content=[Node[description=collection, attributes={name=regular_high, return_snapshot=false, version=14}, content=[Node[description=patch, attributes={}, content=[B@73ce9a0b]]]]]]]
         // Received Binary Message Node[description=iq, attributes={from=s.whatsapp.net, id=54595.12796-301, type=result}, content=[Node[description=dataSync, attributes={}, content=[Node[description=collection, attributes={name=regular_high, version=15}, content=null]]]]]
-    }
-
-    private void createMediaConnectionPlaceholder(){
-        // Sent Binary Message Node[description=iq, attributes={xmlns=w:m, to=s.whatsapp.net, id=54595.12796-319, type=set}, content=[Node[description=media_conn, attributes={}, content=null]]]
-        //Received Binary Message Node[description=iq, attributes={from=s.whatsapp.net, id=54595.12796-319, type=result}, content=[Node[description=media_conn, attributes={auth=AWQkTwWMKc8evmNls99lMA2th8gPHKz474hwoYbOXBhVv3KcKKE_aCC1mew, auth_ttl=21600, max_buckets=12, ttl=300}, content=[Node[description=host, attributes={hostname=media-mxp2-1.cdn.whatsapp.net, fallback_class=pop, fallback_hostname=media-fco2-1.cdn.whatsapp.net, fallback_ip6=2a03:2880:f269:c1:face:b00c:0:167, fallback_ip4=157.240.231.60, type=primary, ip4=157.240.203.60, class=pop, ip6=2a03:2880:f26d:c2:face:b00c:0:167}, content=[Node[description=download, attributes={}, content=null]]], Node[description=host, attributes={hostname=media.fmxp9-1.fna.whatsapp.net, fallback_class=pop, fallback_hostname=media-mxp1-1.cdn.whatsapp.net, fallback_ip6=2a03:2880:f208:c5:face:b00c:0:167, fallback_ip4=31.13.86.51, type=primary, ip4=91.81.217.226, class=fna, ip6=2a01:8d0:7:15:face:b00c:3333:7020}, content=[Node[description=upload, attributes={}, content=null], Node[description=download, attributes={}, content=[Node[description=video, attributes={}, content=null], Node[description=image, attributes={}, content=null], Node[description=gif, attributes={}, content=null], Node[description=sticker, attributes={}, content=null]]], Node[description=download_buckets, attributes={}, content=[Node[description=0, attributes={}, content=null]]]]], Node[description=host, attributes={hostname=mmg.whatsapp.net, type=fallback, class=pop}, content=null]]]]]
     }
 }

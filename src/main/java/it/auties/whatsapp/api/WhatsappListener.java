@@ -76,9 +76,9 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when {@link Socket} receives an action from Whatsapp.
+     * Called when {@link Socket} receives an sync from Whatsapp.
      *
-     * @param action the action that was executed
+     * @param action the sync that was executed
      */
     default void onAction(Action action) {
 

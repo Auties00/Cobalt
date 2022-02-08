@@ -17,4 +17,9 @@ public final class AndroidUnsupportedActions implements Action {
   @JsonProperty("1")
   @JsonPropertyDescription("bool")
   private boolean allowed;
+
+  @Override
+  public String indexName() {
+    return "unknown";
+  }
 }

@@ -17,4 +17,9 @@ public final class LabelAssociationAction implements Action {
   @JsonProperty("1")
   @JsonPropertyDescription("bool")
   private boolean labeled;
+
+  @Override
+  public String indexName() {
+    return "unknown";
+  }
 }

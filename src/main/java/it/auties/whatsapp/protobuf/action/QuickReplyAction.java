@@ -37,4 +37,9 @@ public final class QuickReplyAction implements Action {
   @JsonProperty("5")
   @JsonPropertyDescription("bool")
   private boolean deleted;
+
+  @Override
+  public String indexName() {
+    return "unknown";
+  }
 }

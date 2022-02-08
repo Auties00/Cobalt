@@ -29,4 +29,9 @@ public final class LabelEditAction implements Action {
   @JsonProperty("4")
   @JsonPropertyDescription("bool")
   private boolean deleted;
+
+  @Override
+  public String indexName() {
+    return "unknown";
+  }
 }

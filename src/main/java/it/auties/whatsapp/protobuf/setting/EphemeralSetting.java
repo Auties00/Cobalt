@@ -21,4 +21,9 @@ public final class EphemeralSetting implements Setting {
   @JsonProperty("2")
   @JsonPropertyDescription("sfixed64")
   private long timestamp;
+
+  @Override
+  public String indexName() {
+    return "unknown";
+  }
 }

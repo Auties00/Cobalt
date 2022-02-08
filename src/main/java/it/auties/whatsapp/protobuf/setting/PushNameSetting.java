@@ -17,4 +17,9 @@ public final class PushNameSetting implements Setting {
   @JsonProperty("1")
   @JsonPropertyDescription("string")
   private String name;
+
+  @Override
+  public String indexName() {
+    return "unknown";
+  }
 }

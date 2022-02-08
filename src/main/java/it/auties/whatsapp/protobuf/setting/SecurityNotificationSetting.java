@@ -17,4 +17,9 @@ public final class SecurityNotificationSetting implements Setting {
   @JsonProperty("1")
   @JsonPropertyDescription("bool")
   private boolean showNotification;
+
+  @Override
+  public String indexName() {
+    return "unknown";
+  }
 }

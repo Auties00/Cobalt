@@ -10,8 +10,7 @@ import it.auties.whatsapp.crypto.*;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.action.*;
-import it.auties.whatsapp.protobuf.chat.Chat;
-import it.auties.whatsapp.protobuf.chat.ChatMute;
+import it.auties.whatsapp.protobuf.chat.*;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.contact.ContactStatus;
@@ -48,6 +47,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.random.RandomGeneratorFactory;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -55,6 +55,11 @@ import java.util.stream.Stream;
 import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
 import static it.auties.whatsapp.binary.BinaryArray.empty;
 import static it.auties.whatsapp.binary.BinaryArray.ofBase64;
+import static it.auties.whatsapp.protobuf.chat.GroupPolicy.forData;
+import static it.auties.whatsapp.protobuf.chat.GroupSetting.EDIT_GROUP_INFO;
+import static it.auties.whatsapp.protobuf.chat.GroupSetting.SEND_MESSAGES;
+import static it.auties.whatsapp.protobuf.contact.ContactJid.Type.STATUS;
+import static it.auties.whatsapp.protobuf.contact.ContactJid.Type.USER;
 import static it.auties.whatsapp.socket.Node.*;
 import static it.auties.whatsapp.util.QrHandler.TERMINAL;
 import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
@@ -291,6 +296,53 @@ public class Socket {
                 .flatMap(Collection::stream)
                 .toList();
     }
+
+    private CompletableFuture<GroupMetadata> queryGroupMetadata(ContactJid group){
+        var body = with("query", of("request", "interactive"));
+        return sendQuery(group, "get", "w:g2", body)
+                .thenApplyAsync(this::parseGroupMetadata);
+    }
+
+    private GroupMetadata parseGroupMetadata(Node node) {
+        var group = node.findNode("group");
+        if(group == null){
+            return null;
+        }
+
+        var groupId = group.attributes()
+                .getOptionalString("id")
+                .map(id -> ContactJid.ofUser(id, ContactJid.Server.GROUP))
+                .orElseThrow(() -> new NoSuchElementException("Missing group jid"));
+        var subject = group.attributes().getString("subject");
+        var foundationTimestamp = WhatsappUtils.parseWhatsappTime(group.attributes().getLong("creation"))
+                .orElse(ZonedDateTime.now());
+        var founder = group.attributes()
+                .getJid("creator")
+                .orElse(null);
+        var policies = new HashMap<GroupSetting, GroupPolicy>();
+        policies.put(SEND_MESSAGES, forData(node.hasNode("announce")));
+        policies.put(EDIT_GROUP_INFO, forData(node.hasNode("locked")));
+        var descWrapper = group.findNode("description");
+        var description = Optional.ofNullable(descWrapper)
+                .map(parent -> parent.findNode("body"))
+                .map(wrapper -> (String) wrapper.content())
+                .orElse(null);
+        var descriptionId = Optional.ofNullable(descWrapper)
+                .map(Node::attributes)
+                .flatMap(attributes -> attributes.getOptionalString("id"))
+                .orElse(null);
+        var ephemeral = Optional.ofNullable(group.findNode("ephemeral"))
+                .map(Node::attributes)
+                .map(attributes -> attributes.getLong("expiration"))
+                .flatMap(WhatsappUtils::parseWhatsappTime)
+                .orElse(null);
+        var participants = group.findNodes("participant")
+                .stream()
+                .map(GroupParticipant::of)
+                .toList();
+        return new GroupMetadata(groupId, subject, foundationTimestamp, founder, description, descriptionId, policies, participants, ephemeral);
+    }
+
 
     private void sendReceipt(ContactJid jid, ContactJid participant, List<String> messages, String type) {
         if(messages.isEmpty()){
@@ -568,7 +620,7 @@ public class Socket {
             }
 
             var patchName = update.attributes().getRequiredString("name");
-            appStateHandler.sync(patchName);
+            appStateHandler.pull(patchName);
         }
 
         private void digestIb(Node node) {
@@ -822,6 +874,27 @@ public class Socket {
     }
 
     private class MessageHandler {
+        @SneakyThrows
+        public void encode(MessageInfo info) {
+            var padRandomByte = SignalHelper.randomHeader();
+            var padding = BinaryArray.allocate(padRandomByte).fill((byte) padRandomByte).data();
+            var paddedMessageBuffer = Buffers.newBuffer(ProtobufEncoder.encode(info));
+            paddedMessageBuffer.writeBytes(padding);
+            var paddedMessage = Buffers.readBytes(paddedMessageBuffer);
+
+            var devices = new ArrayList<>();
+            if (info.chatJid().type() == USER || info.chatJid().type() == STATUS) {
+
+            } else {
+                var senderName = new SenderKeyName(info.chatJid().toString(), info.senderJid().toSignalAddress());
+                var sessionBuilder = new GroupSessionBuilder(keys);
+                var distributionMessage = sessionBuilder.createMessage(senderName).serialized();
+                var groupCipher = new GroupCipher(senderName, keys);
+                var cipheredMessage = groupCipher.encrypt(paddedMessage);
+                var groupMetadata = queryGroupMetadata(info.chatJid()).get();
+            }
+        }
+
         public void decode(Node node) {
             var timestamp = node.attributes().getLong("t");
             var id = node.attributes().getRequiredString("id");
@@ -875,12 +948,21 @@ public class Socket {
         }
 
         private void handleMessage(MessageInfo info, ContactJid from) {
+            handleStubMessage(info);
             switch (info.message().content()){
                 case SenderKeyDistributionMessage distributionMessage -> handleDistributionMessage(distributionMessage, from);
                 case ProtocolMessage protocolMessage -> handleProtocolMessage(info, protocolMessage);
                 case DeviceSentMessage deviceSentMessage -> saveMessage(info.message(deviceSentMessage.message()));
                 default -> saveMessage(info);
             }
+        }
+
+        private void handleStubMessage(MessageInfo info) {
+            if(!info.hasStub()) {
+                return;
+            }
+
+            log.warning("Received stub %s with %s: unsupported!".formatted(info.stubType(), info.stubParameters()));
         }
 
         private byte[] decodeCipheredMessage(MessageInfo info, byte[] message, String type) {
@@ -974,7 +1056,7 @@ public class Socket {
                 case APP_STATE_SYNC_KEY_SHARE -> {
                     keys.addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
                     CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS) // FIXME: 26/01/2022 transaction
-                            .execute(appStateHandler::sync);
+                            .execute(appStateHandler::pull);
                 }
 
                 case REVOKE -> {
@@ -1043,13 +1125,13 @@ public class Socket {
     private class AppStateHandler {
         private static final int MAX_SYNC_ATTEMPTS = 5;
 
-        public void patch(PatchRequest patch) {
+        public void push(PatchRequest patch) {
             var index = patch.index().getBytes(StandardCharsets.UTF_8);
             var key = keys.appStateKeys().getLast();
             var hashState = keys.findHashStateByName(patch.type()).copy();
             var actionData = ActionDataSync.builder()
                     .index(index)
-                    .value(patch.action())
+                    .value(patch.sync())
                     .padding(new byte[0])
                     .version(patch.version())
                     .build();
@@ -1101,13 +1183,13 @@ public class Socket {
                     .forEach(this::processSyncActions);
         }
 
-        public void sync(){
-            sync("critical_block", "critical_unblock_low",
+        public void pull(){
+            pull("critical_block", "critical_unblock_low",
                     "regular_high", "regular_low", "regular");
         }
 
         @SneakyThrows
-        public void sync(String... requests) {
+        public void pull(String... requests) {
             var states = Arrays.stream(requests)
                     .map(LTHashState::new)
                     .peek(state -> keys.hashStates().put(state.name(), state))
@@ -1243,7 +1325,7 @@ public class Socket {
                     case PinAction pinAction -> targetChat.ifPresent(chat -> chat.pinned(pinAction.pinned() ? mutation.value().timestamp() : 0));
                     case StarAction starAction -> targetMessage.ifPresent(message -> message.starred(starAction.starred()));
                     case ArchiveChatAction archiveChatAction -> targetChat.ifPresent(chat -> chat.archived(archiveChatAction.archived()));
-                    default -> log.info("Unsupported action: " + mutation.value().action());
+                    default -> log.info("Unsupported sync: " + mutation.value().action());
                 }
 
                 store.callListeners(listener -> listener.onAction(action));

@@ -17,4 +17,9 @@ public final class LocaleSetting implements Setting {
   @JsonProperty("1")
   @JsonPropertyDescription("string")
   private String locale;
+
+  @Override
+  public String indexName() {
+    return "unknown";
+  }
 }

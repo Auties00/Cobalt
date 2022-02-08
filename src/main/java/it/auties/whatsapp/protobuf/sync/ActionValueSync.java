@@ -15,10 +15,12 @@ import java.util.List;
 @ToString
 @Accessors(fluent = true)
 public final class ActionValueSync implements GenericSync {
+    //<editor-fold desc="Metadata">
     @JsonProperty("1")
     @JsonPropertyDescription("int64")
     @Getter
     private long timestamp;
+    //</editor-fold>
 
     //<editor-fold desc="Actions">
     @JsonProperty("2")
@@ -123,6 +125,7 @@ public final class ActionValueSync implements GenericSync {
     private PrimaryFeature primaryFeature;
     //</editor-fold>
 
+    //<editor-fold desc="Accessors">
     public Action action(){
         if(starAction != null) return starAction;
         if(contactAction != null) return contactAction;
@@ -151,6 +154,9 @@ public final class ActionValueSync implements GenericSync {
         return null;
     }
 
+    //</editor-fold>
+
+    //<editor-fold desc="Members">
     @AllArgsConstructor
     @NoArgsConstructor
     @Data
@@ -162,4 +168,6 @@ public final class ActionValueSync implements GenericSync {
         @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
         private List<String> flags;
     }
+
+    //</editor-fold>
 }

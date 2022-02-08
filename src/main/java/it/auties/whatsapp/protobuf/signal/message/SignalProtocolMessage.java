@@ -1,10 +1,9 @@
 package it.auties.whatsapp.protobuf.signal.message;
 
 import it.auties.whatsapp.crypto.SignalHelper;
+import it.auties.whatsapp.util.VersionProvider;
 
-public sealed interface SignalProtocolMessage permits SignalPreKeyMessage, SignalDistributionMessage, SignalMessage {
-    int CURRENT_VERSION = 3;
-
+public sealed interface SignalProtocolMessage extends VersionProvider permits SignalPreKeyMessage, SignalDistributionMessage, SignalMessage {
     int version();
     byte[] serialized();
 

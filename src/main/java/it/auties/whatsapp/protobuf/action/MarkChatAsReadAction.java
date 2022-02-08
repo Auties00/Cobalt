@@ -22,4 +22,9 @@ public final class MarkChatAsReadAction implements Action {
   @JsonProperty("2")
   @JsonPropertyDescription("SyncActionMessageRange")
   private ActionMessageRangeSync messageRange;
+
+  @Override
+  public String indexName() {
+    return "markChatAsRead";
+  }
 }

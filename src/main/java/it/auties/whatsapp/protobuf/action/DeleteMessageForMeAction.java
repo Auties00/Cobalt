@@ -21,4 +21,9 @@ public final class DeleteMessageForMeAction implements Action {
   @JsonProperty("2")
   @JsonPropertyDescription("int64")
   private long messageTimestamp;
+
+  @Override
+  public String indexName() {
+    return "deleteMessageForMe";
+  }
 }
