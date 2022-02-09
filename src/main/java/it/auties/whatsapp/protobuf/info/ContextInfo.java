@@ -35,7 +35,7 @@ public non-sealed class ContextInfo implements WhatsappInfo {
    * The jid of the contact that sent the message that this ContextualMessage quotes
    */
   @JsonProperty("2")
-  @JsonPropertyDescription("string")
+  @JsonPropertyDescription("ContactJid")
   private ContactJid quotedMessageSenderId;
 
   /**

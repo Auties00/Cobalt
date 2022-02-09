@@ -14,17 +14,23 @@ import lombok.SneakyThrows;
 import java.nio.charset.StandardCharsets;
 
 public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) implements VersionProvider {
-
     public void createOutgoing(int id, byte[] identityKey, SignalSignedKeyPair signedPreKey, SignalSignedKeyPair preKey){
         Validate.isTrue(keys.hasTrust(address, identityKey),
                 "Untrusted key", SecurityException.class);
-        Validate.isTrue(Curve.verifySignature(identityKey, signedPreKey.keyPair().publicKey(), signedPreKey.signature()),
+        Validate.isTrue(Curve.verifySignature(identityKey, signedPreKey.keyPair().encodedPublicKey(), signedPreKey.signature()),
                 "Signature mismatch", SecurityException.class);
 
         var baseKey = SignalKeyPair.random();
-        var state = createState(true, baseKey, null,
-                identityKey, preKey == null ? null : preKey.keyPair().publicKey(),
-                signedPreKey.keyPair().publicKey(), id, CURRENT_VERSION);
+        var state = createState(
+                true,
+                baseKey,
+                null,
+                identityKey,
+                preKey == null ? null : preKey.keyPair().encodedPublicKey(),
+                signedPreKey.keyPair().encodedPublicKey(),
+                id,
+                CURRENT_VERSION
+        );
 
         var pendingPreKey = new SessionPreKey(preKey == null ? 0 : preKey.id(), baseKey.publicKey(), signedPreKey.id());
         state.pendingPreKey(pendingPreKey);

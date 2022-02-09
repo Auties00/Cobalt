@@ -27,7 +27,7 @@ public class MessageKey {
    * The jid of the contact or group that sent the message.
    */
   @JsonProperty("1")
-  @JsonPropertyDescription("string")
+  @JsonPropertyDescription("ContactJid")
   @NonNull
   private ContactJid chatJid;
 

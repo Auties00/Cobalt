@@ -249,6 +249,11 @@ public class Socket {
                 .sendWithNoResponse(session(), keys, store);
     }
 
+    @SafeVarargs
+    public final CompletableFuture<Node> sendMessage(MessageInfo info, Entry<String, Object>... metadata){
+        return messageHandler.encode(info, metadata);
+    }
+
     public CompletableFuture<Node> sendQuery(String method, String category, Node... body){
         return sendQuery(null, ContactJid.SOCKET, method, category, null, body);
     }
@@ -300,7 +305,7 @@ public class Socket {
     }
 
     private CompletableFuture<GroupMetadata> queryGroupMetadata(ContactJid group){
-        var body = with("query", of("request", "interactive"));
+        var body = withAttributes("query", of("request", "interactive"));
         return sendQuery(group, "get", "w:g2", body)
                 .thenApplyAsync(node -> GroupMetadata.of(node.findNode("group")));
     }
@@ -783,6 +788,7 @@ public class Socket {
             saveCompanion(container);
 
             var deviceIdentity = requireNonNull(container.findNode("device-identity"), "Missing device identity");
+            keys.companionIdentity(deviceIdentity.bytes());
             var advIdentity = ProtobufDecoder.forType(SignedDeviceIdentityHMAC.class)
                     .decode(deviceIdentity.bytes());
             var advSign = Hmac.calculateSha256(advIdentity.details(), keys.companionKey());
@@ -846,7 +852,11 @@ public class Socket {
         public final CompletableFuture<Node> encode(MessageInfo info, Entry<String, Object>... metadata) {
             var encodedMessage = SignalHelper.pad(ProtobufEncoder.encode(info));
             return createParticipants(info, encodedMessage)
-                    .thenComposeAsync(participants -> encode(info, encodedMessage, participants, metadata));
+                    .thenComposeAsync(participants -> encode(info, encodedMessage, participants, metadata))
+                    .exceptionallyAsync(throwable -> {
+                        throwable.printStackTrace();
+                        return null;
+                    });
         }
 
         @SafeVarargs
@@ -861,12 +871,14 @@ public class Socket {
 
             if(!participants.isEmpty()){
                 body.add(with("participants", participants));
+                body.add(with("device-identity", keys.companionIdentity()));
             }
 
             var attributes = new HashMap<String, Object>();
             attributes.putAll(ofEntries(metadata));
             attributes.putAll(of("id", info.id(), "type", "text", "to", info.chatJid()));
             var request = withChildren("message", attributes, body);
+
             return send(request);
         }
 
@@ -887,8 +899,13 @@ public class Socket {
             return groupsCache.stream()
                     .filter(info.chatJid()::contentEquals)
                     .findFirst()
+                    .map(CompletableFuture::completedFuture)
                     .orElseGet(() -> cacheGroupMetadata(info))
-                    .participants()
+                    .thenComposeAsync(metadata -> createParticipants(info, metadata, signalMessage));
+        }
+
+        private CompletableFuture<List<Node>> createParticipants(MessageInfo info, GroupMetadata metadata, SignalDistributionMessage signalMessage) {
+            return metadata.participants()
                     .stream()
                     .map(participant -> querySyncDevices(participant.jid(), false))
                     .reduce(completedFuture(List.of()), (left, right) -> left.thenCombineAsync(right, WhatsappUtils::combine))
@@ -919,13 +936,15 @@ public class Socket {
         }
 
         private List<Node> createParticipantsSessions(List<ContactJid> contacts, byte[] senderKeyMessage) {
-            return contacts.stream().map(contact -> createParticipantSession(senderKeyMessage, contact)).toList();
+            return contacts.stream()
+                    .map(contact -> createParticipantSession(senderKeyMessage, contact))
+                    .toList();
         }
 
         private Node createParticipantSession(byte[] senderKeyMessage, ContactJid contact) {
             var cipher = new SessionCipher(contact.toSignalAddress(), keys);
             var encrypted = cipher.encrypt(senderKeyMessage);
-            return with("to", of("jid", contact), encrypted);
+            return withChildren("to", of("jid", contact), encrypted);
         }
 
         private CompletableFuture<Boolean> assertSessions(List<ContactJid> contacts) {
@@ -941,11 +960,11 @@ public class Socket {
         private void parseAssertSessions(Node result) {
             result.findNode("list")
                     .findNodes("user")
-                    .forEach(this::parseAsserSession);
+                    .forEach(this::parseAssertSession);
         }
 
-        private void parseAsserSession(Node node) {
-            Validate.isTrue(node.hasNode("error"),
+        private void parseAssertSession(Node node) {
+            Validate.isTrue(!node.hasNode("error"),
                     "Erroneous session node",
                     SecurityException.class);
             var jid = node.attributes().getJid("jid")
@@ -959,9 +978,20 @@ public class Socket {
             builder.createOutgoing(
                     SignalHelper.fromBytes(registrationId.bytes(), 4),
                     SignalHelper.appendKeyHeader(identity.bytes()),
-                    parseKey(signedKey),
+                    parseSignedKey(signedKey),
                     parseKey(key)
             );
+        }
+
+        private SignalSignedKeyPair parseSignedKey(Node node) {
+            if (node == null) {
+                return null;
+            }
+
+            var id = SignalHelper.fromBytes(node.findNode("id").bytes(), 3);
+            var keyPair = new SignalKeyPair(node.findNode("value").bytes(), null);
+            var signature = node.findNode("signature");
+            return new SignalSignedKeyPair(id, keyPair, signature.bytes());
         }
 
         private SignalSignedKeyPair parseKey(Node node) {
@@ -970,18 +1000,19 @@ public class Socket {
             }
 
             var id = SignalHelper.fromBytes(node.findNode("id").bytes(), 3);
-            var publicKey = node.findNode("value");
-            var signature = node.findNode("signature");
-            var keyPair = new SignalKeyPair(publicKey.bytes(), new byte[32]);
-            return new SignalSignedKeyPair(id, keyPair, signature.bytes());
+            var keyPair = new SignalKeyPair(node.findNode("value").bytes(), null);
+            return new SignalSignedKeyPair(id, keyPair, null);
         }
 
         @SneakyThrows
-        private GroupMetadata cacheGroupMetadata(MessageInfo info) {
-            var result = queryGroupMetadata(info.chatJid())
-                    .get();
-            groupsCache.add(result);
-            return result;
+        private CompletableFuture<GroupMetadata> cacheGroupMetadata(MessageInfo info) {
+            return queryGroupMetadata(info.chatJid())
+                    .thenApplyAsync(this::cacheMetadata);
+        }
+
+        private GroupMetadata cacheMetadata(GroupMetadata metadata) {
+            groupsCache.add(metadata);
+            return metadata;
         }
 
         private CompletableFuture<List<ContactJid>> querySyncDevices(ContactJid contact, boolean ignoreZeroDevices) {
@@ -990,7 +1021,7 @@ public class Socket {
             devicesCache.stream()
                     .filter(entry -> Objects.equals(entry.user(), contact.user()))
                     .findFirst()
-                    .ifPresentOrElse(cachedDevices::add, () -> missingDevices.add(with("user", of("jid", contact))));
+                    .ifPresentOrElse(cachedDevices::add, () -> missingDevices.add(withAttributes("user", of("jid", contact))));
             if(missingDevices.isEmpty()) {
                 return completedFuture(cachedDevices);
             }
@@ -1087,6 +1118,7 @@ public class Socket {
             }catch (Throwable throwable){
                 log.warning("An exception occurred while processing a message: " + throwable.getMessage());
                 log.warning("The application will continue running normally, but submit an issue on GitHub");
+                throwable.printStackTrace();
             }
         }
 

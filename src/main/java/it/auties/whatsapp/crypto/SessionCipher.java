@@ -27,14 +27,13 @@ import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 
 public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) {
-    @SneakyThrows
     public Node encrypt(byte[] data){
         var session = loadSession();
         Validate.isTrue(keys.hasTrust(address, session.currentState().remoteIdentityKey()),
                 "Untrusted key", SecurityException.class);
 
         var chain = session.currentState()
-                .findChain(session.currentState().ephemeralKeyPair().encodedPublicKey())
+                .findChain(session.currentState().ephemeralKeyPair().publicKey())
                 .orElseThrow(() -> new NoSuchElementException("Missing chain for %s".formatted(address)));
         fillMessageKeys(chain, chain.counter() + 1);
 

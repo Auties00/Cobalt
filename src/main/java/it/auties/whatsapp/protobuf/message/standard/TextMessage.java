@@ -8,6 +8,7 @@ import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
+import org.w3c.dom.Text;
 
 import java.util.Arrays;
 
@@ -109,6 +110,16 @@ public final class TextMessage extends ContextualMessage {
    */
   public TextMessage(String text){
     this.text = text;
+  }
+
+  /**
+   * Constructs a TextMessage from a text
+   *
+   * @param text the text to wrap
+   * @return a non-null TextMessage
+   */
+  public static TextMessage of(String text){
+    return new TextMessage(text);
   }
 
   /**

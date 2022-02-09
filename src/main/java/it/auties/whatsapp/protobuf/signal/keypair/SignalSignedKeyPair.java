@@ -5,7 +5,7 @@ import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.socket.Node;
 import lombok.NonNull;
 
-public record SignalSignedKeyPair(int id, @NonNull SignalKeyPair keyPair, byte @NonNull [] signature) implements ISignalKeyPair{
+public record SignalSignedKeyPair(int id, @NonNull SignalKeyPair keyPair, byte[] signature) implements ISignalKeyPair{
     public static SignalSignedKeyPair of(int id, @NonNull SignalKeyPair identityKeyPair){
         var keyPair = SignalKeyPair.random();
         var signature = Curve.calculateSignature(identityKeyPair.privateKey(), keyPair.encodedPublicKey());

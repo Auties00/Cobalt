@@ -8,6 +8,7 @@ import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
+import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.util.*;
 
@@ -65,7 +66,7 @@ public class GroupMetadata {
         var descWrapper = node.findNode("description");
         var description = Optional.ofNullable(descWrapper)
                 .map(parent -> parent.findNode("body"))
-                .map(wrapper -> (String) wrapper.content())
+                .map(GroupMetadata::parseDescription)
                 .orElse(null);
         var descriptionId = Optional.ofNullable(descWrapper)
                 .map(Node::attributes)
@@ -81,6 +82,15 @@ public class GroupMetadata {
                 .map(GroupParticipant::of)
                 .toList();
         return new GroupMetadata(groupId, subject, subjectTimestamp, foundationTimestamp, founder, description, descriptionId, policies, participants, ephemeral);
+    }
+
+    private static String parseDescription(Node wrapper) {
+        return switch (wrapper.content()){
+            case null -> null;
+            case String string -> string;
+            case byte[] bytes -> new String(bytes, StandardCharsets.UTF_8);
+            default -> throw new IllegalArgumentException("Illegal body type: %s".formatted(wrapper.content().getClass().getName()));
+        };
     }
 
     public Optional<String> description() {

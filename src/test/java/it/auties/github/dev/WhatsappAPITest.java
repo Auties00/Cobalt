@@ -16,6 +16,8 @@ import lombok.extern.java.Log;
 import org.junit.jupiter.api.Test;
 
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Log
 public class WhatsappAPITest {
@@ -33,6 +35,14 @@ public class WhatsappAPITest {
         @Override
         public void onLoggedIn() {
             System.out.println("Connected");
+        }
+
+        @Override
+        public void onChats() {
+            CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS).execute(() -> {
+                whatsapp.sendMessage(whatsapp.store().findChatByName("Carlo").orElseThrow(), "Test da md");
+            });
+
         }
 
         @Override

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
+import it.auties.whatsapp.protobuf.signal.auth.SignedDeviceIdentityHMAC;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalSignedKeyPair;
@@ -154,6 +155,11 @@ public class WhatsappKeys implements JacksonProvider {
      * Session dependent keys to write and read cyphered messages
      */
     private BinaryArray writeKey, readKey;
+
+    /**
+     * The bytes of the encoded {@link SignedDeviceIdentityHMAC} received during the auth process
+     */
+    private byte[] companionIdentity;
 
     /**
      * Clears all the keys from this machine's memory.

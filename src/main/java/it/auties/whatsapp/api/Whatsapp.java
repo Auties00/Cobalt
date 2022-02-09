@@ -2,6 +2,8 @@ package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.protobuf.chat.*;
+import it.auties.whatsapp.protobuf.message.model.*;
+import it.auties.whatsapp.protobuf.message.standard.TextMessage;
 import it.auties.whatsapp.util.RegisterListenerScanner;
 import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.manager.WhatsappKeys;
@@ -11,8 +13,6 @@ import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.contact.ContactStatus;
 import it.auties.whatsapp.protobuf.info.ContextInfo;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
-import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
-import it.auties.whatsapp.protobuf.message.model.Message;
 import it.auties.whatsapp.socket.*;
 import it.auties.whatsapp.util.Nodes;
 import it.auties.whatsapp.util.Validate;
@@ -202,7 +202,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> sendMessage(@NonNull Chat chat, @NonNull String message) {
-        return null;
+        return sendMessage(chat, new TextMessage(message));
     }
 
     /**
@@ -214,7 +214,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> sendMessage(@NonNull Chat chat, @NonNull String message, @NonNull MessageInfo quotedMessage) {
-        return null;
+        return sendMessage(chat, new TextMessage(message), quotedMessage);
     }
 
     /**
@@ -225,7 +225,16 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> sendMessage(@NonNull Chat chat, @NonNull Message message) {
-        return null;
+        var key = MessageKey.newMessageKey()
+                .chatJid(chat.jid())
+                .fromMe(true)
+                .create();
+        var info = MessageInfo.newMessageInfo()
+                .store(store())
+                .key(key)
+                .message(MessageContainer.of(message))
+                .create();
+        return sendMessage(info);
     }
 
     /**
@@ -237,7 +246,12 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> sendMessage(@NonNull Chat chat, @NonNull ContextualMessage message, @NonNull MessageInfo quotedMessage) {
-        return null;
+        var context = ContextInfo.newContextInfo()
+                .quotedMessageId(quotedMessage.id())
+                .quotedMessageContainer(quotedMessage.message())
+                .quotedMessageSenderId(quotedMessage.senderJid())
+                .create();
+        return sendMessage(chat, message, context);
     }
 
     /**
@@ -249,7 +263,16 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> sendMessage(@NonNull Chat chat, @NonNull ContextualMessage message, @NonNull ContextInfo contextInfo) {
-        return null;
+        var key = MessageKey.newMessageKey()
+                .chatJid(chat.jid())
+                .fromMe(true)
+                .create();
+        var info = MessageInfo.newMessageInfo()
+                .store(store())
+                .key(key)
+                .message(MessageContainer.of(message.contextInfo(contextInfo)))
+                .create();
+        return sendMessage(info);
     }
 
     /**
@@ -259,7 +282,11 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> sendMessage(@NonNull MessageInfo message) {
-        return null;
+        if(message.message().content() instanceof MediaMessage mediaMessage){
+            mediaMessage.store(store());
+        }
+
+        return socket.sendMessage(message);
     }
 
     /**

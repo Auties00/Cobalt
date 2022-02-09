@@ -45,6 +45,6 @@ public final class ProductListInfo implements WhatsappInfo {
    * The jid of the seller of the products that this message wraps
    */
   @JsonProperty("3")
-  @JsonPropertyDescription("string")
+  @JsonPropertyDescription("ContactJid")
   private ContactJid sellerId;
 }

@@ -9,21 +9,7 @@ import org.whispersystems.libsignal.util.KeyHelper;
 
 import java.util.Arrays;
 
-public record SignalKeyPair(byte @NonNull [] publicKey, byte @NonNull [] privateKey) implements ISignalKeyPair{
-/*
-private static final int PUBLIC_HEADER_LENGTH = 12;
-private static final int PRIVATE_HEADER_LENGTH = 16;
-private static final int KEY_SIZE = 32;
-
-@SneakyThrows
-public static SignalKeyPair random() {
-var pair = KeyPairGenerator.getInstance("X25519").generateKeyPair();
-var publicKey = copyOfRange(pair.getPublic().getEncoded(), PUBLIC_HEADER_LENGTH, PUBLIC_HEADER_LENGTH + KEY_SIZE);
-var privateKey = copyOfRange(pair.getPrivate().getEncoded(), PRIVATE_HEADER_LENGTH, PRIVATE_HEADER_LENGTH + KEY_SIZE);
-return new SignalKeyPair(publicKey, privateKey);
-}
- */
-
+public record SignalKeyPair(byte @NonNull [] publicKey, byte[] privateKey) implements ISignalKeyPair{
     public static SignalKeyPair random(){
         var pair = KeyHelper.generateIdentityKeyPair();
         var publicKey = (DjbECPublicKey) pair.getPublicKey().getPublicKey();

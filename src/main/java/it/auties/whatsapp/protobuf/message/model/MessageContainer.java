@@ -316,6 +316,17 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
 
   // Unsupported for now: MessageContextInfo(35), InteractiveMessage(45), ReactionMessage(46), StickerSyncRMRMessage(47)
 
+
+  /**
+   * Constructs a new MessageContainer from a message of any type
+   *
+   * @param message the message that the new container should wrap
+   * @param <T> the type of the message
+   */
+  public static <T extends Message> MessageContainer of(@NonNull T message){
+    return new MessageContainer(message);
+  }
+
   /**
    * Constructs a new MessageContainer from a message of any type that can only be seen once
    *
