@@ -1,14 +1,11 @@
 package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.whatsapp.protobuf.chat.*;
 import it.auties.whatsapp.util.RegisterListenerScanner;
 import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
-import it.auties.whatsapp.protobuf.chat.Chat;
-import it.auties.whatsapp.protobuf.chat.GroupAction;
-import it.auties.whatsapp.protobuf.chat.GroupPolicy;
-import it.auties.whatsapp.protobuf.chat.GroupSetting;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.contact.ContactStatus;
@@ -356,11 +353,11 @@ public class Whatsapp {
      * @return a CompletableFuture     
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    public CompletableFuture<GroupResponse> queryGroupMetadata(@NonNull Chat chat) {
+    public CompletableFuture<GroupMetadata> queryGroupMetadata(@NonNull Chat chat) {
         var query = withAttributes("query", Map.of("request", "interactive"));
         return socket.sendQuery(chat.jid(), "get", "w:g2", query)
                 .thenApplyAsync(result -> result.findNode("group"))
-                .thenApplyAsync(GroupResponse::new);
+                .thenApplyAsync(GroupMetadata::of);
     }
 
     /**
@@ -762,14 +759,14 @@ public class Whatsapp {
      * @param contacts at least one contact to add to the group
      * @return a CompletableFuture
      */
-    public CompletableFuture<GroupResponse> createGroup(@NonNull String subject, @NonNull Contact... contacts) {
+    public CompletableFuture<GroupMetadata> createGroup(@NonNull String subject, @NonNull Contact... contacts) {
         var participants = Arrays.stream(contacts)
                 .map(contact -> withAttributes("participant", Map.of("jid", contact.jid())))
                 .toArray(Node[]::new);
         var body = withChildren("create", Map.of("subject", subject, "key", BinaryArray.random(12).toHex()), participants);
         return socket.sendQuery(ContactJid.ofServer(ContactJid.Server.GROUP), "set", "w:g2", body)
                 .thenApplyAsync(response -> response.findNode("group"))
-                .thenApplyAsync(GroupResponse::new);
+                .thenApplyAsync(GroupMetadata::of);
     }
 
     private void starMessagePlaceholder() {

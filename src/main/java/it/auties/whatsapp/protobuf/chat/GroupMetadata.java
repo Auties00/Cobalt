@@ -3,7 +3,10 @@ package it.auties.whatsapp.protobuf.chat;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.socket.Node;
 import it.auties.whatsapp.util.WhatsappUtils;
+import lombok.AllArgsConstructor;
 import lombok.NonNull;
+import lombok.Value;
+import lombok.experimental.Accessors;
 
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -12,20 +15,50 @@ import static it.auties.whatsapp.protobuf.chat.GroupPolicy.forData;
 import static it.auties.whatsapp.protobuf.chat.GroupSetting.EDIT_GROUP_INFO;
 import static it.auties.whatsapp.protobuf.chat.GroupSetting.SEND_MESSAGES;
 
-public record GroupMetadata(ContactJid jid, String subject, ZonedDateTime foundationTimestamp, ContactJid founder,
-                            String description, String descriptionId, Map<GroupSetting, GroupPolicy> policies,
-                            List<GroupParticipant> participants, ZonedDateTime ephemeralExpiration) {
+@AllArgsConstructor
+@Value
+@Accessors(fluent = true)
+public class GroupMetadata {
+    @NonNull
+    ContactJid jid;
+
+    @NonNull
+    String subject;
+
+    @NonNull
+    ZonedDateTime subjectTimestamp;
+
+    @NonNull
+    ZonedDateTime foundationTimestamp;
+
+    @NonNull
+    ContactJid founder;
+
+    String description;
+
+    String descriptionId;
+
+    @NonNull
+    Map<GroupSetting, GroupPolicy> policies;
+
+    @NonNull
+    List<GroupParticipant> participants;
+
+    ZonedDateTime ephemeralExpiration;
+
     public static GroupMetadata of(@NonNull Node node){
         var groupId = node.attributes()
                 .getOptionalString("id")
                 .map(id -> ContactJid.ofUser(id, ContactJid.Server.GROUP))
                 .orElseThrow(() -> new NoSuchElementException("Missing group jid"));
         var subject = node.attributes().getString("subject");
+        var subjectTimestamp = WhatsappUtils.parseWhatsappTime(node.attributes().getLong("s_t"))
+                .orElse(ZonedDateTime.now());
         var foundationTimestamp = WhatsappUtils.parseWhatsappTime(node.attributes().getLong("creation"))
                 .orElse(ZonedDateTime.now());
         var founder = node.attributes()
                 .getJid("creator")
-                .orElse(null);
+                .orElseThrow(() -> new NoSuchElementException("Missing founder"));
         var policies = new HashMap<GroupSetting, GroupPolicy>();
         policies.put(SEND_MESSAGES, forData(node.hasNode("announce")));
         policies.put(EDIT_GROUP_INFO, forData(node.hasNode("locked")));
@@ -47,6 +80,14 @@ public record GroupMetadata(ContactJid jid, String subject, ZonedDateTime founda
                 .stream()
                 .map(GroupParticipant::of)
                 .toList();
-        return new GroupMetadata(groupId, subject, foundationTimestamp, founder, description, descriptionId, policies, participants, ephemeral);
+        return new GroupMetadata(groupId, subject, subjectTimestamp, foundationTimestamp, founder, description, descriptionId, policies, participants, ephemeral);
+    }
+
+    public Optional<String> description() {
+        return Optional.ofNullable(description);
+    }
+
+    public Optional<ZonedDateTime> ephemeralExpiration() {
+        return Optional.ofNullable(ephemeralExpiration);
     }
 }
