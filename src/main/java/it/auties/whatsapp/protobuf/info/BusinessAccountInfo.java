@@ -23,7 +23,7 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 public final class BusinessAccountInfo implements WhatsappInfo {
   /**
-   * The facebook id
+   * The facebook jid
    */
   @JsonProperty("1")
   @JsonPropertyDescription("uint64")

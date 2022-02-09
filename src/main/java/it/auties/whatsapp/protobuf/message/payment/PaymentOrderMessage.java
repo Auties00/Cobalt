@@ -25,7 +25,7 @@ import java.util.Arrays;
 @Accessors(fluent = true)
 public final class PaymentOrderMessage extends ContextInfo implements PaymentMessage {
   /**
-   * The id of this order
+   * The jid of this order
    */
   @JsonProperty("1")
   @JsonPropertyDescription("string")
@@ -74,7 +74,7 @@ public final class PaymentOrderMessage extends ContextInfo implements PaymentMes
   private String title;
 
   /**
-   * The id of the seller associated with this order
+   * The jid of the seller associated with this order
    */
   @JsonProperty("8")
   @JsonPropertyDescription("seller")

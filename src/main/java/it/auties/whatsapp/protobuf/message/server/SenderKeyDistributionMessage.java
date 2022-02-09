@@ -23,7 +23,7 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 public final class SenderKeyDistributionMessage implements ServerMessage {
   /**
-   * The id of the sender
+   * The jid of the sender
    */
   @JsonProperty("1")
   @JsonPropertyDescription("string")

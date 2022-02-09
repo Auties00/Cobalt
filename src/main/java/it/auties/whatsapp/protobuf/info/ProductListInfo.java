@@ -42,7 +42,7 @@ public final class ProductListInfo implements WhatsappInfo {
   private ProductListHeaderImage headerImage;
 
   /**
-   * The id of the seller of the products that this message wraps
+   * The jid of the seller of the products that this message wraps
    */
   @JsonProperty("3")
   @JsonPropertyDescription("string")

@@ -42,7 +42,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * Constructs a new ContactId for a user from a jid
      *
      * @param jid the non-null jid of the user
-     * @return a non-null contact id
+     * @return a non-null contact jid
      */
     @JsonCreator
     public static ContactJid ofUser(@NonNull String jid) {
@@ -54,7 +54,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      *
      * @param jid    the nullable jid of the user
      * @param server the non-null custom server
-     * @return a non-null contact id
+     * @return a non-null contact jid
      */
     public static ContactJid ofUser(String jid, @NonNull Server server) {
         return new ContactJid(withoutServer(jid), server, 0, 0);
@@ -64,7 +64,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * Constructs a new ContactId that represents a server
      *
      * @param server the non-null custom server
-     * @return a non-null contact id
+     * @return a non-null contact jid
      */
     public static ContactJid ofServer(@NonNull Server server) {
         return new ContactJid(null, server, 0, 0);
@@ -74,12 +74,23 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * Constructs a new ContactId for a companion
      *
      * @param jid    the nullable jid of the user
-     * @param agent  the agent id
-     * @param device the device id
-     * @return a non-null contact id
+     * @param agent  the agent jid
+     * @param device the device jid
+     * @return a non-null contact jid
      */
     public static ContactJid ofCompanion(String jid, int device, int agent) {
         return new ContactJid(withoutServer(jid), Server.WHATSAPP, device, agent);
+    }
+
+    /**
+     * Constructs a new ContactId for a device
+     *
+     * @param jid    the nullable jid of the user
+     * @param device the device jid
+     * @return a non-null contact jid
+     */
+    public static ContactJid ofDevice(String jid, int device) {
+        return new ContactJid(withoutServer(jid), Server.WHATSAPP, device, 0);
     }
 
     /**
@@ -125,6 +136,15 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
                 default -> Type.UNKNOWN;
             };
         };
+    }
+
+    /**
+     * Converts this jid to a user jid
+     *
+     * @return a non-null jid
+     */
+    public ContactJid toUserJid(){
+        return ofUser(user);
     }
 
     /**
@@ -289,7 +309,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
         WHATSAPP("s.whatsapp.net");
 
         @Getter
-        private String address;
+        private final String address;
 
         @JsonCreator
         public static Server forAddress(String address) {

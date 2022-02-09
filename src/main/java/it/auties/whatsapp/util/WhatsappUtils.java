@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 
 import static java.time.ZoneId.systemDefault;
 import static java.time.ZonedDateTime.ofInstant;
@@ -27,6 +28,13 @@ public class WhatsappUtils implements JacksonProvider {
 
     public String createPreferencesPath(String path, Object id) {
         return "%s$%s".formatted(path, id);
+    }
+
+    @SafeVarargs
+    public <T> List<T> combine(List<T>... input){
+        return Stream.of(input)
+                .flatMap(Collection::stream)
+                .toList();
     }
 
     public LinkedList<Integer> knownIds() {
@@ -54,7 +62,7 @@ public class WhatsappUtils implements JacksonProvider {
     }
 
     /**
-     * Returns a random message id
+     * Returns a random message jid
      *
      * @return a non-null ten character String
      */

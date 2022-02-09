@@ -9,10 +9,10 @@ import java.util.NoSuchElementException;
 /**
  * A model class that represents a participant of a group.
  *
- * @param id   the non-null id of the participant
+ * @param jid   the non-null jid of the participant
  * @param role non-null role of the participant
  */
-public record GroupParticipant(@NonNull ContactJid id, @NonNull GroupRole role) {
+public record GroupParticipant(@NonNull ContactJid jid, @NonNull GroupRole role) {
     /**
      * Constructs a new GroupParticipant from an input node
      *

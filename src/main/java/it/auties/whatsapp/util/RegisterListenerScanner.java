@@ -1,4 +1,4 @@
-package it.auties.whatsapp.compiler;
+package it.auties.whatsapp.util;
 
 import io.github.classgraph.ClassGraph;
 import it.auties.whatsapp.api.RegisterListener;

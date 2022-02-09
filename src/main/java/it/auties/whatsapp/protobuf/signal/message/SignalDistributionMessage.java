@@ -28,7 +28,7 @@ public final class SignalDistributionMessage implements SignalProtocolMessage {
   private int version;
 
   /**
-   * The id of the sender
+   * The jid of the sender
    */
   @JsonProperty("1")
   @JsonPropertyDescription("uint32")

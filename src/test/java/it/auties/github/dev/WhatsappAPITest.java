@@ -60,7 +60,7 @@ public class WhatsappAPITest {
 
         @Override
         public void onMessageStatus(Chat chat, Contact contact, MessageInfo message, MessageStatus status) {
-            System.out.printf("Message with id %s in chat %s%s has now status %s%n", message.id(), chat.name(), contact == null ? "" : "sent by %s".formatted(contact.name()), status.name());
+            System.out.printf("Message with jid %s in chat %s%s has now status %s%n", message.id(), chat.name(), contact == null ? "" : "sent by %s".formatted(contact.name()), status.name());
         }
     }
 }

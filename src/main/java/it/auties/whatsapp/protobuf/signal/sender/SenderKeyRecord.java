@@ -34,7 +34,7 @@ public class SenderKeyRecord {
     return states().stream()
             .filter(key -> key.id() == keyId)
             .findFirst()
-            .orElseThrow(() -> new NoSuchElementException("Cannot find state with id %s".formatted(keyId)));
+            .orElseThrow(() -> new NoSuchElementException("Cannot find state with jid %s".formatted(keyId)));
   }
 
   public void addState(int id, int iteration, byte[] chainKey, byte[] signatureKey){

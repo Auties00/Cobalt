@@ -27,7 +27,7 @@ import lombok.experimental.SuperBuilder;
 @Accessors(fluent = true)
 public final class TemplateButtonReplyMessage extends ContextualMessage implements ButtonMessage {
   /**
-   * The id of the button that was selected from the previous template message
+   * The jid of the button that was selected from the previous template message
    */
   @JsonProperty("1")
   @JsonPropertyDescription("string")

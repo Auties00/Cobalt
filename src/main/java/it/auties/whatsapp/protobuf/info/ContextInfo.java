@@ -25,7 +25,7 @@ import java.util.List;
 @Accessors(fluent = true)
 public non-sealed class ContextInfo implements WhatsappInfo {
   /**
-   * The id of the message that this ContextualMessage quotes
+   * The jid of the message that this ContextualMessage quotes
    */
   @JsonProperty("1")
   @JsonPropertyDescription("string")

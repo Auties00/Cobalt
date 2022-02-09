@@ -38,6 +38,7 @@ import static java.util.prefs.Preferences.userRoot;
 @Data
 @Accessors(fluent = true)
 @Log
+@SuppressWarnings({"unused", "UnusedReturnValue"}) // Chaining
 public class WhatsappStore implements JacksonProvider {
     /**
      * The path used to serialize and deserialize this object
@@ -45,7 +46,7 @@ public class WhatsappStore implements JacksonProvider {
     private static final String PREFERENCES_PATH = WhatsappStore.class.getName();
 
     /**
-     * The unsigned id
+     * The unsigned jid
      */
     @JsonProperty
     private final int id;
@@ -114,7 +115,7 @@ public class WhatsappStore implements JacksonProvider {
     /**
      * Constructs a new default instance of WhatsappStore
      *
-     * @param id the unsigned id of this store
+     * @param id the unsigned jid of this store
      * @return a non-null instance of WhatsappStore
      */
     public static WhatsappStore newStore(int id){
@@ -124,7 +125,7 @@ public class WhatsappStore implements JacksonProvider {
     /**
      * Returns the store saved in memory or constructs a new clean instance
      *
-     * @param id the id of this session
+     * @param id the jid of this session
      * @return a non-null instance of WhatsappStore
      */
     public static WhatsappStore fromMemory(int id){
@@ -140,7 +141,7 @@ public class WhatsappStore implements JacksonProvider {
             return JACKSON.readValue(json, WhatsappStore.class);
         } catch (JsonProcessingException exception) {
             exception.printStackTrace();
-            log.warning("Cannot read store for id %s: defaulting to new keys".formatted(id));
+            log.warning("Cannot read store for jid %s: defaulting to new keys".formatted(id));
             return null;
         }
     }
@@ -249,9 +250,9 @@ public class WhatsappStore implements JacksonProvider {
     }
 
     /**
-     * Queries the first request whose id is equal to {@code id}
+     * Queries the first request whose jid is equal to {@code jid}
      *
-     * @param id the id to search, can be null
+     * @param id the jid to search, can be null
      * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
     public Optional<Request> findPendingRequest(String id) {
@@ -261,7 +262,7 @@ public class WhatsappStore implements JacksonProvider {
     }
 
     /**
-     * Queries the first request whose id equals the one stored by the response and, if any is found, it completes it
+     * Queries the first request whose jid equals the one stored by the response and, if any is found, it completes it
      *
      * @param response the response to complete the request with
      * @return true if any request matching {@code response} is found

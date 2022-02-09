@@ -23,7 +23,7 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 public final class ButtonsResponseMessage extends ContextualMessage implements ButtonMessage {
   /**
-   * The id of the button that was selected
+   * The jid of the button that was selected
    */
   @JsonProperty("1")
   @JsonPropertyDescription("string")

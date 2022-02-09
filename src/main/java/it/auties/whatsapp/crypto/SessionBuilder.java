@@ -36,18 +36,18 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
         keys.addSession(address, session);
     }
 
-    public int createIncoming(Session session, SignalPreKeyMessage message){
+    public void createIncoming(Session session, SignalPreKeyMessage message){
         Validate.isTrue(keys.hasTrust(address, message.identityKey()),
                 "Untrusted key", SecurityException.class);
 
         if(session.hasState(message.version(), message.baseKey())){
-            return 0;
+            return;
         }
 
         var preKeyPair = keys.findPreKeyById(message.preKeyId())
                 .orElse(null);
         Validate.isTrue(message.preKeyId() == 0 || preKeyPair != null,
-                "Invalid pre key id: %s", message.preKeyId());
+                "Invalid pre key jid: %s", message.preKeyId());
 
         var signedPreKeyPair = keys.findSignedKeyPairById(message.signedPreKeyId())
                 .toGenericKeyPair();
@@ -65,7 +65,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
         );
 
         session.addState(nextState);
-        return message.preKeyId();
+        message.preKeyId();
     }
 
     @SneakyThrows

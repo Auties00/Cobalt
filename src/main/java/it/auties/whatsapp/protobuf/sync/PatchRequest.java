@@ -35,6 +35,6 @@ public record PatchRequest(String type, ActionValueSync sync, String index, int 
             return List.of(setting.indexName());
         }
 
-        throw new IllegalArgumentException("Cannot encode ");
+        throw new IllegalArgumentException("Cannot encode %s".formatted(sync));
     }
 }

@@ -62,6 +62,7 @@ public record Node(@NonNull String description,
         return new Node(description, Attributes.of(attributes), null);
     }
 
+
     /**
      * Constructs a Node that provides a non-null tag and a nullable var-args of children
      *
@@ -70,7 +71,31 @@ public record Node(@NonNull String description,
      * @return a new node with the above characteristics
      */
     public static Node withChildren(@NonNull String description, Node... children) {
+        return withChildren(description, Arrays.asList(children));
+    }
+
+    /**
+     * Constructs a Node that provides a non-null tag and a nullable var-args of children
+     *
+     * @param description a non-null String that describes the data that this object holds
+     * @param children    the nullable children of this node
+     * @return a new node with the above characteristics
+     */
+    public static Node withChildren(@NonNull String description, Collection<Node> children) {
         return new Node(description, Attributes.empty(), Nodes.orNull(children));
+    }
+
+
+    /**
+     * Constructs a Node that provides a non-null tag, a non-null map of attributes and a nullable var-args of children
+     *
+     * @param description a non-null String that describes the data that this object holds
+     * @param attributes  a non-null Map that describes the metadata of this object
+     * @param children    the nullable children of this node
+     * @return a new node with the above characteristics
+     */
+    public static Node withChildren(@NonNull String description, @NonNull Map<String, Object> attributes, Collection<Node> children) {
+        return new Node(description, Attributes.of(attributes), Nodes.orNull(children));
     }
 
     /**
@@ -82,11 +107,11 @@ public record Node(@NonNull String description,
      * @return a new node with the above characteristics
      */
     public static Node withChildren(@NonNull String description, @NonNull Map<String, Object> attributes, Node... children) {
-        return new Node(description, Attributes.of(attributes), Nodes.orNull(children));
+        return withChildren(description, attributes, Arrays.asList(children));
     }
 
     /**
-     * Returns the nullable id of this node
+     * Returns the nullable jid of this node
      *
      * @return a nullable String
      */
@@ -174,15 +199,15 @@ public record Node(@NonNull String description,
 
     /**
      * Constructs a new request from this node.
-     * If this node doesn't provide an id, the one provided as a parameter will be used.
+     * If this node doesn't provide an jid, the one provided as a parameter will be used.
      *
-     * @param id the nullable id of this request
-     * @throws NullPointerException if no valid id can be found
+     * @param id the nullable jid of this request
+     * @throws NullPointerException if no valid jid can be found
      * @return a non null request
      */
     public Request toRequest(String id){
         if (id() == null) {
-            attributes.map().put("id", requireNonNull(id, "No valid id can be used to create a request"));
+            attributes.map().put("id", requireNonNull(id, "No valid jid can be used to create a request"));
         }
 
         return Request.with(this);

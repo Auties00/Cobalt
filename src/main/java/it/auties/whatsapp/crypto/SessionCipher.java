@@ -10,21 +10,25 @@ import it.auties.whatsapp.protobuf.signal.session.Session;
 import it.auties.whatsapp.protobuf.signal.session.SessionAddress;
 import it.auties.whatsapp.protobuf.signal.session.SessionChain;
 import it.auties.whatsapp.protobuf.signal.session.SessionState;
+import it.auties.whatsapp.socket.Node;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
+import static it.auties.whatsapp.socket.Node.with;
 import static java.util.Arrays.copyOfRange;
+import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 
 public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) {
     @SneakyThrows
-    public byte[] encrypt(byte[] data){
+    public Node encrypt(byte[] data){
         var session = loadSession();
         Validate.isTrue(keys.hasTrust(address, session.currentState().remoteIdentityKey()),
                 "Untrusted key", SecurityException.class);
@@ -42,6 +46,12 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         chain.messageKeys().remove(chain.counter());
 
         var encrypted = AesCbc.encrypt(copyOfRange(whisperKeys[2], 0, 16), data, whisperKeys[0]);
+        var encryptedMessage = encrypt(session, chain, whisperKeys, encrypted);
+        return with("enc",
+                of("v", "2", "type", hasPreKey(session) ? "pkmsg" : "msg"), encryptedMessage);
+    }
+
+    private byte[] encrypt(Session session, SessionChain chain, byte[][] whisperKeys, byte[] encrypted) {
         var message = SignalMessage.builder()
                 .ephemeralPublicKey(session.currentState().ephemeralKeyPair().encodedPublicKey())
                 .counter(chain.counter())
@@ -60,11 +70,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
                 .append(mac.cut(8))
                 .data();
         keys.addSession(address, session);
-        if(session.currentState().pendingPreKey() == null){
-            return result;
-        }
-
-        return SignalPreKeyMessage.builder()
+        return !hasPreKey(session) ? result : SignalPreKeyMessage.builder()
                 .identityKey(keys.identityKeyPair().encodedPublicKey())
                 .registrationId(keys.id())
                 .baseKey(session.currentState().pendingPreKey().baseKey())
@@ -73,6 +79,10 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
                 .serializedSignalMessage(result)
                 .build()
                 .serialized();
+    }
+
+    private boolean hasPreKey(Session session) {
+        return session.currentState().pendingPreKey() != null;
     }
 
     private void fillMessageKeys(SessionChain chain, int counter) {
@@ -97,7 +107,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
 
     public byte[] decrypt(SignalPreKeyMessage message) {
         var session = loadSession(() -> {
-            Validate.isTrue(message.registrationId() != 0, "Missing registration id");
+            Validate.isTrue(message.registrationId() != 0, "Missing registration jid");
             return new Session();
         });
 

@@ -70,7 +70,7 @@ public final class ExternalAdReplyInfo implements WhatsappInfo {
   private String sourceType;
 
   /**
-   * The source id of this ad
+   * The source jid of this ad
    */
   @JsonProperty("8")
   @JsonPropertyDescription("string")

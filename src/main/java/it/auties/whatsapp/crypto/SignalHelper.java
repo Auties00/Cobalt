@@ -1,5 +1,8 @@
 package it.auties.whatsapp.crypto;
 
+import it.auties.protobuf.encoder.ProtobufEncoder;
+import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.whatsapp.util.Buffers;
 import it.auties.whatsapp.util.Validate;
 import it.auties.whatsapp.util.VersionProvider;
 import lombok.SneakyThrows;
@@ -100,6 +103,25 @@ public class SignalHelper implements VersionProvider {
         }
 
         return result.toByteArray();
+    }
+
+    public byte[] pad(byte[] bytes){
+        var padRandomByte = SignalHelper.randomHeader();
+        var padding = BinaryArray.allocate(padRandomByte)
+                .fill((byte) padRandomByte)
+                .data();
+       return BinaryArray.of(bytes)
+               .append(padding)
+               .data();
+    }
+
+    public int fromBytes(byte[] bytes, int length){
+        var result = 0;
+        for (var i = 0; i < length; i++) {
+            result = 256 * result + bytes[i];
+        }
+
+        return result;
     }
 
     public byte[] toBytes(long number){

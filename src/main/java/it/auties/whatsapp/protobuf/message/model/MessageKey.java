@@ -39,7 +39,7 @@ public class MessageKey {
   private boolean fromMe;
 
   /**
-   * The id of the message
+   * The jid of the message
    */
   @JsonProperty("3")
   @JsonPropertyDescription("string")

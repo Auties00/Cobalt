@@ -1,7 +1,7 @@
 package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.binary.BinaryArray;
-import it.auties.whatsapp.compiler.RegisterListenerScanner;
+import it.auties.whatsapp.util.RegisterListenerScanner;
 import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
@@ -49,10 +49,10 @@ public class Whatsapp {
     private final Socket socket;
 
     /**
-     * Constructs a new instance of the API from a known id.
-     * If the id is not associated with any session, a new one will be created.
+     * Constructs a new instance of the API from a known jid.
+     * If the jid is not associated with any session, a new one will be created.
      *
-     * @param id the id of the session
+     * @param id the jid of the session
      * @return a non-null Whatsapp instance
      */
     public static Whatsapp of(int id){
@@ -70,7 +70,7 @@ public class Whatsapp {
     }
 
     /**
-     * Constructs a new instance of the API from a fresh connection using a random id.
+     * Constructs a new instance of the API from a fresh connection using a random jid.
      *
      * @return a non-null Whatsapp instance
      */
@@ -87,10 +87,10 @@ public class Whatsapp {
     }
 
     /**
-     * Constructs a new instance of the API from a known id.
-     * If the id is not associated with any session, a new one will be created.
+     * Constructs a new instance of the API from a known jid.
+     * If the jid is not associated with any session, a new one will be created.
      *
-     * @param id the id of the session
+     * @param id the jid of the session
      */
     public Whatsapp(int id){
         this(new Socket(defaultOptions(), WhatsappStore.fromMemory(id), WhatsappKeys.fromMemory(id)));
@@ -773,12 +773,12 @@ public class Whatsapp {
     }
 
     private void starMessagePlaceholder() {
-        // Sent Binary Message Node[description=iq, attributes={xmlns=w:dataSync:app:state, to=s.whatsapp.net, id=54595.12796-297, type=set}, content=[Node[description=dataSync, attributes={}, content=[Node[description=collection, attributes={name=regular_high, return_snapshot=false, version=13}, content=[Node[description=patch, attributes={}, content=[B@1cd3e518]]]]]]]
-        // Received Binary Message Node[description=iq, attributes={from=s.whatsapp.net, id=54595.12796-297, type=result}, content=[Node[description=dataSync, attributes={}, content=[Node[description=collection, attributes={name=regular_high, version=14}, content=null]]]]]
+        // Sent Binary Message Node[description=iq, attributes={xmlns=w:dataSync:app:state, to=s.whatsapp.net, jid=54595.12796-297, type=set}, content=[Node[description=dataSync, attributes={}, content=[Node[description=collection, attributes={name=regular_high, return_snapshot=false, version=13}, content=[Node[description=patch, attributes={}, content=[B@1cd3e518]]]]]]]
+        // Received Binary Message Node[description=iq, attributes={from=s.whatsapp.net, jid=54595.12796-297, type=result}, content=[Node[description=dataSync, attributes={}, content=[Node[description=collection, attributes={name=regular_high, version=14}, content=null]]]]]
     }
 
     private void unstarMessagePlaceholder() {
-        // Sent Binary Message Node[description=iq, attributes={xmlns=w:dataSync:app:state, to=s.whatsapp.net, id=54595.12796-301, type=set}, content=[Node[description=dataSync, attributes={}, content=[Node[description=collection, attributes={name=regular_high, return_snapshot=false, version=14}, content=[Node[description=patch, attributes={}, content=[B@73ce9a0b]]]]]]]
-        // Received Binary Message Node[description=iq, attributes={from=s.whatsapp.net, id=54595.12796-301, type=result}, content=[Node[description=dataSync, attributes={}, content=[Node[description=collection, attributes={name=regular_high, version=15}, content=null]]]]]
+        // Sent Binary Message Node[description=iq, attributes={xmlns=w:dataSync:app:state, to=s.whatsapp.net, jid=54595.12796-301, type=set}, content=[Node[description=dataSync, attributes={}, content=[Node[description=collection, attributes={name=regular_high, return_snapshot=false, version=14}, content=[Node[description=patch, attributes={}, content=[B@73ce9a0b]]]]]]]
+        // Received Binary Message Node[description=iq, attributes={from=s.whatsapp.net, jid=54595.12796-301, type=result}, content=[Node[description=dataSync, attributes={}, content=[Node[description=collection, attributes={name=regular_high, version=15}, content=null]]]]]
     }
 }

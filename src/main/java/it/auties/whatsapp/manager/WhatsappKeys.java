@@ -2,10 +2,9 @@ package it.auties.whatsapp.manager;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.whatsapp.binary.BinaryArray;
-import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
+import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalSignedKeyPair;
@@ -24,7 +23,6 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 import lombok.extern.java.Log;
 
-import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -42,6 +40,7 @@ import static java.util.prefs.Preferences.userRoot;
 @Data
 @Accessors(fluent = true, chain = true)
 @Log
+@SuppressWarnings({"unused", "UnusedReturnValue"}) // Chaining
 public class WhatsappKeys implements JacksonProvider {
     /**
      * The path used to serialize and deserialize this object
@@ -49,7 +48,7 @@ public class WhatsappKeys implements JacksonProvider {
     private static final String PREFERENCES_PATH = WhatsappKeys.class.getName();
 
     /**
-     * The client id
+     * The client jid
      */
     @JsonProperty
     private int id;
@@ -108,6 +107,12 @@ public class WhatsappKeys implements JacksonProvider {
     private Map<SenderKeyName, SenderKeyRecord> senderKeys;
 
     /**
+     * Receiver keys for signal implementation
+     */
+    @JsonProperty
+    private Map<SenderKeyName, SenderKeyDistributionMessage> receiverKeys;
+
+    /**
      * Sessions map
      */
     @JsonProperty
@@ -163,9 +168,9 @@ public class WhatsappKeys implements JacksonProvider {
     }
 
     /**
-     * Clears the keys associated with the provided id
+     * Clears the keys associated with the provided jid
      *
-     * @param id the id of the keys
+     * @param id the jid of the keys
      */
     public static void deleteKeys(int id) {
         var path = WhatsappUtils.createPreferencesPath(PREFERENCES_PATH, id);
@@ -175,7 +180,7 @@ public class WhatsappKeys implements JacksonProvider {
     /**
      * Returns a new instance of random keys
      *
-     * @param id the unsigned id of these keys
+     * @param id the unsigned jid of these keys
      * @return a non-null instance of WhatsappKeys
      */
     public static WhatsappKeys newKeys(int id){
@@ -185,7 +190,7 @@ public class WhatsappKeys implements JacksonProvider {
     /**
      * Returns the keys saved in memory or constructs a new clean instance
      *
-     * @param id the id of this session
+     * @param id the jid of this session
      * @return a non-null instance of WhatsappKeys
      */
     public static WhatsappKeys fromMemory(int id){
@@ -201,7 +206,7 @@ public class WhatsappKeys implements JacksonProvider {
             return JACKSON.readValue(json, WhatsappKeys.class);
         } catch (JsonProcessingException exception) {
             exception.printStackTrace();
-            log.warning("Cannot read keys for id %s: defaulting to new keys".formatted(id));
+            log.warning("Cannot read keys for jid %s: defaulting to new keys".formatted(id));
             return null;
         }
     }
@@ -214,6 +219,7 @@ public class WhatsappKeys implements JacksonProvider {
         this.signedKeyPair = SignalSignedKeyPair.of(id, identityKeyPair());
         this.companionKey = SignalKeyPair.random().publicKey();
         this.senderKeys = new ConcurrentHashMap<>();
+        this.receiverKeys = new ConcurrentHashMap<>();
         this.preKeys = new LinkedList<>();
         this.sessions = new ConcurrentHashMap<>();
         this.identities = new ConcurrentHashMap<>();
@@ -301,9 +307,9 @@ public class WhatsappKeys implements JacksonProvider {
     }
 
     /**
-     * Queries the trusted key that matches {@code id}
+     * Queries the trusted key that matches {@code jid}
      *
-     * @param id the id to search
+     * @param id the jid to search
      * @return a non-null signed key pair
      * @throws IllegalArgumentException if no element can be found
      */
@@ -313,9 +319,9 @@ public class WhatsappKeys implements JacksonProvider {
     }
 
     /**
-     * Queries the trusted key that matches {@code id}
+     * Queries the trusted key that matches {@code jid}
      *
-     * @param id the non-null id to search
+     * @param id the non-null jid to search
      * @return a non-null Optional signal pre key
      */
     public Optional<SignalPreKeyPair> findPreKeyById(int id) {
@@ -325,9 +331,9 @@ public class WhatsappKeys implements JacksonProvider {
     }
 
     /**
-     * Queries the app state key that matches {@code id}
+     * Queries the app state key that matches {@code jid}
      *
-     * @param id the non-null id to search
+     * @param id the non-null jid to search
      * @return a non-null Optional app state dataSync key
      */
     public Optional<AppStateSyncKey> findAppKeyById(byte[] id) {
@@ -356,6 +362,28 @@ public class WhatsappKeys implements JacksonProvider {
      */
     public boolean hasTrust(@NonNull SessionAddress address, byte[] identityKey) {
         return true; // At least for now
+    }
+
+    /**
+     * Checks whether the receiver key has been sent already
+     *
+     * @param group the group to check
+     * @param participant the participant to check
+     * @return true if the key was already sent
+     */
+    public boolean hasReceiverKey(@NonNull ContactJid group, @NonNull ContactJid participant){
+        var senderKey = new SenderKeyName(group.toString(), participant.toSignalAddress());
+        return receiverKeys.containsKey(senderKey);
+    }
+
+    /**
+     * Checks whether a session already exists for the given address
+     *
+     * @param address the address to check
+     * @return true if a session for that address already exists
+     */
+    public boolean hasSession(@NonNull SessionAddress address){
+        return sessions.containsKey(address);
     }
 
     /**
