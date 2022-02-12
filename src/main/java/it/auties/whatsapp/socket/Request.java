@@ -6,7 +6,6 @@ import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.util.Buffers;
-import it.auties.whatsapp.util.WhatsappUtils;
 import jakarta.websocket.SendResult;
 import jakarta.websocket.Session;
 import lombok.NonNull;
@@ -21,6 +20,7 @@ import static it.auties.whatsapp.crypto.Handshake.PROLOGUE;
  * An abstract model class that represents a request made from the client to the server.
  */
 @Log
+@SuppressWarnings("UnusedReturnValue")
 public record Request(String id, @NonNull Object body, @NonNull CompletableFuture<Node> future) {
     /**
      * The binary encoder, used to encode requests that take as a parameter a node
@@ -138,11 +138,8 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
         var encodedBody = body();
         var body = switch (encodedBody) {
             case byte[] bytes -> bytes;
-            case Node node -> {
-                System.out.println("Sending: " + node);
-                yield ENCODER.encode(node);
-            }
-            default -> throw new IllegalStateException("Illegal body: %s".formatted(encodedBody));
+            case Node node -> ENCODER.encode(node);
+            default -> throw new IllegalStateException("Cannot create request, illegal body: %s".formatted(encodedBody));
         };
 
         if (keys.writeKey() == null) {

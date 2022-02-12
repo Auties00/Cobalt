@@ -6,20 +6,35 @@ import lombok.NonNull;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BooleanSupplier;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 
 public record Attributes(Map<String, Object> map) {
     public static Attributes empty(){
-        return of(Map.of());
+        return of(new HashMap<>());
     }
 
-    public static Attributes of(@NonNull Map<String, Object> map){
-        return new Attributes(new HashMap<>(map));
+    public static Attributes of(Map<String, Object> map){
+        return new Attributes(map != null ? new HashMap<>(map) : new HashMap<>());
     }
 
     public boolean hasKey(@NonNull String key){
         return map.containsKey(key);
+    }
+
+    public Attributes put(@NonNull String key, Object value, @NonNull Function<String, Boolean> condition){
+        return put(key, value, () -> condition.apply(key));
+    }
+
+    public Attributes put(@NonNull String key, Object value, @NonNull BooleanSupplier condition){
+        if(condition.getAsBoolean()){
+            map.put(key, value);
+        }
+
+        return this;
     }
 
     public Attributes put(@NonNull String key, Object value){
@@ -27,8 +42,11 @@ public record Attributes(Map<String, Object> map) {
         return this;
     }
 
-    public Attributes putAll(@NonNull Map<String, Object> values){
-        map.putAll(values);
+    public Attributes putAll(Map<String, Object> values){
+        if(values != null) {
+            map.putAll(values);
+        }
+
         return this;
     }
 
@@ -72,6 +90,10 @@ public record Attributes(Map<String, Object> map) {
 
     public String getString(@NonNull String key){
         return getString(key, "unknown");
+    }
+
+    public String getNullableString(@NonNull String key){
+        return getString(key, null);
     }
 
     public String getRequiredString(@NonNull String key){

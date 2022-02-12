@@ -282,10 +282,6 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> sendMessage(@NonNull MessageInfo message) {
-        if(message.message().content() instanceof MediaMessage mediaMessage){
-            mediaMessage.store(store());
-        }
-
         return socket.sendMessage(message);
     }
 

@@ -167,13 +167,15 @@ public class Socket {
             return;
         }
 
-        var nodes = message.toNodes(keys);
-        System.out.printf("Received %s nodes%n", nodes.size());
-        nodes.forEach(this::handleNode);
+        message.toNodes(keys)
+                .forEach(this::handleNode);
     }
 
     private void handleNode(Node deciphered) {
-        System.out.printf("Received: %s%n", deciphered);
+        if(options.debug()) {
+            log.info("Received: " + deciphered);
+        }
+
         if(store.resolvePendingRequest(deciphered, false)){
             return;
         }
@@ -240,6 +242,10 @@ public class Socket {
     }
 
     public CompletableFuture<Node> send(Node node){
+        if(options.debug()){
+            log.info("Sending: " + node);
+        }
+
         return node.toRequest(store.nextTag())
                 .send(session(), keys, store);
     }
@@ -255,33 +261,27 @@ public class Socket {
     }
 
     public CompletableFuture<Node> sendQuery(String method, String category, Node... body){
-        return sendQuery(null, ContactJid.SOCKET, method, category, null, body);
+        return sendQuery(null, ContactJid.SOCKET,
+                method, category, null, body);
     }
 
     public CompletableFuture<Node> sendQuery(String method, String category, Map<String, Object> metadata, Node... body){
-        return sendQuery(null, ContactJid.SOCKET, method, category, metadata, body);
+        return sendQuery(null, ContactJid.SOCKET,
+                method, category, metadata, body);
     }
 
     public CompletableFuture<Node> sendQuery(ContactJid to, String method, String category, Node... body){
-        return sendQuery(null, to, method, category, null, body);
+        return sendQuery(null, to,
+                method, category, null, body);
     }
 
     public CompletableFuture<Node> sendQuery(String id, ContactJid to, String method, String category, Map<String, Object> metadata, Node... body){
-        var attributes = new HashMap<String, Object>();
-        if(id != null){
-            attributes.put("id", id);
-        }
-
-        attributes.put("type", method);
-        attributes.put("to", to.toString());
-        if(category != null) {
-            attributes.put("xmlns", category);
-        }
-
-        if(metadata != null){
-            attributes.putAll(metadata);
-        }
-
+        var attributes = Attributes.of(metadata)
+                .put("id", id, Objects::nonNull)
+                .put("type", method)
+                .put("to", to)
+                .put("xmlns", category, Objects::nonNull)
+                .map();
         return send(withChildren("iq", attributes, body));
     }
 
@@ -315,17 +315,14 @@ public class Socket {
             return;
         }
 
+        var attributes = Attributes.empty()
+                .put("id", messages.get(0))
+                .put("t", valueOf(now().toEpochMilli()))
+                .put("to", jid.toString())
+                .put("type", type, Objects::nonNull)
+                .put("participant", participant, () -> participant != null && !Objects.equals(jid, participant));
         var receipt = withChildren("receipt",
-                of("id", messages.get(0), "t", valueOf(now().toEpochMilli()), "to", jid.toString()),
-                toMessagesNode(messages));
-        if(type != null){
-            receipt.attributes().put("type", type);
-        }
-
-        if(participant != null && !Objects.equals(jid, participant)){
-            receipt.attributes().put("participant", participant.toString());
-        }
-
+                attributes.map(), toMessagesNode(messages));
         send(receipt);
     }
 
@@ -340,18 +337,13 @@ public class Socket {
                 .toList();
     }
 
-    private void sendMessageAck(Node node, Map<String, Object> attributes){
-        var to = node.attributes().getJid("from")
-                .orElseThrow();
-        var receipt = withAttributes("ack",
-                of("id", node.id(), "to", to.toString()));
-        receipt.attributes().putAll(attributes);
-        var participant = node.attributes()
-                .getString("participant", null);
-        if(participant != null){
-            receipt.attributes().put("participant", participant);
-        }
-
+    private void sendMessageAck(Node node, Map<String, Object> metadata){
+        var attributes = Attributes.of(metadata)
+                .put("id", node.id())
+                .put("to", node.attributes().getJid("from").orElseThrow(() -> new NoSuchElementException("Missing from in message ack")))
+                .put("participant", node.attributes().getNullableString("participant"), Objects::nonNull)
+                .map();
+        var receipt = withAttributes("ack", attributes);
         send(receipt);
     }
 
@@ -447,6 +439,9 @@ public class Socket {
     }
 
     private class StreamHandler {
+        private static final byte[] MESSAGE_HEADER = {6, 0};
+        private static final byte[] SIGNATURE_HEADER = {6, 1};
+
         private void digest(@NonNull Node node) {
             switch (node.description()) {
                 case "ack" -> digestAck(node);
@@ -499,19 +494,16 @@ public class Socket {
         }
 
         private void digestReceipt(Node node) {
-            var type = node.attributes().getString("type", null);
+            var type = node.attributes().getNullableString("type");
             var status = MessageStatus.forValue(type);
             if(status != null) {
                 updateMessageStatus(node, status);
             }
 
-            var attributes = new HashMap<String, Object>();
-            attributes.put("class", "receipt");
-            if(type != null){
-                attributes.put("type", type);
-            }
-
-            sendMessageAck(node, attributes);
+            var attributes = Attributes.empty()
+                    .put("class", "receipt")
+                    .put("type", type, Objects::nonNull);
+            sendMessageAck(node, attributes.map());
         }
 
         private void updateMessageStatus(Node node, MessageStatus status) {
@@ -788,7 +780,6 @@ public class Socket {
             saveCompanion(container);
 
             var deviceIdentity = requireNonNull(container.findNode("device-identity"), "Missing device identity");
-            keys.companionIdentity(deviceIdentity.bytes());
             var advIdentity = ProtobufDecoder.forType(SignedDeviceIdentityHMAC.class)
                     .decode(deviceIdentity.bytes());
             var advSign = Hmac.calculateSha256(advIdentity.details(), keys.companionKey());
@@ -799,7 +790,8 @@ public class Socket {
 
             var account = ProtobufDecoder.forType(SignedDeviceIdentity.class)
                     .decode(advIdentity.details());
-            var message = BinaryArray.of(new byte[]{6, 0})
+            keys.companionIdentity(advIdentity.details());
+            var message = BinaryArray.of(MESSAGE_HEADER)
                     .append(account.details())
                     .append(keys.identityKeyPair().publicKey())
                     .data();
@@ -808,7 +800,7 @@ public class Socket {
                 return;
             }
 
-            var deviceSignatureMessage = BinaryArray.of(new byte[]{6, 1})
+            var deviceSignatureMessage = BinaryArray.of(SIGNATURE_HEADER)
                     .append(account.details())
                     .append(keys.identityKeyPair().publicKey())
                     .append(account.accountSignatureKey())
@@ -853,10 +845,7 @@ public class Socket {
             var encodedMessage = SignalHelper.pad(ProtobufEncoder.encode(info));
             return createParticipants(info, encodedMessage)
                     .thenComposeAsync(participants -> encode(info, encodedMessage, participants, metadata))
-                    .exceptionallyAsync(throwable -> {
-                        throwable.printStackTrace();
-                        return null;
-                    });
+                    .exceptionallyAsync(throwable -> { throw new RuntimeException("Cannot encode message", throwable); });
         }
 
         @SafeVarargs
@@ -871,6 +860,9 @@ public class Socket {
 
             if(!participants.isEmpty()){
                 body.add(with("participants", participants));
+            }
+
+            if(hasPreKeyMessage(participants)) {
                 body.add(with("device-identity", keys.companionIdentity()));
             }
 
@@ -878,8 +870,16 @@ public class Socket {
             attributes.putAll(ofEntries(metadata));
             attributes.putAll(of("id", info.id(), "type", "text", "to", info.chatJid()));
             var request = withChildren("message", attributes, body);
-
             return send(request);
+        }
+
+        private boolean hasPreKeyMessage(List<Node> participants) {
+            return participants.stream()
+                    .map(Node::children)
+                    .flatMap(Collection::stream)
+                    .map(node -> node.attributes().getOptionalString("type"))
+                    .flatMap(Optional::stream)
+                    .anyMatch("pkmsg"::equals);
         }
 
         private CompletableFuture<List<Node>> createParticipants(MessageInfo info, byte[] encodedMessage) {
@@ -1056,12 +1056,12 @@ public class Socket {
                     .findNode("device-list")
                     .children()
                     .stream()
-                    .map(child -> parseDeviceId(excludeZeroDevices, jid, child))
+                    .map(child -> parseDeviceId(child, jid, excludeZeroDevices))
                     .flatMap(Optional::stream)
                     .map(id -> ContactJid.ofDevice(jid.user(), id));
         }
 
-        private Optional<Integer> parseDeviceId(boolean excludeZeroDevices, ContactJid jid, Node child) {
+        private Optional<Integer> parseDeviceId(Node child, ContactJid jid, boolean excludeZeroDevices) {
             var id = child.attributes().getInt("id");
             return child.description().equals("device")
                     && (!excludeZeroDevices || id != 0)

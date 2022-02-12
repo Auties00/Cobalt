@@ -2,6 +2,7 @@ package it.auties.github.dev;
 
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.crypto.LTHash;
+import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.protobuf.sync.MutationSync;
 import lombok.extern.java.Log;
 import org.junit.jupiter.api.Test;
@@ -15,8 +16,16 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class LTHashStateTest {
     @Test
     public void test(){
-        var random = BinaryArray.random(32);
-        System.out.println(Arrays.toString(random.data()));
-        System.out.println(Arrays.toString(random.slice(-16).data()));
+        System.out.println(HexFormat.of().formatHex(pad("mario".getBytes(UTF_8))));
+    }
+
+    public byte[] pad(byte[] bytes){
+        var padRandomByte = 1 + (15 & 5);
+        var padding = BinaryArray.allocate(padRandomByte)
+                .fill((byte) padRandomByte)
+                .data();
+        return BinaryArray.of(bytes)
+                .append(padding)
+                .data();
     }
 }

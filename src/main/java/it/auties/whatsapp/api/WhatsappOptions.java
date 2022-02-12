@@ -48,6 +48,13 @@ public class WhatsappOptions {
     private final String shortDescription = "W4J";
 
     /**
+     * A debug flag to print incoming and out-coming nodes
+     */
+    @NonNull
+    @Default
+    private boolean debug = false;
+
+    /**
      * Constructs a new instance of WhatsappConfiguration with default options
      *
      * @return a new instance of WhatsappConfiguration with the above characteristics
