@@ -14,18 +14,20 @@ import it.auties.whatsapp.socket.Request;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.*;
+import lombok.Builder.Default;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 import lombok.extern.java.Log;
 
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.time.Instant.now;
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.prefs.Preferences.userRoot;
 
 /**
@@ -34,9 +36,11 @@ import static java.util.prefs.Preferences.userRoot;
  * It should not be used by multiple sessions as, being a singleton, it cannot determine and divide data coming from different sessions.
  * It should not be initialized manually.
  */
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
+@Builder(access = AccessLevel.PROTECTED)
 @Data
-@Accessors(fluent = true)
+@Jacksonized
+@Accessors(fluent = true, chain = true)
 @Log
 @SuppressWarnings({"unused", "UnusedReturnValue"}) // Chaining
 public class WhatsappStore implements JacksonProvider {
@@ -46,71 +50,85 @@ public class WhatsappStore implements JacksonProvider {
     private static final String PREFERENCES_PATH = WhatsappStore.class.getName();
 
     /**
-     * The unsigned jid
+     * The session id of this store
      */
     @JsonProperty
-    private final int id;
+    private int id;
 
     /**
      * The non-null list of chats
      */
     @NonNull
-    @JsonProperty
-    private final List<@NonNull Chat> chats;
+    @JsonProperty        
+    @Default
+    private List<Chat> chats = new Vector<>();
 
     /**
      * The non-null list of status messages
      */
     @NonNull
-    @JsonProperty
-    private final List<@NonNull MessageInfo> status;
+    @JsonProperty        
+    @Default
+    private List<MessageInfo> status = new Vector<>();
 
     /**
      * The non-null list of contacts
      */
     @NonNull
-    @JsonProperty
-    private final List<@NonNull Contact> contacts;
+    @JsonProperty        
+    @Default
+    private List<Contact> contacts = new Vector<>();
 
     /**
      * The non-null list of requests that are waiting for a response from Whatsapp
      */
-    @NonNull
-    private final List<@NonNull Request> pendingRequests;
+    @NonNull        
+    @Default
+    private List<Request> pendingRequests = new Vector<>();
 
     /**
      * The non-null list of listeners
      */
-    @NonNull
-    private final List<@NonNull WhatsappListener> listeners;
+    @NonNull        
+    @Default
+    private List<WhatsappListener> listeners = new Vector<>();
 
     /**
      * Request counter
      */
-    private final AtomicLong counter;
+    @NonNull
+    @Default
+    private AtomicLong counter = new AtomicLong();
 
     /**
      * The request tag, used to create messages
      */
-    private final String tag;
+    @NonNull
+    @Default
+    private String tag = BinaryArray.random(12)
+            .toHex()
+            .toLowerCase(Locale.ROOT);
 
     /**
      * The timestamp in seconds for the initialization of this object
-     */
-    private final long initializationTimeStamp;
-
-    /**
-     * The media connection associated with this store
-     */
-    @Getter(onMethod = @__(@NonNull))
-    private MediaConnection mediaConnection;
+     */        
+    @Default
+    private long initializationTimeStamp = now().getEpochSecond();
 
     /**
      * The non-null service used to call listeners.
      * This is needed in order to not block the socket.
      */
     @NonNull
-    private ExecutorService requestsService;
+    @Default
+    private ExecutorService requestsService = newSingleThreadExecutor();
+
+    /**
+     * The media connection associated with this store
+     */
+    @Getter(onMethod = @__(@NonNull))
+    @Setter
+    private MediaConnection mediaConnection;
 
     /**
      * Constructs a new default instance of WhatsappStore
@@ -119,7 +137,9 @@ public class WhatsappStore implements JacksonProvider {
      * @return a non-null instance of WhatsappStore
      */
     public static WhatsappStore newStore(int id){
-        return new WhatsappStore(WhatsappUtils.saveId(id));
+        return WhatsappStore.builder()
+                .id(WhatsappUtils.saveId(id))
+                .build();
     }
 
     /**
@@ -144,15 +164,6 @@ public class WhatsappStore implements JacksonProvider {
             log.warning("Cannot read store for jid %s: defaulting to new keys".formatted(id));
             return null;
         }
-    }
-
-    private WhatsappStore(int id){
-        this(WhatsappUtils.saveId(id), new Vector<>(), new Vector<>(),
-                new Vector<>(), new Vector<>(),
-                new Vector<>(), new AtomicLong(),
-                BinaryArray.random(12).toHex().toLowerCase(Locale.ROOT),
-                Instant.now().getEpochSecond(),
-                Executors.newSingleThreadExecutor());
     }
 
     /**
@@ -267,7 +278,7 @@ public class WhatsappStore implements JacksonProvider {
      * @param response the response to complete the request with
      * @return true if any request matching {@code response} is found
      */
-    public boolean resolvePendingRequest(@NonNull Node response, boolean exceptionally) {
+    public boolean resolvePendingRequest(Node response, boolean exceptionally) {
         return findPendingRequest(response.id())
                 .map(request -> deleteAndComplete(response, request, exceptionally))
                 .isPresent();
@@ -279,7 +290,7 @@ public class WhatsappStore implements JacksonProvider {
      * @param chat the chat to add
      * @return the input chat
      */
-    public Chat addChat(@NonNull Chat chat) {
+    public Chat addChat(Chat chat) {
         chat.messages().forEach(message -> message.store(this));
         chats.add(chat);
         return chat;
@@ -291,7 +302,7 @@ public class WhatsappStore implements JacksonProvider {
      * @param contact the contact to add
      * @return the input contact
      */
-    public Contact addContact(@NonNull Contact contact) {
+    public Contact addContact(Contact contact) {
         contacts.add(contact);
         return contact;
     }
@@ -330,13 +341,13 @@ public class WhatsappStore implements JacksonProvider {
      *
      * @param consumer the operation to execute
      */
-    public void callListeners(@NonNull Consumer<WhatsappListener> consumer){
+    public void callListeners(Consumer<WhatsappListener> consumer){
         listeners.forEach(listener -> callListener(consumer, listener));
     }
 
     private void callListener(Consumer<WhatsappListener> consumer, WhatsappListener listener) {
         if(requestsService.isShutdown()){
-            this.requestsService = Executors.newSingleThreadExecutor();
+            this.requestsService = newSingleThreadExecutor();
         }
 
         requestsService.execute(() -> consumer.accept(listener));

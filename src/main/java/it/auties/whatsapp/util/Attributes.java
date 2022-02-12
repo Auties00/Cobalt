@@ -25,8 +25,8 @@ public record Attributes(Map<String, Object> map) {
         return map.containsKey(key);
     }
 
-    public Attributes put(@NonNull String key, Object value, @NonNull Function<String, Boolean> condition){
-        return put(key, value, () -> condition.apply(key));
+    public <T> Attributes put(@NonNull String key, T value, @NonNull Function<T, Boolean> condition){
+        return put(key, value, () -> condition.apply(value));
     }
 
     public Attributes put(@NonNull String key, Object value, @NonNull BooleanSupplier condition){

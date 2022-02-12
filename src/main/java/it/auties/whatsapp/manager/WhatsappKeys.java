@@ -1,6 +1,7 @@
 package it.auties.whatsapp.manager;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
@@ -58,42 +59,46 @@ public class WhatsappKeys implements JacksonProvider {
      * The secret key pair used for buffer messages
      */
     @JsonProperty
+    @Default
     @NonNull
-    private SignalKeyPair companionKeyPair;
+    private SignalKeyPair companionKeyPair = SignalKeyPair.random();
 
     /**
      * The ephemeral key pair
      */
     @JsonProperty
+    @Default
     @NonNull
-    private SignalKeyPair ephemeralKeyPair;
+    private SignalKeyPair ephemeralKeyPair = SignalKeyPair.random();
 
     /**
      * The signed identity key
      */
     @JsonProperty
+    @Default
     @NonNull
-    private SignalKeyPair identityKeyPair;
+    private SignalKeyPair identityKeyPair = SignalKeyPair.random();
 
     /**
      * The signed pre key
      */
     @JsonProperty
-    @NonNull
     private SignalSignedKeyPair signedKeyPair;
 
     /**
      * The adv secret key
      */
     @JsonProperty
-    private byte @NonNull [] companionKey;
+    @Default
+    private byte[] companionKey = SignalKeyPair.random().publicKey();
 
     /**
      * Whether these keys have generated pre keys assigned to them
      */
     @JsonProperty
+    @Default
     @NonNull
-    private LinkedList<@NonNull SignalPreKeyPair> preKeys;
+    private LinkedList<SignalPreKeyPair> preKeys = new LinkedList<>();
 
     /**
      * The user using these keys
@@ -105,37 +110,49 @@ public class WhatsappKeys implements JacksonProvider {
      * Sender keys for signal implementation
      */
     @JsonProperty
-    private Map<SenderKeyName, SenderKeyRecord> senderKeys;
+    @NonNull
+    @Default
+    private Map<SenderKeyName, SenderKeyRecord> senderKeys = new ConcurrentHashMap<>();
 
     /**
      * Receiver keys for signal implementation
      */
     @JsonProperty
-    private Map<SenderKeyName, SenderKeyDistributionMessage> receiverKeys;
+    @NonNull
+    @Default
+    private Map<SenderKeyName, SenderKeyDistributionMessage> receiverKeys = new ConcurrentHashMap<>();
 
     /**
      * Sessions map
      */
     @JsonProperty
-    private Map<SessionAddress, Session> sessions;
+    @NonNull
+    @Default
+    private Map<SessionAddress, Session> sessions = new ConcurrentHashMap<>();
 
     /**
      * Trusted keys
      */
     @JsonProperty
-    private Map<SessionAddress, byte[]> identities;
+    @NonNull
+    @Default
+    private Map<SessionAddress, byte[]> identities = new ConcurrentHashMap<>();
 
     /**
      * Hash state
      */
     @JsonProperty
-    private Map<String, LTHashState> hashStates;
+    @NonNull
+    @Default
+    private Map<String, LTHashState> hashStates = new ConcurrentHashMap<>();
 
     /**
      * App state keys
      */
     @JsonProperty
-    private LinkedList<AppStateSyncKey> appStateKeys;
+    @NonNull
+    @Default
+    private LinkedList<AppStateSyncKey> appStateKeys = new LinkedList<>();
 
     /**
      * Write counter for IV
@@ -190,7 +207,10 @@ public class WhatsappKeys implements JacksonProvider {
      * @return a non-null instance of WhatsappKeys
      */
     public static WhatsappKeys newKeys(int id){
-        return new WhatsappKeys(id);
+        var result = WhatsappKeys.builder()
+                .id(WhatsappUtils.saveId(id))
+                .build();
+        return result.signedKeyPair(SignalSignedKeyPair.of(result.id(), result.identityKeyPair()));
     }
 
     /**
@@ -215,24 +235,6 @@ public class WhatsappKeys implements JacksonProvider {
             log.warning("Cannot read keys for jid %s: defaulting to new keys".formatted(id));
             return null;
         }
-    }
-
-    private WhatsappKeys(int id) {
-        this.id = WhatsappUtils.saveId(id);
-        this.companionKeyPair = SignalKeyPair.random();
-        this.ephemeralKeyPair = SignalKeyPair.random();
-        this.identityKeyPair = SignalKeyPair.random();
-        this.signedKeyPair = SignalSignedKeyPair.of(id, identityKeyPair());
-        this.companionKey = SignalKeyPair.random().publicKey();
-        this.senderKeys = new ConcurrentHashMap<>();
-        this.receiverKeys = new ConcurrentHashMap<>();
-        this.preKeys = new LinkedList<>();
-        this.sessions = new ConcurrentHashMap<>();
-        this.identities = new ConcurrentHashMap<>();
-        this.hashStates = new ConcurrentHashMap<>();
-        this.appStateKeys = new LinkedList<>();
-        this.readCounter = new AtomicLong();
-        this.writeCounter = new AtomicLong();
     }
 
     /**
@@ -447,5 +449,10 @@ public class WhatsappKeys implements JacksonProvider {
     public long readCounter(boolean increment){
         return increment ? readCounter.getAndIncrement()
                 : readCounter.get();
+    }
+
+    @JsonSetter
+    private void defaultSignedKey(){
+        this.signedKeyPair = SignalSignedKeyPair.of(id, identityKeyPair);
     }
 }

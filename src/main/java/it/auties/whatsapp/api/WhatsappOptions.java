@@ -52,7 +52,7 @@ public class WhatsappOptions {
      */
     @NonNull
     @Default
-    private boolean debug = false;
+    private boolean debug = true;
 
     /**
      * Constructs a new instance of WhatsappConfiguration with default options

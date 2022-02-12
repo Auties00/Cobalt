@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 public class WhatsappAPITest {
     @Test
     public void login() {
-        Whatsapp.newConnection()
+        var whatsapp = Whatsapp.newConnection()
                 .connect();
     }
 
@@ -39,11 +39,7 @@ public class WhatsappAPITest {
 
         @Override
         public void onChats() {
-            CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS).execute(() -> {
-                System.out.println("Sending message to: " + whatsapp.store().findChatByName("Carlo").orElseThrow());
-                whatsapp.sendMessage(whatsapp.store().findChatByName("Carlo").orElseThrow(), "Test da md");
-            });
-
+            whatsapp.sendMessage(whatsapp.store().findChatByName("Basato").orElseThrow(), "Test da md");
         }
 
         @Override
