@@ -3,6 +3,7 @@ package it.auties.whatsapp.util;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import lombok.NonNull;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -25,12 +26,16 @@ public record Attributes(Map<String, Object> map) {
         return map.containsKey(key);
     }
 
-    public <T> Attributes put(@NonNull String key, T value, @NonNull Function<T, Boolean> condition){
-        return put(key, value, () -> condition.apply(value));
+    @SafeVarargs
+    public final <T> Attributes put(@NonNull String key, T value, @NonNull Function<T, Boolean>... conditions){
+        var translated = Arrays.stream(conditions)
+                .<BooleanSupplier>map(condition -> () -> condition.apply(value))
+                .toArray(BooleanSupplier[]::new);
+        return put(key, value, translated);
     }
 
-    public Attributes put(@NonNull String key, Object value, @NonNull BooleanSupplier condition){
-        if(condition.getAsBoolean()){
+    public Attributes put(@NonNull String key, Object value, @NonNull BooleanSupplier... conditions){
+        if(Arrays.stream(conditions).allMatch(BooleanSupplier::getAsBoolean)){
             map.put(key, value);
         }
 

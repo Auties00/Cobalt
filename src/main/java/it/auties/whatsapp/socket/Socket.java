@@ -320,7 +320,7 @@ public class Socket {
                 .put("t", valueOf(now().toEpochMilli()))
                 .put("to", jid.toString())
                 .put("type", type, Objects::nonNull)
-                .put("participant", participant, () -> participant != null && !Objects.equals(jid, participant));
+                .put("participant", participant, Objects::nonNull, value -> !Objects.equals(jid, value));
         var receipt = withChildren("receipt",
                 attributes.map(), toMessagesNode(messages));
         send(receipt);
