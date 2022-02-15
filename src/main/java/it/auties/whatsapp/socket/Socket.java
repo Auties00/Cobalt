@@ -27,6 +27,7 @@ import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
 import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.protobuf.setting.EphemeralSetting;
 import it.auties.whatsapp.protobuf.signal.auth.*;
+import it.auties.whatsapp.protobuf.signal.auth.ClientPayload.ClientPayloadBuilder;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalSignedKeyPair;
@@ -84,6 +85,8 @@ public class Socket {
     private Session session;
 
     private boolean loggedIn;
+
+    private boolean restored;
 
     private ScheduledExecutorService pingService;
 
@@ -173,7 +176,7 @@ public class Socket {
 
     private void handleNode(Node deciphered) {
         if(options.debug()) {
-            log.info("Received: " + deciphered);
+            System.out.println("Received: " + deciphered);
         }
 
         if(store.resolvePendingRequest(deciphered, false)){
@@ -243,7 +246,7 @@ public class Socket {
 
     public CompletableFuture<Node> send(Node node){
         if(options.debug()){
-            log.info("Sending: " + node);
+            System.out.println("Sending: " + node);
         }
 
         return node.toRequest(store.nextTag())
@@ -279,7 +282,7 @@ public class Socket {
         var attributes = Attributes.of(metadata)
                 .put("id", id, Objects::nonNull)
                 .put("type", method)
-                .put("to", to)
+                .put("to", to.toString())
                 .put("xmlns", category, Objects::nonNull)
                 .map();
         return send(withChildren("iq", attributes, body));
@@ -405,8 +408,19 @@ public class Socket {
                     .userAgent(createUserAgent())
                     .passive(keys.hasCompanion())
                     .webInfo(new WebInfo(WebInfo.WebInfoWebSubPlatform.WEB_BROWSER));
-            return encode(keys.hasCompanion() ? builder.username(parseLong(keys.companion().user())).device(keys.companion().device()).build()
-                    : builder.regData(createRegisterData()).build());
+            return ProtobufEncoder.encode(finishUserPayload(builder));
+        }
+
+        private ClientPayload finishUserPayload(ClientPayloadBuilder builder) {
+            if(keys.hasCompanion()){
+                restored = true;
+                return builder.username(parseLong(keys.companion().user()))
+                        .device(keys.companion().device())
+                        .build();
+            }
+
+            return builder.regData(createRegisterData())
+                    .build();
         }
 
         private UserAgent createUserAgent() {
@@ -507,9 +521,12 @@ public class Socket {
         }
 
         private void updateMessageStatus(Node node, MessageStatus status) {
-            var chat = node.attributes().getJid("from")
+            node.attributes().getJid("from")
                     .flatMap(store::findChatByJid)
-                    .orElseThrow(() -> new NoSuchElementException("Missing chat jid from receipt"));
+                    .ifPresent(chat -> updateMessageStatus(node, status, chat));
+        }
+
+        private void updateMessageStatus(Node node, MessageStatus status, Chat chat) {
             var participant = node.attributes().getJid("participant")
                     .flatMap(store::findContactByJid)
                     .orElse(null);
@@ -647,6 +664,13 @@ public class Socket {
             createPingService();
             sendStatusUpdate();
             store.callListeners(WhatsappListener::onLoggedIn);
+            if (!restored) {
+                return;
+            }
+
+            restored = false;
+            store.callListeners(WhatsappListener::onChats);
+            store.callListeners(WhatsappListener::onContacts);
         }
 
         private void sendStatusUpdate() {
@@ -833,8 +857,8 @@ public class Socket {
     }
 
     private class MessageHandler {
-        private final Cache<GroupMetadata> groupsCache;
-        private final Cache<ContactJid> devicesCache;
+        private final Cache<ContactJid, GroupMetadata> groupsCache;
+        private final Cache<String, ContactJid> devicesCache;
         public MessageHandler() {
             this.groupsCache = new Cache<>();
             this.devicesCache = new Cache<>();
@@ -843,7 +867,7 @@ public class Socket {
         @SafeVarargs
         public final CompletableFuture<Node> encode(MessageInfo info, Entry<String, Object>... metadata) {
             var encodedMessage = SignalHelper.pad(ProtobufEncoder.encode(info));
-            return createParticipants(info, encodedMessage)
+            return createMessageBody(info, encodedMessage)
                     .thenComposeAsync(participants -> encode(info, encodedMessage, participants, metadata))
                     .exceptionallyAsync(throwable -> { throw new RuntimeException("Cannot encode message", throwable); });
         }
@@ -852,7 +876,7 @@ public class Socket {
         private CompletableFuture<Node> encode(MessageInfo info, byte[] encodedMessage, List<Node> participants, Entry<String, Object>... metadata) {
             var body = new ArrayList<Node>();
             if (!isConversation(info)) {
-                var senderName = new SenderKeyName(info.chatJid().toString(), info.senderJid().toSignalAddress());
+                var senderName = new SenderKeyName(info.chatJid().toString(), keys.companion().toSignalAddress());
                 var groupCipher = new GroupCipher(senderName, keys);
                 var cipheredMessage = groupCipher.encrypt(encodedMessage);
                 body.add(with("enc", of("v", "2", "type", "skmsg"), cipheredMessage));
@@ -866,9 +890,11 @@ public class Socket {
                 body.add(with("device-identity", keys.companionIdentity()));
             }
 
-            var attributes = new HashMap<String, Object>();
-            attributes.putAll(ofEntries(metadata));
-            attributes.putAll(of("id", info.id(), "type", "text", "to", info.chatJid()));
+            var attributes = Attributes.of(metadata)
+                    .put("id", info.id())
+                    .put("type", "text")
+                    .put("to", info.chatJid())
+                    .map();
             var request = withChildren("message", attributes, body);
             return send(request);
         }
@@ -882,7 +908,7 @@ public class Socket {
                     .anyMatch("pkmsg"::equals);
         }
 
-        private CompletableFuture<List<Node>> createParticipants(MessageInfo info, byte[] encodedMessage) {
+        private CompletableFuture<List<Node>> createMessageBody(MessageInfo info, byte[] encodedMessage) {
             if (isConversation(info)) {
                 var whatsappMessage = DeviceSentMessage.newDeviceSentMessage(info.chatJid().toString(), info.message());
                 var paddedMessage = SignalHelper.pad(ProtobufEncoder.encode(whatsappMessage));
@@ -893,18 +919,16 @@ public class Socket {
                 return receiverDevices.thenCombineAsync(senderDevices, WhatsappUtils::combine);
             }
 
-            var senderName = new SenderKeyName(info.chatJid().toString(), info.senderJid().toSignalAddress());
+            var senderName = new SenderKeyName(info.chatJid().toString(), keys.companion().toSignalAddress());
             var sessionBuilder = new GroupSessionBuilder(keys);
             var signalMessage = sessionBuilder.createMessage(senderName);
-            return groupsCache.stream()
-                    .filter(info.chatJid()::contentEquals)
-                    .findFirst()
+            return groupsCache.getOptional(info.chatJid())
                     .map(CompletableFuture::completedFuture)
                     .orElseGet(() -> cacheGroupMetadata(info))
-                    .thenComposeAsync(metadata -> createParticipants(info, metadata, signalMessage));
+                    .thenComposeAsync(metadata -> createMessageBody(info, metadata, signalMessage));
         }
 
-        private CompletableFuture<List<Node>> createParticipants(MessageInfo info, GroupMetadata metadata, SignalDistributionMessage signalMessage) {
+        private CompletableFuture<List<Node>> createMessageBody(MessageInfo info, GroupMetadata metadata, SignalDistributionMessage signalMessage) {
             return metadata.participants()
                     .stream()
                     .map(participant -> querySyncDevices(participant.jid(), false))
@@ -912,9 +936,21 @@ public class Socket {
                     .thenComposeAsync(contacts -> createDistributionMessage(info, signalMessage, contacts));
         }
 
+
         private boolean isConversation(MessageInfo info) {
             return info.chatJid().type() == ContactJid.Type.USER
                     || info.chatJid().type() == ContactJid.Type.STATUS;
+        }
+
+        @SneakyThrows
+        private CompletableFuture<GroupMetadata> cacheGroupMetadata(MessageInfo info) {
+            return queryGroupMetadata(info.chatJid())
+                    .thenApplyAsync(this::cacheMetadata);
+        }
+
+        private GroupMetadata cacheMetadata(GroupMetadata metadata) {
+            groupsCache.put(metadata.jid(), metadata);
+            return metadata;
         }
 
         private CompletableFuture<List<Node>> createDistributionMessage(MessageInfo info, SignalDistributionMessage signalMessage, List<ContactJid> participants) {
@@ -1004,24 +1040,12 @@ public class Socket {
             return new SignalSignedKeyPair(id, keyPair, null);
         }
 
-        @SneakyThrows
-        private CompletableFuture<GroupMetadata> cacheGroupMetadata(MessageInfo info) {
-            return queryGroupMetadata(info.chatJid())
-                    .thenApplyAsync(this::cacheMetadata);
-        }
-
-        private GroupMetadata cacheMetadata(GroupMetadata metadata) {
-            groupsCache.add(metadata);
-            return metadata;
-        }
-
         private CompletableFuture<List<ContactJid>> querySyncDevices(ContactJid contact, boolean ignoreZeroDevices) {
             var missingDevices = new ArrayList<Node>();
             var cachedDevices = new ArrayList<ContactJid>();
-            devicesCache.stream()
-                    .filter(entry -> Objects.equals(entry.user(), contact.user()))
-                    .findFirst()
-                    .ifPresentOrElse(cachedDevices::add, () -> missingDevices.add(withAttributes("user", of("jid", contact))));
+            devicesCache.getOptional(contact.user())
+                    .ifPresentOrElse(cachedDevices::add,
+                            () -> missingDevices.add(withAttributes("user", of("jid", contact))));
             if(missingDevices.isEmpty()) {
                 return completedFuture(cachedDevices);
             }
@@ -1034,7 +1058,7 @@ public class Socket {
             return sendQuery("get", "usync", body).thenApplyAsync(response -> {
                 var parsed = parseSyncDevices(response, ignoreZeroDevices);
                 cachedDevices.addAll(parsed);
-                devicesCache.addAll(parsed);
+                parsed.forEach(device -> devicesCache.put(contact.user(), device));
                 return cachedDevices;
             });
         }
@@ -1062,11 +1086,11 @@ public class Socket {
         }
 
         private Optional<Integer> parseDeviceId(Node child, ContactJid jid, boolean excludeZeroDevices) {
-            var id = child.attributes().getInt("id");
+            var deviceId = child.attributes().getInt("id");
             return child.description().equals("device")
-                    && (!excludeZeroDevices || id != 0)
-                    && (keys.companion().user().equals(jid.user())
-                    && (id == 0 || child.attributes().hasKey("key-index"))) ? Optional.of(id) : Optional.empty();
+                    && (!excludeZeroDevices || deviceId != 0)
+                    && (!jid.user().equals(keys.companion().user()) || keys.companion().device() != deviceId)
+                    && (deviceId == 0 || child.attributes().hasKey("key-index")) ? Optional.of(deviceId) : Optional.empty();
         }
 
         public void decode(Node node) {
@@ -1205,10 +1229,11 @@ public class Socket {
                     var history = ProtobufDecoder.forType(HistorySync.class)
                             .decode(decompressed);
                     switch(history.syncType()) {
-                        case FULL, INITIAL_BOOTSTRAP -> {
+                        case INITIAL_BOOTSTRAP -> {
                             history.conversations().forEach(store::addChat);
                             store.callListeners(WhatsappListener::onChats);
                         }
+                        case FULL -> history.conversations().forEach(store::addChat);
                         case INITIAL_STATUS_V3 -> {
                             history.statusV3Messages()
                                     .stream()
@@ -1218,8 +1243,11 @@ public class Socket {
                         }
                         case RECENT -> history.conversations()
                                 .forEach(this::handleRecentMessage);
-                        case PUSH_NAME -> history.pushNames()
-                                .forEach(this::handNewPushName);
+                        case PUSH_NAME -> {
+                            history.pushNames()
+                                    .forEach(this::handNewPushName);
+                            store.callListeners(WhatsappListener::onContacts);
+                        }
                     }
 
                     var receipt = withAttributes("receipt",
@@ -1229,7 +1257,7 @@ public class Socket {
 
                 case APP_STATE_SYNC_KEY_SHARE -> {
                     keys.addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
-                    CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS) // FIXME: 26/01/2022 transaction
+                    CompletableFuture.delayedExecutor(2, TimeUnit.SECONDS) // FIXME: 26/01/2022 transaction
                             .execute(appStateHandler::pull);
                 }
 

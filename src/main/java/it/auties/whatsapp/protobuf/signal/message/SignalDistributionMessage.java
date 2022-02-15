@@ -3,6 +3,7 @@ package it.auties.whatsapp.protobuf.signal.message;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.protobuf.decoder.ProtobufDecoder;
+import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.crypto.SignalHelper;
 import lombok.AllArgsConstructor;
@@ -13,6 +14,7 @@ import lombok.experimental.Accessors;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Objects;
 
 import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
 
@@ -76,13 +78,13 @@ public final class SignalDistributionMessage implements SignalProtocolMessage {
   }
 
   public byte[] serialized() {
-    if(serialized == null){
-      var encodedMessage = encode(this);
-      this.serialized = BinaryArray.of(serializedVersion())
-              .append(encodedMessage)
-              .data();
-    }
+    return Objects.requireNonNullElseGet(serialized,
+            () -> this.serialized = serialize());
+  }
 
-    return serialized;
+  private byte[] serialize() {
+    return BinaryArray.of(serializedVersion())
+            .append(ProtobufEncoder.encode(this))
+            .data();
   }
 }

@@ -4,6 +4,8 @@ import com.google.zxing.common.BitMatrix;
 import it.auties.whatsapp.api.RegisterListener;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappListener;
+import it.auties.whatsapp.manager.WhatsappKeys;
+import it.auties.whatsapp.protobuf.action.Action;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactStatus;
@@ -15,6 +17,7 @@ import lombok.NonNull;
 import lombok.extern.java.Log;
 import org.junit.jupiter.api.Test;
 
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -39,7 +42,15 @@ public class WhatsappAPITest {
 
         @Override
         public void onChats() {
-            whatsapp.sendMessage(whatsapp.store().findChatByName("Basato").orElseThrow(), "Test da md");
+            System.out.println("Called on chats");
+            whatsapp.store()
+                    .findChatByName("5-0")
+                    .ifPresent(chat -> whatsapp.sendMessage(chat.jid(), "Test da md"));
+        }
+
+        @Override
+        public void onAction(Action action) {
+            System.out.println("ACTION: " + action);
         }
 
         @Override

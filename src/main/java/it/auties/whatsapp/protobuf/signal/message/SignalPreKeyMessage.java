@@ -12,10 +12,10 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
 import static java.util.Arrays.copyOfRange;
-
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -66,14 +66,12 @@ public final class SignalPreKeyMessage implements SignalProtocolMessage{
         return SignalMessage.ofSerialized(serializedSignalMessage);
     }
 
-    public byte[] serialized(){
-        if(serialized == null){
-            var encodedMessage = encode(this);
-            this.serialized = BinaryArray.of(serializedVersion())
-                    .append(encodedMessage)
-                    .data();
-        }
+    public byte[] serialized() {
+        return Objects.requireNonNullElseGet(serialized,
+                () -> this.serialized = serialize());
+    }
 
-        return serialized;
+    private byte[] serialize() {
+        return BinaryArray.of(serializedVersion()).append(encode(this)).data();
     }
 }

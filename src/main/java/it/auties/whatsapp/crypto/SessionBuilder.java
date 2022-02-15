@@ -32,9 +32,8 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
                 CURRENT_VERSION
         );
 
-        var pendingPreKey = new SessionPreKey(preKey == null ? 0 : preKey.id(), baseKey.publicKey(), signedPreKey.id());
+        var pendingPreKey = new SessionPreKey(preKey == null ? 0 : preKey.id(), baseKey.encodedPublicKey(), signedPreKey.id());
         state.pendingPreKey(pendingPreKey);
-
         var session = keys.findSessionByAddress(address)
                 .map(Session::closeCurrentState)
                 .orElseGet(Session::new)
@@ -53,16 +52,14 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
         var preKeyPair = keys.findPreKeyById(message.preKeyId())
                 .orElse(null);
         Validate.isTrue(message.preKeyId() == 0 || preKeyPair != null,
-                "Invalid pre key jid: %s", message.preKeyId());
+                "Invalid pre key id: %s", message.preKeyId());
 
-        var signedPreKeyPair = keys.findSignedKeyPairById(message.signedPreKeyId())
-                .toGenericKeyPair();
-
+        var signedPreKeyPair = keys.findSignedKeyPairById(message.signedPreKeyId());
         session.closeCurrentState();
         var nextState = createState(
                 false,
                 preKeyPair != null ? preKeyPair.toGenericKeyPair() : null,
-                signedPreKeyPair,
+                signedPreKeyPair.toGenericKeyPair(),
                 message.identityKey(),
                 message.baseKey(),
                 null,
@@ -105,7 +102,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
         var state = SessionState.builder()
                 .version(version)
                 .rootKey(masterKey[0])
-                .ephemeralKeyPair(isInitiator ? SignalKeyPair.random() : ourSignedKey.toGenericKeyPair())
+                .ephemeralKeyPair(isInitiator ? SignalKeyPair.random() : ourSignedKey)
                 .lastRemoteEphemeralKey(theirSignedPubKey)
                 .remoteIdentityKey(theirIdentityPubKey)
                 .baseKey(isInitiator ? ourEphemeralKey.encodedPublicKey() : theirEphemeralPubKey)

@@ -194,14 +194,26 @@ public class Whatsapp {
         return socket.sendWithNoResponse(node);
     }
 
+
     /**
      * Builds and sends a message from a chat and a message
      *
      * @param chat    the chat where the message should be sent
      * @param message the message to send
-     * @return a CompletableFuture 
+     * @return a CompletableFuture
      */
     public CompletableFuture<?> sendMessage(@NonNull Chat chat, @NonNull String message) {
+        return sendMessage(chat.jid(), message);
+    }
+
+    /**
+     * Builds and sends a message from a chat and a message
+     *
+     * @param chat    the chat where the message should be sent
+     * @param message the message to send
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<?> sendMessage(@NonNull ContactJid chat, @NonNull String message) {
         return sendMessage(chat, new TextMessage(message));
     }
 
@@ -214,6 +226,18 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> sendMessage(@NonNull Chat chat, @NonNull String message, @NonNull MessageInfo quotedMessage) {
+        return sendMessage(chat.jid(), message, quotedMessage);
+    }
+
+    /**
+     * Builds and sends a message from a chat, a message and a quoted message
+     *
+     * @param chat          the chat where the message should be sent
+     * @param message       the message to send
+     * @param quotedMessage the message that; should quote
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<?> sendMessage(@NonNull ContactJid chat, @NonNull String message, @NonNull MessageInfo quotedMessage) {
         return sendMessage(chat, new TextMessage(message), quotedMessage);
     }
 
@@ -225,8 +249,19 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> sendMessage(@NonNull Chat chat, @NonNull Message message) {
+        return sendMessage(chat.jid(), message);
+    }
+
+    /**
+     * Builds and sends a message from a chat and a message
+     *
+     * @param chat    the chat where the message should be sent
+     * @param message the message to send
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<?> sendMessage(@NonNull ContactJid chat, @NonNull Message message) {
         var key = MessageKey.newMessageKey()
-                .chatJid(chat.jid())
+                .chatJid(chat)
                 .fromMe(true)
                 .create();
         var info = MessageInfo.newMessageInfo()
@@ -246,6 +281,18 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> sendMessage(@NonNull Chat chat, @NonNull ContextualMessage message, @NonNull MessageInfo quotedMessage) {
+        return sendMessage(chat.jid(), message, quotedMessage);
+    }
+
+    /**
+     * Builds and sends a message from a chat, a message and a quoted message
+     *
+     * @param chat          the chat where the message should be sent
+     * @param message       the message to send
+     * @param quotedMessage the message that; should quote
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<?> sendMessage(@NonNull ContactJid chat, @NonNull ContextualMessage message, @NonNull MessageInfo quotedMessage) {
         var context = ContextInfo.newContextInfo()
                 .quotedMessageId(quotedMessage.id())
                 .quotedMessageContainer(quotedMessage.message())
@@ -263,8 +310,20 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> sendMessage(@NonNull Chat chat, @NonNull ContextualMessage message, @NonNull ContextInfo contextInfo) {
+        return sendMessage(chat.jid(), message, contextInfo);
+    }
+
+    /**
+     * Builds and sends a message from a chat, a message and a context
+     *
+     * @param chat        the chat where the message should be sent
+     * @param message     the message to send
+     * @param contextInfo the context of the message to send
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<?> sendMessage(@NonNull ContactJid chat, @NonNull ContextualMessage message, @NonNull ContextInfo contextInfo) {
         var key = MessageKey.newMessageKey()
-                .chatJid(chat.jid())
+                .chatJid(chat)
                 .fromMe(true)
                 .create();
         var info = MessageInfo.newMessageInfo()

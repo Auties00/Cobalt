@@ -11,11 +11,16 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static java.util.Map.ofEntries;
 import static java.util.Objects.requireNonNull;
 
 public record Attributes(Map<String, Object> map) {
     public static Attributes empty(){
         return of(new HashMap<>());
+    }
+
+    public static Attributes of(Map.Entry<String, Object>... entries){
+        return of(ofEntries(entries));
     }
 
     public static Attributes of(Map<String, Object> map){

@@ -12,9 +12,11 @@ import lombok.NonNull;
 import lombok.extern.java.Log;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static it.auties.whatsapp.crypto.Handshake.PROLOGUE;
+import static java.util.concurrent.CompletableFuture.delayedExecutor;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * An abstract model class that represents a request made from the client to the server.
@@ -36,12 +38,20 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * Constructs a new request with the provided body expecting a response
      */
     public static Request with(@NonNull Node body) {
-        return new Request(body.id(), body, createTimedFuture());
+        var future = new CompletableFuture<Node>();
+        delayedExecutor(TIMEOUT, SECONDS)
+                .execute(() -> cancelTimedFuture(future, body, Thread.currentThread().getStackTrace()));
+        return new Request(body.id(), body, future);
     }
 
-    private static CompletableFuture<Node> createTimedFuture() {
-        return new CompletableFuture<Node>()
-                .orTimeout(TIMEOUT, TimeUnit.SECONDS);
+    private static void cancelTimedFuture(CompletableFuture<Node> future, Node node, StackTraceElement[] trace) {
+        if(future.isDone()){
+            return;
+        }
+
+        var exception = new TimeoutException("%s timed out: no response from WhatsApp".formatted(node));
+        exception.setStackTrace(trace);
+        future.completeExceptionally(exception);
     }
 
     /**

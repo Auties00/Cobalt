@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
@@ -35,13 +36,14 @@ public class SenderKeyState {
   @JsonProperty("4")
   @JsonPropertyDescription("SenderMessageKey")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  @Builder.Default
+  @Default
   private List<SenderMessageKey> messageKeys = new ArrayList<>();
 
   public SenderKeyState(int id, int iteration, byte[] chainKey, byte[] signatureKeyPublic, byte[] signatureKeyPrivate) {
     this.id = id;
     this.chainKey = new SenderChainKey(iteration, chainKey);
     this.signingKey = new SenderSigningKey(signatureKeyPublic, signatureKeyPrivate);
+    this.messageKeys = new ArrayList<>();
   }
 
   public byte[] signingKeyPublic() {

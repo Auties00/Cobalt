@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import static it.auties.whatsapp.socket.Node.withAttributes;
 import static it.auties.whatsapp.socket.Node.withChildren;
 import static java.util.Map.of;
 
@@ -37,7 +38,7 @@ public class LTHashState {
     }
 
     public Node toNode(){
-        return withChildren("collection",
+        return withAttributes("collection",
                 of("name", name, "version", String.valueOf(version), "return_snapshot", Boolean.toString(version == 0)));
     }
 

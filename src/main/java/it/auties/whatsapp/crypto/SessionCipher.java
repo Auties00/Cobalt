@@ -44,7 +44,8 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
                 "WhisperMessageKeys".getBytes(StandardCharsets.UTF_8));
         chain.messageKeys().remove(chain.counter());
 
-        var encrypted = AesCbc.encrypt(copyOfRange(whisperKeys[2], 0, 16), data, whisperKeys[0]);
+        var encryptedIv = copyOfRange(whisperKeys[2], 0, 16);
+        var encrypted = AesCbc.encrypt(encryptedIv, data, whisperKeys[0]);
         var encryptedMessage = encrypt(session, chain, whisperKeys, encrypted);
         return with("enc",
                 of("v", "2", "type", hasPreKey(session) ? "pkmsg" : "msg"), encryptedMessage);
@@ -58,8 +59,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
                 .ciphertext(encrypted)
                 .build()
                 .serialized();
-
-        var macInput = BinaryArray.of(SignalHelper.appendKeyHeader(keys.identityKeyPair().encodedPublicKey()))
+        var macInput = BinaryArray.of(keys.identityKeyPair().encodedPublicKey())
                 .append(session.currentState().remoteIdentityKey())
                 .append(message)
                 .assertSize(message.length + 33 + 33)
@@ -67,6 +67,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         var mac = Hmac.calculateSha256(macInput, whisperKeys[1]);
         var result = BinaryArray.of(message)
                 .append(mac.cut(8))
+                .assertSize(message.length + 8)
                 .data();
         keys.addSession(address, session);
         return !hasPreKey(session) ? result : SignalPreKeyMessage.builder()
