@@ -74,6 +74,13 @@ public class WhatsappStore implements JacksonProvider {
     private Vector<Contact> contacts = new Vector<>();
 
     /**
+     * Whether this store has already received the snapshot from
+     * Whatsapp Web containing chats and contacts
+     */
+    @JsonProperty
+    private boolean hasSnapshot;
+
+    /**
      * The non-null list of requests that are waiting for a response from Whatsapp
      */
     @NonNull        
@@ -147,6 +154,15 @@ public class WhatsappStore implements JacksonProvider {
         return Objects.requireNonNullElseGet(preferences.readJson(new TypeReference<>() {}),
                 () -> newStore(id));
     }
+
+    /**
+     * Deletes all the known keys from memory
+     */
+    public static void deleteAll() {
+        var preferences = WhatsappPreferences.of("store");
+        preferences.delete();
+    }
+
 
     /**
      * Queries the first contact whose jid is equal to {@code jid}
@@ -356,8 +372,19 @@ public class WhatsappStore implements JacksonProvider {
      * @return this
      */
     public WhatsappStore save(){
-        var preferences = WhatsappPreferences.of("/store/%s.json", id);
+        var preferences = WhatsappPreferences.of("store/%s.json", id);
         preferences.writeJsonAsync(this);
+        return this;
+    }
+
+    /**
+     * Deletes this store from memory
+     *
+     * @return this
+     */
+    public WhatsappStore delete(){
+        var preferences = WhatsappPreferences.of("store/%s.json", id);
+        preferences.delete();
         return this;
     }
 }

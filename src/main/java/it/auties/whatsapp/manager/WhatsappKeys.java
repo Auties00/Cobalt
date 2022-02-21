@@ -2,7 +2,6 @@ package it.auties.whatsapp.manager;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
@@ -29,9 +28,6 @@ import lombok.extern.java.Log;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.prefs.BackingStoreException;
-
-import static java.util.prefs.Preferences.userRoot;
 
 /**
  * This class is a data class used to hold the clientId, serverToken, clientToken, publicKey, privateKey, encryptionKey and macKey.
@@ -175,31 +171,27 @@ public class WhatsappKeys implements JacksonProvider {
     private byte[] companionIdentity;
 
     /**
-     * Clears all the keys from this machine's memory.
-     * This method doesn't clear this object's values.
+     * Deletes all the known keys from memory
      */
-    public static void deleteAllKeys() {
-        try {
-            userRoot().clear();
-        }catch (BackingStoreException exception){
-            throw new RuntimeException("Cannot delete keys from memory", exception);
-        }
+    public static void deleteAll() {
+        var preferences = WhatsappPreferences.of("keys");
+        preferences.delete();
     }
 
     /**
-     * Clears the keys associated with the provided jid
+     * Clears the keys associated with the provided id
      *
-     * @param id the jid of the keys
+     * @param id the id of the keys
      */
     public static void deleteKeys(int id) {
-        var preferences = WhatsappPreferences.of("/keys/%s.json", id);
+        var preferences = WhatsappPreferences.of("keys/%s.json", id);
         preferences.delete();
     }
 
     /**
      * Returns a new instance of random keys
      *
-     * @param id the unsigned jid of these keys
+     * @param id the unsigned id of these keys
      * @return a non-null instance of WhatsappKeys
      */
     public static WhatsappKeys newKeys(int id){
@@ -212,11 +204,11 @@ public class WhatsappKeys implements JacksonProvider {
     /**
      * Returns the keys saved in memory or constructs a new clean instance
      *
-     * @param id the jid of this session
+     * @param id the id of this session
      * @return a non-null instance of WhatsappKeys
      */
     public static WhatsappKeys fromMemory(int id){
-        var preferences = WhatsappPreferences.of("/keys/%s.json", id);
+        var preferences = WhatsappPreferences.of("keys/%s.json", id);
         return Objects.requireNonNullElseGet(preferences.readJson(new TypeReference<>() {}),
                 () -> newKeys(id));
     }
@@ -227,7 +219,7 @@ public class WhatsappKeys implements JacksonProvider {
      * @return this
      */
     public WhatsappKeys save(){
-        var preferences = WhatsappPreferences.of("/keys/%s.json", id);
+        var preferences = WhatsappPreferences.of("keys/%s.json", id);
         preferences.writeJsonAsync(this);
         return this;
     }
@@ -295,9 +287,9 @@ public class WhatsappKeys implements JacksonProvider {
     }
 
     /**
-     * Queries the trusted key that matches {@code jid}
+     * Queries the trusted key that matches {@code id}
      *
-     * @param id the jid to search
+     * @param id the id to search
      * @return a non-null signed key pair
      * @throws IllegalArgumentException if no element can be found
      */
@@ -307,9 +299,9 @@ public class WhatsappKeys implements JacksonProvider {
     }
 
     /**
-     * Queries the trusted key that matches {@code jid}
+     * Queries the trusted key that matches {@code id}
      *
-     * @param id the non-null jid to search
+     * @param id the non-null id to search
      * @return a non-null Optional signal pre key
      */
     public Optional<SignalPreKeyPair> findPreKeyById(int id) {
@@ -319,9 +311,9 @@ public class WhatsappKeys implements JacksonProvider {
     }
 
     /**
-     * Queries the app state key that matches {@code jid}
+     * Queries the app state key that matches {@code id}
      *
-     * @param id the non-null jid to search
+     * @param id the non-null id to search
      * @return a non-null Optional app state dataSync key
      */
     public Optional<AppStateSyncKey> findAppKeyById(byte[] id) {

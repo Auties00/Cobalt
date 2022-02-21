@@ -20,14 +20,20 @@ import org.junit.jupiter.api.Test;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 @Log
 public class WhatsappAPITest {
     @Test
-    public void login() {
-        var whatsapp = Whatsapp.newConnection()
-                .connect();
+    public void login() throws ExecutionException, InterruptedException {
+       Whatsapp.lastConnection()
+                .connect()
+                .get();
+       while (true){
+
+       }
     }
 
     @AllArgsConstructor

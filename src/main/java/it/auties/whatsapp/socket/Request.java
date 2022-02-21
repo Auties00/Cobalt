@@ -89,8 +89,9 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @param session the WhatsappWeb's WebSocket session
      * @return this request
      */
-    public CompletableFuture<Node> sendWithNoResponse(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store) {
-        return send(session, keys, store, false, false);
+    public CompletableFuture<Void> sendWithNoResponse(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store) {
+        return send(session, keys, store, false, false)
+                .thenRunAsync(() -> {});
     }
 
     /**

@@ -52,7 +52,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -68,7 +71,6 @@ import static java.lang.String.valueOf;
 import static java.time.Instant.now;
 import static java.util.Arrays.copyOfRange;
 import static java.util.Map.of;
-import static java.util.Map.ofEntries;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -86,15 +88,10 @@ public class Socket {
 
     private boolean loggedIn;
 
-    private boolean restored;
-
     private ScheduledExecutorService pingService;
 
     @NonNull
     private final Handshake handshake;
-
-    @NonNull
-    private final WebSocketContainer container;
 
     @NonNull
     private final WhatsappOptions options;
@@ -119,8 +116,7 @@ public class Socket {
     @NonNull
     private WhatsappStore store;
 
-    @NonNull
-    private CountDownLatch lock;
+    private CompletableFuture<Void> loginFuture, logoutFuture;
 
     static {
         getWebSocketContainer().setDefaultMaxSessionIdleTimeout(0);
@@ -129,7 +125,6 @@ public class Socket {
     public Socket(@NonNull WhatsappOptions options, @NonNull WhatsappStore store, @NonNull WhatsappKeys keys) {
         this.pingService = Executors.newSingleThreadScheduledExecutor();
         this.handshake = new Handshake();
-        this.container = getWebSocketContainer();
         this.options = options;
         this.store = store;
         this.keys = keys;
@@ -137,7 +132,6 @@ public class Socket {
         this.streamHandler = new StreamHandler();
         this.messageHandler = new MessageHandler();
         this.appStateHandler = new AppStateHandler();
-        this.lock = new CountDownLatch(1);
     }
 
     @OnOpen
@@ -186,48 +180,54 @@ public class Socket {
         streamHandler.digest(deciphered);
     }
 
-    public void connect() {
-        try{
-            container.connectToServer(this, URI.create(options.whatsappUrl()));
-            lock.await();
-        }catch (IOException | DeploymentException | InterruptedException exception){
-            throw new RuntimeException("Cannot connect to WhatsappWeb's WebServer", exception);
+    @SneakyThrows
+    public CompletableFuture<Void> connect() {
+        if(loginFuture == null || loginFuture.isDone()){
+            this.loginFuture = new CompletableFuture<>();
         }
+
+        getWebSocketContainer().connectToServer(this, URI.create(options.whatsappUrl()));
+        return loginFuture;
     }
 
-    public void reconnect(){
-        disconnect();
-        connect();
+    public CompletableFuture<Void> reconnect(){
+        return disconnect()
+                .thenComposeAsync(ignored -> connect());
     }
 
-    public void disconnect(){
-        try{
-            changeState(false);
-            session.close();
-        }catch (IOException exception){
-            throw new RuntimeException("Cannot close connection to WhatsappWeb's WebServer", exception);
+    @SneakyThrows
+    public CompletableFuture<Void> disconnect(){
+        if(logoutFuture == null || logoutFuture.isDone()){
+            this.logoutFuture = new CompletableFuture<>();
         }
+
+        changeState(false);
+        session.close();
+        return logoutFuture;
     }
 
-    public void logout(){
+    public CompletableFuture<Void> logout(){
         if (keys.hasCompanion()) {
             var metadata = of("jid", keys.companion(), "reason", "user_initiated");
             var device = withAttributes("remove-companion-device", metadata);
             sendQuery("set", "md", device);
         }
 
-        changeKeys();
+        return disconnect()
+                .thenRunAsync(this::changeKeys);
     }
 
     private void changeState(boolean loggedIn){
         this.loggedIn = loggedIn;
-        this.lock = new CountDownLatch(1);
         keys.clear();
     }
 
     @OnClose
     public void onClose(){
-        System.out.println("Closed");
+        if(logoutFuture != null){
+            logoutFuture.complete(null);
+        }
+
         if(loggedIn) {
             store.callListeners(listener -> listener.onDisconnected(true));
             reconnect();
@@ -253,7 +253,7 @@ public class Socket {
                 .send(session(), keys, store);
     }
 
-    public CompletableFuture<Node> sendWithNoResponse(Node node){
+    public CompletableFuture<Void> sendWithNoResponse(Node node){
         return node.toRequest(store.nextTag())
                 .sendWithNoResponse(session(), keys, store);
     }
@@ -413,7 +413,6 @@ public class Socket {
 
         private ClientPayload finishUserPayload(ClientPayloadBuilder builder) {
             if(keys.hasCompanion()){
-                restored = true;
                 return builder.username(parseLong(keys.companion().user()))
                         .device(keys.companion().device())
                         .build();
@@ -663,12 +662,12 @@ public class Socket {
             sendPreKeys();
             createPingService();
             sendStatusUpdate();
+            loginFuture.complete(null);
             store.callListeners(WhatsappListener::onLoggedIn);
-            if (!restored) {
+            if (!store.hasSnapshot()) {
                 return;
             }
 
-            restored = false;
             store.callListeners(WhatsappListener::onChats);
             store.callListeners(WhatsappListener::onContacts);
         }
@@ -800,7 +799,6 @@ public class Socket {
 
         @SneakyThrows
         private void confirmQrCode(Node node, Node container) {
-            lock.countDown();
             saveCompanion(container);
 
             var deviceIdentity = requireNonNull(container.findNode("device-identity"), "Missing device identity");
@@ -1232,8 +1230,12 @@ public class Socket {
                         case INITIAL_BOOTSTRAP -> {
                             history.conversations().forEach(store::addChat);
                             store.callListeners(WhatsappListener::onChats);
+                            store.hasSnapshot(true);
+                            store.save();
                         }
+
                         case FULL -> history.conversations().forEach(store::addChat);
+
                         case INITIAL_STATUS_V3 -> {
                             history.statusV3Messages()
                                     .stream()
@@ -1241,8 +1243,10 @@ public class Socket {
                                     .forEach(store.status()::add);
                             store.callListeners(WhatsappListener::onStatus);
                         }
+
                         case RECENT -> history.conversations()
                                 .forEach(this::handleRecentMessage);
+
                         case PUSH_NAME -> {
                             history.pushNames()
                                     .forEach(this::handNewPushName);
@@ -1255,11 +1259,7 @@ public class Socket {
                     send(receipt);
                 }
 
-                case APP_STATE_SYNC_KEY_SHARE -> {
-                    keys.addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
-                    CompletableFuture.delayedExecutor(2, TimeUnit.SECONDS) // FIXME: 26/01/2022 transaction
-                            .execute(appStateHandler::pull);
-                }
+                case APP_STATE_SYNC_KEY_SHARE -> keys.addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
 
                 case REVOKE -> {
                     var chat = info.chat()
@@ -1383,11 +1383,6 @@ public class Socket {
                     .map(MutationsRecord::records)
                     .flatMap(Collection::stream)
                     .forEach(this::processSyncActions);
-        }
-
-        public void pull(){
-            pull("critical_block", "critical_unblock_low",
-                    "regular_high", "regular_low", "regular");
         }
 
         @SneakyThrows
