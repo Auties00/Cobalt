@@ -6,11 +6,13 @@ import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.util.Buffers;
-import jakarta.websocket.SendResult;
-import jakarta.websocket.Session;
 import lombok.NonNull;
 import lombok.extern.java.Log;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.http.WebSocket;
+import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
@@ -40,18 +42,16 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     public static Request with(@NonNull Node body) {
         var future = new CompletableFuture<Node>();
         delayedExecutor(TIMEOUT, SECONDS)
-                .execute(() -> cancelTimedFuture(future, body, Thread.currentThread().getStackTrace()));
+                .execute(() -> cancelTimedFuture(future, body));
         return new Request(body.id(), body, future);
     }
 
-    private static void cancelTimedFuture(CompletableFuture<Node> future, Node node, StackTraceElement[] trace) {
-        if(future.isDone()){
+    private static void cancelTimedFuture(CompletableFuture<Node> future, Node node) {
+        if(future.isDone()) {
             return;
         }
 
-        var exception = new TimeoutException("%s timed out: no response from WhatsApp".formatted(node));
-        exception.setStackTrace(trace);
-        future.completeExceptionally(exception);
+        future.completeExceptionally(new TimeoutException("%s timed out: no response from WhatsApp".formatted(node)));
     }
 
     /**
@@ -67,7 +67,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @param session the WhatsappWeb's WebSocket session
      * @param store   the store
      */
-    public CompletableFuture<Node> sendWithPrologue(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store) {
+    public CompletableFuture<Node> sendWithPrologue(@NonNull WebSocket session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store) {
         return send(session, keys, store, true, false);
     }
 
@@ -78,7 +78,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @param session the WhatsappWeb's WebSocket session
      * @return this request
      */
-    public CompletableFuture<Node> send(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store) {
+    public CompletableFuture<Node> send(@NonNull WebSocket session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store) {
         return send(session, keys, store, false, true);
     }
 
@@ -89,8 +89,9 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @param session the WhatsappWeb's WebSocket session
      * @return this request
      */
-    public CompletableFuture<Node> sendWithNoResponse(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store) {
-        return send(session, keys, store, false, false);
+    public CompletableFuture<Void> sendWithNoResponse(@NonNull WebSocket session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store) {
+        return send(session, keys, store, false, false)
+                .thenAcceptAsync(node -> {});
     }
 
     /**
@@ -102,15 +103,16 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @param response whether the request expects a response
      * @return this request
      */
-    public CompletableFuture<Node> send(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store, boolean prologue, boolean response) {
+    public CompletableFuture<Node> send(@NonNull WebSocket session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store,
+                                        boolean prologue, boolean response) {
         var ciphered = cipherMessage(keys);
         var buffer = Buffers.newBuffer(prologue ? PROLOGUE : new byte[0])
                 .writeInt(ciphered.length >> 16)
                 .writeShort(65535 & ciphered.length)
                 .writeBytes(ciphered);
         var read = Buffers.readBinary(buffer);
-        session.getAsyncRemote()
-                .sendBinary(read.toBuffer(), result -> handleSendResult(store, result, response));
+        session.sendBinary(read.toBuffer(), true)
+                .thenRunAsync(() -> handleSendResult(store, response));
         return future;
     }
 
@@ -129,13 +131,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
         future.complete(response);
     }
 
-    private void handleSendResult(WhatsappStore store, SendResult result, boolean response) {
-        if (!result.isOK()) {
-            log.warning("Whatsapp could not send %s: %s".formatted(this, response));
-            future.completeExceptionally(new IllegalArgumentException("Cannot send %s".formatted(this), result.getException()));
-            return;
-        }
-
+    private void handleSendResult(WhatsappStore store, boolean response) {
         if(!response){
             future.complete(null);
             return;

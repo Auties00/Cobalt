@@ -37,8 +37,6 @@ import it.auties.whatsapp.protobuf.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.protobuf.signal.sender.SenderKeyName;
 import it.auties.whatsapp.protobuf.sync.*;
 import it.auties.whatsapp.util.*;
-import jakarta.websocket.*;
-import jakarta.websocket.ClientEndpointConfig.Configurator;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -46,13 +44,25 @@ import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.java.Log;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLParameters;
 import java.io.IOException;
+import java.net.Authenticator;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.WebSocket;
+import java.net.http.WebSocket.Listener;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
+import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -62,39 +72,31 @@ import static it.auties.whatsapp.binary.BinaryArray.empty;
 import static it.auties.whatsapp.binary.BinaryArray.ofBase64;
 import static it.auties.whatsapp.socket.Node.*;
 import static it.auties.whatsapp.util.QrHandler.TERMINAL;
-import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
 import static java.lang.Long.parseLong;
 import static java.lang.String.valueOf;
 import static java.time.Instant.now;
 import static java.util.Arrays.copyOfRange;
 import static java.util.Map.of;
-import static java.util.Map.ofEntries;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 @Accessors(fluent = true)
-@ClientEndpoint(configurator = Socket.OriginPatcher.class)
 @Log
-public class Socket {
+public class Socket implements Listener{
     private static final String BUILD_HASH = "S9Kdc4pc4EJryo21snc5cg==";
     private static final int KEY_TYPE = 5;
 
     @Getter(onMethod = @__(@NonNull))
     @Setter(onParam = @__(@NonNull))
-    private Session session;
+    private WebSocket session;
 
     private boolean loggedIn;
-
-    private boolean restored;
 
     private ScheduledExecutorService pingService;
 
     @NonNull
     private final Handshake handshake;
-
-    @NonNull
-    private final WebSocketContainer container;
 
     @NonNull
     private final WhatsappOptions options;
@@ -111,6 +113,9 @@ public class Socket {
     @NonNull
     private final AppStateHandler appStateHandler;
 
+    @NonNull
+    private final Transaction transaction;
+
     @Getter
     @NonNull
     private WhatsappKeys keys;
@@ -119,17 +124,14 @@ public class Socket {
     @NonNull
     private WhatsappStore store;
 
-    @NonNull
-    private CountDownLatch lock;
-
     static {
-        getWebSocketContainer().setDefaultMaxSessionIdleTimeout(0);
+        System.setProperty("jdk.httpclient.allowRestrictedHeaders", "Host,Connection,Upgrade");
+        System.setProperty("jdk.httpclient.HttpClient.log", "all");
     }
 
     public Socket(@NonNull WhatsappOptions options, @NonNull WhatsappStore store, @NonNull WhatsappKeys keys) {
         this.pingService = Executors.newSingleThreadScheduledExecutor();
         this.handshake = new Handshake();
-        this.container = getWebSocketContainer();
         this.options = options;
         this.store = store;
         this.keys = keys;
@@ -137,12 +139,12 @@ public class Socket {
         this.streamHandler = new StreamHandler();
         this.messageHandler = new MessageHandler();
         this.appStateHandler = new AppStateHandler();
-        this.lock = new CountDownLatch(1);
+        this.transaction = new Transaction();
     }
 
-    @OnOpen
-    @SneakyThrows
-    public void onOpen(@NonNull Session session) {
+    @Override
+    public void onOpen(WebSocket session) {
+        session.request(1);
         session(session);
         if(loggedIn){
             return;
@@ -156,22 +158,27 @@ public class Socket {
                 .sendWithPrologue(session(), keys, store);
     }
 
-    @OnMessage
-    @SneakyThrows
-    public void onBinary(byte @NonNull [] raw) {
-        var message = new BinaryMessage(raw);
+    @Override
+    public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
+        return Listener.super.onText(webSocket, data, last);
+    }
+
+    @Override
+    public CompletionStage<?> onBinary(WebSocket webSocket, ByteBuffer data, boolean last) {
+        var message = new BinaryMessage(data.array());
         if(message.decoded().isEmpty()){
-            return;
+            return Listener.super.onBinary(webSocket, data, last);
         }
 
         var header = message.decoded().getFirst();
         if(!loggedIn){
             authHandler.sendUserPayload(header.data());
-            return;
+            return Listener.super.onBinary(webSocket, data, last);
         }
 
         message.toNodes(keys)
                 .forEach(this::handleNode);
+        return Listener.super.onBinary(webSocket, data, last);
     }
 
     private void handleNode(Node deciphered) {
@@ -186,62 +193,70 @@ public class Socket {
         streamHandler.digest(deciphered);
     }
 
-    public void connect() {
-        try{
-            container.connectToServer(this, URI.create(options.whatsappUrl()));
-            lock.await();
-        }catch (IOException | DeploymentException | InterruptedException exception){
-            throw new RuntimeException("Cannot connect to WhatsappWeb's WebServer", exception);
-        }
+    @SneakyThrows
+    public CompletableFuture<?> connect() {
+        var parameters = new SSLParameters();
+        parameters.setProtocols(new String[] { "TLSv1.2" });
+        parameters.setCipherSuites(new String[] { "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256" });
+        parameters.setApplicationProtocols(new String[] {"h2", "http/1.1"});
+
+        return HttpClient.newBuilder()
+                .sslParameters(parameters)
+                .build()
+                .newWebSocketBuilder()
+                .header("Host", "web.whatsapp.com")
+                .header("Connection", "Upgrade")
+                .header("Pragma", "no-cache")
+                .header("Cache-Control", "no-cache")
+                .header("Upgrade", "websocket")
+                .header("Origin", "https://web.whatsapp.com")
+                .header("Accept-Encoding", "gzip, deflate, br")
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36 Edg/98.0.1108.56")
+                .subprotocols("permessage-deflate", "client_max_window_bits")
+                .connectTimeout(Duration.ofSeconds(30))
+                .buildAsync(URI.create(options.whatsappUrl()), this)
+                .thenRunAsync(() -> {});
     }
 
-    public void reconnect(){
-        disconnect();
-        connect();
+    public CompletableFuture<?> reconnect(){
+        return disconnect().thenComposeAsync(ignored -> connect());
     }
 
-    public void disconnect(){
-        try{
-            changeState(false);
-            session.close();
-        }catch (IOException exception){
-            throw new RuntimeException("Cannot close connection to WhatsappWeb's WebServer", exception);
-        }
+    public CompletableFuture<?> disconnect(){
+        changeState(false);
+        return session.sendClose(WebSocket.NORMAL_CLOSURE, "ok");
     }
 
-    public void logout(){
-        if (keys.hasCompanion()) {
-            var metadata = of("jid", keys.companion(), "reason", "user_initiated");
-            var device = withAttributes("remove-companion-device", metadata);
-            sendQuery("set", "md", device);
+    public CompletableFuture<?> logout(){
+        if (!keys.hasCompanion()) {
+            changeKeys();
+            return CompletableFuture.completedFuture(null);
         }
 
-        changeKeys();
+        var metadata = of("jid", keys.companion(), "reason", "user_initiated");
+        var device = withAttributes("remove-companion-device", metadata);
+        return sendQuery("set", "md", device)
+                .thenRunAsync(this::changeKeys)
+                .thenComposeAsync(ignored -> disconnect());
     }
 
     private void changeState(boolean loggedIn){
         this.loggedIn = loggedIn;
-        this.lock = new CountDownLatch(1);
         keys.clear();
     }
 
-    @OnClose
-    public void onClose(){
-        System.out.println("Closed");
+    @Override
+    public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
         if(loggedIn) {
             store.callListeners(listener -> listener.onDisconnected(true));
-            reconnect();
-            return;
+            connect();
+            return Listener.super.onClose(webSocket, statusCode, reason);
         }
 
         store.callListeners(listener -> listener.onDisconnected(false));
         store.dispose();
         dispose();
-    }
-
-    @OnError
-    public void onError(Throwable throwable){
-        throwable.printStackTrace();
+        return Listener.super.onClose(webSocket, statusCode, reason);
     }
 
     public CompletableFuture<Node> send(Node node){
@@ -253,7 +268,7 @@ public class Socket {
                 .send(session(), keys, store);
     }
 
-    public CompletableFuture<Node> sendWithNoResponse(Node node){
+    public CompletableFuture<Void> sendWithNoResponse(Node node){
         return node.toRequest(store.nextTag())
                 .sendWithNoResponse(session(), keys, store);
     }
@@ -365,14 +380,6 @@ public class Socket {
         keys.save();
     }
 
-    public static class OriginPatcher extends Configurator{
-        @Override
-        public void beforeRequest(@NonNull Map<String, List<String>> headers) {
-            headers.put("Origin", List.of("https://web.whatsapp.com"));
-            headers.put("Host", List.of("web.whatsapp.com"));
-        }
-    }
-
     private class AuthHandler {
         @SneakyThrows
         private void sendUserPayload(byte[] message) {
@@ -413,7 +420,6 @@ public class Socket {
 
         private ClientPayload finishUserPayload(ClientPayloadBuilder builder) {
             if(keys.hasCompanion()){
-                restored = true;
                 return builder.username(parseLong(keys.companion().user()))
                         .device(keys.companion().device())
                         .build();
@@ -469,7 +475,7 @@ public class Socket {
                 case "message" -> messageHandler.decode(node);
                 case "notification" -> digestNotification(node);
                 case "presence", "chatstate" -> digestChatState(node);
-                case "xmlstreamend" -> disconnect();
+                case "xmlstreamend" -> reconnect();
             }
         }
 
@@ -638,14 +644,15 @@ public class Socket {
 
         private void digestError(Node node) {
             var statusCode = node.attributes().getInt("code");
-            switch (statusCode) {
-                case 515 -> reconnect();
-                case 401 -> handleStreamError(node, statusCode);
-                default -> handleStreamError(node);
+            if (statusCode == 401) {
+                handleStreamError(node, statusCode);
+                return;
             }
+
+            handleErroneousNodes(node);
         }
 
-        private void handleStreamError(Node node) {
+        private void handleErroneousNodes(Node node) {
             Validate.isTrue(node.findNode("xml-not-well-formed") == null,
                     "An invalid node was sent to Whatsapp");
             node.children().forEach(error -> store.resolvePendingRequest(error, true));
@@ -664,11 +671,10 @@ public class Socket {
             createPingService();
             sendStatusUpdate();
             store.callListeners(WhatsappListener::onLoggedIn);
-            if (!restored) {
+            if (store.chats().isEmpty() && store.contacts().isEmpty()) {
                 return;
             }
 
-            restored = false;
             store.callListeners(WhatsappListener::onChats);
             store.callListeners(WhatsappListener::onContacts);
         }
@@ -800,7 +806,6 @@ public class Socket {
 
         @SneakyThrows
         private void confirmQrCode(Node node, Node container) {
-            lock.countDown();
             saveCompanion(container);
 
             var deviceIdentity = requireNonNull(container.findNode("device-identity"), "Missing device identity");
@@ -866,10 +871,12 @@ public class Socket {
 
         @SafeVarargs
         public final CompletableFuture<Node> encode(MessageInfo info, Entry<String, Object>... metadata) {
-            var encodedMessage = SignalHelper.pad(ProtobufEncoder.encode(info));
-            return createMessageBody(info, encodedMessage)
-                    .thenComposeAsync(participants -> encode(info, encodedMessage, participants, metadata))
-                    .exceptionallyAsync(throwable -> { throw new RuntimeException("Cannot encode message", throwable); });
+            return transaction.schedule(() -> {
+                var encodedMessage = SignalHelper.pad(ProtobufEncoder.encode(info));
+                return createMessageBody(info, encodedMessage)
+                        .thenComposeAsync(participants -> encode(info, encodedMessage, participants, metadata))
+                        .exceptionallyAsync(throwable -> { throw new RuntimeException("Cannot encode message", throwable); });
+            });
         }
 
         @SafeVarargs
@@ -1233,6 +1240,7 @@ public class Socket {
                             history.conversations().forEach(store::addChat);
                             store.callListeners(WhatsappListener::onChats);
                         }
+
                         case FULL -> history.conversations().forEach(store::addChat);
                         case INITIAL_STATUS_V3 -> {
                             history.statusV3Messages()
@@ -1255,11 +1263,7 @@ public class Socket {
                     send(receipt);
                 }
 
-                case APP_STATE_SYNC_KEY_SHARE -> {
-                    keys.addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
-                    CompletableFuture.delayedExecutor(2, TimeUnit.SECONDS) // FIXME: 26/01/2022 transaction
-                            .execute(appStateHandler::pull);
-                }
+                case APP_STATE_SYNC_KEY_SHARE -> keys.addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
 
                 case REVOKE -> {
                     var chat = info.chat()
@@ -1385,27 +1389,20 @@ public class Socket {
                     .forEach(this::processSyncActions);
         }
 
-        public void pull(){
-            pull("critical_block", "critical_unblock_low",
-                    "regular_high", "regular_low", "regular");
-        }
-
         @SneakyThrows
         public void pull(String... requests) {
-            var states = Arrays.stream(requests)
-                    .map(LTHashState::new)
-                    .peek(state -> keys.hashStates().put(state.name(), state))
-                    .toList();
-
-            var nodes = states.stream()
-                    .map(LTHashState::toNode)
-                    .toList();
-
-            sendQuery("set", "w:sync:app:state", withChildren("sync", nodes))
-                    .thenApplyAsync(this::parseSyncRequest)
-                    .thenApplyAsync(this::parsePatches)
-                    .thenAcceptAsync(actions -> actions.forEach(this::processSyncActions))
-                    .exceptionallyAsync(this::handleSyncFailure);
+            transaction.schedule(() -> {
+                var nodes = Arrays.stream(requests)
+                        .map(LTHashState::new)
+                        .peek(state -> keys.hashStates().put(state.name(), state))
+                        .map(LTHashState::toNode)
+                        .toList();
+                return sendQuery("set", "w:sync:app:state", withChildren("sync", nodes))
+                        .thenApplyAsync(this::parseSyncRequest)
+                        .thenApplyAsync(this::parsePatches)
+                        .thenAcceptAsync(actions -> actions.forEach(this::processSyncActions))
+                        .exceptionallyAsync(this::handleSyncFailure);
+            });
         }
 
         private Void handleSyncFailure(Throwable throwable){
@@ -1717,6 +1714,35 @@ public class Socket {
                     .data();
             return Hmac.calculateSha256(total, key)
                     .data();
+        }
+    }
+
+    private static class Transaction {
+        private CompletableFuture<?> lastTask;
+        public CompletableFuture<Void> schedule(UnsafeRunnable runnable){
+            return schedule(() -> CompletableFuture.runAsync(() -> {
+                try {
+                    runnable.run();
+                }catch (Throwable throwable){
+                    throw new CompletionException(throwable);
+                }
+            }));
+        }
+
+        public <T> CompletableFuture<T> schedule(Supplier<CompletableFuture<T>> supplier){
+            var result = hasTask() ? lastTask.thenComposeAsync(ignored -> supplier.get())
+                    : supplier.get();
+            this.lastTask = result;
+            return result;
+        }
+
+        public boolean hasTask(){
+            return lastTask != null;
+        }
+
+        @FunctionalInterface
+        private interface UnsafeRunnable {
+            void run() throws Throwable;
         }
     }
 }

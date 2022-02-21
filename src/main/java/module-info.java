@@ -8,7 +8,6 @@ open module it.auties.whatsapp4j {
     requires com.fasterxml.jackson.databind;
     requires java.prefs;
     requires org.bouncycastle.provider;
-    requires jakarta.websocket;
     requires it.auties.protoc.api;
     requires com.google.zxing;
     requires com.google.zxing.javase;

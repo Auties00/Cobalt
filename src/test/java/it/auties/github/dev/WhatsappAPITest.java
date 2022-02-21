@@ -19,15 +19,19 @@ import org.junit.jupiter.api.Test;
 
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 @Log
 public class WhatsappAPITest {
     @Test
-    public void login() {
-        var whatsapp = Whatsapp.newConnection()
-                .connect();
+    public void login() throws ExecutionException, InterruptedException, TimeoutException {
+        var result = Whatsapp.lastConnection()
+                .connect()
+                .get();
+        while (true){
+            Thread.sleep(3000L);
+            System.out.println("Alive? " +  result.getSocket().session().isInputClosed());
+        }
     }
 
     @AllArgsConstructor
@@ -41,11 +45,13 @@ public class WhatsappAPITest {
         }
 
         @Override
+        public void onDisconnected(boolean reconnect) {
+            System.out.println("Disconnected");
+        }
+
+        @Override
         public void onChats() {
             System.out.println("Called on chats");
-            whatsapp.store()
-                    .findChatByName("5-0")
-                    .ifPresent(chat -> whatsapp.sendMessage(chat.jid(), "Test da md"));
         }
 
         @Override
