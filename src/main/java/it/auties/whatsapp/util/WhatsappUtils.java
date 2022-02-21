@@ -1,22 +1,17 @@
 package it.auties.whatsapp.util;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.whatsapp.binary.BinaryArray;
-import it.auties.whatsapp.socket.Node;
-import lombok.NonNull;
+import it.auties.whatsapp.manager.WhatsappPreferences;
 import lombok.experimental.UtilityClass;
 
-import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 import static java.time.ZoneId.systemDefault;
 import static java.time.ZonedDateTime.ofInstant;
-import static java.util.prefs.Preferences.userRoot;
 
 /**
  * This utility class provides helper functionality to easily extract data out of Whatsapp models or raw protobuf messages
@@ -24,11 +19,7 @@ import static java.util.prefs.Preferences.userRoot;
  */
 @UtilityClass
 public class WhatsappUtils implements JacksonProvider {
-    private final String ID_PATH = WhatsappUtils.class.getName();
-
-    public String createPreferencesPath(String path, Object id) {
-        return "%s$%s".formatted(path, id);
-    }
+    private final WhatsappPreferences SESSIONS = WhatsappPreferences.of("sessions.json");
 
     @SafeVarargs
     public <T> List<T> combine(List<T>... input){
@@ -38,27 +29,19 @@ public class WhatsappUtils implements JacksonProvider {
     }
 
     public LinkedList<Integer> knownIds() {
-        try {
-            var json = userRoot().get(ID_PATH, "[]");
-            return JACKSON.readValue(json, new TypeReference<>() {});
-        }catch (JsonProcessingException exception){
-            throw new UncheckedIOException("Cannot read IDs", exception);
-        }
+        return Objects.requireNonNullElseGet(SESSIONS.readJson(new TypeReference<>() {}),
+                LinkedList::new);
     }
 
     public int saveId(int id){
-        try {
-            var knownIds = knownIds();
-            if(knownIds.contains(id)){
-                return id;
-            }
-
-            knownIds.add(id);
-            userRoot().put(ID_PATH, JACKSON.writeValueAsString(knownIds));
+        var knownIds = knownIds();
+        if(knownIds.contains(id)){
             return id;
-        }catch (JsonProcessingException exception){
-            throw new UncheckedIOException("Cannot serialize IDs", exception);
         }
+
+        knownIds.add(id);
+        SESSIONS.writeJsonAsync(knownIds);
+        return id;
     }
 
     /**

@@ -19,14 +19,18 @@ import it.auties.whatsapp.util.Validate;
 import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.NonNull;
 
+import java.net.URI;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static it.auties.whatsapp.api.WhatsappOptions.defaultOptions;
 import static it.auties.whatsapp.socket.Node.*;
@@ -43,27 +47,18 @@ public class Whatsapp {
     /**
      * The socket associated with this session
      */
+    @Getter
     private final Socket socket;
 
     /**
-     * Constructs a new instance of the API from a known jid.
-     * If the jid is not associated with any session, a new one will be created.
+     * Constructs a new instance of the API from a known id.
+     * If the id is not associated with any session, a new one will be created.
      *
      * @param id the jid of the session
      * @return a non-null Whatsapp instance
      */
-    public static Whatsapp of(int id){
+    public static Whatsapp connect(int id){
         return new Whatsapp(id);
-    }
-
-    /**
-     * Constructs a new instance of the API from the last session opened.
-     * If no sessions are available, a new one will be created.
-     *
-     * @return a non-null Whatsapp instance
-     */
-    public static Whatsapp ofLast(){
-        return new Whatsapp();
     }
 
     /**
@@ -76,20 +71,33 @@ public class Whatsapp {
     }
 
     /**
-     * Constructs a new instance of the API from the last session opened.
+     * Constructs a new instance of the API from the first session opened.
      * If no sessions are available, a new one will be created.
+     *
+     * @return a non-null Whatsapp instance
      */
-    public Whatsapp(){
-        this(requireNonNullElseGet(WhatsappUtils.knownIds().peekLast(), SignalHelper::randomRegistrationId));
+    public static Whatsapp firstConnection(){
+        return new Whatsapp(requireNonNullElseGet(WhatsappUtils.knownIds().peekFirst(), SignalHelper::randomRegistrationId));
     }
 
     /**
-     * Constructs a new instance of the API from a known jid.
-     * If the jid is not associated with any session, a new one will be created.
+     * Constructs a new instance of the API from the last session opened.
+     * If no sessions are available, a new one will be created.
+     *
+     * @return a non-null Whatsapp instance
+     */
+    public static Whatsapp lastConnection(){
+        return new Whatsapp(requireNonNullElseGet(WhatsappUtils.knownIds().peekLast(), SignalHelper::randomRegistrationId));
+    }
+
+    /**
+     * Constructs a new instance of the API from a known id.
+     * If the id is not associated with any session, a new one will be created.
      *
      * @param id the jid of the session
+     * @apiNote not accessible, please use named constructors
      */
-    public Whatsapp(int id){
+    private Whatsapp(int id){
         this(new Socket(defaultOptions(), WhatsappStore.fromMemory(id), WhatsappKeys.fromMemory(id)));
         RegisterListenerScanner.scan(this)
                 .forEach(this::registerListener);
@@ -144,9 +152,9 @@ public class Whatsapp {
      *
      * @return the same instance
      */
-    public Whatsapp connect() {
-        socket.connect();
-        return this;
+    public CompletableFuture<Whatsapp> connect() {
+        return socket.connect()
+                .thenApplyAsync(ignored -> this);
     }
 
     /**
@@ -154,9 +162,9 @@ public class Whatsapp {
      *
      * @return the same instance
      */
-    public Whatsapp disconnect() {
-        socket.disconnect();
-        return this;
+    public CompletableFuture<Whatsapp> disconnect() {
+        return socket.disconnect()
+                .thenApplyAsync(ignored -> this);
     }
 
     /**
@@ -164,9 +172,9 @@ public class Whatsapp {
      *
      * @return the same instance
      */
-    public Whatsapp reconnect() {
-        socket.reconnect();
-        return this;
+    public CompletableFuture<Whatsapp> reconnect() {
+        return socket.reconnect()
+                .thenApplyAsync(ignored -> this);
     }
 
     /**
@@ -175,9 +183,9 @@ public class Whatsapp {
      *
      * @return the same instance
      */
-    public Whatsapp logout() {
-        socket.logout();
-        return this;
+    public CompletableFuture<Whatsapp> logout() {
+        return socket.logout()
+                .thenApplyAsync(ignored -> this);
     }
 
     /**
@@ -188,7 +196,7 @@ public class Whatsapp {
      * @param contact the contact whose status the api should receive updates on
      * @return a CompletableFuture    
      */
-    public CompletableFuture<?> subscribeToContactPresence(@NonNull Contact contact) {
+    public CompletableFuture<Void> subscribeToContactPresence(@NonNull Contact contact) {
         var node = withAttributes("presence",
                 Map.of("to", contact.jid(), "type", "subscribe"));
         return socket.sendWithNoResponse(node);
@@ -202,7 +210,7 @@ public class Whatsapp {
      * @param message the message to send
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> sendMessage(@NonNull Chat chat, @NonNull String message) {
+    public CompletableFuture<MessageInfo> sendMessage(@NonNull Chat chat, @NonNull String message) {
         return sendMessage(chat.jid(), message);
     }
 
@@ -213,7 +221,7 @@ public class Whatsapp {
      * @param message the message to send
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> sendMessage(@NonNull ContactJid chat, @NonNull String message) {
+    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJid chat, @NonNull String message) {
         return sendMessage(chat, new TextMessage(message));
     }
 
@@ -225,7 +233,7 @@ public class Whatsapp {
      * @param quotedMessage the message that; should quote
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> sendMessage(@NonNull Chat chat, @NonNull String message, @NonNull MessageInfo quotedMessage) {
+    public CompletableFuture<MessageInfo> sendMessage(@NonNull Chat chat, @NonNull String message, @NonNull MessageInfo quotedMessage) {
         return sendMessage(chat.jid(), message, quotedMessage);
     }
 
@@ -237,7 +245,7 @@ public class Whatsapp {
      * @param quotedMessage the message that; should quote
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> sendMessage(@NonNull ContactJid chat, @NonNull String message, @NonNull MessageInfo quotedMessage) {
+    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJid chat, @NonNull String message, @NonNull MessageInfo quotedMessage) {
         return sendMessage(chat, new TextMessage(message), quotedMessage);
     }
 
@@ -248,7 +256,7 @@ public class Whatsapp {
      * @param message the message to send
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> sendMessage(@NonNull Chat chat, @NonNull Message message) {
+    public CompletableFuture<MessageInfo> sendMessage(@NonNull Chat chat, @NonNull Message message) {
         return sendMessage(chat.jid(), message);
     }
 
@@ -259,7 +267,7 @@ public class Whatsapp {
      * @param message the message to send
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> sendMessage(@NonNull ContactJid chat, @NonNull Message message) {
+    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJid chat, @NonNull Message message) {
         var key = MessageKey.newMessageKey()
                 .chatJid(chat)
                 .fromMe(true)
@@ -280,7 +288,7 @@ public class Whatsapp {
      * @param quotedMessage the message that; should quote
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> sendMessage(@NonNull Chat chat, @NonNull ContextualMessage message, @NonNull MessageInfo quotedMessage) {
+    public CompletableFuture<MessageInfo> sendMessage(@NonNull Chat chat, @NonNull ContextualMessage message, @NonNull MessageInfo quotedMessage) {
         return sendMessage(chat.jid(), message, quotedMessage);
     }
 
@@ -292,7 +300,7 @@ public class Whatsapp {
      * @param quotedMessage the message that; should quote
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> sendMessage(@NonNull ContactJid chat, @NonNull ContextualMessage message, @NonNull MessageInfo quotedMessage) {
+    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJid chat, @NonNull ContextualMessage message, @NonNull MessageInfo quotedMessage) {
         var context = ContextInfo.newContextInfo()
                 .quotedMessageId(quotedMessage.id())
                 .quotedMessageContainer(quotedMessage.message())
@@ -309,7 +317,7 @@ public class Whatsapp {
      * @param contextInfo the context of the message to send
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> sendMessage(@NonNull Chat chat, @NonNull ContextualMessage message, @NonNull ContextInfo contextInfo) {
+    public CompletableFuture<MessageInfo> sendMessage(@NonNull Chat chat, @NonNull ContextualMessage message, @NonNull ContextInfo contextInfo) {
         return sendMessage(chat.jid(), message, contextInfo);
     }
 
@@ -321,7 +329,7 @@ public class Whatsapp {
      * @param contextInfo the context of the message to send
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> sendMessage(@NonNull ContactJid chat, @NonNull ContextualMessage message, @NonNull ContextInfo contextInfo) {
+    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJid chat, @NonNull ContextualMessage message, @NonNull ContextInfo contextInfo) {
         var key = MessageKey.newMessageKey()
                 .chatJid(chat)
                 .fromMe(true)
@@ -340,8 +348,9 @@ public class Whatsapp {
      * @param message the message to send
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> sendMessage(@NonNull MessageInfo message) {
-        return socket.sendMessage(message);
+    public CompletableFuture<MessageInfo> sendMessage(@NonNull MessageInfo message) {
+        return socket.sendMessage(message)
+                .thenApplyAsync(ignored -> message);
     }
 
     /**
@@ -396,7 +405,7 @@ public class Whatsapp {
      * @param chat the chat to query
      * @return a CompletableFuture that wraps nullable jpg url hosted on Whatsapp's servers
      */
-    public CompletableFuture<String> queryChatPicture(@NonNull Chat chat) {
+    public CompletableFuture<URI> queryChatPicture(@NonNull Chat chat) {
         return queryChatPicture(chat.jid());
     }
 
@@ -406,7 +415,7 @@ public class Whatsapp {
      * @param contact the contact to query
      * @return a CompletableFuture that wraps nullable jpg url hosted on Whatsapp's servers
      */
-    public CompletableFuture<String> queryChatPicture(@NonNull Contact contact) {
+    public CompletableFuture<URI> queryChatPicture(@NonNull Contact contact) {
         return queryChatPicture(contact.jid());
     }
 
@@ -416,15 +425,16 @@ public class Whatsapp {
      * @param jid the jid of the chat to query
      * @return a CompletableFuture that wraps nullable jpg url hosted on Whatsapp's servers
      */
-    public CompletableFuture<String> queryChatPicture(@NonNull ContactJid jid) {
+    public CompletableFuture<URI> queryChatPicture(@NonNull ContactJid jid) {
         var body = withAttributes("picture", Map.of("query", "url"));
         return socket.sendQuery("get", "w:profile:picture", Map.of("target", jid), body)
                 .thenApplyAsync(this::parseChatPicture);
     }
 
-    private String parseChatPicture(Node result) {
+    private URI parseChatPicture(Node result) {
         return Optional.ofNullable(result.findNode("picture"))
                 .map(picture -> picture.attributes().getString("url", null))
+                .map(URI::create)
                 .orElse(null);
     }
 

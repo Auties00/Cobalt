@@ -466,6 +466,7 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
    */
   public @NonNull MessageContainer.ContentType type(){
     return switch (content()){
+      case null -> ContentType.EMPTY;
       case DeviceMessage ignored -> ContentType.DEVICE;
       case PaymentMessage ignored -> ContentType.PAYMENT;
       case ServerMessage ignored -> ContentType.SERVER;
@@ -473,6 +474,15 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
       case ProductMessage ignored -> ContentType.PRODUCT;
       default -> ContentType.STANDARD;
     };
+  }
+
+  /**
+   * Returns whether this container is empty
+   *
+   * @return true if this container contains no message
+   */
+  public boolean isEmpty(){
+    return type() == ContentType.EMPTY;
   }
 
   /**
@@ -515,6 +525,11 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
    * The constants of this enumerated type describe the various types of messages that a {@link MessageContainer} can wrap
    */
   public enum ContentType {
+    /**
+     * Server message
+     */
+    EMPTY,
+
     /**
      * Server message
      */

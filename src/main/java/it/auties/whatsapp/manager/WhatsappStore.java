@@ -1,7 +1,7 @@
 package it.auties.whatsapp.manager;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.protobuf.chat.Chat;
@@ -28,7 +28,6 @@ import java.util.stream.Stream;
 
 import static java.time.Instant.now;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
-import static java.util.prefs.Preferences.userRoot;
 
 /**
  * This class holds all the data regarding a session with WhatsappWeb's WebSocket.
@@ -45,11 +44,6 @@ import static java.util.prefs.Preferences.userRoot;
 @SuppressWarnings({"unused", "UnusedReturnValue"}) // Chaining
 public class WhatsappStore implements JacksonProvider {
     /**
-     * The path used to serialize and deserialize this object
-     */
-    private static final String PREFERENCES_PATH = WhatsappStore.class.getName();
-
-    /**
      * The session id of this store
      */
     @JsonProperty
@@ -61,7 +55,7 @@ public class WhatsappStore implements JacksonProvider {
     @NonNull
     @JsonProperty        
     @Default
-    private List<Chat> chats = new Vector<>();
+    private Vector<Chat> chats = new Vector<>();
 
     /**
      * The non-null list of status messages
@@ -69,7 +63,7 @@ public class WhatsappStore implements JacksonProvider {
     @NonNull
     @JsonProperty        
     @Default
-    private List<MessageInfo> status = new Vector<>();
+    private Vector<MessageInfo> status = new Vector<>();
 
     /**
      * The non-null list of contacts
@@ -77,21 +71,21 @@ public class WhatsappStore implements JacksonProvider {
     @NonNull
     @JsonProperty        
     @Default
-    private List<Contact> contacts = new Vector<>();
+    private Vector<Contact> contacts = new Vector<>();
 
     /**
      * The non-null list of requests that are waiting for a response from Whatsapp
      */
     @NonNull        
     @Default
-    private List<Request> pendingRequests = new Vector<>();
+    private Vector<Request> pendingRequests = new Vector<>();
 
     /**
      * The non-null list of listeners
      */
     @NonNull        
     @Default
-    private List<WhatsappListener> listeners = new Vector<>();
+    private Vector<WhatsappListener> listeners = new Vector<>();
 
     /**
      * Request counter
@@ -149,21 +143,9 @@ public class WhatsappStore implements JacksonProvider {
      * @return a non-null instance of WhatsappStore
      */
     public static WhatsappStore fromMemory(int id){
-        var path = WhatsappUtils.createPreferencesPath(PREFERENCES_PATH, id);
-        var json = userRoot().get(path, null);
-        return Optional.ofNullable(json)
-                .map(value -> deserialize(id, value))
-                .orElseGet(() -> newStore(id));
-    }
-
-    private static WhatsappStore deserialize(int id, String json) {
-        try {
-            return JACKSON.readValue(json, WhatsappStore.class);
-        } catch (JsonProcessingException exception) {
-            exception.printStackTrace();
-            log.warning("Cannot read store for jid %s: defaulting to new keys".formatted(id));
-            return null;
-        }
+        var preferences = WhatsappPreferences.of("store/%s.json", id);
+        return Objects.requireNonNullElseGet(preferences.readJson(new TypeReference<>() {}),
+                () -> newStore(id));
     }
 
     /**
@@ -374,12 +356,8 @@ public class WhatsappStore implements JacksonProvider {
      * @return this
      */
     public WhatsappStore save(){
-        try {
-            var path = WhatsappUtils.createPreferencesPath(PREFERENCES_PATH, id);
-            userRoot().put(path, JACKSON.writeValueAsString(this));
-            return this;
-        } catch (JsonProcessingException exception) {
-            throw new RuntimeException("Cannot save keys to memory", exception);
-        }
+        var preferences = WhatsappPreferences.of("/store/%s.json", id);
+        preferences.writeJsonAsync(this);
+        return this;
     }
 }

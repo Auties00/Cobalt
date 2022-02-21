@@ -3,6 +3,7 @@ package it.auties.whatsapp.manager;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
@@ -44,11 +45,6 @@ import static java.util.prefs.Preferences.userRoot;
 @Log
 @SuppressWarnings({"unused", "UnusedReturnValue"}) // Chaining
 public class WhatsappKeys implements JacksonProvider {
-    /**
-     * The path used to serialize and deserialize this object
-     */
-    private static final String PREFERENCES_PATH = WhatsappKeys.class.getName();
-
     /**
      * The client jid
      */
@@ -196,8 +192,8 @@ public class WhatsappKeys implements JacksonProvider {
      * @param id the jid of the keys
      */
     public static void deleteKeys(int id) {
-        var path = WhatsappUtils.createPreferencesPath(PREFERENCES_PATH, id);
-        userRoot().remove(path);
+        var preferences = WhatsappPreferences.of("/keys/%s.json", id);
+        preferences.delete();
     }
 
     /**
@@ -220,21 +216,9 @@ public class WhatsappKeys implements JacksonProvider {
      * @return a non-null instance of WhatsappKeys
      */
     public static WhatsappKeys fromMemory(int id){
-        var path = WhatsappUtils.createPreferencesPath(PREFERENCES_PATH, id);
-        var json = userRoot().get(path, null);
-        return Optional.ofNullable(json)
-                .map(value -> deserialize(id, value))
-                .orElseGet(() -> newKeys(id));
-    }
-
-    private static WhatsappKeys deserialize(int id, String json) {
-        try {
-            return JACKSON.readValue(json, WhatsappKeys.class);
-        } catch (JsonProcessingException exception) {
-            exception.printStackTrace();
-            log.warning("Cannot read keys for jid %s: defaulting to new keys".formatted(id));
-            return null;
-        }
+        var preferences = WhatsappPreferences.of("/keys/%s.json", id);
+        return Objects.requireNonNullElseGet(preferences.readJson(new TypeReference<>() {}),
+                () -> newKeys(id));
     }
 
     /**
@@ -243,13 +227,9 @@ public class WhatsappKeys implements JacksonProvider {
      * @return this
      */
     public WhatsappKeys save(){
-        try {
-            var path = WhatsappUtils.createPreferencesPath(PREFERENCES_PATH, id);
-            userRoot().put(path, JACKSON.writeValueAsString(this));
-            return this;
-        } catch (JsonProcessingException exception) {
-            throw new RuntimeException("Cannot save keys to memory", exception);
-        }
+        var preferences = WhatsappPreferences.of("/keys/%s.json", id);
+        preferences.writeJsonAsync(this);
+        return this;
     }
 
     /**
