@@ -2,7 +2,7 @@ package it.auties.whatsapp.protobuf.contact;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import it.auties.protobuf.decoder.ProtobufType;
+import it.auties.protobuf.annotation.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.signal.session.SessionAddress;
 import lombok.AllArgsConstructor;
@@ -10,13 +10,13 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 import lombok.extern.java.Log;
 import org.whispersystems.libsignal.SignalProtocolAddress;
 
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * A model class that represents a jid.
@@ -25,6 +25,7 @@ import java.util.Optional;
  * This class also offers a builder, accessible using {@link ContactJid#builder()}.
  */
 @ProtobufType(String.class)
+@Jacksonized
 @Builder
 @Log
 public record ContactJid(String user, @NonNull Server server, int device, int agent) {

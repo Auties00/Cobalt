@@ -7,6 +7,8 @@ import it.auties.whatsapp.protobuf.action.*;
 import it.auties.whatsapp.protobuf.setting.*;
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
 
@@ -160,6 +162,7 @@ public final class ActionValueSync implements GenericSync {
     @AllArgsConstructor
     @NoArgsConstructor
     @Data
+    @Jacksonized
     @Builder
     @Accessors(fluent = true)
     public static class PrimaryFeature {

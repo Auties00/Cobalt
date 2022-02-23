@@ -1,14 +1,13 @@
 package org.example.whatsapp.command;
 
-import it.auties.whatsapp.api.WhatsappAPI;
-import it.auties.whatsapp4j.protobuf.chat.Chat;
-import it.auties.whatsapp4j.protobuf.model.info.MessageInfo;
+import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.protobuf.info.MessageInfo;
 import lombok.NonNull;
 
 import java.util.Set;
 
 public interface Command {
-    void onCommand(@NonNull WhatsappAPI api, @NonNull Chat chat, @NonNull MessageInfo message);
+    void onCommand(@NonNull Whatsapp api, @NonNull MessageInfo message);
     String command();
-    Set<String> aliases();
+    Set<String> alias();
 }

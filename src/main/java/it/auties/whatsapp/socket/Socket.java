@@ -44,6 +44,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 import lombok.extern.java.Log;
 
 import java.io.IOException;
@@ -67,6 +68,7 @@ import static it.auties.whatsapp.socket.Node.*;
 import static it.auties.whatsapp.util.QrHandler.TERMINAL;
 import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
 import static java.lang.Long.parseLong;
+import static java.lang.Runtime.getRuntime;
 import static java.lang.String.valueOf;
 import static java.time.Instant.now;
 import static java.util.Arrays.copyOfRange;
@@ -116,7 +118,7 @@ public class Socket {
     @NonNull
     private WhatsappStore store;
 
-    private CompletableFuture<Void> loginFuture, logoutFuture;
+    private CompletableFuture<Void> loginFuture;
 
     static {
         getWebSocketContainer().setDefaultMaxSessionIdleTimeout(0);
@@ -132,6 +134,7 @@ public class Socket {
         this.streamHandler = new StreamHandler();
         this.messageHandler = new MessageHandler();
         this.appStateHandler = new AppStateHandler();
+        getRuntime().addShutdownHook(new Thread(this::dispose));
     }
 
     @OnOpen
@@ -197,13 +200,9 @@ public class Socket {
 
     @SneakyThrows
     public CompletableFuture<Void> disconnect(){
-        if(logoutFuture == null || logoutFuture.isDone()){
-            this.logoutFuture = new CompletableFuture<>();
-        }
-
         changeState(false);
         session.close();
-        return logoutFuture;
+        return CompletableFuture.completedFuture(null); // session#close is a synchronous operation
     }
 
     public CompletableFuture<Void> logout(){
@@ -224,8 +223,8 @@ public class Socket {
 
     @OnClose
     public void onClose(){
-        if(logoutFuture != null){
-            logoutFuture.complete(null);
+        if(loginFuture != null && !loginFuture.isDone()){
+            loginFuture.complete(null);
         }
 
         if(loggedIn) {
@@ -361,8 +360,8 @@ public class Socket {
 
     private void dispose(){
         pingService.shutdownNow();
-        store.save();
-        keys.save();
+        store.save(false);
+        keys.save(false);
     }
 
     public static class OriginPatcher extends Configurator{
@@ -468,7 +467,6 @@ public class Socket {
                 case "message" -> messageHandler.decode(node);
                 case "notification" -> digestNotification(node);
                 case "presence", "chatstate" -> digestChatState(node);
-                case "xmlstreamend" -> disconnect();
             }
         }
 
@@ -488,8 +486,8 @@ public class Socket {
         }
 
         private void updateContactPresence(ContactJid chatJid, ContactStatus status, Contact contact) {
-            contact.lastKnownPresence(status);
-            contact.lastSeen(ZonedDateTime.now());
+            // contact.lastKnownPresence(status);
+            //            contact.lastSeen(ZonedDateTime.now());
             store.findChatByJid(chatJid)
                     .ifPresent(chat -> updateChatPresence(status, contact, chat));
         }
@@ -850,7 +848,7 @@ public class Socket {
             var companion = node.attributes().getJid("jid")
                     .orElseThrow(() -> new NoSuchElementException("Missing companion"));
             keys.companion(companion)
-                    .save();
+                    .save(true);
         }
     }
 
@@ -1231,7 +1229,7 @@ public class Socket {
                             history.conversations().forEach(store::addChat);
                             store.callListeners(WhatsappListener::onChats);
                             store.hasSnapshot(true);
-                            store.save();
+                            store.save(true);
                         }
 
                         case FULL -> history.conversations().forEach(store::addChat);

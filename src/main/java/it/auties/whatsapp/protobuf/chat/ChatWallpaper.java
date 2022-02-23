@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 
 /**
  * A model class that represents the wallpaper of a chat.
@@ -17,6 +18,7 @@ import lombok.experimental.Accessors;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@Jacksonized
 @Builder
 @Accessors(fluent = true)
 public class ChatWallpaper{

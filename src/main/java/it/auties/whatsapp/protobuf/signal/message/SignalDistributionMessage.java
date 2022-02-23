@@ -11,6 +11,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -21,6 +22,7 @@ import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@Jacksonized
 @Builder
 @Accessors(fluent = true)
 public final class SignalDistributionMessage implements SignalProtocolMessage {

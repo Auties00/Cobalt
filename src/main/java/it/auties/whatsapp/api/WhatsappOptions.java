@@ -5,6 +5,8 @@ import lombok.Builder.Default;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
+import lombok.extern.jackson.Jacksonized;
 
 /**
  * A configuration class used to specify the behaviour of {@link Whatsapp}.
@@ -13,6 +15,7 @@ import lombok.experimental.Accessors;
  * This class should be configured using its builder, accessible using {@link WhatsappOptions#builder()}.
  * An all arguments' constructor is also available if considered more suitable for the coding style of the project.
  */
+@Jacksonized
 @Builder
 @Data
 @Accessors(fluent = true)
@@ -50,7 +53,6 @@ public class WhatsappOptions {
     /**
      * A debug flag to print incoming and out-coming nodes
      */
-    @NonNull
     @Default
     private boolean debug = true;
 
@@ -59,7 +61,7 @@ public class WhatsappOptions {
      *
      * @return a new instance of WhatsappConfiguration with the above characteristics
      */
-    public static @NonNull WhatsappOptions defaultOptions() {
+    public static WhatsappOptions defaultOptions() {
         return WhatsappOptions.builder().build();
     }
 }

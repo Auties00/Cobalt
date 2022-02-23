@@ -9,6 +9,8 @@ import it.auties.whatsapp.protobuf.message.model.MediaMessage;
 import it.auties.whatsapp.protobuf.message.model.MediaMessageType;
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
+import lombok.extern.jackson.Jacksonized;
 import lombok.experimental.SuperBuilder;
 
 /**
@@ -114,7 +116,8 @@ public final class AudioMessage extends MediaMessage {
    *
    * @return a non-null new message
    */
-  @Builder(builderClassName= "NewAudioMessageBuilder", builderMethodName = "newAudioMessage", buildMethodName = "create")
+  @Jacksonized
+@Builder(builderClassName= "NewAudioMessageBuilder", builderMethodName = "newAudioMessage", buildMethodName = "create")
   private static AudioMessage builder(byte @NonNull [] media, ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
     /*
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.AUDIO);

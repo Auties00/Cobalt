@@ -58,11 +58,11 @@ public final class WhatsappPreferences implements JacksonProvider {
 
     @SneakyThrows
     public void writeJsonAsync(@NonNull Object input){
-        CompletableFuture.runAsync(() -> writeInternal(input));
+        CompletableFuture.runAsync(() -> writeJson(input));
     }
 
     @SneakyThrows
-    private void writeInternal(@NonNull Object input) {
+    public void writeJson(@NonNull Object input) {
         Files.createDirectories(file.getParent());
         Files.writeString(file, JACKSON.writeValueAsString(input),
                 StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);

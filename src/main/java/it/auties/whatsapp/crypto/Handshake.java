@@ -49,7 +49,7 @@ public class Handshake {
         var expanded = extractAndExpandWithHash(new byte[0]);
         keys.writeKey(expanded.cut(32))
                 .readKey(expanded.slice(32))
-                .save();
+                .save(true);
     }
 
     public void mixIntoKey(byte @NonNull [] bytes) {

@@ -7,12 +7,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 
 import java.nio.charset.StandardCharsets;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@Jacksonized
 @Builder
 @Accessors(fluent = true)
 public final class ActionDataSync implements GenericSync {

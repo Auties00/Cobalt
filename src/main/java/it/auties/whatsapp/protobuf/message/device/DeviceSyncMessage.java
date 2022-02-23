@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 
 /**
  * A model class that represents a WhatsappMessage that refers to a message sent by the device paired with the active WhatsappWeb session to dataSync.
@@ -18,6 +19,7 @@ import lombok.experimental.Accessors;
 @AllArgsConstructor(staticName = "newDeviceSyncMessage")
 @NoArgsConstructor
 @Data
+@Jacksonized
 @Builder
 @Accessors(fluent = true)
 public final class DeviceSyncMessage implements DeviceMessage {

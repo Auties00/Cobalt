@@ -7,6 +7,8 @@ import it.auties.whatsapp.protobuf.message.model.MessageKey;
 import it.auties.whatsapp.protobuf.message.payment.RequestPaymentMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
@@ -18,6 +20,7 @@ import java.util.Arrays;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@Jacksonized
 @Builder
 @Accessors(fluent = true)
 public final class PaymentInfo implements WhatsappInfo {

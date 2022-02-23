@@ -6,12 +6,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.binary.BinaryArray;
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@Jacksonized
 @Builder
 @Accessors(fluent = true)
 public final class MutationSync implements ParsableMutation {

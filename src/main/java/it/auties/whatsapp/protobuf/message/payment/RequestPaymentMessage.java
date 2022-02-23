@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 
 /**
  * A model class that represents a WhatsappMessage to try to place a {@link PaymentMessage}.
@@ -19,6 +20,7 @@ import lombok.experimental.Accessors;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@Jacksonized
 @Builder(builderMethodName = "newRequestPaymentMessage", buildMethodName = "create")
 @Accessors(fluent = true)
 public final class RequestPaymentMessage implements PaymentMessage {

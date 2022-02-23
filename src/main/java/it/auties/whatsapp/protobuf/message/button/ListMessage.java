@@ -12,6 +12,8 @@ import it.auties.whatsapp.protobuf.message.model.ButtonMessage;
 import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 import java.util.List;
@@ -26,6 +28,7 @@ import java.util.List;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
+@Jacksonized
 @Builder
 @Accessors(fluent = true)
 public final class ListMessage extends ContextualMessage implements ButtonMessage {

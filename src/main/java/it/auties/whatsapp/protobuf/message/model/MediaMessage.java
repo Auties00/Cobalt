@@ -1,5 +1,7 @@
 package it.auties.whatsapp.protobuf.message.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import it.auties.protobuf.annotation.ProtobufIgnore;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.media.AttachmentProvider;
@@ -8,6 +10,8 @@ import it.auties.whatsapp.protobuf.message.standard.*;
 import it.auties.whatsapp.util.Medias;
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
+import lombok.extern.jackson.Jacksonized;
 import lombok.experimental.SuperBuilder;
 
 import java.util.Locale;
@@ -38,6 +42,7 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
      *          Considering that passing the same instance to {@link MediaMessage#decodedMedia()} is verbose and unnecessary, there is a copy here.
      */
     @NonNull
+    @ProtobufIgnore
     @Getter
     @Setter
     private WhatsappStore store;
@@ -48,7 +53,7 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
      *
      * @return a non-null array of bytes
      */
-    public byte @NonNull [] decodedMedia(){
+    public byte[] decodedMedia(){
         return Objects.requireNonNullElseGet(decodedMedia,
                 () -> (this.decodedMedia = Medias.download(this, store)));
     }
@@ -58,7 +63,7 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
      *
      * @return a non-null array of bytes
      */
-    public byte @NonNull [] refreshMedia(){
+    public byte[] refreshMedia(){
        this.decodedMedia = null;
        return decodedMedia();
     }

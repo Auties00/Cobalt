@@ -17,6 +17,7 @@ import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
+import lombok.extern.jackson.Jacksonized;
 import lombok.extern.java.Log;
 
 import java.util.*;
@@ -36,9 +37,9 @@ import static java.util.concurrent.Executors.newSingleThreadExecutor;
  * It should not be initialized manually.
  */
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
+@Jacksonized
 @Builder(access = AccessLevel.PROTECTED)
 @Data
-@Jacksonized
 @Accessors(fluent = true, chain = true)
 @Log
 @SuppressWarnings({"unused", "UnusedReturnValue"}) // Chaining
@@ -371,9 +372,14 @@ public class WhatsappStore implements JacksonProvider {
      *
      * @return this
      */
-    public WhatsappStore save(){
+    public WhatsappStore save(boolean async){
         var preferences = WhatsappPreferences.of("store/%s.json", id);
-        preferences.writeJsonAsync(this);
+        if(async) {
+            preferences.writeJsonAsync(this);
+            return this;
+        }
+
+        preferences.writeJson(this);
         return this;
     }
 

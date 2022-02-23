@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 import org.bouncycastle.jcajce.provider.digest.Blake2b.Blake2b512;
 
 import java.nio.charset.StandardCharsets;

@@ -6,6 +6,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
@@ -17,6 +19,7 @@ import java.util.Arrays;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@Jacksonized
 @Builder(builderMethodName = "newAdReplyInfo", buildMethodName = "create")
 @Accessors(fluent = true)
 public final class AdReplyInfo implements WhatsappInfo {

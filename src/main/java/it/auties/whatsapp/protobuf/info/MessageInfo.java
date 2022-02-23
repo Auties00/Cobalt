@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.annotation.ProtobufIgnore;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.chat.Chat;
@@ -15,7 +16,9 @@ import it.auties.whatsapp.protobuf.message.standard.LiveLocationMessage;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 import lombok.experimental.Delegate;
+import lombok.extern.jackson.Jacksonized;
 
 import java.time.Instant;
 import java.util.*;
@@ -28,6 +31,7 @@ import java.util.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@Jacksonized
 @Builder(builderMethodName = "newMessageInfo", buildMethodName = "create")
 @Accessors(fluent = true)
 @ToString(exclude = "store")
@@ -36,6 +40,7 @@ public final class MessageInfo implements WhatsappInfo {
   /**
    * The location where this message is stored
    */
+  @ProtobufIgnore
   @NonNull
   private WhatsappStore store;
   
@@ -65,6 +70,8 @@ public final class MessageInfo implements WhatsappInfo {
    * In this case it is guaranteed that every value stored in this map for each participant of this chat is equal or higher hierarchically then {@link MessageInfo#status()}.
    * It is important to remember that it is guaranteed that every participant will be present as a key.
    */
+  @JsonProperty("status")
+  @ProtobufIgnore
   @NonNull
   @Default
   private Map<Contact, MessageStatus> individualStatus = new HashMap<>();
@@ -237,7 +244,27 @@ public final class MessageInfo implements WhatsappInfo {
     this.message = container;
     this.individualStatus = new HashMap<>();
   }
-  
+
+  /**
+   * Returns the name of the chat where this message is or its pretty jid
+   *
+   * @return a non-null String
+   */
+  public String chatName(){
+    return chat().map(Chat::name)
+            .orElseGet(chatJid()::user);
+  }
+
+  /**
+   * Returns the name of the person that sent this message or its pretty jid
+   *
+   * @return a non-null String
+   */
+  public String senderName(){
+    return sender().map(Contact::name)
+            .orElseGet(senderJid()::user);
+  }
+
   /**
    * Returns the chat where the message was sent
    *

@@ -1,9 +1,10 @@
 package it.auties.whatsapp.protobuf.message.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonSetter;
-import it.auties.protobuf.decoder.ProtobufType;
+import it.auties.protobuf.annotation.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.info.CallInfo;
 import it.auties.whatsapp.protobuf.message.button.*;
@@ -19,6 +20,7 @@ import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -44,6 +46,7 @@ import java.util.Optional;
  */
 @AllArgsConstructor
 @NoArgsConstructor
+@Jacksonized
 @Builder
 @Accessors(fluent = true)
 public class MessageContainer { // TODO: Find a way to refactor this while keeping compatibility with Whatsapp
@@ -398,6 +401,7 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
    *
    * @return a nullable Message
    */
+  @JsonIgnore
   public Message content(){
     if(this.senderKeyDistribution != null) return senderKeyDistribution;
     if(this.image != null) return image;
@@ -437,6 +441,7 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
    *
    * @return a non-null Optional ContextualMessage
    */
+  @JsonIgnore
   public Optional<ContextualMessage> contentWithContext(){
     if(this.image != null) return Optional.of(image);
     if(this.contact != null) return Optional.of(contact);
@@ -464,6 +469,7 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
    *
    * @return a non-null enumerated type
    */
+  @JsonIgnore
   public @NonNull MessageContainer.ContentType type(){
     return switch (content()){
       case null -> ContentType.EMPTY;
@@ -481,6 +487,7 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
    *
    * @return true if this container contains no message
    */
+  @JsonIgnore
   public boolean isEmpty(){
     return type() == ContentType.EMPTY;
   }
@@ -490,6 +497,7 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
    *
    * @return true if this container contains a standard message
    */
+  @JsonIgnore
   public boolean isStandard(){
     return type() == ContentType.STANDARD;
   }
@@ -499,6 +507,7 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
    *
    * @return true if this container contains a sever message
    */
+  @JsonIgnore
   public boolean isServer(){
     return type() == ContentType.SERVER;
   }
@@ -508,6 +517,7 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
    *
    * @return true if this container contains a device message
    */
+  @JsonIgnore
   public boolean isDevice(){
     return type() == ContentType.DEVICE;
   }
@@ -517,6 +527,7 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
    *
    * @return a non-null optional
    */
+  @JsonIgnore
   public Optional<CallInfo> call() {
     return Optional.ofNullable(call);
   }

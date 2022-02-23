@@ -1,6 +1,6 @@
 package it.auties.whatsapp.protobuf.chat;
 
-import it.auties.protobuf.decoder.ProtobufType;
+import it.auties.protobuf.annotation.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.NonNull;

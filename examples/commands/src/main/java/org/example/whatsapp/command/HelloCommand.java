@@ -1,17 +1,15 @@
 package org.example.whatsapp.command;
 
-import it.auties.whatsapp.api.WhatsappAPI;
-import it.auties.whatsapp4j.protobuf.chat.Chat;
-import it.auties.whatsapp4j.protobuf.model.info.MessageInfo;
-import it.auties.whatsapp4j.protobuf.message.standard.TextMessage;
+import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.protobuf.info.MessageInfo;
 import lombok.NonNull;
 
 import java.util.Set;
 
-public class HelloCommand implements Command{
+public class HelloCommand implements Command {
     @Override
-    public void onCommand(@NonNull WhatsappAPI api, @NonNull Chat chat, @NonNull MessageInfo message) {
-        api.sendMessage(chat, new TextMessage("Hello :)"), message);
+    public void onCommand(@NonNull Whatsapp api, @NonNull MessageInfo message) {
+        api.sendMessage(message.chatJid(), "Hello :)", message);
     }
 
     @Override
@@ -20,7 +18,7 @@ public class HelloCommand implements Command{
     }
 
     @Override
-    public Set<String> aliases() {
+    public Set<String> alias() {
         return Set.of("/hi", "/morning");
     }
 }

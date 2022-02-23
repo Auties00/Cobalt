@@ -14,11 +14,13 @@ import it.auties.whatsapp.protobuf.message.model.MessageStatus;
 import it.auties.whatsapp.util.QrHandler;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import lombok.extern.java.Log;
 import org.junit.jupiter.api.Test;
 
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -26,14 +28,25 @@ import java.util.concurrent.TimeUnit;
 
 @Log
 public class WhatsappAPITest {
-    @Test
-    public void login() throws ExecutionException, InterruptedException {
-       Whatsapp.lastConnection()
+    @SneakyThrows
+    public static void main(String[] args) {
+        var api = Whatsapp.lastConnection()
                 .connect()
                 .get();
-       while (true){
+        waitForInput(api);
+    }
 
-       }
+    private static void waitForInput(Whatsapp whatsapp){
+        var scanner = new Scanner(System.in);
+        var contact = scanner.nextLine();
+        if(Objects.equals("contact", "stop")){
+            return;
+        }
+
+        System.out.println("Sending message to " + contact);
+        whatsapp.store().findChatByName(contact)
+                .ifPresent(chat -> whatsapp.sendMessage(chat, "Ciao!"));
+        waitForInput(whatsapp);
     }
 
     @AllArgsConstructor

@@ -5,9 +5,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
@@ -15,6 +17,7 @@ import java.util.NoSuchElementException;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@Jacksonized
 @Builder
 @Accessors(fluent = true)
 public class SenderKeyRecord {
@@ -23,7 +26,7 @@ public class SenderKeyRecord {
   @JsonProperty("1")
   @JsonPropertyDescription("SenderKeyStateStructure")
   @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  @Builder.Default
+  @Default
   private LinkedList<SenderKeyState> states = new LinkedList<>();
 
   public SenderKeyState currentState() {

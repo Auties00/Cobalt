@@ -9,6 +9,8 @@ import it.auties.whatsapp.protobuf.message.model.ServerMessage;
 import it.auties.whatsapp.protobuf.sync.*;
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
@@ -20,6 +22,7 @@ import java.util.Arrays;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@Jacksonized
 @Builder(builderMethodName = "newProtocolMessage", buildMethodName = "create")
 @Accessors(fluent = true)
 public final class ProtocolMessage implements ServerMessage {

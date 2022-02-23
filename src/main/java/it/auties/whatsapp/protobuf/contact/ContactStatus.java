@@ -2,10 +2,12 @@ package it.auties.whatsapp.protobuf.contact;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.whatsapp.binary.BinaryFlag;
+import it.auties.whatsapp.protobuf.chat.ChatDisappear;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
@@ -53,6 +55,13 @@ public enum ContactStatus {
     }
 
     @JsonCreator
+    private static ContactStatus forIndex(int index) {
+        return Arrays.stream(values())
+                .filter(entry -> entry.ordinal() == index)
+                .findFirst()
+                .orElse(null);
+    }
+
     public static ContactStatus forValue(@NonNull String jsonValue) {
         return Arrays.stream(values())
                 .filter(entry -> entry.name().equalsIgnoreCase(jsonValue))

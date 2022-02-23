@@ -4,6 +4,7 @@ import it.auties.whatsapp.socket.Node;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 import java.util.HashMap;

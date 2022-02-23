@@ -21,6 +21,7 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.Delegate;
 
 import java.net.URI;
 import java.time.ZonedDateTime;
@@ -47,7 +48,6 @@ public class Whatsapp {
     /**
      * The socket associated with this session
      */
-    @Getter
     private final Socket socket;
 
     /**

@@ -8,6 +8,8 @@ import it.auties.whatsapp.protobuf.message.model.ButtonMessage;
 import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
+import lombok.extern.jackson.Jacksonized;
 
 /**
  * A model class that represents a WhatsappMessage that contains a response to a previous {@link ButtonsMessage}.
@@ -19,6 +21,7 @@ import lombok.experimental.Accessors;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
+@Jacksonized
 @Builder
 @Accessors(fluent = true)
 public final class ButtonsResponseMessage extends ContextualMessage implements ButtonMessage {

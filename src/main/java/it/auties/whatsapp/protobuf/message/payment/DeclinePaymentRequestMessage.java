@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 
 /**
  * A model class that represents a WhatsappMessage to decline a {@link RequestPaymentMessage}.
@@ -19,6 +20,7 @@ import lombok.experimental.Accessors;
 @AllArgsConstructor(staticName = "newDeclinePaymentRequestMessage")
 @NoArgsConstructor
 @Data
+@Jacksonized
 @Builder
 @Accessors(fluent = true)
 public final class DeclinePaymentRequestMessage implements PaymentMessage {

@@ -4,6 +4,8 @@ import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,6 +15,7 @@ import java.util.Optional;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@Jacksonized
 @Builder
 @Accessors(fluent = true)
 public class SessionState {

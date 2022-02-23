@@ -154,18 +154,18 @@ public interface WhatsappListener {
     /**
      * Called when a new message is received in a chat
      *
-     * @param message the message that was sent
+     * @param info the message that was sent
      */
-    default void onNewMessage(MessageInfo message) {
+    default void onNewMessage(MessageInfo info) {
     }
 
     /**
      * Called when a message is deleted
      *
-     * @param message  the message that was deleted
+     * @param info     the message that was deleted
      * @param everyone whether this message was deleted by you only for yourself or whether the message was permanently removed
      */
-    default void onMessageDeleted(MessageInfo message, boolean everyone) {
+    default void onMessageDeleted(MessageInfo info, boolean everyone) {
     }
 
     /**
@@ -187,10 +187,10 @@ public interface WhatsappListener {
      *
      * @param chat    the chat that triggered a status change
      * @param contact the contact that triggered a status change
-     * @param message the message whose status changed
+     * @param info    the message whose status changed
      * @param status  the new status of the message
      */
-    default void onMessageStatus(Chat chat, Contact contact, MessageInfo message, MessageStatus status) {
+    default void onMessageStatus(Chat chat, Contact contact, MessageInfo info, MessageStatus status) {
     }
 
     /**

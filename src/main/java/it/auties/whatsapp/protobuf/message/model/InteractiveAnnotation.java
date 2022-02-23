@@ -7,6 +7,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.api.Whatsapp;
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 import java.util.List;
@@ -19,6 +21,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@Jacksonized
 @Builder
 @Accessors(fluent = true)
 public class InteractiveAnnotation {
@@ -80,7 +83,8 @@ public class InteractiveAnnotation {
   @AllArgsConstructor
   @NoArgsConstructor
   @Data
-  @Builder
+  @Jacksonized
+@Builder
   @Accessors(fluent = true)
   public static class Point {
     /**
@@ -120,7 +124,8 @@ public class InteractiveAnnotation {
   @AllArgsConstructor
   @NoArgsConstructor
   @Data
-  @Builder
+  @Jacksonized
+@Builder
   @Accessors(fluent = true)
   public static class Location {
     /**

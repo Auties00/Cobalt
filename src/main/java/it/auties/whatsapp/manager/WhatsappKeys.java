@@ -23,6 +23,7 @@ import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
+import lombok.extern.jackson.Jacksonized;
 import lombok.extern.java.Log;
 
 import java.util.*;
@@ -218,9 +219,14 @@ public class WhatsappKeys implements JacksonProvider {
      *
      * @return this
      */
-    public WhatsappKeys save(){
+    public WhatsappKeys save(boolean async){
         var preferences = WhatsappPreferences.of("keys/%s.json", id);
-        preferences.writeJsonAsync(this);
+        if(async) {
+            preferences.writeJsonAsync(this);
+            return this;
+        }
+
+        preferences.writeJson(this);
         return this;
     }
 

@@ -3,6 +3,7 @@ package it.auties.whatsapp.socket;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 
 @AllArgsConstructor
 @Data

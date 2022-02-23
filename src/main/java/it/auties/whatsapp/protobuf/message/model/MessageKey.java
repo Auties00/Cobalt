@@ -10,6 +10,7 @@ import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 
 /**
  * A container for unique identifiers and metadata linked to a {@link Message} and contained in {@link MessageInfo}.
@@ -21,6 +22,7 @@ import lombok.experimental.Accessors;
 @NoArgsConstructor
 @Data
 @Accessors(fluent = true)
+@Jacksonized
 @Builder(builderMethodName = "newMessageKey", buildMethodName = "create")
 public class MessageKey {
   /**

@@ -1,9 +1,11 @@
 package it.auties.whatsapp.protobuf.chat;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import it.auties.protobuf.decoder.ProtobufType;
+import it.auties.protobuf.annotation.ProtobufIgnore;
+import it.auties.protobuf.annotation.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.protobuf.contact.Contact;
@@ -16,6 +18,7 @@ import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -30,6 +33,7 @@ import java.util.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@Jacksonized
 @Builder
 @Accessors(fluent = true)
 public class Chat {
@@ -253,6 +257,8 @@ public class Chat {
      * The presence that this map indicates might not line up with {@link Contact#lastKnownPresence()} if the contact is composing, recording or paused.
      * This is because a contact can be online on Whatsapp and composing, recording or paused in a specific chat.
      */
+    @JsonProperty("presences")
+    @ProtobufIgnore
     @Default
     private Map<Contact, ContactStatus> presences = new HashMap<>();
 
@@ -261,6 +267,7 @@ public class Chat {
      *
      * @return a non-null string
      */
+    @JsonIgnore
     public String name(){
         return Objects.requireNonNullElseGet(name,
                 () -> this.name = jid.user());
@@ -271,6 +278,7 @@ public class Chat {
      *
      * @return true if this chat is a group
      */
+    @JsonIgnore
     public boolean isGroup() {
         return jid.type() == ContactJid.Type.GROUP;
     }
@@ -280,6 +288,7 @@ public class Chat {
      *
      * @return true if this chat is pinned
      */
+    @JsonIgnore
     public boolean isPinned() {
         return pinned != 0;
     }
@@ -289,6 +298,7 @@ public class Chat {
      *
      * @return true if ephemeral messages are enabled for this chat
      */
+    @JsonIgnore
     public boolean isEphemeral() {
         return ephemeralMessageDuration != 0 && ephemeralMessagesToggleTime != 0;
     }
