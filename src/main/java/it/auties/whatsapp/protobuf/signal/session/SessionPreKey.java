@@ -1,7 +1,13 @@
 package it.auties.whatsapp.protobuf.signal.session;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Builder;
 import lombok.NonNull;
+import lombok.extern.jackson.Jacksonized;
 
-public record SessionPreKey(int preKeyId, byte @NonNull [] baseKey, int signedPreKeyId) {
+@Builder
+@Jacksonized
+public record SessionPreKey(@JsonProperty("id") int preKeyId, @JsonProperty("key") byte @NonNull [] baseKey,
+                            @JsonProperty("signed_id") int signedPreKeyId) {
 
 }

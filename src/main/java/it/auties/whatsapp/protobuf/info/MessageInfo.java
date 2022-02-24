@@ -1,9 +1,6 @@
 package it.auties.whatsapp.protobuf.info;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.*;
 import it.auties.protobuf.annotation.ProtobufIgnore;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.manager.WhatsappStore;
@@ -22,6 +19,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A model class that holds the information related to a {@link Message}.
@@ -31,18 +29,21 @@ import java.util.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Jacksonized
 @Builder(builderMethodName = "newMessageInfo", buildMethodName = "create")
 @Accessors(fluent = true)
-@ToString(exclude = "store")
-@EqualsAndHashCode(exclude = "store")
+@ToString(exclude = "storeId")
 public final class MessageInfo implements WhatsappInfo {
   /**
-   * The location where this message is stored
+   * The id of the store associated with this message
    */
+  @JsonProperty("store")
   @ProtobufIgnore
-  @NonNull
-  private WhatsappStore store;
+  private int storeId;
+
+  /**
+   * The cached store
+   */
+  private WhatsappStore cachedStore;
   
   /**
    * The MessageKey of this message
@@ -74,7 +75,7 @@ public final class MessageInfo implements WhatsappInfo {
   @ProtobufIgnore
   @NonNull
   @Default
-  private Map<Contact, MessageStatus> individualStatus = new HashMap<>();
+  private Map<Contact, MessageStatus> individualStatus = new ConcurrentHashMap<>();
 
   /**
    * The global status of this message.
@@ -231,6 +232,16 @@ public final class MessageInfo implements WhatsappInfo {
   @JsonPropertyDescription("bytes")
   private byte[] mediaCiphertextSha256;
 
+  public boolean equals(Object object){
+    return object instanceof MessageInfo that
+            && Objects.equals(this.id(), that.id());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(id());
+  }
+
   /**
    * Constructs a new MessageInfo from a MessageKey and a MessageContainer
    *
@@ -242,7 +253,7 @@ public final class MessageInfo implements WhatsappInfo {
     this.timestamp = Instant.now().getEpochSecond();
     this.status = MessageStatus.PENDING;
     this.message = container;
-    this.individualStatus = new HashMap<>();
+    this.individualStatus = new ConcurrentHashMap<>();
   }
 
   /**
@@ -250,6 +261,7 @@ public final class MessageInfo implements WhatsappInfo {
    *
    * @return a non-null String
    */
+  @JsonIgnore
   public String chatName(){
     return chat().map(Chat::name)
             .orElseGet(chatJid()::user);
@@ -260,6 +272,7 @@ public final class MessageInfo implements WhatsappInfo {
    *
    * @return a non-null String
    */
+  @JsonIgnore
   public String senderName(){
     return sender().map(Contact::name)
             .orElseGet(senderJid()::user);
@@ -270,17 +283,9 @@ public final class MessageInfo implements WhatsappInfo {
    *
    * @return an optional wrapping a {@link Chat}
    */
+  @JsonIgnore
   public Optional<Chat> chat(){
-    return store.findChatByJid(chatJid());
-  }
-
-  /**
-   * Checks whether this message wraps a stub type
-   *
-   * @return true if this message wraps a stub type
-   */
-  public boolean hasStub(){
-    return stubType != null;
+    return store().findChatByJid(chatJid());
   }
 
   /**
@@ -288,6 +293,7 @@ public final class MessageInfo implements WhatsappInfo {
    *
    * @return a non-null ContactId
    */
+  @JsonIgnore
   public ContactJid senderJid(){
     return Objects.requireNonNullElse(senderJid, chatJid());
   }
@@ -297,8 +303,9 @@ public final class MessageInfo implements WhatsappInfo {
    *
    * @return an optional wrapping a {@link Contact}
    */
+  @JsonIgnore
   public Optional<Contact> sender(){
-    return store.findContactByJid(senderJid());
+    return store().findContactByJid(senderJid());
   }
 
   /**
@@ -306,6 +313,7 @@ public final class MessageInfo implements WhatsappInfo {
    *
    * @return a non-empty optional {@link MessageInfo} if this message quotes a message in memory
    */
+  @JsonIgnore
   public Optional<MessageInfo> quotedMessage(){
     return Optional.of(message)
             .flatMap(MessageContainer::contentWithContext)
@@ -315,7 +323,26 @@ public final class MessageInfo implements WhatsappInfo {
 
   private Optional<MessageInfo> quotedMessage(ContextInfo contextualMessage) {
     var chat = chat().orElseThrow(() -> new NoSuchElementException("Cannot get quoted message: missing chat"));
-    return store.findMessageById(chat, contextualMessage.quotedMessageId());
+    return store().findMessageById(chat, contextualMessage.quotedMessageId());
+  }
+
+  public WhatsappStore store(){
+    return Objects.requireNonNullElseGet(cachedStore,
+            () -> this.cachedStore = cacheStore());
+  }
+
+  private WhatsappStore cacheStore() {
+    return WhatsappStore.findStoreById(storeId)
+            .orElseThrow(() -> new NoSuchElementException("Missing store for id %s".formatted(storeId)));
+  }
+
+  /**
+   * Checks whether this message wraps a stub type
+   *
+   * @return true if this message wraps a stub type
+   */
+  public boolean hasStub(){
+    return stubType != null;
   }
 
   /**

@@ -13,6 +13,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -51,5 +52,10 @@ public class SenderKeyRecord {
 
   public boolean isEmpty() {
     return states.isEmpty();
+  }
+
+  public boolean equals(Object object){
+    return object instanceof SenderKeyRecord that
+            && Objects.equals(this.states(), that.states());
   }
 }

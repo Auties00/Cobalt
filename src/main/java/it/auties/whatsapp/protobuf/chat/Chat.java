@@ -1,9 +1,7 @@
 package it.auties.whatsapp.protobuf.chat;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import it.auties.protobuf.annotation.ProtobufIgnore;
 import it.auties.protobuf.annotation.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
@@ -12,6 +10,7 @@ import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.contact.ContactStatus;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
+import it.auties.whatsapp.protobuf.message.model.Message;
 import it.auties.whatsapp.protobuf.sync.HistorySyncMessage;
 import it.auties.whatsapp.util.SortedMessageList;
 import it.auties.whatsapp.util.WhatsappUtils;
@@ -22,6 +21,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A model class that represents a Chat.
@@ -260,7 +260,7 @@ public class Chat {
     @JsonProperty("presences")
     @ProtobufIgnore
     @Default
-    private Map<Contact, ContactStatus> presences = new HashMap<>();
+    private Map<Contact, ContactStatus> presences = new ConcurrentHashMap<>();
 
     /**
      * Returns the name of this chat

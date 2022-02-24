@@ -486,8 +486,8 @@ public class Socket {
         }
 
         private void updateContactPresence(ContactJid chatJid, ContactStatus status, Contact contact) {
-            // contact.lastKnownPresence(status);
-            //            contact.lastSeen(ZonedDateTime.now());
+            contact.lastKnownPresence(status);
+            contact.lastSeen(ZonedDateTime.now());
             store.findChatByJid(chatJid)
                     .ifPresent(chat -> updateChatPresence(status, contact, chat));
         }
@@ -586,7 +586,7 @@ public class Socket {
                 return;
             }
 
-            var update = node.findNode("collection");
+            var update = node.findNode("internal");
             if (update == null) {
                 return;
             }
@@ -847,8 +847,7 @@ public class Socket {
             var node = requireNonNull(container.findNode("device"), "Missing device");
             var companion = node.attributes().getJid("jid")
                     .orElseThrow(() -> new NoSuchElementException("Missing companion"));
-            keys.companion(companion)
-                    .save(true);
+            keys.companion(companion);
         }
     }
 
@@ -1116,7 +1115,7 @@ public class Socket {
             }
 
             var key = keyBuilder.id(id).create();
-            var info = messageBuilder.store(store)
+            var info = messageBuilder.storeId(store.id())
                     .key(key)
                     .timestamp(timestamp)
                     .create();
@@ -1196,7 +1195,7 @@ public class Socket {
 
         private void saveMessage(MessageInfo info) {
             if(info.message().content() instanceof MediaMessage mediaMessage){
-                mediaMessage.store(info.store());
+                mediaMessage.storeId(info.storeId());
             }
 
             var chat = info.chat()
@@ -1229,7 +1228,6 @@ public class Socket {
                             history.conversations().forEach(store::addChat);
                             store.callListeners(WhatsappListener::onChats);
                             store.hasSnapshot(true);
-                            store.save(true);
                         }
 
                         case FULL -> history.conversations().forEach(store::addChat);
@@ -1237,7 +1235,7 @@ public class Socket {
                         case INITIAL_STATUS_V3 -> {
                             history.statusV3Messages()
                                     .stream()
-                                    .peek(message -> message.store(store))
+                                    .peek(message -> message.storeId(store.id()))
                                     .forEach(store.status()::add);
                             store.callListeners(WhatsappListener::onStatus);
                         }
@@ -1316,7 +1314,7 @@ public class Socket {
 
             recent.messages()
                     .stream()
-                    .peek(message -> message.store(store))
+                    .peek(message -> message.storeId(store.id()))
                     .forEach(oldChat.get().messages()::add);
             store.callListeners(listener -> listener.onChatRecentMessages(oldChat.get()));
         }
@@ -1368,7 +1366,7 @@ public class Socket {
                     .build();
             hashState.indexValueMap().put(indexMac.toBase64(), valueMac);
 
-            var collectionNode = withAttributes("collection",
+            var collectionNode = withAttributes("internal",
                     of("name", patch.type(), "version", valueOf(hashState.version() - 1)));
             var patchNode = with("patch",
                     ProtobufEncoder.encode(sync));
@@ -1443,7 +1441,7 @@ public class Socket {
 
         private List<SnapshotSyncRecord> parseSyncRequest(Node node) {
             var syncNode = node.findNode("dataSync");
-            return syncNode.findNodes("collection")
+            return syncNode.findNodes("internal")
                     .stream()
                     .map(this::parseSync)
                     .toList();
@@ -1511,7 +1509,7 @@ public class Socket {
                 var targetMessage = targetChat.flatMap(chat -> store.findMessageById(chat, mutation.messageIndex().messageId()));
                 switch (action) {
                     case AndroidUnsupportedActions ignored -> {}
-                    case ClearChatAction ignored -> targetChat.map(Chat::messages).ifPresent(Collection::clear);
+                    case ClearChatAction ignored -> targetChat.map(Chat::messages).ifPresent(SortedMessageList::clear);
                     case ContactAction contactAction -> targetContact.ifPresent(contact -> updateContactName(contact, contactAction));
                     case DeleteChatAction ignored -> targetChat.ifPresent(store.chats()::remove);
                     case DeleteMessageForMeAction ignored -> targetMessage.ifPresent(message -> targetChat.ifPresent(chat -> deleteMessage(message, chat)));

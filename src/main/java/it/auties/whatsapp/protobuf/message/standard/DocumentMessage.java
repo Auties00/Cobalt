@@ -23,6 +23,7 @@ import lombok.experimental.SuperBuilder;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(buildMethodName = "create")
+@Jacksonized
 @Accessors(fluent = true)
 public final class DocumentMessage extends MediaMessage {
   /**
@@ -124,8 +125,7 @@ public final class DocumentMessage extends MediaMessage {
    *
    * @return a non-null new message
    */
-  @Jacksonized
-@Builder(builderClassName = "NewDocumentMessageBuilder", builderMethodName = "newDocumentMessage", buildMethodName = "create")
+  @Builder(builderClassName = "NewDocumentMessageBuilder", builderMethodName = "newDocumentMessage", buildMethodName = "create")
   private static DocumentMessage builder(byte @NonNull [] media, String mimeType, String title, int pageCount, String fileName, byte[] jpegThumbnail, ContextInfo contextInfo) {
     /*
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.DOCUMENT);

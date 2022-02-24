@@ -46,7 +46,6 @@ import java.util.Optional;
  */
 @AllArgsConstructor
 @NoArgsConstructor
-@Jacksonized
 @Builder
 @Accessors(fluent = true)
 public class MessageContainer { // TODO: Find a way to refactor this while keeping compatibility with Whatsapp
@@ -318,7 +317,6 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
   private PaymentInviteMessage paymentInvite;
 
   // Unsupported for now: MessageContextInfo(35), InteractiveMessage(45), ReactionMessage(46), StickerSyncRMRMessage(47)
-
 
   /**
    * Constructs a new MessageContainer from a message of any type

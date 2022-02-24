@@ -205,7 +205,7 @@ public record BinaryEncoder(@NonNull ByteBuf buffer){
             case byte[] bytes -> writeBytes(bytes);
             case ContactJid jid -> writeJid(jid);
             case Collection<?> collection -> writeList(collection);
-            case Node ignored -> throw new IllegalArgumentException("Invalid payload type(nodes should be wrapped by a collection): %s".formatted(input));
+            case Node ignored -> throw new IllegalArgumentException("Invalid payload type(nodes should be wrapped by a internal): %s".formatted(input));
             default -> throw new IllegalArgumentException("Invalid payload type(%s): %s".formatted(input.getClass().getName(), input));
         }
     }

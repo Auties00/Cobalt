@@ -49,14 +49,12 @@ public enum ChatDisappear {
     @AllArgsConstructor
     @NoArgsConstructor
     @Data
-    @Jacksonized
-@Builder
-    @Accessors(fluent = true)
     public static class Linker {
         @JsonProperty("1")
         @JsonPropertyDescription("enum")
         private ChatDisappear disappear;
 
+        @JsonCreator
         public Linker(long index){
             this.disappear = ChatDisappear.forIndex((int) index);
         }

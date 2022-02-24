@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 @UtilityClass
 public class Nodes {
     /**
-     * Returns {@code nodes} if any non-null value is found in the collection.
+     * Returns {@code nodes} if any non-null value is found in the internal.
      * Otherwise, returns null.
      *
      * @param nodes the nullable list of nodes to check

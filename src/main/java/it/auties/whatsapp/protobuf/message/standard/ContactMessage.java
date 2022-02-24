@@ -20,6 +20,7 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @NoArgsConstructor
 @SuperBuilder(buildMethodName = "create")
+@Jacksonized
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Accessors(fluent = true)
@@ -48,8 +49,7 @@ public final class ContactMessage extends ContextualMessage {
    *
    * @return a non-null new message
    */
-  @Jacksonized
-@Builder(builderClassName = "NewContactMessageBuilder", builderMethodName = "newContactMessage", buildMethodName = "create")
+  @Builder(builderClassName = "NewContactMessageBuilder", builderMethodName = "newContactMessage", buildMethodName = "create")
   private static ContactMessage builder(String displayName, String vcard, ContextInfo contextInfo) {
     return ContactMessage.builder()
             .vcard(vcard)

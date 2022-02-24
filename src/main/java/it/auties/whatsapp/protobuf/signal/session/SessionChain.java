@@ -1,7 +1,9 @@
 package it.auties.whatsapp.protobuf.signal.session;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalPreKeyPair;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -11,17 +13,21 @@ import java.util.HashMap;
 import java.util.Map;
 
 @AllArgsConstructor
+@Builder
+@Jacksonized
 @Data
 @Accessors(fluent = true)
 public class SessionChain {
+    @JsonProperty("counter")
     private int counter;
 
-    @NonNull
-    private byte[] key;
+    @JsonProperty("key")
+    private byte @NonNull [] key;
 
-    @NonNull
-    private byte[] owner;
+    @JsonProperty("owner")
+    private byte @NonNull [] owner;
 
+    @JsonProperty("message_keys")
     @NonNull
     private Map<Integer, SignalPreKeyPair> messageKeys;
 

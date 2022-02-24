@@ -10,7 +10,7 @@ public record SenderKeyName(String groupId, SessionAddress sender) {
   @JsonCreator
   public static SenderKeyName of(String serialized){
     var split = serialized.split("::", 2);
-    return new SenderKeyName(split[1], SessionAddress.of(split[1]));
+    return new SenderKeyName(split[0], SessionAddress.of(split[1]));
   }
 
   @Override

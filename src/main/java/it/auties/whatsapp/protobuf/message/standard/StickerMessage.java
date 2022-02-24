@@ -23,6 +23,7 @@ import lombok.experimental.SuperBuilder;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(buildMethodName = "create")
+@Jacksonized
 @Accessors(fluent = true)
 public final class StickerMessage extends MediaMessage {
   /**
@@ -136,8 +137,7 @@ public final class StickerMessage extends MediaMessage {
    *
    * @return a non-null new message
    */
-  @Jacksonized
-@Builder(builderClassName = "NewStickerMessageBuilder", builderMethodName = "newStickerMessage", buildMethodName = "create")
+  @Builder(builderClassName = "NewStickerMessageBuilder", builderMethodName = "newStickerMessage", buildMethodName = "create")
   private static StickerMessage builder(byte @NonNull [] media, String mimeType, byte[] pngThumbnail, boolean isAnimated, ContextInfo contextInfo) {
     /*
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.STICKER);

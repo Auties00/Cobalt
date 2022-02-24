@@ -1,5 +1,6 @@
 package it.auties.whatsapp.manager;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.whatsapp.api.WhatsappListener;
@@ -16,7 +17,6 @@ import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
 import lombok.extern.jackson.Jacksonized;
 import lombok.extern.java.Log;
 
@@ -44,6 +44,11 @@ import static java.util.concurrent.Executors.newSingleThreadExecutor;
 @Log
 @SuppressWarnings({"unused", "UnusedReturnValue"}) // Chaining
 public class WhatsappStore implements JacksonProvider {
+    /**
+     * All the known stores
+     */
+    private static Set<WhatsappStore> stores = new HashSet<>();
+
     /**
      * The session id of this store
      */
@@ -139,9 +144,11 @@ public class WhatsappStore implements JacksonProvider {
      * @return a non-null instance of WhatsappStore
      */
     public static WhatsappStore newStore(int id){
-        return WhatsappStore.builder()
+        var result = WhatsappStore.builder()
                 .id(WhatsappUtils.saveId(id))
                 .build();
+        stores.add(result);
+        return result;
     }
 
     /**
@@ -152,8 +159,10 @@ public class WhatsappStore implements JacksonProvider {
      */
     public static WhatsappStore fromMemory(int id){
         var preferences = WhatsappPreferences.of("store/%s.json", id);
-        return Objects.requireNonNullElseGet(preferences.readJson(new TypeReference<>() {}),
+        var result = Objects.requireNonNullElseGet(preferences.readJson(new TypeReference<>() {}),
                 () -> newStore(id));
+        stores.add(result);
+        return result;
     }
 
     /**
@@ -164,6 +173,11 @@ public class WhatsappStore implements JacksonProvider {
         preferences.delete();
     }
 
+    public static Optional<WhatsappStore> findStoreById(int id){
+        return stores.stream()
+                .filter(entry -> entry.id() == id)
+                .findFirst();
+    }
 
     /**
      * Queries the first contact whose jid is equal to {@code jid}
@@ -290,7 +304,7 @@ public class WhatsappStore implements JacksonProvider {
      * @return the input chat
      */
     public Chat addChat(Chat chat) {
-        chat.messages().forEach(message -> message.store(this));
+        chat.messages().forEach(message -> message.storeId(id()));
         chats.add(chat);
         return chat;
     }

@@ -1,7 +1,9 @@
 package it.auties.whatsapp.protobuf.sync;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.socket.Node;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -15,12 +17,21 @@ import static it.auties.whatsapp.socket.Node.withChildren;
 import static java.util.Map.of;
 
 @AllArgsConstructor
+@Builder
+@Jacksonized
 @Data
 @Accessors(fluent = true)
 public class LTHashState {
+    @JsonProperty("name")
     private String name;
+
+    @JsonProperty("version")
     private long version;
+
+    @JsonProperty("hash")
     private byte[] hash;
+
+    @JsonProperty("values")
     private Map<String, byte[]> indexValueMap;
 
     public LTHashState(String name){
@@ -39,7 +50,7 @@ public class LTHashState {
     }
 
     public Node toNode(){
-        return withAttributes("collection",
+        return withAttributes("internal",
                 of("name", name, "version", String.valueOf(version), "return_snapshot", Boolean.toString(version == 0)));
     }
 

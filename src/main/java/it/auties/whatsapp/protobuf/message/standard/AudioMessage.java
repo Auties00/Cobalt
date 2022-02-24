@@ -23,6 +23,7 @@ import lombok.experimental.SuperBuilder;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(buildMethodName = "create")
+@Jacksonized
 @Accessors(fluent = true)
 public final class AudioMessage extends MediaMessage {
   /**
@@ -116,8 +117,7 @@ public final class AudioMessage extends MediaMessage {
    *
    * @return a non-null new message
    */
-  @Jacksonized
-@Builder(builderClassName= "NewAudioMessageBuilder", builderMethodName = "newAudioMessage", buildMethodName = "create")
+  @Builder(builderClassName= "NewAudioMessageBuilder", builderMethodName = "newAudioMessage", buildMethodName = "create")
   private static AudioMessage builder(byte @NonNull [] media, ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
     /*
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.AUDIO);

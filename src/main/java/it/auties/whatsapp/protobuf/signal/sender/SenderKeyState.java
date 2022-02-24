@@ -13,6 +13,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -77,5 +78,10 @@ public class SenderKeyState {
             .mapToObj(messageKeys::remove)
             .findFirst()
             .orElse(null);
+  }
+
+  public boolean equals(Object other){
+    return other instanceof SenderKeyState that
+            && Objects.equals(this.id(), that.id());
   }
 }

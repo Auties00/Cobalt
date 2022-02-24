@@ -25,7 +25,6 @@ import java.util.Objects;
  * This class also offers a builder, accessible using {@link ContactJid#builder()}.
  */
 @ProtobufType(String.class)
-@Jacksonized
 @Builder
 @Log
 public record ContactJid(String user, @NonNull Server server, int device, int agent) {

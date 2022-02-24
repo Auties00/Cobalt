@@ -1,5 +1,6 @@
 package it.auties.whatsapp.protobuf.signal.session;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
 import lombok.*;
 import lombok.Builder.Default;
@@ -21,33 +22,40 @@ import java.util.Optional;
 public class SessionState {
     private static final int MAX_SESSIONS = 40;
 
+    @JsonProperty("version")
     private int version;
 
+    @JsonProperty("id")
     private int registrationId;
 
-    @NonNull
-    private byte[] rootKey;
+    @JsonProperty("root_key")
+    private byte @NonNull [] rootKey;
 
+    @JsonProperty("ephemeral_key_pair")
     @NonNull
     private SignalKeyPair ephemeralKeyPair;
 
-    @NonNull
-    private byte[] lastRemoteEphemeralKey;
+    @JsonProperty("last_remote_ephemeral_key")
+    private byte @NonNull [] lastRemoteEphemeralKey;
 
+    @JsonProperty("previous_counter")
     private int previousCounter;
 
-    @NonNull
-    private byte[] remoteIdentityKey;
+    @JsonProperty("remote_identity_key")
+    private byte @NonNull [] remoteIdentityKey;
 
+    @JsonProperty("chains")
     @NonNull
     @Default
     private List<SessionChain> chains = new ArrayList<>();
 
+    @JsonProperty("pending_pre_key")
     private SessionPreKey pendingPreKey;
 
-    @NonNull
-    private byte[] baseKey;
+    @JsonProperty("base_key")
+    private byte @NonNull [] baseKey;
 
+    @JsonProperty("closed")
     private boolean closed;
 
     public boolean hasChain(byte[] senderEphemeral) {

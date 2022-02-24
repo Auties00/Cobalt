@@ -27,6 +27,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(builderMethodName = "newRawImageMessage", buildMethodName = "create")
+@Jacksonized
 @Accessors(fluent = true)
 public final class ImageMessage extends MediaMessage {
   /**
@@ -185,8 +186,7 @@ public final class ImageMessage extends MediaMessage {
    *
    * @return a non-null new message
    */
-  @Jacksonized
-@Builder(builderClassName = "NewImageMessageBuilder", builderMethodName = "newImageMessage", buildMethodName = "create")
+  @Builder(builderClassName = "NewImageMessageBuilder", builderMethodName = "newImageMessage", buildMethodName = "create")
   private static ImageMessage simpleBuilder(byte @NonNull [] media, String mimeType, String caption, int width, int height, ContextInfo contextInfo) {
     /*
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.IMAGE);

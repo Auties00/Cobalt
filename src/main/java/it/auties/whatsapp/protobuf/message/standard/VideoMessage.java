@@ -169,8 +169,7 @@ public final class VideoMessage extends MediaMessage {
    *
    * @return a non-null new message
    */
-  @Jacksonized
-@Builder(builderClassName = "NewVideoMessageBuilder", builderMethodName = "newVideoMessage", buildMethodName = "create")
+  @Builder(builderClassName = "NewVideoMessageBuilder", builderMethodName = "newVideoMessage", buildMethodName = "create")
   private static VideoMessage videoBuilder(byte @NonNull [] media, String mimeType, String caption, int width, int height, int seconds, ContextInfo contextInfo) {
     /*
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.VIDEO);
