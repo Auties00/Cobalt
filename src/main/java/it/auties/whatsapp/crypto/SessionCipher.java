@@ -27,7 +27,7 @@ import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 
 public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) {
-    public Node encrypt(byte[] data){
+    public Node encrypt(byte @NonNull [] data){
         var session = loadSession();
         Validate.isTrue(keys.hasTrust(address, session.currentState().remoteIdentityKey()),
                 "Untrusted key", SecurityException.class);

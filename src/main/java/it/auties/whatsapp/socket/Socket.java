@@ -28,7 +28,6 @@ import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.protobuf.setting.EphemeralSetting;
 import it.auties.whatsapp.protobuf.signal.auth.*;
 import it.auties.whatsapp.protobuf.signal.auth.ClientPayload.ClientPayloadBuilder;
-import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.protobuf.signal.message.SignalDistributionMessage;
@@ -44,7 +43,6 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
 import lombok.extern.java.Log;
 
 import java.io.IOException;
@@ -64,6 +62,7 @@ import java.util.stream.Stream;
 import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
 import static it.auties.whatsapp.binary.BinaryArray.empty;
 import static it.auties.whatsapp.binary.BinaryArray.ofBase64;
+import static it.auties.whatsapp.protobuf.message.device.DeviceSentMessage.newDeviceSentMessage;
 import static it.auties.whatsapp.socket.Node.*;
 import static it.auties.whatsapp.util.QrHandler.TERMINAL;
 import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
@@ -202,7 +201,7 @@ public class Socket {
     public CompletableFuture<Void> disconnect(){
         changeState(false);
         session.close();
-        return CompletableFuture.completedFuture(null); // session#close is a synchronous operation
+        return completedFuture(null); // session#close is a synchronous operation
     }
 
     public CompletableFuture<Void> logout(){
@@ -853,18 +852,44 @@ public class Socket {
 
     private class MessageHandler {
         private final Cache<ContactJid, GroupMetadata> groupsCache;
-        private final Cache<String, ContactJid> devicesCache;
+        private final Cache<String, List<ContactJid>> devicesCache;
         public MessageHandler() {
             this.groupsCache = new Cache<>();
             this.devicesCache = new Cache<>();
         }
 
         @SafeVarargs
-        public final CompletableFuture<Node> encode(MessageInfo info, Entry<String, Object>... metadata) {
+        public final CompletableFuture<Node> encode(MessageInfo info, Entry<String, Object>... attributes) {
             var encodedMessage = SignalHelper.pad(ProtobufEncoder.encode(info));
-            return createMessageBody(info, encodedMessage)
-                    .thenComposeAsync(participants -> encode(info, encodedMessage, participants, metadata))
-                    .exceptionallyAsync(throwable -> { throw new RuntimeException("Cannot encode message", throwable); });
+            if (isConversation(info)) {
+                var whatsappMessage = newDeviceSentMessage(info.chatJid().toString(), info.message());
+                var paddedMessage = SignalHelper.pad(ProtobufEncoder.encode(whatsappMessage));
+                var receiverDevices = querySyncDevices(info.chatJid(), true)
+                        .thenComposeAsync(this::createSessions)
+                        .thenApplyAsync(result -> createParticipantsSessions(result, paddedMessage));
+                var senderDevices = querySyncDevices(keys.companion().toUserJid(), true)
+                        .thenComposeAsync(this::createSessions)
+                        .thenApplyAsync(result -> createParticipantsSessions(result, paddedMessage));
+                return receiverDevices.thenCombineAsync(senderDevices, WhatsappUtils::combine)
+                        .thenComposeAsync(participants -> encode(info, encodedMessage, participants, attributes));
+            }
+
+            var senderName = new SenderKeyName(info.chatJid().toString(), keys.companion().toSignalAddress());
+            var sessionBuilder = new GroupSessionBuilder(keys);
+            var signalMessage = sessionBuilder.createMessage(senderName);
+            return groupsCache.getOptional(info.chatJid())
+                    .map(CompletableFuture::completedFuture)
+                    .orElseGet(() -> cacheGroupMetadata(info))
+                    .thenComposeAsync(metadata -> getGroupParticipants(info, metadata, signalMessage))
+                    .thenComposeAsync(participants -> encode(info, encodedMessage, participants, attributes));
+        }
+
+        private CompletableFuture<List<Node>> getGroupParticipants(MessageInfo info, GroupMetadata metadata, SignalDistributionMessage message) {
+            return metadata.participants()
+                    .stream()
+                    .map(participant -> querySyncDevices(participant.jid(), false))
+                    .reduce(completedFuture(List.of()), (left, right) -> left.thenCombineAsync(right, WhatsappUtils::combine))
+                    .thenComposeAsync(contacts -> createDistributionMessage(info, message, contacts));
         }
 
         @SafeVarargs
@@ -903,34 +928,6 @@ public class Socket {
                     .anyMatch("pkmsg"::equals);
         }
 
-        private CompletableFuture<List<Node>> createMessageBody(MessageInfo info, byte[] encodedMessage) {
-            if (isConversation(info)) {
-                var whatsappMessage = DeviceSentMessage.newDeviceSentMessage(info.chatJid().toString(), info.message());
-                var paddedMessage = SignalHelper.pad(ProtobufEncoder.encode(whatsappMessage));
-                var receiverDevices = querySyncDevices(info.chatJid(), true)
-                        .thenComposeAsync(contacts -> createSessions(contacts, encodedMessage));
-                var senderDevices = querySyncDevices(keys.companion().toUserJid(), true)
-                        .thenComposeAsync(contacts -> createSessions(contacts, paddedMessage));
-                return receiverDevices.thenCombineAsync(senderDevices, WhatsappUtils::combine);
-            }
-
-            var senderName = new SenderKeyName(info.chatJid().toString(), keys.companion().toSignalAddress());
-            var sessionBuilder = new GroupSessionBuilder(keys);
-            var signalMessage = sessionBuilder.createMessage(senderName);
-            return groupsCache.getOptional(info.chatJid())
-                    .map(CompletableFuture::completedFuture)
-                    .orElseGet(() -> cacheGroupMetadata(info))
-                    .thenComposeAsync(metadata -> createMessageBody(info, metadata, signalMessage));
-        }
-
-        private CompletableFuture<List<Node>> createMessageBody(MessageInfo info, GroupMetadata metadata, SignalDistributionMessage signalMessage) {
-            return metadata.participants()
-                    .stream()
-                    .map(participant -> querySyncDevices(participant.jid(), false))
-                    .reduce(completedFuture(List.of()), (left, right) -> left.thenCombineAsync(right, WhatsappUtils::combine))
-                    .thenComposeAsync(contacts -> createDistributionMessage(info, signalMessage, contacts));
-        }
-
 
         private boolean isConversation(MessageInfo info) {
             return info.chatJid().type() == ContactJid.Type.USER
@@ -958,12 +955,8 @@ public class Socket {
 
             var whatsappMessage = new SenderKeyDistributionMessage(info.chatJid().toString(), signalMessage.serialized());
             var paddedMessage = SignalHelper.pad(ProtobufEncoder.encode(whatsappMessage));
-            return createSessions(missingParticipants, paddedMessage);
-        }
-
-        public CompletableFuture<List<Node>> createSessions(List<ContactJid> contacts, byte[] senderKeyMessage) {
-            return assertSessions(contacts)
-                    .thenApplyAsync(ignored -> createParticipantsSessions(contacts, senderKeyMessage));
+            return createSessions(missingParticipants)
+                    .thenApplyAsync(result -> createParticipantsSessions(result, paddedMessage));
         }
 
         private List<Node> createParticipantsSessions(List<ContactJid> contacts, byte[] senderKeyMessage) {
@@ -978,23 +971,23 @@ public class Socket {
             return withChildren("to", of("jid", contact), encrypted);
         }
 
-        private CompletableFuture<Boolean> assertSessions(List<ContactJid> contacts) {
+        private CompletableFuture<List<ContactJid>> createSessions(List<ContactJid> contacts) {
             var nodes = contacts.stream()
                     .filter(contact -> !keys.hasSession(contact.toSignalAddress()))
                     .map(contact -> withAttributes("user", of("jid", contact, "reason", "identity")))
                     .toList();
-            return nodes.isEmpty() ? completedFuture(false) : sendQuery("get", "encrypt", withChildren("key", nodes))
-                    .thenAcceptAsync(this::parseAssertSessions)
-                    .thenCompose(ignored -> completedFuture(true));
+            return nodes.isEmpty() ? completedFuture(contacts) : sendQuery("get", "encrypt", withChildren("key", nodes))
+                    .thenAcceptAsync(this::parseSessions)
+                    .thenCompose(result -> completedFuture(contacts));
         }
 
-        private void parseAssertSessions(Node result) {
+        private void parseSessions(Node result) {
             result.findNode("list")
                     .findNodes("user")
-                    .forEach(this::parseAssertSession);
+                    .forEach(this::parseSession);
         }
 
-        private void parseAssertSession(Node node) {
+        private void parseSession(Node node) {
             Validate.isTrue(!node.hasNode("error"),
                     "Erroneous session node",
                     SecurityException.class);
@@ -1009,66 +1002,39 @@ public class Socket {
             builder.createOutgoing(
                     SignalHelper.fromBytes(registrationId.bytes(), 4),
                     SignalHelper.appendKeyHeader(identity.bytes()),
-                    parseSignedKey(signedKey),
-                    parseKey(key)
+                    SignalSignedKeyPair.of(signedKey).orElseThrow(),
+                    SignalSignedKeyPair.of(key).orElse(null)
             );
         }
 
-        private SignalSignedKeyPair parseSignedKey(Node node) {
-            if (node == null) {
-                return null;
-            }
-
-            var id = SignalHelper.fromBytes(node.findNode("id").bytes(), 3);
-            var keyPair = new SignalKeyPair(node.findNode("value").bytes(), null);
-            return new SignalSignedKeyPair(id, keyPair, node.findNode("signature").bytes());
-        }
-
-        private SignalSignedKeyPair parseKey(Node node) {
-            if (node == null) {
-                return null;
-            }
-
-            var id = SignalHelper.fromBytes(node.findNode("id").bytes(), 3);
-            var keyPair = new SignalKeyPair(node.findNode("value").bytes(), null);
-            return new SignalSignedKeyPair(id, keyPair, null);
-        }
-
         private CompletableFuture<List<ContactJid>> querySyncDevices(ContactJid contact, boolean ignoreZeroDevices) {
-            var missingDevices = new ArrayList<Node>();
-            var cachedDevices = new ArrayList<ContactJid>();
-            devicesCache.getOptional(contact.user())
-                    .ifPresentOrElse(cachedDevices::add,
-                            () -> missingDevices.add(withAttributes("user", of("jid", contact))));
-            if(missingDevices.isEmpty()) {
-                return completedFuture(cachedDevices);
+            var cachedDevices = devicesCache.getOptional(contact.user());
+            if(cachedDevices.isPresent()){
+                return completedFuture(cachedDevices.get());
             }
 
             var body = withChildren("usync",
                     of("sid", store.nextTag(), "mode", "query", "last", "true", "index", "0", "context", "message"),
                     withChildren("query", withAttributes("devices", of("version", "2"))),
-                    withChildren("list", missingDevices));
-
-            return sendQuery("get", "usync", body).thenApplyAsync(response -> {
-                var parsed = parseSyncDevices(response, ignoreZeroDevices);
-                cachedDevices.addAll(parsed);
-                parsed.forEach(device -> devicesCache.put(contact.user(), device));
-                return cachedDevices;
-            });
+                    withChildren("list", withAttributes("user", of("jid", contact))));
+            return sendQuery("get", "usync", body)
+                    .thenApplyAsync(response -> cacheSyncDevices(response, contact, ignoreZeroDevices));
         }
 
-        private List<ContactJid> parseSyncDevices(Node node, boolean excludeZeroDevices) {
-            return node.children()
+        private List<ContactJid> cacheSyncDevices(Node node, ContactJid contact, boolean excludeZeroDevices) {
+            var contacts = node.children()
                     .stream()
                     .map(child -> child.findNode("list"))
                     .filter(Objects::nonNull)
                     .map(Node::children)
                     .flatMap(Collection::stream)
-                    .flatMap(wrapper -> parseDevicesList(wrapper, excludeZeroDevices))
+                    .flatMap(wrapper -> parseDevices(wrapper, excludeZeroDevices))
                     .toList();
+            devicesCache.put(contact.user(), contacts);
+            return contacts;
         }
 
-        private Stream<ContactJid> parseDevicesList(Node wrapper, boolean excludeZeroDevices) {
+        private Stream<ContactJid> parseDevices(Node wrapper, boolean excludeZeroDevices) {
             var jid = ContactJid.ofUser(wrapper.attributes().getString("jid"), ContactJid.Server.USER);
             return wrapper.findNode("devices")
                     .findNode("device-list")

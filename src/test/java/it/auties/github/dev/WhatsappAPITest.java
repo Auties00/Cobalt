@@ -63,8 +63,11 @@ public class WhatsappAPITest {
         public void onChats() {
             System.out.println("Called on chats");
             whatsapp.store()
-                    .findChatByName("5-0")
-                    .ifPresent(chat -> whatsapp.sendMessage(chat.jid(), "Test da md"));
+                    .findChatByName("Il Bot Di Autiero")
+                    .ifPresent(chat -> {
+                        System.out.printf("Sending message to %s%n", chat.jid());
+                        whatsapp.sendMessage(chat.jid(), "Test da md");
+                    });
         }
 
         @Override
@@ -97,7 +100,7 @@ public class WhatsappAPITest {
 
         @Override
         public void onMessageStatus(Chat chat, Contact contact, MessageInfo message, MessageStatus status) {
-            System.out.printf("Message with jid %s in chat %s%s has now status %s%n", message.id(), chat.name(), contact == null ? "" : "sent by %s".formatted(contact.name()), status.name());
+            System.out.printf("Message with jid %s in chat %s%s has now status %s%n", message.id(), chat.name(), contact == null ? "" : " sent by %s".formatted(contact.name()), status.name());
         }
     }
 }

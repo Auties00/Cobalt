@@ -196,19 +196,11 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      */
     @Override
     public String toString() {
-        if (isCompanion()) {
-            var user = Objects.requireNonNullElse(user(), "");
-            var agent = agent() != 0 ? "_%s".formatted(agent()) : "";
-            var device = device() != 0 ? ":%s".formatted(device()) : "";
-            return "%s%s%s@%s".formatted(user, agent, device, server());
-        }
-
-        if (agent != 0) {
-            return "%s.%s@%s".formatted(user, agent, server());
-        }
-
-        return user == null ? Server.WHATSAPP.address()
-                : "%s@%s".formatted(user, server());
+        var user = Objects.requireNonNullElse(user(), "");
+        var agent = agent() != 0 ? "_%s".formatted(agent()) : "";
+        var device = device() != 0 ? ":%s".formatted(device()) : "";
+        var leading = "%s%s%s".formatted(user, agent, device);
+        return leading.isEmpty() ? server().toString() : "%s@%s".formatted(leading, server());
     }
 
     /**

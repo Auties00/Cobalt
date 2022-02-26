@@ -2,6 +2,7 @@ package it.auties.whatsapp.protobuf.signal.sender;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.annotation.ProtobufIgnore;
 import it.auties.whatsapp.crypto.Hkdf;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,8 +30,12 @@ public class SenderMessageKey {
     @JsonPropertyDescription("bytes")
     private byte[] seed;
 
+    @JsonProperty("3")
+    @ProtobufIgnore
     private byte[] cipherKey;
 
+    @JsonProperty("4")
+    @ProtobufIgnore
     private byte[] iv;
 
     public SenderMessageKey(int iteration, byte[] seed) {
