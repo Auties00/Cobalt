@@ -1021,8 +1021,7 @@ public class Socket {
 
             var id = SignalHelper.fromBytes(node.findNode("id").bytes(), 3);
             var keyPair = new SignalKeyPair(node.findNode("value").bytes(), null);
-            var signature = node.findNode("signature");
-            return new SignalSignedKeyPair(id, keyPair, signature.bytes());
+            return new SignalSignedKeyPair(id, keyPair, node.findNode("signature").bytes());
         }
 
         private SignalSignedKeyPair parseKey(Node node) {
@@ -1574,7 +1573,6 @@ public class Socket {
             var mutations = decodeMutations(patch.mutations(), newState);
             newState.hash(mutations.hash());
             newState.indexValueMap(mutations.indexValueMap());
-            log.info("Hmac validation: " + Arrays.equals(generatePatchMac(name, newState, patch), patch.snapshotMac()));
             // FIXME: 06/02/2022 Invalid hmac
             // Validate.isTrue(Arrays.equals(generatePatchMac(name, newState, patch), patch.snapshotMac()),
             //                    "Cannot decode mutations: Hmac validation failed",

@@ -144,14 +144,6 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when {@link Socket} receives a new chat
-     *
-     * @param chat the new chat
-     */
-    default void onNewChat(Chat chat) {
-    }
-
-    /**
      * Called when a new message is received in a chat
      *
      * @param info the message that was sent

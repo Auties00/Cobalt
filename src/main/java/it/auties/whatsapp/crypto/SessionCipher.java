@@ -52,33 +52,37 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
     }
 
     private byte[] encrypt(Session session, SessionChain chain, byte[][] whisperKeys, byte[] encrypted) {
-        var message = SignalMessage.builder()
-                .ephemeralPublicKey(session.currentState().ephemeralKeyPair().encodedPublicKey())
-                .counter(chain.counter())
-                .previousCounter(session.currentState().previousCounter())
-                .ciphertext(encrypted)
-                .build()
-                .serialized();
-        var macInput = BinaryArray.of(keys.identityKeyPair().encodedPublicKey())
-                .append(session.currentState().remoteIdentityKey())
-                .append(message)
-                .assertSize(message.length + 33 + 33)
-                .data();
-        var mac = Hmac.calculateSha256(macInput, whisperKeys[1]);
-        var result = BinaryArray.of(message)
-                .append(mac.cut(8))
-                .assertSize(message.length + 8)
-                .data();
+        var ephemeralKey = session.currentState()
+                .ephemeralKeyPair()
+                .encodedPublicKey();
+        var message = new SignalMessage(ephemeralKey, chain.counter(), session.currentState().previousCounter(),
+                encrypted, encodedMessage -> createMessageSignature(session, whisperKeys, encodedMessage));
         keys.addSession(address, session);
-        return !hasPreKey(session) ? result : SignalPreKeyMessage.builder()
+        return hasPreKey(session) ? createPreKeyMessage(session, message)
+                : message.serialized();
+    }
+
+    private byte[] createPreKeyMessage(Session session, SignalMessage message) {
+        return SignalPreKeyMessage.builder()
                 .identityKey(keys.identityKeyPair().encodedPublicKey())
                 .registrationId(keys.id())
                 .baseKey(session.currentState().pendingPreKey().baseKey())
                 .signedPreKeyId(session.currentState().pendingPreKey().signedPreKeyId())
                 .preKeyId(session.currentState().pendingPreKey().preKeyId())
-                .serializedSignalMessage(result)
+                .serializedSignalMessage(message.serialized())
                 .build()
                 .serialized();
+    }
+
+    private byte[] createMessageSignature(Session session, byte[][] whisperKeys, byte[] encodedMessage) {
+        var macInput = BinaryArray.of(keys.identityKeyPair().encodedPublicKey())
+                .append(session.currentState().remoteIdentityKey())
+                .append(encodedMessage)
+                .assertSize(encodedMessage.length + 33 + 33)
+                .data();
+        return Hmac.calculateSha256(macInput, whisperKeys[1])
+                .cut(8)
+                .data();
     }
 
     private boolean hasPreKey(Session session) {
@@ -156,10 +160,10 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         var hmacInput = BinaryArray.of(state.remoteIdentityKey())
                 .append(keys.identityKeyPair().encodedPublicKey())
                 .append(message.serialized())
-                .assertSize(message.serialized().length + 33 + 33)
+                .cut(-SignalMessage.MAC_LENGTH)
                 .data();
         var hmac = Hmac.calculateSha256(hmacInput, secrets[1])
-                .cut(8)
+                .cut(SignalMessage.MAC_LENGTH)
                 .data();
         Validate.isTrue(Arrays.equals(message.signature(), hmac),
                 "Cannot decode message: Hmac validation failed", SecurityException.class);

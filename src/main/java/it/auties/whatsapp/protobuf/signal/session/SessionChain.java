@@ -22,10 +22,10 @@ public class SessionChain {
     private int counter;
 
     @JsonProperty("key")
-    private byte @NonNull [] key;
+    private byte[] key;
 
     @JsonProperty("owner")
-    private byte @NonNull [] owner;
+    private byte[] owner;
 
     @JsonProperty("message_keys")
     @NonNull

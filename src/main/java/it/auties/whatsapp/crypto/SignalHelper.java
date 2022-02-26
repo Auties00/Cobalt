@@ -1,10 +1,8 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp.binary.BinaryArray;
-import it.auties.whatsapp.util.Buffers;
 import it.auties.whatsapp.util.Validate;
-import it.auties.whatsapp.util.VersionProvider;
+import it.auties.whatsapp.util.SignalProvider;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
@@ -19,7 +17,7 @@ import java.util.zip.Inflater;
  * This class should only be used for WhatsappWeb's WebSocket buffer operations
  */
 @UtilityClass
-public class SignalHelper implements VersionProvider {
+public class SignalHelper implements SignalProvider {
     private final String SHA_PRNG = "SHA1PRNG";
 
     public byte[] appendKeyHeader(byte[] key){

@@ -2,23 +2,19 @@ package it.auties.whatsapp.protobuf.signal.sender;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.annotation.ProtobufIgnore;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.crypto.Curve;
 import it.auties.whatsapp.crypto.SignalHelper;
-import it.auties.whatsapp.util.VersionProvider;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import it.auties.whatsapp.util.SignalProvider;
+import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.io.IOException;
-import java.util.Objects;
 
-import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
 import static java.util.Arrays.copyOfRange;
 
 @AllArgsConstructor
@@ -27,9 +23,9 @@ import static java.util.Arrays.copyOfRange;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public class SenderKeyMessage implements VersionProvider {
-  private static final int SIGNATURE_LENGTH = 64;
-
+public class SenderKeyMessage implements SignalProvider {
+  @JsonProperty("0")
+  @ProtobufIgnore
   private int version;
 
   @JsonProperty("1")
@@ -42,14 +38,18 @@ public class SenderKeyMessage implements VersionProvider {
 
   @JsonProperty("3")
   @JsonPropertyDescription("bytes")
-  private byte[] cipherText;
+  private byte @NonNull [] cipherText;
 
   @JsonProperty("4")
   @JsonPropertyDescription("bytes")
   private byte[] signingKey;
 
+  @JsonProperty("5")
+  @ProtobufIgnore
   private byte[] signature;
 
+  @JsonProperty("6")
+  @ProtobufIgnore
   private byte[] serialized;
 
   public SenderKeyMessage(int id, int iteration, byte[] cipherText, byte[] signingKey) {
@@ -72,21 +72,9 @@ public class SenderKeyMessage implements VersionProvider {
               .decode(copyOfRange(serialized, 1, serialized.length - SIGNATURE_LENGTH))
               .version(SignalHelper.deserialize(serialized[0]))
               .signature(copyOfRange(serialized, serialized.length - SIGNATURE_LENGTH, serialized.length))
-              .serialized(copyOfRange(serialized, 0, serialized.length - SIGNATURE_LENGTH));
+              .serialized(serialized);
     } catch (IOException exception) {
       throw new RuntimeException("Cannot decode SenderKeyMessage", exception);
     }
-  }
-
-  public byte[] serialized() {
-    return Objects.requireNonNullElseGet(serialized,
-            () -> this.serialized = serialize());
-  }
-
-  private byte[] serialize() {
-    return BinaryArray.of(SignalHelper.serialize(version()))
-            .append(encode(this))
-            .append(signature())
-            .data();
   }
 }

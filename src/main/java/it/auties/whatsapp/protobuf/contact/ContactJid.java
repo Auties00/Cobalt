@@ -217,9 +217,8 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @return a non-null {@link SignalProtocolAddress}
      */
     public SessionAddress toSignalAddress(){
-        var name = agent == 0 ? user()
-                : "%s_%s".formatted(user(), agent());
-        return new SessionAddress(name, device);
+        var name = toString().split("@", 2)[0];
+        return new SessionAddress(name, 0);
     }
 
     /**

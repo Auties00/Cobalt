@@ -7,13 +7,13 @@ import it.auties.whatsapp.protobuf.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.protobuf.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.protobuf.signal.session.*;
 import it.auties.whatsapp.util.Validate;
-import it.auties.whatsapp.util.VersionProvider;
+import it.auties.whatsapp.util.SignalProvider;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 
 import java.nio.charset.StandardCharsets;
 
-public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) implements VersionProvider {
+public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) implements SignalProvider {
     public void createOutgoing(int id, byte[] identityKey, SignalSignedKeyPair signedPreKey, SignalSignedKeyPair preKey){
         Validate.isTrue(keys.hasTrust(address, identityKey),
                 "Untrusted key", SecurityException.class);
@@ -68,7 +68,6 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
         );
 
         session.addState(nextState);
-        message.preKeyId();
     }
 
     @SneakyThrows
