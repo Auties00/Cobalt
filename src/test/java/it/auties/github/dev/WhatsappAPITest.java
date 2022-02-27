@@ -63,7 +63,7 @@ public class WhatsappAPITest {
         public void onChats() {
             System.out.println("Called on chats");
             whatsapp.store()
-                    .findChatByName("Il Bot Di Autiero")
+                    .findChatByName("5-0")
                     .ifPresent(chat -> {
                         System.out.printf("Sending message to %s%n", chat.jid());
                         whatsapp.sendMessage(chat.jid(), "Test da md");
@@ -72,7 +72,7 @@ public class WhatsappAPITest {
 
         @Override
         public void onAction(Action action) {
-            System.out.println("ACTION: " + action);
+            System.out.println("New action: " + action);
         }
 
         @Override

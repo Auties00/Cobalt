@@ -39,7 +39,7 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys key
     public byte[] decrypt(byte[] data) {
         var record = keys.findSenderKeyByName(name)
                 .orElseThrow(() -> new NoSuchElementException("Missing record for name: %s. Known records: %s".formatted(name, keys.senderKeys())));
-        var senderKeyMessage = SenderKeyMessage.ofEncoded(data);
+        var senderKeyMessage = SenderKeyMessage.ofSerialized(data);
         var senderKeyState = record.findStateById(senderKeyMessage.id());
         var senderKey = getSenderKey(senderKeyState, senderKeyMessage.iteration());
         var plaintext = AesCbc.decrypt(

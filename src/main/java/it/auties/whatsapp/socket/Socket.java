@@ -62,7 +62,6 @@ import java.util.stream.Stream;
 import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
 import static it.auties.whatsapp.binary.BinaryArray.empty;
 import static it.auties.whatsapp.binary.BinaryArray.ofBase64;
-import static it.auties.whatsapp.protobuf.message.device.DeviceSentMessage.newDeviceSentMessage;
 import static it.auties.whatsapp.socket.Node.*;
 import static it.auties.whatsapp.util.QrHandler.TERMINAL;
 import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
@@ -862,7 +861,7 @@ public class Socket {
         public final CompletableFuture<Node> encode(MessageInfo info, Entry<String, Object>... attributes) {
             var encodedMessage = SignalHelper.pad(ProtobufEncoder.encode(info));
             if (isConversation(info)) {
-                var whatsappMessage = newDeviceSentMessage(info.chatJid().toString(), info.message());
+                var whatsappMessage = DeviceSentMessage.newDeviceSentMessage(info.chatJid().toString(), info.message());
                 var paddedMessage = SignalHelper.pad(ProtobufEncoder.encode(whatsappMessage));
                 var receiverDevices = querySyncDevices(info.chatJid(), true)
                         .thenComposeAsync(this::createSessions)
@@ -871,7 +870,11 @@ public class Socket {
                         .thenComposeAsync(this::createSessions)
                         .thenApplyAsync(result -> createParticipantsSessions(result, paddedMessage));
                 return receiverDevices.thenCombineAsync(senderDevices, WhatsappUtils::combine)
-                        .thenComposeAsync(participants -> encode(info, encodedMessage, participants, attributes));
+                        .thenComposeAsync(participants -> encode(info, encodedMessage, participants, attributes))
+                        .exceptionallyAsync(throwable ->  {
+                            throwable.printStackTrace();
+                            return null;
+                        });
             }
 
             var senderName = new SenderKeyName(info.chatJid().toString(), keys.companion().toSignalAddress());
@@ -881,7 +884,11 @@ public class Socket {
                     .map(CompletableFuture::completedFuture)
                     .orElseGet(() -> cacheGroupMetadata(info))
                     .thenComposeAsync(metadata -> getGroupParticipants(info, metadata, signalMessage))
-                    .thenComposeAsync(participants -> encode(info, encodedMessage, participants, attributes));
+                    .thenComposeAsync(participants -> encode(info, encodedMessage, participants, attributes))
+                    .exceptionallyAsync(throwable ->  {
+                        throwable.printStackTrace();
+                        return null;
+                    });
         }
 
         private CompletableFuture<List<Node>> getGroupParticipants(MessageInfo info, GroupMetadata metadata, SignalDistributionMessage message) {
@@ -927,7 +934,6 @@ public class Socket {
                     .flatMap(Optional::stream)
                     .anyMatch("pkmsg"::equals);
         }
-
 
         private boolean isConversation(MessageInfo info) {
             return info.chatJid().type() == ContactJid.Type.USER

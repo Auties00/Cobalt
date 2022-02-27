@@ -66,7 +66,7 @@ public class SenderKeyMessage implements SignalProvider {
     this.serialized = encodedMessage.append(signature).data();
   }
 
-  public static SenderKeyMessage ofEncoded(byte[] serialized) {
+  public static SenderKeyMessage ofSerialized(byte[] serialized) {
     try {
       return ProtobufDecoder.forType(SenderKeyMessage.class)
               .decode(copyOfRange(serialized, 1, serialized.length - SIGNATURE_LENGTH))
