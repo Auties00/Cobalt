@@ -30,23 +30,11 @@ import java.util.concurrent.TimeUnit;
 public class WhatsappAPITest {
     @SneakyThrows
     public static void main(String[] args) {
-        var api = Whatsapp.lastConnection()
+        Whatsapp.lastConnection()
                 .connect()
-                .get();
-        waitForInput(api);
-    }
-
-    private static void waitForInput(Whatsapp whatsapp){
-        var scanner = new Scanner(System.in);
-        var contact = scanner.nextLine();
-        if(Objects.equals("contact", "stop")){
-            return;
-        }
-
-        System.out.println("Sending message to " + contact);
-        whatsapp.store().findChatByName(contact)
-                .ifPresent(chat -> whatsapp.sendMessage(chat, "Ciao!"));
-        waitForInput(whatsapp);
+                .get()
+                .await();
+        System.out.println("ABCDJDJ!DJ!");
     }
 
     @AllArgsConstructor

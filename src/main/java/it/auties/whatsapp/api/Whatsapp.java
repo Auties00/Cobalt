@@ -158,6 +158,13 @@ public class Whatsapp {
     }
 
     /**
+     * Waits for the socket to be closed on the current thread
+     */
+    public void await(){
+        socket.await();
+    }
+
+    /**
      * Disconnects from Whatsapp Web's WebSocket if a previous connection exists
      *
      * @return the same instance

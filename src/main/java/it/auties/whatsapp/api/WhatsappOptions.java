@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 
+import java.util.Set;
+
 /**
  * A configuration class used to specify the behaviour of {@link Whatsapp}.
  * Each field is immutable, this means that once this class has been initialized, cannot be changed.
@@ -22,7 +24,7 @@ public class WhatsappOptions {
      * If the version is too outdated, the server will refuse to connect
      */
     @Default
-    private final int[] whatsappVersion = new int[]{2, 2204, 13};
+    private final int @NonNull [] whatsappVersion = new int[]{2, 2204, 13};
 
     /**
      * The url of the multi device beta socket
@@ -52,6 +54,14 @@ public class WhatsappOptions {
      */
     @Default
     private boolean debug = true;
+
+    /**
+     * A list of strategies to serialize sensible data associated with a session.
+     * By default, all data is serialized synchronously when the socket is closed in a json locally.
+     */
+    @Default
+    @NonNull
+    private final Set<@NonNull SerializationStrategy> serializationStrategies = Set.of(SerializationStrategy.onClose());
 
     /**
      * Constructs a new instance of WhatsappConfiguration with default options

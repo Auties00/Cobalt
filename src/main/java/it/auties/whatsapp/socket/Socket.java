@@ -2,6 +2,8 @@ package it.auties.whatsapp.socket;
 
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.protobuf.encoder.ProtobufEncoder;
+import it.auties.whatsapp.api.SerializationStrategy;
+import it.auties.whatsapp.api.SerializationStrategy.Event;
 import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.binary.BinaryArray;
@@ -60,6 +62,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
+import static it.auties.whatsapp.api.SerializationStrategy.Event.*;
 import static it.auties.whatsapp.binary.BinaryArray.empty;
 import static it.auties.whatsapp.binary.BinaryArray.ofBase64;
 import static it.auties.whatsapp.socket.Node.*;
@@ -132,7 +135,14 @@ public class Socket {
         this.streamHandler = new StreamHandler();
         this.messageHandler = new MessageHandler();
         this.appStateHandler = new AppStateHandler();
-        getRuntime().addShutdownHook(new Thread(this::dispose));
+        getRuntime().addShutdownHook(new Thread(() -> serialize(ON_CLOSE)));
+    }
+
+    private void serialize(Event event) {
+        options.serializationStrategies()
+                .stream()
+                .filter(strategy -> strategy.trigger() == event)
+                .forEach(strategy -> strategy.serialize(store, keys));
     }
 
     @OnOpen
@@ -191,6 +201,12 @@ public class Socket {
         return loginFuture;
     }
 
+    @SneakyThrows
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    public void await(){
+        pingService.awaitTermination(Integer.MAX_VALUE, TimeUnit.DAYS);
+    }
+
     public CompletableFuture<Void> reconnect(){
         return disconnect()
                 .thenComposeAsync(ignored -> connect());
@@ -238,6 +254,7 @@ public class Socket {
 
     @OnError
     public void onError(Throwable throwable){
+        serialize(ON_ERROR);
         throwable.printStackTrace();
     }
 
@@ -462,10 +479,15 @@ public class Socket {
                 case "receipt" -> digestReceipt(node);
                 case "stream:error" -> digestError(node);
                 case "success" -> digestSuccess();
-                case "message" -> messageHandler.decode(node);
+                case "message" -> digestMessage(node);
                 case "notification" -> digestNotification(node);
                 case "presence", "chatstate" -> digestChatState(node);
             }
+        }
+
+        private void digestMessage(Node node) {
+            messageHandler.decode(node);
+            serialize(ON_MESSAGE);
         }
 
         private void digestChatState(Node node) {
