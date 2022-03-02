@@ -1,10 +1,9 @@
 package it.auties.whatsapp.manager;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
+import it.auties.buffer.ByteBuffer;
 import it.auties.whatsapp.api.WhatsappListener;
-import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
@@ -112,7 +111,7 @@ public class WhatsappStore implements JacksonProvider {
      */
     @NonNull
     @Default
-    private String tag = BinaryArray.random(12)
+    private String tag = ByteBuffer.random(12)
             .toHex()
             .toLowerCase(Locale.ROOT);
 

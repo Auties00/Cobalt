@@ -1,7 +1,6 @@
 package it.auties.whatsapp.util;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.buffer.ByteBuffer;
 import it.auties.whatsapp.crypto.AesCbc;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.Sha256;
@@ -43,10 +42,10 @@ public class Medias implements JacksonProvider {
             var keys = MediaKeys.random(type.whatsappName());
             var encryptedMedia = AesCbc.encrypt(keys.iv(), file, keys.cipherKey());
             var hmac = calculateMac(encryptedMedia, keys);
-            var encrypted = BinaryArray.of(encryptedMedia)
+            var encrypted = ByteBuffer.of(encryptedMedia)
                     .append(hmac)
-                    .data();
-            var sha256 = Base64.getEncoder().encodeToString(Sha256.calculate(encrypted).data());
+                    .toByteArray();
+            var sha256 = Base64.getEncoder().encodeToString(Sha256.calculate(encrypted).toByteArray());
             var uri = URI.create("https://%s/%s/%s?auth=%s&token=%s".formatted(host, type.uploadPath(), sha256, auth, sha256));
             var request = HttpRequest.newBuilder()
                     .POST(ofByteArray(encrypted))
@@ -74,20 +73,18 @@ public class Medias implements JacksonProvider {
     }
 
     private Optional<byte[]> download(AttachmentProvider provider, String url) {
-        try {
-            var stream = BinaryArray.of(new URL(url)
-                    .openStream()
-                    .readAllBytes());
+        try(var connection = new URL(url).openStream()){
+            var stream = ByteBuffer.of(connection.readAllBytes());
 
-            var sha256 = Sha256.calculate(stream.data());
-            Validate.isTrue(Arrays.equals(sha256.data(), provider.fileEncSha256()),
+            var sha256 = Sha256.calculate(stream.toByteArray());
+            Validate.isTrue(Arrays.equals(sha256.toByteArray(), provider.fileEncSha256()),
                     "Cannot decode media: Invalid sha256 signature",
                     SecurityException.class);
 
             var encryptedMedia = stream.cut(-10)
-                    .data();
+                    .toByteArray();
             var mediaMac = stream.slice(-10)
-                    .data();
+                    .toByteArray();
 
             var keys = MediaKeys.of(provider.key(), provider.keyName());
             var hmac = calculateMac(encryptedMedia, keys);
@@ -106,10 +103,10 @@ public class Medias implements JacksonProvider {
     }
 
     private byte[] calculateMac(byte[] encryptedMedia, MediaKeys keys) {
-        var hmacInput = BinaryArray.of(keys.iv()).append(encryptedMedia).data();
+        var hmacInput = ByteBuffer.of(keys.iv()).append(encryptedMedia).toByteArray();
         return Hmac.calculateSha256(hmacInput, keys.macKey())
                 .cut(10)
-                .data();
+                .toByteArray();
     }
 
     private List<String> collectDownloadUrls(AttachmentProvider provider, WhatsappStore store){

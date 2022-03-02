@@ -1,22 +1,15 @@
 package it.auties.whatsapp.binary;
 
-import io.netty.buffer.ByteBuf;
+import it.auties.buffer.ByteBuffer;
 import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.socket.Node;
-import it.auties.whatsapp.util.Buffers;
-import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
 
-import java.util.HexFormat;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
-
-import static it.auties.whatsapp.binary.BinaryArray.of;
 
 /**
  * A wrapper object used to represent messages received by Whatsapp
@@ -33,37 +26,35 @@ public class BinaryMessage {
      * The raw buffer array used to construct this object
      */
     @NonNull
-    BinaryArray raw;
+    ByteBuffer raw;
 
     /**
      * The raw buffer array sliced at [3, {@code length})
      */
     @NonNull
-    LinkedList<BinaryArray> decoded;
+    LinkedList<ByteBuffer> decoded;
 
     /**
      * Constructs a new instance of this wrapper from a buffer array
      *
-     * @param array the non-null buffer array
+     * @param raw the non-null buffer array
      */
-    public BinaryMessage(@NonNull BinaryArray array) {
-        this.raw = array;
-        var buffer = Buffers.newBuffer(array);
-        var decoded = new LinkedList<BinaryArray>();
-        while (buffer.readableBytes() >= 3) {
-            var size = decodeLength(buffer);
+    public BinaryMessage(@NonNull ByteBuffer raw) {
+        this.raw = raw;
+        var decoded = new LinkedList<ByteBuffer>();
+        while (raw.readableBytes() >= 3) {
+            var size = decodeLength(raw);
             if(size < 0){
                 continue;
             }
 
-            var frame = Buffers.readBinary(buffer, size);
-            decoded.add(frame);
+            decoded.add(raw.readBuffer(size));
         }
 
         this.decoded = decoded;
     }
 
-    private int decodeLength(ByteBuf buffer) {
+    private int decodeLength(ByteBuffer buffer) {
         return (buffer.readByte() << 16) | buffer.readUnsignedShort();
     }
 
@@ -73,7 +64,7 @@ public class BinaryMessage {
      * @param array the non-null array of bytes
      */
     public BinaryMessage(byte @NonNull [] array) {
-        this(of(array));
+        this(ByteBuffer.of(array));
     }
 
     /**
@@ -88,9 +79,9 @@ public class BinaryMessage {
                 .toList();
     }
 
-    private Node toNode(BinaryArray encoded, WhatsappKeys keys) {
+    private Node toNode(ByteBuffer encoded, WhatsappKeys keys) {
         var plainText = AesGmc.with(keys.readKey(), keys.readCounter(true), false)
-                .process(encoded.data());
+                .process(encoded.toByteArray());
         return decoder.decode(plainText);
     }
 }

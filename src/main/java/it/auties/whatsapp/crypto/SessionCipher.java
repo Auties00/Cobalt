@@ -1,6 +1,6 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.buffer.ByteBuffer;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalPreKeyPair;
@@ -17,7 +17,6 @@ import lombok.SneakyThrows;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
@@ -75,14 +74,14 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
     }
 
     private byte[] createMessageSignature(Session session, byte[][] whisperKeys, byte[] encodedMessage) {
-        var macInput = BinaryArray.of(keys.identityKeyPair().encodedPublicKey())
+        var macInput = ByteBuffer.of(keys.identityKeyPair().encodedPublicKey())
                 .append(session.currentState().remoteIdentityKey())
                 .append(encodedMessage)
                 .assertSize(encodedMessage.length + 33 + 33)
-                .data();
+                .toByteArray();
         return Hmac.calculateSha256(macInput, whisperKeys[1])
                 .cut(8)
-                .data();
+                .toByteArray();
     }
 
     private boolean hasPreKey(Session session) {
@@ -100,11 +99,11 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
                 "Closed chain");
 
         var messagesHmac = Hmac.calculateSha256(new byte[]{1}, chain.key());
-        var keyPair = new SignalPreKeyPair(chain.counter() + 1, messagesHmac.data(), null);
+        var keyPair = new SignalPreKeyPair(chain.counter() + 1, messagesHmac.toByteArray(), null);
         chain.messageKeys().put(chain.counter() + 1, keyPair);
 
         var keyHmac = Hmac.calculateSha256(new byte[]{2}, chain.key());
-        chain.key(keyHmac.data());
+        chain.key(keyHmac.toByteArray());
         chain.incrementCounter();
         fillMessageKeys(chain, counter);
     }
@@ -157,14 +156,14 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         var secrets = Hkdf.deriveSecrets(messageKey.publicKey(),
                 "WhisperMessageKeys".getBytes(StandardCharsets.UTF_8));
 
-        var hmacInput = BinaryArray.of(state.remoteIdentityKey())
+        var hmacInput = ByteBuffer.of(state.remoteIdentityKey())
                 .append(keys.identityKeyPair().encodedPublicKey())
                 .append(message.serialized())
                 .cut(-SignalMessage.MAC_LENGTH)
-                .data();
+                .toByteArray();
         var hmac = Hmac.calculateSha256(hmacInput, secrets[1])
                 .cut(SignalMessage.MAC_LENGTH)
-                .data();
+                .toByteArray();
         Validate.isTrue(Arrays.equals(message.signature(), hmac),
                 "Cannot decode message: Hmac validation failed", SecurityException.class);
 
@@ -199,7 +198,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
     private void calculateRatchet(SignalMessage message, SessionState state, boolean sending) {
         var sharedSecret = Curve.calculateAgreement(message.ephemeralPublicKey(),
                 state.ephemeralKeyPair().privateKey());
-        var masterKey = Hkdf.deriveSecrets(sharedSecret.data(), state.rootKey(),
+        var masterKey = Hkdf.deriveSecrets(sharedSecret.toByteArray(), state.rootKey(),
                 "WhisperRatchet".getBytes(StandardCharsets.UTF_8), 2);
         var chainKey = sending ? state.ephemeralKeyPair().encodedPublicKey() : message.ephemeralPublicKey();
         state.addChain(new SessionChain(-1, masterKey[1], chainKey));

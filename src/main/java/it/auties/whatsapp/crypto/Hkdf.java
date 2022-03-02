@@ -46,23 +46,23 @@ public class Hkdf {
         var result = resultStream.toByteArray();
 
        var signed = new ArrayList<byte[]>();
-       var first = Hmac.calculateSha256(copyOfRange(result, 32, result.length), prk.data());
-       signed.add(first.data());
+       var first = Hmac.calculateSha256(copyOfRange(result, 32, result.length), prk.toByteArray());
+       signed.add(first.toByteArray());
 
         if (chunks > 1) {
             var source = signed.get(0);
             System.arraycopy(source, 0, result, 0, source.length);
             result[result.length - 1] = 2;
-            var second = Hmac.calculateSha256(result, prk.data());
-            signed.add(second.data());
+            var second = Hmac.calculateSha256(result, prk.toByteArray());
+            signed.add(second.toByteArray());
         }
 
         if (chunks > 2) {
             var source = signed.get(1);
             System.arraycopy(source, 0, result, 0, source.length);
             result[result.length - 1] = 3;
-            var third = Hmac.calculateSha256(result, prk.data());
-            signed.add(third.data());
+            var third = Hmac.calculateSha256(result, prk.toByteArray());
+            signed.add(third.toByteArray());
         }
 
         return signed.toArray(byte[][]::new);

@@ -124,7 +124,7 @@ public final class AudioMessage extends MediaMessage {
     return AudioMessage.builder()
             .fileSha256(upload.fileSha256())
             .fileEncSha256(upload.fileEncSha256())
-            .mediaKey(upload.mediaKey().data())
+            .mediaKey(upload.mediaKey().toByteArray())
             .mediaKeyTimestamp(ZonedDateTime.now().toEpochSecond())
             .url(upload.url())
             .directPath(upload.directPath())

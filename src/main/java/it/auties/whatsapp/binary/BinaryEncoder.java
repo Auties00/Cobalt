@@ -1,25 +1,23 @@
 package it.auties.whatsapp.binary;
 
-import io.netty.buffer.ByteBuf;
+import it.auties.buffer.ByteBuffer;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.socket.Node;
-import it.auties.whatsapp.util.Buffers;
 import it.auties.whatsapp.util.Nodes;
 import lombok.NonNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
-import java.util.Objects;
 
 import static it.auties.whatsapp.binary.BinaryTag.*;
 
-public record BinaryEncoder(@NonNull ByteBuf buffer){
+public record BinaryEncoder(@NonNull ByteBuffer buffer){
     private static final int UNSIGNED_BYTE_MAX_VALUE = 256;
     private static final int UNSIGNED_SHORT_MAX_VALUE = 65536;
     private static final int INT_20_MAX_VALUE = 1048576;
 
     public BinaryEncoder(){
-        this(Buffers.newBuffer());
+        this(ByteBuffer.newBuffer());
     }
 
     public byte[] encode(Node node) {
@@ -163,7 +161,7 @@ public record BinaryEncoder(@NonNull ByteBuf buffer){
         if (input.description().equals("0")) {
             buffer.writeByte(LIST_8.data());
             buffer.writeByte(LIST_EMPTY.data());
-            return Buffers.readAllBytes(buffer);
+            return buffer.toByteArray();
         }
 
         writeInt(input.size());
@@ -172,7 +170,8 @@ public record BinaryEncoder(@NonNull ByteBuf buffer){
         if(input.hasContent()) {
             write(input.content());
         }
-        return Buffers.readAllBytes(buffer);
+
+        return buffer.toByteArray();
     }
 
     private void writeAttributes(Node input) {
@@ -191,7 +190,7 @@ public record BinaryEncoder(@NonNull ByteBuf buffer){
 
         if (size < UNSIGNED_SHORT_MAX_VALUE) {
             buffer.writeByte(LIST_16.data());
-            buffer.writeShort(size);
+            buffer.writeShort((short) size);
         }
 
         throw new IllegalArgumentException("Cannot write int %s: overflow".formatted(size));

@@ -2,7 +2,7 @@ package it.auties.whatsapp.protobuf.sync;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.buffer.ByteBuffer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -35,12 +35,12 @@ public final class RecordSync implements ParsableMutation {
   }
 
   @Override
-  public BinaryArray valueBlob() {
-    return BinaryArray.of(value.blob());
+  public ByteBuffer valueBlob() {
+    return ByteBuffer.of(value.blob());
   }
 
   @Override
-  public BinaryArray indexBlob() {
-    return BinaryArray.of(index.blob());
+  public ByteBuffer indexBlob() {
+    return ByteBuffer.of(index.blob());
   }
 }

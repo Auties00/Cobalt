@@ -1,11 +1,11 @@
 package it.auties.whatsapp.socket;
 
+import it.auties.buffer.ByteBuffer;
 import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp.binary.BinaryEncoder;
 import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
-import it.auties.whatsapp.util.Buffers;
 import jakarta.websocket.SendResult;
 import jakarta.websocket.Session;
 import lombok.NonNull;
@@ -105,13 +105,13 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      */
     public CompletableFuture<Node> send(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store, boolean prologue, boolean response) {
         var ciphered = cipherMessage(keys);
-        var buffer = Buffers.newBuffer(prologue ? PROLOGUE : new byte[0])
+        var buffer = ByteBuffer.of(prologue ? PROLOGUE : new byte[0])
                 .writeInt(ciphered.length >> 16)
                 .writeShort(65535 & ciphered.length)
-                .writeBytes(ciphered);
-        var read = Buffers.readBinary(buffer);
+                .writeBytes(ciphered)
+                .toNioBuffer();
         session.getAsyncRemote()
-                .sendBinary(read.toBuffer(), result -> handleSendResult(store, result, response));
+                .sendBinary(buffer, result -> handleSendResult(store, result, response));
         return future;
     }
 

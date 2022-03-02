@@ -2,20 +2,18 @@ package it.auties.whatsapp.protobuf.signal.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.buffer.ByteBuffer;
 import it.auties.protobuf.annotation.ProtobufIgnore;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.protobuf.encoder.ProtobufEncoder;
-import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.crypto.SignalHelper;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.io.IOException;
-import java.util.Objects;
 import java.util.function.Function;
 
-import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
 import static java.util.Arrays.copyOfRange;
 
 @AllArgsConstructor
@@ -59,11 +57,11 @@ public final class SignalMessage implements SignalProtocolMessage {
         this.counter = counter;
         this.previousCounter = previousCounter;
         this.ciphertext = ciphertext;
-        var encodedMessage = BinaryArray.of(SignalHelper.serialize(version))
+        var encodedMessage = ByteBuffer.of(SignalHelper.serialize(version))
                 .append(ProtobufEncoder.encode(this));
-        this.signature = signer.apply(encodedMessage.data());
+        this.signature = signer.apply(encodedMessage.toByteArray());
         this.serialized = encodedMessage.append(signature)
-                .data();
+                .toByteArray();
     }
     public static SignalMessage ofSerialized(byte[] serialized) {
         try {

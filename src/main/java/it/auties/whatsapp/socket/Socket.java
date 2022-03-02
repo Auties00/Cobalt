@@ -1,12 +1,11 @@
 package it.auties.whatsapp.socket;
 
+import it.auties.buffer.ByteBuffer;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.protobuf.encoder.ProtobufEncoder;
-import it.auties.whatsapp.api.SerializationStrategy;
 import it.auties.whatsapp.api.SerializationStrategy.Event;
 import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.api.WhatsappOptions;
-import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.binary.BinaryMessage;
 import it.auties.whatsapp.crypto.*;
 import it.auties.whatsapp.manager.WhatsappKeys;
@@ -63,8 +62,8 @@ import java.util.stream.Stream;
 
 import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
 import static it.auties.whatsapp.api.SerializationStrategy.Event.*;
-import static it.auties.whatsapp.binary.BinaryArray.empty;
-import static it.auties.whatsapp.binary.BinaryArray.ofBase64;
+import static it.auties.buffer.ByteBuffer.empty;
+import static it.auties.buffer.ByteBuffer.ofBase64;
 import static it.auties.whatsapp.socket.Node.*;
 import static it.auties.whatsapp.util.QrHandler.TERMINAL;
 import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
@@ -136,6 +135,7 @@ public class Socket {
         this.messageHandler = new MessageHandler();
         this.appStateHandler = new AppStateHandler();
         getRuntime().addShutdownHook(new Thread(() -> serialize(ON_CLOSE)));
+        serialize(OTHER);
     }
 
     private void serialize(Event event) {
@@ -148,6 +148,10 @@ public class Socket {
     @OnOpen
     @SneakyThrows
     public void onOpen(@NonNull Session session) {
+        if(options.debug()){
+            System.out.println("Opened");
+        }
+
         session(session);
         if(loggedIn){
             return;
@@ -171,7 +175,7 @@ public class Socket {
 
         var header = message.decoded().getFirst();
         if(!loggedIn){
-            authHandler.sendUserPayload(header.data());
+            authHandler.sendUserPayload(header.toByteArray());
             return;
         }
 
@@ -184,10 +188,7 @@ public class Socket {
             System.out.println("Received: " + deciphered);
         }
 
-        if(store.resolvePendingRequest(deciphered, false)){
-            return;
-        }
-
+        store.resolvePendingRequest(deciphered, false);
         streamHandler.digest(deciphered);
     }
 
@@ -237,6 +238,10 @@ public class Socket {
 
     @OnClose
     public void onClose(){
+        if(options.debug()){
+            System.out.println("Closed");
+        }
+
         if(loginFuture != null && !loginFuture.isDone()){
             loginFuture.complete(null);
         }
@@ -255,7 +260,12 @@ public class Socket {
     @OnError
     public void onError(Throwable throwable){
         serialize(ON_ERROR);
+        handleError(throwable);
+    }
+
+    private <T> T handleError(Throwable throwable){
         throwable.printStackTrace();
+        return null;
     }
 
     public CompletableFuture<Node> send(Node node){
@@ -395,16 +405,16 @@ public class Socket {
                     .serverHello();
             handshake.updateHash(serverHello.ephemeral());
             var sharedEphemeral = Curve.calculateAgreement(serverHello.ephemeral(), keys.ephemeralKeyPair().privateKey());
-            handshake.mixIntoKey(sharedEphemeral.data());
+            handshake.mixIntoKey(sharedEphemeral.toByteArray());
 
             var decodedStaticText = handshake.cipher(serverHello.staticText(), false);
             var sharedStatic = Curve.calculateAgreement(decodedStaticText, keys.ephemeralKeyPair().privateKey());
-            handshake.mixIntoKey(sharedStatic.data());
+            handshake.mixIntoKey(sharedStatic.toByteArray());
             handshake.cipher(serverHello.payload(), false);
 
             var encodedKey = handshake.cipher(keys.companionKeyPair().publicKey(), true);
             var sharedPrivate = Curve.calculateAgreement(serverHello.ephemeral(), keys.companionKeyPair().privateKey());
-            handshake.mixIntoKey(sharedPrivate.data());
+            handshake.mixIntoKey(sharedPrivate.toByteArray());
 
             var encodedPayload = handshake.cipher(createUserPayload(), true);
             var clientFinish = new ClientFinish(encodedKey, encodedPayload);
@@ -446,7 +456,7 @@ public class Socket {
 
         private CompanionData createRegisterData() {
             return CompanionData.builder()
-                    .buildHash(ofBase64(BUILD_HASH).data())
+                    .buildHash(ofBase64(BUILD_HASH).toByteArray())
                     .companion(encode(createCompanionProps()))
                     .id(SignalHelper.toBytes(keys.id(), 4))
                     .keyType(SignalHelper.toBytes(KEY_TYPE, 1))
@@ -587,6 +597,7 @@ public class Socket {
         }
 
         private void digestAck(Node node) {
+            System.out.println("Received ack: " + node);
             var clazz = node.attributes().getString("class");
             if (!Objects.equals(clazz, "message")) {
                 return;
@@ -594,7 +605,7 @@ public class Socket {
 
             var from = node.attributes().getJid("from")
                     .orElseThrow(() -> new NoSuchElementException("Cannot digest ack: missing from"));
-            var receipt = with("ack",
+            var receipt = withAttributes("ack",
                     of("class", "receipt", "id", node.id(), "from", from));
             send(receipt);
         }
@@ -745,17 +756,21 @@ public class Socket {
         }
 
         private void digestIq(Node node) {
-            var children = node.children();
-            if(children.isEmpty()){
+            var container = node.children().peekFirst();
+            if(container == null){
                 return;
             }
 
-            var container = children.getFirst();
-            switch (container.description()){
-                case "pair-device" -> generateQrCode(node, container);
-                case "pair-success" -> confirmQrCode(node, container);
-                default -> throw new IllegalArgumentException("Cannot handle iq request, unknown description. %s%n".formatted(container.description()));
+            if (container.description().equals("pair-device")) {
+                generateQrCode(node, container);
+                return;
             }
+
+            if (!container.description().equals("pair-success")) {
+                return;
+            }
+
+            confirmQrCode(node, container);
         }
 
         private void confirmConnection() {
@@ -823,7 +838,7 @@ public class Socket {
             var advIdentity = ProtobufDecoder.forType(SignedDeviceIdentityHMAC.class)
                     .decode(deviceIdentity.bytes());
             var advSign = Hmac.calculateSha256(advIdentity.details(), keys.companionKey());
-            if(!Arrays.equals(advIdentity.hmac(), advSign.data())) {
+            if(!Arrays.equals(advIdentity.hmac(), advSign.toByteArray())) {
                 handleFailure(503, "hmac_validation", "login_adv_sign");
                 return;
             }
@@ -831,20 +846,20 @@ public class Socket {
             var account = ProtobufDecoder.forType(SignedDeviceIdentity.class)
                     .decode(advIdentity.details());
             keys.companionIdentity(advIdentity.details());
-            var message = BinaryArray.of(MESSAGE_HEADER)
+            var message = ByteBuffer.of(MESSAGE_HEADER)
                     .append(account.details())
                     .append(keys.identityKeyPair().publicKey())
-                    .data();
+                    .toByteArray();
             if(!Curve.verifySignature(account.accountSignatureKey(), message, account.accountSignature())) {
                 handleFailure(503, "hmac_validation", "login_verify_signature");
                 return;
             }
 
-            var deviceSignatureMessage = BinaryArray.of(SIGNATURE_HEADER)
+            var deviceSignatureMessage = ByteBuffer.of(SIGNATURE_HEADER)
                     .append(account.details())
                     .append(keys.identityKeyPair().publicKey())
                     .append(account.accountSignatureKey())
-                    .data();
+                    .toByteArray();
             var deviceSignature = Curve.calculateSignature(keys.identityKeyPair().privateKey(), deviceSignatureMessage);
             account.deviceSignature(deviceSignature);
             account.accountSignatureKey(null);
@@ -885,18 +900,12 @@ public class Socket {
             if (isConversation(info)) {
                 var whatsappMessage = DeviceSentMessage.newDeviceSentMessage(info.chatJid().toString(), info.message());
                 var paddedMessage = SignalHelper.pad(ProtobufEncoder.encode(whatsappMessage));
-                var receiverDevices = querySyncDevices(info.chatJid(), true)
+                return querySyncDevices(info.chatJid(), true)
+                        .thenCombineAsync(querySyncDevices(keys.companion().toUserJid(), true), WhatsappUtils::combine)
                         .thenComposeAsync(this::createSessions)
-                        .thenApplyAsync(result -> createParticipantsSessions(result, paddedMessage));
-                var senderDevices = querySyncDevices(keys.companion().toUserJid(), true)
-                        .thenComposeAsync(this::createSessions)
-                        .thenApplyAsync(result -> createParticipantsSessions(result, paddedMessage));
-                return receiverDevices.thenCombineAsync(senderDevices, WhatsappUtils::combine)
+                        .thenApplyAsync(result -> createParticipantsSessions(result, paddedMessage))
                         .thenComposeAsync(participants -> encode(info, encodedMessage, participants, attributes))
-                        .exceptionallyAsync(throwable ->  {
-                            throwable.printStackTrace();
-                            return null;
-                        });
+                        .exceptionallyAsync(Socket.this::handleError);
             }
 
             var senderName = new SenderKeyName(info.chatJid().toString(), keys.companion().toSignalAddress());
@@ -907,10 +916,7 @@ public class Socket {
                     .orElseGet(() -> cacheGroupMetadata(info))
                     .thenComposeAsync(metadata -> getGroupParticipants(info, metadata, signalMessage))
                     .thenComposeAsync(participants -> encode(info, encodedMessage, participants, attributes))
-                    .exceptionallyAsync(throwable ->  {
-                        throwable.printStackTrace();
-                        return null;
-                    });
+                    .exceptionallyAsync(Socket.this::handleError);
         }
 
         private CompletableFuture<List<Node>> getGroupParticipants(MessageInfo info, GroupMetadata metadata, SignalDistributionMessage message) {
@@ -945,6 +951,9 @@ public class Socket {
                     .put("to", info.chatJid())
                     .map();
             var request = withChildren("message", attributes, body);
+            Validate.isTrue(request.content() != null,
+                    "Missing message content",
+                    IllegalArgumentException.class);
             return send(request);
         }
 
@@ -1333,7 +1342,7 @@ public class Socket {
             var indexMac = Hmac.calculateSha256(index, mutationKeys.indexKey());
 
             var generator = new LTHash(hashState);
-            generator.mix(indexMac.data(), valueMac, patch.operation());
+            generator.mix(indexMac.toByteArray(), valueMac, patch.operation());
 
             var result = generator.finish();
             hashState.hash(result.hash());
@@ -1342,10 +1351,10 @@ public class Socket {
 
             var snapshotMac = generateSnapshotMac(hashState.hash(), hashState.version(), patch.type(), mutationKeys.snapshotMacKey());
             var syncId = new KeyId(key.keyId().keyId());
-            var patchMac = generatePatchMac(snapshotMac, BinaryArray.of(valueMac), hashState.version(), patch.type(), mutationKeys.patchMacKey());
+            var patchMac = generatePatchMac(snapshotMac, ByteBuffer.of(valueMac), hashState.version(), patch.type(), mutationKeys.patchMacKey());
             var record = RecordSync.builder()
-                    .index(new IndexSync(indexMac.data()))
-                    .value(new ValueSync(BinaryArray.of(encrypted, valueMac).data()))
+                    .index(new IndexSync(indexMac.toByteArray()))
+                    .value(new ValueSync(ByteBuffer.of(encrypted, valueMac).toByteArray()))
                     .keyId(syncId)
                     .build();
             var mutation = MutationSync.builder()
@@ -1389,12 +1398,7 @@ public class Socket {
                     .thenApplyAsync(this::parseSyncRequest)
                     .thenApplyAsync(this::parsePatches)
                     .thenAcceptAsync(actions -> actions.forEach(this::processSyncActions))
-                    .exceptionallyAsync(this::handleSyncFailure);
-        }
-
-        private Void handleSyncFailure(Throwable throwable){
-            throwable.printStackTrace();
-            return null;
+                    .exceptionallyAsync(Socket.this::handleError);
         }
 
         private List<ActionDataSync> parsePatches(List<SnapshotSyncRecord> patches) {
@@ -1422,7 +1426,6 @@ public class Socket {
 
                 return results;
             } catch (Throwable throwable) {
-                throwable.printStackTrace();
                 keys.hashStates().remove(name);
                 if (tries > MAX_SYNC_ATTEMPTS) {
                     throw new RuntimeException("Cannot parse patch", throwable);
@@ -1560,17 +1563,19 @@ public class Socket {
             }
 
             newState.version(patch.version().version());
-            Validate.isTrue(Arrays.equals(calculateSyncMac(patch, name), patch.patchMac()),
-                    "Cannot decode mutations: Hmac validation failed",
-                    SecurityException.class);
+            if(!Arrays.equals(calculateSyncMac(patch, name), patch.patchMac())){
+                streamHandler.handleFailure(400, "hmac_validation", "patch");
+                return Optional.empty();
+            }
 
             var mutations = decodeMutations(patch.mutations(), newState);
             newState.hash(mutations.hash());
             newState.indexValueMap(mutations.indexValueMap());
             // FIXME: 06/02/2022 Invalid hmac
-            // Validate.isTrue(Arrays.equals(generatePatchMac(name, newState, patch), patch.snapshotMac()),
-            //                    "Cannot decode mutations: Hmac validation failed",
-            //                    SecurityException.class);
+            // if(!Arrays.equals(generatePatchMac(name, newState, patch), patch.snapshotMac())){
+            //    streamHandler.handleFailure(400, "hmac_validation", "snapshot");
+            //    return Optional.empty();
+            //  }
 
             return Optional.of(mutations)
                     .filter(ignored -> patch.version().version() == 0 || patch.version().version() > minimumVersionNumber);
@@ -1590,9 +1595,9 @@ public class Socket {
             var mutationMacs = sync.mutations()
                     .stream()
                     .map(mutation -> mutation.record().value().blob())
-                    .map(BinaryArray::of)
+                    .map(ByteBuffer::of)
                     .map(binary -> binary.slice(-32))
-                    .reduce(empty(), BinaryArray::append);
+                    .reduce(empty(), ByteBuffer::append);
             return generatePatchMac(sync.snapshotMac(), mutationMacs, sync.version().version(), name, mutationKeys.patchMacKey());
         }
 
@@ -1601,10 +1606,10 @@ public class Socket {
             var mutations = decodeMutations(snapshot.records(), newState);
             newState.hash(mutations.hash());
             newState.indexValueMap(mutations.indexValueMap());
-
-            Validate.isTrue(Arrays.equals(snapshot.mac(), computeSnapshotMac(name, snapshot, newState)),
-                    "Cannot decode mutations: Hmac validation failed",
-                    SecurityException.class);
+            if(!Arrays.equals(snapshot.mac(), computeSnapshotMac(name, snapshot, newState))){
+                streamHandler.handleFailure(400, "hmac_validation", "snapshot");
+                return mutations;
+            }
 
             var oldState = keys.findHashStateByName(name);
             var required = oldState.version() == 0 || newState.version() > oldState.version();
@@ -1640,22 +1645,23 @@ public class Socket {
             var mutationKeys = MutationKeys.of(appStateSyncKey.keyData().keyData());
             var encryptedBlob = mutation.valueBlob()
                     .cut(-32)
-                    .data();
+                    .toByteArray();
             var encryptedMac = mutation.valueBlob()
                     .slice(-32)
-                    .data();
-            Validate.isTrue(Arrays.equals(generateMac(MutationSync.Operation.SET, encryptedBlob, mutation.id(), mutationKeys.macKey()), encryptedMac),
-                    "Cannot decode mutation: Hmac validation failed",
-                    SecurityException.class);
+                    .toByteArray();
+            if(!Arrays.equals(generateMac(MutationSync.Operation.SET, encryptedBlob, mutation.id(), mutationKeys.macKey()), encryptedMac)){
+                streamHandler.handleFailure(400, "hmac_validation", "mutation");
+                throw new RuntimeException();
+            }
 
             var result = AesCbc.decrypt(encryptedBlob, mutationKeys.encKey());
-            var actionSync = ProtobufDecoder.forType(ActionDataSync.class)
-                    .decode(result);
-            Validate.isTrue(Objects.equals(Hmac.calculateSha256(actionSync.index(), mutationKeys.indexKey()), mutation.indexBlob()),
-                    "Cannot decode mutation: Hmac validation failed",
-                    SecurityException.class);
+            var actionSync = ProtobufDecoder.forType(ActionDataSync.class).decode(result);
+            if(!Objects.equals(Hmac.calculateSha256(actionSync.index(), mutationKeys.indexKey()), mutation.indexBlob())){
+                streamHandler.handleFailure(400, "hmac_validation", "mutation");
+                throw new RuntimeException();
+            }
 
-            generator.mix(mutation.indexBlob().data(), encryptedMac, MutationSync.Operation.SET);
+            generator.mix(mutation.indexBlob().toByteArray(), encryptedMac, MutationSync.Operation.SET);
             return actionSync;
         }
 
@@ -1665,41 +1671,41 @@ public class Socket {
                 case REMOVE -> 0x02;
             };
 
-            var encodedKey = BinaryArray.of(keyData)
+            var encodedKey = ByteBuffer.of(keyData)
                     .append(keyId)
-                    .data();
+                    .toByteArray();
 
-            var last = BinaryArray.allocate(8)
-                    .withLast((byte) encodedKey.length)
-                    .data();
+            var last = ByteBuffer.allocate(8)
+                    .writeByte((byte) encodedKey.length, 7)
+                    .toByteArray();
 
-            var total = BinaryArray.of(encodedKey)
+            var total = ByteBuffer.of(encodedKey)
                     .append(data)
                     .append(last)
-                    .data();
+                    .toByteArray();
 
             return Hmac.calculateSha512(total, key)
                     .cut(32)
-                    .data();
+                    .toByteArray();
         }
 
         private byte[] generateSnapshotMac(byte[] ltHash, long version, String patchName, byte[] key) {
-            var total = BinaryArray.of(ltHash)
+            var total = ByteBuffer.of(ltHash)
                     .append(SignalHelper.toBytes(version))
                     .append(patchName.getBytes(StandardCharsets.UTF_8))
-                    .data();
+                    .toByteArray();
             return Hmac.calculateSha256(total, key)
-                    .data();
+                    .toByteArray();
         }
 
-        private byte[] generatePatchMac(byte[] snapshotMac, BinaryArray valueMacs, long version, String type, byte[] key) {
-            var total = BinaryArray.of(snapshotMac)
+        private byte[] generatePatchMac(byte[] snapshotMac, ByteBuffer valueMacs, long version, String type, byte[] key) {
+            var total = ByteBuffer.of(snapshotMac)
                     .append(valueMacs)
                     .append(SignalHelper.toBytes(version))
                     .append(type.getBytes(StandardCharsets.UTF_8))
-                    .data();
+                    .toByteArray();
             return Hmac.calculateSha256(total, key)
-                    .data();
+                    .toByteArray();
         }
     }
 }

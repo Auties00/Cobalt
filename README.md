@@ -454,14 +454,14 @@ To search messages in any chat on Whatsapp's servers:
 ``` java
 var future = api.search(stringToSearch, numOfMessages, page);  // A future for the request
 var response = future.get(); // Wait for the future to complete
-var messages = response.data().orElseThrow(); // The requested messages
+var messages = response.toByteArray().orElseThrow(); // The requested messages
 ```
 
 To search messages for a specific chat on Whatsapp's servers:
 ``` java
 var future = api.search(stringToSearch, chat, numOfMessages, page);  // A future for the request
 var response = future.get(); // Wait for the future to complete
-var messages = response.data().orElseThrow(); // The requested messages
+var messages = response.toByteArray().orElseThrow(); // The requested messages
 ```
 
 ### Miscellaneous chat related methods

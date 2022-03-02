@@ -9,7 +9,7 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.Arrays;
 
 /**
- * The constants of this enumerated type describe the various tags used by an encrypted {@link BinaryArray}.
+ * The constants of this enumerated type describe the various tags used by an encrypted {@link it.auties.buffer.ByteBuffer}.
  * These tags were extracted from JS code found at https://web.whatsapp.com/.
  * It is important to remember that these are unsigned ints, not bytes.
  * For this reason when comparing a byte with one of these tags it is important to convert said byte to an unsigned int using {@link Byte#toUnsignedInt(byte)}.

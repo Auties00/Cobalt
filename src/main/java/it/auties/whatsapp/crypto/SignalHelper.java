@@ -1,15 +1,15 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.buffer.ByteBuffer;
 import it.auties.whatsapp.util.Validate;
 import it.auties.whatsapp.util.SignalProvider;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
 import java.io.ByteArrayOutputStream;
-import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
 /**
@@ -89,28 +89,31 @@ public class SignalHelper implements SignalProvider {
         return Byte.toUnsignedInt(version) >> 4;
     }
 
-    @SneakyThrows
-    public byte[] deflate(byte[] compressed){
-        var decompressor = new Inflater();
-        decompressor.setInput(compressed);
-        var result = new ByteArrayOutputStream();
-        var buffer = new byte[1024];
-        while (!decompressor.finished()) {
-            var count = decompressor.inflate(buffer);
-            result.write(buffer, 0, count);
-        }
+    public byte[] deflate(byte[] compressed) {
+       try {
+           var decompressor = new Inflater();
+           decompressor.setInput(compressed);
+           var result = new ByteArrayOutputStream();
+           var buffer = new byte[1024];
+           while (!decompressor.finished()) {
+               var count = decompressor.inflate(buffer);
+               result.write(buffer, 0, count);
+           }
 
-        return result.toByteArray();
+           return result.toByteArray();
+       }catch (DataFormatException exception){
+           throw new IllegalArgumentException("Cannot deflate", exception);
+       }
     }
 
     public byte[] pad(byte[] bytes){
         var padRandomByte = SignalHelper.randomHeader();
-        var padding = BinaryArray.allocate(padRandomByte)
+        var padding = ByteBuffer.allocate(padRandomByte)
                 .fill((byte) padRandomByte)
-                .data();
-       return BinaryArray.of(bytes)
+                .toByteArray();
+       return ByteBuffer.of(bytes)
                .append(padding)
-               .data();
+               .toByteArray();
     }
 
     public int fromBytes(byte[] bytes, int length){
@@ -124,8 +127,8 @@ public class SignalHelper implements SignalProvider {
 
     public byte[] toBytes(long number){
         return ByteBuffer.allocate(Long.BYTES)
-                .putLong(number)
-                .array();
+                .writeLong(number)
+                .toByteArray();
     }
 
     public byte[] toBytes(int input, int length) {

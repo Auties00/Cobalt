@@ -24,7 +24,7 @@ public class WhatsappOptions {
      * If the version is too outdated, the server will refuse to connect
      */
     @Default
-    private final int @NonNull [] whatsappVersion = new int[]{2, 2204, 13};
+    private final int[] whatsappVersion = new int[]{2, 2204, 13};
 
     /**
      * The url of the multi device beta socket
@@ -61,7 +61,8 @@ public class WhatsappOptions {
      */
     @Default
     @NonNull
-    private final Set<@NonNull SerializationStrategy> serializationStrategies = Set.of(SerializationStrategy.onClose());
+    private final Set<SerializationStrategy> serializationStrategies
+            = Set.of(SerializationStrategy.onClose());
 
     /**
      * Constructs a new instance of WhatsappConfiguration with default options

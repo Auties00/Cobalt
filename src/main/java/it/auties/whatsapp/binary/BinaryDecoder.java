@@ -1,19 +1,16 @@
 package it.auties.whatsapp.binary;
 
-import io.netty.buffer.ByteBuf;
+import it.auties.buffer.ByteBuffer;
 import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.socket.Node;
-import it.auties.whatsapp.util.Buffers;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static it.auties.whatsapp.binary.BinaryTag.*;
@@ -21,25 +18,21 @@ import static it.auties.whatsapp.protobuf.contact.ContactJid.Server.forAddress;
 import static it.auties.whatsapp.socket.Node.with;
 import static it.auties.whatsapp.socket.Node.withAttributes;
 
-public record BinaryDecoder(@NonNull ByteBuf buffer){
+public record BinaryDecoder(@NonNull ByteBuffer buffer){
     public BinaryDecoder(){
-        this(Buffers.newBuffer());
+        this(ByteBuffer.newBuffer());
     }
+
     public Node decode(byte @NonNull [] input){
         buffer.clear().writeBytes(unpack(input));
         return readNode();
     }
 
     private byte[] unpack(byte[] input){
-        var data = Buffers.newBuffer()
-                .writeBytes(input);
-        var token = data.readByte() & 2;
-        if (token == 0) {
-            return Buffers.readBytes(data);
-        }
-
-        var bytes = Buffers.readBytes(data);
-        return SignalHelper.deflate(bytes);
+        var buffer = ByteBuffer.of(input);
+        var token = buffer.readByte() & 2;
+        var data = buffer.remaining().toByteArray();
+        return token == 0 ? data : SignalHelper.deflate(data);
     }
 
     private Node readNode() {
@@ -124,7 +117,7 @@ public record BinaryDecoder(@NonNull ByteBuf buffer){
     }
 
     private Object readString(int size, boolean parseBytes) {
-        var data = Buffers.readBytes(buffer, size);
+        var data = buffer.readBytes(size);
         return parseBytes ? new String(data, StandardCharsets.UTF_8)
                 : data;
     }

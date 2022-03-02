@@ -2,8 +2,8 @@ package it.auties.whatsapp.protobuf.signal.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.buffer.ByteBuffer;
 import it.auties.protobuf.decoder.ProtobufDecoder;
-import it.auties.whatsapp.binary.BinaryArray;
 import it.auties.whatsapp.crypto.SignalHelper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -74,8 +74,8 @@ public final class SignalPreKeyMessage implements SignalProtocolMessage{
     }
 
     private byte[] serialize() {
-        return BinaryArray.of(serializedVersion())
+        return ByteBuffer.of(serializedVersion())
                 .append(encode(this))
-                .data();
+                .toByteArray();
     }
 }

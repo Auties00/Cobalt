@@ -30,18 +30,27 @@ import java.util.concurrent.TimeUnit;
 public class WhatsappAPITest {
     @SneakyThrows
     public static void main(String[] args) {
-        Whatsapp.lastConnection()
+        var api = Whatsapp.lastConnection()
                 .connect()
-                .get()
-                .await();
-        System.out.println("ABCDJDJ!DJ!");
+                .get();
+        waitForInput(api);
     }
 
-    @AllArgsConstructor
-    @RegisterListener
-    public static class TestListener implements WhatsappListener {
-        public Whatsapp whatsapp;
+    private static void waitForInput(Whatsapp whatsapp){
+        var scanner = new Scanner(System.in);
+        var contact = scanner.nextLine();
+        if(Objects.equals("contact", "stop")){
+            return;
+        }
 
+        System.out.println("Sending message to " + contact);
+        whatsapp.store().findChatByName(contact)
+                .ifPresent(chat -> whatsapp.sendMessage(chat, "Ciao!"));
+        waitForInput(whatsapp);
+    }
+
+    @RegisterListener
+    public record TestListener(Whatsapp whatsapp) implements WhatsappListener {
         @Override
         public void onLoggedIn() {
             System.out.println("Connected");
@@ -51,7 +60,7 @@ public class WhatsappAPITest {
         public void onChats() {
             System.out.println("Called on chats");
             whatsapp.store()
-                    .findChatByName("5-0")
+                    .findChatByName("Il Bot Di Autiero")
                     .ifPresent(chat -> {
                         System.out.printf("Sending message to %s%n", chat.jid());
                         whatsapp.sendMessage(chat.jid(), "Test da md");
@@ -60,7 +69,7 @@ public class WhatsappAPITest {
 
         @Override
         public void onAction(Action action) {
-            System.out.println("New action: " + action);
+            System.out.println("ACTION: " + action);
         }
 
         @Override

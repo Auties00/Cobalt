@@ -1,6 +1,6 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.buffer.ByteBuffer;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
@@ -12,9 +12,9 @@ public class Sha256 {
     private final String SHA_256 = "SHA-256";
 
     @SneakyThrows
-    public BinaryArray calculate(@NonNull byte[] data) {
+    public ByteBuffer calculate(@NonNull byte[] data) {
         var digest = MessageDigest.getInstance(SHA_256);
         digest.update(data);
-        return BinaryArray.of(digest.digest());
+        return ByteBuffer.of(digest.digest());
     }
 }

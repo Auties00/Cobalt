@@ -1,20 +1,20 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.buffer.ByteBuffer;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 
-import static it.auties.whatsapp.binary.BinaryArray.of;
+import static it.auties.buffer.ByteBuffer.of;
 
 public class Handshake {
     public static final byte[] PROLOGUE = new byte[]{87, 65, 5, 2};
-    private static final BinaryArray PROTOCOL = BinaryArray.of("Noise_XX_25519_AESGCM_SHA256\0\0\0\0");
+    private static final ByteBuffer PROTOCOL = ByteBuffer.of("Noise_XX_25519_AESGCM_SHA256\0\0\0\0");
 
     private WhatsappKeys keys;
-    private BinaryArray hash;
-    private BinaryArray salt;
-    private BinaryArray cryptoKey;
+    private ByteBuffer hash;
+    private ByteBuffer salt;
+    private ByteBuffer cryptoKey;
     private long counter;
 
     public void start(WhatsappKeys keys) {
@@ -29,12 +29,12 @@ public class Handshake {
     @SneakyThrows
     public void updateHash(byte @NonNull [] data) {
         var input = hash.append(data);
-        this.hash = Sha256.calculate(input.data());
+        this.hash = Sha256.calculate(input.toByteArray());
     }
 
     @SneakyThrows
     public byte[] cipher(byte @NonNull [] bytes, boolean encrypt) {
-        var cyphered = AesGmc.with(cryptoKey, hash.data(), counter++, encrypt)
+        var cyphered = AesGmc.with(cryptoKey, hash.toByteArray(), counter++, encrypt)
                 .process(bytes);
         if (!encrypt) {
             updateHash(bytes);
@@ -58,8 +58,8 @@ public class Handshake {
         this.counter = 0;
     }
 
-    private BinaryArray extractAndExpandWithHash(byte @NonNull [] key) {
-        var extracted = Hkdf.extract(salt.data(), key);
+    private ByteBuffer extractAndExpandWithHash(byte @NonNull [] key) {
+        var extracted = Hkdf.extract(salt.toByteArray(), key);
         var expanded = Hkdf.expand(extracted, null, 64);
         return of(expanded);
     }

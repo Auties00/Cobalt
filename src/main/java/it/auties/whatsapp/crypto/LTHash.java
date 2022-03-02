@@ -1,16 +1,10 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.buffer.ByteBuffer;
 import it.auties.whatsapp.protobuf.sync.LTHashState;
 import it.auties.whatsapp.protobuf.sync.MutationSync;
-import it.auties.whatsapp.util.Buffers;
 import it.auties.whatsapp.util.Validate;
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.Value;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
-import org.bouncycastle.jcajce.provider.digest.Blake2b.Blake2b512;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -38,7 +32,7 @@ public class LTHash {
     }
 
     public void mix(byte[] indexMac, byte[] valueMac, MutationSync.Operation operation) {
-        var indexMacBase64 = BinaryArray.of(indexMac).toBase64();
+        var indexMacBase64 = ByteBuffer.of(indexMac).toBase64();
         var prevOp = indexValueMap.get(indexMacBase64);
         if (operation == MutationSync.Operation.REMOVE) {
             Validate.isTrue(prevOp != null, "No previous operation");
@@ -98,16 +92,16 @@ public class LTHash {
         }
 
         public byte[] performPointWiseWithOverflow(byte[] input, byte[] buffer, BiFunction<Integer, Integer, Integer> function) {
-            var eRead = Buffers.newBuffer(input);
-            var tRead = Buffers.newBuffer(buffer);
-            var write = Buffers.newBuffer();
+            var eRead = ByteBuffer.of(input);
+            var tRead = ByteBuffer.of(buffer);
+            var write = ByteBuffer.newBuffer();
             while (eRead.isReadable()){
                 var first = eRead.readUnsignedShort();
                 var second = tRead.readUnsignedShort();
-                write.writeShort(function.apply(first, second));
+                write.writeShort(function.apply(first, second).shortValue());
             }
 
-            return Buffers.readBytes(write);
+            return write.remaining().toByteArray();
         }
     }
 }

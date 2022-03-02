@@ -1,6 +1,6 @@
 package it.auties.whatsapp.api;
 
-import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.buffer.ByteBuffer;
 import it.auties.whatsapp.protobuf.chat.*;
 import it.auties.whatsapp.protobuf.message.model.*;
 import it.auties.whatsapp.protobuf.message.standard.TextMessage;
@@ -19,9 +19,7 @@ import it.auties.whatsapp.util.Validate;
 import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.experimental.Delegate;
 
 import java.net.URI;
 import java.time.ZonedDateTime;
@@ -30,8 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import static it.auties.whatsapp.api.WhatsappOptions.defaultOptions;
 import static it.auties.whatsapp.socket.Node.*;
@@ -862,7 +858,7 @@ public class Whatsapp {
         var participants = Arrays.stream(contacts)
                 .map(contact -> withAttributes("participant", Map.of("jid", contact.jid())))
                 .toArray(Node[]::new);
-        var body = withChildren("create", Map.of("subject", subject, "key", BinaryArray.random(12).toHex()), participants);
+        var body = withChildren("create", Map.of("subject", subject, "key", ByteBuffer.random(12).toHex()), participants);
         return socket.sendQuery(ContactJid.ofServer(ContactJid.Server.GROUP), "set", "w:g2", body)
                 .thenApplyAsync(response -> response.findNode("group"))
                 .thenApplyAsync(GroupMetadata::of);

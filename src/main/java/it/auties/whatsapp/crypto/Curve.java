@@ -1,6 +1,6 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.buffer.ByteBuffer;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
@@ -24,11 +24,11 @@ public class Curve {
     private final String CURVE_25519 = "X25519";
 
     @SneakyThrows
-    public BinaryArray calculateAgreement(byte @NonNull [] publicKey, byte @NonNull [] privateKey) {
+    public ByteBuffer calculateAgreement(byte @NonNull [] publicKey, byte @NonNull [] privateKey) {
         var keyAgreement = KeyAgreement.getInstance(CURVE_25519);
         keyAgreement.init(toPKCS8Encoded(privateKey));
         keyAgreement.doPhase(toX509Encoded(SignalHelper.removeKeyHeader(publicKey)), true);
-        return BinaryArray.of(keyAgreement.generateSecret());
+        return ByteBuffer.of(keyAgreement.generateSecret());
     }
 
     @SneakyThrows

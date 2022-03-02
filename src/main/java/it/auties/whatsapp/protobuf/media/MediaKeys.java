@@ -1,6 +1,6 @@
 package it.auties.whatsapp.protobuf.media;
 
-import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.buffer.ByteBuffer;
 import it.auties.whatsapp.crypto.Hkdf;
 import lombok.NonNull;
 
@@ -9,7 +9,7 @@ import java.util.Arrays;
 
 public record MediaKeys(byte[] iv, byte[] cipherKey, byte[] macKey, byte[] ref) {
     public static MediaKeys random(@NonNull String type){
-        return of(BinaryArray.random(32).data(), type);
+        return of(ByteBuffer.random(32).toByteArray(), type);
     }
 
     public static MediaKeys of(byte @NonNull [] key, @NonNull String type){

@@ -1,6 +1,6 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.buffer.ByteBuffer;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalSignedKeyPair;
@@ -83,7 +83,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
 
         var signedSecret = Curve.calculateAgreement(theirSignedPubKey, keys.identityKeyPair().privateKey());
         var identitySecret = Curve.calculateAgreement(theirIdentityPubKey, ourSignedKey.privateKey());
-        var sharedSecret = BinaryArray.allocate(32)
+        var sharedSecret = ByteBuffer.allocate(32)
                 .fill((byte) 0xff)
                 .append(isInitiator ? signedSecret : identitySecret)
                 .append(isInitiator ? identitySecret : signedSecret)
@@ -95,7 +95,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
 
         var masterKeyInput = sharedSecret
                 .assertSize(ourEphemeralKey == null || theirEphemeralPubKey == null ? 128 : 160)
-                .data();
+                .toByteArray();
         var masterKey = Hkdf.deriveSecrets(masterKeyInput,
                 "WhisperText".getBytes(StandardCharsets.UTF_8));
         var state = SessionState.builder()
@@ -111,7 +111,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
         }
 
         var initSecret = Curve.calculateAgreement(theirSignedPubKey, state.ephemeralKeyPair().privateKey());
-        var initKey = Hkdf.deriveSecrets(initSecret.data(), state.rootKey(),
+        var initKey = Hkdf.deriveSecrets(initSecret.toByteArray(), state.rootKey(),
                 "WhisperRatchet".getBytes(StandardCharsets.UTF_8));
         var chain = new SessionChain(-1, masterKey[1], state.ephemeralKeyPair().publicKey());
         return state.addChain(chain)

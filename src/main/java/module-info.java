@@ -24,5 +24,6 @@ open module it.auties.whatsapp4j {
     requires org.bouncycastle.provider;
     requires signal.protocol.java;
     requires curve25519.java;
+    requires it.auties.bytebuffer;
     requires netty.buffer;
 }

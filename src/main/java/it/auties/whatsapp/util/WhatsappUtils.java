@@ -1,7 +1,7 @@
 package it.auties.whatsapp.util;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.buffer.ByteBuffer;
 import it.auties.whatsapp.manager.WhatsappPreferences;
 import lombok.experimental.UtilityClass;
 
@@ -50,7 +50,7 @@ public class WhatsappUtils implements JacksonProvider {
      * @return a non-null ten character String
      */
     public String randomId() {
-        return BinaryArray.random(10).toHex();
+        return ByteBuffer.random(10).toHex();
     }
 
     /**

@@ -3,10 +3,9 @@ package it.auties.whatsapp.protobuf.sync;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import it.auties.whatsapp.binary.BinaryArray;
+import it.auties.buffer.ByteBuffer;
 import lombok.*;
 import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
@@ -32,12 +31,12 @@ public final class MutationSync implements ParsableMutation {
   }
 
   @Override
-  public BinaryArray valueBlob() {
+  public ByteBuffer valueBlob() {
     return record.valueBlob();
   }
 
   @Override
-  public BinaryArray indexBlob() {
+  public ByteBuffer indexBlob() {
     return record.indexBlob();
   }
 
