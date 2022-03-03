@@ -2,7 +2,7 @@ package it.auties.whatsapp.protobuf.signal.sender;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import it.auties.buffer.ByteBuffer;
+import it.auties.bytes.Bytes;
 import it.auties.protobuf.annotation.ProtobufIgnore;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.protobuf.encoder.ProtobufEncoder;
@@ -60,7 +60,7 @@ public class SenderKeyMessage implements SignalProvider {
     this.signingKey = signingKey;
     var encodedVersion = SignalHelper.serialize(version);
     var encoded =  ProtobufEncoder.encode(this);
-    var encodedMessage = ByteBuffer.of(encodedVersion)
+    var encodedMessage = Bytes.of(encodedVersion)
             .append(encoded);
     this.signature = Curve.calculateSignature(signingKey, encodedMessage.toByteArray());
     this.serialized = encodedMessage.append(signature).toByteArray();

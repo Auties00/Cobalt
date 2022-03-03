@@ -2,7 +2,7 @@ package it.auties.whatsapp.protobuf.signal.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import it.auties.buffer.ByteBuffer;
+import it.auties.bytes.Bytes;
 import it.auties.protobuf.annotation.ProtobufIgnore;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.protobuf.encoder.ProtobufEncoder;
@@ -69,7 +69,7 @@ public final class SignalDistributionMessage implements SignalProtocolMessage {
     this.iteration = iteration;
     this.chainKey = chainKey;
     this.signingKey = signingKey;
-    this.serialized = ByteBuffer.of(serializedVersion())
+    this.serialized = Bytes.of(serializedVersion())
             .append(ProtobufEncoder.encode(this))
             .toByteArray();
   }

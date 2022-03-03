@@ -7,7 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
 
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;

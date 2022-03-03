@@ -8,8 +8,6 @@ import it.auties.whatsapp.protobuf.chat.Chat;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
-import lombok.extern.jackson.Jacksonized;
-import lombok.extern.jackson.Jacksonized;
 
 import java.time.ZonedDateTime;
 import java.util.Optional;

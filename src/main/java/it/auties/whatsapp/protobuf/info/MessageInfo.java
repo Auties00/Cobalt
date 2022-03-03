@@ -13,9 +13,7 @@ import it.auties.whatsapp.protobuf.message.standard.LiveLocationMessage;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
 import lombok.experimental.Delegate;
-import lombok.extern.jackson.Jacksonized;
 
 import java.time.Instant;
 import java.util.*;

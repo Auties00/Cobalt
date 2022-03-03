@@ -10,7 +10,6 @@ import it.auties.whatsapp.protobuf.sync.*;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
-import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 

@@ -11,9 +11,8 @@ import it.auties.whatsapp.protobuf.message.model.MediaMessage;
 import it.auties.whatsapp.protobuf.message.model.MediaMessageType;
 import lombok.*;
 import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
-import lombok.extern.jackson.Jacksonized;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
 

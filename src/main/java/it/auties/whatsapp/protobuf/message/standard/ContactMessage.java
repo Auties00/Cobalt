@@ -8,9 +8,8 @@ import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
-import lombok.extern.jackson.Jacksonized;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds a contact inside.

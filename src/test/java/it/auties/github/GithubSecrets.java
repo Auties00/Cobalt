@@ -1,6 +1,5 @@
 package it.auties.github;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.whatsapp.util.JacksonProvider;
 import lombok.experimental.UtilityClass;
 import lombok.extern.java.Log;

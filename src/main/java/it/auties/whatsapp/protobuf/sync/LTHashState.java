@@ -13,7 +13,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static it.auties.whatsapp.socket.Node.withAttributes;
-import static it.auties.whatsapp.socket.Node.withChildren;
 import static java.util.Map.of;
 
 @AllArgsConstructor

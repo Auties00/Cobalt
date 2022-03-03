@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 import java.util.NoSuchElementException;

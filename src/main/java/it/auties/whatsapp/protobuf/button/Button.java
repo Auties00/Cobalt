@@ -7,7 +7,6 @@ import it.auties.whatsapp.protobuf.info.NativeFlowInfo;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
-import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 

@@ -1,20 +1,25 @@
 package it.auties.whatsapp.api;
 
-import it.auties.buffer.ByteBuffer;
-import it.auties.whatsapp.protobuf.chat.*;
-import it.auties.whatsapp.protobuf.message.model.*;
-import it.auties.whatsapp.protobuf.message.standard.TextMessage;
-import it.auties.whatsapp.util.RegisterListenerScanner;
 import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.manager.WhatsappStore;
+import it.auties.whatsapp.protobuf.chat.*;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.contact.ContactStatus;
 import it.auties.whatsapp.protobuf.info.ContextInfo;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
-import it.auties.whatsapp.socket.*;
+import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
+import it.auties.whatsapp.protobuf.message.model.Message;
+import it.auties.whatsapp.protobuf.message.model.MessageContainer;
+import it.auties.whatsapp.protobuf.message.model.MessageKey;
+import it.auties.whatsapp.protobuf.message.standard.TextMessage;
+import it.auties.whatsapp.socket.HasWhatsappResponse;
+import it.auties.whatsapp.socket.Node;
+import it.auties.whatsapp.socket.Socket;
+import it.auties.whatsapp.socket.StatusResponse;
 import it.auties.whatsapp.util.Nodes;
+import it.auties.whatsapp.util.RegisterListenerScanner;
 import it.auties.whatsapp.util.Validate;
 import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.AccessLevel;
@@ -29,6 +34,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import static it.auties.bytes.Bytes.ofRandom;
 import static it.auties.whatsapp.api.WhatsappOptions.defaultOptions;
 import static it.auties.whatsapp.socket.Node.*;
 import static java.util.Objects.requireNonNullElseGet;
@@ -858,7 +864,7 @@ public class Whatsapp {
         var participants = Arrays.stream(contacts)
                 .map(contact -> withAttributes("participant", Map.of("jid", contact.jid())))
                 .toArray(Node[]::new);
-        var body = withChildren("create", Map.of("subject", subject, "key", ByteBuffer.random(12).toHex()), participants);
+        var body = withChildren("create", Map.of("subject", subject, "key", ofRandom(12).toHex()), participants);
         return socket.sendQuery(ContactJid.ofServer(ContactJid.Server.GROUP), "set", "w:g2", body)
                 .thenApplyAsync(response -> response.findNode("group"))
                 .thenApplyAsync(GroupMetadata::of);

@@ -1,9 +1,9 @@
 package it.auties.whatsapp.protobuf.sync;
 
-import it.auties.buffer.ByteBuffer;
+import it.auties.bytes.Bytes;
 
 public sealed interface ParsableMutation extends GenericSync permits MutationSync, RecordSync {
     byte[] id();
-    ByteBuffer valueBlob();
-    ByteBuffer indexBlob();
+    Bytes valueBlob();
+    Bytes indexBlob();
 }

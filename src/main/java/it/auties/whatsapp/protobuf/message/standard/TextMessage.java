@@ -7,10 +7,7 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
-import lombok.extern.jackson.Jacksonized;
 import lombok.experimental.SuperBuilder;
-import org.w3c.dom.Text;
 
 import java.util.Arrays;
 

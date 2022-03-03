@@ -3,7 +3,7 @@ package it.auties.whatsapp.protobuf.business;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import it.auties.buffer.ByteBuffer;
+import it.auties.bytes.Bytes;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.info.BusinessAccountInfo;
@@ -55,7 +55,7 @@ public class BusinessAccountPayload {
       this.certificate = certificate;
       this.info = ProtobufDecoder.forType(BusinessAccountInfo.class).decode(encodedInfo);
     }catch (IOException exception){
-      throw new IllegalArgumentException("Cannot construct BusinessAccountPayload from %s".formatted(ByteBuffer.of(encodedInfo).toBase64()));
+      throw new IllegalArgumentException("Cannot construct BusinessAccountPayload from %s".formatted(Bytes.of(encodedInfo).toBase64()));
     }
   }
 }

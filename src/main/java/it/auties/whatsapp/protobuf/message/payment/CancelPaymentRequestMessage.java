@@ -9,7 +9,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
 
 /**
  * A model class that represents a WhatsappMessage that cancels a {@link RequestPaymentMessage}.

@@ -3,7 +3,6 @@ package it.auties.whatsapp.protobuf.message.model;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
 
 /**
  * The constants of this enumerated type describe the various types of media type that a {@link MediaMessage} can hold

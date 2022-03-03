@@ -1,13 +1,13 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.buffer.ByteBuffer;
+import it.auties.bytes.Bytes;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.protobuf.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.protobuf.signal.session.*;
-import it.auties.whatsapp.util.Validate;
 import it.auties.whatsapp.util.SignalProvider;
+import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 
@@ -83,7 +83,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
 
         var signedSecret = Curve.calculateAgreement(theirSignedPubKey, keys.identityKeyPair().privateKey());
         var identitySecret = Curve.calculateAgreement(theirIdentityPubKey, ourSignedKey.privateKey());
-        var sharedSecret = ByteBuffer.allocate(32)
+        var sharedSecret = Bytes.of(32)
                 .fill((byte) 0xff)
                 .append(isInitiator ? signedSecret : identitySecret)
                 .append(isInitiator ? identitySecret : signedSecret)

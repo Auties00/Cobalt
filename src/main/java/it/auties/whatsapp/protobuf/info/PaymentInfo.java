@@ -8,7 +8,6 @@ import it.auties.whatsapp.protobuf.message.payment.RequestPaymentMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
-import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 

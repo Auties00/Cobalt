@@ -7,7 +7,6 @@ import it.auties.whatsapp.api.Whatsapp;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
-import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 

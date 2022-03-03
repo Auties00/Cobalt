@@ -9,7 +9,6 @@ import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
-import lombok.extern.jackson.Jacksonized;
 
 /**
  * A model class that represents a WhatsappMessage that contains a response to a previous {@link ButtonsMessage}.

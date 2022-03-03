@@ -1,6 +1,6 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.buffer.ByteBuffer;
+import it.auties.bytes.Bytes;
 import it.auties.whatsapp.util.Validate;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
@@ -9,7 +9,7 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import static it.auties.buffer.ByteBuffer.random;
+import static it.auties.bytes.Bytes.ofRandom;
 
 @UtilityClass
 public class AesCbc {
@@ -18,7 +18,7 @@ public class AesCbc {
     private final int AES_BLOCK_SIZE = 16;
 
     public byte[] encrypt(byte [] plaintext, byte[] key) {
-        return encrypt(random(AES_BLOCK_SIZE).toByteArray(), plaintext, key);
+        return encrypt(ofRandom(AES_BLOCK_SIZE).toByteArray(), plaintext, key);
     }
 
     @SneakyThrows
@@ -30,7 +30,7 @@ public class AesCbc {
     }
 
     public byte[] decrypt(byte[] encrypted, byte[] key) {
-        var binary = ByteBuffer.of(encrypted);
+        var binary = Bytes.of(encrypted);
         var iv = binary.cut(16)
                 .toByteArray();
         var encryptedNoIv = binary.slice(16)

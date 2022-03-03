@@ -8,7 +8,6 @@ import it.auties.whatsapp.protobuf.setting.*;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
-import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
 

@@ -1,6 +1,6 @@
 package it.auties.whatsapp.socket;
 
-import it.auties.buffer.ByteBuffer;
+import it.auties.bytes.Bytes;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp.api.SerializationStrategy.Event;
@@ -60,10 +60,10 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static it.auties.bytes.Bytes.newBuffer;
+import static it.auties.bytes.Bytes.ofBase64;
 import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
 import static it.auties.whatsapp.api.SerializationStrategy.Event.*;
-import static it.auties.buffer.ByteBuffer.empty;
-import static it.auties.buffer.ByteBuffer.ofBase64;
 import static it.auties.whatsapp.socket.Node.*;
 import static it.auties.whatsapp.util.QrHandler.TERMINAL;
 import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
@@ -846,7 +846,7 @@ public class Socket {
             var account = ProtobufDecoder.forType(SignedDeviceIdentity.class)
                     .decode(advIdentity.details());
             keys.companionIdentity(advIdentity.details());
-            var message = ByteBuffer.of(MESSAGE_HEADER)
+            var message = Bytes.of(MESSAGE_HEADER)
                     .append(account.details())
                     .append(keys.identityKeyPair().publicKey())
                     .toByteArray();
@@ -855,7 +855,7 @@ public class Socket {
                 return;
             }
 
-            var deviceSignatureMessage = ByteBuffer.of(SIGNATURE_HEADER)
+            var deviceSignatureMessage = Bytes.of(SIGNATURE_HEADER)
                     .append(account.details())
                     .append(keys.identityKeyPair().publicKey())
                     .append(account.accountSignatureKey())
@@ -1351,10 +1351,10 @@ public class Socket {
 
             var snapshotMac = generateSnapshotMac(hashState.hash(), hashState.version(), patch.type(), mutationKeys.snapshotMacKey());
             var syncId = new KeyId(key.keyId().keyId());
-            var patchMac = generatePatchMac(snapshotMac, ByteBuffer.of(valueMac), hashState.version(), patch.type(), mutationKeys.patchMacKey());
+            var patchMac = generatePatchMac(snapshotMac, Bytes.of(valueMac), hashState.version(), patch.type(), mutationKeys.patchMacKey());
             var record = RecordSync.builder()
                     .index(new IndexSync(indexMac.toByteArray()))
-                    .value(new ValueSync(ByteBuffer.of(encrypted, valueMac).toByteArray()))
+                    .value(new ValueSync(Bytes.of(encrypted, valueMac).toByteArray()))
                     .keyId(syncId)
                     .build();
             var mutation = MutationSync.builder()
@@ -1595,9 +1595,9 @@ public class Socket {
             var mutationMacs = sync.mutations()
                     .stream()
                     .map(mutation -> mutation.record().value().blob())
-                    .map(ByteBuffer::of)
+                    .map(Bytes::of)
                     .map(binary -> binary.slice(-32))
-                    .reduce(empty(), ByteBuffer::append);
+                    .reduce(newBuffer(), Bytes::append);
             return generatePatchMac(sync.snapshotMac(), mutationMacs, sync.version().version(), name, mutationKeys.patchMacKey());
         }
 
@@ -1671,15 +1671,15 @@ public class Socket {
                 case REMOVE -> 0x02;
             };
 
-            var encodedKey = ByteBuffer.of(keyData)
+            var encodedKey = Bytes.of(keyData)
                     .append(keyId)
                     .toByteArray();
 
-            var last = ByteBuffer.allocate(8)
-                    .writeByte((byte) encodedKey.length, 7)
+            var last = Bytes.of(8)
+                    .append((byte) encodedKey.length, 7)
                     .toByteArray();
 
-            var total = ByteBuffer.of(encodedKey)
+            var total = Bytes.of(encodedKey)
                     .append(data)
                     .append(last)
                     .toByteArray();
@@ -1690,7 +1690,7 @@ public class Socket {
         }
 
         private byte[] generateSnapshotMac(byte[] ltHash, long version, String patchName, byte[] key) {
-            var total = ByteBuffer.of(ltHash)
+            var total = Bytes.of(ltHash)
                     .append(SignalHelper.toBytes(version))
                     .append(patchName.getBytes(StandardCharsets.UTF_8))
                     .toByteArray();
@@ -1698,8 +1698,8 @@ public class Socket {
                     .toByteArray();
         }
 
-        private byte[] generatePatchMac(byte[] snapshotMac, ByteBuffer valueMacs, long version, String type, byte[] key) {
-            var total = ByteBuffer.of(snapshotMac)
+        private byte[] generatePatchMac(byte[] snapshotMac, Bytes valueMacs, long version, String type, byte[] key) {
+            var total = Bytes.of(snapshotMac)
                     .append(valueMacs)
                     .append(SignalHelper.toBytes(version))
                     .append(type.getBytes(StandardCharsets.UTF_8))

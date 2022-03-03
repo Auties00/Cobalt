@@ -2,7 +2,6 @@ package it.auties.whatsapp.socket;
 
 import it.auties.whatsapp.util.Attributes;
 import it.auties.whatsapp.util.Nodes;
-import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.NonNull;
 
 import java.util.*;

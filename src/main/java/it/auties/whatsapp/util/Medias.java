@@ -1,6 +1,7 @@
 package it.auties.whatsapp.util;
 
-import it.auties.buffer.ByteBuffer;
+import it.auties.bytes.Bytes;
+import it.auties.bytes.Bytes;
 import it.auties.whatsapp.crypto.AesCbc;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.Sha256;
@@ -17,7 +18,10 @@ import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.List;
+import java.util.Optional;
 
 import static java.net.http.HttpRequest.BodyPublishers.ofByteArray;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
@@ -42,7 +46,7 @@ public class Medias implements JacksonProvider {
             var keys = MediaKeys.random(type.whatsappName());
             var encryptedMedia = AesCbc.encrypt(keys.iv(), file, keys.cipherKey());
             var hmac = calculateMac(encryptedMedia, keys);
-            var encrypted = ByteBuffer.of(encryptedMedia)
+            var encrypted = Bytes.of(encryptedMedia)
                     .append(hmac)
                     .toByteArray();
             var sha256 = Base64.getEncoder().encodeToString(Sha256.calculate(encrypted).toByteArray());
@@ -74,7 +78,7 @@ public class Medias implements JacksonProvider {
 
     private Optional<byte[]> download(AttachmentProvider provider, String url) {
         try(var connection = new URL(url).openStream()){
-            var stream = ByteBuffer.of(connection.readAllBytes());
+            var stream = Bytes.of(connection.readAllBytes());
 
             var sha256 = Sha256.calculate(stream.toByteArray());
             Validate.isTrue(Arrays.equals(sha256.toByteArray(), provider.fileEncSha256()),
@@ -103,7 +107,7 @@ public class Medias implements JacksonProvider {
     }
 
     private byte[] calculateMac(byte[] encryptedMedia, MediaKeys keys) {
-        var hmacInput = ByteBuffer.of(keys.iv()).append(encryptedMedia).toByteArray();
+        var hmacInput = Bytes.of(keys.iv()).append(encryptedMedia).toByteArray();
         return Hmac.calculateSha256(hmacInput, keys.macKey())
                 .cut(10)
                 .toByteArray();

@@ -4,7 +4,6 @@ import com.google.zxing.common.BitMatrix;
 import it.auties.whatsapp.api.RegisterListener;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappListener;
-import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.protobuf.action.Action;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
@@ -12,19 +11,11 @@ import it.auties.whatsapp.protobuf.contact.ContactStatus;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.message.model.MessageStatus;
 import it.auties.whatsapp.util.QrHandler;
-import lombok.AllArgsConstructor;
-import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.java.Log;
-import org.junit.jupiter.api.Test;
 
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Scanner;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 @Log
 public class WhatsappAPITest {

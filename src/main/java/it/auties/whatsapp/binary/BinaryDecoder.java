@@ -1,6 +1,6 @@
 package it.auties.whatsapp.binary;
 
-import it.auties.buffer.ByteBuffer;
+import it.auties.bytes.Bytes;
 import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.socket.Node;
@@ -18,18 +18,16 @@ import static it.auties.whatsapp.protobuf.contact.ContactJid.Server.forAddress;
 import static it.auties.whatsapp.socket.Node.with;
 import static it.auties.whatsapp.socket.Node.withAttributes;
 
-public record BinaryDecoder(@NonNull ByteBuffer buffer){
-    public BinaryDecoder(){
-        this(ByteBuffer.newBuffer());
-    }
+public final class BinaryDecoder {
+    private Bytes buffer;
 
-    public Node decode(byte @NonNull [] input){
-        buffer.clear().writeBytes(unpack(input));
+    public synchronized Node decode(byte @NonNull [] input) {
+        this.buffer = Bytes.of(unpack(input));
         return readNode();
     }
 
-    private byte[] unpack(byte[] input){
-        var buffer = ByteBuffer.of(input);
+    private byte[] unpack(byte[] input) {
+        var buffer = Bytes.of(input);
         var token = buffer.readByte() & 2;
         var data = buffer.remaining().toByteArray();
         return token == 0 ? data : SignalHelper.deflate(data);
@@ -38,12 +36,10 @@ public record BinaryDecoder(@NonNull ByteBuffer buffer){
     private Node readNode() {
         var token = buffer.readUnsignedByte();
         var size = readSize(token);
-        Validate.isTrue(size != 0,
-                "Cannot decode node with empty body");
+        Validate.isTrue(size != 0, "Cannot decode node with empty body");
         var description = readString();
         var attrs = readAttributes(size);
-        return size % 2 != 0 ? withAttributes(description, attrs)
-                : with(description, attrs, read(false));
+        return size % 2 != 0 ? withAttributes(description, attrs) : with(description, attrs, read(false));
     }
 
     public String readString() {
@@ -52,20 +48,16 @@ public record BinaryDecoder(@NonNull ByteBuffer buffer){
             return string;
         }
 
-        throw new IllegalArgumentException("Strict decoding failed: expected string, got %s with type %s"
-                .formatted(read, read == null ? null : read.getClass().getName()));
+        throw new IllegalArgumentException("Strict decoding failed: expected string, got %s with type %s".formatted(read, read == null ? null : read.getClass().getName()));
     }
 
-    private List<Node> readList(int size){
-        return IntStream.range(0, size)
-                .mapToObj(index -> readNode())
-                .toList();
+    private List<Node> readList(int size) {
+        return IntStream.range(0, size).mapToObj(index -> readNode()).toList();
     }
 
     private String readString(List<Character> permitted, int start, int end) {
         var string = new char[2 * end - start];
-        IntStream.iterate(0, index -> index < string.length - 1, n -> n + 2)
-                .forEach(index -> readChar(permitted, string, index));
+        IntStream.iterate(0, index -> index < string.length - 1, n -> n + 2).forEach(index -> readChar(permitted, string, index));
         if (start != 0) {
             string[string.length - 1] = permitted.get(buffer.readUnsignedByte() >>> 4);
         }
@@ -97,9 +89,7 @@ public record BinaryDecoder(@NonNull ByteBuffer buffer){
     }
 
     private int readString20Length() {
-        return ((15 & buffer.readUnsignedByte()) << 16)
-                + (buffer.readUnsignedByte() << 8)
-                + buffer.readUnsignedByte();
+        return ((15 & buffer.readUnsignedByte()) << 16) + (buffer.readUnsignedByte() << 8) + buffer.readUnsignedByte();
     }
 
     private String readStringFromToken(int token) {
@@ -118,8 +108,7 @@ public record BinaryDecoder(@NonNull ByteBuffer buffer){
 
     private Object readString(int size, boolean parseBytes) {
         var data = buffer.readBytes(size);
-        return parseBytes ? new String(data, StandardCharsets.UTF_8)
-                : data;
+        return parseBytes ? new String(data, StandardCharsets.UTF_8) : data;
     }
 
     private String readHexString() {
@@ -128,7 +117,7 @@ public record BinaryDecoder(@NonNull ByteBuffer buffer){
     }
 
     private ContactJid readJidPair() {
-        return switch (read(true)){
+        return switch (read(true)) {
             case String encoded -> ContactJid.ofUser(encoded, forAddress(readString()));
             case null -> ContactJid.ofUser(null, forAddress(readString()));
             default -> throw new RuntimeException("Invalid jid type");
@@ -143,8 +132,7 @@ public record BinaryDecoder(@NonNull ByteBuffer buffer){
     }
 
     private int readSize(int token) {
-        return LIST_8.contentEquals(token) ? buffer.readUnsignedByte()
-                : buffer.readUnsignedShort();
+        return LIST_8.contentEquals(token) ? buffer.readUnsignedByte() : buffer.readUnsignedShort();
     }
 
     private Map<String, Object> readAttributes(int size) {

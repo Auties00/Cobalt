@@ -1,8 +1,8 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.buffer.ByteBuffer;
-import it.auties.whatsapp.util.Validate;
+import it.auties.bytes.Bytes;
 import it.auties.whatsapp.util.SignalProvider;
+import it.auties.whatsapp.util.Validate;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
@@ -108,10 +108,10 @@ public class SignalHelper implements SignalProvider {
 
     public byte[] pad(byte[] bytes){
         var padRandomByte = SignalHelper.randomHeader();
-        var padding = ByteBuffer.allocate(padRandomByte)
+        var padding = Bytes.of(padRandomByte)
                 .fill((byte) padRandomByte)
                 .toByteArray();
-       return ByteBuffer.of(bytes)
+       return Bytes.of(bytes)
                .append(padding)
                .toByteArray();
     }
@@ -126,8 +126,8 @@ public class SignalHelper implements SignalProvider {
     }
 
     public byte[] toBytes(long number){
-        return ByteBuffer.allocate(Long.BYTES)
-                .writeLong(number)
+        return Bytes.of(Long.BYTES)
+                .appendLong(number)
                 .toByteArray();
     }
 

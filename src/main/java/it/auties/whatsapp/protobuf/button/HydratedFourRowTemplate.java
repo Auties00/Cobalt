@@ -11,7 +11,6 @@ import it.auties.whatsapp.protobuf.message.standard.VideoMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
-import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 import java.util.List;

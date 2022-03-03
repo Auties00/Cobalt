@@ -1,15 +1,11 @@
 package it.auties.whatsapp.protobuf.message.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.whatsapp.protobuf.contact.ContactStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
-import java.util.Locale;
 
 /**
  * The constants of this enumerated type describe the various types of status of a {@link Message}

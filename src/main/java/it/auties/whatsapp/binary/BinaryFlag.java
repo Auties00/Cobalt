@@ -5,7 +5,6 @@ import it.auties.whatsapp.protobuf.contact.ContactStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
 
 /**
  * The constants of this enumerated type describe the various flags that can be used when sending a WhatsappNode to WhatsappWeb's WebSocket.

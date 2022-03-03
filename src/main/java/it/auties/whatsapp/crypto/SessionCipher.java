@@ -1,6 +1,6 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.buffer.ByteBuffer;
+import it.auties.bytes.Bytes;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalPreKeyPair;
@@ -74,7 +74,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
     }
 
     private byte[] createMessageSignature(Session session, byte[][] whisperKeys, byte[] encodedMessage) {
-        var macInput = ByteBuffer.of(keys.identityKeyPair().encodedPublicKey())
+        var macInput = Bytes.of(keys.identityKeyPair().encodedPublicKey())
                 .append(session.currentState().remoteIdentityKey())
                 .append(encodedMessage)
                 .assertSize(encodedMessage.length + 33 + 33)
@@ -156,7 +156,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         var secrets = Hkdf.deriveSecrets(messageKey.publicKey(),
                 "WhisperMessageKeys".getBytes(StandardCharsets.UTF_8));
 
-        var hmacInput = ByteBuffer.of(state.remoteIdentityKey())
+        var hmacInput = Bytes.of(state.remoteIdentityKey())
                 .append(keys.identityKeyPair().encodedPublicKey())
                 .append(message.serialized())
                 .cut(-SignalMessage.MAC_LENGTH)

@@ -1,27 +1,23 @@
 package it.auties.whatsapp.binary;
 
-import it.auties.buffer.ByteBuffer;
+import it.auties.bytes.Bytes;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.socket.Node;
 import it.auties.whatsapp.util.Nodes;
-import lombok.NonNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 
 import static it.auties.whatsapp.binary.BinaryTag.*;
 
-public record BinaryEncoder(@NonNull ByteBuffer buffer){
+public final class BinaryEncoder {
     private static final int UNSIGNED_BYTE_MAX_VALUE = 256;
     private static final int UNSIGNED_SHORT_MAX_VALUE = 65536;
     private static final int INT_20_MAX_VALUE = 1048576;
-
-    public BinaryEncoder(){
-        this(ByteBuffer.newBuffer());
-    }
-
-    public byte[] encode(Node node) {
-        buffer.clear();
+    
+    private Bytes buffer;
+    public synchronized byte[] encode(Node node) {
+        this.buffer = Bytes.newBuffer();
         var encoded = writeNode(node);
         return pack(encoded);
     }
@@ -34,15 +30,15 @@ public record BinaryEncoder(@NonNull ByteBuffer buffer){
     }
 
     private void writeString(String input, BinaryTag token) {
-        buffer.writeByte(token.data());
+        this.buffer = buffer.append(token.data());
         writeStringLength(input);
 
-        for(int charCode = 0, index = 0; index < input.length(); index++){
+        for (int charCode = 0, index = 0; index < input.length(); index++) {
             var stringCodePoint = Character.codePointAt(input, index);
             var binaryCodePoint = getStringCodePoint(token, stringCodePoint);
 
             if (index % 2 != 0) {
-                buffer.writeByte(charCode |= binaryCodePoint);
+                this.buffer = buffer.append(charCode |= binaryCodePoint);
                 continue;
             }
 
@@ -51,24 +47,24 @@ public record BinaryEncoder(@NonNull ByteBuffer buffer){
                 continue;
             }
 
-            buffer.writeByte(charCode |= 15);
+            this.buffer = buffer.append(charCode |= 15);
         }
     }
 
     private int getStringCodePoint(BinaryTag token, int codePoint) {
-        if(codePoint >= 48 && codePoint <= 57){
+        if (codePoint >= 48 && codePoint <= 57) {
             return codePoint - 48;
         }
 
-        if(token == NIBBLE_8 && codePoint == 45) {
+        if (token == NIBBLE_8 && codePoint == 45) {
             return 10;
         }
 
-        if(token == NIBBLE_8 && codePoint == 46){
+        if (token == NIBBLE_8 && codePoint == 46) {
             return 11;
         }
 
-        if(token == HEX_8 && codePoint >= 65 && codePoint <= 70){
+        if (token == HEX_8 && codePoint >= 65 && codePoint <= 70) {
             return codePoint - 55;
         }
 
@@ -77,63 +73,63 @@ public record BinaryEncoder(@NonNull ByteBuffer buffer){
 
     private void writeStringLength(String input) {
         var roundedLength = (int) Math.ceil(input.length() / 2F);
-        if(input.length() % 2 == 1){
-            buffer.writeByte(roundedLength | 128);
+        if (input.length() % 2 == 1) {
+            this.buffer = buffer.append(roundedLength | 128);
             return;
         }
 
-        buffer.writeByte(roundedLength);
+        this.buffer = buffer.append(roundedLength);
     }
 
     private void writeLong(long input) {
-        if (input < UNSIGNED_BYTE_MAX_VALUE){
-            buffer.writeByte(BINARY_8.data());
-            buffer.writeByte((int) input);
+        if (input < UNSIGNED_BYTE_MAX_VALUE) {
+            this.buffer = buffer.append(BINARY_8.data());
+            this.buffer = buffer.append((int) input);
             return;
         }
 
-        if (input < INT_20_MAX_VALUE){
-            buffer.writeByte(BINARY_20.data());
-            buffer.writeByte((int) ((input >>> 16) & 255));
-            buffer.writeByte((int) ((input >>> 8) & 255));
-            buffer.writeByte((int) (255 & input));
+        if (input < INT_20_MAX_VALUE) {
+            this.buffer = buffer.append(BINARY_20.data());
+            this.buffer = buffer.append((int) ((input >>> 16) & 255));
+            this.buffer = buffer.append((int) ((input >>> 8) & 255));
+            this.buffer = buffer.append((int) (255 & input));
             return;
         }
 
-        buffer.writeByte(BINARY_32.data());
-        buffer.writeLong(input);
+        this.buffer = buffer.append(BINARY_32.data());
+        buffer.appendLong(input);
     }
 
     private void writeString(String input) {
-        if (input.isEmpty()){
-            buffer.writeByte(BINARY_8.data());
-            buffer.writeByte(LIST_EMPTY.data());
+        if (input.isEmpty()) {
+            this.buffer = buffer.append(BINARY_8.data());
+            this.buffer = buffer.append(LIST_EMPTY.data());
             return;
         }
 
         var tokenIndex = BinaryTokens.SINGLE_BYTE.indexOf(input);
         if (tokenIndex != -1) {
-            buffer.writeByte(tokenIndex + 1);
+            this.buffer = buffer.append(tokenIndex + 1);
             return;
         }
 
-        if(writeDoubleByteString(input)){
+        if (writeDoubleByteString(input)) {
             return;
         }
 
         var length = length(input);
         if (length < 128 && BinaryTokens.checkRegex(input, BinaryTokens.NUMBERS_REGEX)) {
             writeString(input, NIBBLE_8);
-                return;
+            return;
         }
 
         if (length < 128 && BinaryTokens.checkRegex(input, BinaryTokens.HEX_REGEX)) {
-                writeString(input, HEX_8);
-                return;
+            writeString(input, HEX_8);
+            return;
         }
 
         writeLong(length);
-        buffer.writeBytes(input.getBytes(StandardCharsets.UTF_8));
+        this.buffer = buffer.append(input.getBytes(StandardCharsets.UTF_8));
     }
 
     private boolean writeDoubleByteString(String input) {
@@ -142,13 +138,13 @@ public record BinaryEncoder(@NonNull ByteBuffer buffer){
         }
 
         var index = BinaryTokens.DOUBLE_BYTE.indexOf(input);
-        buffer.writeByte(doubleByteStringTag(index).data());
-        buffer.writeByte(index % (BinaryTokens.DOUBLE_BYTE.size() / 4));
+        this.buffer = buffer.append(doubleByteStringTag(index).data());
+        this.buffer = buffer.append(index % (BinaryTokens.DOUBLE_BYTE.size() / 4));
         return true;
     }
 
-    private BinaryTag doubleByteStringTag(int index){
-        return switch (index / (BinaryTokens.DOUBLE_BYTE.size() / 4)){
+    private BinaryTag doubleByteStringTag(int index) {
+        return switch (index / (BinaryTokens.DOUBLE_BYTE.size() / 4)) {
             case 0 -> DICTIONARY_0;
             case 1 -> DICTIONARY_1;
             case 2 -> DICTIONARY_2;
@@ -159,15 +155,15 @@ public record BinaryEncoder(@NonNull ByteBuffer buffer){
 
     private byte[] writeNode(Node input) {
         if (input.description().equals("0")) {
-            buffer.writeByte(LIST_8.data());
-            buffer.writeByte(LIST_EMPTY.data());
+            this.buffer = buffer.append(LIST_8.data());
+            this.buffer = buffer.append(LIST_EMPTY.data());
             return buffer.toByteArray();
         }
 
         writeInt(input.size());
         writeString(input.description());
         writeAttributes(input);
-        if(input.hasContent()) {
+        if (input.hasContent()) {
             write(input.content());
         }
 
@@ -183,14 +179,14 @@ public record BinaryEncoder(@NonNull ByteBuffer buffer){
 
     private void writeInt(int size) {
         if (size < UNSIGNED_BYTE_MAX_VALUE) {
-            buffer.writeByte(LIST_8.data());
-            buffer.writeByte(size);
+            this.buffer = buffer.append(LIST_8.data());
+            this.buffer = buffer.append(size);
             return;
         }
 
         if (size < UNSIGNED_SHORT_MAX_VALUE) {
-            buffer.writeByte(LIST_16.data());
-            buffer.writeShort((short) size);
+            this.buffer = buffer.append(LIST_16.data());
+            buffer.appendShort(size);
         }
 
         throw new IllegalArgumentException("Cannot write int %s: overflow".formatted(size));
@@ -198,14 +194,16 @@ public record BinaryEncoder(@NonNull ByteBuffer buffer){
 
     private void write(Object input) {
         switch (input) {
-            case null -> buffer.writeByte(LIST_EMPTY.data());
+            case null -> this.buffer = buffer.append(LIST_EMPTY.data());
             case String str -> writeString(str);
             case Number number -> writeString(number.toString());
             case byte[] bytes -> writeBytes(bytes);
             case ContactJid jid -> writeJid(jid);
             case Collection<?> collection -> writeList(collection);
-            case Node ignored -> throw new IllegalArgumentException("Invalid payload type(nodes should be wrapped by a internal): %s".formatted(input));
-            default -> throw new IllegalArgumentException("Invalid payload type(%s): %s".formatted(input.getClass().getName(), input));
+            case Node ignored ->
+                    throw new IllegalArgumentException("Invalid payload type(nodes should be wrapped by a internal): %s".formatted(input));
+            default ->
+                    throw new IllegalArgumentException("Invalid payload type(%s): %s".formatted(input.getClass().getName(), input));
         }
     }
 
@@ -216,26 +214,26 @@ public record BinaryEncoder(@NonNull ByteBuffer buffer){
 
     private void writeBytes(byte[] bytes) {
         writeLong(bytes.length);
-        buffer.writeBytes(bytes);
+        this.buffer = buffer.append(bytes);
     }
 
     private void writeJid(ContactJid jid) {
-        if(jid.isCompanion()){
-            buffer.writeByte(COMPANION_JID.data());
-            buffer.writeByte(jid.agent());
-            buffer.writeByte(jid.device());
+        if (jid.isCompanion()) {
+            this.buffer = buffer.append(COMPANION_JID.data());
+            this.buffer = buffer.append(jid.agent());
+            this.buffer = buffer.append(jid.device());
             writeString(jid.user());
             return;
         }
 
-        buffer.writeByte(JID_PAIR.data());
-        if(jid.user() != null) {
+        this.buffer = buffer.append(JID_PAIR.data());
+        if (jid.user() != null) {
             writeString(jid.user());
             writeString(jid.server().address());
             return;
         }
 
-        buffer.writeByte(LIST_EMPTY.data());
+        this.buffer = buffer.append(LIST_EMPTY.data());
         writeString(jid.server().address());
     }
 

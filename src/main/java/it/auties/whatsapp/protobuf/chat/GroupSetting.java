@@ -4,7 +4,6 @@ import it.auties.whatsapp.api.Whatsapp;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
 
 /**
  * The constants of this enumerated type describe the various settings that can be toggled for a group.

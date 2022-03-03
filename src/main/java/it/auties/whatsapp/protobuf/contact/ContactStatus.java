@@ -2,12 +2,10 @@ package it.auties.whatsapp.protobuf.contact;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.whatsapp.binary.BinaryFlag;
-import it.auties.whatsapp.protobuf.chat.ChatDisappear;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 

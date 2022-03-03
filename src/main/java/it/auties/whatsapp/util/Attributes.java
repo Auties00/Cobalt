@@ -6,10 +6,10 @@ import lombok.NonNull;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static java.util.Map.ofEntries;
 import static java.util.Objects.requireNonNull;
@@ -19,7 +19,8 @@ public record Attributes(Map<String, Object> map) {
         return of(new HashMap<>());
     }
 
-    public static Attributes of(Map.Entry<String, Object>... entries){
+    @SafeVarargs
+    public static Attributes of(Entry<String, Object>... entries){
         return of(ofEntries(entries));
     }
 

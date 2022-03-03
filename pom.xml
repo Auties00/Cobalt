@@ -95,7 +95,7 @@
         <jackson.map.version>1.1-SNAPSHOT</jackson.map.version>
         <noise.version>1.2</noise.version>
         <signal.version>2.8.1</signal.version>
-        <buffers.version>1.0</buffers.version>
+        <bytes.version>1.1</bytes.version>
         <classgraph.version>4.8.139</classgraph.version>
         <delombok.input>${project.basedir}\src\main\java</delombok.input>
         <delombok.output>${project.build.directory}\delombok</delombok.output>
@@ -242,8 +242,8 @@
         </dependency>
         <dependency>
             <groupId>com.github.auties00</groupId>
-            <artifactId>bytebuffer</artifactId>
-            <version>${buffers.version}</version>
+            <artifactId>bytes</artifactId>
+            <version>${bytes.version}</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>

@@ -1,10 +1,10 @@
 package it.auties.whatsapp.util;
 
 import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ScanResult;
 import it.auties.whatsapp.api.RegisterListener;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappListener;
-import it.auties.whatsapp.util.Validate;
 import lombok.experimental.UtilityClass;
 
 import java.util.List;
@@ -13,15 +13,20 @@ import java.util.NoSuchElementException;
 @UtilityClass
 public class RegisterListenerScanner {
     public List<WhatsappListener> scan(Whatsapp whatsapp){
+        try(var scanner = createScanner()) {
+            return scanner.getClassesWithAnnotation(RegisterListener.class)
+                    .loadClasses()
+                    .stream()
+                    .map(clazz -> initialize(clazz, whatsapp))
+                    .toList();
+        }
+    }
+
+    private ScanResult createScanner() {
         return new ClassGraph()
                 .enableClassInfo()
                 .enableAnnotationInfo()
-                .scan()
-                .getClassesWithAnnotation(RegisterListener.class)
-                .loadClasses()
-                .stream()
-                .map(clazz -> initialize(clazz, whatsapp))
-                .toList();
+                .scan();
     }
 
     private WhatsappListener initialize(Class<?> listener, Whatsapp whatsapp){

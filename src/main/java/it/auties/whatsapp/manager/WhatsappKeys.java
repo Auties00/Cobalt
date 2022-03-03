@@ -3,7 +3,7 @@ package it.auties.whatsapp.manager;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.core.type.TypeReference;
-import it.auties.buffer.ByteBuffer;
+import it.auties.bytes.Bytes;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.protobuf.signal.auth.SignedDeviceIdentityHMAC;
@@ -163,7 +163,7 @@ public class WhatsappKeys implements JacksonProvider {
     /**
      * Session dependent keys to write and read cyphered messages
      */
-    private ByteBuffer writeKey, readKey;
+    private Bytes writeKey, readKey;
 
     /**
      * The bytes of the encoded {@link SignedDeviceIdentityHMAC} received during the auth process
