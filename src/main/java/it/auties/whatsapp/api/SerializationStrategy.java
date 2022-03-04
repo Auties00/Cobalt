@@ -36,7 +36,7 @@ public interface SerializationStrategy {
 
             @Override
             public Event trigger() {
-                return Event.ON_CLOSE;
+                return Event.ON_ERROR;
             }
         };
     }

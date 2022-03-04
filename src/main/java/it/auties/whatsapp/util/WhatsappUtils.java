@@ -2,7 +2,7 @@ package it.auties.whatsapp.util;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.bytes.Bytes;
-import it.auties.whatsapp.manager.WhatsappPreferences;
+import it.auties.whatsapp.manager.internal.WhatsappPreferences;
 import lombok.experimental.UtilityClass;
 
 import java.time.Instant;

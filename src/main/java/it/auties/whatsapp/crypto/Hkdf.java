@@ -1,5 +1,7 @@
 package it.auties.whatsapp.crypto;
 
+import it.auties.bytes.Bytes;
+import it.auties.whatsapp.util.SignalProvider;
 import it.auties.whatsapp.util.Validate;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
@@ -7,14 +9,9 @@ import lombok.experimental.UtilityClass;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayOutputStream;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-
-import static java.util.Arrays.copyOfRange;
 
 @UtilityClass
-public class Hkdf {
+public class Hkdf implements SignalProvider {
     private final int ITERATION_START_OFFSET = 1; // v3
     private final int HASH_OUTPUT_SIZE = 32;
     private final String HMAC_SHA_256 = "HmacSHA256";
@@ -33,39 +30,37 @@ public class Hkdf {
 
     @SneakyThrows
     public byte[][] deriveSecrets(byte[] input, byte[] salt, byte[] info, int chunks) {
-        Validate.isTrue(salt.length == 32,
+        Validate.isTrue(salt.length == KEY_LENGTH,
                 "Incorrect salt length: %s", salt.length);
         Validate.isTrue(chunks >= 1 && chunks <= 3,
                 "Incorrect number of chunks: %s", chunks);
 
        var prk = Hmac.calculateSha256(input, salt);
-       var resultStream = new ByteArrayOutputStream();
-        resultStream.write(new byte[32]);
-        resultStream.write(info);
-        resultStream.write(1);
-        var result = resultStream.toByteArray();
+       var result = Bytes.of(32)
+               .append(info)
+               .append(1)
+               .toByteArray();
 
-       var signed = new ArrayList<byte[]>();
-       var first = Hmac.calculateSha256(copyOfRange(result, 32, result.length), prk.toByteArray());
-       signed.add(first.toByteArray());
+       var signed = new byte[chunks][];
+       var key = Bytes.of(result)
+               .slice(KEY_LENGTH)
+               .toByteArray();
+       var first = Hmac.calculateSha256(key, prk);
+       signed[0] = first;
 
         if (chunks > 1) {
-            var source = signed.get(0);
-            System.arraycopy(source, 0, result, 0, source.length);
+            System.arraycopy(first, 0, result, 0, first.length);
             result[result.length - 1] = 2;
-            var second = Hmac.calculateSha256(result, prk.toByteArray());
-            signed.add(second.toByteArray());
+            signed[1] = Hmac.calculateSha256(result, prk);
         }
 
         if (chunks > 2) {
-            var source = signed.get(1);
-            System.arraycopy(source, 0, result, 0, source.length);
+            System.arraycopy(signed[1], 0, result, 0, signed[1].length);
             result[result.length - 1] = 3;
-            var third = Hmac.calculateSha256(result, prk.toByteArray());
-            signed.add(third.toByteArray());
+            signed[2] = Hmac.calculateSha256(result, prk);
         }
 
-        return signed.toArray(byte[][]::new);
+        return signed;
     }
 
     public byte[] extractAndExpand(byte[] inputKeyMaterial, byte[] info, int outputLength) {
@@ -77,39 +72,33 @@ public class Hkdf {
         return expand(prk, info, outputLength);
     }
 
+    @SneakyThrows
     public byte[] extract(byte[] salt, byte[] inputKeyMaterial) {
-        try {
-            var mac = Mac.getInstance(HMAC_SHA_256);
-            mac.init(new SecretKeySpec(salt, HMAC_SHA_256));
-            return mac.doFinal(inputKeyMaterial);
-        } catch (NoSuchAlgorithmException | InvalidKeyException exception) {
-            throw new RuntimeException("Cannot hkdf extract", exception);
-        }
+        var mac = Mac.getInstance(HMAC_SHA_256);
+        mac.init(new SecretKeySpec(salt, HMAC_SHA_256));
+        return mac.doFinal(inputKeyMaterial);
     }
 
+    @SneakyThrows
     public byte[] expand(byte[] prk, byte[] info, int outputSize) {
-        try {
-            var iterations = (int) Math.ceil((double) outputSize / (double) HASH_OUTPUT_SIZE);
-            var mixin = new byte[0];
-            var results = new ByteArrayOutputStream();
-            for (var index = ITERATION_START_OFFSET; index < iterations + ITERATION_START_OFFSET; index++) {
-                var mac = Mac.getInstance(HMAC_SHA_256);
-                mac.init(new SecretKeySpec(prk, HMAC_SHA_256));
-                mac.update(mixin);
-                if (info != null) mac.update(info);
-                mac.update((byte) index);
+        var iterations = (int) Math.ceil((double) outputSize / (double) HASH_OUTPUT_SIZE);
+        var mixin = new byte[0];
+        var results = new ByteArrayOutputStream();
+        for (var index = ITERATION_START_OFFSET; index < iterations + ITERATION_START_OFFSET; index++) {
+            var mac = Mac.getInstance(HMAC_SHA_256);
+            mac.init(new SecretKeySpec(prk, HMAC_SHA_256));
+            mac.update(mixin);
+            if (info != null) mac.update(info);
+            mac.update((byte) index);
 
-                var stepResult = mac.doFinal();
-                var stepSize = Math.min(outputSize, stepResult.length);
-                results.write(stepResult, 0, stepSize);
+            var stepResult = mac.doFinal();
+            var stepSize = Math.min(outputSize, stepResult.length);
+            results.write(stepResult, 0, stepSize);
 
-                mixin = stepResult;
-                outputSize -= stepSize;
-            }
-
-            return results.toByteArray();
-        } catch (NoSuchAlgorithmException | InvalidKeyException exception) {
-            throw new RuntimeException("Cannot hkdf expand", exception);
+            mixin = stepResult;
+            outputSize -= stepSize;
         }
+
+        return results.toByteArray();
     }
 }

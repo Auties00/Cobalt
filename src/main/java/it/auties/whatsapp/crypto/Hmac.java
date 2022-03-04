@@ -13,18 +13,18 @@ public class Hmac {
     private final String HMAC_SHA_256 = "HmacSHA256";
     private final String HMAC_SHA_512 = "HmacSHA512";
 
-    public Bytes calculateSha256(@NonNull byte[] plain, @NonNull byte[] key) {
+    public byte[] calculateSha256(@NonNull byte[] plain, @NonNull byte[] key) {
         return calculate(HMAC_SHA_256, plain, key);
     }
 
-    public Bytes calculateSha512(@NonNull byte[] plain, @NonNull byte[] key) {
+    public byte[] calculateSha512(@NonNull byte[] plain, @NonNull byte[] key) {
         return calculate(HMAC_SHA_512, plain, key);
     }
 
     @SneakyThrows
-    private static Bytes calculate(String algorithm, byte[] plain, byte[] key)  {
+    private byte[] calculate(String algorithm, byte[] plain, byte[] key)  {
         var localMac = Mac.getInstance(algorithm);
         localMac.init(new SecretKeySpec(key, algorithm));
-        return Bytes.of(localMac.doFinal(plain));
+        return localMac.doFinal(plain);
     }
 }

@@ -1,6 +1,6 @@
 package it.auties.whatsapp.protobuf.signal.keypair;
 
-import it.auties.whatsapp.crypto.Curve;
+import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.socket.Node;
 import lombok.NonNull;
@@ -10,7 +10,7 @@ import java.util.Optional;
 public record SignalSignedKeyPair(int id, @NonNull SignalKeyPair keyPair, byte[] signature) implements ISignalKeyPair{
     public static SignalSignedKeyPair of(int id, @NonNull SignalKeyPair identityKeyPair){
         var keyPair = SignalKeyPair.random();
-        var signature = Curve.calculateSignature(identityKeyPair.privateKey(), keyPair.encodedPublicKey());
+        var signature = Curve25519.calculateSignature(identityKeyPair.privateKey(), keyPair.encodedPublicKey());
         return new SignalSignedKeyPair(id, keyPair, signature);
     }
 

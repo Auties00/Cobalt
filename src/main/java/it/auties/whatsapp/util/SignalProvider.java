@@ -7,6 +7,16 @@ public interface SignalProvider {
     int CURRENT_VERSION = 3;
 
     /**
+     * Iv length
+     */
+    int IV_LENGTH = 16;
+
+    /**
+     * Curve25519 Key Length
+     */
+    int KEY_LENGTH = 32;
+
+    /**
      * Mac length
      */
     int MAC_LENGTH = 8;

@@ -11,7 +11,6 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.extern.java.Log;
-import org.whispersystems.libsignal.SignalProtocolAddress;
 
 import java.util.Arrays;
 import java.util.NoSuchElementException;
@@ -205,7 +204,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
     /**
      * Converts this jid to a signal address
      *
-     * @return a non-null {@link SignalProtocolAddress}
+     * @return a non-null {@link SessionAddress}
      */
     public SessionAddress toSignalAddress(){
         var name = toString().split("@", 2)[0];

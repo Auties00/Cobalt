@@ -1,20 +1,21 @@
 package it.auties.whatsapp.protobuf.signal.keypair;
 
+import it.auties.curve25519.Curve25519;
+import it.auties.curve25519.XecUtils;
 import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.socket.Node;
 import lombok.NonNull;
-import org.whispersystems.libsignal.ecc.DjbECPrivateKey;
-import org.whispersystems.libsignal.ecc.DjbECPublicKey;
-import org.whispersystems.libsignal.util.KeyHelper;
 
+import java.security.interfaces.XECPrivateKey;
+import java.security.interfaces.XECPublicKey;
 import java.util.Arrays;
 
 public record SignalKeyPair(byte @NonNull [] publicKey, byte[] privateKey) implements ISignalKeyPair{
     public static SignalKeyPair random(){
-        var pair = KeyHelper.generateIdentityKeyPair();
-        var publicKey = (DjbECPublicKey) pair.getPublicKey().getPublicKey();
-        var privateKey = (DjbECPrivateKey) pair.getPrivateKey();
-        return new SignalKeyPair(publicKey.getPublicKey(), privateKey.getPrivateKey());
+        var keyPair = Curve25519.generateKeyPair();
+        var publicKey = XecUtils.toBytes((XECPublicKey) keyPair.getPublic());
+        var privateKey = XecUtils.toBytes((XECPrivateKey) keyPair.getPrivate());
+        return new SignalKeyPair(publicKey, privateKey);
     }
 
     public byte[] encodedPublicKey(){

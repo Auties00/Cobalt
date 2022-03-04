@@ -14,8 +14,6 @@ import lombok.extern.jackson.Jacksonized;
 import java.io.IOException;
 import java.util.function.Function;
 
-import static java.util.Arrays.copyOfRange;
-
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
@@ -65,10 +63,11 @@ public final class SignalMessage implements SignalProtocolMessage {
     }
     public static SignalMessage ofSerialized(byte[] serialized) {
         try {
+            var buffer = Bytes.of(serialized);
             return ProtobufDecoder.forType(SignalMessage.class)
-                    .decode(copyOfRange(serialized, 1, serialized.length - MAC_LENGTH))
+                    .decode(buffer.slice(1, -MAC_LENGTH).toByteArray())
                     .version(SignalHelper.deserialize(serialized[0]))
-                    .signature(copyOfRange(serialized, serialized.length - MAC_LENGTH, serialized.length))
+                    .signature(buffer.slice(-MAC_LENGTH).toByteArray())
                     .serialized(serialized);
         } catch (IOException exception) {
             throw new RuntimeException("Cannot decode SignalMessage", exception);

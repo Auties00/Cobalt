@@ -1,4 +1,4 @@
-package it.auties.whatsapp.manager;
+package it.auties.whatsapp.manager.internal;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.whatsapp.util.JacksonProvider;

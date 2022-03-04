@@ -29,7 +29,7 @@ public class Handshake {
     @SneakyThrows
     public void updateHash(byte @NonNull [] data) {
         var input = hash.append(data);
-        this.hash = Sha256.calculate(input.toByteArray());
+        this.hash = of(Sha256.calculate(input.toByteArray()));
     }
 
     @SneakyThrows

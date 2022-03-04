@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 
 import static it.auties.bytes.Bytes.ofRandom;
 import static it.auties.whatsapp.api.WhatsappOptions.defaultOptions;
@@ -90,6 +91,26 @@ public class Whatsapp {
      */
     public static Whatsapp lastConnection(){
         return new Whatsapp(requireNonNullElseGet(WhatsappUtils.knownIds().peekLast(), SignalHelper::randomRegistrationId));
+    }
+
+    /**
+     * Returns a list of all known connections
+     *
+     * @return a non-null List
+     */
+    public static List<Whatsapp> listConnections(){
+        return streamConnections().toList();
+    }
+
+    /**
+     * Returns a stream of all known connections
+     *
+     * @return a non-null Stream
+     */
+    public static Stream<Whatsapp> streamConnections(){
+        return WhatsappUtils.knownIds()
+                .stream()
+                .map(Whatsapp::connect);
     }
 
     /**

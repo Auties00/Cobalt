@@ -49,7 +49,7 @@ public class Medias implements JacksonProvider {
             var encrypted = Bytes.of(encryptedMedia)
                     .append(hmac)
                     .toByteArray();
-            var sha256 = Base64.getEncoder().encodeToString(Sha256.calculate(encrypted).toByteArray());
+            var sha256 = Base64.getEncoder().encodeToString(Sha256.calculate(encrypted));
             var uri = URI.create("https://%s/%s/%s?auth=%s&token=%s".formatted(host, type.uploadPath(), sha256, auth, sha256));
             var request = HttpRequest.newBuilder()
                     .POST(ofByteArray(encrypted))
@@ -81,7 +81,7 @@ public class Medias implements JacksonProvider {
             var stream = Bytes.of(connection.readAllBytes());
 
             var sha256 = Sha256.calculate(stream.toByteArray());
-            Validate.isTrue(Arrays.equals(sha256.toByteArray(), provider.fileEncSha256()),
+            Validate.isTrue(Arrays.equals(sha256, provider.fileEncSha256()),
                     "Cannot decode media: Invalid sha256 signature",
                     SecurityException.class);
 
@@ -108,7 +108,7 @@ public class Medias implements JacksonProvider {
 
     private byte[] calculateMac(byte[] encryptedMedia, MediaKeys keys) {
         var hmacInput = Bytes.of(keys.iv()).append(encryptedMedia).toByteArray();
-        return Hmac.calculateSha256(hmacInput, keys.macKey())
+        return Bytes.of(Hmac.calculateSha256(hmacInput, keys.macKey()))
                 .cut(10)
                 .toByteArray();
     }

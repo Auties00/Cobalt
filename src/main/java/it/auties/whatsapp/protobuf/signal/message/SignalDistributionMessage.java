@@ -77,7 +77,7 @@ public final class SignalDistributionMessage implements SignalProtocolMessage {
   public static SignalDistributionMessage ofSerialized(byte[] serialized){
     try {
       return ProtobufDecoder.forType(SignalDistributionMessage.class)
-              .decode(Arrays.copyOfRange(serialized, 1, serialized.length))
+              .decode(Bytes.of(serialized).slice(1).toByteArray())
               .version(SignalHelper.deserialize(serialized[0]))
               .serialized(serialized);
     } catch (IOException exception) {

@@ -48,7 +48,7 @@ public class SignalHelper implements SignalProvider {
 
         return switch (key.length){
             case 32 -> key;
-            case 33 -> Arrays.copyOfRange(key, 1, key.length);
+            case 33 -> Bytes.of(key).slice(1).toByteArray();
             default -> throw new IllegalArgumentException("Invalid key size: %s".formatted(key.length));
         };
     }

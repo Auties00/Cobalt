@@ -94,7 +94,7 @@
         <jackson.version>2.13.1</jackson.version>
         <jackson.map.version>1.1-SNAPSHOT</jackson.map.version>
         <noise.version>1.2</noise.version>
-        <signal.version>2.8.1</signal.version>
+        <curve25519.version>1.0</curve25519.version>
         <bytes.version>1.1</bytes.version>
         <classgraph.version>4.8.139</classgraph.version>
         <delombok.input>${project.basedir}\src\main\java</delombok.input>
@@ -231,9 +231,9 @@
             <version>${jackson.map.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.whispersystems</groupId>
-            <artifactId>signal-protocol-java</artifactId>
-            <version>${signal.version}</version>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>curve25519</artifactId>
+            <version>${curve25519.version}</version>
         </dependency>
         <dependency>
             <groupId>io.github.classgraph</groupId>
@@ -261,7 +261,6 @@
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna</artifactId>
             <version>${jna.version}</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

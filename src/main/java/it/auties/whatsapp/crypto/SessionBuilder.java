@@ -1,6 +1,7 @@
 package it.auties.whatsapp.crypto;
 
 import it.auties.bytes.Bytes;
+import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalSignedKeyPair;
@@ -12,12 +13,15 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+
+import static it.auties.curve25519.Curve25519.calculateAgreement;
 
 public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) implements SignalProvider {
     public void createOutgoing(int id, byte[] identityKey, SignalSignedKeyPair signedPreKey, SignalSignedKeyPair preKey){
         Validate.isTrue(keys.hasTrust(address, identityKey),
                 "Untrusted key", SecurityException.class);
-        Validate.isTrue(Curve.verifySignature(identityKey, signedPreKey.keyPair().encodedPublicKey(), signedPreKey.signature()),
+        Validate.isTrue(Curve25519.verifySignature(SignalHelper.removeKeyHeader(identityKey), signedPreKey.keyPair().encodedPublicKey(), signedPreKey.signature()),
                 "Signature mismatch", SecurityException.class);
 
         var baseKey = SignalKeyPair.random();
@@ -81,15 +85,15 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
             theirSignedPubKey = theirEphemeralPubKey;
         }
 
-        var signedSecret = Curve.calculateAgreement(theirSignedPubKey, keys.identityKeyPair().privateKey());
-        var identitySecret = Curve.calculateAgreement(theirIdentityPubKey, ourSignedKey.privateKey());
+        var signedSecret = calculateAgreement(SignalHelper.removeKeyHeader(theirSignedPubKey), keys.identityKeyPair().privateKey());
+        var identitySecret = calculateAgreement(SignalHelper.removeKeyHeader(theirIdentityPubKey), ourSignedKey.privateKey());
         var sharedSecret = Bytes.of(32)
                 .fill((byte) 0xff)
                 .append(isInitiator ? signedSecret : identitySecret)
                 .append(isInitiator ? identitySecret : signedSecret)
-                .append(Curve.calculateAgreement(theirSignedPubKey, ourSignedKey.privateKey()));
+                .append(calculateAgreement(SignalHelper.removeKeyHeader(theirSignedPubKey), ourSignedKey.privateKey()));
         if (ourEphemeralKey != null && theirEphemeralPubKey != null) {
-            var ephemeralSecret = Curve.calculateAgreement(theirEphemeralPubKey, ourEphemeralKey.privateKey());
+            var ephemeralSecret = calculateAgreement(SignalHelper.removeKeyHeader(theirEphemeralPubKey), ourEphemeralKey.privateKey());
             sharedSecret = sharedSecret.append(ephemeralSecret);
         }
 
@@ -102,7 +106,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
                 .version(version)
                 .rootKey(masterKey[0])
                 .ephemeralKeyPair(isInitiator ? SignalKeyPair.random() : ourSignedKey)
-                .lastRemoteEphemeralKey(theirSignedPubKey)
+                .lastRemoteEphemeralKey(Objects.requireNonNull(theirSignedPubKey))
                 .remoteIdentityKey(theirIdentityPubKey)
                 .baseKey(isInitiator ? ourEphemeralKey.encodedPublicKey() : theirEphemeralPubKey)
                 .build();
@@ -110,8 +114,8 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
             return state;
         }
 
-        var initSecret = Curve.calculateAgreement(theirSignedPubKey, state.ephemeralKeyPair().privateKey());
-        var initKey = Hkdf.deriveSecrets(initSecret.toByteArray(), state.rootKey(),
+        var initSecret = calculateAgreement(SignalHelper.removeKeyHeader(theirSignedPubKey), state.ephemeralKeyPair().privateKey());
+        var initKey = Hkdf.deriveSecrets(initSecret, state.rootKey(),
                 "WhisperRatchet".getBytes(StandardCharsets.UTF_8));
         var chain = new SessionChain(-1, masterKey[1], state.ephemeralKeyPair().publicKey());
         return state.addChain(chain)

@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.util.Objects;
 
 import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
-import static java.util.Arrays.copyOfRange;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -56,7 +55,7 @@ public final class SignalPreKeyMessage implements SignalProtocolMessage{
     public static SignalPreKeyMessage ofSerialized(byte[] serialized) {
         try {
             return ProtobufDecoder.forType(SignalPreKeyMessage.class)
-                    .decode(copyOfRange(serialized, 1, serialized.length))
+                    .decode(Bytes.of(serialized).slice(1).toByteArray())
                     .version(SignalHelper.deserialize(serialized[0]))
                     .serialized(serialized);
         } catch (IOException exception) {

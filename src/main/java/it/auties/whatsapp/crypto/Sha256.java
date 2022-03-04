@@ -12,9 +12,9 @@ public class Sha256 {
     private final String SHA_256 = "SHA-256";
 
     @SneakyThrows
-    public Bytes calculate(@NonNull byte[] data) {
+    public byte[] calculate(@NonNull byte[] data) {
         var digest = MessageDigest.getInstance(SHA_256);
         digest.update(data);
-        return Bytes.of(digest.digest());
+        return digest.digest();
     }
 }
