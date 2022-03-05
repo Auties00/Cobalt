@@ -8,7 +8,6 @@ import lombok.experimental.UtilityClass;
 
 import java.io.ByteArrayOutputStream;
 import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 

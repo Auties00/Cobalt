@@ -1,11 +1,10 @@
 package it.auties.whatsapp.util;
 
 import it.auties.bytes.Bytes;
-import it.auties.bytes.Bytes;
+import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.crypto.AesCbc;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.Sha256;
-import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.media.AttachmentProvider;
 import it.auties.whatsapp.protobuf.media.MediaKeys;
 import it.auties.whatsapp.protobuf.media.MediaUpload;

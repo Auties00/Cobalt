@@ -2,7 +2,7 @@ package it.auties.whatsapp.protobuf.chat;
 
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.socket.Node;
-import it.auties.whatsapp.util.WhatsappUtils;
+import it.auties.whatsapp.util.Clock;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.Value;
@@ -53,9 +53,9 @@ public class GroupMetadata {
                 .map(id -> ContactJid.ofUser(id, ContactJid.Server.GROUP))
                 .orElseThrow(() -> new NoSuchElementException("Missing group jid"));
         var subject = node.attributes().getString("subject");
-        var subjectTimestamp = WhatsappUtils.parseWhatsappTime(node.attributes().getLong("s_t"))
+        var subjectTimestamp = Clock.parse(node.attributes().getLong("s_t"))
                 .orElse(ZonedDateTime.now());
-        var foundationTimestamp = WhatsappUtils.parseWhatsappTime(node.attributes().getLong("creation"))
+        var foundationTimestamp = Clock.parse(node.attributes().getLong("creation"))
                 .orElse(ZonedDateTime.now());
         var founder = node.attributes()
                 .getJid("creator")
@@ -75,7 +75,7 @@ public class GroupMetadata {
         var ephemeral = Optional.ofNullable(node.findNode("ephemeral"))
                 .map(Node::attributes)
                 .map(attributes -> attributes.getLong("expiration"))
-                .flatMap(WhatsappUtils::parseWhatsappTime)
+                .flatMap(Clock::parse)
                 .orElse(null);
         var participants = node.findNodes("participant")
                 .stream()

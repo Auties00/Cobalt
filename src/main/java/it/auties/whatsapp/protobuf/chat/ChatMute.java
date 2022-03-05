@@ -2,7 +2,7 @@ package it.auties.whatsapp.protobuf.chat;
 
 import it.auties.protobuf.annotation.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.util.WhatsappUtils;
+import it.auties.whatsapp.util.Clock;
 import lombok.NonNull;
 
 import java.time.Instant;
@@ -87,6 +87,6 @@ public record ChatMute(long endTimeStamp) {
      * @return a non-empty optional date if {@link ChatMute#endTimeStamp} > 0
      */
     public @NonNull Optional<ZonedDateTime> end() {
-        return WhatsappUtils.parseWhatsappTime(endTimeStamp);
+        return Clock.parse(endTimeStamp);
     }
 }

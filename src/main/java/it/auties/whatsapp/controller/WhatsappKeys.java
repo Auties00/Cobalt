@@ -1,10 +1,9 @@
-package it.auties.whatsapp.manager;
+package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.bytes.Bytes;
-import it.auties.whatsapp.manager.internal.WhatsappPreferences;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.protobuf.signal.auth.SignedDeviceIdentityHMAC;
@@ -17,9 +16,8 @@ import it.auties.whatsapp.protobuf.signal.session.Session;
 import it.auties.whatsapp.protobuf.signal.session.SessionAddress;
 import it.auties.whatsapp.protobuf.sync.AppStateSyncKey;
 import it.auties.whatsapp.protobuf.sync.LTHashState;
-import it.auties.whatsapp.util.JacksonProvider;
+import it.auties.whatsapp.util.Preferences;
 import it.auties.whatsapp.util.Validate;
-import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
@@ -41,7 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Accessors(fluent = true, chain = true)
 @Log
 @SuppressWarnings({"unused", "UnusedReturnValue"}) // Chaining
-public class WhatsappKeys implements JacksonProvider {
+public non-sealed class WhatsappKeys implements WhatsappController {
     /**
      * The client jid
      */
@@ -175,7 +173,7 @@ public class WhatsappKeys implements JacksonProvider {
      * Deletes all the known keys from memory
      */
     public static void deleteAll() {
-        var preferences = WhatsappPreferences.of("keys");
+        var preferences = Preferences.of("keys");
         preferences.delete();
     }
 
@@ -185,7 +183,7 @@ public class WhatsappKeys implements JacksonProvider {
      * @param id the id of the keys
      */
     public static void deleteKeys(int id) {
-        var preferences = WhatsappPreferences.of("keys/%s.json", id);
+        var preferences = Preferences.of("keys/%s.json", id);
         preferences.delete();
     }
 
@@ -197,10 +195,11 @@ public class WhatsappKeys implements JacksonProvider {
      */
     public static WhatsappKeys newKeys(int id){
         var result = WhatsappKeys.builder()
-                .id(WhatsappUtils.saveId(id))
+                .id(WhatsappController.saveId(id))
                 .build();
         return result.signedKeyPair(SignalSignedKeyPair.of(result.id(), result.identityKeyPair()));
     }
+
 
     /**
      * Returns the keys saved in memory or constructs a new clean instance
@@ -209,25 +208,9 @@ public class WhatsappKeys implements JacksonProvider {
      * @return a non-null instance of WhatsappKeys
      */
     public static WhatsappKeys fromMemory(int id){
-        var preferences = WhatsappPreferences.of("keys/%s.json", id);
+        var preferences = Preferences.of("keys/%s.json", id);
         return Objects.requireNonNullElseGet(preferences.readJson(new TypeReference<>() {}),
                 () -> newKeys(id));
-    }
-
-    /**
-     * Serializes this object to a json and saves it in memory
-     *
-     * @return this
-     */
-    public WhatsappKeys save(boolean async){
-        var preferences = WhatsappPreferences.of("keys/%s.json", id);
-        if(async) {
-            preferences.writeJsonAsync(this);
-            return this;
-        }
-
-        preferences.writeJson(this);
-        return this;
     }
 
     /**
@@ -427,6 +410,20 @@ public class WhatsappKeys implements JacksonProvider {
     public long readCounter(boolean increment){
         return increment ? readCounter.getAndIncrement()
                 : readCounter.get();
+    }
+
+    /**
+     * Serializes this object to a json and saves it in memory
+     */
+    @Override
+    public void save(boolean async){
+        var preferences = Preferences.of("keys/%s.json", id);
+        if(async) {
+            preferences.writeJsonAsync(this);
+            return;
+        }
+
+        preferences.writeJson(this);
     }
 
     @JsonSetter

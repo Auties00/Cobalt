@@ -1,7 +1,7 @@
 package it.auties.whatsapp.crypto;
 
 import it.auties.bytes.Bytes;
-import it.auties.whatsapp.manager.WhatsappKeys;
+import it.auties.whatsapp.controller.WhatsappKeys;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 

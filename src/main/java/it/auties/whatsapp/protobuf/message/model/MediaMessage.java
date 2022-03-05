@@ -3,7 +3,7 @@ package it.auties.whatsapp.protobuf.message.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.protobuf.annotation.ProtobufIgnore;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.manager.WhatsappStore;
+import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.protobuf.media.AttachmentProvider;
 import it.auties.whatsapp.protobuf.message.payment.PaymentInvoiceMessage;
 import it.auties.whatsapp.protobuf.message.standard.*;

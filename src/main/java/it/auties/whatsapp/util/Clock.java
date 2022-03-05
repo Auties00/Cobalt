@@ -1,0 +1,19 @@
+package it.auties.whatsapp.util;
+
+import lombok.experimental.UtilityClass;
+
+import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.util.Optional;
+
+import static java.time.ZoneId.systemDefault;
+import static java.time.ZonedDateTime.ofInstant;
+
+@UtilityClass
+public class Clock {
+    public Optional<ZonedDateTime> parse(long input) {
+        return Optional.of(input)
+                .filter(time -> time != 0)
+                .map(time -> ofInstant(Instant.ofEpochSecond(time), systemDefault()));
+    }
+}

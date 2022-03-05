@@ -2,10 +2,10 @@ package it.auties.whatsapp.protobuf.message.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.bytes.Bytes;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
-import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
@@ -46,5 +46,5 @@ public class MessageKey {
   @JsonPropertyDescription("string")
   @NonNull
   @Default
-  private String id = WhatsappUtils.randomId();
+  private String id = Bytes.ofRandom(10).toHex();
 }

@@ -1,7 +1,7 @@
 package it.auties.whatsapp.api;
 
 import com.google.zxing.common.BitMatrix;
-import it.auties.whatsapp.manager.WhatsappStore;
+import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.protobuf.action.Action;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
@@ -10,7 +10,6 @@ import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.message.model.MessageStatus;
 import it.auties.whatsapp.protobuf.setting.Setting;
 import it.auties.whatsapp.socket.Socket;
-import it.auties.whatsapp.util.QrHandler;
 import lombok.NonNull;
 
 import java.util.List;
@@ -26,14 +25,13 @@ public interface WhatsappListener {
     /**
      * Called when {@link Socket} successfully establishes a connection with new secrets.
      * By default, the QR code is printed to the console.
-     * If no enum supports your intended functionality, define the logic inside this method and return {@link QrHandler#CUSTOM}.
      *
      * @param qr the generator code to consume
      * @return a non-null handler to process the qr code
      */
     @NonNull
     default QrHandler onQRCode(BitMatrix qr){
-        return QrHandler.TERMINAL;
+        return QrHandler.toTerminal();
     }
 
     /**

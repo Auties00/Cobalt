@@ -4,13 +4,14 @@ import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.protobuf.encoder.ProtobufEncoder;
+import it.auties.whatsapp.api.QrHandler;
 import it.auties.whatsapp.api.SerializationStrategy.Event;
 import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.binary.BinaryMessage;
+import it.auties.whatsapp.controller.WhatsappKeys;
+import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.crypto.*;
-import it.auties.whatsapp.manager.WhatsappKeys;
-import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.action.*;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.chat.ChatMute;
@@ -47,7 +48,6 @@ import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.java.Log;
 
-import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
@@ -66,7 +66,6 @@ import static it.auties.bytes.Bytes.ofBase64;
 import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
 import static it.auties.whatsapp.api.SerializationStrategy.Event.*;
 import static it.auties.whatsapp.socket.Node.*;
-import static it.auties.whatsapp.util.QrHandler.TERMINAL;
 import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
 import static java.lang.Long.parseLong;
 import static java.lang.Runtime.getRuntime;
@@ -822,13 +821,13 @@ public class Socket {
         private void printQrCode(Node container) {
             var ref = container.findNode("ref");
             var qr = new String(ref.bytes(), StandardCharsets.UTF_8);
-            var matrix = Qr.generate(keys, qr);
+            var matrix = QrGenerator.generate(keys, qr);
             if (!store.listeners().isEmpty()) {
                 store.callListeners(listener -> listener.onQRCode(matrix).accept(matrix));
                 return;
             }
 
-            TERMINAL.accept(matrix);
+            QrHandler.toTerminal().accept(matrix);
         }
 
         @SneakyThrows
@@ -902,7 +901,7 @@ public class Socket {
                 var whatsappMessage = DeviceSentMessage.newDeviceSentMessage(info.chatJid().toString(), info.message());
                 var paddedMessage = SignalHelper.pad(ProtobufEncoder.encode(whatsappMessage));
                 return querySyncDevices(info.chatJid(), true)
-                        .thenCombineAsync(querySyncDevices(keys.companion().toUserJid(), true), WhatsappUtils::combine)
+                        .thenCombineAsync(querySyncDevices(keys.companion().toUserJid(), true), this::joinContacts)
                         .thenComposeAsync(this::createSessions)
                         .thenApplyAsync(result -> createParticipantsSessions(result, paddedMessage))
                         .thenComposeAsync(participants -> encode(info, encodedMessage, participants, attributes))
@@ -924,8 +923,14 @@ public class Socket {
             return metadata.participants()
                     .stream()
                     .map(participant -> querySyncDevices(participant.jid(), false))
-                    .reduce(completedFuture(List.of()), (left, right) -> left.thenCombineAsync(right, WhatsappUtils::combine))
+                    .reduce(completedFuture(List.of()), (left, right) -> left.thenCombineAsync(right, this::joinContacts))
                     .thenComposeAsync(contacts -> createDistributionMessage(info, message, contacts));
+        }
+
+        private List<ContactJid> joinContacts(List<ContactJid> first, List<ContactJid> second) {
+            return Stream.of(first, second)
+                    .flatMap(Collection::stream)
+                    .toList();
         }
 
         @SafeVarargs

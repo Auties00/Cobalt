@@ -24,7 +24,7 @@ open module it.auties.whatsapp4j {
     requires it.auties.curve;
 
     exports it.auties.whatsapp.api;
-    exports it.auties.whatsapp.manager;
+    exports it.auties.whatsapp.controller;
     exports it.auties.whatsapp.protobuf.action;
     exports it.auties.whatsapp.protobuf.business;
     exports it.auties.whatsapp.protobuf.button;
@@ -41,4 +41,5 @@ open module it.auties.whatsapp4j {
     exports it.auties.whatsapp.protobuf.product;
     exports it.auties.whatsapp.protobuf.setting;
     exports it.auties.whatsapp.protobuf.sync;
+    exports it.auties.whatsapp.util;
 }

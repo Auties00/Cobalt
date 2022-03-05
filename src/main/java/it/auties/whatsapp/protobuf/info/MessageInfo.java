@@ -3,7 +3,7 @@ package it.auties.whatsapp.protobuf.info;
 import com.fasterxml.jackson.annotation.*;
 import it.auties.protobuf.annotation.ProtobufIgnore;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.manager.WhatsappStore;
+import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactJid;

@@ -1,7 +1,7 @@
 package it.auties.whatsapp.api;
 
-import it.auties.whatsapp.manager.WhatsappKeys;
-import it.auties.whatsapp.manager.WhatsappStore;
+import it.auties.whatsapp.controller.WhatsappKeys;
+import it.auties.whatsapp.controller.WhatsappStore;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;

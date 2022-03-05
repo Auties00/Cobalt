@@ -1,6 +1,6 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.whatsapp.manager.WhatsappKeys;
+import it.auties.whatsapp.controller.WhatsappKeys;
 import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.protobuf.signal.message.SignalDistributionMessage;
 import it.auties.whatsapp.protobuf.signal.sender.SenderKeyName;

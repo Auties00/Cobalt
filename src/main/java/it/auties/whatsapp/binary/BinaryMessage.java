@@ -1,8 +1,8 @@
 package it.auties.whatsapp.binary;
 
 import it.auties.bytes.Bytes;
+import it.auties.whatsapp.controller.WhatsappKeys;
 import it.auties.whatsapp.crypto.AesGmc;
-import it.auties.whatsapp.manager.WhatsappKeys;
 import it.auties.whatsapp.socket.Node;
 import lombok.NonNull;
 import lombok.Value;

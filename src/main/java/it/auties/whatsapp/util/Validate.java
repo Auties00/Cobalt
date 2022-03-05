@@ -18,7 +18,7 @@ public class Validate {
      * @param message the message of the exception to throw if {@code value} isn't true
      * @param args    the arguments used to format the exception thrown if {@code value} isn't true
      */
-    public void isTrue(boolean value, @NonNull String message, @NonNull Object... args) {
+    public void isTrue(boolean value, @NonNull String message, Object... args) {
         isTrue(value, message, IllegalArgumentException.class, args);
     }
 
@@ -31,7 +31,7 @@ public class Validate {
      * @param throwable the type of exception to throw if {@code value} isn't true
      * @param args      the arguments used to format the exception thrown if {@code value} isn't true
      */
-    public void isTrue(boolean value, @NonNull String message, @NonNull Class<? extends Throwable> throwable, @NonNull Object... args) {
+    public void isTrue(boolean value, @NonNull String message, @NonNull Class<? extends Throwable> throwable, Object... args) {
         isTrue(value, createThrowable(throwable, message.formatted(args)));
     }
 

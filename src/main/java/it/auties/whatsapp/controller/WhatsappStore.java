@@ -1,10 +1,9 @@
-package it.auties.whatsapp.manager;
+package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.api.WhatsappListener;
-import it.auties.whatsapp.manager.internal.WhatsappPreferences;
 import it.auties.whatsapp.protobuf.chat.Chat;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
@@ -12,8 +11,7 @@ import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.media.MediaConnection;
 import it.auties.whatsapp.socket.Node;
 import it.auties.whatsapp.socket.Request;
-import it.auties.whatsapp.util.JacksonProvider;
-import it.auties.whatsapp.util.WhatsappUtils;
+import it.auties.whatsapp.util.Preferences;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
@@ -43,7 +41,7 @@ import static java.util.concurrent.Executors.newSingleThreadExecutor;
 @Accessors(fluent = true, chain = true)
 @Log
 @SuppressWarnings({"unused", "UnusedReturnValue"}) // Chaining
-public class WhatsappStore implements JacksonProvider {
+public final class WhatsappStore implements WhatsappController {
     /**
      * All the known stores
      */
@@ -145,7 +143,7 @@ public class WhatsappStore implements JacksonProvider {
      */
     public static WhatsappStore newStore(int id){
         var result = WhatsappStore.builder()
-                .id(WhatsappUtils.saveId(id))
+                .id(WhatsappController.saveId(id))
                 .build();
         stores.add(result);
         return result;
@@ -158,7 +156,7 @@ public class WhatsappStore implements JacksonProvider {
      * @return a non-null instance of WhatsappStore
      */
     public static WhatsappStore fromMemory(int id){
-        var preferences = WhatsappPreferences.of("store/%s.json", id);
+        var preferences = Preferences.of("store/%s.json", id);
         var result = Objects.requireNonNullElseGet(preferences.readJson(new TypeReference<>() {}),
                 () -> newStore(id));
         stores.add(result);
@@ -169,7 +167,7 @@ public class WhatsappStore implements JacksonProvider {
      * Deletes all the known keys from memory
      */
     public static void deleteAll() {
-        var preferences = WhatsappPreferences.of("store");
+        var preferences = Preferences.of("store");
         preferences.delete();
     }
 
@@ -383,18 +381,16 @@ public class WhatsappStore implements JacksonProvider {
 
     /**
      * Serializes this object to a json and saves it in memory
-     *
-     * @return this
      */
-    public WhatsappStore save(boolean async){
-        var preferences = WhatsappPreferences.of("store/%s.json", id);
+    @Override
+    public void save(boolean async){
+        var preferences = Preferences.of("store/%s.json", id);
         if(async) {
             preferences.writeJsonAsync(this);
-            return this;
+            return;
         }
 
         preferences.writeJson(this);
-        return this;
     }
 
     /**
@@ -403,7 +399,7 @@ public class WhatsappStore implements JacksonProvider {
      * @return this
      */
     public WhatsappStore delete(){
-        var preferences = WhatsappPreferences.of("store/%s.json", id);
+        var preferences = Preferences.of("store/%s.json", id);
         preferences.delete();
         return this;
     }

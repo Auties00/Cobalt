@@ -5,7 +5,7 @@ import com.google.zxing.EncodeHintType;
 import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
-import it.auties.whatsapp.manager.WhatsappKeys;
+import it.auties.whatsapp.controller.WhatsappKeys;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
@@ -19,7 +19,7 @@ import static it.auties.bytes.Bytes.of;
  * A utility class used to generate QR codes to authenticate with whatsapp
  */
 @UtilityClass
-public class Qr {
+public class QrGenerator {
     /**
      * Margin between the qr code and the border
      */

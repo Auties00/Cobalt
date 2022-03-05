@@ -1,7 +1,6 @@
-package it.auties.whatsapp.manager.internal;
+package it.auties.whatsapp.util;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import it.auties.whatsapp.util.JacksonProvider;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -14,7 +13,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 @RequiredArgsConstructor
-public final class WhatsappPreferences implements JacksonProvider {
+public final class Preferences implements JacksonProvider {
     private static final Path DEFAULT_DIRECTORY
             = Path.of(System.getProperty("user.home") + "/.whatsappweb4j/");
 
@@ -24,9 +23,9 @@ public final class WhatsappPreferences implements JacksonProvider {
     private String cache;
 
     @SneakyThrows
-    public static WhatsappPreferences of(String path, Object... args) {
+    public static Preferences of(String path, Object... args) {
         var location = Path.of("%s/%s".formatted(DEFAULT_DIRECTORY, path.formatted(args)));
-        return new WhatsappPreferences(location.toAbsolutePath());
+        return new Preferences(location.toAbsolutePath());
     }
 
     @SneakyThrows

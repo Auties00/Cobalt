@@ -1,6 +1,6 @@
 package it.auties.whatsapp.socket;
 
-import it.auties.whatsapp.util.WhatsappUtils;
+import it.auties.whatsapp.util.Clock;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -22,7 +22,7 @@ public class StatusResponse extends Response {
         super(source);
         this.status = new String((byte[]) source.content(), StandardCharsets.UTF_8);
         var timestamp = source.attributes().getLong("t");
-        this.timestamp = WhatsappUtils.parseWhatsappTime(timestamp)
+        this.timestamp = Clock.parse(timestamp)
                 .orElse(ZonedDateTime.now());
     }
 

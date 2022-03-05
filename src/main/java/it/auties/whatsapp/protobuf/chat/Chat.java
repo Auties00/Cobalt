@@ -13,8 +13,8 @@ import it.auties.whatsapp.protobuf.contact.ContactJid;
 import it.auties.whatsapp.protobuf.contact.ContactStatus;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.sync.HistorySyncMessage;
+import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.SortedMessageList;
-import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
@@ -376,7 +376,7 @@ public class Chat {
      * @return a non-empty optional if the chat is pinned
      */
     public Optional<ZonedDateTime> pinned() {
-        return WhatsappUtils.parseWhatsappTime(pinned);
+        return Clock.parse(pinned);
     }
 
     /**
@@ -385,7 +385,7 @@ public class Chat {
      * @return a non-empty optional if ephemeral messages are enabled for this chat
      */
     public Optional<ZonedDateTime> ephemeralMessageDuration() {
-        return WhatsappUtils.parseWhatsappTime(ephemeralMessageDuration);
+        return Clock.parse(ephemeralMessageDuration);
     }
 
     /**
@@ -394,7 +394,7 @@ public class Chat {
      * @return a non-empty optional if ephemeral messages are enabled for this chat
      */
     public Optional<ZonedDateTime> ephemeralMessagesToggleTime() {
-        return WhatsappUtils.parseWhatsappTime(ephemeralMessagesToggleTime);
+        return Clock.parse(ephemeralMessagesToggleTime);
     }
 
     /**

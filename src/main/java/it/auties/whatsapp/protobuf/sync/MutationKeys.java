@@ -6,7 +6,6 @@ import it.auties.whatsapp.util.SignalProvider;
 import lombok.NonNull;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 public record MutationKeys(byte[] indexKey, byte[] encKey, byte[] macKey, byte[] snapshotMacKey,
                            byte[] patchMacKey) implements SignalProvider {

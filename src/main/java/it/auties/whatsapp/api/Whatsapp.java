@@ -1,8 +1,8 @@
 package it.auties.whatsapp.api;
 
+import it.auties.whatsapp.controller.WhatsappKeys;
+import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.crypto.SignalHelper;
-import it.auties.whatsapp.manager.WhatsappKeys;
-import it.auties.whatsapp.manager.WhatsappStore;
 import it.auties.whatsapp.protobuf.chat.*;
 import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactJid;
@@ -21,7 +21,6 @@ import it.auties.whatsapp.socket.StatusResponse;
 import it.auties.whatsapp.util.Nodes;
 import it.auties.whatsapp.util.RegisterListenerScanner;
 import it.auties.whatsapp.util.Validate;
-import it.auties.whatsapp.util.WhatsappUtils;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
@@ -37,6 +36,7 @@ import java.util.stream.Stream;
 
 import static it.auties.bytes.Bytes.ofRandom;
 import static it.auties.whatsapp.api.WhatsappOptions.defaultOptions;
+import static it.auties.whatsapp.controller.WhatsappController.knownIds;
 import static it.auties.whatsapp.socket.Node.*;
 import static java.util.Objects.requireNonNullElseGet;
 
@@ -80,7 +80,7 @@ public class Whatsapp {
      * @return a non-null Whatsapp instance
      */
     public static Whatsapp firstConnection(){
-        return new Whatsapp(requireNonNullElseGet(WhatsappUtils.knownIds().peekFirst(), SignalHelper::randomRegistrationId));
+        return new Whatsapp(requireNonNullElseGet(knownIds().peekFirst(), SignalHelper::randomRegistrationId));
     }
 
     /**
@@ -90,7 +90,7 @@ public class Whatsapp {
      * @return a non-null Whatsapp instance
      */
     public static Whatsapp lastConnection(){
-        return new Whatsapp(requireNonNullElseGet(WhatsappUtils.knownIds().peekLast(), SignalHelper::randomRegistrationId));
+        return new Whatsapp(requireNonNullElseGet(knownIds().peekLast(), SignalHelper::randomRegistrationId));
     }
 
     /**
@@ -108,7 +108,7 @@ public class Whatsapp {
      * @return a non-null Stream
      */
     public static Stream<Whatsapp> streamConnections(){
-        return WhatsappUtils.knownIds()
+        return knownIds()
                 .stream()
                 .map(Whatsapp::connect);
     }

@@ -1,6 +1,7 @@
 package it.auties.github.dev;
 
 import com.google.zxing.common.BitMatrix;
+import it.auties.whatsapp.api.QrHandler;
 import it.auties.whatsapp.api.RegisterListener;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappListener;
@@ -10,7 +11,6 @@ import it.auties.whatsapp.protobuf.contact.Contact;
 import it.auties.whatsapp.protobuf.contact.ContactStatus;
 import it.auties.whatsapp.protobuf.info.MessageInfo;
 import it.auties.whatsapp.protobuf.message.model.MessageStatus;
-import it.auties.whatsapp.util.QrHandler;
 import lombok.SneakyThrows;
 import lombok.extern.java.Log;
 
@@ -51,7 +51,7 @@ public class WhatsappAPITest {
         public void onChats() {
             System.out.println("Called on chats");
             whatsapp.store()
-                    .findChatByName("Il Bot Di Autiero")
+                    .findChatByName("5-0")
                     .ifPresent(chat -> {
                         System.out.printf("Sending message to %s%n", chat.jid());
                         whatsapp.sendMessage(chat.jid(), "Test da md");
@@ -65,7 +65,7 @@ public class WhatsappAPITest {
 
         @Override
         public QrHandler onQRCode(BitMatrix qr) {
-            return QrHandler.FILE;
+            return QrHandler.toFile();
         }
 
         @Override
