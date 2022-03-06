@@ -3,17 +3,17 @@ package it.auties.whatsapp.api;
 import it.auties.whatsapp.controller.WhatsappKeys;
 import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.crypto.SignalHelper;
-import it.auties.whatsapp.protobuf.chat.*;
-import it.auties.whatsapp.protobuf.contact.Contact;
-import it.auties.whatsapp.protobuf.contact.ContactJid;
-import it.auties.whatsapp.protobuf.contact.ContactStatus;
-import it.auties.whatsapp.protobuf.info.ContextInfo;
-import it.auties.whatsapp.protobuf.info.MessageInfo;
-import it.auties.whatsapp.protobuf.message.model.ContextualMessage;
-import it.auties.whatsapp.protobuf.message.model.Message;
-import it.auties.whatsapp.protobuf.message.model.MessageContainer;
-import it.auties.whatsapp.protobuf.message.model.MessageKey;
-import it.auties.whatsapp.protobuf.message.standard.TextMessage;
+import it.auties.whatsapp.model.chat.*;
+import it.auties.whatsapp.model.contact.Contact;
+import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.contact.ContactStatus;
+import it.auties.whatsapp.model.info.ContextInfo;
+import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.message.model.ContextualMessage;
+import it.auties.whatsapp.model.message.model.Message;
+import it.auties.whatsapp.model.message.model.MessageContainer;
+import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.message.standard.TextMessage;
 import it.auties.whatsapp.socket.HasWhatsappResponse;
 import it.auties.whatsapp.socket.Node;
 import it.auties.whatsapp.socket.Socket;
@@ -47,6 +47,7 @@ import static java.util.Objects.requireNonNullElseGet;
  * Multiple instances of this class can be initialized, though it is not advisable as; is a singleton and cannot distinguish between the data associated with each session.
  */
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
+@SuppressWarnings("unused")
 public class Whatsapp {
     /**
      * The socket associated with this session

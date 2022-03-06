@@ -25,21 +25,21 @@ open module it.auties.whatsapp4j {
 
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;
-    exports it.auties.whatsapp.protobuf.action;
-    exports it.auties.whatsapp.protobuf.business;
-    exports it.auties.whatsapp.protobuf.button;
-    exports it.auties.whatsapp.protobuf.chat;
-    exports it.auties.whatsapp.protobuf.contact;
-    exports it.auties.whatsapp.protobuf.info;
-    exports it.auties.whatsapp.protobuf.media;
-    exports it.auties.whatsapp.protobuf.message.button;
-    exports it.auties.whatsapp.protobuf.message.server;
-    exports it.auties.whatsapp.protobuf.message.device;
-    exports it.auties.whatsapp.protobuf.message.model;
-    exports it.auties.whatsapp.protobuf.message.payment;
-    exports it.auties.whatsapp.protobuf.message.standard;
-    exports it.auties.whatsapp.protobuf.product;
-    exports it.auties.whatsapp.protobuf.setting;
-    exports it.auties.whatsapp.protobuf.sync;
+    exports it.auties.whatsapp.model.action;
+    exports it.auties.whatsapp.model.business;
+    exports it.auties.whatsapp.model.button;
+    exports it.auties.whatsapp.model.chat;
+    exports it.auties.whatsapp.model.contact;
+    exports it.auties.whatsapp.model.info;
+    exports it.auties.whatsapp.model.media;
+    exports it.auties.whatsapp.model.message.button;
+    exports it.auties.whatsapp.model.message.server;
+    exports it.auties.whatsapp.model.message.device;
+    exports it.auties.whatsapp.model.message.model;
+    exports it.auties.whatsapp.model.message.payment;
+    exports it.auties.whatsapp.model.message.standard;
+    exports it.auties.whatsapp.model.product;
+    exports it.auties.whatsapp.model.setting;
+    exports it.auties.whatsapp.model.sync;
     exports it.auties.whatsapp.util;
 }

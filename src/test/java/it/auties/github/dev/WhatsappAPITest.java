@@ -5,12 +5,12 @@ import it.auties.whatsapp.api.QrHandler;
 import it.auties.whatsapp.api.RegisterListener;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappListener;
-import it.auties.whatsapp.protobuf.action.Action;
-import it.auties.whatsapp.protobuf.chat.Chat;
-import it.auties.whatsapp.protobuf.contact.Contact;
-import it.auties.whatsapp.protobuf.contact.ContactStatus;
-import it.auties.whatsapp.protobuf.info.MessageInfo;
-import it.auties.whatsapp.protobuf.message.model.MessageStatus;
+import it.auties.whatsapp.model.action.Action;
+import it.auties.whatsapp.model.chat.Chat;
+import it.auties.whatsapp.model.contact.Contact;
+import it.auties.whatsapp.model.contact.ContactStatus;
+import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.message.model.MessageStatus;
 import lombok.SneakyThrows;
 import lombok.extern.java.Log;
 
@@ -51,7 +51,7 @@ public class WhatsappAPITest {
         public void onChats() {
             System.out.println("Called on chats");
             whatsapp.store()
-                    .findChatByName("5-0")
+                    .findChatByName("Basato")
                     .ifPresent(chat -> {
                         System.out.printf("Sending message to %s%n", chat.jid());
                         whatsapp.sendMessage(chat.jid(), "Test da md");

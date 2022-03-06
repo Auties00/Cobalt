@@ -1,7 +1,7 @@
 package it.auties.whatsapp.binary;
 
-import it.auties.whatsapp.protobuf.contact.Contact;
-import it.auties.whatsapp.protobuf.contact.ContactStatus;
+import it.auties.whatsapp.model.contact.Contact;
+import it.auties.whatsapp.model.contact.ContactStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;

@@ -12,32 +12,32 @@ import it.auties.whatsapp.binary.BinaryMessage;
 import it.auties.whatsapp.controller.WhatsappKeys;
 import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.crypto.*;
-import it.auties.whatsapp.protobuf.action.*;
-import it.auties.whatsapp.protobuf.chat.Chat;
-import it.auties.whatsapp.protobuf.chat.ChatMute;
-import it.auties.whatsapp.protobuf.chat.GroupMetadata;
-import it.auties.whatsapp.protobuf.contact.Contact;
-import it.auties.whatsapp.protobuf.contact.ContactJid;
-import it.auties.whatsapp.protobuf.contact.ContactStatus;
-import it.auties.whatsapp.protobuf.info.MessageInfo;
-import it.auties.whatsapp.protobuf.media.MediaConnection;
-import it.auties.whatsapp.protobuf.message.device.DeviceSentMessage;
-import it.auties.whatsapp.protobuf.message.model.MediaMessage;
-import it.auties.whatsapp.protobuf.message.model.MessageContainer;
-import it.auties.whatsapp.protobuf.message.model.MessageKey;
-import it.auties.whatsapp.protobuf.message.model.MessageStatus;
-import it.auties.whatsapp.protobuf.message.server.ProtocolMessage;
-import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
-import it.auties.whatsapp.protobuf.setting.EphemeralSetting;
-import it.auties.whatsapp.protobuf.signal.auth.*;
-import it.auties.whatsapp.protobuf.signal.auth.ClientPayload.ClientPayloadBuilder;
-import it.auties.whatsapp.protobuf.signal.keypair.SignalPreKeyPair;
-import it.auties.whatsapp.protobuf.signal.keypair.SignalSignedKeyPair;
-import it.auties.whatsapp.protobuf.signal.message.SignalDistributionMessage;
-import it.auties.whatsapp.protobuf.signal.message.SignalMessage;
-import it.auties.whatsapp.protobuf.signal.message.SignalPreKeyMessage;
-import it.auties.whatsapp.protobuf.signal.sender.SenderKeyName;
-import it.auties.whatsapp.protobuf.sync.*;
+import it.auties.whatsapp.model.action.*;
+import it.auties.whatsapp.model.chat.Chat;
+import it.auties.whatsapp.model.chat.ChatMute;
+import it.auties.whatsapp.model.chat.GroupMetadata;
+import it.auties.whatsapp.model.contact.Contact;
+import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.contact.ContactStatus;
+import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.media.MediaConnection;
+import it.auties.whatsapp.model.message.device.DeviceSentMessage;
+import it.auties.whatsapp.model.message.model.MediaMessage;
+import it.auties.whatsapp.model.message.model.MessageContainer;
+import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.message.model.MessageStatus;
+import it.auties.whatsapp.model.message.server.ProtocolMessage;
+import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
+import it.auties.whatsapp.model.setting.EphemeralSetting;
+import it.auties.whatsapp.model.signal.auth.*;
+import it.auties.whatsapp.model.signal.auth.ClientPayload.ClientPayloadBuilder;
+import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
+import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
+import it.auties.whatsapp.model.signal.message.SignalDistributionMessage;
+import it.auties.whatsapp.model.signal.message.SignalMessage;
+import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
+import it.auties.whatsapp.model.signal.sender.SenderKeyName;
+import it.auties.whatsapp.model.sync.*;
 import it.auties.whatsapp.util.*;
 import jakarta.websocket.*;
 import jakarta.websocket.ClientEndpointConfig.Configurator;
@@ -887,11 +887,11 @@ public class Socket {
     }
 
     private class MessageHandler {
-        private final Cache<ContactJid, GroupMetadata> groupsCache;
-        private final Cache<String, List<ContactJid>> devicesCache;
+        private final CacheMap<ContactJid, GroupMetadata> groupsCache;
+        private final CacheMap<String, List<ContactJid>> devicesCache;
         public MessageHandler() {
-            this.groupsCache = new Cache<>();
-            this.devicesCache = new Cache<>();
+            this.groupsCache = new CacheMap<>();
+            this.devicesCache = new CacheMap<>();
         }
 
         @SafeVarargs
@@ -1108,7 +1108,7 @@ public class Socket {
             var messageBuilder = MessageInfo.newMessageInfo();
             var keyBuilder = MessageKey.newMessageKey();
             switch (from.type()){
-                case USER, OFFICIAL_BUSINESS_ACCOUNT, STATUS, ANNOUNCEMENT -> {
+                case USER, OFFICIAL_BUSINESS_ACCOUNT, STATUS, ANNOUNCEMENT, COMPANION -> {
                     keyBuilder.chatJid(recipient);
                     messageBuilder.senderJid(from);
                 }
@@ -1137,7 +1137,11 @@ public class Socket {
                 var encodedMessage = messageNode.bytes();
                 var messageType = messageNode.attributes().getString("type");
                 var buffer = decodeCipheredMessage(info, encodedMessage, messageType);
-                info.message(decodeMessageContainer(buffer));
+                if(buffer.isEmpty()){
+                    return;
+                }
+
+                info.message(decodeMessageContainer(buffer.get()));
                 sendMessageAck(container, of("class", "receipt"));
                 sendReceipt(info.chatJid(), info.senderJid(),
                         List.of(info.key().id()), null);
@@ -1167,28 +1171,33 @@ public class Socket {
             log.warning("Received stub %s with %s: unsupported!".formatted(info.stubType(), info.stubParameters()));
         }
 
-        private byte[] decodeCipheredMessage(MessageInfo info, byte[] message, String type) {
-            return switch (type) {
-                case "skmsg" -> {
-                    var senderName = new SenderKeyName(info.chatJid().toString(), info.senderJid().toSignalAddress());
-                    var signalGroup = new GroupCipher(senderName, keys);
-                    yield signalGroup.decrypt(message);
-                }
+        private Optional<byte[]> decodeCipheredMessage(MessageInfo info, byte[] message, String type) {
+            try {
+                return Optional.of(switch (type) {
+                    case "skmsg" -> {
+                        var senderName = new SenderKeyName(info.chatJid().toString(), info.senderJid().toSignalAddress());
+                        var signalGroup = new GroupCipher(senderName, keys);
+                        yield signalGroup.decrypt(message);
+                    }
 
-                case "pkmsg" -> {
-                    var session = new SessionCipher(info.chatJid().toSignalAddress(), keys);
-                    var preKey = SignalPreKeyMessage.ofSerialized(message);
-                    yield session.decrypt(preKey);
-                }
+                    case "pkmsg" -> {
+                        var session = new SessionCipher(info.chatJid().toSignalAddress(), keys);
+                        var preKey = SignalPreKeyMessage.ofSerialized(message);
+                        yield session.decrypt(preKey);
+                    }
 
-                case "msg" -> {
-                    var session = new SessionCipher(info.chatJid().toSignalAddress(), keys);
-                    var signalMessage = SignalMessage.ofSerialized(message);
-                    yield session.decrypt(signalMessage);
-                }
+                    case "msg" -> {
+                        var session = new SessionCipher(info.chatJid().toSignalAddress(), keys);
+                        var signalMessage = SignalMessage.ofSerialized(message);
+                        yield session.decrypt(signalMessage);
+                    }
 
-                default -> throw new IllegalArgumentException("Unsupported encoded message type: %s".formatted(type));
-            };
+                    default -> throw new IllegalArgumentException("Unsupported encoded message type: %s".formatted(type));
+                });
+            }catch (SecurityException exception){
+                streamHandler.handleFailure(400, "hmac_validation", "message_decoding");
+                return Optional.empty();
+            }
         }
 
         @SneakyThrows
@@ -1680,8 +1689,8 @@ public class Socket {
                     .append(keyId)
                     .toByteArray();
 
-            var last = Bytes.of(8)
-                    .append((byte) encodedKey.length, 7)
+            var last = Bytes.newBuffer(7)
+                    .append(encodedKey.length)
                     .toByteArray();
 
             var total = Bytes.of(encodedKey)

@@ -4,18 +4,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.bytes.Bytes;
-import it.auties.whatsapp.protobuf.contact.ContactJid;
-import it.auties.whatsapp.protobuf.message.server.SenderKeyDistributionMessage;
-import it.auties.whatsapp.protobuf.signal.auth.SignedDeviceIdentityHMAC;
-import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
-import it.auties.whatsapp.protobuf.signal.keypair.SignalPreKeyPair;
-import it.auties.whatsapp.protobuf.signal.keypair.SignalSignedKeyPair;
-import it.auties.whatsapp.protobuf.signal.sender.SenderKeyName;
-import it.auties.whatsapp.protobuf.signal.sender.SenderKeyRecord;
-import it.auties.whatsapp.protobuf.signal.session.Session;
-import it.auties.whatsapp.protobuf.signal.session.SessionAddress;
-import it.auties.whatsapp.protobuf.sync.AppStateSyncKey;
-import it.auties.whatsapp.protobuf.sync.LTHashState;
+import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
+import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
+import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
+import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
+import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
+import it.auties.whatsapp.model.signal.sender.SenderKeyName;
+import it.auties.whatsapp.model.signal.sender.SenderKeyRecord;
+import it.auties.whatsapp.model.signal.session.Session;
+import it.auties.whatsapp.model.signal.session.SessionAddress;
+import it.auties.whatsapp.model.sync.AppStateSyncKey;
+import it.auties.whatsapp.model.sync.LTHashState;
 import it.auties.whatsapp.util.Preferences;
 import it.auties.whatsapp.util.Validate;
 import lombok.*;
@@ -98,6 +98,12 @@ public non-sealed class WhatsappKeys implements WhatsappController {
     private ContactJid companion;
 
     /**
+     * The bytes of the encoded {@link SignedDeviceIdentityHMAC} received during the auth process
+     */
+    @JsonProperty
+    private byte[] companionIdentity;
+
+    /**
      * Sender keys for signal implementation
      */
     @JsonProperty
@@ -163,11 +169,6 @@ public non-sealed class WhatsappKeys implements WhatsappController {
      * Session dependent keys to write and read cyphered messages
      */
     private Bytes writeKey, readKey;
-
-    /**
-     * The bytes of the encoded {@link SignedDeviceIdentityHMAC} received during the auth process
-     */
-    private byte[] companionIdentity;
 
     /**
      * Deletes all the known keys from memory

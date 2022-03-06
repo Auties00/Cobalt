@@ -2,16 +2,16 @@ package it.auties.whatsapp.crypto;
 
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.controller.WhatsappKeys;
-import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
-import it.auties.whatsapp.protobuf.signal.keypair.SignalPreKeyPair;
-import it.auties.whatsapp.protobuf.signal.message.SignalMessage;
-import it.auties.whatsapp.protobuf.signal.message.SignalPreKeyMessage;
-import it.auties.whatsapp.protobuf.signal.session.Session;
-import it.auties.whatsapp.protobuf.signal.session.SessionAddress;
-import it.auties.whatsapp.protobuf.signal.session.SessionChain;
-import it.auties.whatsapp.protobuf.signal.session.SessionState;
+import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
+import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
+import it.auties.whatsapp.model.signal.message.SignalMessage;
+import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
+import it.auties.whatsapp.model.signal.session.Session;
+import it.auties.whatsapp.model.signal.session.SessionAddress;
+import it.auties.whatsapp.model.signal.session.SessionChain;
+import it.auties.whatsapp.model.signal.session.SessionState;
 import it.auties.whatsapp.socket.Node;
-import it.auties.whatsapp.util.SignalProvider;
+import it.auties.whatsapp.util.SignalSpec;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -26,7 +26,7 @@ import static it.auties.whatsapp.socket.Node.with;
 import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 
-public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) implements SignalProvider {
+public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) implements SignalSpec {
     public Node encrypt(byte @NonNull [] data){
         var session = loadSession();
         Validate.isTrue(keys.hasTrust(address, session.currentState().remoteIdentityKey()),

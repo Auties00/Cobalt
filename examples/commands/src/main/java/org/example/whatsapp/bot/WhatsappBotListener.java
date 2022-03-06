@@ -3,8 +3,8 @@ package org.example.whatsapp.bot;
 import it.auties.whatsapp.api.RegisterListener;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappListener;
-import it.auties.whatsapp.protobuf.info.MessageInfo;
-import it.auties.whatsapp.protobuf.message.standard.TextMessage;
+import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.message.standard.TextMessage;
 import org.example.whatsapp.command.CommandManager;
 
 @RegisterListener

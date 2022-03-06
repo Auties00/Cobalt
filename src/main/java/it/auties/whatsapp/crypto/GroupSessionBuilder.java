@@ -1,10 +1,10 @@
 package it.auties.whatsapp.crypto;
 
 import it.auties.whatsapp.controller.WhatsappKeys;
-import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
-import it.auties.whatsapp.protobuf.signal.message.SignalDistributionMessage;
-import it.auties.whatsapp.protobuf.signal.sender.SenderKeyName;
-import it.auties.whatsapp.protobuf.signal.sender.SenderKeyRecord;
+import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
+import it.auties.whatsapp.model.signal.message.SignalDistributionMessage;
+import it.auties.whatsapp.model.signal.sender.SenderKeyName;
+import it.auties.whatsapp.model.signal.sender.SenderKeyRecord;
 import lombok.NonNull;
 
 public record GroupSessionBuilder(@NonNull WhatsappKeys keys) {

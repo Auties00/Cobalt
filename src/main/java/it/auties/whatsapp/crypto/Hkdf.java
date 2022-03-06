@@ -1,7 +1,7 @@
 package it.auties.whatsapp.crypto;
 
 import it.auties.bytes.Bytes;
-import it.auties.whatsapp.util.SignalProvider;
+import it.auties.whatsapp.util.SignalSpec;
 import it.auties.whatsapp.util.Validate;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
@@ -11,7 +11,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayOutputStream;
 
 @UtilityClass
-public class Hkdf implements SignalProvider {
+public class Hkdf implements SignalSpec {
     private final int ITERATION_START_OFFSET = 1; // v3
     private final int HASH_OUTPUT_SIZE = 32;
     private final String HMAC_SHA_256 = "HmacSHA256";
@@ -36,7 +36,7 @@ public class Hkdf implements SignalProvider {
                 "Incorrect number of chunks: %s", chunks);
 
        var prk = Hmac.calculateSha256(input, salt);
-       var result = Bytes.of(32)
+       var result = Bytes.newBuffer(KEY_LENGTH)
                .append(info)
                .append(1)
                .toByteArray();

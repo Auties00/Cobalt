@@ -3,9 +3,9 @@ package org.example.whatsapp;
 import it.auties.whatsapp.api.RegisterListener;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappListener;
-import it.auties.whatsapp.protobuf.contact.ContactJid;
-import it.auties.whatsapp.protobuf.info.MessageInfo;
-import it.auties.whatsapp.protobuf.message.standard.TextMessage;
+import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.message.standard.TextMessage;
 
 @RegisterListener
 public record BanBotListener(Whatsapp api) implements WhatsappListener {

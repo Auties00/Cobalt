@@ -1,6 +1,6 @@
 package it.auties.whatsapp.socket;
 
-import it.auties.whatsapp.protobuf.contact.ContactJid;
+import it.auties.whatsapp.model.contact.ContactJid;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

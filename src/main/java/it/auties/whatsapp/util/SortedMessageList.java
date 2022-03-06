@@ -2,10 +2,10 @@ package it.auties.whatsapp.util;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import it.auties.whatsapp.protobuf.chat.Chat;
-import it.auties.whatsapp.protobuf.info.MessageInfo;
-import it.auties.whatsapp.protobuf.message.model.Message;
-import it.auties.whatsapp.protobuf.sync.HistorySyncMessage;
+import it.auties.whatsapp.model.chat.Chat;
+import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.message.model.Message;
+import it.auties.whatsapp.model.sync.HistorySyncMessage;
 import lombok.NonNull;
 
 import java.util.*;

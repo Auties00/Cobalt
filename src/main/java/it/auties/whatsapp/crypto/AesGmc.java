@@ -23,8 +23,9 @@ public record AesGmc(@NonNull GCMBlockCipher cipher) {
     }
 
     private static byte[] createIv(long count) {
-        return Bytes.of(4)
+        return Bytes.newBuffer(4)
                 .appendLong(count)
+                .assertSize(12)
                 .toByteArray();
     }
 

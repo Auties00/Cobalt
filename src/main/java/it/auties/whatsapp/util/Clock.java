@@ -11,6 +11,10 @@ import static java.time.ZonedDateTime.ofInstant;
 
 @UtilityClass
 public class Clock {
+    public long now(){
+        return Instant.now().getEpochSecond();
+    }
+
     public Optional<ZonedDateTime> parse(long input) {
         return Optional.of(input)
                 .filter(time -> time != 0)

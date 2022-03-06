@@ -3,11 +3,11 @@ package it.auties.whatsapp.crypto;
 import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.controller.WhatsappKeys;
-import it.auties.whatsapp.protobuf.signal.keypair.SignalKeyPair;
-import it.auties.whatsapp.protobuf.signal.keypair.SignalSignedKeyPair;
-import it.auties.whatsapp.protobuf.signal.message.SignalPreKeyMessage;
-import it.auties.whatsapp.protobuf.signal.session.*;
-import it.auties.whatsapp.util.SignalProvider;
+import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
+import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
+import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
+import it.auties.whatsapp.model.signal.session.*;
+import it.auties.whatsapp.util.SignalSpec;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -17,7 +17,7 @@ import java.util.Objects;
 
 import static it.auties.curve25519.Curve25519.calculateAgreement;
 
-public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) implements SignalProvider {
+public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) implements SignalSpec {
     public void createOutgoing(int id, byte[] identityKey, SignalSignedKeyPair signedPreKey, SignalSignedKeyPair preKey){
         Validate.isTrue(keys.hasTrust(address, identityKey),
                 "Untrusted key", SecurityException.class);
@@ -87,8 +87,8 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
 
         var signedSecret = calculateAgreement(SignalHelper.removeKeyHeader(theirSignedPubKey), keys.identityKeyPair().privateKey());
         var identitySecret = calculateAgreement(SignalHelper.removeKeyHeader(theirIdentityPubKey), ourSignedKey.privateKey());
-        var sharedSecret = Bytes.of(32)
-                .fill((byte) 0xff)
+        var sharedSecret = Bytes.newBuffer(32)
+                .fill(0xff)
                 .append(isInitiator ? signedSecret : identitySecret)
                 .append(isInitiator ? identitySecret : signedSecret)
                 .append(calculateAgreement(SignalHelper.removeKeyHeader(theirSignedPubKey), ourSignedKey.privateKey()));

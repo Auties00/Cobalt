@@ -95,7 +95,7 @@
         <jackson.map.version>1.1-SNAPSHOT</jackson.map.version>
         <noise.version>1.2</noise.version>
         <curve25519.version>1.0</curve25519.version>
-        <bytes.version>1.1</bytes.version>
+        <bytes.version>1.2-SNAPSHOT</bytes.version>
         <classgraph.version>4.8.139</classgraph.version>
         <delombok.input>${project.basedir}\src\main\java</delombok.input>
         <delombok.output>${project.build.directory}\delombok</delombok.output>

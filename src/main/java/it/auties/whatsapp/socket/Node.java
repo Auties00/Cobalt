@@ -213,6 +213,23 @@ public record Node(@NonNull String description,
     }
 
     /**
+     * Checks if this object is equal to another
+     * @param other the reference object with which to compare
+     *
+     * @return whether {@code other} is equal to this object
+     */
+    @Override
+    public boolean equals(Object other) {
+        return other instanceof Node that
+                && Objects.equals(this.description(), that.description())
+                && Objects.equals(this.attributes(), that.attributes())
+                && (Objects.equals(this.content(), that.content())
+                    || this.content() instanceof byte[] theseBytes
+                        && that.content() instanceof byte[] thoseBytes
+                        && Arrays.equals(theseBytes, thoseBytes));
+    }
+
+    /**
      * Converts this node into a String
      *
      * @return a non null String

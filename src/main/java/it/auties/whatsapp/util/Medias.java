@@ -5,10 +5,10 @@ import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.crypto.AesCbc;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.Sha256;
-import it.auties.whatsapp.protobuf.media.AttachmentProvider;
-import it.auties.whatsapp.protobuf.media.MediaKeys;
-import it.auties.whatsapp.protobuf.media.MediaUpload;
-import it.auties.whatsapp.protobuf.message.model.MediaMessageType;
+import it.auties.whatsapp.model.media.AttachmentProvider;
+import it.auties.whatsapp.model.media.MediaKeys;
+import it.auties.whatsapp.model.media.MediaUpload;
+import it.auties.whatsapp.model.message.model.MediaMessageType;
 import lombok.experimental.UtilityClass;
 
 import java.net.URI;

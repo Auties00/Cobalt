@@ -4,13 +4,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.api.WhatsappListener;
-import it.auties.whatsapp.protobuf.chat.Chat;
-import it.auties.whatsapp.protobuf.contact.Contact;
-import it.auties.whatsapp.protobuf.contact.ContactJid;
-import it.auties.whatsapp.protobuf.info.MessageInfo;
-import it.auties.whatsapp.protobuf.media.MediaConnection;
+import it.auties.whatsapp.model.chat.Chat;
+import it.auties.whatsapp.model.contact.Contact;
+import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.socket.Node;
 import it.auties.whatsapp.socket.Request;
+import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Preferences;
 import lombok.*;
 import lombok.Builder.Default;
@@ -118,7 +119,7 @@ public final class WhatsappStore implements WhatsappController {
      * The timestamp in seconds for the initialization of this object
      */        
     @Default
-    private long initializationTimeStamp = now().getEpochSecond();
+    private long initializationTimeStamp = Clock.now();
 
     /**
      * The non-null service used to call listeners.

@@ -1,7 +1,7 @@
 package org.example.whatsapp.command;
 
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.protobuf.info.MessageInfo;
+import it.auties.whatsapp.model.info.MessageInfo;
 import lombok.NonNull;
 
 import java.util.Set;

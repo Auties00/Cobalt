@@ -1,7 +1,7 @@
 package it.auties.whatsapp.crypto;
 
 import it.auties.bytes.Bytes;
-import it.auties.whatsapp.util.SignalProvider;
+import it.auties.whatsapp.util.SignalSpec;
 import it.auties.whatsapp.util.Validate;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
@@ -16,7 +16,7 @@ import java.util.zip.Inflater;
  * This class should only be used for WhatsappWeb's WebSocket buffer operations
  */
 @UtilityClass
-public class SignalHelper implements SignalProvider {
+public class SignalHelper implements SignalSpec {
     private final String SHA_PRNG = "SHA1PRNG";
 
     public byte[] appendKeyHeader(byte[] key){
@@ -107,7 +107,7 @@ public class SignalHelper implements SignalProvider {
 
     public byte[] pad(byte[] bytes){
         var padRandomByte = SignalHelper.randomHeader();
-        var padding = Bytes.of(padRandomByte)
+        var padding = Bytes.newBuffer(padRandomByte)
                 .fill((byte) padRandomByte)
                 .toByteArray();
        return Bytes.of(bytes)
@@ -125,8 +125,9 @@ public class SignalHelper implements SignalProvider {
     }
 
     public byte[] toBytes(long number){
-        return Bytes.of(Long.BYTES)
+        return Bytes.newBuffer()
                 .appendLong(number)
+                .assertSize(Long.BYTES)
                 .toByteArray();
     }
 

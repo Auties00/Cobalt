@@ -2,13 +2,13 @@ package it.auties.whatsapp.api;
 
 import com.google.zxing.common.BitMatrix;
 import it.auties.whatsapp.controller.WhatsappStore;
-import it.auties.whatsapp.protobuf.action.Action;
-import it.auties.whatsapp.protobuf.chat.Chat;
-import it.auties.whatsapp.protobuf.contact.Contact;
-import it.auties.whatsapp.protobuf.contact.ContactStatus;
-import it.auties.whatsapp.protobuf.info.MessageInfo;
-import it.auties.whatsapp.protobuf.message.model.MessageStatus;
-import it.auties.whatsapp.protobuf.setting.Setting;
+import it.auties.whatsapp.model.action.Action;
+import it.auties.whatsapp.model.chat.Chat;
+import it.auties.whatsapp.model.contact.Contact;
+import it.auties.whatsapp.model.contact.ContactStatus;
+import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.message.model.MessageStatus;
+import it.auties.whatsapp.model.setting.Setting;
 import it.auties.whatsapp.socket.Socket;
 import lombok.NonNull;
 

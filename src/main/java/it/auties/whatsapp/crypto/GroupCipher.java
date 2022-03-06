@@ -1,10 +1,10 @@
 package it.auties.whatsapp.crypto;
 
 import it.auties.whatsapp.controller.WhatsappKeys;
-import it.auties.whatsapp.protobuf.signal.sender.SenderKeyMessage;
-import it.auties.whatsapp.protobuf.signal.sender.SenderKeyName;
-import it.auties.whatsapp.protobuf.signal.sender.SenderKeyState;
-import it.auties.whatsapp.protobuf.signal.sender.SenderMessageKey;
+import it.auties.whatsapp.model.signal.sender.SenderKeyMessage;
+import it.auties.whatsapp.model.signal.sender.SenderKeyName;
+import it.auties.whatsapp.model.signal.sender.SenderKeyState;
+import it.auties.whatsapp.model.signal.sender.SenderMessageKey;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 

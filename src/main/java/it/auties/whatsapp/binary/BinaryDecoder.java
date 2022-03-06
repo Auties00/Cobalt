@@ -2,7 +2,7 @@ package it.auties.whatsapp.binary;
 
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.crypto.SignalHelper;
-import it.auties.whatsapp.protobuf.contact.ContactJid;
+import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.socket.Node;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.stream.IntStream;
 
 import static it.auties.whatsapp.binary.BinaryTag.*;
-import static it.auties.whatsapp.protobuf.contact.ContactJid.Server.forAddress;
+import static it.auties.whatsapp.model.contact.ContactJid.Server.forAddress;
 import static it.auties.whatsapp.socket.Node.with;
 import static it.auties.whatsapp.socket.Node.withAttributes;
 

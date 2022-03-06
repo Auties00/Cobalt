@@ -1,8 +1,8 @@
 package it.auties.whatsapp.crypto;
 
 import it.auties.bytes.Bytes;
-import it.auties.whatsapp.protobuf.sync.LTHashState;
-import it.auties.whatsapp.protobuf.sync.MutationSync;
+import it.auties.whatsapp.model.sync.LTHashState;
+import it.auties.whatsapp.model.sync.MutationSync;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 
