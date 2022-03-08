@@ -25,7 +25,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class BusinessIdentityInfo implements WhatsappInfo {
+public final class BusinessIdentityInfo implements Info {
   /**
    * The level of verification of this account
    */

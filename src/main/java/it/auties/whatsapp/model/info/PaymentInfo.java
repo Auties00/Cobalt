@@ -22,7 +22,7 @@ import java.util.Arrays;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class PaymentInfo implements WhatsappInfo {
+public final class PaymentInfo implements Info {
   /**
    * The status of this transaction
    */

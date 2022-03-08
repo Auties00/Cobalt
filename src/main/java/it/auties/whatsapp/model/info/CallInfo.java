@@ -21,7 +21,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class CallInfo implements WhatsappInfo {
+public final class CallInfo implements Info {
   /**
    * The key of this call
    */

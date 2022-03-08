@@ -21,7 +21,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class NativeFlowInfo implements WhatsappInfo {
+public final class NativeFlowInfo implements Info {
   /**
    * The name of the flow
    */

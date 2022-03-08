@@ -27,7 +27,7 @@ import java.util.List;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class ProductListInfo implements WhatsappInfo {
+public final class ProductListInfo implements Info {
   /**
    * The products that this message wraps
    */

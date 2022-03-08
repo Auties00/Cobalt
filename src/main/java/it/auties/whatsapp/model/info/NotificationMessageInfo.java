@@ -17,7 +17,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class NotificationMessageInfo implements WhatsappInfo {
+public final class NotificationMessageInfo implements Info {
   @JsonProperty("1")
   @JsonPropertyDescription("MessageKey")
   private MessageKey key;

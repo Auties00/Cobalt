@@ -16,7 +16,6 @@ import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.experimental.Delegate;
 
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -31,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Builder(builderMethodName = "newMessageInfo", buildMethodName = "create")
 @Accessors(fluent = true)
 @ToString(exclude = "storeId")
-public final class MessageInfo implements WhatsappInfo {
+public final class MessageInfo implements Info {
   /**
    * The id of the store associated with this message
    */

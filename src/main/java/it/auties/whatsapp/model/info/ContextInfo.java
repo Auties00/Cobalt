@@ -25,7 +25,7 @@ import java.util.List;
 @Jacksonized
 @Builder(builderMethodName = "newContextInfo", buildMethodName = "create")
 @Accessors(fluent = true)
-public non-sealed class ContextInfo implements WhatsappInfo {
+public non-sealed class ContextInfo implements Info {
   /**
    * The jid of the message that this ContextualMessage quotes
    */

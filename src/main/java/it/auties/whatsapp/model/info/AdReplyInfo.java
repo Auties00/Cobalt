@@ -21,7 +21,7 @@ import java.util.Arrays;
 @Jacksonized
 @Builder(builderMethodName = "newAdReplyInfo", buildMethodName = "create")
 @Accessors(fluent = true)
-public final class AdReplyInfo implements WhatsappInfo {
+public final class AdReplyInfo implements Info {
   /**
    * The name of the advertiser that served the original companion
    */

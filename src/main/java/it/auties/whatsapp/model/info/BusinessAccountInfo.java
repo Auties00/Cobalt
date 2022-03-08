@@ -23,7 +23,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class BusinessAccountInfo implements WhatsappInfo {
+public final class BusinessAccountInfo implements Info {
   /**
    * The facebook jid
    */

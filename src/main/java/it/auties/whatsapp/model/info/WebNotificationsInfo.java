@@ -18,7 +18,7 @@ import java.util.List;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class WebNotificationsInfo implements WhatsappInfo {
+public final class WebNotificationsInfo implements Info {
   @JsonProperty("2")
   @JsonPropertyDescription("uint64")
   private long timestamp;

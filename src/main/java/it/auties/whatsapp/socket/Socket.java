@@ -845,7 +845,6 @@ public class Socket {
 
             var account = ProtobufDecoder.forType(SignedDeviceIdentity.class)
                     .decode(advIdentity.details());
-            keys.companionIdentity(advIdentity.details());
             var message = Bytes.of(MESSAGE_HEADER)
                     .append(account.details())
                     .append(keys.identityKeyPair().publicKey())
@@ -862,14 +861,15 @@ public class Socket {
                     .toByteArray();
             var deviceSignature = Curve25519.calculateSignature(keys.identityKeyPair().privateKey(), deviceSignatureMessage);
             account.deviceSignature(deviceSignature);
-            account.accountSignatureKey(null);
+            var oldSignature = Arrays.copyOf(account.accountSignatureKey(), account.accountSignature().length);
 
             var keyIndex = ProtobufDecoder.forType(DeviceIdentity.class)
                     .decode(account.details())
                     .keyIndex();
-            var identityNode = with("device-identity", of("key-index", valueOf(keyIndex)), ProtobufEncoder.encode(account));
+            var identityNode = with("device-identity", of("key-index", valueOf(keyIndex)), ProtobufEncoder.encode(account.accountSignatureKey(null)));
             var content = withChildren("pair-device-sign", identityNode);
 
+            keys.companionIdentity(account.accountSignature(oldSignature));
             sendConfirmNode(node, content);
         }
 
@@ -948,7 +948,7 @@ public class Socket {
             }
 
             if(hasPreKeyMessage(participants)) {
-                body.add(with("device-identity", keys.companionIdentity()));
+                body.add(with("device-identity", ProtobufEncoder.encode(keys.companionIdentity())));
             }
 
             var attributes = Attributes.of(metadata)

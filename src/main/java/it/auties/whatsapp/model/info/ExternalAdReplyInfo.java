@@ -21,7 +21,7 @@ import java.util.Arrays;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class ExternalAdReplyInfo implements WhatsappInfo {
+public final class ExternalAdReplyInfo implements Info {
   /**
    * The title of this advertisement
    */

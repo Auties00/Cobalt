@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
+import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
@@ -101,7 +102,7 @@ public non-sealed class WhatsappKeys implements WhatsappController {
      * The bytes of the encoded {@link SignedDeviceIdentityHMAC} received during the auth process
      */
     @JsonProperty
-    private byte[] companionIdentity;
+    private SignedDeviceIdentity companionIdentity;
 
     /**
      * Sender keys for signal implementation
