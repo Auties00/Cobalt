@@ -86,16 +86,16 @@
         <nexus.staging.maven.plugin.version>1.6.7</nexus.staging.maven.plugin.version>
         <bouncy.castle.version>1.69</bouncy.castle.version>
         <zxing.version>3.4.1</zxing.version>
-        <protoc.version>1.9-SNAPSHOT</protoc.version>
+        <protoc.version>1.9</protoc.version>
         <tyrus.version>2.0.0</tyrus.version>
         <lombok.version>1.18.22</lombok.version>
         <junit.version>5.8.2</junit.version>
         <jna.version>5.9.0</jna.version>
         <jackson.version>2.13.1</jackson.version>
-        <jackson.map.version>1.1-SNAPSHOT</jackson.map.version>
+        <jackson.map.version>1.0</jackson.map.version>
         <noise.version>1.2</noise.version>
         <curve25519.version>1.0</curve25519.version>
-        <bytes.version>1.2-SNAPSHOT</bytes.version>
+        <bytes.version>1.2</bytes.version>
         <classgraph.version>4.8.139</classgraph.version>
         <delombok.input>${project.basedir}\src\main\java</delombok.input>
         <delombok.output>${project.build.directory}\delombok</delombok.output>
@@ -227,7 +227,7 @@
         </dependency>
         <dependency>
             <groupId>com.github.auties00</groupId>
-            <artifactId>map</artifactId>
+            <artifactId>map-module</artifactId>
             <version>${jackson.map.version}</version>
         </dependency>
         <dependency>

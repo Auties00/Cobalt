@@ -118,12 +118,12 @@ public final class BinaryEncoder {
         }
 
         var length = length(input);
-        if (length < 128 && BinaryTokens.checkRegex(input, BinaryTokens.NUMBERS_REGEX)) {
+        if (length < 128 && BinaryTokens.noMatch(input, BinaryTokens.NUMBERS_REGEX)) {
             writeString(input, NIBBLE_8);
             return;
         }
 
-        if (length < 128 && BinaryTokens.checkRegex(input, BinaryTokens.HEX_REGEX)) {
+        if (length < 128 && BinaryTokens.noMatch(input, BinaryTokens.HEX_REGEX)) {
             writeString(input, HEX_8);
             return;
         }

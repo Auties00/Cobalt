@@ -40,18 +40,16 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     public static Request with(@NonNull Node body) {
         var future = new CompletableFuture<Node>();
         delayedExecutor(TIMEOUT, SECONDS)
-                .execute(() -> cancelTimedFuture(future, body, Thread.currentThread().getStackTrace()));
+                .execute(() -> cancelTimedFuture(future, body));
         return new Request(body.id(), body, future);
     }
 
-    private static void cancelTimedFuture(CompletableFuture<Node> future, Node node, StackTraceElement[] trace) {
+    private static void cancelTimedFuture(CompletableFuture<Node> future, Node node) {
         if(future.isDone()){
             return;
         }
 
-        var exception = new TimeoutException("%s timed out: no response from WhatsApp".formatted(node));
-        exception.setStackTrace(trace);
-        future.completeExceptionally(exception);
+        future.completeExceptionally(new TimeoutException("%s timed out: no response from WhatsApp".formatted(node)));
     }
 
     /**
@@ -104,14 +102,19 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @return this request
      */
     public CompletableFuture<Node> send(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store, boolean prologue, boolean response) {
-        var ciphered = cipherMessage(keys);
-        var buffer = Bytes.of(prologue ? PROLOGUE : new byte[0])
-                .appendInt(ciphered.length >> 16)
-                .appendShort(65535 & ciphered.length)
-                .append(ciphered)
-                .toNioBuffer();
-        session.getAsyncRemote()
-                .sendBinary(buffer, result -> handleSendResult(store, result, response));
+        try {
+            var ciphered = cipherMessage(keys);
+            var buffer = Bytes.of(prologue ? PROLOGUE : new byte[0])
+                    .appendInt(ciphered.length >> 16)
+                    .appendShort(65535 & ciphered.length)
+                    .append(ciphered)
+                    .toNioBuffer();
+            session.getAsyncRemote()
+                    .sendBinary(buffer, result -> handleSendResult(store, result, response));
+        }catch (Exception exception){
+            future.completeExceptionally(new RuntimeException("Cannot send request", exception));
+        }
+
         return future;
     }
 

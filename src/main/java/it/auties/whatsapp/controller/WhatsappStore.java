@@ -331,11 +331,12 @@ public final class WhatsappStore implements WhatsappController {
     }
 
     /**
-     * Clears all the data that this object holds
+     * Clears all the data that this object holds and closes the pending requests
      */
     public void clear() {
         chats.clear();
         contacts.clear();
+        pendingRequests.forEach(request -> request.complete(Node.with("xmlstreamend"), true));
         pendingRequests.clear();
     }
 

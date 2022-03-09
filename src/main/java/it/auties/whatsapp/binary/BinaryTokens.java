@@ -49,7 +49,7 @@ public class BinaryTokens {
      * @param regex the non-null regex
      * @return true if no matches are found
      */
-    public boolean checkRegex(@NonNull String input, @NonNull String regex) {
+    public boolean noMatch(@NonNull String input, @NonNull String regex) {
         return Pattern.compile(regex)
                 .matcher(input)
                 .results()

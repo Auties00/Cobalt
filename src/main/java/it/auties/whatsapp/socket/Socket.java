@@ -654,6 +654,7 @@ public class Socket {
             Validate.isTrue(shouldHandleFailure(statusCode, reason),
                     "Invalid or expired credentials: socket failed with status code %s at %s", statusCode, location);
             log.warning("Handling failure caused by %s at %s with status code %s: restoring session".formatted(reason, location, statusCode));
+            store.clear();
             changeKeys();
             reconnect();
         }
