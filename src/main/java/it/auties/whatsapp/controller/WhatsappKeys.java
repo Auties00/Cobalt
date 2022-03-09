@@ -75,14 +75,8 @@ public non-sealed class WhatsappKeys implements WhatsappController {
      * The signed pre key
      */
     @JsonProperty
+    @NonNull
     private SignalSignedKeyPair signedKeyPair;
-
-    /**
-     * The adv secret key
-     */
-    @JsonProperty
-    @Default
-    private byte[] companionKey = SignalKeyPair.random().publicKey();
 
     /**
      * Whether these keys have generated pre keys assigned to them
@@ -97,6 +91,13 @@ public non-sealed class WhatsappKeys implements WhatsappController {
      */
     @JsonProperty
     private ContactJid companion;
+
+    /**
+     * The companion secret key
+     */
+    @JsonProperty
+    @Default
+    private byte[] companionKey = SignalKeyPair.random().publicKey();
 
     /**
      * The bytes of the encoded {@link SignedDeviceIdentityHMAC} received during the auth process
@@ -127,14 +128,6 @@ public non-sealed class WhatsappKeys implements WhatsappController {
     @NonNull
     @Default
     private Map<SessionAddress, Session> sessions = new ConcurrentHashMap<>();
-
-    /**
-     * Trusted keys
-     */
-    @JsonProperty
-    @NonNull
-    @Default
-    private Map<SessionAddress, byte[]> identities = new ConcurrentHashMap<>();
 
     /**
      * Hash state
