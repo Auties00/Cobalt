@@ -48,6 +48,7 @@ import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.java.Log;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
@@ -139,6 +140,10 @@ public class Socket {
     }
 
     private void serialize(Event event) {
+        if(options.debug()){
+            System.out.printf("Serializing for event %s%n", event.name().toLowerCase(Locale.ROOT));
+        }
+
         options.serializationStrategies()
                 .stream()
                 .filter(strategy -> strategy.trigger() == event)
@@ -718,7 +723,7 @@ public class Socket {
                     .stream()
                     .map(node -> Map.entry(node.attributes().getString("name"), node.attributes().getString("value")))
                     .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-            store.callListeners(listener -> listener.onProps(properties));
+            store.callListeners(listener -> listener.onMetadata(properties));
         }
 
         private void createPingService() {
@@ -870,7 +875,7 @@ public class Socket {
             var identityNode = with("device-identity", of("key-index", valueOf(keyIndex)), ProtobufEncoder.encode(account.accountSignatureKey(null)));
             var content = withChildren("pair-device-sign", identityNode);
 
-            keys.companionIdentity(account.accountSignature(oldSignature));
+            keys.companionIdentity(account.accountSignatureKey(oldSignature));
             sendConfirmNode(node, content);
         }
 
@@ -915,12 +920,12 @@ public class Socket {
             return groupsCache.getOptional(info.chatJid())
                     .map(CompletableFuture::completedFuture)
                     .orElseGet(() -> cacheGroupMetadata(info))
-                    .thenComposeAsync(metadata -> getGroupParticipants(info, metadata, signalMessage))
+                    .thenComposeAsync(metadata -> getGroupParticipantsNodes(info, metadata, signalMessage))
                     .thenComposeAsync(participants -> encode(info, encodedMessage, participants, attributes))
                     .exceptionallyAsync(Socket.this::handleError);
         }
 
-        private CompletableFuture<List<Node>> getGroupParticipants(MessageInfo info, GroupMetadata metadata, SignalDistributionMessage message) {
+        private CompletableFuture<List<Node>> getGroupParticipantsNodes(MessageInfo info, GroupMetadata metadata, SignalDistributionMessage message) {
             return metadata.participants()
                     .stream()
                     .map(participant -> querySyncDevices(participant.jid(), false))
@@ -1203,11 +1208,15 @@ public class Socket {
 
         @SneakyThrows
         private MessageContainer decodeMessageContainer(byte[] buffer) {
-            var bufferWithNoPadding = Bytes.of(buffer)
-                    .cut(-buffer[buffer.length - 1])
-                    .toByteArray();
-            return ProtobufDecoder.forType(MessageContainer.class)
-                    .decode(bufferWithNoPadding);
+            try {
+                var bufferWithNoPadding = Bytes.of(buffer)
+                        .cut(-buffer[buffer.length - 1])
+                        .toByteArray();
+                return ProtobufDecoder.forType(MessageContainer.class)
+                        .decode(bufferWithNoPadding);
+            }catch (IOException exception){
+                throw exception;
+            }
         }
 
         private void saveMessage(MessageInfo info) {

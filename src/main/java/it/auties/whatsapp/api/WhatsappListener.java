@@ -48,9 +48,9 @@ public interface WhatsappListener {
      * This method is called both when a connection is established with WhatsappWeb and when new props are available.
      * In the latter case though, this object should be considered as partial and is guaranteed to contain only updated entries.
      *
-     * @param props the updated list of properties
+     * @param metadata the updated list of properties
      */
-    default void onProps(Map<String, String> props) {
+    default void onMetadata(Map<String, String> metadata) {
     }
 
     /**
@@ -135,8 +135,8 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when {@link Socket} receives the recent message for a chat already in memory.
-     * When this event is fired, it is guaranteed that all metadata excluding messages will be present.
+     * Called when {@link Socket} receives the recent message for a chat.
+     * This method may be called multiple times depending on the chat's size.
      */
     default void onChatRecentMessages(Chat chat) {
     }

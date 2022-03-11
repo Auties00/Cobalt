@@ -118,7 +118,7 @@ public class SignalHelper implements SignalSpec {
     public int fromBytes(byte[] bytes, int length){
         var result = 0;
         for (var i = 0; i < length; i++) {
-            result = 256 * result + bytes[i];
+            result = 256 * result + Byte.toUnsignedInt(bytes[i]);
         }
 
         return result;

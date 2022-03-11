@@ -336,7 +336,7 @@ public final class WhatsappStore implements WhatsappController {
     public void clear() {
         chats.clear();
         contacts.clear();
-        pendingRequests.forEach(request -> request.complete(Node.with("xmlstreamend"), true));
+        pendingRequests.forEach(request -> request.complete(null, false));
         pendingRequests.clear();
     }
 

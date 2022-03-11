@@ -75,7 +75,6 @@ public non-sealed class WhatsappKeys implements WhatsappController {
      * The signed pre key
      */
     @JsonProperty
-    @NonNull
     private SignalSignedKeyPair signedKeyPair;
 
     /**

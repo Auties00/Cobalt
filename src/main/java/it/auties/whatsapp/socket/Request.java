@@ -123,7 +123,12 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      *
      * @param response the response used to complete {@link Request#future}
      */
-    public void complete(@NonNull Node response, boolean exceptionally) {
+    public void complete(Node response, boolean exceptionally) {
+        if(response == null){
+            future.complete(Node.with("xmlstreamend"));
+            return;
+        }
+
         if (exceptionally) {
             log.warning("Whatsapp could not process %s: %s".formatted(this, response));
             future.completeExceptionally(new RuntimeException("Whatsapp could not process %s: %s".formatted(this, response)));
