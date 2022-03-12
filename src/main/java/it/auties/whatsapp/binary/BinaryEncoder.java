@@ -16,16 +16,13 @@ public final class BinaryEncoder {
     private static final int INT_20_MAX_VALUE = 1048576;
     
     private Bytes buffer;
+
     public synchronized byte[] encode(Node node) {
         this.buffer = Bytes.newBuffer();
         var encoded = writeNode(node);
-        return pack(encoded);
-    }
-
-    private byte[] pack(byte[] array) {
-        var result = new byte[1 + array.length];
+        var result = new byte[1 + encoded.length];
         result[0] = 0;
-        System.arraycopy(array, 0, result, 1, array.length);
+        System.arraycopy(encoded, 0, result, 1, encoded.length);
         return result;
     }
 
@@ -200,10 +197,8 @@ public final class BinaryEncoder {
             case byte[] bytes -> writeBytes(bytes);
             case ContactJid jid -> writeJid(jid);
             case Collection<?> collection -> writeList(collection);
-            case Node ignored ->
-                    throw new IllegalArgumentException("Invalid payload type(nodes should be wrapped by a internal): %s".formatted(input));
-            default ->
-                    throw new IllegalArgumentException("Invalid payload type(%s): %s".formatted(input.getClass().getName(), input));
+            case Node ignored -> throw new IllegalArgumentException("Invalid payload type(nodes should be wrapped by a internal): %s".formatted(input));
+            default -> throw new IllegalArgumentException("Invalid payload type(%s): %s".formatted(input.getClass().getName(), input));
         }
     }
 

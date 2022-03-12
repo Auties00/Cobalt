@@ -1107,6 +1107,10 @@ public class BinarySocket {
         public void decode(Node node) {
             var timestamp = node.attributes().getLong("t");
             var id = node.attributes().getRequiredString("id");
+            if(options.debug()) {
+                System.out.printf("Decoding message with id %s%n", id);
+            }
+
             var from = node.attributes().getJid("from")
                     .orElseThrow(() -> new NoSuchElementException("Missing from"));
             var recipient = node.attributes().getJid("recipient")
@@ -1210,15 +1214,11 @@ public class BinarySocket {
 
         @SneakyThrows
         private MessageContainer decodeMessageContainer(byte[] buffer) {
-            try {
-                var bufferWithNoPadding = Bytes.of(buffer)
-                        .cut(-buffer[buffer.length - 1])
-                        .toByteArray();
-                return ProtobufDecoder.forType(MessageContainer.class)
-                        .decode(bufferWithNoPadding);
-            }catch (IOException exception){
-                throw exception;
-            }
+            var bufferWithNoPadding = Bytes.of(buffer)
+                    .cut(-buffer[buffer.length - 1])
+                    .toByteArray();
+            return ProtobufDecoder.forType(MessageContainer.class)
+                    .decode(bufferWithNoPadding);
         }
 
         private void saveMessage(MessageInfo info) {

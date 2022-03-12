@@ -1,4 +1,4 @@
-package it.auties.github.dev;
+package it.auties.whatsapp;
 
 import com.google.zxing.common.BitMatrix;
 import it.auties.whatsapp.api.QrHandler;
@@ -18,7 +18,7 @@ import java.util.Objects;
 import java.util.Scanner;
 
 @Log
-public class WhatsappAPITest {
+public class ApiTest {
     @SneakyThrows
     public static void main(String[] args) {
         var api = Whatsapp.lastConnection()
@@ -73,7 +73,8 @@ public class WhatsappAPITest {
             if(message.chat().isEmpty()){
                 System.out.println("Empty: " + message);
             }
-            System.out.printf("Received a new message at %s%n", message.chat().map(Chat::name).orElse("AAA: " + message.chatJid()));
+
+            System.out.printf("Received a new message at %s%n", message.chat().map(Chat::name).orElse(message.chatJid().toString()));
         }
 
         @Override

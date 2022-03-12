@@ -16,16 +16,16 @@ public class Hkdf implements SignalSpecification {
     private final int HASH_OUTPUT_SIZE = 32;
     private final String HMAC_SHA_256 = "HmacSHA256";
 
-    public byte[][] deriveSecrets(byte[] inputKeyMaterial, byte[] info) {
-        return deriveSecrets(inputKeyMaterial, info, 3);
+    public byte[][] deriveSecrets(byte[] input, byte[] info) {
+        return deriveSecrets(input, info, 3);
     }
 
-    public byte[][] deriveSecrets(byte[] inputKeyMaterial, byte[] info, int chunks) {
-        return deriveSecrets(inputKeyMaterial, new byte[HASH_OUTPUT_SIZE], info, chunks);
+    public byte[][] deriveSecrets(byte[] input, byte[] info, int chunks) {
+        return deriveSecrets(input, new byte[HASH_OUTPUT_SIZE], info, chunks);
     }
 
-    public byte[][] deriveSecrets(byte[] inputKeyMaterial, byte[] salt, byte[] info) {
-        return deriveSecrets(inputKeyMaterial, salt, info, 3);
+    public byte[][] deriveSecrets(byte[] input, byte[] salt, byte[] info) {
+        return deriveSecrets(input, salt, info, 3);
     }
 
     @SneakyThrows

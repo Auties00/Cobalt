@@ -33,8 +33,8 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         Validate.isTrue(keys.hasTrust(address, session.currentState().remoteIdentityKey()),
                 "Untrusted key", SecurityException.class);
 
-        var chain = session.currentState()
-                .findChain(session.currentState().ephemeralKeyPair().publicKey())
+        var currentState = session.currentState();
+        var chain = currentState.findChain(currentState.ephemeralKeyPair().encodedPublicKey())
                 .orElseThrow(() -> new NoSuchElementException("Missing chain for %s".formatted(address)));
         fillMessageKeys(chain, chain.counter() + 1);
 

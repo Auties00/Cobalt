@@ -22,15 +22,11 @@ public final class BinaryDecoder {
     private Bytes buffer;
 
     public synchronized Node decode(byte @NonNull [] input) {
-        this.buffer = Bytes.of(unpack(input));
-        return readNode();
-    }
-
-    private byte[] unpack(byte[] input) {
         var buffer = Bytes.of(input);
         var token = buffer.readByte() & 2;
         var data = buffer.remaining().toByteArray();
-        return token == 0 ? data : BytesHelper.deflate(data);
+        this.buffer = Bytes.of(token == 0 ? data : BytesHelper.deflate(data));
+        return readNode();
     }
 
     private Node readNode() {

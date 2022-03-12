@@ -1,4 +1,4 @@
-package it.auties.github;
+package it.auties.whatsapp;
 
 import lombok.SneakyThrows;
 
@@ -14,14 +14,15 @@ public class RemoveDuplicates {
         var input = Path.of(args[0]);
         var output = Path.of(args[1]);
 
-        var inputs = Files.walk(input)
-                .filter(file -> !file.toString().contains(output.toString()) && file.toString().endsWith(".java"))
-                .map(Path::getFileName)
-                .toList();
-
-        Files.walk(output)
-                .filter(file -> inputs.contains(file.getFileName()))
-                .forEach(RemoveDuplicates::deleteAndPrint);
+        try(var inputWalker = Files.walk(input)){
+            var inputs = inputWalker.filter(file -> !file.toString().contains(output.toString()) && file.toString().endsWith(".java"))
+                    .map(Path::getFileName)
+                    .toList();
+            try(var walker = Files.walk(output)){
+                walker.filter(file -> inputs.contains(file.getFileName()))
+                        .forEach(RemoveDuplicates::deleteAndPrint);
+            }
+        }
     }
 
     private static void deleteAndPrint(Path file) {
@@ -30,7 +31,7 @@ public class RemoveDuplicates {
         }catch (IOException exception){
             throw new UncheckedIOException(exception);
         }finally {
-            System.out.println(file);
+            System.out.printf("Removed: %s%n", file);
         }
     }
 }

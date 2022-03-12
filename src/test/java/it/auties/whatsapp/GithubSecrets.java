@@ -1,4 +1,4 @@
-package it.auties.github;
+package it.auties.whatsapp;
 
 import it.auties.whatsapp.util.JacksonProvider;
 import lombok.experimental.UtilityClass;

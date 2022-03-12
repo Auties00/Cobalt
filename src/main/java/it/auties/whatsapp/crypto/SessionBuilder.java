@@ -39,10 +39,15 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
 
         var pendingPreKey = new SessionPreKey(preKey == null ? 0 : preKey.id(), baseKey.encodedPublicKey(), signedPreKey.id());
         state.pendingPreKey(pendingPreKey);
+
         var session = keys.findSessionByAddress(address)
                 .map(Session::closeCurrentState)
-                .orElseGet(Session::new)
-                .addState(state);
+                .orElseGet(Session::new);
+        if(session.currentState() != null){
+            session.closeCurrentState();
+        }
+
+        session.addState(state);
         keys.addSession(address, session);
     }
 
@@ -94,8 +99,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
                 .append(isInitiator ? identitySecret : signedSecret)
                 .append(calculateAgreement(Keys.withoutHeader(theirSignedPubKey), ourSignedKey.privateKey()));
         if (ourEphemeralKey != null && theirEphemeralPubKey != null) {
-            var ephemeralSecret = calculateAgreement(Keys.withoutHeader(theirEphemeralPubKey), ourEphemeralKey.privateKey());
-            sharedSecret = sharedSecret.append(ephemeralSecret);
+            sharedSecret = sharedSecret.append(calculateAgreement(Keys.withoutHeader(theirEphemeralPubKey), ourEphemeralKey.privateKey()));
         }
 
         var masterKeyInput = sharedSecret
@@ -105,11 +109,14 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
                 "WhisperText".getBytes(StandardCharsets.UTF_8));
         var state = SessionState.builder()
                 .version(version)
+                .registrationId(registrationId)
                 .rootKey(masterKey[0])
                 .ephemeralKeyPair(isInitiator ? SignalKeyPair.random() : ourSignedKey)
                 .lastRemoteEphemeralKey(Objects.requireNonNull(theirSignedPubKey))
+                .previousCounter(0)
                 .remoteIdentityKey(theirIdentityPubKey)
                 .baseKey(isInitiator ? ourEphemeralKey.encodedPublicKey() : theirEphemeralPubKey)
+                .closed(false)
                 .build();
         if (!isInitiator) {
             return state;
@@ -118,9 +125,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
         var initSecret = calculateAgreement(Keys.withoutHeader(theirSignedPubKey), state.ephemeralKeyPair().privateKey());
         var initKey = Hkdf.deriveSecrets(initSecret, state.rootKey(),
                 "WhisperRatchet".getBytes(StandardCharsets.UTF_8));
-        var chain = new SessionChain(-1, masterKey[1], state.ephemeralKeyPair().publicKey());
-        return state.addChain(chain)
-                .registrationId(registrationId)
-                .rootKey(initKey[0]);
+        var chain = new SessionChain(-1, masterKey[1], state.ephemeralKeyPair().encodedPublicKey());
+        return state.addChain(chain).rootKey(initKey[0]);
     }
 }

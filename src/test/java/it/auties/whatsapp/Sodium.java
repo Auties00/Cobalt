@@ -1,4 +1,4 @@
-package it.auties.github;
+package it.auties.whatsapp;
 
 import com.sun.jna.Library;
 

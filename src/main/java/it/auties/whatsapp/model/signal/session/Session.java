@@ -2,12 +2,13 @@ package it.auties.whatsapp.model.signal.session;
 
 import lombok.NonNull;
 
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Optional;
 
-public record Session(LinkedList<@NonNull SessionState> states) {
+public record Session(LinkedHashSet<@NonNull SessionState> states) {
   public Session(){
-    this(new LinkedList<>());
+    this(new LinkedHashSet<>());
   }
 
   public SessionState currentState(){

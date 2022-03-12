@@ -46,6 +46,7 @@ public class SenderKeyRecord {
   }
 
   public void addState(int id, int iteration, byte[] chainKey, byte[] signaturePublic, byte[] signaturePrivate){
+    states.removeIf(item -> item.id() == id);
     var state = new SenderKeyState(id, iteration, chainKey, signaturePublic, signaturePrivate);
     states.add(state);
   }

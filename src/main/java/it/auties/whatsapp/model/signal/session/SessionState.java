@@ -1,16 +1,14 @@
 package it.auties.whatsapp.model.signal.session;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.OptBoolean;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -81,5 +79,10 @@ public class SessionState {
     public boolean contentEquals(int version, byte[] baseKey){
         return version() == version
                 && Arrays.equals(baseKey(), baseKey);
+    }
+
+    public boolean equals(Object other){
+        return other instanceof SessionState that
+                && contentEquals(that.version(), that.baseKey());
     }
 }
