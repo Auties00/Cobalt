@@ -6,7 +6,7 @@ import it.auties.bytes.Bytes;
 import it.auties.protobuf.annotation.ProtobufIgnore;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.protobuf.encoder.ProtobufEncoder;
-import it.auties.whatsapp.crypto.SignalHelper;
+import it.auties.whatsapp.util.BytesHelper;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -55,7 +55,7 @@ public final class SignalMessage implements SignalProtocolMessage {
         this.counter = counter;
         this.previousCounter = previousCounter;
         this.ciphertext = ciphertext;
-        var encodedMessage = Bytes.of(SignalHelper.serialize(version))
+        var encodedMessage = Bytes.of(BytesHelper.serialize(version))
                 .append(ProtobufEncoder.encode(this));
         this.signature = signer.apply(encodedMessage.toByteArray());
         this.serialized = encodedMessage.append(signature)
@@ -66,7 +66,7 @@ public final class SignalMessage implements SignalProtocolMessage {
             var buffer = Bytes.of(serialized);
             return ProtobufDecoder.forType(SignalMessage.class)
                     .decode(buffer.slice(1, -MAC_LENGTH).toByteArray())
-                    .version(SignalHelper.deserialize(serialized[0]))
+                    .version(BytesHelper.deserialize(serialized[0]))
                     .signature(buffer.slice(-MAC_LENGTH).toByteArray())
                     .serialized(serialized);
         } catch (IOException exception) {

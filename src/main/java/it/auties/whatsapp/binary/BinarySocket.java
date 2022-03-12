@@ -1,4 +1,4 @@
-package it.auties.whatsapp.socket;
+package it.auties.whatsapp.binary;
 
 import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
@@ -8,7 +8,6 @@ import it.auties.whatsapp.api.QrHandler;
 import it.auties.whatsapp.api.SerializationStrategy.Event;
 import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.api.WhatsappOptions;
-import it.auties.whatsapp.binary.BinaryMessage;
 import it.auties.whatsapp.controller.WhatsappKeys;
 import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.crypto.*;
@@ -28,6 +27,8 @@ import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
+import it.auties.whatsapp.model.request.Node;
+import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.model.setting.EphemeralSetting;
 import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.signal.auth.ClientPayload.ClientPayloadBuilder;
@@ -66,7 +67,7 @@ import static it.auties.bytes.Bytes.newBuffer;
 import static it.auties.bytes.Bytes.ofBase64;
 import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
 import static it.auties.whatsapp.api.SerializationStrategy.Event.*;
-import static it.auties.whatsapp.socket.Node.*;
+import static it.auties.whatsapp.model.request.Node.*;
 import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
 import static java.lang.Long.parseLong;
 import static java.lang.Runtime.getRuntime;
@@ -79,9 +80,9 @@ import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 @Accessors(fluent = true)
-@ClientEndpoint(configurator = Socket.OriginPatcher.class)
+@ClientEndpoint(configurator = BinarySocket.OriginPatcher.class)
 @Log
-public class Socket {
+public class BinarySocket {
     private static final String BUILD_HASH = "S9Kdc4pc4EJryo21snc5cg==";
     private static final int KEY_TYPE = 5;
 
@@ -125,7 +126,7 @@ public class Socket {
         getWebSocketContainer().setDefaultMaxSessionIdleTimeout(0);
     }
 
-    public Socket(@NonNull WhatsappOptions options, @NonNull WhatsappStore store, @NonNull WhatsappKeys keys) {
+    public BinarySocket(@NonNull WhatsappOptions options, @NonNull WhatsappStore store, @NonNull WhatsappKeys keys) {
         this.pingService = Executors.newSingleThreadScheduledExecutor();
         this.handshake = new Handshake();
         this.options = options;
@@ -136,7 +137,8 @@ public class Socket {
         this.messageHandler = new MessageHandler();
         this.appStateHandler = new AppStateHandler();
         getRuntime().addShutdownHook(new Thread(() -> serialize(ON_CLOSE)));
-        serialize(OTHER);
+        serialize(PERIODICALLY);
+        serialize(CUSTOM);
     }
 
     private void serialize(Event event) {
@@ -381,7 +383,7 @@ public class Socket {
 
     private void changeKeys() {
         keys.delete();
-        var newId = SignalHelper.randomRegistrationId();
+        var newId = Keys.registrationId();
         this.keys = WhatsappKeys.newKeys(newId);
         var newStore = WhatsappStore.newStore(newId);
         newStore.listeners().addAll(store.listeners());
@@ -463,8 +465,8 @@ public class Socket {
             return CompanionData.builder()
                     .buildHash(ofBase64(BUILD_HASH).toByteArray())
                     .companion(encode(createCompanionProps()))
-                    .id(SignalHelper.toBytes(keys.id(), 4))
-                    .keyType(SignalHelper.toBytes(KEY_TYPE, 1))
+                    .id(BytesHelper.toBytes(keys.id(), 4))
+                    .keyType(BytesHelper.toBytes(KEY_TYPE, 1))
                     .identifier(keys.identityKeyPair().publicKey())
                     .signatureId(keys.signedKeyPair().encodedId())
                     .signaturePublicKey(keys.signedKeyPair().keyPair().publicKey())
@@ -806,7 +808,7 @@ public class Socket {
         }
 
         private Node createPreKeysRegistration() {
-            return with("registration", SignalHelper.toBytes(keys.id(), 4));
+            return with("registration", BytesHelper.toBytes(keys.id(), 4));
         }
 
         private Node createPreKeys() {
@@ -902,27 +904,27 @@ public class Socket {
 
         @SafeVarargs
         public final CompletableFuture<Node> encode(MessageInfo info, Entry<String, Object>... attributes) {
-            var encodedMessage = SignalHelper.pad(ProtobufEncoder.encode(info));
+            var encodedMessage = BytesHelper.pad(ProtobufEncoder.encode(info));
             if (isConversation(info)) {
                 var whatsappMessage = DeviceSentMessage.newDeviceSentMessage(info.chatJid().toString(), info.message());
-                var paddedMessage = SignalHelper.pad(ProtobufEncoder.encode(whatsappMessage));
+                var paddedMessage = BytesHelper.pad(ProtobufEncoder.encode(whatsappMessage));
                 return querySyncDevices(info.chatJid(), true)
                         .thenCombineAsync(querySyncDevices(keys.companion().toUserJid(), true), this::joinContacts)
                         .thenComposeAsync(this::createSessions)
                         .thenApplyAsync(result -> createParticipantsSessions(result, paddedMessage))
                         .thenComposeAsync(participants -> encode(info, encodedMessage, participants, attributes))
-                        .exceptionallyAsync(Socket.this::handleError);
+                        .exceptionallyAsync(BinarySocket.this::handleError);
             }
 
             var senderName = new SenderKeyName(info.chatJid().toString(), keys.companion().toSignalAddress());
-            var sessionBuilder = new GroupSessionBuilder(keys);
+            var sessionBuilder = new GroupBuilder(keys);
             var signalMessage = sessionBuilder.createMessage(senderName);
             return groupsCache.getOptional(info.chatJid())
                     .map(CompletableFuture::completedFuture)
                     .orElseGet(() -> cacheGroupMetadata(info))
                     .thenComposeAsync(metadata -> getGroupParticipantsNodes(info, metadata, signalMessage))
                     .thenComposeAsync(participants -> encode(info, encodedMessage, participants, attributes))
-                    .exceptionallyAsync(Socket.this::handleError);
+                    .exceptionallyAsync(BinarySocket.this::handleError);
         }
 
         private CompletableFuture<List<Node>> getGroupParticipantsNodes(MessageInfo info, GroupMetadata metadata, SignalDistributionMessage message) {
@@ -1003,7 +1005,7 @@ public class Socket {
             }
 
             var whatsappMessage = new SenderKeyDistributionMessage(info.chatJid().toString(), signalMessage.serialized());
-            var paddedMessage = SignalHelper.pad(ProtobufEncoder.encode(whatsappMessage));
+            var paddedMessage = BytesHelper.pad(ProtobufEncoder.encode(whatsappMessage));
             return createSessions(missingParticipants)
                     .thenApplyAsync(result -> createParticipantsSessions(result, paddedMessage));
         }
@@ -1049,8 +1051,8 @@ public class Socket {
 
             var builder = new SessionBuilder(jid.toSignalAddress(), keys);
             builder.createOutgoing(
-                    SignalHelper.fromBytes(registrationId.bytes(), 4),
-                    SignalHelper.appendKeyHeader(identity.bytes()),
+                    BytesHelper.fromBytes(registrationId.bytes(), 4),
+                    Keys.withHeader(identity.bytes()),
                     SignalSignedKeyPair.of(signedKey).orElseThrow(),
                     SignalSignedKeyPair.of(key).orElse(null)
             );
@@ -1236,7 +1238,7 @@ public class Socket {
 
         private void handleDistributionMessage(SenderKeyDistributionMessage distributionMessage, ContactJid from) {
             var groupName = new SenderKeyName(distributionMessage.groupId(), from.toSignalAddress());
-            var builder = new GroupSessionBuilder(keys);
+            var builder = new GroupBuilder(keys);
             var message = SignalDistributionMessage.ofSerialized(distributionMessage.data());
             builder.process(groupName, message);
         }
@@ -1246,7 +1248,7 @@ public class Socket {
             switch(protocolMessage.type()) {
                 case HISTORY_SYNC_NOTIFICATION -> {
                     var compressed = Medias.download(protocolMessage.historySyncNotification(), store);
-                    var decompressed = SignalHelper.deflate(compressed);
+                    var decompressed = BytesHelper.deflate(compressed);
                     var history = ProtobufDecoder.forType(HistorySync.class)
                             .decode(decompressed);
                     switch(history.syncType()) {
@@ -1422,7 +1424,7 @@ public class Socket {
                     .thenApplyAsync(this::parseSyncRequest)
                     .thenApplyAsync(this::parsePatches)
                     .thenAcceptAsync(actions -> actions.forEach(this::processSyncActions))
-                    .exceptionallyAsync(Socket.this::handleError);
+                    .exceptionallyAsync(BinarySocket.this::handleError);
         }
 
         private List<ActionDataSync> parsePatches(List<SnapshotSyncRecord> patches) {
@@ -1715,7 +1717,7 @@ public class Socket {
 
         private byte[] generateSnapshotMac(byte[] ltHash, long version, String patchName, byte[] key) {
             var total = Bytes.of(ltHash)
-                    .append(SignalHelper.toBytes(version))
+                    .append(BytesHelper.toBytes(version))
                     .append(patchName.getBytes(StandardCharsets.UTF_8))
                     .toByteArray();
             return Hmac.calculateSha256(total, key);
@@ -1724,7 +1726,7 @@ public class Socket {
         private byte[] generatePatchMac(byte[] snapshotMac, Bytes valueMacs, long version, String type, byte[] key) {
             var total = Bytes.of(snapshotMac)
                     .append(valueMacs)
-                    .append(SignalHelper.toBytes(version))
+                    .append(BytesHelper.toBytes(version))
                     .append(type.getBytes(StandardCharsets.UTF_8))
                     .toByteArray();
             return Hmac.calculateSha256(total, key);

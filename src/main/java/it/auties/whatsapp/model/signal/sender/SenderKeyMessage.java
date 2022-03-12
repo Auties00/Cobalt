@@ -7,8 +7,8 @@ import it.auties.curve25519.Curve25519;
 import it.auties.protobuf.annotation.ProtobufIgnore;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.protobuf.encoder.ProtobufEncoder;
-import it.auties.whatsapp.crypto.SignalHelper;
-import it.auties.whatsapp.util.SignalSpec;
+import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.SignalSpecification;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -21,7 +21,7 @@ import java.io.IOException;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public class SenderKeyMessage implements SignalSpec {
+public class SenderKeyMessage implements SignalSpecification {
   @JsonProperty("0")
   @ProtobufIgnore
   private int version;
@@ -55,7 +55,7 @@ public class SenderKeyMessage implements SignalSpec {
     this.id = id;
     this.iteration = iteration;
     this.cipherText = cipherText;
-    var encodedVersion = SignalHelper.serialize(version);
+    var encodedVersion = BytesHelper.serialize(version);
     var encoded =  ProtobufEncoder.encode(this);
     var encodedMessage = Bytes.of(encodedVersion)
             .append(encoded);
@@ -68,7 +68,7 @@ public class SenderKeyMessage implements SignalSpec {
       var buffer = Bytes.of(serialized);
       return ProtobufDecoder.forType(SenderKeyMessage.class)
               .decode(buffer.slice(1, -SIGNATURE_LENGTH).toByteArray())
-              .version(SignalHelper.deserialize(serialized[0]))
+              .version(BytesHelper.deserialize(serialized[0]))
               .signature(buffer.slice(-SIGNATURE_LENGTH).toByteArray())
               .serialized(serialized);
     } catch (IOException exception) {

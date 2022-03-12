@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.decoder.ProtobufDecoder;
-import it.auties.whatsapp.crypto.SignalHelper;
+import it.auties.whatsapp.util.BytesHelper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -56,7 +56,7 @@ public final class SignalPreKeyMessage implements SignalProtocolMessage{
         try {
             return ProtobufDecoder.forType(SignalPreKeyMessage.class)
                     .decode(Bytes.of(serialized).slice(1).toByteArray())
-                    .version(SignalHelper.deserialize(serialized[0]))
+                    .version(BytesHelper.deserialize(serialized[0]))
                     .serialized(serialized);
         } catch (IOException exception) {
             throw new RuntimeException("Cannot decode PreKeySignalMessage", exception);

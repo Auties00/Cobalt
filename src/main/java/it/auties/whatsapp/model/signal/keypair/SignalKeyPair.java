@@ -2,8 +2,8 @@ package it.auties.whatsapp.model.signal.keypair;
 
 import it.auties.curve25519.Curve25519;
 import it.auties.curve25519.XecUtils;
-import it.auties.whatsapp.crypto.SignalHelper;
-import it.auties.whatsapp.socket.Node;
+import it.auties.whatsapp.model.request.Node;
+import it.auties.whatsapp.util.Keys;
 import lombok.NonNull;
 
 import java.security.interfaces.XECPrivateKey;
@@ -19,7 +19,7 @@ public record SignalKeyPair(byte @NonNull [] publicKey, byte[] privateKey) imple
     }
 
     public byte[] encodedPublicKey(){
-        return SignalHelper.appendKeyHeader(publicKey);
+        return Keys.withHeader(publicKey);
     }
 
     @Override

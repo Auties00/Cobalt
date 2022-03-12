@@ -7,7 +7,8 @@ import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.model.signal.session.*;
-import it.auties.whatsapp.util.SignalSpec;
+import it.auties.whatsapp.util.Keys;
+import it.auties.whatsapp.util.SignalSpecification;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -17,11 +18,11 @@ import java.util.Objects;
 
 import static it.auties.curve25519.Curve25519.calculateAgreement;
 
-public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) implements SignalSpec {
+public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) implements SignalSpecification {
     public void createOutgoing(int id, byte[] identityKey, SignalSignedKeyPair signedPreKey, SignalSignedKeyPair preKey){
         Validate.isTrue(keys.hasTrust(address, identityKey),
                 "Untrusted key", SecurityException.class);
-        Validate.isTrue(Curve25519.verifySignature(SignalHelper.removeKeyHeader(identityKey), signedPreKey.keyPair().encodedPublicKey(), signedPreKey.signature()),
+        Validate.isTrue(Curve25519.verifySignature(Keys.withoutHeader(identityKey), signedPreKey.keyPair().encodedPublicKey(), signedPreKey.signature()),
                 "Signature mismatch", SecurityException.class);
 
         var baseKey = SignalKeyPair.random();
@@ -85,15 +86,15 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
             theirSignedPubKey = theirEphemeralPubKey;
         }
 
-        var signedSecret = calculateAgreement(SignalHelper.removeKeyHeader(theirSignedPubKey), keys.identityKeyPair().privateKey());
-        var identitySecret = calculateAgreement(SignalHelper.removeKeyHeader(theirIdentityPubKey), ourSignedKey.privateKey());
+        var signedSecret = calculateAgreement(Keys.withoutHeader(theirSignedPubKey), keys.identityKeyPair().privateKey());
+        var identitySecret = calculateAgreement(Keys.withoutHeader(theirIdentityPubKey), ourSignedKey.privateKey());
         var sharedSecret = Bytes.newBuffer(32)
                 .fill(0xff)
                 .append(isInitiator ? signedSecret : identitySecret)
                 .append(isInitiator ? identitySecret : signedSecret)
-                .append(calculateAgreement(SignalHelper.removeKeyHeader(theirSignedPubKey), ourSignedKey.privateKey()));
+                .append(calculateAgreement(Keys.withoutHeader(theirSignedPubKey), ourSignedKey.privateKey()));
         if (ourEphemeralKey != null && theirEphemeralPubKey != null) {
-            var ephemeralSecret = calculateAgreement(SignalHelper.removeKeyHeader(theirEphemeralPubKey), ourEphemeralKey.privateKey());
+            var ephemeralSecret = calculateAgreement(Keys.withoutHeader(theirEphemeralPubKey), ourEphemeralKey.privateKey());
             sharedSecret = sharedSecret.append(ephemeralSecret);
         }
 
@@ -114,7 +115,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
             return state;
         }
 
-        var initSecret = calculateAgreement(SignalHelper.removeKeyHeader(theirSignedPubKey), state.ephemeralKeyPair().privateKey());
+        var initSecret = calculateAgreement(Keys.withoutHeader(theirSignedPubKey), state.ephemeralKeyPair().privateKey());
         var initKey = Hkdf.deriveSecrets(initSecret, state.rootKey(),
                 "WhisperRatchet".getBytes(StandardCharsets.UTF_8));
         var chain = new SessionChain(-1, masterKey[1], state.ephemeralKeyPair().publicKey());

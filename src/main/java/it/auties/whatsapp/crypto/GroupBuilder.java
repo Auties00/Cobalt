@@ -5,9 +5,10 @@ import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalDistributionMessage;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
 import it.auties.whatsapp.model.signal.sender.SenderKeyRecord;
+import it.auties.whatsapp.util.Keys;
 import lombok.NonNull;
 
-public record GroupSessionBuilder(@NonNull WhatsappKeys keys) {
+public record GroupBuilder(@NonNull WhatsappKeys keys) {
     public void process(SenderKeyName name, SignalDistributionMessage message) {
         var senderKeyRecord = keys.findSenderKeyByName(name)
                 .orElseGet(() -> createRecord(name));
@@ -20,8 +21,8 @@ public record GroupSessionBuilder(@NonNull WhatsappKeys keys) {
         var senderKeyRecord = keys.findSenderKeyByName(name)
                 .orElseGet(() -> createRecord(name));
         if (senderKeyRecord.isEmpty()) {
-            var keyId = SignalHelper.randomSenderKeyId();
-            var senderKey = SignalHelper.randomSenderKey();
+            var keyId = Keys.senderKeyId();
+            var senderKey = Keys.senderKey();
             var signingKey = SignalKeyPair.random();
             senderKeyRecord.addState(keyId, 0, senderKey, signingKey.publicKey(), signingKey.privateKey());
             keys.addSenderKey(name, senderKeyRecord);

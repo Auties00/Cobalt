@@ -9,9 +9,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import it.auties.map.SimpleMapModule;
 
 public interface JacksonProvider {
-    /**
-     * An instance of Jackson
-     */
     ObjectMapper JACKSON = new ObjectMapper()
             .setSerializationInclusion(Include.NON_NULL)
             .setSerializationInclusion(Include.NON_DEFAULT)

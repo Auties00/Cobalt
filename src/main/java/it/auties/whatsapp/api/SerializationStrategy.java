@@ -16,7 +16,7 @@ public interface SerializationStrategy {
             @Override
             public void serialize(WhatsappStore store, WhatsappKeys keys) {
                 store.save(false);
-                store.save(false);
+                keys.save(false);
             }
 
             @Override
@@ -31,7 +31,7 @@ public interface SerializationStrategy {
             @Override
             public void serialize(WhatsappStore store, WhatsappKeys keys) {
                 store.save(async);
-                store.save(async);
+                keys.save(async);
             }
 
             @Override
@@ -46,7 +46,7 @@ public interface SerializationStrategy {
             @Override
             public void serialize(WhatsappStore store, WhatsappKeys keys) {
                 store.save(async);
-                store.save(async);
+                keys.save(async);
             }
 
             @Override
@@ -57,18 +57,22 @@ public interface SerializationStrategy {
     }
 
     static SerializationStrategy periodically(long period, boolean async){
+        return periodically(period, TimeUnit.SECONDS, async);
+    }
+
+    static SerializationStrategy periodically(long period, TimeUnit unit, boolean async){
         return new SerializationStrategy() {
             @Override
             public void serialize(WhatsappStore store, WhatsappKeys keys) {
                 Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
                     store.save(async);
-                    store.save(async);
-                }, 0L, period, TimeUnit.SECONDS);
+                    keys.save(async);
+                }, 0L, period, unit);
             }
 
             @Override
             public Event trigger() {
-                return Event.OTHER;
+                return Event.PERIODICALLY;
             }
         };
     }
@@ -91,6 +95,7 @@ public interface SerializationStrategy {
         ON_CLOSE,
         ON_MESSAGE,
         ON_ERROR,
-        OTHER
+        PERIODICALLY,
+        CUSTOM
     }
 }

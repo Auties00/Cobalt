@@ -6,7 +6,7 @@ import it.auties.bytes.Bytes;
 import it.auties.protobuf.annotation.ProtobufIgnore;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.protobuf.encoder.ProtobufEncoder;
-import it.auties.whatsapp.crypto.SignalHelper;
+import it.auties.whatsapp.util.BytesHelper;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -77,7 +77,7 @@ public final class SignalDistributionMessage implements SignalProtocolMessage {
     try {
       return ProtobufDecoder.forType(SignalDistributionMessage.class)
               .decode(Bytes.of(serialized).slice(1).toByteArray())
-              .version(SignalHelper.deserialize(serialized[0]))
+              .version(BytesHelper.deserialize(serialized[0]))
               .serialized(serialized);
     } catch (IOException exception) {
       throw new RuntimeException("Cannot decode SenderKeyMessage", exception);

@@ -1,13 +1,13 @@
 package it.auties.whatsapp.model.signal.message;
 
-import it.auties.whatsapp.crypto.SignalHelper;
-import it.auties.whatsapp.util.SignalSpec;
+import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.SignalSpecification;
 
-public sealed interface SignalProtocolMessage extends SignalSpec permits SignalPreKeyMessage, SignalDistributionMessage, SignalMessage {
+public sealed interface SignalProtocolMessage extends SignalSpecification permits SignalPreKeyMessage, SignalDistributionMessage, SignalMessage {
     int version();
     byte[] serialized();
 
     default byte serializedVersion(){
-        return SignalHelper.serialize(version() == 0 ? CURRENT_VERSION : version());
+        return BytesHelper.serialize(version() == 0 ? CURRENT_VERSION : version());
     }
 }

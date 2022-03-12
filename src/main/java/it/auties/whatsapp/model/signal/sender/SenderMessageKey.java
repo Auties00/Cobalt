@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.annotation.ProtobufIgnore;
 import it.auties.whatsapp.crypto.Hkdf;
-import it.auties.whatsapp.util.SignalSpec;
+import it.auties.whatsapp.util.SignalSpecification;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,7 +21,7 @@ import java.nio.charset.StandardCharsets;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public class SenderMessageKey implements SignalSpec {
+public class SenderMessageKey implements SignalSpecification {
     @JsonProperty("1")
     @JsonPropertyDescription("uint32")
     private int iteration;

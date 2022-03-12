@@ -1,12 +1,11 @@
 package it.auties.whatsapp.api;
 
+import it.auties.whatsapp.binary.BinarySocket;
 import it.auties.whatsapp.controller.WhatsappKeys;
 import it.auties.whatsapp.controller.WhatsappStore;
-import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
@@ -14,10 +13,10 @@ import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.standard.TextMessage;
-import it.auties.whatsapp.socket.HasWhatsappResponse;
-import it.auties.whatsapp.socket.Node;
-import it.auties.whatsapp.socket.Socket;
-import it.auties.whatsapp.socket.StatusResponse;
+import it.auties.whatsapp.model.request.Node;
+import it.auties.whatsapp.model.response.ContactHasWhatsapp;
+import it.auties.whatsapp.model.response.ContactStatus;
+import it.auties.whatsapp.util.Keys;
 import it.auties.whatsapp.util.Nodes;
 import it.auties.whatsapp.util.RegisterListenerScanner;
 import it.auties.whatsapp.util.Validate;
@@ -37,7 +36,7 @@ import java.util.stream.Stream;
 import static it.auties.bytes.Bytes.ofRandom;
 import static it.auties.whatsapp.api.WhatsappOptions.defaultOptions;
 import static it.auties.whatsapp.controller.WhatsappController.knownIds;
-import static it.auties.whatsapp.socket.Node.*;
+import static it.auties.whatsapp.model.request.Node.*;
 import static java.util.Objects.requireNonNullElseGet;
 
 /**
@@ -52,7 +51,7 @@ public class Whatsapp {
     /**
      * The socket associated with this session
      */
-    private final Socket socket;
+    private final BinarySocket socket;
 
     /**
      * Constructs a new instance of the API from a known id.
@@ -71,7 +70,7 @@ public class Whatsapp {
      * @return a non-null Whatsapp instance
      */
     public static Whatsapp newConnection(){
-        return new Whatsapp(SignalHelper.randomRegistrationId());
+        return new Whatsapp(Keys.registrationId());
     }
 
     /**
@@ -81,7 +80,7 @@ public class Whatsapp {
      * @return a non-null Whatsapp instance
      */
     public static Whatsapp firstConnection(){
-        return new Whatsapp(requireNonNullElseGet(knownIds().peekFirst(), SignalHelper::randomRegistrationId));
+        return new Whatsapp(requireNonNullElseGet(knownIds().peekFirst(), Keys::registrationId));
     }
 
     /**
@@ -91,7 +90,7 @@ public class Whatsapp {
      * @return a non-null Whatsapp instance
      */
     public static Whatsapp lastConnection(){
-        return new Whatsapp(requireNonNullElseGet(knownIds().peekLast(), SignalHelper::randomRegistrationId));
+        return new Whatsapp(requireNonNullElseGet(knownIds().peekLast(), Keys::registrationId));
     }
 
     /**
@@ -122,7 +121,7 @@ public class Whatsapp {
      * @apiNote not accessible, please use named constructors
      */
     private Whatsapp(int id){
-        this(new Socket(defaultOptions(), WhatsappStore.fromMemory(id), WhatsappKeys.fromMemory(id)));
+        this(new BinarySocket(defaultOptions(), WhatsappStore.fromMemory(id), WhatsappKeys.fromMemory(id)));
         RegisterListenerScanner.scan(this)
                 .forEach(this::registerListener);
     }
@@ -390,12 +389,12 @@ public class Whatsapp {
      * @param contacts the contacts to check
      * @return a CompletableFuture that wraps a non-null list of HasWhatsappResponse
      */
-    public CompletableFuture<List<HasWhatsappResponse>> hasWhatsapp(@NonNull ContactJid... contacts) {
+    public CompletableFuture<List<ContactHasWhatsapp>> hasWhatsapp(@NonNull ContactJid... contacts) {
         var contactNodes = Arrays.stream(contacts)
                 .map(jid -> with("contact", "+%s".formatted(jid.user())))
                 .toArray(Node[]::new);
         return socket.sendQuery(with("contact"), withChildren("user", contactNodes))
-                .thenApplyAsync(nodes -> nodes.stream().map(HasWhatsappResponse::new).toList());
+                .thenApplyAsync(nodes -> nodes.stream().map(ContactHasWhatsapp::new).toList());
     }
 
     /**
@@ -422,12 +421,12 @@ public class Whatsapp {
      * @param contact the target contact
      * @return a CompletableFuture that wraps a non-null list of StatusResponse
      */
-    public CompletableFuture<List<StatusResponse>> queryUserStatus(@NonNull Contact contact) {
+    public CompletableFuture<List<ContactStatus>> queryUserStatus(@NonNull Contact contact) {
         var query = with("status");
         var body = withAttributes("user", Map.of("jid", contact.jid()));
         return socket.sendQuery(query, body)
                 .thenApplyAsync(response -> Nodes.findAll(response, "status"))
-                .thenApplyAsync(nodes -> nodes.stream().map(StatusResponse::new).toList());
+                .thenApplyAsync(nodes -> nodes.stream().map(ContactStatus::new).toList());
     }
 
     /**
@@ -525,7 +524,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> changePresence(boolean available) {
-        var presence = available ? ContactStatus.AVAILABLE : ContactStatus.UNAVAILABLE;
+        var presence = available ? it.auties.whatsapp.model.contact.ContactStatus.AVAILABLE : it.auties.whatsapp.model.contact.ContactStatus.UNAVAILABLE;
         var node = withAttributes("presence", Map.of("type", presence.data()));
         return socket.sendWithNoResponse(node);
     }
@@ -537,7 +536,7 @@ public class Whatsapp {
      * @param presence the new status
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> changePresence(@NonNull Chat chat, @NonNull ContactStatus presence) {
+    public CompletableFuture<?> changePresence(@NonNull Chat chat, @NonNull it.auties.whatsapp.model.contact.ContactStatus presence) {
         var node = withAttributes("presence", Map.of("to", chat.jid(), "type", presence.data()));
         return socket.sendWithNoResponse(node);
     }

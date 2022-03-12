@@ -1,4 +1,4 @@
-package it.auties.whatsapp.socket;
+package it.auties.whatsapp.model.request;
 
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.encoder.ProtobufEncoder;
@@ -130,8 +130,8 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
         }
 
         if (exceptionally) {
-            log.warning("Whatsapp could not process %s: %s".formatted(this, response));
-            future.completeExceptionally(new RuntimeException("Whatsapp could not process %s: %s".formatted(this, response)));
+            log.warning("Cannot process request %s, erroneous response: %s".formatted(this, response));
+            future.completeExceptionally(new RuntimeException("Cannot process request %s, erroneous response: %s".formatted(this, response)));
             return;
         }
 
@@ -140,8 +140,8 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
 
     private void handleSendResult(WhatsappStore store, SendResult result, boolean response) {
         if (!result.isOK()) {
-            log.warning("Whatsapp could not send %s: %s".formatted(this, response));
-            future.completeExceptionally(new IllegalArgumentException("Cannot send %s".formatted(this), result.getException()));
+            log.warning("Cannot send request %s, erroneous send result".formatted(this));
+            future.completeExceptionally(new IllegalArgumentException(("Cannot send request %s, erroneous send result: %s".formatted(this, result)), result.getException()));
             return;
         }
 

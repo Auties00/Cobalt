@@ -1,15 +1,9 @@
 package it.auties.whatsapp.binary;
 
-import it.auties.whatsapp.model.contact.Contact;
-import it.auties.whatsapp.model.contact.ContactStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
-/**
- * The constants of this enumerated type describe the various flags that can be used when sending a WhatsappNode to WhatsappWeb's WebSocket.
- * Some of these constants are also used to describe a {@link Contact}'s status in the {@link ContactStatus} class.
- */
 @AllArgsConstructor
 @Accessors(fluent = true)
 public enum BinaryFlag {

@@ -9,8 +9,8 @@ import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.MediaConnection;
-import it.auties.whatsapp.socket.Node;
-import it.auties.whatsapp.socket.Request;
+import it.auties.whatsapp.model.request.Node;
+import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Preferences;
 import lombok.*;
@@ -26,7 +26,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.time.Instant.now;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 
 /**

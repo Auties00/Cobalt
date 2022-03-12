@@ -5,42 +5,16 @@ import lombok.experimental.UtilityClass;
 
 import static lombok.Lombok.sneakyThrow;
 
-/**
- * This utility class provides an easy way to check if a condition is satisfied
- * If the condition isn't satisfied, an exception is thrown
- */
 @UtilityClass
 public class Validate {
-    /**
-     * Throws an exception with type IllegalArgumentException with message {@code message} formatted using {@code args} if {@code value} is not true
-     *
-     * @param value   the value to check
-     * @param message the message of the exception to throw if {@code value} isn't true
-     * @param args    the arguments used to format the exception thrown if {@code value} isn't true
-     */
     public void isTrue(boolean value, @NonNull String message, Object... args) {
         isTrue(value, message, IllegalArgumentException.class, args);
     }
 
-    /**
-     * Throws an exception with type {@code exception} with message {@code message} formatted using {@code args} if {@code value} is not true.
-     * If the provided exception doesn't provide a message constructor, a {@link RuntimeException} will be thrown instead.
-     *
-     * @param value     the value to check
-     * @param message   the message of the exception to throw if {@code value} isn't true
-     * @param throwable the type of exception to throw if {@code value} isn't true
-     * @param args      the arguments used to format the exception thrown if {@code value} isn't true
-     */
     public void isTrue(boolean value, @NonNull String message, @NonNull Class<? extends Throwable> throwable, Object... args) {
         isTrue(value, createThrowable(throwable, message.formatted(args)));
     }
 
-    /**
-     * Throws {@code exception} if {@code value} is not true.
-     *
-     * @param value     the value to check
-     * @param throwable the exception to throw
-     */
     public void isTrue(boolean value, @NonNull Throwable throwable) {
         if (value) {
             return;

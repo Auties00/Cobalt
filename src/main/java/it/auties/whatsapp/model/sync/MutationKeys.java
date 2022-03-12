@@ -2,13 +2,13 @@ package it.auties.whatsapp.model.sync;
 
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.crypto.Hkdf;
-import it.auties.whatsapp.util.SignalSpec;
+import it.auties.whatsapp.util.SignalSpecification;
 import lombok.NonNull;
 
 import java.nio.charset.StandardCharsets;
 
 public record MutationKeys(byte[] indexKey, byte[] encKey, byte[] macKey, byte[] snapshotMacKey,
-                           byte[] patchMacKey) implements SignalSpec {
+                           byte[] patchMacKey) implements SignalSpecification {
     private static final int EXPANDED_SIZE = 160;
     private static final byte[] MUTATION_KEYS = "WhatsApp Mutation Keys".getBytes(StandardCharsets.UTF_8);
 

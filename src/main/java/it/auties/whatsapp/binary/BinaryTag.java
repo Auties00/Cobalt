@@ -7,12 +7,6 @@ import lombok.experimental.Accessors;
 
 import java.util.Arrays;
 
-/**
- * The constants of this enumerated type describe the various tags used by an encrypted {@link it.auties.bytes.Bytes}.
- * These tags were extracted from JS code found at https://web.whatsapp.com/.
- * It is important to remember that these are unsigned ints, not bytes.
- * For this reason when comparing a byte with one of these tags it is important to convert said byte to an unsigned int using {@link Byte#toUnsignedInt(byte)}.
- */
 @AllArgsConstructor
 @Accessors(fluent = true)
 public enum BinaryTag {
@@ -38,12 +32,6 @@ public enum BinaryTag {
     @Getter
     private final int data;
 
-    /**
-     * Returns the {@link BinaryTag} whose content matches {@code data}
-     *
-     * @param data the data to search
-     * @return the matching {@link BinaryTag}
-     */
     public static @NonNull BinaryTag forData(int data){
         return Arrays.stream(values())
                 .filter(entry -> entry.data() == data)

@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.signal.keypair;
 
-import it.auties.whatsapp.crypto.SignalHelper;
-import it.auties.whatsapp.socket.Node;
+import it.auties.whatsapp.model.request.Node;
+import it.auties.whatsapp.util.BytesHelper;
 import lombok.NonNull;
 
 public record SignalPreKeyPair(int id, byte @NonNull [] publicKey, byte[] privateKey) implements ISignalKeyPair{
@@ -22,6 +22,6 @@ public record SignalPreKeyPair(int id, byte @NonNull [] publicKey, byte[] privat
     }
 
     public byte[] encodedId(){
-        return SignalHelper.toBytes(id, 3);
+        return BytesHelper.toBytes(id, 3);
     }
 }

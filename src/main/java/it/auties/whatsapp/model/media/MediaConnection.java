@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.media;
 
-import it.auties.whatsapp.socket.Node;
+import it.auties.whatsapp.model.request.Node;
 import lombok.NonNull;
 
 import java.util.List;

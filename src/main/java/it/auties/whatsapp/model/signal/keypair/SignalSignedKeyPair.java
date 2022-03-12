@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.signal.keypair;
 
 import it.auties.curve25519.Curve25519;
-import it.auties.whatsapp.crypto.SignalHelper;
-import it.auties.whatsapp.socket.Node;
+import it.auties.whatsapp.model.request.Node;
+import it.auties.whatsapp.util.BytesHelper;
 import lombok.NonNull;
 
 import java.util.Optional;
@@ -19,7 +19,7 @@ public record SignalSignedKeyPair(int id, @NonNull SignalKeyPair keyPair, byte[]
             return Optional.empty();
         }
 
-        var id = SignalHelper.fromBytes(node.findNode("id").bytes(), 3);
+        var id = BytesHelper.fromBytes(node.findNode("id").bytes(), 3);
         var keyPair = new SignalKeyPair(node.findNode("value").bytes(), null);
         var signature = node.findNode("signature");
         return Optional.of(new SignalSignedKeyPair(id, keyPair, signature != null ? signature.bytes() : null));
@@ -39,6 +39,6 @@ public record SignalSignedKeyPair(int id, @NonNull SignalKeyPair keyPair, byte[]
     }
 
     public byte[] encodedId(){
-        return SignalHelper.toBytes(id, 3);
+        return BytesHelper.toBytes(id, 3);
     }
 }

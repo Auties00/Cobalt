@@ -15,33 +15,12 @@ import java.util.Map;
 
 import static it.auties.bytes.Bytes.of;
 
-/**
- * A utility class used to generate QR codes to authenticate with whatsapp
- */
 @UtilityClass
 public class QrGenerator {
-    /**
-     * Margin between the qr code and the border
-     */
     private final int MARGIN = 5;
-
-    /**
-     * Size of the QR code, only affects files
-     */
     private final int SIZE = 500;
-
-    /**
-     * QR code writer
-     */
     private final MultiFormatWriter WRITER = new MultiFormatWriter();
 
-    /**
-     * Generates a QR code to initialize the connection with WhatsappWeb's WebSocket
-     *
-     * @param keys the non-null keys to use to generate the QR code
-     * @param ref  the non-null string reference to generate the qr code
-     * @return a non-null {@link BitMatrix}
-     */
     @SneakyThrows
     public BitMatrix generate(@NonNull WhatsappKeys keys, @NonNull String ref) {
         var qr = "%s,%s,%s,%s".formatted(

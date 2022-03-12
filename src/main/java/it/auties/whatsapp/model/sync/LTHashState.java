@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.sync;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.whatsapp.socket.Node;
+import it.auties.whatsapp.model.request.Node;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import static it.auties.whatsapp.socket.Node.withAttributes;
+import static it.auties.whatsapp.model.request.Node.withAttributes;
 import static java.util.Map.of;
 
 @AllArgsConstructor

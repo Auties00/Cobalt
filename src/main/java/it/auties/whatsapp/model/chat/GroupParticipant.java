@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.chat;
 
 import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.socket.Node;
+import it.auties.whatsapp.model.request.Node;
 import lombok.NonNull;
 
 import java.util.NoSuchElementException;

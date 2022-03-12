@@ -1,9 +1,9 @@
 package it.auties.whatsapp.binary;
 
 import it.auties.bytes.Bytes;
-import it.auties.whatsapp.crypto.SignalHelper;
 import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.socket.Node;
+import it.auties.whatsapp.model.request.Node;
+import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 
@@ -15,8 +15,8 @@ import java.util.stream.IntStream;
 
 import static it.auties.whatsapp.binary.BinaryTag.*;
 import static it.auties.whatsapp.model.contact.ContactJid.Server.forAddress;
-import static it.auties.whatsapp.socket.Node.with;
-import static it.auties.whatsapp.socket.Node.withAttributes;
+import static it.auties.whatsapp.model.request.Node.with;
+import static it.auties.whatsapp.model.request.Node.withAttributes;
 
 public final class BinaryDecoder {
     private Bytes buffer;
@@ -30,7 +30,7 @@ public final class BinaryDecoder {
         var buffer = Bytes.of(input);
         var token = buffer.readByte() & 2;
         var data = buffer.remaining().toByteArray();
-        return token == 0 ? data : SignalHelper.deflate(data);
+        return token == 0 ? data : BytesHelper.deflate(data);
     }
 
     private Node readNode() {

@@ -1,4 +1,4 @@
-package it.auties.whatsapp.socket;
+package it.auties.whatsapp.model.request;
 
 import it.auties.whatsapp.util.Attributes;
 import it.auties.whatsapp.util.Nodes;

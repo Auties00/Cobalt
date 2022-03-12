@@ -2,9 +2,7 @@ package it.auties.whatsapp.util;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
 import lombok.NonNull;
 
@@ -12,24 +10,12 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-/**
- * This class is an implementation of ArrayList used to store the {@link Message} in a {@link Chat}.
- * The messages stored in this internal are guaranteed to be stored chronologically.
- * This contract can be technically broken using reflection to access the array associated with this internal, though, obviously, it's not advisable.
- *
- */
 public final class SortedMessageList implements List<MessageInfo> {
-    /**
-     * The default comparator used to sort the entries in this internal
-     */
     private static final Comparator<HistorySyncMessage> ENTRY_COMPARATOR
             = Comparator.comparingLong(entry -> entry.message().timestamp());
 
     private final List<HistorySyncMessage> internal;
 
-    /**
-     * @param internal An internal used to represent the messages
-     */
     @JsonCreator
     public SortedMessageList(List<HistorySyncMessage> internal) {
         this.internal = internal;
@@ -39,13 +25,6 @@ public final class SortedMessageList implements List<MessageInfo> {
         this(new ArrayList<>());
     }
 
-    /**
-     * Adds {@code message} to this internal in the right position in order to respect the contract explained previously.
-     * If this message already exists, it is removed automatically.
-     *
-     * @param message the non-null message to add to this internal
-     * @return true if {@code message} was added successfully
-     */
     public boolean add(@NonNull MessageInfo message) {
         internal.removeIf(entry -> message.id().equals(entry.message().id()));
         var initialSize = internal.size();
@@ -65,12 +44,6 @@ public final class SortedMessageList implements List<MessageInfo> {
         return new HashSet<>(internal).containsAll(c);
     }
 
-    /**
-     * Adds each entry of {@code internal} if no other entry in this internal has an jid that matches said entry's.
-     * Otherwise, it removes said entry and adds said entry.
-     *
-     * @param collection the internal to add to this internal
-     */
     public boolean addAll(@NonNull Collection<? extends MessageInfo> collection) {
         collection.forEach(this::add);
         return true;

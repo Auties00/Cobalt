@@ -3,8 +3,11 @@ package it.auties.whatsapp.util;
 import it.auties.whatsapp.model.contact.ContactJid;
 import lombok.NonNull;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
