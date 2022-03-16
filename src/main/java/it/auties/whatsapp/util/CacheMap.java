@@ -35,6 +35,11 @@ public class CacheMap<K, V> extends ConcurrentHashMap<K, V> {
         return result;
     }
 
+    public V putAndGetValue(K key, V value){
+        put(key, value);
+        return value;
+    }
+
     @Override
     public void putAll(Map<? extends K, ? extends V> map) {
         super.putAll(map);

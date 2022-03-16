@@ -29,10 +29,7 @@ import java.util.stream.Stream;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 
 /**
- * This class holds all the data regarding a session with WhatsappWeb's WebSocket.
- * It also provides various methods to query this data.
- * It should not be used by multiple sessions as, being a singleton, it cannot determine and divide data coming from different sessions.
- * It should not be initialized manually.
+ * This controller holds the user-related data regarding a WhatsappWeb session
  */
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 @Jacksonized

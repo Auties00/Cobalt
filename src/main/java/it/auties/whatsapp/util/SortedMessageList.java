@@ -85,9 +85,13 @@ public final class SortedMessageList implements List<MessageInfo> {
         return internal.toArray();
     }
 
+    @SuppressWarnings("SuspiciousToArrayCall")
     @Override
     public <T> T[] toArray(T[] a) {
-        throw new UnsupportedOperationException("Typed to array is not supported");
+        return internal.stream()
+                .map(HistorySyncMessage::message)
+                .toList()
+                .toArray(a);
     }
 
     public MessageInfo get(int index) {
@@ -123,12 +127,18 @@ public final class SortedMessageList implements List<MessageInfo> {
 
     @Override
     public ListIterator<MessageInfo> listIterator() {
-        throw new UnsupportedOperationException("List iterators are not supported");
+        return internal.stream()
+                .map(HistorySyncMessage::message)
+                .toList()
+                .listIterator();
     }
 
     @Override
     public ListIterator<MessageInfo> listIterator(int index) {
-        throw new UnsupportedOperationException("List iterators are not supported");
+        return internal.stream()
+                .map(HistorySyncMessage::message)
+                .toList()
+                .listIterator(index);
     }
 
     @Override
@@ -139,22 +149,29 @@ public final class SortedMessageList implements List<MessageInfo> {
                 .toList();
     }
 
+    @Override
     public int size() {
         return internal.size();
     }
 
+    @Override
     public Stream<MessageInfo> stream() {
-        return internal.stream().map(HistorySyncMessage::message);
+        return internal.stream()
+                .map(HistorySyncMessage::message);
     }
 
+    @Override
     public Stream<MessageInfo> parallelStream() {
-        return internal.parallelStream().map(HistorySyncMessage::message);
+        return internal.parallelStream()
+                .map(HistorySyncMessage::message);
     }
 
+    @Override
     public void forEach(Consumer<? super MessageInfo> consumer) {
         internal.forEach(entry -> consumer.accept(entry.message()));
     }
 
+    @Override
     public void clear() {
         internal.clear();
     }

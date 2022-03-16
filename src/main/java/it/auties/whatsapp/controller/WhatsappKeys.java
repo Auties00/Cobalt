@@ -30,8 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * This class is a data class used to hold the clientId, serverToken, clientToken, publicKey, privateKey, encryptionKey and macKey.
- * It can be serialized using Jackson and deserialized using the fromPreferences named constructor.
+ * This controller holds the cryptographic-related data regarding a WhatsappWeb session
  */
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder(access = AccessLevel.PROTECTED)
@@ -40,9 +39,9 @@ import java.util.concurrent.atomic.AtomicLong;
 @Accessors(fluent = true, chain = true)
 @Log
 @SuppressWarnings({"unused", "UnusedReturnValue"}) // Chaining
-public non-sealed class WhatsappKeys implements WhatsappController {
+public final class WhatsappKeys implements WhatsappController {
     /**
-     * The client jid
+     * The client id
      */
     @JsonProperty
     private int id;
@@ -121,6 +120,14 @@ public non-sealed class WhatsappKeys implements WhatsappController {
     private Map<SenderKeyName, SenderKeyDistributionMessage> receiverKeys = new ConcurrentHashMap<>();
 
     /**
+     * App state keys
+     */
+    @JsonProperty
+    @NonNull
+    @Default
+    private LinkedList<AppStateSyncKey> appStateKeys = new LinkedList<>();
+
+    /**
      * Sessions map
      */
     @JsonProperty
@@ -135,14 +142,6 @@ public non-sealed class WhatsappKeys implements WhatsappController {
     @NonNull
     @Default
     private Map<String, LTHashState> hashStates = new ConcurrentHashMap<>();
-
-    /**
-     * App state keys
-     */
-    @JsonProperty
-    @NonNull
-    @Default
-    private LinkedList<AppStateSyncKey> appStateKeys = new LinkedList<>();
 
     /**
      * Write counter for IV

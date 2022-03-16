@@ -49,7 +49,6 @@ import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.java.Log;
 
-import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
@@ -908,8 +907,8 @@ public class BinarySocket {
             if (isConversation(info)) {
                 var whatsappMessage = DeviceSentMessage.newDeviceSentMessage(info.chatJid().toString(), info.message());
                 var paddedMessage = BytesHelper.pad(ProtobufEncoder.encode(whatsappMessage));
-                return querySyncDevices(info.chatJid(), true)
-                        .thenCombineAsync(querySyncDevices(keys.companion().toUserJid(), true), this::joinContacts)
+                return querySyncDevices(info.chatJid())
+                        .thenCombineAsync(querySyncDevices(keys.companion().toUserJid()), this::joinContacts)
                         .thenComposeAsync(this::createSessions)
                         .thenApplyAsync(result -> createParticipantsSessions(result, paddedMessage))
                         .thenComposeAsync(participants -> encode(info, encodedMessage, participants, attributes))
@@ -921,24 +920,11 @@ public class BinarySocket {
             var signalMessage = sessionBuilder.createMessage(senderName);
             return groupsCache.getOptional(info.chatJid())
                     .map(CompletableFuture::completedFuture)
-                    .orElseGet(() -> cacheGroupMetadata(info))
+                    .orElseGet(() -> queryGroupMetadata(info.chatJid()))
+                    .thenApplyAsync(metadata -> groupsCache.putAndGetValue(metadata.jid(), metadata))
                     .thenComposeAsync(metadata -> getGroupParticipantsNodes(info, metadata, signalMessage))
                     .thenComposeAsync(participants -> encode(info, encodedMessage, participants, attributes))
                     .exceptionallyAsync(BinarySocket.this::handleError);
-        }
-
-        private CompletableFuture<List<Node>> getGroupParticipantsNodes(MessageInfo info, GroupMetadata metadata, SignalDistributionMessage message) {
-            return metadata.participants()
-                    .stream()
-                    .map(participant -> querySyncDevices(participant.jid(), false))
-                    .reduce(completedFuture(List.of()), (left, right) -> left.thenCombineAsync(right, this::joinContacts))
-                    .thenComposeAsync(contacts -> createDistributionMessage(info, message, contacts));
-        }
-
-        private List<ContactJid> joinContacts(List<ContactJid> first, List<ContactJid> second) {
-            return Stream.of(first, second)
-                    .flatMap(Collection::stream)
-                    .toList();
         }
 
         @SafeVarargs
@@ -971,6 +957,20 @@ public class BinarySocket {
             return send(request);
         }
 
+        private CompletableFuture<List<Node>> getGroupParticipantsNodes(MessageInfo info, GroupMetadata metadata, SignalDistributionMessage message) {
+            return metadata.participants()
+                    .stream()
+                    .map(participant -> querySyncDevices(participant.jid()))
+                    .reduce(completedFuture(List.of()), (left, right) -> left.thenCombineAsync(right, this::joinContacts))
+                    .thenComposeAsync(contacts -> createDistributionMessage(info, message, contacts));
+        }
+
+        private List<ContactJid> joinContacts(List<ContactJid> first, List<ContactJid> second) {
+            return Stream.of(first, second)
+                    .flatMap(Collection::stream)
+                    .toList();
+        }
+
         private boolean hasPreKeyMessage(List<Node> participants) {
             return participants.stream()
                     .map(Node::children)
@@ -983,17 +983,6 @@ public class BinarySocket {
         private boolean isConversation(MessageInfo info) {
             return info.chatJid().type() == ContactJid.Type.USER
                     || info.chatJid().type() == ContactJid.Type.STATUS;
-        }
-
-        @SneakyThrows
-        private CompletableFuture<GroupMetadata> cacheGroupMetadata(MessageInfo info) {
-            return queryGroupMetadata(info.chatJid())
-                    .thenApplyAsync(this::cacheMetadata);
-        }
-
-        private GroupMetadata cacheMetadata(GroupMetadata metadata) {
-            groupsCache.put(metadata.jid(), metadata);
-            return metadata;
         }
 
         private CompletableFuture<List<Node>> createDistributionMessage(MessageInfo info, SignalDistributionMessage signalMessage, List<ContactJid> participants) {
@@ -1058,7 +1047,7 @@ public class BinarySocket {
             );
         }
 
-        private CompletableFuture<List<ContactJid>> querySyncDevices(ContactJid contact, boolean ignoreZeroDevices) {
+        private CompletableFuture<List<ContactJid>> querySyncDevices(ContactJid contact) {
             var cachedDevices = devicesCache.getOptional(contact.user());
             if(cachedDevices.isPresent()){
                 return completedFuture(cachedDevices.get());
@@ -1069,37 +1058,37 @@ public class BinarySocket {
                     withChildren("query", withAttributes("devices", of("version", "2"))),
                     withChildren("list", withAttributes("user", of("jid", contact))));
             return sendQuery("get", "usync", body)
-                    .thenApplyAsync(response -> cacheSyncDevices(response, contact, ignoreZeroDevices));
+                    .thenApplyAsync(response -> saveSyncDevices(response, contact));
         }
 
-        private List<ContactJid> cacheSyncDevices(Node node, ContactJid contact, boolean excludeZeroDevices) {
+        private List<ContactJid> saveSyncDevices(Node node, ContactJid contact) {
             var contacts = node.children()
                     .stream()
                     .map(child -> child.findNode("list"))
                     .filter(Objects::nonNull)
                     .map(Node::children)
                     .flatMap(Collection::stream)
-                    .flatMap(wrapper -> parseDevices(wrapper, excludeZeroDevices))
+                    .flatMap(this::parseSyncDevices)
                     .toList();
             devicesCache.put(contact.user(), contacts);
             return contacts;
         }
 
-        private Stream<ContactJid> parseDevices(Node wrapper, boolean excludeZeroDevices) {
-            var jid = ContactJid.ofUser(wrapper.attributes().getString("jid"), ContactJid.Server.USER);
+        private Stream<ContactJid> parseSyncDevices(Node wrapper) {
+            var jid = wrapper.attributes().getJid("jid")
+                    .orElseThrow(() -> new NoSuchElementException("Missing jid for sync device"));
             return wrapper.findNode("devices")
                     .findNode("device-list")
                     .children()
                     .stream()
-                    .map(child -> parseDeviceId(child, jid, excludeZeroDevices))
+                    .map(child -> parseDeviceId(child, jid))
                     .flatMap(Optional::stream)
                     .map(id -> ContactJid.ofDevice(jid.user(), id));
         }
 
-        private Optional<Integer> parseDeviceId(Node child, ContactJid jid, boolean excludeZeroDevices) {
+        private Optional<Integer> parseDeviceId(Node child, ContactJid jid) {
             var deviceId = child.attributes().getInt("id");
             return child.description().equals("device")
-                    && (!excludeZeroDevices || deviceId != 0)
                     && (!jid.user().equals(keys.companion().user()) || keys.companion().device() != deviceId)
                     && (deviceId == 0 || child.attributes().hasKey("key-index")) ? Optional.of(deviceId) : Optional.empty();
         }
