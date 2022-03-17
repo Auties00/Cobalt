@@ -15,7 +15,7 @@ public record SessionAddress(String name, int deviceId) {
     @JsonValue
     @Override
     public String toString() {
-        return "%s.%s".formatted(name, deviceId);
+        return "%s.%s".formatted(name(), deviceId());
     }
 
     @Override

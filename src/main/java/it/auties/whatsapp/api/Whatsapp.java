@@ -501,8 +501,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> queryGroupsInCommon(@NonNull Contact contact) {
-        // Unknown
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -513,8 +512,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> queryFavouriteMessagesInChat(@NonNull Chat chat, int count) {
-        // Unknown
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -550,7 +548,7 @@ public class Whatsapp {
      * @throws IllegalArgumentException if the provided chat is not a group
      */
     public CompletableFuture<?> promote(@NonNull Chat group, @NonNull Contact... contacts) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -562,7 +560,7 @@ public class Whatsapp {
      * @throws IllegalArgumentException if the provided chat is not a group
      */
     public CompletableFuture<?> demote(@NonNull Chat group, @NonNull Contact... contacts) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -574,7 +572,7 @@ public class Whatsapp {
      * @throws IllegalArgumentException if the provided chat is not a group
      */
     public CompletableFuture<?> add(@NonNull Chat group, @NonNull Contact... contacts) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -586,7 +584,7 @@ public class Whatsapp {
      * @throws IllegalArgumentException if the provided chat is not a group
      */
     public CompletableFuture<?> remove(@NonNull Chat group, @NonNull Contact... contacts) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -600,7 +598,7 @@ public class Whatsapp {
      * @throws IllegalArgumentException if no jids are provided
      */
     public CompletableFuture<?> executeActionOnGroupParticipant(@NonNull Chat group, @NonNull GroupAction action, @NonNull List<Node> jids) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -613,7 +611,7 @@ public class Whatsapp {
      * @throws IllegalArgumentException if the provided new name is empty or blank
      */
     public CompletableFuture<?> changeGroupName(@NonNull Chat group, @NonNull String newName) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -625,7 +623,7 @@ public class Whatsapp {
      * @throws IllegalArgumentException if the provided chat is not a group
      */
     public CompletableFuture<?> changeGroupDescription(@NonNull Chat group, @NonNull String newDescription) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -637,7 +635,7 @@ public class Whatsapp {
      * @throws IllegalArgumentException if the provided chat is not a group
      */
     public CompletableFuture<?> changeWhoCanSendMessagesInGroup(@NonNull Chat group, @NonNull GroupPolicy policy) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -649,7 +647,7 @@ public class Whatsapp {
      * @throws IllegalArgumentException if the provided chat is not a group
      */
     public CompletableFuture<?> changeWhoCanEditGroupInfo(@NonNull Chat group, @NonNull GroupPolicy policy) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -662,7 +660,7 @@ public class Whatsapp {
      * @throws IllegalArgumentException if the provided chat is not a group
      */
     public CompletableFuture<?> changeGroupSetting(@NonNull Chat group, @NonNull GroupSetting setting, @NonNull GroupPolicy policy) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -675,7 +673,7 @@ public class Whatsapp {
      * @throws IllegalArgumentException if the provided chat is not a group
      */
     public CompletableFuture<?> changeGroupPicture(@NonNull Chat group, byte @NonNull [] image) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -686,7 +684,7 @@ public class Whatsapp {
      * @throws IllegalArgumentException if the provided chat is not a group
      */
     public CompletableFuture<?> removeGroupPicture(@NonNull Chat group) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -696,7 +694,7 @@ public class Whatsapp {
      * @throws IllegalArgumentException if the provided chat is not a group
      */
     public CompletableFuture<?> leave(@NonNull Chat group) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -706,7 +704,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> mute(@NonNull Chat chat) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -717,7 +715,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> mute(@NonNull Chat chat, @NonNull ZonedDateTime until) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -728,7 +726,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> mute(@NonNull Chat chat, long untilInSeconds) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -738,7 +736,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> unmute(@NonNull Chat chat) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -748,7 +746,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> block(@NonNull Contact contact) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -758,7 +756,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> enableEphemeralMessages(@NonNull Chat chat) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -768,7 +766,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> disableEphemeralMessages(@NonNull Chat chat) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -779,7 +777,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> changeEphemeralStatus(@NonNull Chat chat, int time) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -789,7 +787,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> markAsUnread(@NonNull Chat chat) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -799,7 +797,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> markAsRead(@NonNull Chat chat) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -814,7 +812,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> markChat(@NonNull Chat chat, int flag, int newFlag) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -828,7 +826,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> markChat(@NonNull Chat chat, @NonNull MessageInfo lastMessage, int flag, int newFlag) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -840,7 +838,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> pin(@NonNull Chat chat) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -850,7 +848,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> unpin(@NonNull Chat chat) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -861,7 +859,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> archive(@NonNull Chat chat) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -871,7 +869,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> unarchive(@NonNull Chat chat) {
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**

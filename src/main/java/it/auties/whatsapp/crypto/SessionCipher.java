@@ -218,6 +218,6 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
 
     private Session loadSession(Supplier<Session> defaultSupplier) {
         return keys.findSessionByAddress(address)
-                .orElseGet(() -> requireNonNull(defaultSupplier.get(), "Missing session for %s".formatted(address)));
+                .orElseGet(() -> requireNonNull(defaultSupplier.get(), "Missing session for %s. Known sessions: %s".formatted(address, keys.sessions())));
     }
 }

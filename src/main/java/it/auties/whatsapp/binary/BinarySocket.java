@@ -901,6 +901,12 @@ public class BinarySocket {
             this.devicesCache = new CacheMap<>();
         }
 
+        private List<ContactJid> joinContacts(List<ContactJid> first, List<ContactJid> second) {
+            return Stream.of(first, second)
+                    .flatMap(Collection::stream)
+                    .toList();
+        }
+
         @SafeVarargs
         public final CompletableFuture<Node> encode(MessageInfo info, Entry<String, Object>... attributes) {
             var encodedMessage = BytesHelper.pad(ProtobufEncoder.encode(info));
@@ -963,12 +969,6 @@ public class BinarySocket {
                     .map(participant -> querySyncDevices(participant.jid()))
                     .reduce(completedFuture(List.of()), (left, right) -> left.thenCombineAsync(right, this::joinContacts))
                     .thenComposeAsync(contacts -> createDistributionMessage(info, message, contacts));
-        }
-
-        private List<ContactJid> joinContacts(List<ContactJid> first, List<ContactJid> second) {
-            return Stream.of(first, second)
-                    .flatMap(Collection::stream)
-                    .toList();
         }
 
         private boolean hasPreKeyMessage(List<Node> participants) {

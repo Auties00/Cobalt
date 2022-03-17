@@ -21,12 +21,12 @@ public record SenderKeyName(String groupId, SessionAddress sender) {
 
   @Override
   public int hashCode() {
-    return Objects.hash(groupId);
+    return Objects.hash(groupId());
   }
 
   @JsonValue
   @Override
   public String toString() {
-    return "%s::%s".formatted(groupId(), sender);
+    return "%s::%s".formatted(groupId(), sender());
   }
 }

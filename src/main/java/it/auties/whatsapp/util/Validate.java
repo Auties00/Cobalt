@@ -1,5 +1,6 @@
 package it.auties.whatsapp.util;
 
+import lombok.Lombok;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 
@@ -15,12 +16,13 @@ public class Validate {
         isTrue(value, createThrowable(throwable, message.formatted(args)));
     }
 
-    public void isTrue(boolean value, @NonNull Throwable throwable) {
+    @SuppressWarnings("unchecked")
+    public <T extends Throwable> void isTrue(boolean value, @NonNull Throwable throwable) throws T {
         if (value) {
             return;
         }
 
-        throw sneakyThrow(throwable);
+        throw (T) throwable;
     }
 
     private Throwable createThrowable(Class<? extends Throwable> throwable, String formattedMessage) {
