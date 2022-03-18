@@ -43,9 +43,6 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
         var session = keys.findSessionByAddress(address)
                 .map(Session::closeCurrentState)
                 .orElseGet(Session::new);
-        if(session.currentState() != null){
-            session.closeCurrentState();
-        }
 
         session.addState(state);
         keys.addSession(address, session);

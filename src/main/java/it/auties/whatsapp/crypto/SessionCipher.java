@@ -20,6 +20,7 @@ import lombok.SneakyThrows;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import static it.auties.curve25519.Curve25519.calculateAgreement;
@@ -30,10 +31,11 @@ import static java.util.Objects.requireNonNull;
 public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) implements SignalSpecification {
     public Node encrypt(byte @NonNull [] data){
         var session = loadSession();
+        var currentState = session.currentState();
+
         Validate.isTrue(keys.hasTrust(address, session.currentState().remoteIdentityKey()),
                 "Untrusted key", SecurityException.class);
 
-        var currentState = session.currentState();
         var chain = currentState.findChain(currentState.ephemeralKeyPair().encodedPublicKey())
                 .orElseThrow(() -> new NoSuchElementException("Missing chain for %s".formatted(address)));
         fillMessageKeys(chain, chain.counter() + 1);
@@ -43,53 +45,56 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
                 .publicKey();
         var whisperKeys = Hkdf.deriveSecrets(currentKey,
                 "WhisperMessageKeys".getBytes(StandardCharsets.UTF_8));
-        chain.messageKeys().remove(chain.counter());
+        Objects.requireNonNull(chain.messageKeys().remove(chain.counter()),
+                "Cannot remove chain");
 
         var encryptedIv = Bytes.of(whisperKeys[2])
                 .cut(IV_LENGTH)
                 .toByteArray();
         var encrypted = AesCbc.encrypt(encryptedIv, data, whisperKeys[0]);
-        var encryptedMessage = encrypt(session, chain, whisperKeys, encrypted);
+
+        var encryptedMessage = encrypt(currentState, chain, whisperKeys, encrypted);
+        keys.addSession(address, session);
+
         return with("enc",
-                of("v", "2", "type", hasPreKey(session) ? "pkmsg" : "msg"), encryptedMessage);
+                of("v", "2", "type", currentState.hasPreKey() ? "pkmsg" : "msg"), encryptedMessage);
     }
 
-    private byte[] encrypt(Session session, SessionChain chain, byte[][] whisperKeys, byte[] encrypted) {
-        var ephemeralKey = session.currentState()
-                .ephemeralKeyPair()
-                .encodedPublicKey();
-        var message = new SignalMessage(ephemeralKey, chain.counter(), session.currentState().previousCounter(),
-                encrypted, encodedMessage -> createMessageSignature(session, whisperKeys, encodedMessage));
-        keys.addSession(address, session);
-        return hasPreKey(session) ? createPreKeyMessage(session, message)
+    private byte[] encrypt(SessionState state, SessionChain chain, byte[][] whisperKeys, byte[] encrypted) {
+        var message = new SignalMessage(
+                state.ephemeralKeyPair().encodedPublicKey(),
+                chain.counter(),
+                state.previousCounter(),
+                encrypted,
+                encodedMessage -> createMessageSignature(state, whisperKeys, encodedMessage)
+        );
+
+        return state.hasPreKey() ? createPreKeyMessage(state, message)
                 : message.serialized();
     }
 
-    private byte[] createPreKeyMessage(Session session, SignalMessage message) {
+    private byte[] createPreKeyMessage(SessionState state, SignalMessage message) {
         return SignalPreKeyMessage.builder()
+                .version(CURRENT_VERSION)
                 .identityKey(keys.identityKeyPair().encodedPublicKey())
                 .registrationId(keys.id())
-                .baseKey(session.currentState().pendingPreKey().baseKey())
-                .signedPreKeyId(session.currentState().pendingPreKey().signedPreKeyId())
-                .preKeyId(session.currentState().pendingPreKey().preKeyId())
+                .baseKey(state.pendingPreKey().baseKey())
+                .signedPreKeyId(state.pendingPreKey().signedKeyId())
                 .serializedSignalMessage(message.serialized())
+                .preKeyId(state.pendingPreKey().preKeyId())
                 .build()
                 .serialized();
     }
 
-    private byte[] createMessageSignature(Session session, byte[][] whisperKeys, byte[] encodedMessage) {
+    private byte[] createMessageSignature(SessionState state, byte[][] whisperKeys, byte[] encodedMessage) {
         var macInput = Bytes.of(keys.identityKeyPair().encodedPublicKey())
-                .append(session.currentState().remoteIdentityKey())
+                .append(state.remoteIdentityKey())
                 .append(encodedMessage)
                 .assertSize(encodedMessage.length + 33 + 33)
                 .toByteArray();
         return Bytes.of(Hmac.calculateSha256(macInput, whisperKeys[1]))
-                .cut(8)
+                .cut(MAC_LENGTH)
                 .toByteArray();
-    }
-
-    private boolean hasPreKey(Session session) {
-        return session.currentState().pendingPreKey() != null;
     }
 
     private void fillMessageKeys(SessionChain chain, int counter) {

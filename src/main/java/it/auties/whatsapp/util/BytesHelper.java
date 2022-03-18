@@ -34,6 +34,12 @@ public class BytesHelper {
        }
     }
 
+    public byte[] unpad(byte[] bytes){
+        return Bytes.of(bytes)
+                .cut(-bytes[bytes.length - 1])
+                .toByteArray();
+    }
+
     public byte[] pad(byte[] bytes){
         var padRandomByte = Keys.header();
         var padding = Bytes.newBuffer(padRandomByte)

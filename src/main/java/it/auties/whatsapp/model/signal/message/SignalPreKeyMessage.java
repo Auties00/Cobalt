@@ -5,10 +5,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.whatsapp.util.BytesHelper;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
@@ -52,15 +49,12 @@ public final class SignalPreKeyMessage implements SignalProtocolMessage{
 
     private byte[] serialized;
 
+    @SneakyThrows
     public static SignalPreKeyMessage ofSerialized(byte[] serialized) {
-        try {
-            return ProtobufDecoder.forType(SignalPreKeyMessage.class)
-                    .decode(Bytes.of(serialized).slice(1).toByteArray())
-                    .version(BytesHelper.deserialize(serialized[0]))
-                    .serialized(serialized);
-        } catch (IOException exception) {
-            throw new RuntimeException("Cannot decode PreKeySignalMessage", exception);
-        }
+        return ProtobufDecoder.forType(SignalPreKeyMessage.class)
+                .decode(Bytes.of(serialized).slice(1).toByteArray())
+                .version(BytesHelper.deserialize(serialized[0]))
+                .serialized(serialized);
     }
 
     public SignalMessage signalMessage(){

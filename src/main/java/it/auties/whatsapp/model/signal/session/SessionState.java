@@ -76,6 +76,10 @@ public class SessionState {
         return this;
     }
 
+    public boolean hasPreKey(){
+        return pendingPreKey != null;
+    }
+
     public boolean contentEquals(int version, byte[] baseKey){
         return version() == version
                 && Arrays.equals(baseKey(), baseKey);
@@ -84,5 +88,10 @@ public class SessionState {
     public boolean equals(Object other){
         return other instanceof SessionState that
                 && contentEquals(that.version(), that.baseKey());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(version(), Arrays.hashCode(baseKey()));
     }
 }

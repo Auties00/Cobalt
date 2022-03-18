@@ -901,22 +901,22 @@ public class BinarySocket {
             this.devicesCache = new CacheMap<>();
         }
 
-        private List<ContactJid> joinContacts(List<ContactJid> first, List<ContactJid> second) {
-            return Stream.of(first, second)
-                    .flatMap(Collection::stream)
-                    .toList();
-        }
-
         @SafeVarargs
         public final CompletableFuture<Node> encode(MessageInfo info, Entry<String, Object>... attributes) {
             var encodedMessage = BytesHelper.pad(ProtobufEncoder.encode(info));
             if (isConversation(info)) {
-                var whatsappMessage = DeviceSentMessage.newDeviceSentMessage(info.chatJid().toString(), info.message());
-                var paddedMessage = BytesHelper.pad(ProtobufEncoder.encode(whatsappMessage));
-                return querySyncDevices(info.chatJid())
-                        .thenCombineAsync(querySyncDevices(keys.companion().toUserJid()), this::joinContacts)
+                var message = BytesHelper.pad(ProtobufEncoder.encode(info));
+                var deviceMessage = BytesHelper.pad(ProtobufEncoder.encode(DeviceSentMessage.newDeviceSentMessage(info.chatJid().toString(), info.message())));
+
+                var companionFuture = querySyncDevices(keys.companion().toUserJid())
                         .thenComposeAsync(this::createSessions)
-                        .thenApplyAsync(result -> createParticipantsSessions(result, paddedMessage))
+                        .thenApplyAsync(result -> createParticipantsSessions(result, deviceMessage));
+
+                var destinationFuture = querySyncDevices(info.chatJid())
+                        .thenComposeAsync(this::createSessions)
+                        .thenApplyAsync(result -> createParticipantsSessions(result, message));
+
+                return destinationFuture.thenCombineAsync(companionFuture, this::append)
                         .thenComposeAsync(participants -> encode(info, encodedMessage, participants, attributes))
                         .exceptionallyAsync(BinarySocket.this::handleError);
             }
@@ -967,7 +967,7 @@ public class BinarySocket {
             return metadata.participants()
                     .stream()
                     .map(participant -> querySyncDevices(participant.jid()))
-                    .reduce(completedFuture(List.of()), (left, right) -> left.thenCombineAsync(right, this::joinContacts))
+                    .reduce(completedFuture(List.of()), (left, right) -> left.thenCombineAsync(right, this::append))
                     .thenComposeAsync(contacts -> createDistributionMessage(info, message, contacts));
         }
 
@@ -999,15 +999,15 @@ public class BinarySocket {
                     .thenApplyAsync(result -> createParticipantsSessions(result, paddedMessage));
         }
 
-        private List<Node> createParticipantsSessions(List<ContactJid> contacts, byte[] senderKeyMessage) {
+        private List<Node> createParticipantsSessions(List<ContactJid> contacts, byte[] message) {
             return contacts.stream()
-                    .map(contact -> createParticipantSession(senderKeyMessage, contact))
+                    .map(contact -> createParticipantSession(message, contact))
                     .toList();
         }
 
-        private Node createParticipantSession(byte[] senderKeyMessage, ContactJid contact) {
+        private Node createParticipantSession(byte[] message, ContactJid contact) {
             var cipher = new SessionCipher(contact.toSignalAddress(), keys);
-            var encrypted = cipher.encrypt(senderKeyMessage);
+            var encrypted = cipher.encrypt(message);
             return withChildren("to", of("jid", contact), encrypted);
         }
 
@@ -1142,7 +1142,9 @@ public class BinarySocket {
                     return;
                 }
 
-                info.message(decodeMessageContainer(buffer.get()));
+                var decodedMessage = ProtobufDecoder.forType(MessageContainer.class)
+                        .decode(BytesHelper.unpad(buffer.get()));
+                info.message(decodedMessage);
                 sendMessageAck(container, of("class", "receipt"));
                 sendReceipt(info.chatJid(), info.senderJid(),
                         List.of(info.key().id()), null);
@@ -1199,15 +1201,6 @@ public class BinarySocket {
                 streamHandler.handleFailure(400, "hmac_validation", "message_decoding");
                 return Optional.empty();
             }
-        }
-
-        @SneakyThrows
-        private MessageContainer decodeMessageContainer(byte[] buffer) {
-            var bufferWithNoPadding = Bytes.of(buffer)
-                    .cut(-buffer[buffer.length - 1])
-                    .toByteArray();
-            return ProtobufDecoder.forType(MessageContainer.class)
-                    .decode(bufferWithNoPadding);
         }
 
         private void saveMessage(MessageInfo info) {
@@ -1334,6 +1327,12 @@ public class BinarySocket {
                     .peek(message -> message.storeId(store.id()))
                     .forEach(oldChat.get().messages()::add);
             store.callListeners(listener -> listener.onChatRecentMessages(oldChat.get()));
+        }
+
+        private <T> List<T> append(List<T> first, List<T> second) {
+            return Stream.of(first, second)
+                    .flatMap(Collection::stream)
+                    .toList();
         }
     }
 
