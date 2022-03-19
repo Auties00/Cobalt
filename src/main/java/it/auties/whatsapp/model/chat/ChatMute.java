@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.chat;
 
 import it.auties.protobuf.annotation.ProtobufType;
+import it.auties.protobuf.encoder.ProtobufValueProvider;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.util.Clock;
 import lombok.NonNull;
@@ -16,7 +17,7 @@ import java.util.Optional;
  * @param endTimeStamp the end date of the mute associated with this object stored as second since {@link Instant#EPOCH}
  */
 @ProtobufType(long.class)
-public record ChatMute(long endTimeStamp) {
+public record ChatMute(long endTimeStamp) implements ProtobufValueProvider<Long> {
     /**
      * Not muted constant
      */
@@ -88,5 +89,10 @@ public record ChatMute(long endTimeStamp) {
      */
     public @NonNull Optional<ZonedDateTime> end() {
         return Clock.parse(endTimeStamp);
+    }
+
+    @Override
+    public Long value() {
+        return endTimeStamp;
     }
 }

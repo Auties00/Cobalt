@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import static it.auties.curve25519.Curve25519.calculateAgreement;
@@ -134,19 +135,24 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
 
     public byte[] decrypt(SignalMessage message) {
         var session = loadSession();
-        for(var state : session.states()){
-            try {
-                Validate.isTrue(keys.hasTrust(address, state.remoteIdentityKey()),
-                        "Untrusted key");
-                var result = decrypt(message, state);
-                keys.addSession(address, session);
-                return result;
-            }catch (Throwable ignored){
+        return session.states()
+                .stream()
+                .map(state -> decrypt(message, session, state))
+                .flatMap(Optional::stream)
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException("Cannot decrypt message: no suitable session found"));
+    }
 
-            }
+    private Optional<byte[]> decrypt(SignalMessage message, Session session, SessionState state) {
+        try {
+            Validate.isTrue(keys.hasTrust(address, state.remoteIdentityKey()),
+                    "Untrusted key");
+            var result = decrypt(message, state);
+            keys.addSession(address, session);
+            return Optional.of(result);
+        }catch (Throwable ignored){
+            return Optional.empty();
         }
-
-        throw new RuntimeException("Cannot decrypt message");
     }
 
     @SneakyThrows

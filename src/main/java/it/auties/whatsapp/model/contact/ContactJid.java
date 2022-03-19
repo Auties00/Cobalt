@@ -3,8 +3,10 @@ package it.auties.whatsapp.model.contact;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import it.auties.protobuf.annotation.ProtobufType;
+import it.auties.protobuf.encoder.ProtobufValueProvider;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
+import it.auties.whatsapp.util.Validate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -25,7 +27,7 @@ import java.util.Objects;
 @ProtobufType(String.class)
 @Builder
 @Log
-public record ContactJid(String user, @NonNull Server server, int device, int agent) {
+public record ContactJid(String user, @NonNull Server server, int device, int agent) implements ProtobufValueProvider<String> {
     /**
      * The official business account address
      */
@@ -44,7 +46,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      */
     @JsonCreator
     public static ContactJid ofUser(@NonNull String jid) {
-        return new ContactJid(withoutServer(jid), Server.forAddress(jid), 0, 0);
+        return ofUser(jid, Server.forAddress(jid));
     }
 
     /**
@@ -55,6 +57,8 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @return a non-null contact jid
      */
     public static ContactJid ofUser(String jid, @NonNull Server server) {
+        Validate.isTrue(jid == null || (!jid.contains(":") && !jid.contains("_")),
+                "Cannot create an user jid from a complex jid: %s", jid);
         return new ContactJid(withoutServer(jid), server, 0, 0);
     }
 
@@ -65,7 +69,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @return a non-null contact jid
      */
     public static ContactJid ofServer(@NonNull Server server) {
-        return new ContactJid(null, server, 0, 0);
+        return ofUser(null, server);
     }
 
     /**
@@ -199,6 +203,11 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
         var device = device() != 0 ? ":%s".formatted(device()) : "";
         var leading = "%s%s%s".formatted(user, agent, device);
         return leading.isEmpty() ? server().toString() : "%s@%s".formatted(leading, server());
+    }
+
+    @Override
+    public String value() {
+        return toString();
     }
 
     /**

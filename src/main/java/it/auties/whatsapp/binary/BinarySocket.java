@@ -866,18 +866,20 @@ public class BinarySocket {
                     .append(keys.identityKeyPair().publicKey())
                     .append(account.accountSignatureKey())
                     .toByteArray();
-            var deviceSignature = Curve25519.calculateSignature(keys.identityKeyPair().privateKey(), deviceSignatureMessage);
-            account.deviceSignature(deviceSignature);
-            var oldSignature = Arrays.copyOf(account.accountSignatureKey(), account.accountSignature().length);
+            account.deviceSignature(Curve25519.calculateSignature(keys.identityKeyPair().privateKey(), deviceSignatureMessage));
 
             var keyIndex = ProtobufDecoder.forType(DeviceIdentity.class)
                     .decode(account.details())
                     .keyIndex();
-            var identityNode = with("device-identity", of("key-index", valueOf(keyIndex)), ProtobufEncoder.encode(account.accountSignatureKey(null)));
-            var content = withChildren("pair-device-sign", identityNode);
+
+            var oldSignature = Arrays.copyOf(account.accountSignatureKey(), account.accountSignature().length);
+            var devicePairNode = withChildren("pair-device-sign",
+                    with("device-identity",
+                            of("key-index", valueOf(keyIndex)),
+                            ProtobufEncoder.encode(account.accountSignatureKey(null))));
 
             keys.companionIdentity(account.accountSignatureKey(oldSignature));
-            sendConfirmNode(node, content);
+            sendConfirmNode(node, devicePairNode);
         }
 
         private void sendConfirmNode(Node node, Node content) {
@@ -903,7 +905,6 @@ public class BinarySocket {
 
         @SafeVarargs
         public final CompletableFuture<Node> encode(MessageInfo info, Entry<String, Object>... attributes) {
-            var encodedMessage = BytesHelper.pad(ProtobufEncoder.encode(info));
             if (isConversation(info)) {
                 var message = BytesHelper.pad(ProtobufEncoder.encode(info));
                 var deviceMessage = BytesHelper.pad(ProtobufEncoder.encode(DeviceSentMessage.newDeviceSentMessage(info.chatJid().toString(), info.message())));
@@ -917,7 +918,7 @@ public class BinarySocket {
                         .thenApplyAsync(result -> createParticipantsSessions(result, message));
 
                 return destinationFuture.thenCombineAsync(companionFuture, this::append)
-                        .thenComposeAsync(participants -> encode(info, encodedMessage, participants, attributes))
+                        .thenComposeAsync(participants -> encode(info, participants, attributes))
                         .exceptionallyAsync(BinarySocket.this::handleError);
             }
 
@@ -929,17 +930,17 @@ public class BinarySocket {
                     .orElseGet(() -> queryGroupMetadata(info.chatJid()))
                     .thenApplyAsync(metadata -> groupsCache.putAndGetValue(metadata.jid(), metadata))
                     .thenComposeAsync(metadata -> getGroupParticipantsNodes(info, metadata, signalMessage))
-                    .thenComposeAsync(participants -> encode(info, encodedMessage, participants, attributes))
+                    .thenComposeAsync(participants -> encode(info, participants, attributes))
                     .exceptionallyAsync(BinarySocket.this::handleError);
         }
 
         @SafeVarargs
-        private CompletableFuture<Node> encode(MessageInfo info, byte[] encodedMessage, List<Node> participants, Entry<String, Object>... metadata) {
+        private CompletableFuture<Node> encode(MessageInfo info, List<Node> participants, Entry<String, Object>... metadata) {
             var body = new ArrayList<Node>();
             if (!isConversation(info)) {
                 var senderName = new SenderKeyName(info.chatJid().toString(), keys.companion().toSignalAddress());
                 var groupCipher = new GroupCipher(senderName, keys);
-                var cipheredMessage = groupCipher.encrypt(encodedMessage);
+                var cipheredMessage = groupCipher.encrypt(BytesHelper.pad(ProtobufEncoder.encode(info)));
                 body.add(with("enc", of("v", "2", "type", "skmsg"), cipheredMessage));
             }
 
