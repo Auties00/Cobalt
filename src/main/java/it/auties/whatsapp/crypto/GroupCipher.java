@@ -1,6 +1,7 @@
 package it.auties.whatsapp.crypto;
 
 import it.auties.whatsapp.controller.WhatsappKeys;
+import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.signal.sender.SenderKeyMessage;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
 import it.auties.whatsapp.model.signal.sender.SenderKeyState;
@@ -10,8 +11,11 @@ import lombok.NonNull;
 
 import java.util.NoSuchElementException;
 
+import static it.auties.whatsapp.model.request.Node.with;
+import static java.util.Map.of;
+
 public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys keys) {
-    public byte[] encrypt(byte[] data) {
+    public Node encrypt(byte[] data) {
         var record = keys.findSenderKeyByName(name)
                 .orElseThrow(() -> new NoSuchElementException("Missing record for name: %s".formatted(name)));
         var messageKey = record.currentState()
@@ -33,7 +37,8 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys key
         var next = record.currentState().chainKey().next();
         record.currentState().chainKey(next);
         keys.addSenderKey(name, record);
-        return senderKeyMessage.serialized();
+        return with("enc", of("v", "2", "type", "skmsg"),
+                senderKeyMessage.serialized());
     }
 
     public byte[] decrypt(byte[] data) {

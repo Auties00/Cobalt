@@ -114,8 +114,8 @@ public final class BinaryDecoder {
 
     private ContactJid readJidPair() {
         return switch (read(true)) {
-            case String encoded -> ContactJid.ofUser(encoded, forAddress(readString()));
-            case null -> ContactJid.ofUser(null, forAddress(readString()));
+            case String encoded -> ContactJid.of(encoded, forAddress(readString()));
+            case null -> ContactJid.ofServer(forAddress(readString()));
             default -> throw new RuntimeException("Invalid jid type");
         };
     }

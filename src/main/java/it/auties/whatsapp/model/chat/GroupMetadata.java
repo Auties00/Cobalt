@@ -50,7 +50,7 @@ public class GroupMetadata {
     public static GroupMetadata of(@NonNull Node node){
         var groupId = node.attributes()
                 .getOptionalString("id")
-                .map(id -> ContactJid.ofUser(id, ContactJid.Server.GROUP))
+                .map(id -> ContactJid.of(id, ContactJid.Server.GROUP))
                 .orElseThrow(() -> new NoSuchElementException("Missing group jid"));
         var subject = node.attributes().getString("subject");
         var subjectTimestamp = Clock.parse(node.attributes().getLong("s_t"))

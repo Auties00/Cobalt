@@ -6,7 +6,6 @@ import it.auties.protobuf.annotation.ProtobufType;
 import it.auties.protobuf.encoder.ProtobufValueProvider;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
-import it.auties.whatsapp.util.Validate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,7 +14,6 @@ import lombok.experimental.Accessors;
 import lombok.extern.java.Log;
 
 import java.util.Arrays;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 
 /**
@@ -45,8 +43,8 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @return a non-null contact jid
      */
     @JsonCreator
-    public static ContactJid ofUser(@NonNull String jid) {
-        return ofUser(jid, Server.forAddress(jid));
+    public static ContactJid of(@NonNull String jid) {
+        return of(jid, Server.forAddress(jid));
     }
 
     /**
@@ -56,9 +54,26 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @param server the non-null custom server
      * @return a non-null contact jid
      */
-    public static ContactJid ofUser(String jid, @NonNull Server server) {
-        Validate.isTrue(jid == null || (!jid.contains(":") && !jid.contains("_")),
-                "Cannot create an user jid from a complex jid: %s", jid);
+    public static ContactJid of(String jid, @NonNull Server server) {
+        var complexUser = withoutServer(jid);
+        if(complexUser.contains(":")){
+            var simpleUser = complexUser.split(":", 2);
+            var user = simpleUser[0];
+            var device = Integer.parseUnsignedInt(simpleUser[1]);
+            if(user.contains("_")){
+                var simpleUserAgent = user.split("_", 2);
+                var agent = Integer.parseUnsignedInt(simpleUserAgent[1]);
+                return new ContactJid(simpleUserAgent[0], server, device, agent);
+            }
+
+            return new ContactJid(user, server, device, 0);
+        }
+
+        if(complexUser.contains("_")){
+            var simpleUserAgent = complexUser.split("_", 2);
+            return new ContactJid(simpleUserAgent[0], server, 0, Integer.parseUnsignedInt(simpleUserAgent[1]));
+        }
+
         return new ContactJid(withoutServer(jid), server, 0, 0);
     }
 
@@ -69,7 +84,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @return a non-null contact jid
      */
     public static ContactJid ofServer(@NonNull Server server) {
-        return ofUser(null, server);
+        return of(null, server);
     }
 
     /**
@@ -146,7 +161,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @return a non-null jid
      */
     public ContactJid toUserJid(){
-        return ofUser(user(), Server.WHATSAPP);
+        return of(user(), Server.WHATSAPP);
     }
 
     /**
@@ -314,7 +329,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
             return Arrays.stream(values())
                     .filter(entry -> address != null && address.endsWith(entry.address()))
                     .findFirst()
-                    .orElseThrow(() -> new NoSuchElementException("No known server matches %s".formatted(address)));
+                    .orElse(WHATSAPP); // FIXME: 22/03/2022 TESTING ONLY!!!!
         }
 
         @Override

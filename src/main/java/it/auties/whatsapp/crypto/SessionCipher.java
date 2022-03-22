@@ -44,17 +44,17 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         var currentKey = chain.messageKeys()
                 .get(chain.counter())
                 .publicKey();
-        var whisperKeys = Hkdf.deriveSecrets(currentKey,
+        var secrets = Hkdf.deriveSecrets(currentKey,
                 "WhisperMessageKeys".getBytes(StandardCharsets.UTF_8));
         Objects.requireNonNull(chain.messageKeys().remove(chain.counter()),
                 "Cannot remove chain");
 
-        var encryptedIv = Bytes.of(whisperKeys[2])
+        var iv = Bytes.of(secrets[2])
                 .cut(IV_LENGTH)
                 .toByteArray();
-        var encrypted = AesCbc.encrypt(encryptedIv, data, whisperKeys[0]);
+        var encrypted = AesCbc.encrypt(iv, data, secrets[0]);
 
-        var encryptedMessage = encrypt(currentState, chain, whisperKeys, encrypted);
+        var encryptedMessage = encrypt(currentState, chain, secrets, encrypted);
         keys.addSession(address, session);
 
         return with("enc",

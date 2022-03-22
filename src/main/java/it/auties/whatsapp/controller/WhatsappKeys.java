@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * This controller holds the cryptographic-related data regarding a WhatsappWeb session
  */
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
-@Builder(access = AccessLevel.PROTECTED)
+@Builder // FIXME: 22/03/2022 (access = AccessLevel.PROTECTED) TESTING ONLY!!!
 @Jacksonized
 @Data
 @Accessors(fluent = true, chain = true)

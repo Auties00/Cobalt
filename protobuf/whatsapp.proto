@@ -1,5 +1,4 @@
 syntax = "proto2";
-package proto;
 
 message AppVersion {
     optional uint32 primary = 1;
