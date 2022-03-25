@@ -45,7 +45,7 @@ import java.util.Optional;
  */
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
+@Builder(builderMethodName = "newMessageContainer", buildMethodName = "create")
 @Accessors(fluent = true)
 public class MessageContainer { // TODO: Find a way to refactor this while keeping compatibility with Whatsapp
   @JsonProperty("1")
@@ -334,9 +334,9 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
    * @param <T> the type of the message
    */
   public static <T extends Message> MessageContainer ofViewOnce(@NonNull T message){
-    return MessageContainer.builder()
+    return MessageContainer.newMessageContainer()
             .viewOnce(message)
-            .build();
+            .create();
   }
 
   /**
@@ -346,9 +346,20 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
    * @param <T> the type of the message
    */
   public static <T extends Message> MessageContainer ofEphemeral(@NonNull T message){
-    return MessageContainer.builder()
+    return MessageContainer.newMessageContainer()
             .ephemeral(message)
-            .build();
+            .create();
+  }
+
+  /**
+   * Constructs a new MessageContainer from a text message with no context
+   *
+   * @param message the text message with no context
+   */
+  public static MessageContainer ofConversation(@NonNull String message){
+    return MessageContainer.newMessageContainer()
+            .textWithNoContext(message)
+            .create();
   }
 
   /**

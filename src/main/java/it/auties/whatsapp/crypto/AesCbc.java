@@ -17,7 +17,7 @@ public class AesCbc {
     private final String AES = "AES";
     private final int AES_BLOCK_SIZE = 16;
 
-    public byte[] encrypt(byte [] plaintext, byte[] key) {
+    public byte[] encrypt(byte[] plaintext, byte[] key) {
         return encrypt(ofRandom(AES_BLOCK_SIZE).toByteArray(), plaintext, key);
     }
 

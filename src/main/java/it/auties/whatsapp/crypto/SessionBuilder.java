@@ -15,37 +15,47 @@ import lombok.SneakyThrows;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+import java.util.concurrent.Semaphore;
 
 import static it.auties.curve25519.Curve25519.calculateAgreement;
 
 public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) implements SignalSpecification {
+    private static final Semaphore OUTGOING_SEMAPHORE = new Semaphore(1);
+
     public void createOutgoing(int id, byte[] identityKey, SignalSignedKeyPair signedPreKey, SignalSignedKeyPair preKey){
-        Validate.isTrue(keys.hasTrust(address, identityKey),
-                "Untrusted key", SecurityException.class);
-        Validate.isTrue(Curve25519.verifySignature(Keys.withoutHeader(identityKey), signedPreKey.keyPair().encodedPublicKey(), signedPreKey.signature()),
-                "Signature mismatch", SecurityException.class);
+        try {
+            OUTGOING_SEMAPHORE.acquire();
+            Validate.isTrue(keys.hasTrust(address, identityKey),
+                    "Untrusted key", SecurityException.class);
+            Validate.isTrue(Curve25519.verifySignature(Keys.withoutHeader(identityKey), signedPreKey.keyPair().encodedPublicKey(), signedPreKey.signature()),
+                    "Signature mismatch", SecurityException.class);
 
-        var baseKey = SignalKeyPair.random();
-        var state = createState(
-                true,
-                baseKey,
-                null,
-                identityKey,
-                preKey == null ? null : preKey.keyPair().encodedPublicKey(),
-                signedPreKey.keyPair().encodedPublicKey(),
-                id,
-                CURRENT_VERSION
-        );
+            var baseKey = SignalKeyPair.random();
+            var state = createState(
+                    true,
+                    baseKey,
+                    null,
+                    identityKey,
+                    preKey == null ? null : preKey.keyPair().encodedPublicKey(),
+                    signedPreKey.keyPair().encodedPublicKey(),
+                    id,
+                    CURRENT_VERSION
+            );
 
-        var pendingPreKey = new SessionPreKey(preKey == null ? 0 : preKey.id(), baseKey.encodedPublicKey(), signedPreKey.id());
-        state.pendingPreKey(pendingPreKey);
+            var pendingPreKey = new SessionPreKey(preKey == null ? 0 : preKey.id(), baseKey.encodedPublicKey(), signedPreKey.id());
+            state.pendingPreKey(pendingPreKey);
 
-        var session = keys.findSessionByAddress(address)
-                .map(Session::closeCurrentState)
-                .orElseGet(Session::new);
+            var session = keys.findSessionByAddress(address)
+                    .map(Session::closeCurrentState)
+                    .orElseGet(Session::new);
 
-        session.addState(state);
-        keys.addSession(address, session);
+            session.addState(state);
+            keys.addSession(address, session);
+        }catch (Throwable throwable){
+            throw new RuntimeException("Cannot create outgoing: an exception occured", throwable);
+        }finally {
+            OUTGOING_SEMAPHORE.release();
+        }
     }
 
     public void createIncoming(Session session, SignalPreKeyMessage message){
@@ -59,7 +69,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
         var preKeyPair = keys.findPreKeyById(message.preKeyId())
                 .orElse(null);
         Validate.isTrue(message.preKeyId() == 0 || preKeyPair != null,
-                "Invalid pre key id: %s", message.preKeyId());
+                "Invalid pre key id: %s", SecurityException.class, message.preKeyId());
 
         var signedPreKeyPair = keys.findSignedKeyPairById(message.signedPreKeyId());
         session.closeCurrentState();
@@ -122,7 +132,8 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
         var initSecret = calculateAgreement(Keys.withoutHeader(theirSignedPubKey), state.ephemeralKeyPair().privateKey());
         var initKey = Hkdf.deriveSecrets(initSecret, state.rootKey(),
                 "WhisperRatchet".getBytes(StandardCharsets.UTF_8));
-        var chain = new SessionChain(-1, masterKey[1], state.ephemeralKeyPair().encodedPublicKey());
-        return state.addChain(chain).rootKey(initKey[0]);
+        var chain = new SessionChain(-1, masterKey[1]);
+        return state.addChain(state.ephemeralKeyPair().encodedPublicKey(), chain)
+                .rootKey(initKey[0]);
     }
 }

@@ -24,15 +24,12 @@ public class SessionChain {
     @JsonProperty("key")
     private byte[] key;
 
-    @JsonProperty("owner")
-    private byte[] owner;
-
     @JsonProperty("message_keys")
     @NonNull
     private Map<Integer, SignalPreKeyPair> messageKeys;
 
-    public SessionChain(int counter, @NonNull byte[] key, @NonNull byte[] owner) {
-        this(counter, key, owner, new HashMap<>());
+    public SessionChain(int counter, @NonNull byte[] key) {
+        this(counter, key, new HashMap<>());
     }
 
     public boolean hasMessageKey(int counter){

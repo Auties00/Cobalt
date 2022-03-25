@@ -9,8 +9,9 @@ import java.util.Objects;
 public record SenderKeyName(String groupId, SessionAddress sender) {
   @JsonCreator
   public static SenderKeyName of(String serialized){
-    var split = serialized.split("::", 2);
-    return new SenderKeyName(split[0], SessionAddress.of(split[1]));
+    var split = serialized.split("::", 3);
+    var address = new SessionAddress(split[1], Integer.parseUnsignedInt( split[2]));
+    return new SenderKeyName(split[0], address);
   }
 
   @Override
@@ -27,6 +28,6 @@ public record SenderKeyName(String groupId, SessionAddress sender) {
   @JsonValue
   @Override
   public String toString() {
-    return "%s::%s".formatted(groupId(), sender());
+    return "%s::%s::%s".formatted(groupId(), sender().name(), sender().deviceId());
   }
 }

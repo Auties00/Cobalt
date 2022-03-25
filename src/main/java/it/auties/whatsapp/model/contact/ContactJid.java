@@ -56,6 +56,10 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      */
     public static ContactJid of(String jid, @NonNull Server server) {
         var complexUser = withoutServer(jid);
+        if (complexUser == null) {
+            return new ContactJid(null, server, 0, 0);
+        }
+
         if(complexUser.contains(":")){
             var simpleUser = complexUser.split(":", 2);
             var user = simpleUser[0];
@@ -74,7 +78,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
             return new ContactJid(simpleUserAgent[0], server, 0, Integer.parseUnsignedInt(simpleUserAgent[1]));
         }
 
-        return new ContactJid(withoutServer(jid), server, 0, 0);
+        return new ContactJid(complexUser, server, 0, 0);
     }
 
     /**

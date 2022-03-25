@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.signal.session;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.OptBoolean;
+import it.auties.bytes.Bytes;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import lombok.*;
 import lombok.Builder.Default;
@@ -44,7 +45,7 @@ public class SessionState {
     @JsonProperty("chains")
     @NonNull
     @Default
-    private List<SessionChain> chains = new ArrayList<>();
+    private Map<String, SessionChain> chains = new HashMap<>();
 
     @JsonProperty("pending_pre_key")
     private SessionPreKey pendingPreKey;
@@ -56,23 +57,21 @@ public class SessionState {
     private boolean closed;
 
     public boolean hasChain(byte[] senderEphemeral) {
-        return chains.stream()
-                .anyMatch(receiverChain -> Arrays.equals(senderEphemeral, receiverChain.owner()));
+        return chains.containsKey(Bytes.of(senderEphemeral).toHex());
     }
 
     public Optional<SessionChain> findChain(byte[] senderEphemeral) {
-        return chains.stream()
-                .filter(receiverChain -> Arrays.equals(senderEphemeral, receiverChain.owner()))
-                .findFirst();
+        return Optional.ofNullable(chains.get(Bytes.of(senderEphemeral).toHex()));
     }
 
-    public SessionState addChain(SessionChain chain) {
-        chains.add(chain);
-        if (chains().size() <= MAX_SESSIONS) {
-            return this;
-        }
+    public SessionState addChain(byte[] senderEphemeral, SessionChain chain) {
+        chains.put(Bytes.of(senderEphemeral).toHex(), chain);
+        return this;
+    }
 
-        chains.remove(0);
+    public SessionState removeChain(byte[] senderEphemeral) {
+        Objects.requireNonNull(chains.remove(Bytes.of(senderEphemeral).toHex()),
+                "Cannot remove chain");
         return this;
     }
 

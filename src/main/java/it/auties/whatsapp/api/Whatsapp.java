@@ -252,7 +252,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJid chat, @NonNull String message) {
-        return sendMessage(chat, new TextMessage(message));
+        return sendMessage(chat, TextMessage.of(message));
     }
 
     /**
@@ -276,7 +276,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJid chat, @NonNull String message, @NonNull MessageInfo quotedMessage) {
-        return sendMessage(chat, new TextMessage(message), quotedMessage);
+        return sendMessage(chat, TextMessage.of(message), quotedMessage);
     }
 
     /**

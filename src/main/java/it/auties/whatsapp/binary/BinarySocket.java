@@ -77,6 +77,8 @@ import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.stream.Collectors.partitioningBy;
+import static java.util.stream.Collectors.toUnmodifiableSet;
 
 @Accessors(fluent = true)
 @ClientEndpoint(configurator = BinarySocket.OriginPatcher.class)
@@ -290,7 +292,8 @@ public class BinarySocket {
 
     @SafeVarargs
     public final CompletableFuture<Node> sendMessage(MessageInfo info, Entry<String, Object>... metadata){
-        return messageHandler.encode(info, metadata);
+        return messageHandler.encode(info, metadata)
+                .thenComposeAsync(this::send);
     }
 
     public CompletableFuture<Node> sendQuery(String method, String category, Node... body){
@@ -908,14 +911,10 @@ public class BinarySocket {
             if (isConversation(info)) {
                 var message = BytesHelper.pad(ProtobufEncoder.encode(info.message()));
                 var deviceMessage = BytesHelper.pad(ProtobufEncoder.encode(DeviceSentMessage.newDeviceSentMessage(info.chatJid().toString(), info.message())));
-                var companionFuture = querySyncDevices(keys.companion().toUserJid())
-                        .thenComposeAsync(this::createSessions)
-                        .thenApplyAsync(result -> createParticipantsSessions(result, deviceMessage));
-                var destinationFuture = querySyncDevices(info.chatJid())
-                        .thenComposeAsync(this::createSessions)
-                        .thenApplyAsync(result -> createParticipantsSessions(result, message));
-                return destinationFuture.thenCombineAsync(companionFuture, this::append)
-                        .thenComposeAsync(participants -> encode(info, participants, null, attributes))
+                return querySyncDevices(keys.companion().toUserJid())
+                        .thenCombineAsync(querySyncDevices(info.chatJid()), this::append)
+                        .thenComposeAsync(result -> createDistinctSessions(result, message, deviceMessage))
+                        .thenApplyAsync(participants -> prepareMessageNode(info, participants, null, attributes))
                         .exceptionallyAsync(BinarySocket.this::handleError);
             }
 
@@ -929,12 +928,12 @@ public class BinarySocket {
                     .orElseGet(() -> queryGroupMetadata(info.chatJid()))
                     .thenApplyAsync(metadata -> groupsCache.putAndGetValue(metadata.jid(), metadata))
                     .thenComposeAsync(metadata -> getGroupParticipantsNodes(info, metadata, groupSignalMessage))
-                    .thenComposeAsync(participants -> encode(info, participants, groupWhatsappMessage, attributes))
+                    .thenApplyAsync(participants -> prepareMessageNode(info, participants, groupWhatsappMessage, attributes))
                     .exceptionallyAsync(BinarySocket.this::handleError);
         }
 
         @SafeVarargs
-        private CompletableFuture<Node> encode(MessageInfo info, List<Node> participants, Node descriptor, Entry<String, Object>... metadata) {
+        private Node prepareMessageNode(MessageInfo info, List<Node> participants, Node descriptor, Entry<String, Object>... metadata) {
             var body = new ArrayList<Node>();
             if(descriptor != null){
                 body.add(descriptor);
@@ -953,11 +952,7 @@ public class BinarySocket {
                     .put("type", "text")
                     .put("to", info.chatJid())
                     .map();
-            var request = withChildren("message", attributes, body);
-            Validate.isTrue(request.content() != null,
-                    "Missing message content",
-                    IllegalArgumentException.class);
-            return send(request);
+            return withChildren("message", attributes, body);
         }
 
         private CompletableFuture<List<Node>> getGroupParticipantsNodes(MessageInfo info, GroupMetadata metadata, SignalDistributionMessage message) {
@@ -985,37 +980,47 @@ public class BinarySocket {
         private CompletableFuture<List<Node>> createDistributionMessage(MessageInfo info, SignalDistributionMessage signalMessage, List<ContactJid> participants) {
             var missingParticipants= participants.stream()
                     .filter(participant -> !keys.hasSession(participant.toSignalAddress()))
-                    .toList();
+                    .collect(toUnmodifiableSet());
             if(missingParticipants.isEmpty()){
                 return completedFuture(List.of());
             }
 
             var whatsappMessage = new SenderKeyDistributionMessage(info.chatJid().toString(), signalMessage.serialized());
             var paddedMessage = BytesHelper.pad(ProtobufEncoder.encode(whatsappMessage));
-            return createSessions(missingParticipants)
-                    .thenApplyAsync(result -> createParticipantsSessions(result, paddedMessage));
+            return createSessions(missingParticipants, paddedMessage);
         }
 
-        private List<Node> createParticipantsSessions(List<ContactJid> contacts, byte[] message) {
-            return contacts.stream()
-                    .map(contact -> createParticipantSession(message, contact))
-                    .toList();
+        private CompletableFuture<List<Node>> createDistinctSessions(List<ContactJid> contacts, byte[] message, byte[] deviceMessage) {
+            var mapped = contacts.stream()
+                    .collect(partitioningBy(contact -> contact.toUserJid().contentEquals(keys.companion().toUserJid()), toUnmodifiableSet()));
+            return createSessions(mapped.get(true), deviceMessage)
+                    .thenCombineAsync(createSessions(mapped.get(false), message), this::append);
         }
-
-        private Node createParticipantSession(byte[] message, ContactJid contact) {
-            var cipher = new SessionCipher(contact.toSignalAddress(), keys);
-            var encrypted = cipher.encrypt(message);
-            return withChildren("to", of("jid", contact), encrypted);
-        }
-
-        private CompletableFuture<List<ContactJid>> createSessions(List<ContactJid> contacts) {
-            var nodes = contacts.stream()
+        private CompletableFuture<List<Node>> createSessions(Set<ContactJid> contacts, byte[] message) {
+            var missingSessions = contacts.stream()
                     .filter(contact -> !keys.hasSession(contact.toSignalAddress()))
                     .map(contact -> withAttributes("user", of("jid", contact, "reason", "identity")))
                     .toList();
-            return nodes.isEmpty() ? completedFuture(contacts) : sendQuery("get", "encrypt", withChildren("key", nodes))
+            if(missingSessions.isEmpty()){
+                return CompletableFuture.completedFuture(createSessionsWithoutSync(contacts, message));
+            }
+
+            return sendQuery("get", "encrypt", withChildren("key", missingSessions))
                     .thenAcceptAsync(this::parseSessions)
-                    .thenCompose(result -> completedFuture(contacts));
+                    .thenComposeAsync(result -> completedFuture(contacts))
+                    .thenApplyAsync(ignored -> createSessionsWithoutSync(contacts, message));
+        }
+
+        private List<Node> createSessionsWithoutSync(Set<ContactJid> contacts, byte[] message) {
+            return contacts.stream()
+                    .map(contact -> createSession(contact, message))
+                    .toList();
+        }
+
+        private Node createSession(ContactJid contact, byte[] message) {
+            var cipher = new SessionCipher(contact.toSignalAddress(), keys);
+            var encrypted = cipher.encrypt(message);
+            return withChildren("to", of("jid", contact), encrypted);
         }
 
         private void parseSessions(Node result) {

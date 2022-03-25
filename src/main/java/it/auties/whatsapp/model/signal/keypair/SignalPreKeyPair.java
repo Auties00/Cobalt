@@ -6,6 +6,12 @@ import it.auties.whatsapp.util.Keys;
 import lombok.NonNull;
 
 public record SignalPreKeyPair(int id, byte @NonNull [] publicKey, byte[] privateKey) implements ISignalKeyPair{
+    public SignalPreKeyPair(int id, byte[] publicKey, byte[] privateKey){
+        this.id = id;
+        this.publicKey = Keys.withoutHeader(publicKey);
+        this.privateKey = privateKey;
+    }
+
     public static SignalPreKeyPair ofIndex(int index){
         var keyPair = SignalKeyPair.random();
         return new SignalPreKeyPair(index, keyPair.publicKey(), keyPair.privateKey());

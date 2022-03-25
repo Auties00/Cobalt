@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.Semaphore;
 import java.util.function.Supplier;
 
 import static it.auties.curve25519.Curve25519.calculateAgreement;
@@ -30,35 +31,46 @@ import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 
 public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) implements SignalSpecification {
+    private static final Semaphore ENCRYPTION_SEMAPHORE = new Semaphore(1);
+
     public Node encrypt(byte @NonNull [] data){
-        var session = loadSession();
-        var currentState = session.currentState();
+        try {
+            ENCRYPTION_SEMAPHORE.acquire();
+            var session = loadSession();
+            var currentState = session.currentState();
 
-        Validate.isTrue(keys.hasTrust(address, session.currentState().remoteIdentityKey()),
-                "Untrusted key", SecurityException.class);
+            Validate.isTrue(keys.hasTrust(address, session.currentState().remoteIdentityKey()),
+                    "Untrusted key", SecurityException.class);
 
-        var chain = currentState.findChain(currentState.ephemeralKeyPair().encodedPublicKey())
-                .orElseThrow(() -> new NoSuchElementException("Missing chain for %s".formatted(address)));
-        fillMessageKeys(chain, chain.counter() + 1);
+            var chain = currentState.findChain(currentState.ephemeralKeyPair().encodedPublicKey())
+                    .orElseThrow(() -> new NoSuchElementException("Missing chain for %s".formatted(address)));
+            fillMessageKeys(chain, chain.counter() + 1);
 
-        var currentKey = chain.messageKeys()
-                .get(chain.counter())
-                .publicKey();
-        var secrets = Hkdf.deriveSecrets(currentKey,
-                "WhisperMessageKeys".getBytes(StandardCharsets.UTF_8));
-        Objects.requireNonNull(chain.messageKeys().remove(chain.counter()),
-                "Cannot remove chain");
+            System.out.printf("Keys: %s%nCounter: %s%nResult: %s%n%n", chain.messageKeys(), chain.counter(), chain.messageKeys().get(chain.counter()));
+            var currentKey = chain.messageKeys()
+                    .get(chain.counter())
+                    .publicKey();
 
-        var iv = Bytes.of(secrets[2])
-                .cut(IV_LENGTH)
-                .toByteArray();
-        var encrypted = AesCbc.encrypt(iv, data, secrets[0]);
+            var secrets = Hkdf.deriveSecrets(currentKey,
+                    "WhisperMessageKeys".getBytes(StandardCharsets.UTF_8));
+            Objects.requireNonNull(chain.messageKeys().remove(chain.counter()),
+                    "Cannot remove chain");
 
-        var encryptedMessage = encrypt(currentState, chain, secrets, encrypted);
-        keys.addSession(address, session);
+            var iv = Bytes.of(secrets[2])
+                    .cut(IV_LENGTH)
+                    .toByteArray();
+            var encrypted = AesCbc.encrypt(iv, data, secrets[0]);
 
-        return with("enc",
-                of("v", "2", "type", currentState.hasPreKey() ? "pkmsg" : "msg"), encryptedMessage);
+            var encryptedMessage = encrypt(currentState, chain, secrets, encrypted);
+            keys.addSession(address, session);
+
+            return with("enc",
+                    of("v", "2", "type", currentState.hasPreKey() ? "pkmsg" : "msg"), encryptedMessage);
+        }catch (Throwable throwable){
+            throw new RuntimeException("Cannot encrypt message: an exception occured", throwable);
+        }finally {
+            ENCRYPTION_SEMAPHORE.release();
+        }
     }
 
     private byte[] encrypt(SessionState state, SessionChain chain, byte[][] whisperKeys, byte[] encrypted) {
@@ -205,7 +217,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         var previousCounter = state.findChain(state.ephemeralKeyPair().encodedPublicKey());
         previousCounter.ifPresent(chain -> {
             state.previousCounter(chain.counter());
-            state.chains().remove(chain);
+            state.removeChain(state.ephemeralKeyPair().encodedPublicKey());
         });
 
         state.ephemeralKeyPair(SignalKeyPair.random());
@@ -219,7 +231,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         var masterKey = Hkdf.deriveSecrets(sharedSecret, state.rootKey(),
                 "WhisperRatchet".getBytes(StandardCharsets.UTF_8), 2);
         var chainKey = sending ? state.ephemeralKeyPair().encodedPublicKey() : message.ephemeralPublicKey();
-        state.addChain(new SessionChain(-1, masterKey[1], chainKey));
+        state.addChain(chainKey, new SessionChain(-1, masterKey[1]));
         state.rootKey(masterKey[0]);
     }
 

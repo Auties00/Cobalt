@@ -276,7 +276,10 @@ public final class WhatsappKeys implements WhatsappController {
      * @throws IllegalArgumentException if no element can be found
      */
     public SignalSignedKeyPair findSignedKeyPairById(int id) {
-        Validate.isTrue(id == signedKeyPair.id(), "Id mismatch: %s != %s", id, signedKeyPair.id());
+        Validate.isTrue(id == signedKeyPair.id(),
+                "Id mismatch: %s != %s",
+                SecurityException.class,
+                id, signedKeyPair.id());
         return signedKeyPair;
     }
 
