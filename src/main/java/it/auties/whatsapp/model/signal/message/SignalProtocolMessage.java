@@ -8,6 +8,6 @@ public sealed interface SignalProtocolMessage extends SignalSpecification permit
     byte[] serialized();
 
     default byte serializedVersion(){
-        return BytesHelper.serialize(version() == 0 ? CURRENT_VERSION : version());
+        return BytesHelper.versionToBytes(version() == 0 ? CURRENT_VERSION : version());
     }
 }

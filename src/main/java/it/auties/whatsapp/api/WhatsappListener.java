@@ -29,7 +29,6 @@ public interface WhatsappListener {
      * @param qr the generator code to consume
      * @return a non-null handler to process the qr code
      */
-    @NonNull
     default QrHandler onQRCode(BitMatrix qr){
         return QrHandler.toTerminal();
     }
@@ -41,6 +40,7 @@ public interface WhatsappListener {
      *
      */
     default void onLoggedIn() {
+
     }
 
     /**
@@ -51,6 +51,7 @@ public interface WhatsappListener {
      * @param metadata the updated list of properties
      */
     default void onMetadata(Map<String, String> metadata) {
+
     }
 
     /**
@@ -59,6 +60,7 @@ public interface WhatsappListener {
      * @param reconnect whether the connection is going to be re-established
      */
     default void onDisconnected(boolean reconnect) {
+
     }
 
     /**
@@ -105,6 +107,7 @@ public interface WhatsappListener {
      * To access this data use {@link WhatsappStore#contacts()}.
      */
     default void onContacts() {
+
     }
 
     /**
@@ -113,6 +116,7 @@ public interface WhatsappListener {
      * @param contact the new contact
      */
     default void onNewContact(Contact contact) {
+
     }
 
     /**
@@ -123,6 +127,7 @@ public interface WhatsappListener {
      * @param status  the new status of the contact
      */
     default void onContactPresence(Chat chat, Contact contact, ContactStatus status) {
+
     }
 
     /**
@@ -132,6 +137,7 @@ public interface WhatsappListener {
      * If you also need the messages to be loaded, please refer to {@link WhatsappListener#onChatRecentMessages(Chat)}.
      */
     default void onChats() {
+
     }
 
     /**
@@ -139,6 +145,7 @@ public interface WhatsappListener {
      * This method may be called multiple times depending on the chat's size.
      */
     default void onChatRecentMessages(Chat chat) {
+
     }
 
     /**
@@ -147,6 +154,7 @@ public interface WhatsappListener {
      * @param info the message that was sent
      */
     default void onNewMessage(MessageInfo info) {
+
     }
 
     /**
@@ -156,6 +164,7 @@ public interface WhatsappListener {
      * @param everyone whether this message was deleted by you only for yourself or whether the message was permanently removed
      */
     default void onMessageDeleted(MessageInfo info, boolean everyone) {
+
     }
 
     /**
@@ -167,13 +176,14 @@ public interface WhatsappListener {
      * @param status the new status of the message
      */
     default void onMessageStatus(MessageInfo info, MessageStatus status) {
+
     }
 
     /**
      * Called when the status of a message changes inside any type of chat.
      * If {@code chat} is a conversation with {@code contact}, the new read status can be considered valid for the message itself(global status).
      * Otherwise, it should be considered valid only for {@code contact}.
-     * If you only need updates regarding conversation, implement {@link WhatsappListener#onMessageStatus(MessageInfo, MessageStatus)}
+     * If you only need updates regarding conversation, implement {@link WhatsappListener#onMessageStatus(MessageInfo, MessageStatus)}.
      *
      * @param chat    the chat that triggered a status change
      * @param contact the contact that triggered a status change
@@ -181,13 +191,23 @@ public interface WhatsappListener {
      * @param status  the new status of the message
      */
     default void onMessageStatus(Chat chat, Contact contact, MessageInfo info, MessageStatus status) {
+
     }
 
     /**
-     * Called when {@link BinarySocket} receives all the status updated from WhatsappWeb's Socket
+     * Called when {@link BinarySocket} receives all the status updated from WhatsappWeb's Socket.
      * To access this data use {@link WhatsappStore#status()}.
-     * If you also need the messages to be loaded, please refer to {@link WhatsappListener#onChatRecentMessages(Chat)}.
      */
     default void onStatus() {
+
+    }
+
+    /**
+     * Called when {@link BinarySocket} receives a new status from WhatsappWeb's Socket
+     * 
+     * @param status the new status message
+     */
+    default void onNewStatus(MessageInfo status) {
+
     }
 }

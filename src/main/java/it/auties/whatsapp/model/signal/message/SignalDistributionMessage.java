@@ -77,7 +77,7 @@ public final class SignalDistributionMessage implements SignalProtocolMessage {
     try {
       return ProtobufDecoder.forType(SignalDistributionMessage.class)
               .decode(Bytes.of(serialized).slice(1).toByteArray())
-              .version(BytesHelper.deserialize(serialized[0]))
+              .version(BytesHelper.bytesToVersion(serialized[0]))
               .serialized(serialized);
     } catch (IOException exception) {
       throw new RuntimeException("Cannot decode SenderKeyMessage", exception);

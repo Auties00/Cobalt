@@ -55,7 +55,7 @@ public class SenderKeyMessage implements SignalSpecification {
     this.id = id;
     this.iteration = iteration;
     this.cipherText = cipherText;
-    var encodedVersion = BytesHelper.serialize(version);
+    var encodedVersion = BytesHelper.versionToBytes(version);
     var encoded =  ProtobufEncoder.encode(this);
     var encodedMessage = Bytes.of(encodedVersion)
             .append(encoded);
@@ -68,7 +68,7 @@ public class SenderKeyMessage implements SignalSpecification {
       var buffer = Bytes.of(serialized);
       return ProtobufDecoder.forType(SenderKeyMessage.class)
               .decode(buffer.slice(1, -SIGNATURE_LENGTH).toByteArray())
-              .version(BytesHelper.deserialize(serialized[0]))
+              .version(BytesHelper.bytesToVersion(serialized[0]))
               .signature(buffer.slice(-SIGNATURE_LENGTH).toByteArray())
               .serialized(serialized);
     } catch (IOException exception) {

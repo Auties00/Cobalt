@@ -31,6 +31,8 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
                     "Signature mismatch", SecurityException.class);
 
             var baseKey = SignalKeyPair.random();
+            // boolean, SignalKePair, SignalKeyPair, byte[33], byte[33], null, int, int
+
             var state = createState(
                     true,
                     baseKey,

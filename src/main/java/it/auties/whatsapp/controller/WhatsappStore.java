@@ -182,7 +182,7 @@ public final class WhatsappStore implements WhatsappController {
      */
     public Optional<Contact> findContactByJid(ContactJid jid) {
         return jid == null ? Optional.empty() : contacts.parallelStream()
-                .filter(contact -> contact.jid().contentEquals(jid))
+                .filter(contact -> contact.jid().equals(jid))
                 .findAny();
     }
 
@@ -223,7 +223,7 @@ public final class WhatsappStore implements WhatsappController {
      */
     public Optional<Chat> findChatByJid(ContactJid jid) {
         return jid == null ? Optional.empty() : chats.parallelStream()
-                .filter(chat -> chat.jid().contentEquals(jid))
+                .filter(chat -> chat.jid().equals(jid))
                 .findAny();
     }
 

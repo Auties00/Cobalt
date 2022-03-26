@@ -29,7 +29,12 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
     /**
      * The official business account address
      */
-    public static final String OFFICIAL_BUSINESS_ACCOUNT = "16505361212@s.whatsapp.net";
+    public static final ContactJid OFFICIAL_BUSINESS_ACCOUNT = ContactJid.of("16505361212@s.whatsapp.net");
+
+    /**
+     * The official status account
+     */
+    public static final ContactJid STATUS_ACCOUNT = ContactJid.of("status@broadcast");
 
     /**
      * The ID of Whatsapp, used to send nodes
@@ -142,7 +147,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
             return Type.COMPANION;
         }
 
-        if (Objects.equals(toString(), OFFICIAL_BUSINESS_ACCOUNT)) {
+        if (equals(OFFICIAL_BUSINESS_ACCOUNT)) {
             return Type.OFFICIAL_BUSINESS_ACCOUNT;
         }
 
@@ -175,39 +180,6 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      */
     public boolean isCompanion(){
         return device() != 0;
-    }
-
-    /**
-     * Checks if the input object equals this jid.
-     * The equality is determined based on the server, other variables might differ.
-     *
-     * @param other the object to check, maybe null
-     * @return true if the object matches
-     */
-    @Override
-    public boolean equals(Object other) {
-        return other instanceof ContactJid that && this.server() == that.server();
-    }
-
-    /**
-     * Checks if the input object equals this jid.
-     * The equality is determined based on all factors.
-     *
-     * @param other the object to check, maybe null
-     * @return true if the object matches
-     */
-    public boolean contentEquals(Object other) {
-        return Objects.equals(Objects.toString(this), Objects.toString(other));
-    }
-
-    /**
-     * Returns a hash code value for the object
-     *
-     * @return a hash code value for this object
-     */
-    @Override
-    public int hashCode() {
-        return Objects.hash(user, server, device, agent);
     }
 
     /**

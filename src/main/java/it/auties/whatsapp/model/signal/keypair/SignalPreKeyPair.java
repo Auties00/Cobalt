@@ -29,6 +29,6 @@ public record SignalPreKeyPair(int id, byte @NonNull [] publicKey, byte[] privat
     }
 
     public byte[] encodedId(){
-        return BytesHelper.toBytes(id, 3);
+        return BytesHelper.intToBytes(id, 3);
     }
 }

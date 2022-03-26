@@ -5,6 +5,7 @@ import it.auties.curve25519.Curve25519;
 import it.auties.protobuf.decoder.ProtobufDecoder;
 import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp.api.QrHandler;
+import it.auties.whatsapp.api.SerializationStrategy;
 import it.auties.whatsapp.api.SerializationStrategy.Event;
 import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.api.WhatsappOptions;
@@ -345,7 +346,6 @@ public class BinarySocket {
         return sendQuery(group, "get", "w:g2", body)
                 .thenApplyAsync(node -> GroupMetadata.of(node.findNode("group")));
     }
-
     private void sendReceipt(ContactJid jid, ContactJid participant, List<String> messages, String type) {
         if(messages.isEmpty()){
             return;
@@ -361,7 +361,6 @@ public class BinarySocket {
                 attributes.map(), toMessagesNode(messages));
         send(receipt);
     }
-
     private List<Node> toMessagesNode(List<String> messages) {
         if (messages.size() <= 1) {
             return null;
@@ -394,8 +393,9 @@ public class BinarySocket {
 
     private void dispose(){
         pingService.shutdownNow();
-        store.save(false);
-        keys.save(false);
+        serialize(ON_CLOSE);
+        options.serializationStrategies()
+                .forEach(SerializationStrategy::dispose);
     }
 
     public static class OriginPatcher extends Configurator{
@@ -467,8 +467,8 @@ public class BinarySocket {
             return CompanionData.builder()
                     .buildHash(ofBase64(BUILD_HASH).toByteArray())
                     .companion(encode(createCompanionProps()))
-                    .id(BytesHelper.toBytes(keys.id(), 4))
-                    .keyType(BytesHelper.toBytes(KEY_TYPE, 1))
+                    .id(BytesHelper.intToBytes(keys.id(), 4))
+                    .keyType(BytesHelper.intToBytes(KEY_TYPE, 1))
                     .identifier(keys.identityKeyPair().publicKey())
                     .signatureId(keys.signedKeyPair().encodedId())
                     .signaturePublicKey(keys.signedKeyPair().keyPair().publicKey())
@@ -606,7 +606,6 @@ public class BinarySocket {
         }
 
         private void digestAck(Node node) {
-            System.out.println("Received ack: " + node);
             var clazz = node.attributes().getString("class");
             if (!Objects.equals(clazz, "message")) {
                 return;
@@ -626,7 +625,7 @@ public class BinarySocket {
                 return;
             }
 
-            var update = node.findNode("internal");
+            var update = node.findNode("collection");
             if (update == null) {
                 return;
             }
@@ -810,7 +809,7 @@ public class BinarySocket {
         }
 
         private Node createPreKeysRegistration() {
-            return with("registration", BytesHelper.toBytes(keys.id(), 4));
+            return with("registration", BytesHelper.intToBytes(keys.id(), 4));
         }
 
         private Node createPreKeys() {
@@ -833,7 +832,7 @@ public class BinarySocket {
             var qr = new String(ref.bytes(), StandardCharsets.UTF_8);
             var matrix = QrGenerator.generate(keys, qr);
             if (!store.listeners().isEmpty()) {
-                store.callListeners(listener -> listener.onQRCode(matrix).accept(matrix));
+                store.callListeners(listener -> Objects.requireNonNull(listener.onQRCode(matrix), "Invalid QR handler").accept(matrix));
                 return;
             }
 
@@ -992,7 +991,7 @@ public class BinarySocket {
 
         private CompletableFuture<List<Node>> createDistinctSessions(List<ContactJid> contacts, byte[] message, byte[] deviceMessage) {
             var mapped = contacts.stream()
-                    .collect(partitioningBy(contact -> contact.toUserJid().contentEquals(keys.companion().toUserJid()), toUnmodifiableSet()));
+                    .collect(partitioningBy(contact -> contact.toUserJid().equals(keys.companion().toUserJid()), toUnmodifiableSet()));
             return createSessions(mapped.get(true), deviceMessage)
                     .thenCombineAsync(createSessions(mapped.get(false), message), this::append);
         }
@@ -1042,7 +1041,7 @@ public class BinarySocket {
 
             var builder = new SessionBuilder(jid.toSignalAddress(), keys);
             builder.createOutgoing(
-                    BytesHelper.fromBytes(registrationId.bytes(), 4),
+                    BytesHelper.bytesToInt(registrationId.bytes(), 4),
                     Keys.withHeader(identity.bytes()),
                     SignalSignedKeyPair.of(signedKey).orElseThrow(),
                     SignalSignedKeyPair.of(key).orElse(null)
@@ -1200,8 +1199,10 @@ public class BinarySocket {
 
                     default -> throw new IllegalArgumentException("Unsupported encoded message type: %s".formatted(type));
                 });
-            }catch (SecurityException exception){
-                streamHandler.handleFailure(400, "hmac_validation", "message_decoding");
+            }catch (Exception exception){
+                streamHandler.handleFailure(400,
+                        exception instanceof SecurityException ? "hmac_validation" : "%s: %s".formatted(exception.getClass().getSimpleName(), exception.getMessage()),
+                        "message_decoding");
                 return Optional.empty();
             }
         }
@@ -1209,6 +1210,12 @@ public class BinarySocket {
         private void saveMessage(MessageInfo info) {
             if(info.message().content() instanceof MediaMessage mediaMessage){
                 mediaMessage.storeId(info.storeId());
+            }
+
+            if(info.chatJid().equals(ContactJid.STATUS_ACCOUNT)){
+                store.status().add(info);
+                store.callListeners(listener -> listener.onNewStatus(info));
+                return;
             }
 
             var chat = info.chat()
@@ -1272,7 +1279,7 @@ public class BinarySocket {
 
                 case REVOKE -> {
                     var chat = info.chat()
-                            .orElseThrow(() -> new NoSuchElementException("Missing chat"));
+                            .orElseThrow(() -> new NoSuchElementException("Missing chat: %s".formatted(info.chatJid())));
                     var message = store.findMessageById(chat, protocolMessage.key().id())
                             .orElseThrow(() -> new NoSuchElementException("Missing message"));
                     chat.messages().add(message);
@@ -1281,7 +1288,7 @@ public class BinarySocket {
 
                 case EPHEMERAL_SETTING -> {
                     var chat = info.chat()
-                            .orElseThrow(() -> new NoSuchElementException("Missing chat"));
+                            .orElseThrow(() -> new NoSuchElementException("Missing chat: %s".formatted(info.chatJid())));
                     chat.ephemeralMessagesToggleTime(info.timestamp())
                             .ephemeralMessageDuration(protocolMessage.ephemeralExpiration());
                     var setting = new EphemeralSetting(info.ephemeralDuration(), info.timestamp());
@@ -1292,24 +1299,16 @@ public class BinarySocket {
 
         private void handNewPushName(PushName pushName) {
             var jid = ContactJid.of(pushName.id());
-            var oldContact = store.findContactByJid(jid)
+            var contact = store.findContactByJid(jid)
                     .orElseGet(() -> createContact(jid));
-            oldContact.chosenName(pushName.pushname());
-            var name = oldContact.name();
-            store.findChatByJid(oldContact.jid())
-                    .ifPresentOrElse(chat -> chat.name(name), () -> createChat(oldContact));
+            contact.chosenName(pushName.pushname());
+            store.findChatByJid(contact.jid())
+                    .filter(chat -> chat.name() == null)
+                    .ifPresent(chat -> chat.name(contact.chosenName()));
             var firstName = pushName.pushname().contains(" ")  ? pushName.pushname().split(" ")[0]
                     : null;
             var action = new ContactAction(pushName.pushname(), firstName);
             store.callListeners(listener -> listener.onAction(action));
-        }
-
-        private void createChat(Contact oldContact){
-            var newChat = Chat.builder()
-                    .jid(oldContact.jid())
-                    .name(oldContact.name())
-                    .build();
-            store.addChat(newChat);
         }
 
         private Contact createContact(ContactJid jid) {
@@ -1385,7 +1384,7 @@ public class BinarySocket {
                     .build();
             hashState.indexValueMap().put(getEncoder().encodeToString(indexMac), valueMac);
 
-            var collectionNode = withAttributes("internal",
+            var collectionNode = withAttributes("collection",
                     of("name", patch.type(), "version", valueOf(hashState.version() - 1)));
             var patchNode = with("patch",
                     ProtobufEncoder.encode(sync));
@@ -1402,6 +1401,10 @@ public class BinarySocket {
 
         @SneakyThrows
         public void pull(String... requests) {
+            if(options.debug()){
+                System.out.printf("Pulling %s%n", Arrays.toString(requests));
+            }
+
             var states = Arrays.stream(requests)
                     .map(LTHashState::new)
                     .peek(state -> keys.hashStates().put(state.name(), state))
@@ -1454,7 +1457,7 @@ public class BinarySocket {
 
         private List<SnapshotSyncRecord> parseSyncRequest(Node node) {
             var syncNode = node.findNode("dataSync");
-            return syncNode.findNodes("internal")
+            return syncNode.findNodes("collection")
                     .stream()
                     .map(this::parseSync)
                     .toList();
@@ -1708,7 +1711,7 @@ public class BinarySocket {
 
         private byte[] generateSnapshotMac(byte[] ltHash, long version, String patchName, byte[] key) {
             var total = Bytes.of(ltHash)
-                    .append(BytesHelper.toBytes(version))
+                    .append(BytesHelper.longToBytes(version))
                     .append(patchName.getBytes(StandardCharsets.UTF_8))
                     .toByteArray();
             return Hmac.calculateSha256(total, key);
@@ -1717,7 +1720,7 @@ public class BinarySocket {
         private byte[] generatePatchMac(byte[] snapshotMac, Bytes valueMacs, long version, String type, byte[] key) {
             var total = Bytes.of(snapshotMac)
                     .append(valueMacs)
-                    .append(BytesHelper.toBytes(version))
+                    .append(BytesHelper.longToBytes(version))
                     .append(type.getBytes(StandardCharsets.UTF_8))
                     .toByteArray();
             return Hmac.calculateSha256(total, key);

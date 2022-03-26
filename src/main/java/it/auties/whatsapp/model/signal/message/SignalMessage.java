@@ -55,7 +55,7 @@ public final class SignalMessage implements SignalProtocolMessage {
         this.counter = counter;
         this.previousCounter = previousCounter;
         this.ciphertext = ciphertext;
-        var encodedMessage = Bytes.of(BytesHelper.serialize(version))
+        var encodedMessage = Bytes.of(BytesHelper.versionToBytes(version))
                 .append(ProtobufEncoder.encode(this));
         this.signature = signer.apply(encodedMessage.toByteArray());
         this.serialized = encodedMessage.append(signature)
@@ -66,7 +66,7 @@ public final class SignalMessage implements SignalProtocolMessage {
             var buffer = Bytes.of(serialized);
             return ProtobufDecoder.forType(SignalMessage.class)
                     .decode(buffer.slice(1, -MAC_LENGTH).toByteArray())
-                    .version(BytesHelper.deserialize(serialized[0]))
+                    .version(BytesHelper.bytesToVersion(serialized[0]))
                     .signature(buffer.slice(-MAC_LENGTH).toByteArray())
                     .serialized(serialized);
         } catch (IOException exception) {

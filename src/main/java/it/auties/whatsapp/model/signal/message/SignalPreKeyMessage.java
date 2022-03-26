@@ -9,7 +9,6 @@ import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.io.IOException;
 import java.util.Objects;
 
 import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
@@ -53,7 +52,7 @@ public final class SignalPreKeyMessage implements SignalProtocolMessage{
     public static SignalPreKeyMessage ofSerialized(byte[] serialized) {
         return ProtobufDecoder.forType(SignalPreKeyMessage.class)
                 .decode(Bytes.of(serialized).slice(1).toByteArray())
-                .version(BytesHelper.deserialize(serialized[0]))
+                .version(BytesHelper.bytesToVersion(serialized[0]))
                 .serialized(serialized);
     }
 

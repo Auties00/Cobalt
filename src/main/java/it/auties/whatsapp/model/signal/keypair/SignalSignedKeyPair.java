@@ -19,7 +19,7 @@ public record SignalSignedKeyPair(int id, @NonNull SignalKeyPair keyPair, byte[]
             return Optional.empty();
         }
 
-        var id = BytesHelper.fromBytes(node.findNode("id").bytes(), 3);
+        var id = BytesHelper.bytesToInt(node.findNode("id").bytes(), 3);
         var keyPair = new SignalKeyPair(node.findNode("value").bytes(), null);
         var signature = node.findNode("signature");
         return Optional.of(new SignalSignedKeyPair(id, keyPair, signature != null ? signature.bytes() : null));
@@ -39,6 +39,6 @@ public record SignalSignedKeyPair(int id, @NonNull SignalKeyPair keyPair, byte[]
     }
 
     public byte[] encodedId(){
-        return BytesHelper.toBytes(id, 3);
+        return BytesHelper.intToBytes(id, 3);
     }
 }
