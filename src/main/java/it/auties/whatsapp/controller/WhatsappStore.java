@@ -107,7 +107,7 @@ public final class WhatsappStore implements WhatsappController {
      */
     @NonNull
     @Default
-    private String tag = Bytes.ofRandom(12)
+    private String tag = Bytes.ofRandom(1)
             .toHex()
             .toLowerCase(Locale.ROOT);
 

@@ -50,15 +50,13 @@ import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.java.Log;
 
+import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -282,12 +280,12 @@ public class BinarySocket {
             System.out.println("Sending: " + node);
         }
 
-        return node.toRequest(store.nextTag())
+        return node.toRequest(node.id() == null ? store.nextTag() : null)
                 .send(session(), keys, store);
     }
 
     public CompletableFuture<Void> sendWithNoResponse(Node node){
-        return node.toRequest(store.nextTag())
+        return node.toRequest(node.id() == null ? store.nextTag() : null)
                 .sendWithNoResponse(session(), keys, store);
     }
 
@@ -316,7 +314,7 @@ public class BinarySocket {
         var attributes = Attributes.of(metadata)
                 .put("id", id, Objects::nonNull)
                 .put("type", method)
-                .put("to", to.toString())
+                .put("to", to)
                 .put("xmlns", category, Objects::nonNull)
                 .map();
         return send(withChildren("iq", attributes, body));
@@ -755,7 +753,8 @@ public class BinarySocket {
             sendQuery("set", "w:m", with("media_conn"))
                     .thenApplyAsync(MediaConnection::ofNode)
                     .thenApplyAsync(this::scheduleMediaConnection)
-                    .thenApplyAsync(store::mediaConnection);
+                    .thenApplyAsync(store::mediaConnection)
+                    .exceptionallyAsync(BinarySocket.this::handleError);
         }
 
         private MediaConnection scheduleMediaConnection(MediaConnection connection) {
@@ -1243,11 +1242,12 @@ public class BinarySocket {
                     var decompressed = BytesHelper.deflate(compressed);
                     var history = ProtobufDecoder.forType(HistorySync.class)
                             .decode(decompressed);
+
                     switch(history.syncType()) {
                         case INITIAL_BOOTSTRAP -> {
                             history.conversations().forEach(store::addChat);
-                            store.callListeners(WhatsappListener::onChats);
                             store.hasSnapshot(true);
+                            store.callListeners(WhatsappListener::onChats);
                         }
 
                         case FULL -> history.conversations().forEach(store::addChat);
@@ -1271,11 +1271,17 @@ public class BinarySocket {
                     }
 
                     var receipt = withAttributes("receipt",
-                            of("to",  keys.companion().toUserJid().toString(), "type", "hist_sync", "id", info.key().id()));
+                            of("to",  ContactJid.of(keys.companion().user(), ContactJid.Server.USER), "type", "hist_sync", "id", info.key().id()));
                     send(receipt);
                 }
 
-                case APP_STATE_SYNC_KEY_SHARE -> keys.addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
+                case APP_STATE_SYNC_KEY_SHARE -> {
+                    keys.addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
+                    CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS).execute(() -> {
+                        appStateHandler.pull("critical_block", "critical_unblock_low",
+                                        "regular_high", "regular_low", "regular");
+                    });
+                }
 
                 case REVOKE -> {
                     var chat = info.chat()
@@ -1300,15 +1306,26 @@ public class BinarySocket {
         private void handNewPushName(PushName pushName) {
             var jid = ContactJid.of(pushName.id());
             var contact = store.findContactByJid(jid)
-                    .orElseGet(() -> createContact(jid));
-            contact.chosenName(pushName.pushname());
-            store.findChatByJid(contact.jid())
-                    .filter(chat -> chat.name() == null)
-                    .ifPresent(chat -> chat.name(contact.chosenName()));
-            var firstName = pushName.pushname().contains(" ")  ? pushName.pushname().split(" ")[0]
-                    : null;
+                    .orElseGet(() -> createContact(jid))
+                    .chosenName(pushName.pushname());
+            store.findChatByJid(contact.jid()).ifPresentOrElse(chat -> {
+                if (chat.name() != null) {
+                    return;
+                }
+
+                chat.name(contact.name());
+            }, () -> createChat(contact));
+            var firstName = pushName.pushname().contains(" ")  ? pushName.pushname().split(" ")[0] : null;
             var action = new ContactAction(pushName.pushname(), firstName);
             store.callListeners(listener -> listener.onAction(action));
+        }
+
+        private void createChat(Contact oldContact){
+            var newChat = Chat.builder()
+                    .jid(oldContact.jid())
+                    .name(oldContact.name())
+                    .build();
+            store.addChat(newChat);
         }
 
         private Contact createContact(ContactJid jid) {
@@ -1341,7 +1358,7 @@ public class BinarySocket {
     private class AppStateHandler {
         private static final int MAX_SYNC_ATTEMPTS = 5;
 
-        public void push(PatchRequest patch) {
+        public CompletableFuture<Void> push(PatchRequest patch) {
             var index = patch.index().getBytes(StandardCharsets.UTF_8);
             var key = keys.appStateKeys().getLast();
             var hashState = keys.findHashStateByName(patch.type()).copy();
@@ -1388,10 +1405,13 @@ public class BinarySocket {
                     of("name", patch.type(), "version", valueOf(hashState.version() - 1)));
             var patchNode = with("patch",
                     ProtobufEncoder.encode(sync));
-            sendQuery("set", "w:sync:app:state",
-                    withChildren("sync", collectionNode, patchNode));
-            keys.hashStates().put(patch.type(), hashState);
+            return sendQuery("set", "w:sync:app:state",
+                    withChildren("sync", collectionNode, patchNode))
+                    .thenRunAsync(() -> parseSyncRequest(patch, hashState, sync));
+        }
 
+        private void parseSyncRequest(PatchRequest patch, LTHashState hashState, PatchSync sync) {
+            keys.hashStates().put(patch.type(), hashState);
             decodePatch(patch.type(), hashState.version(), hashState, sync)
                     .stream()
                     .map(MutationsRecord::records)
@@ -1399,8 +1419,7 @@ public class BinarySocket {
                     .forEach(this::processSyncActions);
         }
 
-        @SneakyThrows
-        public void pull(String... requests) {
+        public CompletableFuture<Void> pull(String... requests) {
             if(options.debug()){
                 System.out.printf("Pulling %s%n", Arrays.toString(requests));
             }
@@ -1414,7 +1433,7 @@ public class BinarySocket {
                     .map(LTHashState::toNode)
                     .toList();
 
-            sendQuery("set", "w:sync:app:state", withChildren("sync", nodes))
+            return sendQuery("set", "w:sync:app:state", withChildren("sync", nodes))
                     .thenApplyAsync(this::parseSyncRequest)
                     .thenApplyAsync(this::parsePatches)
                     .thenAcceptAsync(actions -> actions.forEach(this::processSyncActions))
@@ -1457,7 +1476,7 @@ public class BinarySocket {
 
         private List<SnapshotSyncRecord> parseSyncRequest(Node node) {
             var syncNode = node.findNode("dataSync");
-            return syncNode.findNodes("collection")
+            return syncNode == null ? List.of() : syncNode.findNodes("collection")
                     .stream()
                     .map(this::parseSync)
                     .toList();
@@ -1591,11 +1610,10 @@ public class BinarySocket {
             var mutations = decodeMutations(patch.mutations(), newState);
             newState.hash(mutations.hash());
             newState.indexValueMap(mutations.indexValueMap());
-            // FIXME: 06/02/2022 Invalid hmac
-            // if(!Arrays.equals(generatePatchMac(name, newState, patch), patch.snapshotMac())){
-            //    streamHandler.handleFailure(400, "hmac_validation", "snapshot");
-            //    return Optional.empty();
-            //  }
+            if(!Arrays.equals(generatePatchMac(name, newState, patch), patch.snapshotMac())){
+                streamHandler.handleFailure(400, "hmac_validation", "snapshot");
+                return Optional.empty();
+            }
 
             return Optional.of(mutations)
                     .filter(ignored -> patch.version().version() == 0 || patch.version().version() > minimumVersionNumber);

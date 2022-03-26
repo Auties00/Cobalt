@@ -12,6 +12,6 @@ import java.util.Arrays;
 
 public class RandomTest {
     public static void main(String[] args) throws IOException {
-        System.out.println(ContactJid.of("status@broadcast").user());
+        System.out.println(ContactJid.of("393495089819", ContactJid.Server.USER));
     }
 }

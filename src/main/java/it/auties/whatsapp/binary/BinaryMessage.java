@@ -4,6 +4,7 @@ import it.auties.bytes.Bytes;
 import it.auties.whatsapp.controller.WhatsappKeys;
 import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.model.request.Node;
+import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.Accessors;
@@ -26,12 +27,7 @@ public class BinaryMessage {
         this.raw = raw;
         var decoded = new LinkedList<Bytes>();
         while (raw.readableBytes() >= 3) {
-            var size = decodeLength(raw);
-            if(size < 0){
-                continue;
-            }
-
-            decoded.add(raw.readBuffer(size));
+            decoded.add(raw.readBuffer(decodeLength(raw)));
         }
 
         this.decoded = decoded;
