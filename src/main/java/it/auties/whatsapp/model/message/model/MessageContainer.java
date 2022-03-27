@@ -15,6 +15,7 @@ import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.model.signal.message.SignalDistributionMessage;
+import it.auties.whatsapp.util.Validate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -411,6 +412,7 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
    */
   @JsonIgnore
   public Message content(){
+    assertNoDuplicates();
     if(this.senderKeyDistribution != null) return senderKeyDistribution;
     if(this.image != null) return image;
     if(this.contact != null) return contact;
@@ -442,6 +444,43 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
     if(buttonsResponse != null) return buttonsResponse;
     if(paymentInvite != null) return paymentInvite;
     return null;
+  }
+
+  private void assertNoDuplicates(){
+    var counter = 0;
+    if(this.senderKeyDistribution != null) counter++;
+    if(this.image != null) counter++;
+    if(this.contact != null) counter++;
+    if(this.location != null) counter++;
+    if(this.text != null) counter++;
+    if(this.document != null) counter++;
+    if(this.audio != null) counter++;
+    if(this.video != null) counter++;
+    if(this.protocol != null) counter++;
+    if(this.contactsArray != null) counter++;
+    if(this.highlyStructured != null) counter++;
+    if(this.sendPayment != null) counter++;
+    if(this.liveLocation != null) counter++;
+    if(this.requestPayment != null) counter++;
+    if(this.declinePaymentRequest != null) counter++;
+    if(this.cancelPaymentRequest != null) counter++;
+    if(this.template != null) counter++;
+    if(this.sticker != null) counter++;
+    if(this.groupInvite != null)  counter++;
+    if(this.templateButtonReply != null)  counter++;
+    if(this.product != null)  counter++;
+    if(this.deviceSent != null)  counter++;
+    if(this.deviceSync != null) counter++;
+    if(buttonsList != null)  counter++;
+    if(order != null)  counter++;
+    if(listResponse != null)  counter++;
+    if(invoice != null)  counter++;
+    if(buttons != null)  counter++;
+    if(buttonsResponse != null)  counter++;
+    if(paymentInvite != null) counter++;
+    if(counter != 0 && counter != 1){
+      System.out.printf("Too much content: %s%n", counter);
+    }
   }
 
   /**

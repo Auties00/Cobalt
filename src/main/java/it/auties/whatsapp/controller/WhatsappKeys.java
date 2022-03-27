@@ -315,7 +315,7 @@ public final class WhatsappKeys implements WhatsappController {
      * @return a non-null hash state
      */
     public LTHashState findHashStateByName(@NonNull String name) {
-        return Objects.requireNonNull(hashStates.get(name), "Missing hash state");
+        return Objects.requireNonNull(hashStates.get(name), "Missing hash state: %s".formatted(name));
     }
 
     /**

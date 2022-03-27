@@ -32,7 +32,7 @@ public enum BinaryTag {
     @Getter
     private final int data;
 
-    public static @NonNull BinaryTag forData(int data){
+    public static BinaryTag forData(int data){
         return Arrays.stream(values())
                 .filter(entry -> entry.data() == data)
                 .findAny()

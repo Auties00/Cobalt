@@ -193,11 +193,12 @@ public final class BinaryEncoder {
         switch (input) {
             case null -> this.buffer = buffer.append(LIST_EMPTY.data());
             case String str -> writeString(str);
+            case Boolean bool -> writeString(Boolean.toString(bool));
             case Number number -> writeString(number.toString());
             case byte[] bytes -> writeBytes(bytes);
             case ContactJid jid -> writeJid(jid);
             case Collection<?> collection -> writeList(collection);
-            case Node ignored -> throw new IllegalArgumentException("Invalid payload type(nodes should be wrapped by a internal): %s".formatted(input));
+            case Node ignored -> throw new IllegalArgumentException("Invalid payload type(nodes should be wrapped by a collection): %s".formatted(input));
             default -> throw new IllegalArgumentException("Invalid payload type(%s): %s".formatted(input.getClass().getName(), input));
         }
     }

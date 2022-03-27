@@ -50,7 +50,6 @@ import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.java.Log;
 
-import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
@@ -173,7 +172,6 @@ public class BinarySocket {
     }
 
     @OnMessage
-    @SneakyThrows
     public void onBinary(byte @NonNull [] raw) {
         var message = new BinaryMessage(raw);
         if(message.decoded().isEmpty()){
@@ -344,6 +342,13 @@ public class BinarySocket {
         return sendQuery(group, "get", "w:g2", body)
                 .thenApplyAsync(node -> GroupMetadata.of(node.findNode("group")));
     }
+
+    private void sendSyncReceipt(MessageInfo info, String type){
+        var receipt = withAttributes("receipt",
+                of("to",  ContactJid.of(keys.companion().user(), ContactJid.Server.USER), "type", type, "id", info.key().id()));
+        send(receipt);
+    }
+
     private void sendReceipt(ContactJid jid, ContactJid participant, List<String> messages, String type) {
         if(messages.isEmpty()){
             return;
@@ -628,7 +633,7 @@ public class BinarySocket {
                 return;
             }
 
-            var patchName = update.attributes().getRequiredString("name");
+            var patchName = BinarySync.forName(update.attributes().getRequiredString("name"));
             appStateHandler.pull(patchName);
         }
 
@@ -657,12 +662,7 @@ public class BinarySocket {
         }
 
         private void handleFailure(long statusCode, String reason, String location) {
-            Validate.isTrue(shouldHandleFailure(statusCode, reason),
-                    "Invalid or expired credentials: socket failed with status code %s at %s", statusCode, location);
-            log.warning("Handling failure caused by %s at %s with status code %s: restoring session".formatted(reason, location, statusCode));
-            store.clear();
-            changeKeys();
-            reconnect();
+
         }
 
         private boolean shouldHandleFailure(long statusCode, String reason) {
@@ -1095,11 +1095,13 @@ public class BinarySocket {
         }
 
         public void decode(Node node) {
+            var pushName = node.attributes().getString("notify");
             var timestamp = node.attributes().getLong("t");
             var id = node.attributes().getRequiredString("id");
             if(options.debug()) {
                 System.out.printf("Decoding message with id %s%n", id);
             }
+
 
             var from = node.attributes().getJid("from")
                     .orElseThrow(() -> new NoSuchElementException("Missing from"));
@@ -1127,6 +1129,7 @@ public class BinarySocket {
             var key = keyBuilder.id(id).create();
             var info = messageBuilder.storeId(store.id())
                     .key(key)
+                    .pushName(pushName)
                     .timestamp(timestamp)
                     .create();
 
@@ -1136,6 +1139,7 @@ public class BinarySocket {
 
         private void decodeMessage(MessageInfo info, Node container, Node messageNode, ContactJid from) {
             try {
+                sendMessageAck(container, of("class", "receipt"));
                 var encodedMessage = messageNode.bytes();
                 var messageType = messageNode.attributes().getString("type");
                 var buffer = decodeCipheredMessage(info, encodedMessage, messageType);
@@ -1145,25 +1149,18 @@ public class BinarySocket {
 
                 var decodedMessage = ProtobufDecoder.forType(MessageContainer.class)
                         .decode(BytesHelper.unpad(buffer.get()));
-                info.message(decodedMessage);
-                sendMessageAck(container, of("class", "receipt"));
-                sendReceipt(info.chatJid(), info.senderJid(),
-                        List.of(info.key().id()), null);
-                handleMessage(info, from);
+                info.message(decodedMessage.content() instanceof DeviceSentMessage deviceSentMessage ? MessageContainer.of(deviceSentMessage.message().content()) : decodedMessage);
+                handleStubMessage(info);
+                switch (info.message().content()){
+                    case SenderKeyDistributionMessage distributionMessage -> handleDistributionMessage(distributionMessage, from);
+                    case ProtocolMessage protocolMessage -> handleProtocolMessage(info, protocolMessage, Objects.equals(container.attributes().getString("category"), "peer"));
+                    default -> saveMessage(info);
+                }
+                sendReceipt(info.chatJid(), info.senderJid(), List.of(info.key().id()), null);
             }catch (Throwable throwable){
                 log.warning("An exception occurred while processing a message: " + throwable.getMessage());
                 log.warning("The application will continue running normally, but submit an issue on GitHub");
                 throwable.printStackTrace();
-            }
-        }
-
-        private void handleMessage(MessageInfo info, ContactJid from) {
-            handleStubMessage(info);
-            switch (info.message().content()){
-                case SenderKeyDistributionMessage distributionMessage -> handleDistributionMessage(distributionMessage, from);
-                case ProtocolMessage protocolMessage -> handleProtocolMessage(info, protocolMessage);
-                case DeviceSentMessage deviceSentMessage -> saveMessage(info.message(deviceSentMessage.message()));
-                default -> saveMessage(info);
             }
         }
 
@@ -1235,7 +1232,7 @@ public class BinarySocket {
         }
 
         @SneakyThrows
-        private void handleProtocolMessage(MessageInfo info, ProtocolMessage protocolMessage){
+        private void handleProtocolMessage(MessageInfo info, ProtocolMessage protocolMessage, boolean peer){
             switch(protocolMessage.type()) {
                 case HISTORY_SYNC_NOTIFICATION -> {
                     var compressed = Medias.download(protocolMessage.historySyncNotification(), store);
@@ -1270,17 +1267,12 @@ public class BinarySocket {
                         }
                     }
 
-                    var receipt = withAttributes("receipt",
-                            of("to",  ContactJid.of(keys.companion().user(), ContactJid.Server.USER), "type", "hist_sync", "id", info.key().id()));
-                    send(receipt);
+                    sendSyncReceipt(info, "hist_sync");
                 }
 
                 case APP_STATE_SYNC_KEY_SHARE -> {
                     keys.addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
-                    CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS).execute(() -> {
-                        appStateHandler.pull("critical_block", "critical_unblock_low",
-                                        "regular_high", "regular_low", "regular");
-                    });
+                    appStateHandler.pull(BinarySync.values());
                 }
 
                 case REVOKE -> {
@@ -1301,6 +1293,12 @@ public class BinarySocket {
                     store.callListeners(listener -> listener.onSetting(setting));
                 }
             }
+
+            if (!peer) {
+                return;
+            }
+
+            sendSyncReceipt(info, "peer_msg");
         }
 
         private void handNewPushName(PushName pushName) {
@@ -1356,6 +1354,7 @@ public class BinarySocket {
     }
 
     private class AppStateHandler {
+        private static final Semaphore PULL_SEMAPHORE = new Semaphore(1);
         private static final int MAX_SYNC_ATTEMPTS = 5;
 
         public CompletableFuture<Void> push(PatchRequest patch) {
@@ -1419,12 +1418,15 @@ public class BinarySocket {
                     .forEach(this::processSyncActions);
         }
 
-        public CompletableFuture<Void> pull(String... requests) {
+
+        @SneakyThrows
+        private void pull(BinarySync... syncs) {
+            PULL_SEMAPHORE.acquire();
             if(options.debug()){
-                System.out.printf("Pulling %s%n", Arrays.toString(requests));
+                System.out.printf("Pulling %s%n", Arrays.toString(syncs));
             }
 
-            var states = Arrays.stream(requests)
+            var states = Arrays.stream(syncs)
                     .map(LTHashState::new)
                     .peek(state -> keys.hashStates().put(state.name(), state))
                     .toList();
@@ -1433,31 +1435,39 @@ public class BinarySocket {
                     .map(LTHashState::toNode)
                     .toList();
 
-            return sendQuery("set", "w:sync:app:state", withChildren("sync", nodes))
+            var request = withChildren("iq",
+                    of("id", store.nextTag(), "to", ContactJid.SOCKET, "xmlns", "w:sync:app:state", "type", "set"),
+                    withChildren("sync", nodes));
+            send(request)
                     .thenApplyAsync(this::parseSyncRequest)
                     .thenApplyAsync(this::parsePatches)
                     .thenAcceptAsync(actions -> actions.forEach(this::processSyncActions))
-                    .exceptionallyAsync(BinarySocket.this::handleError);
+                    .thenRunAsync(PULL_SEMAPHORE::release)
+                    .exceptionallyAsync(this::handlePullError);
+        }
+
+        private Void handlePullError(Throwable exception) {
+            PULL_SEMAPHORE.release();
+            return handleError(exception);
         }
 
         private List<ActionDataSync> parsePatches(List<SnapshotSyncRecord> patches) {
             return patches.stream()
-                    .map(patch -> parsePatch(patch, 0))
+                    .map(patch -> parsePatch(patch, 0, null))
                     .flatMap(Collection::stream)
                     .toList();
         }
 
-        private List<ActionDataSync> parsePatch(SnapshotSyncRecord patch, int tries) {
-            var results = new ArrayList<ActionDataSync>();
-            var name = patch.name();
+        private List<ActionDataSync> parsePatch(SnapshotSyncRecord patch, int tries, Throwable previousException) {
             try {
+                var results = new ArrayList<ActionDataSync>();
                 if (patch.hasSnapshot()) {
-                    var decodedSnapshot = decodeSnapshot(name, patch.snapshot());
+                    var decodedSnapshot = decodeSnapshot(patch.name(), patch.snapshot());
                     results.addAll(decodedSnapshot.records());
                 }
 
                 if (patch.hasPatches()) {
-                    decodePatches(name, patch.patches())
+                    decodePatches(patch.name(), patch.patches())
                             .stream()
                             .map(MutationsRecord::records)
                             .forEach(results::addAll);
@@ -1465,17 +1475,31 @@ public class BinarySocket {
 
                 return results;
             } catch (Throwable throwable) {
-                keys.hashStates().remove(name);
+                keys.hashStates().put(patch.name(), new LTHashState(BinarySync.forName(patch.name())));
                 if (tries > MAX_SYNC_ATTEMPTS) {
                     throw new RuntimeException("Cannot parse patch", throwable);
                 }
 
-                return parsePatch(patch, tries + 1);
+                return parsePatch(patch, tries + 1, createException(throwable, previousException));
             }
         }
 
+        private Throwable createException(Throwable current, Throwable previous){
+            if(previous == null){
+                return current;
+            }
+
+            var innerException = current;
+            while (innerException.getCause() != null){
+                innerException = innerException.getCause();
+            }
+
+            innerException.initCause(previous);
+            return current;
+        }
+
         private List<SnapshotSyncRecord> parseSyncRequest(Node node) {
-            var syncNode = node.findNode("dataSync");
+            var syncNode = node.findNode("sync");
             return syncNode == null ? List.of() : syncNode.findNodes("collection")
                     .stream()
                     .map(this::parseSync)
@@ -1689,14 +1713,14 @@ public class BinarySocket {
                     .toByteArray();
             if(!Arrays.equals(generateMac(MutationSync.Operation.SET, encryptedBlob, mutation.id(), mutationKeys.macKey()), encryptedMac)){
                 streamHandler.handleFailure(400, "hmac_validation", "mutation");
-                throw new RuntimeException();
+                throw new RuntimeException("Cannot decode mutation: hmc validation failed");
             }
 
             var result = AesCbc.decrypt(encryptedBlob, mutationKeys.encKey());
             var actionSync = ProtobufDecoder.forType(ActionDataSync.class).decode(result);
             if(!mutation.indexBlob().contentEquals(Hmac.calculateSha256(actionSync.index(), mutationKeys.indexKey()))){
                 streamHandler.handleFailure(400, "hmac_validation", "mutation");
-                throw new RuntimeException();
+                throw new RuntimeException("Cannot decode mutation: hmc validation failed");
             }
 
             generator.mix(mutation.indexBlob().toByteArray(), encryptedMac, MutationSync.Operation.SET);

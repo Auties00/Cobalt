@@ -1,7 +1,9 @@
 package it.auties.whatsapp.model.sync;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import it.auties.whatsapp.binary.BinarySync;
 import it.auties.whatsapp.model.request.Node;
+import it.auties.whatsapp.util.Attributes;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,6 +13,7 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import static it.auties.whatsapp.model.request.Node.withAttributes;
 import static it.auties.whatsapp.model.request.Node.withChildren;
@@ -34,7 +37,7 @@ public class LTHashState {
     @JsonProperty("values")
     private Map<String, byte[]> indexValueMap;
 
-    public LTHashState(String name){
+    public LTHashState(BinarySync name){
         this(name, 0);
     }
 
@@ -42,16 +45,20 @@ public class LTHashState {
         this(null, version);
     }
 
-    public LTHashState(String name, long version){
-        this.name = name;
+    public LTHashState(BinarySync name, long version){
+        this.name = Objects.toString(name);
         this.version = version;
         this.hash = new byte[128];
         this.indexValueMap = new HashMap<>();
     }
 
     public Node toNode(){
-        return withChildren("collection",
-                of("name", name, "version", String.valueOf(version), "return_snapshot", Boolean.toString(version == 0)));
+        var attributes = Attributes.empty()
+                .put("name", name)
+                .put("version", version)
+                .put("return_snapshot", version == 0)
+                .map();
+        return withAttributes("collection", attributes);
     }
 
     public LTHashState copy(){

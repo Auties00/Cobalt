@@ -27,7 +27,12 @@ public class BinaryMessage {
         this.raw = raw;
         var decoded = new LinkedList<Bytes>();
         while (raw.readableBytes() >= 3) {
-            decoded.add(raw.readBuffer(decodeLength(raw)));
+            var length = decodeLength(raw);
+            if(length < 0){
+                continue;
+            }
+
+            decoded.add(raw.readBuffer(length));
         }
 
         this.decoded = decoded;
