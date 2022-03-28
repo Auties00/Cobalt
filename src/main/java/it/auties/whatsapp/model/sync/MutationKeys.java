@@ -18,7 +18,7 @@ public record MutationKeys(byte[] indexKey, byte[] encKey, byte[] macKey, byte[]
         var encKey = buffer.slice(KEY_LENGTH, KEY_LENGTH * 2).toByteArray();
         var macKey = buffer.slice(KEY_LENGTH * 2, KEY_LENGTH * 3).toByteArray();
         var snapshotMacKey = buffer.slice(KEY_LENGTH * 3, KEY_LENGTH * 4).toByteArray();
-        var patchMacKey = buffer.slice(KEY_LENGTH * 4, KEY_LENGTH * 5).toByteArray();
+        var patchMacKey = buffer.slice(KEY_LENGTH * 4).toByteArray();
         return new MutationKeys(indexKey, encKey, macKey, snapshotMacKey, patchMacKey);
     }
 }

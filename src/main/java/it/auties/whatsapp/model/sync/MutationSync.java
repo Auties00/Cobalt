@@ -43,11 +43,14 @@ public final class MutationSync implements ParsableMutation {
   @AllArgsConstructor
   @Accessors(fluent = true)
   public enum Operation {
-    SET(0),
-    REMOVE(1);
+    SET(0, (byte) 0x01),
+    REMOVE(1, (byte) 0x02);
 
     @Getter
     private final int index;
+
+    @Getter
+    private final byte value;
 
     @JsonCreator
     public static Operation forIndex(int index) {

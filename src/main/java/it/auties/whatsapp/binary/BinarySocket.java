@@ -40,6 +40,7 @@ import it.auties.whatsapp.model.signal.message.SignalMessage;
 import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
 import it.auties.whatsapp.model.sync.*;
+import it.auties.whatsapp.model.sync.MutationSync.Operation;
 import it.auties.whatsapp.util.*;
 import jakarta.websocket.*;
 import jakarta.websocket.ClientEndpointConfig.Configurator;
@@ -190,7 +191,8 @@ public class BinarySocket {
 
     private void handleNode(Node deciphered) {
         if(options.debug()) {
-            System.out.println("Received: " + deciphered);
+            var pretty = deciphered.toString();
+            System.out.println("Received: " + (pretty.length() > 1000 ? pretty.substring(0, 1000) : pretty));
         }
 
         store.resolvePendingRequest(deciphered, false);
@@ -662,7 +664,12 @@ public class BinarySocket {
         }
 
         private void handleFailure(long statusCode, String reason, String location) {
-
+            Validate.isTrue(shouldHandleFailure(statusCode, reason),
+                    "Invalid or expired credentials: socket failed with status code %s at %s", statusCode, location);
+            log.warning("Handling failure caused by %s at %s with status code %s: restoring session".formatted(reason, location, statusCode));
+            store.clear();
+            changeKeys();
+            reconnect();
         }
 
         private boolean shouldHandleFailure(long statusCode, String reason) {
@@ -1418,7 +1425,6 @@ public class BinarySocket {
                     .forEach(this::processSyncActions);
         }
 
-
         @SneakyThrows
         private void pull(BinarySync... syncs) {
             PULL_SEMAPHORE.acquire();
@@ -1480,11 +1486,11 @@ public class BinarySocket {
                     throw new RuntimeException("Cannot parse patch", throwable);
                 }
 
-                return parsePatch(patch, tries + 1, createException(throwable, previousException));
+                return parsePatch(patch, tries + 1, createPatchException(throwable, previousException));
             }
         }
 
-        private Throwable createException(Throwable current, Throwable previous){
+        private Throwable createPatchException(Throwable current, Throwable previous){
             if(previous == null){
                 return current;
             }
@@ -1627,7 +1633,7 @@ public class BinarySocket {
 
             newState.version(patch.version().version());
             if(!Arrays.equals(calculateSyncMac(patch, name), patch.patchMac())){
-                streamHandler.handleFailure(400, "hmac_validation", "patch");
+                streamHandler.handleFailure(400, "sync_mac", "decode_patch");
                 return Optional.empty();
             }
 
@@ -1635,7 +1641,7 @@ public class BinarySocket {
             newState.hash(mutations.hash());
             newState.indexValueMap(mutations.indexValueMap());
             if(!Arrays.equals(generatePatchMac(name, newState, patch), patch.snapshotMac())){
-                streamHandler.handleFailure(400, "hmac_validation", "snapshot");
+                streamHandler.handleFailure(400, "patch_mac", "decode_patch");
                 return Optional.empty();
             }
 
@@ -1664,12 +1670,12 @@ public class BinarySocket {
         }
 
         private MutationsRecord decodeSnapshot(String name, SnapshotSync snapshot) {
-            var newState = new LTHashState(snapshot.version().version());
+            var newState = new LTHashState(BinarySync.forName(name), snapshot.version().version());
             var mutations = decodeMutations(snapshot.records(), newState);
             newState.hash(mutations.hash());
             newState.indexValueMap(mutations.indexValueMap());
             if(!Arrays.equals(snapshot.mac(), computeSnapshotMac(name, snapshot, newState))){
-                streamHandler.handleFailure(400, "hmac_validation", "snapshot");
+                streamHandler.handleFailure(400, "decode_snapshot", "compute_snapshot_mac");
                 return mutations;
             }
 
@@ -1711,37 +1717,32 @@ public class BinarySocket {
             var encryptedMac = mutation.valueBlob()
                     .slice(-32)
                     .toByteArray();
-            if(!Arrays.equals(generateMac(MutationSync.Operation.SET, encryptedBlob, mutation.id(), mutationKeys.macKey()), encryptedMac)){
-                streamHandler.handleFailure(400, "hmac_validation", "mutation");
+            if(!Arrays.equals(generateMac(Operation.SET, encryptedBlob, mutation.id(), mutationKeys.macKey()), encryptedMac)){
+                streamHandler.handleFailure(400, "decode_mutation", "generate_mac");
                 throw new RuntimeException("Cannot decode mutation: hmc validation failed");
             }
 
             var result = AesCbc.decrypt(encryptedBlob, mutationKeys.encKey());
             var actionSync = ProtobufDecoder.forType(ActionDataSync.class).decode(result);
             if(!mutation.indexBlob().contentEquals(Hmac.calculateSha256(actionSync.index(), mutationKeys.indexKey()))){
-                streamHandler.handleFailure(400, "hmac_validation", "mutation");
+                streamHandler.handleFailure(400, "decode_mutation", "index_blob");
                 throw new RuntimeException("Cannot decode mutation: hmc validation failed");
             }
 
-            generator.mix(mutation.indexBlob().toByteArray(), encryptedMac, MutationSync.Operation.SET);
+            generator.mix(mutation.indexBlob().toByteArray(), encryptedMac, Operation.SET);
             return actionSync;
         }
 
-        private byte[] generateMac(MutationSync.Operation operation, byte[] data, byte[] keyId, byte[] key) {
-            var keyData = (byte) switch (operation){
-                case SET -> 0x01;
-                case REMOVE -> 0x02;
-            };
-
-            var encodedKey = Bytes.of(keyData)
+        private byte[] generateMac(Operation operation, byte[] data, byte[] keyId, byte[] key) {
+            var keyData = Bytes.of(operation.value())
                     .append(keyId)
                     .toByteArray();
 
             var last = Bytes.newBuffer(7)
-                    .append(encodedKey.length)
+                    .append(keyData.length)
                     .toByteArray();
 
-            var total = Bytes.of(encodedKey)
+            var total = Bytes.of(keyData)
                     .append(data)
                     .append(last)
                     .toByteArray();

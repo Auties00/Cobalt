@@ -4,20 +4,23 @@ import it.auties.bytes.Bytes;
 import it.auties.whatsapp.model.sync.LTHashState;
 import it.auties.whatsapp.model.sync.MutationSync;
 import it.auties.whatsapp.util.Validate;
+import lombok.Getter;
 import lombok.NonNull;
 
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
 
 public class LTHash {
-    @NonNull
-    private final LTHashImplementation implementation;
+    private static final int EXPAND_SIZE = 128;
 
-    @NonNull
-    private final byte[] hash;
+    private final byte @NonNull [] salt;
+
+    private final byte @NonNull [] hash;
 
     @NonNull
     private final Map<String, byte[]> indexValueMap;
@@ -26,7 +29,7 @@ public class LTHash {
     private final List<byte[]> add, subtract;
 
     public LTHash(LTHashState hash){
-        this.implementation = new LTHashImplementation("WhatsApp Patch Integrity");
+        this.salt = "WhatsApp Patch Integrity".getBytes(StandardCharsets.UTF_8);
         this.hash = hash.hash();
         this.indexValueMap = hash.indexValueMap();
         this.add = new ArrayList<>();
@@ -53,57 +56,43 @@ public class LTHash {
     }
 
     public Result finish() {
-        var result = implementation.subtractThenAdd(hash,
-                add.toArray(byte[][]::new), subtract.toArray(byte[][]::new));
-        return new Result(result, indexValueMap);
+        var subtracted = perform(hash, false);
+        var added = perform(subtracted, true);
+        return new Result(added, indexValueMap);
     }
 
     public record Result(byte[] hash, Map<String, byte[]> indexValueMap){
 
     }
 
-    private record LTHashImplementation(@NonNull String salt) {
-        public byte[] add(byte[] input, byte[][] buffers) {
-            for(var item : buffers) {
-                input = addSingle(input, item);
-            }
-
-            return input;
+    private byte[] perform(byte[] input, boolean sum) {
+        for(var item : sum ? add : subtract) {
+            input = perform(input, item, sum);
         }
 
-        public byte[] subtract(byte[] input, byte[][] buffers) {
-            for(var item : buffers) {
-                input = subtractSingle(input, item);
-            }
+        return input;
+    }
 
-            return input;
+    private byte[] perform(byte[] input, byte[] buffer, boolean add) {
+        var expanded = Hkdf.extractAndExpand(buffer, salt, EXPAND_SIZE);
+        return performPointWiseWithOverflow(input, expanded, add);
+    }
+
+    private byte[] performPointWiseWithOverflow(byte[] input, byte[] buffer, boolean sum) {
+        var eRead = ByteBuffer.wrap(input)
+                .order(ByteOrder.LITTLE_ENDIAN);
+        var tRead = ByteBuffer.wrap(buffer)
+                .order(ByteOrder.LITTLE_ENDIAN);
+        var write = ByteBuffer.allocate(input.length)
+                .order(ByteOrder.LITTLE_ENDIAN);
+        for(var index = 0; index < input.length; index += 2){
+            var first = Short.toUnsignedInt(eRead.getShort(index));
+            var second = Short.toUnsignedInt(tRead.getShort(index));
+            write.putShort(index, (short) (sum ? first + second : first - second));
         }
 
-        public byte[] subtractThenAdd(byte[] input, byte[][] addBuffers, byte[][] removeBuffers) {
-            return add(subtract(input, removeBuffers), addBuffers);
-        }
-
-        public byte[] addSingle(byte[] input, byte[] addBuffer) {
-            var expanded = Hkdf.expand(addBuffer, salt.getBytes(StandardCharsets.UTF_8), 128);
-            return performPointWiseWithOverflow(input, expanded, Integer::sum);
-        }
-
-        public byte[] subtractSingle(byte[] input, byte[] removeBuffer) {
-            var expanded = Hkdf.expand(removeBuffer, salt.getBytes(StandardCharsets.UTF_8), 128);
-            return performPointWiseWithOverflow(input, expanded, (first, second) -> first - second);
-        }
-
-        public byte[] performPointWiseWithOverflow(byte[] input, byte[] buffer, BiFunction<Integer, Integer, Integer> function) {
-            var eRead = Bytes.of(input);
-            var tRead = Bytes.of(buffer);
-            var write = Bytes.newBuffer();
-            while (eRead.isReadable()){
-                var first = eRead.readUnsignedShort();
-                var second = tRead.readUnsignedShort();
-                write.appendShort(function.apply(first, second).shortValue());
-            }
-
-            return write.remaining().toByteArray();
-        }
+        var result = new byte[input.length];
+        write.get(result);
+        return result;
     }
 }

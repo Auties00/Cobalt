@@ -41,10 +41,6 @@ public class LTHashState {
         this(name, 0);
     }
 
-    public LTHashState(long version){
-        this(null, version);
-    }
-
     public LTHashState(BinarySync name, long version){
         this.name = Objects.toString(name);
         this.version = version;
