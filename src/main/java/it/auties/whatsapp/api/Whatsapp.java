@@ -252,7 +252,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJid chat, @NonNull String message) {
-        return sendMessage(chat, TextMessage.of(message));
+        return sendMessage(chat, MessageContainer.ofConversation(message));
     }
 
     /**
@@ -287,7 +287,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull Chat chat, @NonNull Message message) {
-        return sendMessage(chat.jid(), message);
+        return sendMessage(chat.jid(), MessageContainer.of(message));
     }
 
     /**
@@ -297,7 +297,7 @@ public class Whatsapp {
      * @param message the message to send
      * @return a CompletableFuture
      */
-    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJid chat, @NonNull Message message) {
+    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJid chat, @NonNull MessageContainer message) {
         var key = MessageKey.newMessageKey()
                 .chatJid(chat)
                 .fromMe(true)
@@ -305,7 +305,7 @@ public class Whatsapp {
         var info = MessageInfo.newMessageInfo()
                 .storeId(store().id())
                 .key(key)
-                .message(MessageContainer.of(message))
+                .message(message)
                 .create();
         return sendMessage(info);
     }

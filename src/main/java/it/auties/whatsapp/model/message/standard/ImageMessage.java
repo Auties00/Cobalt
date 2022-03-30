@@ -214,7 +214,7 @@ public final class ImageMessage extends MediaMessage {
    * @return {@link MediaMessageType#IMAGE}
    */
   @Override
-  public @NonNull MediaMessageType type() {
+  public MediaMessageType type() {
     return MediaMessageType.IMAGE;
   }
 }

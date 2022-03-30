@@ -2,11 +2,7 @@ package it.auties.whatsapp.model.sync;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import it.auties.bytes.Bytes;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
@@ -16,7 +12,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class RecordSync implements ParsableMutation {
+public class RecordSync {
   @JsonProperty("1")
   @JsonPropertyDescription("SyncdIndex")
   private IndexSync index;
@@ -29,18 +25,16 @@ public final class RecordSync implements ParsableMutation {
   @JsonPropertyDescription("KeyId")
   private KeyId keyId;
 
-  @Override
-  public byte[] id() {
-    return keyId().id();
-  }
+  @AllArgsConstructor
+  @Accessors(fluent = true)
+  public enum Operation {
+      SET(0, (byte) 0x01),
+      REMOVE(1, (byte) 0x02);
 
-  @Override
-  public Bytes valueBlob() {
-    return Bytes.of(value.blob());
-  }
+      @Getter
+      private final int index;
 
-  @Override
-  public Bytes indexBlob() {
-    return Bytes.of(index.blob());
+      @Getter
+      private final byte value;
   }
 }

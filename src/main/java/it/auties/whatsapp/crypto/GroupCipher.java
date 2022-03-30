@@ -6,39 +6,50 @@ import it.auties.whatsapp.model.signal.sender.SenderKeyMessage;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
 import it.auties.whatsapp.model.signal.sender.SenderKeyState;
 import it.auties.whatsapp.model.signal.sender.SenderMessageKey;
+import it.auties.whatsapp.util.SignalSpecification;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 
 import java.util.NoSuchElementException;
+import java.util.concurrent.Semaphore;
 
 import static it.auties.whatsapp.model.request.Node.with;
 import static java.util.Map.of;
 
 public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys keys) {
+    private static final Semaphore ENCRYPTION_SEMAPHORE = new Semaphore(1);
+
     public Node encrypt(byte[] data) {
-        var record = keys.findSenderKeyByName(name)
-                .orElseThrow(() -> new NoSuchElementException("Missing record for name: %s".formatted(name)));
-        var messageKey = record.currentState()
-                .chainKey()
-                .toSenderMessageKey();
-        var ciphertext = AesCbc.encrypt(
-                messageKey.iv(),
-                data,
-                messageKey.cipherKey()
-        );
+        try {
+            ENCRYPTION_SEMAPHORE.acquire();
+            var record = keys.findSenderKeyByName(name)
+                    .orElseThrow(() -> new NoSuchElementException("Missing record for name: %s".formatted(name)));
+            var messageKey = record.currentState()
+                    .chainKey()
+                    .toSenderMessageKey();
+            var ciphertext = AesCbc.encrypt(
+                    messageKey.iv(),
+                    data,
+                    messageKey.cipherKey()
+            );
 
-        var senderKeyMessage = new SenderKeyMessage(
-                record.currentState().id(),
-                messageKey.iteration(),
-                ciphertext,
-                record.currentState().signingKeyPrivate()
-        );
+            var senderKeyMessage = new SenderKeyMessage(
+                    record.currentState().id(),
+                    messageKey.iteration(),
+                    ciphertext,
+                    record.currentState().signingKeyPrivate()
+            );
 
-        var next = record.currentState().chainKey().next();
-        record.currentState().chainKey(next);
-        keys.addSenderKey(name, record);
-        return with("enc", of("v", "2", "type", "skmsg"),
-                senderKeyMessage.serialized());
+            var next = record.currentState().chainKey().next();
+            record.currentState().chainKey(next);
+            keys.addSenderKey(name, record);
+            return with("enc", of("v", "2", "type", "skmsg"),
+                    senderKeyMessage.serialized());
+        }catch (Throwable throwable){
+            throw new RuntimeException("Cannot encrypt message: an exception occured", throwable);
+        }finally {
+            ENCRYPTION_SEMAPHORE.release();
+        }
     }
 
     public byte[] decrypt(byte[] data) {

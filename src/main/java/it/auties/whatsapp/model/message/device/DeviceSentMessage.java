@@ -37,4 +37,11 @@ public final class DeviceSentMessage implements DeviceMessage {
   @JsonProperty("2")
   @JsonPropertyDescription("message")
   private MessageContainer message;
+
+  /**
+   * The hash of the destination chat
+   */
+  @JsonProperty("3")
+  @JsonPropertyDescription("string")
+  private String phash;
 }

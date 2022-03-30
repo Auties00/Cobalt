@@ -2,12 +2,10 @@ package it.auties.whatsapp.crypto;
 
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.model.sync.LTHashState;
-import it.auties.whatsapp.model.sync.MutationSync;
+import it.auties.whatsapp.model.sync.RecordSync;
 import it.auties.whatsapp.util.Validate;
-import lombok.Getter;
 import lombok.NonNull;
 
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -36,10 +34,10 @@ public class LTHash {
         this.subtract = new ArrayList<>();
     }
 
-    public void mix(byte[] indexMac, byte[] valueMac, MutationSync.Operation operation) {
+    public void mix(byte[] indexMac, byte[] valueMac, RecordSync.Operation operation) {
         var indexMacBase64 = Bytes.of(indexMac).toBase64();
         var prevOp = indexValueMap.get(indexMacBase64);
-        if (operation == MutationSync.Operation.REMOVE) {
+        if (operation == RecordSync.Operation.REMOVE) {
             Validate.isTrue(prevOp != null, "No previous operation");
             indexValueMap.remove(indexMacBase64);
             subtract.add(prevOp);

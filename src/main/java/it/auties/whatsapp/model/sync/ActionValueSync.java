@@ -15,7 +15,7 @@ import java.util.List;
 @NoArgsConstructor
 @ToString
 @Accessors(fluent = true)
-public final class ActionValueSync implements GenericSync {
+public class ActionValueSync {
     //<editor-fold desc="Metadata">
     @JsonProperty("1")
     @JsonPropertyDescription("int64")

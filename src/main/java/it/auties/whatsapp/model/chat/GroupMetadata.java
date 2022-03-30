@@ -100,4 +100,10 @@ public class GroupMetadata {
     public Optional<ZonedDateTime> ephemeralExpiration() {
         return Optional.ofNullable(ephemeralExpiration);
     }
+
+    public List<ContactJid> participantsJids(){
+        return participants.stream()
+                .map(GroupParticipant::jid)
+                .toList();
+    }
 }

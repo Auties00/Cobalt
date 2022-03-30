@@ -124,4 +124,5 @@ public class Medias implements JacksonProvider {
                 .map(host -> "https://%s%s&hash=%s&mms-type=%s&__wa-mms=".formatted(host, provider.directPath(), fileEncSha256, provider.name()))
                 .toList();
     }
+
 }

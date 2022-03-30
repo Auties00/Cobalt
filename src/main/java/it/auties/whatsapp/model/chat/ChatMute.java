@@ -70,7 +70,7 @@ public record ChatMute(long endTimeStamp) implements ProtobufValueProvider<Long>
      *
      * @return a non-null enum that describes the type of mute for this object
      */
-    public @NonNull ChatMuteType type() {
+    public ChatMuteType type() {
         if (endTimeStamp == -1) {
             return ChatMuteType.MUTED_INDEFINITELY;
         }
@@ -87,7 +87,7 @@ public record ChatMute(long endTimeStamp) implements ProtobufValueProvider<Long>
      *
      * @return a non-empty optional date if {@link ChatMute#endTimeStamp} > 0
      */
-    public @NonNull Optional<ZonedDateTime> end() {
+    public Optional<ZonedDateTime> end() {
         return Clock.parse(endTimeStamp);
     }
 

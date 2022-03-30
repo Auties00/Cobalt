@@ -43,7 +43,6 @@ public sealed interface WhatsappController permits WhatsappStore, WhatsappKeys {
                 LinkedList::new);
     }
 
-
     /**
      * Saves this object as a JSON
      *

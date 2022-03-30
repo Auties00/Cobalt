@@ -21,6 +21,8 @@ import lombok.extern.java.Log;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -126,9 +128,15 @@ public final class WhatsappStore implements WhatsappController {
     private ExecutorService requestsService = newSingleThreadExecutor();
 
     /**
+     * The media connection semaphore
+     */
+    @NonNull
+    @Default
+    private Semaphore mediaConnectionSemaphore = new Semaphore(1);
+
+    /**
      * The media connection associated with this store
      */
-    @Getter(onMethod = @__(@NonNull))
     @Setter
     private MediaConnection mediaConnection;
 
@@ -169,7 +177,8 @@ public final class WhatsappStore implements WhatsappController {
     }
 
     public static Optional<WhatsappStore> findStoreById(int id){
-        return stores.stream()
+        return Collections.synchronizedSet(stores)
+                .parallelStream()
                 .filter(entry -> entry.id() == id)
                 .findFirst();
     }
@@ -181,7 +190,8 @@ public final class WhatsappStore implements WhatsappController {
      * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
     public Optional<Contact> findContactByJid(ContactJid jid) {
-        return jid == null ? Optional.empty() : contacts.parallelStream()
+        return jid == null ? Optional.empty() : Collections.synchronizedList(contacts())
+                .parallelStream()
                 .filter(contact -> contact.jid().equals(jid))
                 .findAny();
     }
@@ -209,7 +219,8 @@ public final class WhatsappStore implements WhatsappController {
     }
 
     private Stream<Contact> findContactsStream(String name) {
-        return name == null ? Stream.empty() : contacts.parallelStream()
+        return name == null ? Stream.empty() : Collections.synchronizedList(contacts())
+                .parallelStream()
                 .filter(contact -> Objects.equals(contact.fullName(), name)
                         || Objects.equals(contact.shortName(), name)
                         || Objects.equals(contact.chosenName(), name));
@@ -222,7 +233,8 @@ public final class WhatsappStore implements WhatsappController {
      * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
     public Optional<Chat> findChatByJid(ContactJid jid) {
-        return jid == null ? Optional.empty() : chats.parallelStream()
+        return jid == null ? Optional.empty() : Collections.synchronizedList(chats())
+                .parallelStream()
                 .filter(chat -> chat.jid().equals(jid))
                 .findAny();
     }
@@ -235,7 +247,7 @@ public final class WhatsappStore implements WhatsappController {
      * @return a non-empty Optional containing the result if it is found otherwise an empty Optional empty
      */
     public Optional<MessageInfo> findMessageById(Chat chat, String id) {
-        return chat == null || id == null ? Optional.empty() : chat.messages()
+        return chat == null || id == null ? Optional.empty() : Collections.synchronizedList(chat.messages())
                 .parallelStream()
                 .filter(message -> Objects.equals(message.key().id(), id))
                 .findAny();
@@ -264,7 +276,8 @@ public final class WhatsappStore implements WhatsappController {
     }
 
     private Stream<Chat> findChatsStream(String name) {
-        return name == null ? Stream.empty() : chats.parallelStream()
+        return name == null ? Stream.empty() : Collections.synchronizedList(chats())
+                .parallelStream()
                 .filter(chat -> chat.name().equalsIgnoreCase(name));
     }
 
@@ -275,7 +288,8 @@ public final class WhatsappStore implements WhatsappController {
      * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional empty
      */
     public Optional<Request> findPendingRequest(String id) {
-        return id == null ? Optional.empty() : pendingRequests.parallelStream()
+        return id == null ? Optional.empty() : Collections.synchronizedList(pendingRequests())
+                .parallelStream()
                 .filter(request -> Objects.equals(request.id(), id))
                 .findAny();
     }
@@ -321,7 +335,8 @@ public final class WhatsappStore implements WhatsappController {
      * @return a non-null list of chats
      */
     public List<Chat> pinnedChats(){
-        return chats.parallelStream()
+        return Collections.synchronizedList(chats())
+                .parallelStream()
                 .filter(Chat::isPinned)
                 .toList();
     }
@@ -400,5 +415,21 @@ public final class WhatsappStore implements WhatsappController {
         var preferences = Preferences.of("store/%s.json", id);
         preferences.delete();
         return this;
+    }
+
+    /**
+     * Returns this media connection when it becomes available
+     *
+     * @return a non-null media connection
+     */
+    public MediaConnection mediaConnection(){
+        try {
+            mediaConnectionSemaphore.acquire();
+            return mediaConnection;
+        }catch (InterruptedException exception){
+            throw new IllegalStateException("Cannot use media connection", exception);
+        }finally {
+            mediaConnectionSemaphore.release();
+        }
     }
 }

@@ -103,7 +103,7 @@ public final class PaymentInvoiceMessage extends MediaMessage implements Payment
    * @throws UnsupportedOperationException always
    */
   @Override
-  public @NonNull String url() {
+  public String url() {
     throw new UnsupportedOperationException("Invoices don't provide an upload url");
   }
 
@@ -124,7 +124,7 @@ public final class PaymentInvoiceMessage extends MediaMessage implements Payment
    * @return a non-null {@link MediaMessageType}
    */
   @Override
-  public @NonNull MediaMessageType type() {
+  public MediaMessageType type() {
     return type == AttachmentType.IMAGE ? MediaMessageType.IMAGE
             : MediaMessageType.DOCUMENT;
   }

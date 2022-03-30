@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.sync;
 
-import it.auties.whatsapp.model.sync.MutationSync.Operation;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.SignalSpecification;
 import lombok.SneakyThrows;
@@ -8,16 +7,16 @@ import lombok.SneakyThrows;
 import java.util.ArrayList;
 import java.util.List;
 
-public record PatchRequest(String type, ActionValueSync sync, String index, int version, Operation operation)
+public record PatchRequest(String type, ActionValueSync sync, String index, int version, RecordSync.Operation operation)
         implements JacksonProvider, SignalSpecification {
 
     @SneakyThrows
-    public static PatchRequest newRequest(String type, ActionValueSync sync, Operation operation, int version){
+    public static PatchRequest newRequest(String type, ActionValueSync sync, RecordSync.Operation operation, int version){
         var index = JACKSON.writeValueAsString(createArguments(sync));
         return new PatchRequest(type, sync, index, version, operation);
     }
 
-    public static PatchRequest newRequest(String type, ActionValueSync sync, Operation operation){
+    public static PatchRequest newRequest(String type, ActionValueSync sync, RecordSync.Operation operation){
         return newRequest(type, sync, operation, CURRENT_VERSION);
     }
 

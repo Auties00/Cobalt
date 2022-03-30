@@ -147,7 +147,7 @@ public final class AudioMessage extends MediaMessage {
    * @return {@link MediaMessageType#AUDIO}
    */
   @Override
-  public @NonNull MediaMessageType type() {
+  public MediaMessageType type() {
     return MediaMessageType.AUDIO;
   }
 }

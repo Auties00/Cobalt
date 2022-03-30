@@ -40,7 +40,7 @@ import it.auties.whatsapp.model.signal.message.SignalMessage;
 import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
 import it.auties.whatsapp.model.sync.*;
-import it.auties.whatsapp.model.sync.MutationSync.Operation;
+import it.auties.whatsapp.model.sync.RecordSync.Operation;
 import it.auties.whatsapp.util.*;
 import jakarta.websocket.*;
 import jakarta.websocket.ClientEndpointConfig.Configurator;
@@ -57,27 +57,22 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static it.auties.bytes.Bytes.newBuffer;
-import static it.auties.bytes.Bytes.ofBase64;
 import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
 import static it.auties.whatsapp.api.SerializationStrategy.Event.*;
 import static it.auties.whatsapp.model.request.Node.*;
 import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
 import static java.lang.Long.parseLong;
 import static java.lang.Runtime.getRuntime;
-import static java.lang.String.valueOf;
-import static java.time.Instant.now;
-import static java.util.Base64.getEncoder;
 import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static java.util.stream.Collectors.partitioningBy;
-import static java.util.stream.Collectors.toUnmodifiableSet;
+import static java.util.stream.Collectors.*;
 
 @Accessors(fluent = true)
 @ClientEndpoint(configurator = BinarySocket.OriginPatcher.class)
@@ -358,8 +353,8 @@ public class BinarySocket {
 
         var attributes = Attributes.empty()
                 .put("id", messages.get(0))
-                .put("t", valueOf(now().toEpochMilli()))
-                .put("to", jid.toString())
+                .put("t", Clock.now() / 1000L)
+                .put("to", jid)
                 .put("type", type, Objects::nonNull)
                 .put("participant", participant, Objects::nonNull, value -> !Objects.equals(jid, value));
         var receipt = withChildren("receipt",
@@ -470,7 +465,7 @@ public class BinarySocket {
 
         private CompanionData createRegisterData() {
             return CompanionData.builder()
-                    .buildHash(ofBase64(BUILD_HASH).toByteArray())
+                    .buildHash(Bytes.ofBase64(BUILD_HASH).toByteArray())
                     .companion(encode(createCompanionProps()))
                     .id(BytesHelper.intToBytes(keys.id(), 4))
                     .keyType(BytesHelper.intToBytes(KEY_TYPE, 1))
@@ -752,15 +747,18 @@ public class BinarySocket {
             sendQuery("get", "w:p", with("ping"));
         }
 
+        @SneakyThrows
         private void createMediaConnection(){
             if(!loggedIn){
                 return;
             }
 
+            store.mediaConnectionSemaphore().acquire();
             sendQuery("set", "w:m", with("media_conn"))
                     .thenApplyAsync(MediaConnection::ofNode)
                     .thenApplyAsync(this::scheduleMediaConnection)
                     .thenApplyAsync(store::mediaConnection)
+                    .thenRunAsync(store.mediaConnectionSemaphore()::release)
                     .exceptionallyAsync(BinarySocket.this::handleError);
         }
 
@@ -883,7 +881,7 @@ public class BinarySocket {
             var oldSignature = Arrays.copyOf(account.accountSignatureKey(), account.accountSignature().length);
             var devicePairNode = withChildren("pair-device-sign",
                     with("device-identity",
-                            of("key-index", valueOf(keyIndex)),
+                            of("key-index", keyIndex),
                             ProtobufEncoder.encode(account.accountSignatureKey(null))));
 
             keys.companionIdentity(account.accountSignatureKey(oldSignature));
@@ -914,12 +912,12 @@ public class BinarySocket {
         @SafeVarargs
         public final CompletableFuture<Node> encode(MessageInfo info, Entry<String, Object>... attributes) {
             if (isConversation(info)) {
-                var message = BytesHelper.pad(ProtobufEncoder.encode(info.message()));
-                var deviceMessage = BytesHelper.pad(ProtobufEncoder.encode(DeviceSentMessage.newDeviceSentMessage(info.chatJid().toString(), info.message())));
-                return querySyncDevices(keys.companion().toUserJid())
-                        .thenCombineAsync(querySyncDevices(info.chatJid()), this::append)
-                        .thenComposeAsync(result -> createDistinctSessions(result, message, deviceMessage))
-                        .thenApplyAsync(participants -> prepareMessageNode(info, participants, null, attributes))
+                var encodedMessage = BytesHelper.pad(ProtobufEncoder.encode(info.message()));
+                var deviceMessage = MessageContainer.of(DeviceSentMessage.newDeviceSentMessage(info.chatJid().toString(), info.message(), null));
+                var encodedDeviceMessage = BytesHelper.pad(ProtobufEncoder.encode(deviceMessage));
+                return querySyncDevices(List.of(keys.companion().toUserJid(), info.chatJid()))
+                        .thenComposeAsync(result -> createDistinctSessions(result, encodedMessage, encodedDeviceMessage))
+                        .thenApplyAsync(participants -> createEncodedMessageNode(info, participants, null, attributes))
                         .exceptionallyAsync(BinarySocket.this::handleError);
             }
 
@@ -932,13 +930,14 @@ public class BinarySocket {
                     .map(CompletableFuture::completedFuture)
                     .orElseGet(() -> queryGroupMetadata(info.chatJid()))
                     .thenApplyAsync(metadata -> groupsCache.putAndGetValue(metadata.jid(), metadata))
-                    .thenComposeAsync(metadata -> getGroupParticipantsNodes(info, metadata, groupSignalMessage))
-                    .thenApplyAsync(participants -> prepareMessageNode(info, participants, groupWhatsappMessage, attributes))
+                    .thenComposeAsync(metadata -> querySyncDevices(metadata.participantsJids()))
+                    .thenComposeAsync(contacts -> createDistributionMessage(info, groupSignalMessage, contacts))
+                    .thenApplyAsync(participants -> createEncodedMessageNode(info, participants, groupWhatsappMessage, attributes))
                     .exceptionallyAsync(BinarySocket.this::handleError);
         }
 
         @SafeVarargs
-        private Node prepareMessageNode(MessageInfo info, List<Node> participants, Node descriptor, Entry<String, Object>... metadata) {
+        private Node createEncodedMessageNode(MessageInfo info, List<Node> participants, Node descriptor, Entry<String, Object>... metadata) {
             var body = new ArrayList<Node>();
             if(descriptor != null){
                 body.add(descriptor);
@@ -958,14 +957,6 @@ public class BinarySocket {
                     .put("to", info.chatJid())
                     .map();
             return withChildren("message", attributes, body);
-        }
-
-        private CompletableFuture<List<Node>> getGroupParticipantsNodes(MessageInfo info, GroupMetadata metadata, SignalDistributionMessage message) {
-            return metadata.participants()
-                    .stream()
-                    .map(participant -> querySyncDevices(participant.jid()))
-                    .reduce(completedFuture(List.of()), (left, right) -> left.thenCombineAsync(right, this::append))
-                    .thenComposeAsync(contacts -> createDistributionMessage(info, message, contacts));
         }
 
         private boolean hasPreKeyMessage(List<Node> participants) {
@@ -996,18 +987,25 @@ public class BinarySocket {
         }
 
         private CompletableFuture<List<Node>> createDistinctSessions(List<ContactJid> contacts, byte[] message, byte[] deviceMessage) {
-            var mapped = contacts.stream()
+            var partitioned = contacts.stream()
                     .collect(partitioningBy(contact -> contact.toUserJid().equals(keys.companion().toUserJid()), toUnmodifiableSet()));
-            return createSessions(mapped.get(true), deviceMessage)
-                    .thenCombineAsync(createSessions(mapped.get(false), message), this::append);
+            var companions = partitioned.get(true);
+            var others = partitioned.get(false);
+            return createSessions(companions, deviceMessage)
+                    .thenCombineAsync(createSessions(others, message), this::append);
         }
+
         private CompletableFuture<List<Node>> createSessions(Set<ContactJid> contacts, byte[] message) {
+            if(contacts.isEmpty()){
+                return completedFuture(List.of());
+            }
+            
             var missingSessions = contacts.stream()
                     .filter(contact -> !keys.hasSession(contact.toSignalAddress()))
                     .map(contact -> withAttributes("user", of("jid", contact, "reason", "identity")))
                     .toList();
             if(missingSessions.isEmpty()){
-                return CompletableFuture.completedFuture(createSessionsWithoutSync(contacts, message));
+                return completedFuture(createSessionsWithoutSync(contacts, message));
             }
 
             return sendQuery("get", "encrypt", withChildren("key", missingSessions))
@@ -1054,23 +1052,36 @@ public class BinarySocket {
             );
         }
 
-        private CompletableFuture<List<ContactJid>> querySyncDevices(ContactJid contact) {
-            return devicesCache.getOptional(contact.user())
-                    .map(CompletableFuture::completedFuture)
-                    .orElseGet(() -> querySyncDevicesFromWhatsapp(contact));
+        private CompletableFuture<List<ContactJid>> querySyncDevices(List<ContactJid> contacts) {
+            var partitioned = contacts.stream()
+                    .collect(partitioningBy(contact -> devicesCache.containsKey(contact.user()), toUnmodifiableSet()));
+            var cached = partitioned.get(true)
+                    .stream()
+                    .map(ContactJid::user)
+                    .map(devicesCache::getOptional)
+                    .flatMap(Optional::stream)
+                    .flatMap(Collection::stream)
+                    .toList();
+            var missing = partitioned.get(false);
+            return missing.isEmpty() ? completedFuture(cached)
+                    : querySyncDevicesFromWhatsapp(missing).thenApplyAsync(results -> append(results, cached));
+
         }
 
-        private CompletableFuture<List<ContactJid>> querySyncDevicesFromWhatsapp(ContactJid contact) {
+        private CompletableFuture<List<ContactJid>> querySyncDevicesFromWhatsapp(Set<ContactJid> contacts) {
+            var contactNodes = contacts.stream()
+                    .map(contact -> withAttributes("user", of("jid", contact)))
+                    .toList();
             var body = withChildren("usync",
                     of("sid", store.nextTag(), "mode", "query", "last", "true", "index", "0", "context", "message"),
                     withChildren("query", withAttributes("devices", of("version", "2"))),
-                    withChildren("list", withAttributes("user", of("jid", contact))));
+                    withChildren("list", contactNodes));
             return sendQuery("get", "usync", body)
-                    .thenApplyAsync(response -> saveSyncDevices(response, contact));
+                    .thenApplyAsync(this::parseAndCacheSyncDevices);
         }
 
-        private List<ContactJid> saveSyncDevices(Node node, ContactJid contact) {
-            var contacts = node.children()
+        private List<ContactJid> parseAndCacheSyncDevices(Node node) {
+            var results = node.children()
                     .stream()
                     .map(child -> child.findNode("list"))
                     .filter(Objects::nonNull)
@@ -1078,8 +1089,8 @@ public class BinarySocket {
                     .flatMap(Collection::stream)
                     .flatMap(this::parseSyncDevices)
                     .toList();
-            devicesCache.put(contact.user(), contacts);
-            return contacts;
+            devicesCache.putAll(results.stream().collect(groupingBy(ContactJid::user)));
+            return results;
         }
 
         private Stream<ContactJid> parseSyncDevices(Node wrapper) {
@@ -1108,7 +1119,6 @@ public class BinarySocket {
             if(options.debug()) {
                 System.out.printf("Decoding message with id %s%n", id);
             }
-
 
             var from = node.attributes().getJid("from")
                     .orElseThrow(() -> new NoSuchElementException("Missing from"));
@@ -1279,6 +1289,7 @@ public class BinarySocket {
 
                 case APP_STATE_SYNC_KEY_SHARE -> {
                     keys.addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
+                    if(options.debug()) System.out.println("Initial pull");
                     appStateHandler.pull(BinarySync.values());
                 }
 
@@ -1405,10 +1416,10 @@ public class BinarySocket {
                     .keyId(syncId)
                     .mutations(List.of(mutation))
                     .build();
-            hashState.indexValueMap().put(getEncoder().encodeToString(indexMac), valueMac);
+            hashState.indexValueMap().put(Bytes.of(indexMac).toBase64(), valueMac);
 
             var collectionNode = withAttributes("collection",
-                    of("name", patch.type(), "version", valueOf(hashState.version() - 1)));
+                    of("name", patch.type(), "version", hashState.version() - 1));
             var patchNode = with("patch",
                     ProtobufEncoder.encode(sync));
             return sendQuery("set", "w:sync:app:state",
@@ -1637,7 +1648,10 @@ public class BinarySocket {
                 return Optional.empty();
             }
 
-            var mutations = decodeMutations(patch.mutations(), newState);
+            var records = patch.mutations()
+                    .stream()
+                    .collect(Collectors.toMap(MutationSync::record, MutationSync::operation));
+            var mutations = decodeMutations(records, newState);
             newState.hash(mutations.hash());
             newState.indexValueMap(mutations.indexValueMap());
             if(!Arrays.equals(generatePatchMac(name, newState, patch), patch.snapshotMac())){
@@ -1665,13 +1679,16 @@ public class BinarySocket {
                     .map(mutation -> mutation.record().value().blob())
                     .map(Bytes::of)
                     .map(binary -> binary.slice(-32))
-                    .reduce(newBuffer(), Bytes::append);
+                    .reduce(Bytes.newBuffer(), Bytes::append);
             return generatePatchMac(sync.snapshotMac(), mutationMacs, sync.version().version(), name, mutationKeys.patchMacKey());
         }
 
         private MutationsRecord decodeSnapshot(String name, SnapshotSync snapshot) {
             var newState = new LTHashState(BinarySync.forName(name), snapshot.version().version());
-            var mutations = decodeMutations(snapshot.records(), newState);
+            var records = snapshot.records()
+                    .stream()
+                    .collect(Collectors.toMap(Function.identity(), ignored -> Operation.SET));
+            var mutations = decodeMutations(records, newState);
             newState.hash(mutations.hash());
             newState.indexValueMap(mutations.indexValueMap());
             if(!Arrays.equals(snapshot.mac(), computeSnapshotMac(name, snapshot, newState))){
@@ -1696,40 +1713,38 @@ public class BinarySocket {
             return generateSnapshotMac(newState.hash(), newState.version(), name, mutationKeys.snapshotMacKey());
         }
 
-        private MutationsRecord decodeMutations(List<? extends ParsableMutation> syncs, LTHashState initialState) {
+        private MutationsRecord decodeMutations(Map<RecordSync, Operation> syncs, LTHashState initialState) {
             var generator = new LTHash(initialState);
-            var mutations = syncs.stream()
-                    .map(mutation -> decodeMutation(generator, mutation))
+            var mutations = syncs.keySet()
+                    .stream()
+                    .map(mutation -> decodeMutation(syncs.get(mutation), mutation, generator))
                     .toList();
             var result = generator.finish();
             return new MutationsRecord(result.hash(), result.indexValueMap(), mutations);
         }
 
         @SneakyThrows
-        private ActionDataSync decodeMutation(LTHash generator, ParsableMutation mutation) {
-            var appStateSyncKey = keys.findAppKeyById(mutation.id())
+        private ActionDataSync decodeMutation(Operation operation, RecordSync sync, LTHash generator) {
+            var appStateSyncKey = keys.findAppKeyById(sync.keyId().id())
                     .orElseThrow(() -> new NoSuchElementException("No keys available for mutation"));
-
             var mutationKeys = MutationKeys.of(appStateSyncKey.keyData().keyData());
-            var encryptedBlob = mutation.valueBlob()
-                    .cut(-32)
-                    .toByteArray();
-            var encryptedMac = mutation.valueBlob()
-                    .slice(-32)
-                    .toByteArray();
-            if(!Arrays.equals(generateMac(Operation.SET, encryptedBlob, mutation.id(), mutationKeys.macKey()), encryptedMac)){
+
+            var blob = Bytes.of(sync.value().blob());
+            var encryptedBlob = blob.cut(-32).toByteArray();
+            var encryptedMac = blob.slice(-32).toByteArray();
+            if(!Arrays.equals(generateMac(operation, encryptedBlob, sync.keyId().id(), mutationKeys.macKey()), encryptedMac)){
                 streamHandler.handleFailure(400, "decode_mutation", "generate_mac");
                 throw new RuntimeException("Cannot decode mutation: hmc validation failed");
             }
 
             var result = AesCbc.decrypt(encryptedBlob, mutationKeys.encKey());
             var actionSync = ProtobufDecoder.forType(ActionDataSync.class).decode(result);
-            if(!mutation.indexBlob().contentEquals(Hmac.calculateSha256(actionSync.index(), mutationKeys.indexKey()))){
+            if(!Arrays.equals(sync.index().blob(), Hmac.calculateSha256(actionSync.index(), mutationKeys.indexKey()))){
                 streamHandler.handleFailure(400, "decode_mutation", "index_blob");
                 throw new RuntimeException("Cannot decode mutation: hmc validation failed");
             }
 
-            generator.mix(mutation.indexBlob().toByteArray(), encryptedMac, Operation.SET);
+            generator.mix(sync.index().blob(), encryptedMac, operation);
             return actionSync;
         }
 
@@ -1742,11 +1757,7 @@ public class BinarySocket {
                     .append(keyData.length)
                     .toByteArray();
 
-            var total = Bytes.of(keyData)
-                    .append(data)
-                    .append(last)
-                    .toByteArray();
-
+            var total = Bytes.of(keyData, data, last).toByteArray();
             return Bytes.of(Hmac.calculateSha512(total, key))
                     .cut(32)
                     .toByteArray();

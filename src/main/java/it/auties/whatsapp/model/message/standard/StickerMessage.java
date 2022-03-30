@@ -169,7 +169,7 @@ public final class StickerMessage extends MediaMessage {
    * @return {@link MediaMessageType#STICKER}
    */
   @Override
-  public @NonNull MediaMessageType type() {
+  public MediaMessageType type() {
     return MediaMessageType.STICKER;
   }
 }

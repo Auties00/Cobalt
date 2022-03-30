@@ -17,7 +17,7 @@ import java.nio.charset.StandardCharsets;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class ActionDataSync implements GenericSync {
+public class ActionDataSync {
   @JsonProperty("1")
   @JsonPropertyDescription("bytes")
   private byte[] index;

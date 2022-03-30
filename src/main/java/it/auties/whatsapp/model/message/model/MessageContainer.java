@@ -517,7 +517,7 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
    * @return a non-null enumerated type
    */
   @JsonIgnore
-  public @NonNull MessageContainer.ContentType type(){
+  public MessageContainer.ContentType type(){
     return switch (content()){
       case null -> ContentType.EMPTY;
       case DeviceMessage ignored -> ContentType.DEVICE;
