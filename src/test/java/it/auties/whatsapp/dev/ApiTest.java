@@ -1,4 +1,4 @@
-package it.auties.whatsapp;
+package it.auties.whatsapp.dev;
 
 import com.google.zxing.common.BitMatrix;
 import it.auties.whatsapp.api.QrHandler;
@@ -35,9 +35,10 @@ public class ApiTest {
             return;
         }
 
-        System.out.println("Sending message to " + contact);
-        whatsapp.store().findChatByName(contact)
-                .ifPresent(chat -> whatsapp.sendMessage(chat, "Ciao!"));
+        whatsapp.store().findChatByName(contact).ifPresentOrElse(chat -> {
+            System.out.println("Sending message to " + contact);
+            whatsapp.sendMessage(chat, "Ciao!");
+        }, () -> System.out.println("No match for " + contact));
         waitForInput(whatsapp);
     }
 
@@ -52,7 +53,7 @@ public class ApiTest {
         public void onChats() {
             System.out.println("Called on chats");
             whatsapp.store()
-                    .findChatByJid(ContactJid.of("393495089819@s.whatsapp.net"))
+                    .findChatByName("Andrea")
                     .ifPresent(chat -> {
                         System.out.printf("Sending message to %s%n", chat.jid());
                         whatsapp.sendMessage(chat.jid(), "Test da md");

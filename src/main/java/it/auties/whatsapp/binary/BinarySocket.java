@@ -759,7 +759,12 @@ public class BinarySocket {
                     .thenApplyAsync(this::scheduleMediaConnection)
                     .thenApplyAsync(store::mediaConnection)
                     .thenRunAsync(store.mediaConnectionSemaphore()::release)
-                    .exceptionallyAsync(BinarySocket.this::handleError);
+                    .exceptionallyAsync(this::handleMediaConnectionError);
+        }
+
+        private Void handleMediaConnectionError(Throwable throwable){
+            store.mediaConnectionSemaphore().release();
+            return handleError(throwable);
         }
 
         private MediaConnection scheduleMediaConnection(MediaConnection connection) {
@@ -915,22 +920,23 @@ public class BinarySocket {
                 var encodedMessage = BytesHelper.pad(ProtobufEncoder.encode(info.message()));
                 var deviceMessage = MessageContainer.of(DeviceSentMessage.newDeviceSentMessage(info.chatJid().toString(), info.message(), null));
                 var encodedDeviceMessage = BytesHelper.pad(ProtobufEncoder.encode(deviceMessage));
-                return querySyncDevices(List.of(keys.companion().toUserJid(), info.chatJid()))
-                        .thenComposeAsync(result -> createDistinctSessions(result, encodedMessage, encodedDeviceMessage))
+                var knownDevices = List.of(keys.companion().toUserJid(), info.chatJid());
+                return querySyncDevices(knownDevices, true)
+                        .thenComposeAsync(result -> createDistinctSessions(append(knownDevices, result), encodedMessage, encodedDeviceMessage))
                         .thenApplyAsync(participants -> createEncodedMessageNode(info, participants, null, attributes))
                         .exceptionallyAsync(BinarySocket.this::handleError);
             }
 
             var senderName = new SenderKeyName(info.chatJid().toString(), keys.companion().toSignalAddress());
             var groupBuilder = new GroupBuilder(keys);
-            var groupSignalMessage = groupBuilder.createMessage(senderName);
+            var groupSignalMessage = groupBuilder.createOutgoing(senderName);
             var groupCipher = new GroupCipher(senderName, keys);
             var groupWhatsappMessage = groupCipher.encrypt(BytesHelper.pad(ProtobufEncoder.encode(info.message())));
             return groupsCache.getOptional(info.chatJid())
                     .map(CompletableFuture::completedFuture)
                     .orElseGet(() -> queryGroupMetadata(info.chatJid()))
                     .thenApplyAsync(metadata -> groupsCache.putAndGetValue(metadata.jid(), metadata))
-                    .thenComposeAsync(metadata -> querySyncDevices(metadata.participantsJids()))
+                    .thenComposeAsync(metadata -> querySyncDevices(metadata.participantsJids(), false))
                     .thenComposeAsync(contacts -> createDistributionMessage(info, groupSignalMessage, contacts))
                     .thenApplyAsync(participants -> createEncodedMessageNode(info, participants, groupWhatsappMessage, attributes))
                     .exceptionallyAsync(BinarySocket.this::handleError);
@@ -976,7 +982,7 @@ public class BinarySocket {
         private CompletableFuture<List<Node>> createDistributionMessage(MessageInfo info, SignalDistributionMessage signalMessage, List<ContactJid> participants) {
             var missingParticipants= participants.stream()
                     .filter(participant -> !keys.hasSession(participant.toSignalAddress()))
-                    .collect(toUnmodifiableSet());
+                    .toList();
             if(missingParticipants.isEmpty()){
                 return completedFuture(List.of());
             }
@@ -988,14 +994,14 @@ public class BinarySocket {
 
         private CompletableFuture<List<Node>> createDistinctSessions(List<ContactJid> contacts, byte[] message, byte[] deviceMessage) {
             var partitioned = contacts.stream()
-                    .collect(partitioningBy(contact -> contact.toUserJid().equals(keys.companion().toUserJid()), toUnmodifiableSet()));
+                    .collect(partitioningBy(contact -> contact.toUserJid().equals(keys.companion().toUserJid()), toUnmodifiableList()));
             var companions = partitioned.get(true);
             var others = partitioned.get(false);
             return createSessions(companions, deviceMessage)
                     .thenCombineAsync(createSessions(others, message), this::append);
         }
 
-        private CompletableFuture<List<Node>> createSessions(Set<ContactJid> contacts, byte[] message) {
+        private CompletableFuture<List<Node>> createSessions(List<ContactJid> contacts, byte[] message) {
             if(contacts.isEmpty()){
                 return completedFuture(List.of());
             }
@@ -1014,7 +1020,7 @@ public class BinarySocket {
                     .thenApplyAsync(ignored -> createSessionsWithoutSync(contacts, message));
         }
 
-        private List<Node> createSessionsWithoutSync(Set<ContactJid> contacts, byte[] message) {
+        private List<Node> createSessionsWithoutSync(List<ContactJid> contacts, byte[] message) {
             return contacts.stream()
                     .map(contact -> createSession(contact, message))
                     .toList();
@@ -1052,9 +1058,9 @@ public class BinarySocket {
             );
         }
 
-        private CompletableFuture<List<ContactJid>> querySyncDevices(List<ContactJid> contacts) {
+        private CompletableFuture<List<ContactJid>> querySyncDevices(List<ContactJid> contacts, boolean excludeSelf) {
             var partitioned = contacts.stream()
-                    .collect(partitioningBy(contact -> devicesCache.containsKey(contact.user()), toUnmodifiableSet()));
+                    .collect(partitioningBy(contact -> devicesCache.containsKey(contact.user()), toUnmodifiableList()));
             var cached = partitioned.get(true)
                     .stream()
                     .map(ContactJid::user)
@@ -1064,11 +1070,11 @@ public class BinarySocket {
                     .toList();
             var missing = partitioned.get(false);
             return missing.isEmpty() ? completedFuture(cached)
-                    : querySyncDevicesFromWhatsapp(missing).thenApplyAsync(results -> append(results, cached));
+                    : querySyncDevicesFromWhatsapp(missing, excludeSelf).thenApplyAsync(results -> append(results, cached));
 
         }
 
-        private CompletableFuture<List<ContactJid>> querySyncDevicesFromWhatsapp(Set<ContactJid> contacts) {
+        private CompletableFuture<List<ContactJid>> querySyncDevicesFromWhatsapp(List<ContactJid> contacts, boolean excludeSelf) {
             var contactNodes = contacts.stream()
                     .map(contact -> withAttributes("user", of("jid", contact)))
                     .toList();
@@ -1077,37 +1083,38 @@ public class BinarySocket {
                     withChildren("query", withAttributes("devices", of("version", "2"))),
                     withChildren("list", contactNodes));
             return sendQuery("get", "usync", body)
-                    .thenApplyAsync(this::parseAndCacheSyncDevices);
+                    .thenApplyAsync(result -> parseAndCacheSyncDevices(result, excludeSelf));
         }
 
-        private List<ContactJid> parseAndCacheSyncDevices(Node node) {
+        private List<ContactJid> parseAndCacheSyncDevices(Node node, boolean excludeSelf) {
             var results = node.children()
                     .stream()
                     .map(child -> child.findNode("list"))
                     .filter(Objects::nonNull)
                     .map(Node::children)
                     .flatMap(Collection::stream)
-                    .flatMap(this::parseSyncDevices)
+                    .flatMap(entry -> parseSyncDevices(entry, excludeSelf))
                     .toList();
             devicesCache.putAll(results.stream().collect(groupingBy(ContactJid::user)));
             return results;
         }
 
-        private Stream<ContactJid> parseSyncDevices(Node wrapper) {
+        private Stream<ContactJid> parseSyncDevices(Node wrapper, boolean excludeSelf) {
             var jid = wrapper.attributes().getJid("jid")
                     .orElseThrow(() -> new NoSuchElementException("Missing jid for sync device"));
             return wrapper.findNode("devices")
                     .findNode("device-list")
                     .children()
                     .stream()
-                    .map(child -> parseDeviceId(child, jid))
+                    .map(child -> parseDeviceId(child, jid, excludeSelf))
                     .flatMap(Optional::stream)
                     .map(id -> ContactJid.ofDevice(jid.user(), id));
         }
 
-        private Optional<Integer> parseDeviceId(Node child, ContactJid jid) {
+        private Optional<Integer> parseDeviceId(Node child, ContactJid jid, boolean excludeSelf) {
             var deviceId = child.attributes().getInt("id");
             return child.description().equals("device")
+                    && (!excludeSelf || deviceId != 0)
                     && (!jid.user().equals(keys.companion().user()) || keys.companion().device() != deviceId)
                     && (deviceId == 0 || child.attributes().hasKey("key-index")) ? Optional.of(deviceId) : Optional.empty();
         }
@@ -1245,7 +1252,7 @@ public class BinarySocket {
             var groupName = new SenderKeyName(distributionMessage.groupId(), from.toSignalAddress());
             var builder = new GroupBuilder(keys);
             var message = SignalDistributionMessage.ofSerialized(distributionMessage.data());
-            builder.process(groupName, message);
+            builder.createIncoming(groupName, message);
         }
 
         @SneakyThrows

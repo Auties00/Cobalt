@@ -20,11 +20,9 @@ import java.util.concurrent.Semaphore;
 import static it.auties.curve25519.Curve25519.calculateAgreement;
 
 public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) implements SignalSpecification {
-    private static final Semaphore OUTGOING_SEMAPHORE = new Semaphore(1);
-
     public void createOutgoing(int id, byte[] identityKey, SignalSignedKeyPair signedPreKey, SignalSignedKeyPair preKey){
         try {
-            OUTGOING_SEMAPHORE.acquire();
+            SEMAPHORE.acquire();
             Validate.isTrue(keys.hasTrust(address, identityKey),
                     "Untrusted key", SecurityException.class);
             Validate.isTrue(Curve25519.verifySignature(Keys.withoutHeader(identityKey), signedPreKey.keyPair().encodedPublicKey(), signedPreKey.signature()),
@@ -54,7 +52,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
         }catch (Throwable throwable){
             throw new RuntimeException("Cannot create outgoing: an exception occured", throwable);
         }finally {
-            OUTGOING_SEMAPHORE.release();
+            SEMAPHORE.release();
         }
     }
 

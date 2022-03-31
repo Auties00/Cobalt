@@ -31,11 +31,9 @@ import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 
 public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) implements SignalSpecification {
-    private static final Semaphore ENCRYPTION_SEMAPHORE = new Semaphore(1);
-
     public Node encrypt(byte @NonNull [] data){
         try {
-            ENCRYPTION_SEMAPHORE.acquire();
+            SEMAPHORE.acquire();
             var session = loadSession();
             var currentState = session.currentState();
 
@@ -69,7 +67,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         }catch (Throwable throwable){
             throw new RuntimeException("Cannot encrypt message: an exception occured", throwable);
         }finally {
-            ENCRYPTION_SEMAPHORE.release();
+            SEMAPHORE.release();
         }
     }
 
