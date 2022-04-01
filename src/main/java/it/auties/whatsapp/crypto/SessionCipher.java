@@ -44,7 +44,6 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
                     .orElseThrow(() -> new NoSuchElementException("Missing chain for %s".formatted(address)));
             fillMessageKeys(chain, chain.counter() + 1);
 
-            System.out.printf("Keys: %s%nCounter: %s%nResult: %s%n%n", chain.messageKeys(), chain.counter(), chain.messageKeys().get(chain.counter()));
             var currentKey = chain.messageKeys()
                     .get(chain.counter())
                     .publicKey();

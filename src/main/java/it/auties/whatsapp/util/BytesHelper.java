@@ -35,7 +35,7 @@ public class BytesHelper {
     }
 
     public byte[] pad(byte[] bytes){
-        var padRandomByte = Keys.header();
+        var padRandomByte = 1; // FIXME: 01/04/2022 TESTING: Keys.header();
         var padding = Bytes.newBuffer(padRandomByte)
                 .fill((byte) padRandomByte)
                 .toByteArray();

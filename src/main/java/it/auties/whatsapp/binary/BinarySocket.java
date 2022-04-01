@@ -914,6 +914,14 @@ public class BinarySocket {
             this.devicesCache = new CacheMap<>();
         }
 
+        public CompletableFuture<Node> encodeBeta(MessageInfo info, byte[] encodedMessage) {
+            var knownDevices = List.of(keys.companion().toUserJid(), info.chatJid());
+            return querySyncDevices(knownDevices, true)
+                    .thenComposeAsync(result -> createDistinctSessions(append(knownDevices, result), encodedMessage, encodedMessage))
+                    .thenApplyAsync(participants -> createEncodedMessageNode(info, participants, null))
+                    .exceptionallyAsync(BinarySocket.this::handleError);
+        }
+
         @SafeVarargs
         public final CompletableFuture<Node> encode(MessageInfo info, Entry<String, Object>... attributes) {
             if (isConversation(info)) {

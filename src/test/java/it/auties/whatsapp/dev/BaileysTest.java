@@ -3,7 +3,6 @@ package it.auties.whatsapp.dev;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.protobuf.MapEntry;
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.binary.BinarySocket;
@@ -30,27 +29,89 @@ import it.auties.whatsapp.model.sync.AppStateSyncKeyData;
 import it.auties.whatsapp.model.sync.AppStateSyncKeyFingerprint;
 import it.auties.whatsapp.model.sync.AppStateSyncKeyId;
 import it.auties.whatsapp.util.CacheMap;
-import it.auties.whatsapp.util.JacksonProvider;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import static it.auties.whatsapp.util.SignalSpecification.CURRENT_VERSION;
 
-public class BaileysTest implements JacksonProvider {
+public class BaileysTest {
+
+    public static final String MESSAGE_ID = "ABCABCABCABCABCC";
+    public static final String MESSAGE_CONTENT = "Ciao";
+
     @Test
     @SneakyThrows
     public void toWW4J()  {
+        var whatsappKeys = createKeys();
+        var whatsappStore = WhatsappStore.newStore(33);
+
+        var contact = ContactJid.of("393495089819@s.whatsapp.net");
+        var key = MessageKey.newMessageKey()
+                .id(MESSAGE_ID)
+                .chatJid(contact)
+                .fromMe(true)
+                .create();
+        var info = MessageInfo.newMessageInfo()
+                .storeId(whatsappStore.id())
+                .key(key)
+                .message(MessageContainer.of(TextMessage.of(MESSAGE_CONTENT)))
+                .create();
+
+
+        var messageHandler = createMessageHandler(whatsappKeys, whatsappStore);
+        var encodeMethod = messageHandler.getClass().getMethod("encodeBeta", MessageInfo.class, byte[].class);
+        encodeMethod.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        var result = (CompletableFuture<Node>) encodeMethod.invoke(messageHandler, info, Bytes.ofHex("fa01270a1b33393334393530383938313940732e77686174736170702e6e6574120832060a044369616f01").toByteArray());
+        var completed = result.get();
+
+        System.out.println(completed);
+    }
+
+    private Object createMessageHandler(WhatsappKeys whatsappKeys, WhatsappStore whatsappStore) throws NoSuchFieldException, IllegalAccessException {
+        var dummy = new BinarySocket(WhatsappOptions.defaultOptions(), whatsappStore, whatsappKeys);
+        var messageHandlerField = dummy.getClass().getDeclaredField("messageHandler");
+        messageHandlerField.setAccessible(true);
+        var messageHandler = messageHandlerField.get(dummy);
+        var devicesCacheField = messageHandler.getClass().getDeclaredField("devicesCache");
+        devicesCacheField.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        var devicesCache = (CacheMap<String, List<ContactJid>>) devicesCacheField.get(messageHandler);
+        addSessions(whatsappKeys, devicesCache);
+        System.out.println(devicesCache);
+        return messageHandler;
+    }
+
+    private void addSessions(WhatsappKeys whatsappKeys, CacheMap<String, List<ContactJid>> devicesCache) {
+        whatsappKeys.sessions()
+                .keySet()
+                .stream()
+                .map(SessionAddress::name)
+                .distinct()
+                .forEach(name -> addSession(whatsappKeys, devicesCache, name));
+    }
+
+    private void addSession(WhatsappKeys whatsappKeys, CacheMap<String, List<ContactJid>> devicesCache, String name) {
+        var sessions = whatsappKeys.sessions()
+                .keySet()
+                .stream()
+                .filter(entry -> entry.name().equals(name))
+                .map(entry -> ContactJid.ofDevice(entry.name(), entry.deviceId()))
+                .toList();
+        devicesCache.put(name, sessions);
+    }
+
+    private WhatsappKeys createKeys() throws URISyntaxException, IOException {
         var path = Path.of(Objects.requireNonNull(ClassLoader.getSystemClassLoader().getResource("test.json")).toURI());
         var baileysKeys = new ObjectMapper().readValue(path.toFile(), BaileysKeys.class);
-        var whatsappKeys = WhatsappKeys.builder()
+        return WhatsappKeys.builder()
                 .id(baileysKeys.creds().registrationId())
                 .companionKeyPair(new SignalKeyPair(baileysKeys.creds().noiseKey().publicKey().data(), baileysKeys.creds().noiseKey().privateKey().data()))
                 .ephemeralKeyPair(new SignalKeyPair(baileysKeys.creds().noiseKey().publicKey().data(), baileysKeys.creds().noiseKey().privateKey().data()))
@@ -140,43 +201,6 @@ public class BaileysTest implements JacksonProvider {
                         })
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)) : new HashMap<>())
                 .build();
-
-        var contact = ContactJid.of("393495089819@s.whatsapp.net");
-        var dummy = new BinarySocket(WhatsappOptions.defaultOptions(), WhatsappStore.newStore(ThreadLocalRandom.current().nextInt()), whatsappKeys);
-
-        var key = MessageKey.newMessageKey()
-                .chatJid(contact)
-                .fromMe(true)
-                .create();
-        var info = MessageInfo.newMessageInfo()
-                .storeId(dummy.store().id())
-                .key(key)
-                .message(MessageContainer.ofConversation("Ciao"))
-                .create();
-
-        var messageHandlerField = dummy.getClass().getDeclaredField("messageHandler");
-        messageHandlerField.setAccessible(true);
-        var messageHandler = messageHandlerField.get(dummy);
-        var devicesCacheField = messageHandler.getClass().getDeclaredField("devicesCache");
-        devicesCacheField.setAccessible(true);
-        @SuppressWarnings("unchecked")
-        var devicesCache = (CacheMap<String, List<ContactJid>>) devicesCacheField.get(messageHandler);
-        whatsappKeys.sessions()
-                .keySet()
-                .stream()
-                .map(SessionAddress::name)
-                .distinct()
-                .forEach(name -> devicesCache.put(name,  whatsappKeys.sessions().keySet().stream().filter(entry -> entry.name().equals(name)).map(entry -> ContactJid.ofDevice(entry.name(), entry.deviceId())).toList()));
-
-        System.out.println(whatsappKeys.sessions().keySet());
-
-        var encodeMethod = messageHandler.getClass().getMethod("encode", MessageInfo.class, Map.Entry[].class);
-        encodeMethod.setAccessible(true);
-        @SuppressWarnings("unchecked")
-        var result = (CompletableFuture<Node>) encodeMethod.invoke(messageHandler, info, new Map.Entry[0]);
-
-
-        System.out.println(result.get());
     }
 
     record BaileysKeys(Credentials creds, Keys keys) {
