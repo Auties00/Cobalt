@@ -3,14 +3,15 @@ package it.auties.whatsapp.model.signal.auth;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.whatsapp.util.Validate;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Arrays;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -49,17 +50,18 @@ public class Version {
         this.tertiary = tertiary;
     }
 
-    public Version(int[] version) {
-        Validate.isTrue(version.length == 3 || version.length == 5,
-                "Invalid encoded version %s: expected 3 or 5 entries", Arrays.toString(version));
-        this.primary = version[0];
-        this.secondary = version[1];
-        this.tertiary = version[2];
-        if (version.length != 5) {
-            return;
-        }
+    @SneakyThrows
+    public byte[] toHash(){
+        var digest = MessageDigest.getInstance("MD5");
+        digest.update(toString().getBytes(StandardCharsets.UTF_8));
+        return digest.digest();
+    }
 
-        this.quaternary = version[3];
-        this.quinary = version[4];
+    @Override
+    public String toString(){
+        return Stream.of(primary, secondary, tertiary, quaternary, quinary)
+                .filter(entry -> entry != 0)
+                .map(String::valueOf)
+                .collect(Collectors.joining("."));
     }
 }

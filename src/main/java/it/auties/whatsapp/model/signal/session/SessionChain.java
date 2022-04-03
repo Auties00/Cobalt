@@ -26,7 +26,7 @@ public class SessionChain {
 
     @JsonProperty("message_keys")
     @NonNull
-    private Map<Integer, SignalPreKeyPair> messageKeys;
+    private Map<Integer, byte[]> messageKeys;
 
     public SessionChain(int counter, @NonNull byte[] key) {
         this(counter, key, new HashMap<>());

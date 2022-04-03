@@ -42,14 +42,14 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
 
             var chain = currentState.findChain(currentState.ephemeralKeyPair().encodedPublicKey())
                     .orElseThrow(() -> new NoSuchElementException("Missing chain for %s".formatted(address)));
+            System.out.println("Counter: " + chain.counter());
             fillMessageKeys(chain, chain.counter() + 1);
 
-            var currentKey = chain.messageKeys()
-                    .get(chain.counter())
-                    .publicKey();
-
+            var currentKey = chain.messageKeys().get(chain.counter());
+            System.out.println("Chain key: " + Bytes.of(currentKey).toHex());
             var secrets = Hkdf.deriveSecrets(currentKey,
                     "WhisperMessageKeys".getBytes(StandardCharsets.UTF_8));
+            System.out.println("Derived: " + Bytes.of(secrets).toHex());
             Objects.requireNonNull(chain.messageKeys().remove(chain.counter()),
                     "Cannot remove chain");
 
@@ -57,8 +57,10 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
                     .cut(IV_LENGTH)
                     .toByteArray();
             var encrypted = AesCbc.encrypt(iv, data, secrets[0]);
+            System.out.println("Cipher text: " + Bytes.of(encrypted).toHex());
 
             var encryptedMessage = encrypt(currentState, chain, secrets, encrypted);
+            System.out.println("Result: " + Bytes.of(encryptedMessage).toHex());
             keys.addSession(address, session);
 
             return with("enc",
@@ -118,8 +120,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
                 "Closed chain");
 
         var messagesHmac = Hmac.calculateSha256(new byte[]{1}, chain.key());
-        var keyPair = new SignalPreKeyPair(chain.counter() + 1, messagesHmac, null);
-        chain.messageKeys().put(chain.counter() + 1, keyPair);
+        chain.messageKeys().put(chain.counter() + 1, messagesHmac);
 
         var keyHmac = Hmac.calculateSha256(new byte[]{2}, chain.key());
         chain.key(keyHmac);
@@ -177,7 +178,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         var messageKey = chain.messageKeys().get(message.counter());
         chain.messageKeys().remove(message.counter());
 
-        var secrets = Hkdf.deriveSecrets(messageKey.publicKey(),
+        var secrets = Hkdf.deriveSecrets(messageKey,
                 "WhisperMessageKeys".getBytes(StandardCharsets.UTF_8));
 
         var hmacInput = Bytes.of(state.remoteIdentityKey())

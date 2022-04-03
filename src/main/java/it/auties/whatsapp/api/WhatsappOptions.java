@@ -1,5 +1,6 @@
 package it.auties.whatsapp.api;
 
+import it.auties.whatsapp.model.signal.auth.Version;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Data;
@@ -24,7 +25,7 @@ public class WhatsappOptions {
      * If the version is too outdated, the server will refuse to connect
      */
     @Default
-    private final int[] whatsappVersion = new int[]{2, 2204, 13};
+    private final Version whatsappVersion = new Version(2, 2210, 9);
 
     /**
      * The url of the multi device beta socket

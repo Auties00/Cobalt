@@ -18,7 +18,7 @@ import lombok.extern.jackson.Jacksonized;
 public final class EphemeralSetting implements Setting {
   @JsonProperty("1")
   @JsonPropertyDescription("sfixed32")
-  private int duration;
+  private float duration;
 
   @JsonProperty("2")
   @JsonPropertyDescription("sfixed64")

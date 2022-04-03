@@ -78,7 +78,6 @@ import static java.util.stream.Collectors.*;
 @ClientEndpoint(configurator = BinarySocket.OriginPatcher.class)
 @Log
 public class BinarySocket {
-    private static final String BUILD_HASH = "S9Kdc4pc4EJryo21snc5cg==";
     private static final int KEY_TYPE = 5;
 
     @Getter(onMethod = @__(@NonNull))
@@ -457,7 +456,7 @@ public class BinarySocket {
 
         private UserAgent createUserAgent() {
             return UserAgent.builder()
-                    .appVersion(new Version(options.whatsappVersion()))
+                    .appVersion(options.whatsappVersion())
                     .platform(UserAgent.UserAgentPlatform.WEB)
                     .releaseChannel(UserAgent.UserAgentReleaseChannel.RELEASE)
                     .build();
@@ -465,7 +464,7 @@ public class BinarySocket {
 
         private CompanionData createRegisterData() {
             return CompanionData.builder()
-                    .buildHash(Bytes.ofBase64(BUILD_HASH).toByteArray())
+                    .buildHash(options.whatsappVersion().toHash())
                     .companion(encode(createCompanionProps()))
                     .id(BytesHelper.intToBytes(keys.id(), 4))
                     .keyType(BytesHelper.intToBytes(KEY_TYPE, 1))

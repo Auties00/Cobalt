@@ -175,7 +175,7 @@ public class BaileysTest {
                                                                             .messageKeys()
                                                                             .keySet()
                                                                             .stream()
-                                                                            .map(messageKey -> Map.entry(messageKey, new SignalPreKeyPair(messageKey, sessionState._chains().get(chainKey).messageKeys().get(messageKey), null)))
+                                                                            .map(messageKey -> Map.entry(messageKey, sessionState._chains().get(chainKey).messageKeys().get(messageKey)))
                                                                             .collect(Collectors.toConcurrentMap(Map.Entry::getKey, Map.Entry::getValue)))
                                                                     .build()))
                                                             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)))
