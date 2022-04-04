@@ -1,7 +1,10 @@
 package it.auties.whatsapp.dev;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.api.WhatsappOptions;
@@ -28,8 +31,13 @@ import it.auties.whatsapp.model.signal.session.SessionState;
 import it.auties.whatsapp.model.sync.AppStateSyncKeyData;
 import it.auties.whatsapp.model.sync.AppStateSyncKeyFingerprint;
 import it.auties.whatsapp.model.sync.AppStateSyncKeyId;
+import it.auties.whatsapp.util.Attributes;
 import it.auties.whatsapp.util.CacheMap;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.experimental.Accessors;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -42,7 +50,6 @@ import java.util.stream.Collectors;
 import static it.auties.whatsapp.util.SignalSpecification.CURRENT_VERSION;
 
 public class BaileysTest {
-
     public static final String MESSAGE_ID = "ABCABCABCABCABCC";
     public static final String MESSAGE_CONTENT = "Ciao";
 
@@ -68,12 +75,11 @@ public class BaileysTest {
         var messageHandler = createMessageHandler(whatsappKeys, whatsappStore);
         var encodeMethod = messageHandler.getClass().getMethod("encodeBeta", MessageInfo.class, byte[].class);
         encodeMethod.setAccessible(true);
-        @SuppressWarnings("unchecked")
-        var result = (CompletableFuture<Node>) encodeMethod.invoke(messageHandler, info, Bytes.ofHex("fa01270a1b33393334393530383938313940732e77686174736170702e6e6574120832060a044369616f01").toByteArray());
-        var completed = result.get();
 
+        var completed = (Node) encodeMethod.invoke(messageHandler, info, Bytes.ofHex("fa01270a1b33393334393530383938313940732e77686174736170702e6e6574120832060a044369616f01").toByteArray());
         System.out.println(completed);
     }
+
 
     private Object createMessageHandler(WhatsappKeys whatsappKeys, WhatsappStore whatsappStore) throws NoSuchFieldException, IllegalAccessException {
         var dummy = new BinarySocket(WhatsappOptions.defaultOptions(), whatsappStore, whatsappKeys);

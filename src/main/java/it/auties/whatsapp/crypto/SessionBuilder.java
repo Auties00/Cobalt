@@ -15,9 +15,6 @@ import lombok.SneakyThrows;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
-import java.util.concurrent.Semaphore;
-
-import static it.auties.curve25519.Curve25519.calculateAgreement;
 
 public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) implements SignalSpecification {
     public void createOutgoing(int id, byte[] identityKey, SignalSignedKeyPair signedPreKey, SignalSignedKeyPair preKey){
@@ -96,23 +93,35 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
             theirSignedPubKey = theirEphemeralPubKey;
         }
 
-        var signedSecret = calculateAgreement(Keys.withoutHeader(theirSignedPubKey), keys.identityKeyPair().privateKey());
-        var identitySecret = calculateAgreement(Keys.withoutHeader(theirIdentityPubKey), ourSignedKey.privateKey());
-        var sharedSecret = Bytes.newBuffer(32)
-                .fill(0xff)
-                .append(isInitiator ? signedSecret : identitySecret)
-                .append(isInitiator ? identitySecret : signedSecret)
-                .append(calculateAgreement(Keys.withoutHeader(theirSignedPubKey), ourSignedKey.privateKey()));
-        if (ourEphemeralKey != null && theirEphemeralPubKey != null) {
-            sharedSecret = sharedSecret.append(calculateAgreement(Keys.withoutHeader(theirEphemeralPubKey), ourEphemeralKey.privateKey()));
-        }
-
+        var signedSecret = Curve25519.calculateAgreement(Keys.withoutHeader(theirSignedPubKey),
+                keys.identityKeyPair().privateKey());
+        var identitySecret = Curve25519.calculateAgreement(Keys.withoutHeader(theirIdentityPubKey),
+                ourSignedKey.privateKey());
+        var sharedSecret = createStateSecret(isInitiator, ourEphemeralKey, ourSignedKey,
+                theirEphemeralPubKey, theirSignedPubKey, signedSecret, identitySecret);
         var masterKeyInput = sharedSecret
                 .assertSize(ourEphemeralKey == null || theirEphemeralPubKey == null ? 128 : 160)
                 .toByteArray();
         var masterKey = Hkdf.deriveSecrets(masterKeyInput,
                 "WhisperText".getBytes(StandardCharsets.UTF_8));
-        var state = SessionState.builder()
+        var state = createState(isInitiator, ourEphemeralKey, ourSignedKey, theirIdentityPubKey,
+                theirEphemeralPubKey, theirSignedPubKey, registrationId, version, masterKey);
+        if (!isInitiator) {
+            return state;
+        }
+
+        var initSecret = Curve25519.calculateAgreement(Keys.withoutHeader(theirSignedPubKey), state.ephemeralKeyPair().privateKey());
+        var initKey = Hkdf.deriveSecrets(initSecret, state.rootKey(),
+                "WhisperRatchet".getBytes(StandardCharsets.UTF_8));
+        var chain = new SessionChain(-1, masterKey[1]);
+        return state.addChain(state.ephemeralKeyPair().encodedPublicKey(), chain)
+                .rootKey(initKey[0]);
+    }
+
+    private SessionState createState(boolean isInitiator, SignalKeyPair ourEphemeralKey, SignalKeyPair ourSignedKey,
+                                     byte[] theirIdentityPubKey, byte[] theirEphemeralPubKey, byte[] theirSignedPubKey,
+                                     int registrationId, int version, byte[][] masterKey) {
+        return SessionState.builder()
                 .version(version)
                 .registrationId(registrationId)
                 .rootKey(masterKey[0])
@@ -123,15 +132,20 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
                 .baseKey(isInitiator ? ourEphemeralKey.encodedPublicKey() : theirEphemeralPubKey)
                 .closed(false)
                 .build();
-        if (!isInitiator) {
-            return state;
+    }
+
+    private Bytes createStateSecret(boolean isInitiator, SignalKeyPair ourEphemeralKey, SignalKeyPair ourSignedKey,
+                                    byte[] theirEphemeralPubKey, byte[] theirSignedPubKey, byte[] signedSecret, byte[] identitySecret) {
+        var sharedSecret = Bytes.newBuffer(32)
+                .fill(0xff)
+                .append(isInitiator ? signedSecret : identitySecret)
+                .append(isInitiator ? identitySecret : signedSecret)
+                .append(Curve25519.calculateAgreement(Keys.withoutHeader(theirSignedPubKey), ourSignedKey.privateKey()));
+        if (ourEphemeralKey == null || theirEphemeralPubKey == null) {
+            return sharedSecret;
         }
 
-        var initSecret = calculateAgreement(Keys.withoutHeader(theirSignedPubKey), state.ephemeralKeyPair().privateKey());
-        var initKey = Hkdf.deriveSecrets(initSecret, state.rootKey(),
-                "WhisperRatchet".getBytes(StandardCharsets.UTF_8));
-        var chain = new SessionChain(-1, masterKey[1]);
-        return state.addChain(state.ephemeralKeyPair().encodedPublicKey(), chain)
-                .rootKey(initKey[0]);
+        var additional = Curve25519.calculateAgreement(Keys.withoutHeader(theirEphemeralPubKey), ourEphemeralKey.privateKey());
+        return sharedSecret.append(additional);
     }
 }

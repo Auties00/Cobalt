@@ -11,17 +11,17 @@ public class Handshake {
     public static final byte[] PROLOGUE = new byte[]{87, 65, 5, 2};
     private static final Bytes PROTOCOL = Bytes.of("Noise_XX_25519_AESGCM_SHA256\0\0\0\0");
 
-    private WhatsappKeys keys;
+    private final WhatsappKeys keys;
     private Bytes hash;
     private Bytes salt;
     private Bytes cryptoKey;
     private long counter;
 
-    public void start(WhatsappKeys keys) {
+    public Handshake(WhatsappKeys keys) {
+        this.keys = keys;
         this.hash = PROTOCOL;
         this.salt = PROTOCOL;
         this.cryptoKey = PROTOCOL;
-        this.keys = keys;
         this.counter = 0;
         updateHash(PROLOGUE);
     }
@@ -46,21 +46,15 @@ public class Handshake {
     }
 
     public void finish() {
-        var expanded = extractAndExpandWithHash(new byte[0]);
-        keys.writeKey(expanded.cut(32))
-                .readKey(expanded.slice(32));
+        var expanded = Bytes.of(Hkdf.extractAndExpand(new byte[0], salt.toByteArray(), null, 64));
+        keys.writeKey(expanded.cut(32));
+        keys.readKey(expanded.slice(32));
     }
 
     public void mixIntoKey(byte @NonNull [] bytes) {
-        var expanded = extractAndExpandWithHash(bytes);
+        var expanded = Bytes.of(Hkdf.extractAndExpand(bytes, salt.toByteArray(), null, 64));
         this.salt = expanded.cut(32);
         this.cryptoKey = expanded.slice(32);
         this.counter = 0;
-    }
-
-    private Bytes extractAndExpandWithHash(byte @NonNull [] key) {
-        var extracted = Hkdf.extract(salt.toByteArray(), key);
-        var expanded = Hkdf.expand(extracted, null, 64);
-        return of(expanded);
     }
 }

@@ -73,14 +73,14 @@ public class Hkdf implements SignalSpecification {
     }
 
     @SneakyThrows
-    public byte[] extract(byte[] salt, byte[] inputKeyMaterial) {
+    private byte[] extract(byte[] salt, byte[] inputKeyMaterial) {
         var mac = Mac.getInstance(HMAC_SHA_256);
         mac.init(new SecretKeySpec(salt, HMAC_SHA_256));
         return mac.doFinal(inputKeyMaterial);
     }
 
     @SneakyThrows
-    public byte[] expand(byte[] prk, byte[] info, int outputSize) {
+    private byte[] expand(byte[] prk, byte[] info, int outputSize) {
         var iterations = (int) Math.ceil((double) outputSize / (double) HASH_OUTPUT_SIZE);
         var mixin = new byte[0];
         var results = new ByteArrayOutputStream();

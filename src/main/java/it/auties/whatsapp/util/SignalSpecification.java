@@ -9,4 +9,5 @@ public interface SignalSpecification {
     int KEY_LENGTH = 32;
     int MAC_LENGTH = 8;
     int SIGNATURE_LENGTH = 64;
+    int KEY_TYPE = 5;
 }

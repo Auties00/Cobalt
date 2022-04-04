@@ -10,7 +10,6 @@ import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.setting.Setting;
-import lombok.NonNull;
 
 import java.util.List;
 import java.util.Map;

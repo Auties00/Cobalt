@@ -193,7 +193,6 @@ public final class WhatsappKeys implements WhatsappController {
         return result.signedKeyPair(SignalSignedKeyPair.of(result.id(), result.identityKeyPair()));
     }
 
-
     /**
      * Returns the keys saved in memory or constructs a new clean instance
      *

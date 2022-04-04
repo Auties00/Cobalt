@@ -59,10 +59,6 @@ public class LTHash {
         return new Result(added, indexValueMap);
     }
 
-    public record Result(byte[] hash, Map<String, byte[]> indexValueMap){
-
-    }
-
     private byte[] perform(byte[] input, boolean sum) {
         for(var item : sum ? add : subtract) {
             input = perform(input, item, sum);
@@ -71,15 +67,11 @@ public class LTHash {
         return input;
     }
 
-    private byte[] perform(byte[] input, byte[] buffer, boolean add) {
+    private byte[] perform(byte[] input, byte[] buffer, boolean sum) {
         var expanded = Hkdf.extractAndExpand(buffer, salt, EXPAND_SIZE);
-        return performPointWiseWithOverflow(input, expanded, add);
-    }
-
-    private byte[] performPointWiseWithOverflow(byte[] input, byte[] buffer, boolean sum) {
         var eRead = ByteBuffer.wrap(input)
                 .order(ByteOrder.LITTLE_ENDIAN);
-        var tRead = ByteBuffer.wrap(buffer)
+        var tRead = ByteBuffer.wrap(expanded)
                 .order(ByteOrder.LITTLE_ENDIAN);
         var write = ByteBuffer.allocate(input.length)
                 .order(ByteOrder.LITTLE_ENDIAN);
@@ -92,5 +84,9 @@ public class LTHash {
         var result = new byte[input.length];
         write.get(result);
         return result;
+    }
+
+    public record Result(byte[] hash, Map<String, byte[]> indexValueMap){
+
     }
 }
