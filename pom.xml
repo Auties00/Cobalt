@@ -97,8 +97,8 @@
         <curve25519.version>1.0</curve25519.version>
         <bytes.version>1.2</bytes.version>
         <classgraph.version>4.8.140</classgraph.version>
-        <delombok.input>${project.basedir}\src\main\java</delombok.input>
-        <delombok.output>${project.build.directory}\delombok</delombok.output>
+        <delombok.input>${project.basedir}/src/main/java</delombok.input>
+        <delombok.output>${project.build.directory}/delombok</delombok.output>
     </properties>
 
     <build>
