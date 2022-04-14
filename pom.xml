@@ -98,8 +98,9 @@
         <curve25519.version>1.0</curve25519.version>
         <bytes.version>1.2</bytes.version>
         <classgraph.version>4.8.143</classgraph.version>
-        <delombok.input>${project.basedir}\src\main\java</delombok.input>
-        <delombok.output>${project.build.directory}\delombok</delombok.output>
+        <reflection.version>1.2</reflection.version>
+        <delombok.input>${project.basedir}/src/main/java</delombok.input>
+        <delombok.output>${project.build.directory}/delombok</delombok.output>
     </properties>
 
     <build>
@@ -126,8 +127,8 @@
                 <version>${maven.compiler.plugin.version}</version>
                 <configuration>
                     <compileSourceRoots>${delombok.input}</compileSourceRoots>
-                    <source>17</source>
-                    <target>17</target>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
                     <release>${java.version}</release>
                     <annotationProcessorPaths>
                         <path>
@@ -219,7 +220,7 @@
         <dependency>
             <groupId>com.github.auties00</groupId>
             <artifactId>reflection</artifactId>
-            <version>1.2</version>
+            <version>${reflection.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
