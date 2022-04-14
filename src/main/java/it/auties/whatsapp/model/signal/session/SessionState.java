@@ -12,10 +12,9 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.*;
 
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
 public class SessionState {
     private static final int MAX_SESSIONS = 40;

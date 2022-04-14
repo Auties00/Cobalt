@@ -4,13 +4,18 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
 /**
  * A model class that describes an interactive annotation linked to a message
@@ -18,25 +23,22 @@ import java.util.List;
  * Instead, methods inside {@link Whatsapp} should be used.
  */
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
+@Builder(builderMethodName = "newInteractiveAnnotation", buildMethodName = "create")
 @Jacksonized
-@Builder
 @Accessors(fluent = true)
-public class InteractiveAnnotation {
+public class InteractiveAnnotation implements ProtobufMessage {
   /**
    * Polygon vertices
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("Point")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  @ProtobufProperty(index = 1, type = MESSAGE,
+          concreteType = Point.class, repeated = true)
   private List<Point> polygonVertices;
 
   /**
    * Location
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("Location")
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = Location.class)
   private Location location;
 
   /**
@@ -53,7 +55,7 @@ public class InteractiveAnnotation {
    */
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum Action {
+  public enum Action implements ProtobufMessage{
     /**
      * Unknown
      */
@@ -67,7 +69,6 @@ public class InteractiveAnnotation {
     @Getter
     private final int index;
 
-    @JsonCreator
     public static Action forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
@@ -83,37 +84,37 @@ public class InteractiveAnnotation {
   @NoArgsConstructor
   @Data
   @Jacksonized
-@Builder
+  @Builder
   @Accessors(fluent = true)
-  public static class Point {
+  public static class Point implements ProtobufMessage{
     /**
      * X coordinate, deprecated
+     *
+     * @deprecated use {@link Point#x instead}
      */
-    @JsonProperty("1")
-    @JsonPropertyDescription("int32")
+    @ProtobufProperty(index = 1, type = INT32)
     @Deprecated
     private int xDeprecated;
 
     /**
      * Y coordinate, deprecated
+     *
+     * @deprecated use {@link Point#y instead}
      */
-    @JsonProperty("2")
-    @JsonPropertyDescription("int32")
+    @ProtobufProperty(index = 2, type = INT32)
     @Deprecated
     private int yDeprecated;
 
     /**
      * X coordinate
      */
-    @JsonProperty("3")
-    @JsonPropertyDescription("double")
+    @ProtobufProperty(index = 3, type = DOUBLE)
     private double x;
 
     /**
      * Y coordinate
      */
-    @JsonProperty("4")
-    @JsonPropertyDescription("double")
+    @ProtobufProperty(index = 4, type = DOUBLE)
     private double y;
   }
 
@@ -124,28 +125,33 @@ public class InteractiveAnnotation {
   @NoArgsConstructor
   @Data
   @Jacksonized
-@Builder
+  @Builder
   @Accessors(fluent = true)
-  public static class Location {
+  public static class Location implements ProtobufMessage {
     /**
      * The latitude of this location, in degrees
      */
-    @JsonProperty("1")
-    @JsonPropertyDescription("double")
+    @ProtobufProperty(index = 1, type = DOUBLE)
     private double latitude;
 
     /**
      * The longitude of this location, in degrees
      */
-    @JsonProperty("2")
-    @JsonPropertyDescription("double")
+    @ProtobufProperty(index = 2, type = DOUBLE)
     private double longitude;
 
     /**
      * The name of this location
      */
-    @JsonProperty("3")
-    @JsonPropertyDescription("string")
+    @ProtobufProperty(index = 3, type = STRING)
     private String name;
+  }
+
+  public static class InteractiveAnnotationBuilder {
+    public InteractiveAnnotationBuilder polygonVertices(List<Point> polygonVertices){
+      if(this.polygonVertices == null) this.polygonVertices = new ArrayList<>();
+      this.polygonVertices.addAll(polygonVertices);
+      return this;
+    }
   }
 }

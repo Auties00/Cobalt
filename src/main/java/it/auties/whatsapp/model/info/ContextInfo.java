@@ -3,16 +3,21 @@ package it.auties.whatsapp.model.info;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.model.business.BusinessVerifiedLevel;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.message.payment.PaymentOrderMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
 /**
  * A model class that holds the information related to a {@link ContextualMessage}.
@@ -25,134 +30,115 @@ import java.util.List;
 @Jacksonized
 @Builder(builderMethodName = "newContextInfo", buildMethodName = "create")
 @Accessors(fluent = true)
-public non-sealed class ContextInfo implements Info {
+public sealed class ContextInfo implements Info permits PaymentOrderMessage {
   /**
    * The jid of the message that this ContextualMessage quotes
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 1, type = STRING)
   private String quotedMessageId;
 
   /**
    * The jid of the contact that sent the message that this ContextualMessage quotes
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("ContactJid")
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ContactJid.class)
   private ContactJid quotedMessageSenderId;
 
   /**
    * The message that this ContextualMessage quotes
    */
-  @JsonProperty("3")
-  @JsonPropertyDescription("MessageContainer")
+  @ProtobufProperty(index = 3, type = MESSAGE, concreteType = MessageContainer.class)
   private MessageContainer quotedMessageContainer;
 
   /**
    * A list of the contacts' jids mentioned in this ContextualMessage
    */
-  @JsonProperty("15")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 15, type = STRING, repeated = true)
   private List<String> mentionedJid;
 
   /**
    * Conversation source
    */
-  @JsonProperty("18")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 18, type = STRING)
   private String conversionSource;
 
   /**
    * Conversation data
    */
-  @JsonProperty("19")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 19, type = BYTES)
   private byte[] conversionData;
 
   /**
    * Conversation delay in seconds
    */
-  @JsonProperty("20")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 20, type = UINT32)
   private int conversionDelaySeconds;
 
   /**
    * Forwarding score
    */
-  @JsonProperty("21")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 21, type = UINT32)
   private int forwardingScore;
 
   /**
    * Whether this ContextualMessage is forwarded
    */
-  @JsonProperty("22")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 22, type = BOOLEAN)
   private boolean forwarded;
 
   /**
    * The ad that this ContextualMessage quotes
    */
-  @JsonProperty("23")
-  @JsonPropertyDescription("AdReplyInfo")
+  @ProtobufProperty(index = 23, type = MESSAGE, concreteType = AdReplyInfo.class)
   private AdReplyInfo quotedAd;
 
   /**
    * Placeholder key
    */
-  @JsonProperty("24")
-  @JsonPropertyDescription("MessageKey")
+  @ProtobufProperty(index = 24, type = MESSAGE, concreteType = MessageKey.class)
   private MessageKey placeholderKey;
 
   /**
    * The expiration in seconds since {@link java.time.Instant#EPOCH} for this ContextualMessage.
    * Only valid if the chat where this message was sent is ephemeral.
    */
-  @JsonProperty("25")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 25, type = UINT32)
   private int expiration;
 
   /**
    * The timestamp, that is the endTimeStamp in seconds since {@link java.time.Instant#EPOCH}, of the last modification to the ephemeral settings
    * for the chat where this ContextualMessage was sent.
    */
-  @JsonProperty("26")
-  @JsonPropertyDescription("int64")
+  @ProtobufProperty(index = 26, type = INT64)
   private long ephemeralSettingTimestamp;
 
   /**
    * Ephemeral shared secret
    */
-  @JsonProperty("27")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 27, type = BYTES)
   private byte[] ephemeralSharedSecret;
 
   /**
    * External ad reply
    */
-  @JsonProperty("28")
-  @JsonPropertyDescription("ExternalAdReplyInfo")
+  @ProtobufProperty(index = 28, type = MESSAGE, concreteType = ExternalAdReplyInfo.class)
   private ExternalAdReplyInfo externalAdReply;
 
   /**
    * Entry point conversion source
    */
-  @JsonProperty("29")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 29, type = STRING)
   private String entryPointConversionSource;
 
   /**
    * Entry point conversion app
    */
-  @JsonProperty("30")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 30, type = STRING)
   private String entryPointConversionApp;
 
   /**
    * Entry point conversion delay in seconds
    */
-  @JsonProperty("31")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 31, type = UINT32)
   private int entryPointConversionDelaySeconds;
 
   /**

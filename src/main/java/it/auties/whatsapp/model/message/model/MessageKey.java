@@ -3,6 +3,8 @@ package it.auties.whatsapp.model.message.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.bytes.Bytes;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -12,6 +14,8 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Locale;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
 /**
  * A container for unique identifiers and metadata linked to a {@link Message} and contained in {@link MessageInfo}.
@@ -25,27 +29,24 @@ import java.util.Locale;
 @Accessors(fluent = true)
 @Jacksonized
 @Builder(builderMethodName = "newMessageKey", buildMethodName = "create")
-public class MessageKey {
+public class MessageKey implements ProtobufMessage {
   /**
    * The jid of the contact or group that sent the message.
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("ContactJid")
+  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = ContactJid.class)
   @NonNull
   private ContactJid chatJid;
 
   /**
    * Determines whether the message was sent by you or by someone else
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 2, type = BOOLEAN)
   private boolean fromMe;
 
   /**
    * The jid of the message
    */
-  @JsonProperty("3")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 3, type = STRING)
   @NonNull
   @Default
   private String id = Bytes.ofRandom(8)

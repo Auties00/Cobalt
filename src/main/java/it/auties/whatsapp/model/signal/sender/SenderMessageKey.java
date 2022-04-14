@@ -1,41 +1,35 @@
 package it.auties.whatsapp.model.signal.sender;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.bytes.Bytes;
-import it.auties.protobuf.annotation.ProtobufIgnore;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.util.SignalSpecification;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.nio.charset.StandardCharsets;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.BYTES;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT32;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class SenderMessageKey implements SignalSpecification {
-    @JsonProperty("1")
-    @JsonPropertyDescription("uint32")
+public class SenderMessageKey implements ProtobufMessage, SignalSpecification {
+    @ProtobufProperty(index = 1, type = UINT32)
     private int iteration;
 
-    @JsonProperty("2")
-    @JsonPropertyDescription("bytes")
+    @ProtobufProperty(index = 2, type = BYTES)
     private byte[] seed;
 
-    @JsonProperty("3")
-    @ProtobufIgnore
     private byte[] cipherKey;
 
-    @JsonProperty("4")
-    @ProtobufIgnore
     private byte[] iv;
 
     public SenderMessageKey(int iteration, byte[] seed) {

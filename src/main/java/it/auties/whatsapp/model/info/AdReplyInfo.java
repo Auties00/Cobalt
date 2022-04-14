@@ -3,12 +3,15 @@ package it.auties.whatsapp.model.info;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
 /**
  * A model class that holds the information related to an companion reply.
@@ -25,29 +28,25 @@ public final class AdReplyInfo implements Info {
   /**
    * The name of the advertiser that served the original companion
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 1, type = STRING)
   private String advertiserName;
 
   /**
    * The type of original companion
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("AdReplyInfoMediaType")
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = AdReplyInfoMediaType.class)
   private AdReplyInfoMediaType mediaType;
 
   /**
    * The thumbnail of the original companion encoded as jpeg in an array of bytes
    */
-  @JsonProperty("16")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 16, type = BYTES)
   private byte[] thumbnail;
 
   /**
    * The caption of the original companion
    */
-  @JsonProperty("17")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 17, type = STRING)
   private String caption;
 
   /**

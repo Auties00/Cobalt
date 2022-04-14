@@ -3,25 +3,26 @@ package it.auties.whatsapp.model.signal.auth;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class DNSSource {
-  @JsonProperty("15")
-  @JsonPropertyDescription("DNSSourceDNSResolutionMethod")
+public class DNSSource implements ProtobufMessage {
+  @ProtobufProperty(index = 15, type = MESSAGE, concreteType = DNSSourceDNSResolutionMethod.class)
   private DNSSourceDNSResolutionMethod dnsMethod;
 
-  @JsonProperty("16")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 16, type = BOOLEAN)
   private boolean appCached;
 
   @AllArgsConstructor

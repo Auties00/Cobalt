@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.chat;
 
+import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.Clock;
@@ -19,7 +20,7 @@ import static it.auties.whatsapp.model.chat.GroupSetting.SEND_MESSAGES;
 @AllArgsConstructor
 @Value
 @Accessors(fluent = true)
-public class GroupMetadata {
+public class GroupMetadata implements ProtobufMessage {
     @NonNull
     ContactJid jid;
 

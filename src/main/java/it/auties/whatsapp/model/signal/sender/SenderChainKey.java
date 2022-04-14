@@ -2,6 +2,8 @@ package it.auties.whatsapp.model.signal.sender;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.crypto.Hmac;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,22 +12,22 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.BYTES;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT32;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class SenderChainKey {
+public class SenderChainKey implements ProtobufMessage {
   private static final byte[] MESSAGE_KEY_SEED = {0x01};
   private static final byte[] CHAIN_KEY_SEED = {0x02};
 
-  @JsonProperty("1")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 1, type = UINT32)
   private int iteration;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 2, type = BYTES)
   private byte[] seed;
 
   public SenderMessageKey toSenderMessageKey() {

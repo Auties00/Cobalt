@@ -1,10 +1,7 @@
 package it.auties.whatsapp.model.message.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.annotation.JsonSetter;
-import it.auties.protobuf.annotation.ProtobufType;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.CallInfo;
 import it.auties.whatsapp.model.message.button.*;
@@ -15,15 +12,18 @@ import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.model.signal.message.SignalDistributionMessage;
-import it.auties.whatsapp.util.Validate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Objects;
 import java.util.Optional;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 
 /**
  * A container for all types of messages known currently to WhatsappWeb.
@@ -47,273 +47,214 @@ import java.util.Optional;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder(builderMethodName = "newMessageContainer", buildMethodName = "create")
+@Jacksonized
 @Accessors(fluent = true)
-public class MessageContainer { // TODO: Find a way to refactor this while keeping compatibility with Whatsapp
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
+public class MessageContainer implements ProtobufMessage {
+  @ProtobufProperty(index = 1, type = STRING)
   private String textWithNoContext;
 
-  @JsonSetter("1")
-  private void mapToMessage(String textWithNoContext){
-    this.textWithNoContext = textWithNoContext;
-    this.text = new TextMessage(textWithNoContext);
-  }
-  
   /**
    * Sender key distribution message
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("distribution")
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = SenderKeyDistributionMessage.class)
   private SenderKeyDistributionMessage senderKeyDistribution;
   
   /**
    * Image message
    */
-  @JsonProperty("3")
-  @JsonPropertyDescription("image")
+  @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ImageMessage.class)
   private ImageMessage image;
   
   /**
    * Contact message
    */
-  @JsonProperty("4")
-  @JsonPropertyDescription("contact")
+  @ProtobufProperty(index = 4, type = MESSAGE, concreteType = ContactMessage.class)
   private ContactMessage contact;
 
   /**
    * Location message
    */
-  @JsonProperty("5")
-  @JsonPropertyDescription("location")
+  @ProtobufProperty(index = 5, type = MESSAGE, concreteType = LocationMessage.class)
   private LocationMessage location;
 
   /**
    * Text message
    */
-  @JsonProperty("6")
-  @JsonPropertyDescription("text")
+  @ProtobufProperty(index = 6, type = MESSAGE, concreteType = TextMessage.class)
   private TextMessage text;
 
   /**
    * Document message
    */
-  @JsonProperty("7")
-  @JsonPropertyDescription("document")
+  @ProtobufProperty(index = 7, type = MESSAGE, concreteType = DocumentMessage.class)
   private DocumentMessage document;
   
   /**
    * Audio message
    */
-  @JsonProperty("8")
-  @JsonPropertyDescription("audio")
+  @ProtobufProperty(index = 8, type = MESSAGE, concreteType = AudioMessage.class)
   private AudioMessage audio;
 
   /**
    * Video message
    */
-  @JsonProperty("9")
-  @JsonPropertyDescription("video")
+  @ProtobufProperty(index = 9, type = MESSAGE, concreteType = VideoMessage.class)
   private VideoMessage video;
   
   /**
    * Call message
    */
-  @JsonProperty("10")
-  @JsonPropertyDescription("call")
+  @ProtobufProperty(index = 10, type = MESSAGE, concreteType = CallInfo.class)
   private CallInfo call;
 
   /**
    * Sever message
    */
-  @JsonProperty("12")
-  @JsonPropertyDescription("protocol")
+  @ProtobufProperty(index = 12, type = MESSAGE, concreteType = ProtocolMessage.class)
   private ProtocolMessage protocol;
   
   /**
    * Contact array message
    */
-  @JsonProperty("13")
-  @JsonPropertyDescription("contacts")
+  @ProtobufProperty(index = 13, type = MESSAGE, concreteType = ContactsArrayMessage.class)
   private ContactsArrayMessage contactsArray;
 
   /**
    * Highly structured message
    */
-  @JsonProperty("14")
-  @JsonPropertyDescription("highlyStructured")
+  @ProtobufProperty(index = 14, type = MESSAGE, concreteType = StructuredButtonMessage.class)
   private StructuredButtonMessage highlyStructured;
   
   /**
    * Fast ratchet key sender key distribution message
    */
-  @JsonProperty("15")
-  @JsonPropertyDescription("fastRatchetKeySenderKeyDistribution")
+  @ProtobufProperty(index = 15, type = MESSAGE, concreteType = SignalDistributionMessage.class)
   private SignalDistributionMessage fastRatchetKeySenderKeyDistribution;
   
   /**
    * Send payment message
    */
-  @JsonProperty("16")
-  @JsonPropertyDescription("sendPayment")
+  @ProtobufProperty(index = 16, type = MESSAGE, concreteType = SendPaymentMessage.class)
   private SendPaymentMessage sendPayment;
 
   /**
    * Live location message
    */
-  @JsonProperty("18")
-  @JsonPropertyDescription("liveLocation")
+  @ProtobufProperty(index = 18, type = MESSAGE, concreteType = LiveLocationMessage.class)
   private LiveLocationMessage liveLocation;
   
   /**
    * Request payment message
    */
-  @JsonProperty("22")
-  @JsonPropertyDescription("requestPayment")
+  @ProtobufProperty(index = 22, type = MESSAGE, concreteType = RequestPaymentMessage.class)
   private RequestPaymentMessage requestPayment;
 
   /**
    * Decline payment request message
    */
-  @JsonProperty("23")
-  @JsonPropertyDescription("declinePaymentRequest")
+  @ProtobufProperty(index = 23, type = MESSAGE, concreteType = DeclinePaymentRequestMessage.class)
   private DeclinePaymentRequestMessage declinePaymentRequest;
   
   /**
    * Cancel payment request message
    */
-  @JsonProperty("24")
-  @JsonPropertyDescription("cancelPaymentRequest")
+  @ProtobufProperty(index = 24, type = MESSAGE, concreteType = CancelPaymentRequestMessage.class)
   private CancelPaymentRequestMessage cancelPaymentRequest;
   
   /**
    * Template message
    */
-  @JsonProperty("25")
-  @JsonPropertyDescription("template")
+  @ProtobufProperty(index = 25, type = MESSAGE, concreteType = TemplateMessage.class)
   private TemplateMessage template;
 
   /**
    * Sticker message
    */
-  @JsonProperty("26")
-  @JsonPropertyDescription("sticker")
+  @ProtobufProperty(index = 26, type = MESSAGE, concreteType = StickerMessage.class)
   private StickerMessage sticker;
 
   /**
    * Group invite message
    */
-  @JsonProperty("28")
-  @JsonPropertyDescription("groupInvite")
+  @ProtobufProperty(index = 28, type = MESSAGE, concreteType = GroupInviteMessage.class)
   private GroupInviteMessage groupInvite;
 
   /**
    * Template button reply message
    */
-  @JsonProperty("29")
-  @JsonPropertyDescription("templateButtonReply")
+  @ProtobufProperty(index = 29, type = MESSAGE, concreteType = TemplateButtonReplyMessage.class)
   private TemplateButtonReplyMessage templateButtonReply;
   
   /**
    * Product message
    */
-  @JsonProperty("30")
-  @JsonPropertyDescription("product")
+  @ProtobufProperty(index = 30, type = MESSAGE, concreteType = ProductMessage.class)
   private ProductMessage product;
 
   /**
    * Device sent message
    */
-  @JsonProperty("31")
-  @JsonPropertyDescription("deviceSent")
+  @ProtobufProperty(index = 31, type = MESSAGE, concreteType = DeviceSentMessage.class)
   private DeviceSentMessage deviceSent;
   
   /**
    * Device dataSync message
    */
-  @JsonProperty("32")
-  @JsonPropertyDescription("deviceSync")
+  @ProtobufProperty(index = 32, type = MESSAGE, concreteType = DeviceSyncMessage.class)
   private DeviceSyncMessage deviceSync;
 
   /**
    * List message
    */
-  @JsonProperty("36")
-  @JsonPropertyDescription("buttonsList")
+  @ProtobufProperty(index = 36, type = MESSAGE, concreteType = ListMessage.class)
   private ListMessage buttonsList;
 
   /**
    * View once message
    */
-  @JsonProperty("37")
-  @JsonPropertyDescription("viewOnce")
-  @ProtobufType(MessageContainer.class)
+  @ProtobufProperty(index = 37, type = MESSAGE, concreteType = MessageContainer.class)
   private Message viewOnce;
-
-  @JsonSetter("37")
-  private void mapViewOnce(MessageContainer container){
-    if(container == null){
-      return;
-    }
-
-    this.viewOnce = container.content();
-  }
 
   /**
    * Order message
    */
-  @JsonProperty("38")
-  @JsonPropertyDescription("order")
+  @ProtobufProperty(index = 38, type = MESSAGE, concreteType = PaymentOrderMessage.class)
   private PaymentOrderMessage order;
 
   /**
    * List response message
    */
-  @JsonProperty("39")
-  @JsonPropertyDescription("listResponse")
+  @ProtobufProperty(index = 39, type = MESSAGE, concreteType = ListResponseMessage.class)
   private ListResponseMessage listResponse;
 
   /**
    * Ephemeral message
    */
-  @JsonProperty("40")
-  @JsonPropertyDescription("ephemeral")
+  @ProtobufProperty(index = 40, type = MESSAGE, concreteType = MessageContainer.class)
   private Message ephemeral;
-
-  @JsonSetter("40")
-  private void mapEphemeral(MessageContainer container){
-    if(container == null){
-      return;
-    }
-
-    this.ephemeral = container.content();
-  }
 
   /**
    * Invoice message
    */
-  @JsonProperty("41")
-  @JsonPropertyDescription("invoice")
+  @ProtobufProperty(index = 41, type = MESSAGE, concreteType = PaymentInvoiceMessage.class)
   private PaymentInvoiceMessage invoice;
 
   /**
    * Buttons message
    */
-  @JsonProperty("42")
-  @JsonPropertyDescription("buttons")
+  @ProtobufProperty(index = 42, type = MESSAGE, concreteType = ButtonsMessage.class)
   private ButtonsMessage buttons;
 
   /**
    * Buttons response message
    */
-  @JsonProperty("43")
-  @JsonPropertyDescription("buttonsResponse")
+  @ProtobufProperty(index = 43, type = MESSAGE, concreteType = ButtonsResponseMessage.class)
   private ButtonsResponseMessage buttonsResponse;
 
   /**
    * Payment invite message
    */
-  @JsonProperty("44")
-  @JsonPropertyDescription("paymentInvite")
+  @ProtobufProperty(index = 44, type = MESSAGE, concreteType = PaymentInviteMessage.class)
   private PaymentInviteMessage paymentInvite;
 
   // Unsupported for now: MessageContextInfo(35), InteractiveMessage(45), ReactionMessage(46), StickerSyncRMRMessage(47)
@@ -410,9 +351,7 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
    *
    * @return a nullable Message
    */
-  @JsonIgnore
   public Message content(){
-    assertNoDuplicates();
     if(this.senderKeyDistribution != null) return senderKeyDistribution;
     if(this.image != null) return image;
     if(this.contact != null) return contact;
@@ -446,49 +385,11 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
     return null;
   }
 
-  private void assertNoDuplicates(){
-    var counter = 0;
-    if(this.senderKeyDistribution != null) counter++;
-    if(this.image != null) counter++;
-    if(this.contact != null) counter++;
-    if(this.location != null) counter++;
-    if(this.text != null) counter++;
-    if(this.document != null) counter++;
-    if(this.audio != null) counter++;
-    if(this.video != null) counter++;
-    if(this.protocol != null) counter++;
-    if(this.contactsArray != null) counter++;
-    if(this.highlyStructured != null) counter++;
-    if(this.sendPayment != null) counter++;
-    if(this.liveLocation != null) counter++;
-    if(this.requestPayment != null) counter++;
-    if(this.declinePaymentRequest != null) counter++;
-    if(this.cancelPaymentRequest != null) counter++;
-    if(this.template != null) counter++;
-    if(this.sticker != null) counter++;
-    if(this.groupInvite != null)  counter++;
-    if(this.templateButtonReply != null)  counter++;
-    if(this.product != null)  counter++;
-    if(this.deviceSent != null)  counter++;
-    if(this.deviceSync != null) counter++;
-    if(buttonsList != null)  counter++;
-    if(order != null)  counter++;
-    if(listResponse != null)  counter++;
-    if(invoice != null)  counter++;
-    if(buttons != null)  counter++;
-    if(buttonsResponse != null)  counter++;
-    if(paymentInvite != null) counter++;
-    if(counter != 0 && counter != 1){
-      System.out.printf("Too much content: %s%n", counter);
-    }
-  }
-
   /**
    * Returns the first populated contextual message inside this container
    *
    * @return a non-null Optional ContextualMessage
    */
-  @JsonIgnore
   public Optional<ContextualMessage> contentWithContext(){
     if(this.image != null) return Optional.of(image);
     if(this.contact != null) return Optional.of(contact);
@@ -516,7 +417,6 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
    *
    * @return a non-null enumerated type
    */
-  @JsonIgnore
   public MessageContainer.ContentType type(){
     return switch (content()){
       case null -> ContentType.EMPTY;
@@ -534,7 +434,6 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
    *
    * @return true if this container contains no message
    */
-  @JsonIgnore
   public boolean isEmpty(){
     return type() == ContentType.EMPTY;
   }
@@ -544,7 +443,6 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
    *
    * @return true if this container contains a standard message
    */
-  @JsonIgnore
   public boolean isStandard(){
     return type() == ContentType.STANDARD;
   }
@@ -554,7 +452,6 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
    *
    * @return true if this container contains a sever message
    */
-  @JsonIgnore
   public boolean isServer(){
     return type() == ContentType.SERVER;
   }
@@ -564,7 +461,6 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
    *
    * @return true if this container contains a device message
    */
-  @JsonIgnore
   public boolean isDevice(){
     return type() == ContentType.DEVICE;
   }
@@ -574,7 +470,6 @@ public class MessageContainer { // TODO: Find a way to refactor this while keepi
    *
    * @return a non-null optional
    */
-  @JsonIgnore
   public Optional<CallInfo> call() {
     return Optional.ofNullable(call);
   }

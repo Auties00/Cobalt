@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.message.device;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.message.model.DeviceMessage;
 import lombok.AllArgsConstructor;
@@ -10,6 +11,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.BYTES;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 
 /**
  * A model class that represents a WhatsappMessage that refers to a message sent by the device paired with the active WhatsappWeb session to dataSync.
@@ -20,13 +24,12 @@ import lombok.extern.jackson.Jacksonized;
 @NoArgsConstructor
 @Data
 @Jacksonized
-@Builder
+@Builder(builderMethodName = "newDeviceSyncMessage", buildMethodName = "create")
 @Accessors(fluent = true)
 public final class DeviceSyncMessage implements DeviceMessage {
   /**
    * The data that this synchronization wraps encoded as xml and stored in an array of bytes
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 1, type = BYTES)
   private byte[] serializedXmlBytes;
 }

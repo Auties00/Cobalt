@@ -1,11 +1,8 @@
 package it.auties.whatsapp.model.signal.message;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.bytes.Bytes;
-import it.auties.protobuf.annotation.ProtobufIgnore;
-import it.auties.protobuf.decoder.ProtobufDecoder;
-import it.auties.protobuf.encoder.ProtobufEncoder;
+import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.api.model.ProtobufSchema;
 import it.auties.whatsapp.util.BytesHelper;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -14,41 +11,34 @@ import lombok.extern.jackson.Jacksonized;
 import java.io.IOException;
 import java.util.function.Function;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.BYTES;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT32;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
 public final class SignalMessage implements SignalProtocolMessage {
-    @JsonProperty("0")
-    @ProtobufIgnore
     private int version;
 
-    @JsonProperty("1")
-    @JsonPropertyDescription("bytes")
+    @ProtobufProperty(index = 1, type = BYTES)
     private byte @NonNull [] ephemeralPublicKey;
 
-    @JsonProperty("2")
-    @JsonPropertyDescription("uint32")
+    @ProtobufProperty(index = 2, type = UINT32)
     private int counter;
 
-    @JsonProperty("3")
-    @JsonPropertyDescription("uint32")
+    @ProtobufProperty(index = 3, type = UINT32)
     private int previousCounter;
 
-    @JsonProperty("4")
-    @JsonPropertyDescription("bytes")
+    @ProtobufProperty(index = 4, type = BYTES)
     private byte @NonNull [] ciphertext;
 
-    @JsonProperty("5")
-    @ProtobufIgnore
     private byte[] signature;
 
-    @JsonProperty("6")
-    @ProtobufIgnore
     private byte[] serialized;
 
+    @SneakyThrows
     public SignalMessage(byte[] ephemeralPublicKey, int counter, int previousCounter, byte[] ciphertext, Function<byte[], byte[]> signer) {
         this.version = CURRENT_VERSION;
         this.ephemeralPublicKey = ephemeralPublicKey;
@@ -56,16 +46,18 @@ public final class SignalMessage implements SignalProtocolMessage {
         this.previousCounter = previousCounter;
         this.ciphertext = ciphertext;
         var encodedMessage = Bytes.of(BytesHelper.versionToBytes(version))
-                .append(ProtobufEncoder.encode(this));
+                .append(PROTOBUF.writeValueAsBytes(this));
         this.signature = signer.apply(encodedMessage.toByteArray());
         this.serialized = encodedMessage.append(signature)
                 .toByteArray();
     }
+
     public static SignalMessage ofSerialized(byte[] serialized) {
         try {
             var buffer = Bytes.of(serialized);
-            return ProtobufDecoder.forType(SignalMessage.class)
-                    .decode(buffer.slice(1, -MAC_LENGTH).toByteArray())
+            return PROTOBUF.reader()
+                    .with(ProtobufSchema.of(SignalMessage.class))
+                    .readValue(buffer.slice(1, -MAC_LENGTH).toByteArray(), SignalMessage.class)
                     .version(BytesHelper.bytesToVersion(serialized[0]))
                     .signature(buffer.slice(-MAC_LENGTH).toByteArray())
                     .serialized(serialized);

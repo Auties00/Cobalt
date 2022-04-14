@@ -1,9 +1,7 @@
 package it.auties.whatsapp.model.sync;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.info.MessageInfo;
 import lombok.*;
@@ -15,61 +13,87 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class HistorySync {
-  @JsonProperty(value = "1", required = true)
-  @JsonPropertyDescription("HistorySyncHistorySyncType")
-  private HistorySyncHistorySyncType syncType;
+public class HistorySync implements ProtobufMessage {
+    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = HistorySyncHistorySyncType.class)
+    @NonNull
+    private HistorySyncHistorySyncType syncType;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("Conversation")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  @Default
-  private List<Chat> conversations = new ArrayList<>();
+    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = Chat.class, repeated = true)
+    @Default
+    private List<Chat> conversations = new ArrayList<>();
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("WebMessageInfo")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  @Default
-  private List<MessageInfo> statusV3Messages = new ArrayList<>();
+    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = MessageInfo.class, repeated = true)
+    @Default
+    private List<MessageInfo> statusV3Messages = new ArrayList<>();
 
-  @JsonProperty("5")
-  @JsonPropertyDescription("uint32")
-  private int chunkOrder;
+    @ProtobufProperty(index = 5, type = UINT32)
+    private int chunkOrder;
 
-  @JsonProperty("6")
-  @JsonPropertyDescription("uint32")
-  private int progress;
+    @ProtobufProperty(index = 6, type = UINT32)
+    private int progress;
 
-  @JsonProperty("7")
-  @JsonPropertyDescription("Pushname")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  @Default
-  private List<PushName> pushNames = new ArrayList<>();
+    @ProtobufProperty(index = 7, type = MESSAGE, concreteType = PushName.class, repeated = true)
+    @Default
+    private List<PushName> pushNames  = new ArrayList<>();
 
-  @AllArgsConstructor
-  @Accessors(fluent = true)
-  public enum HistorySyncHistorySyncType {
-    INITIAL_BOOTSTRAP(0),
-    INITIAL_STATUS_V3(1),
-    FULL(2),
-    RECENT(3),
-    PUSH_NAME(4);
+    @ProtobufProperty(index = 9, type = BYTES)
+    private byte[] threadIdUserSecret;
 
-    @Getter
-    private final int index;
+    @ProtobufProperty(index = 10, type = UINT32)
+    private int threadDsTimeframeOffset;
 
-    @JsonCreator
-    public static HistorySyncHistorySyncType forIndex(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
-          .orElse(null);
+    @AllArgsConstructor
+    @Accessors(fluent = true)
+    public enum HistorySyncHistorySyncType {
+        INITIAL_BOOTSTRAP(0), INITIAL_STATUS_V3(1), FULL(2), RECENT(3), PUSH_NAME(4);
+
+        @Getter
+        private final int index;
+
+        public static HistorySyncHistorySyncType forIndex(int index) {
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(null);
+        }
     }
-  }
+
+    public static class HistorySyncBuilder {
+        public HistorySyncBuilder conversations(List<Chat> conversations) {
+            if(conversations$value == null){
+                this.conversations$value = conversations;
+                return this;
+            }
+
+            this.conversations$value.addAll(conversations);
+            return this;
+        }
+
+        public HistorySyncBuilder statusV3Messages(List<MessageInfo> statusV3Messages) {
+            if(statusV3Messages$value == null){
+                this.statusV3Messages$value = statusV3Messages;
+                return this;
+            }
+
+            this.statusV3Messages$value.addAll(statusV3Messages);
+            return this;
+        }
+
+        public HistorySyncBuilder pushNames(List<PushName> pushNames) {
+            if(pushNames$value == null){
+                this.pushNames$value = pushNames;
+                return this;
+            }
+
+            this.pushNames$value.addAll(pushNames);
+            return this;
+        }
+    }
 }

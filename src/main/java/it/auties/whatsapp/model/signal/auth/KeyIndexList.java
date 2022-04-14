@@ -1,40 +1,42 @@
 package it.auties.whatsapp.model.signal.auth;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import it.auties.protobuf.annotation.ProtobufPacked;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT32;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT64;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class KeyIndexList {
-  @JsonProperty("1")
-  @JsonPropertyDescription("uint32")
+public class KeyIndexList implements ProtobufMessage {
+  @ProtobufProperty(index = 1, type = UINT32)
   private int rawId;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("uint64")
+  @ProtobufProperty(index = 2, type = UINT64)
   private long timestamp;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 3, type = UINT32)
   private int currentIndex;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("uint32")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  @ProtobufPacked
+  @ProtobufProperty(index = 4, type = UINT32, repeated = true, packed = true)
   private List<Integer> validIndexes;
+
+  public static class KeyIndexListBuilder {
+    public KeyIndexListBuilder clientFeatures(List<Integer> validIndexes) {
+      if (this.validIndexes == null) this.validIndexes = new ArrayList<>();
+      this.validIndexes.addAll(validIndexes);
+      return this;
+    }
+  }
 }

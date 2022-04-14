@@ -1,8 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -14,7 +12,10 @@ import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds an image inside.
@@ -32,146 +33,125 @@ public final class ImageMessage extends MediaMessage {
   /**
    * The upload url of the encoded image that this object wraps
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 1, type = STRING)
   private String url;
 
   /**
    * The mime type of the image that this object wraps.
    * Most of the endTimeStamp this is {@link MediaMessageType#defaultMimeType()}
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 2, type = STRING)
   private String mimetype;
 
   /**
    * The caption of this message
    */
-  @JsonProperty("3")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 3, type = STRING)
   private String caption;
 
   /**
    * The sha256 of the decoded image that this object wraps
    */
-  @JsonProperty("4")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 4, type = BYTES)
   private byte[] fileSha256;
 
   /**
    * The unsigned size of the decoded image that this object wraps
    */
-  @JsonProperty("5")
-  @JsonPropertyDescription("uint64")
+  @ProtobufProperty(index = 5, type = UINT64)
   private long fileLength;
 
   /**
    * The unsigned height of the decoded image that this object wraps
    */
-  @JsonProperty("6")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 6, type = UINT32)
   private int height;
 
   /**
    * The unsigned width of the decoded image that this object wraps
    */
-  @JsonProperty("7")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 7, type = UINT32)
   private int width;
 
   /**
    * The media key of the image that this object wraps
    */
-  @JsonProperty("8")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 8, type = BYTES)
   private byte[] key; 
 
   /**
    * The sha256 of the encoded image that this object wraps
    */
-  @JsonProperty("9")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 9, type = BYTES)
   private byte[] fileEncSha256;
 
   /**
    * Interactive annotations
    */
-  @JsonProperty("10")
-  @JsonPropertyDescription("annotations")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  @ProtobufProperty(index = 10, type = MESSAGE,
+          concreteType = InteractiveAnnotation.class, repeated = true)
   private List<InteractiveAnnotation> interactiveAnnotations;
   
   /**
    * The direct path to the encoded image that this object wraps
    */
-  @JsonProperty("11")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 11, type = STRING)
   private String directPath;
 
   /**
    * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link ImageMessage#key()}
    */
-  @JsonProperty("12")
-  @JsonPropertyDescription("uint64")
+  @ProtobufProperty(index = 12, type = UINT64)
   private long mediaKeyTimestamp;
   
   /**
    * The thumbnail for this image message encoded as jpeg in an array of bytes
    */
-  @JsonProperty("16")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 16, type = BYTES)
   private byte[] thumbnail;
 
   /**
    * The sidecar for the first sidecar
    */
-  @JsonProperty("18")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 18, type = BYTES)
   private byte[] firstScanSidecar;
 
   /**
    * The length of the first scan
    */
-  @JsonProperty("19")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 19, type = UINT32)
   private int firstScanLength;
 
   /**
    * Experiment Group Id
    */
-  @JsonProperty("20")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 20, type = UINT32)
   private int experimentGroupId;
   
   /**
    * The sidecar for the scans of the decoded image
    */
-  @JsonProperty("21")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 21, type = BYTES)
   private byte[] scansSidecar;
 
   /**
    * The length of each scan of the decoded image
    */
-  @JsonProperty("22")
-  @JsonPropertyDescription("uint32")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  @ProtobufProperty(index = 22, type = UINT32, repeated = true)
   private List<Integer> scanLengths;
 
   /**
    * The sha256 of the decoded image in medium quality
    */
-  @JsonProperty("23")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 23, type = BYTES)
   private byte[] midQualityFileSha256;
 
   /**
    * The sha256 of the encoded image in medium quality
    */
-  @JsonProperty("24")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 24, type = BYTES)
   private byte[] midQualityFileEncSha256;
-  
+
   /**
    * Constructs a new builder to create a ImageMessage.
    * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
@@ -185,7 +165,7 @@ public final class ImageMessage extends MediaMessage {
    *
    * @return a non-null new message
    */
-  @Builder(builderClassName = "NewImageMessageBuilder", builderMethodName = "newImageMessage", buildMethodName = "create")
+  @Builder(builderClassName = "SimpleImageBuilder", builderMethodName = "newImageMessage", buildMethodName = "create")
   private static ImageMessage simpleBuilder(byte @NonNull [] media, String mimeType, String caption, int width, int height, ContextInfo contextInfo) {
     /*
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.IMAGE);
@@ -216,5 +196,19 @@ public final class ImageMessage extends MediaMessage {
   @Override
   public MediaMessageType type() {
     return MediaMessageType.IMAGE;
+  }
+
+  public static abstract class ImageMessageBuilder<C extends ImageMessage, B extends ImageMessageBuilder<C, B>> extends MediaMessageBuilder<C, B> {
+    public B interactiveAnnotations(List<InteractiveAnnotation> interactiveAnnotations) {
+      if(this.interactiveAnnotations == null) this.interactiveAnnotations = new ArrayList<>();
+      this.interactiveAnnotations.addAll(interactiveAnnotations);
+      return self();
+    }
+
+    public B scanLengths(List<Integer> scanLengths){
+      if(this.scanLengths == null) this.scanLengths = new ArrayList<>();
+      this.scanLengths.addAll(scanLengths);
+      return self();
+    }
   }
 }

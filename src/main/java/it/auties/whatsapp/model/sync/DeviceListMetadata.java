@@ -1,50 +1,53 @@
 package it.auties.whatsapp.model.sync;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import it.auties.protobuf.annotation.ProtobufPacked;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class DeviceListMetadata {
-  @JsonProperty("1")
-  @JsonPropertyDescription("bytes")
-  private byte[] senderKeyHash;
+public class DeviceListMetadata implements ProtobufMessage {
+    @ProtobufProperty(index = 1, type = BYTES)
+    private byte[] senderKeyHash;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("uint64")
-  private long senderTimestamp;
+    @ProtobufProperty(index = 2, type = UINT64)
+    private long senderTimestamp;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("uint32")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  @ProtobufPacked
-  private List<Integer> senderKeyIndexes;
+    @ProtobufProperty(index = 3, type = UINT32, repeated = true, packed = true)
+    private List<Integer> senderKeyIndexes;
 
-  @JsonProperty("8")
-  @JsonPropertyDescription("bytes")
-  private byte[] recipientKeyHash;
+    @ProtobufProperty(index = 8, type = BYTES)
+    private byte[] recipientKeyHash;
 
-  @JsonProperty("9")
-  @JsonPropertyDescription("uint64")
-  private long recipientTimestamp;
+    @ProtobufProperty(index = 9, type = UINT64)
+    private long recipientTimestamp;
 
-  @JsonProperty("10")
-  @JsonPropertyDescription("uint32")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  @ProtobufPacked
-  private List<Integer> recipientKeyIndexes;
+    @ProtobufProperty(index = 10, type = UINT32, repeated = true, packed = true)
+    private List<Integer> recipientKeyIndexes;
+
+    public static class DeviceListMetadataBuilder {
+        public DeviceListMetadataBuilder senderKeyIndexes(List<Integer> senderKeyIndexes) {
+            if (this.senderKeyIndexes == null) this.senderKeyIndexes = new ArrayList<>();
+            this.senderKeyIndexes.addAll(senderKeyIndexes);
+            return this;
+        }
+
+        public DeviceListMetadataBuilder recipientKeyIndexes(List<Integer> recipientKeyIndexes) {
+            if (this.recipientKeyIndexes == null) this.recipientKeyIndexes = new ArrayList<>();
+            this.recipientKeyIndexes.addAll(recipientKeyIndexes);
+            return this;
+        }
+    }
 }

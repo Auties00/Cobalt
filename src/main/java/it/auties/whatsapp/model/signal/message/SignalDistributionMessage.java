@@ -1,11 +1,8 @@
 package it.auties.whatsapp.model.signal.message;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.bytes.Bytes;
-import it.auties.protobuf.annotation.ProtobufIgnore;
-import it.auties.protobuf.decoder.ProtobufDecoder;
-import it.auties.protobuf.encoder.ProtobufEncoder;
+import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.api.model.ProtobufSchema;
 import it.auties.whatsapp.util.BytesHelper;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -13,55 +10,50 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.io.IOException;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.BYTES;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT32;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
 public final class SignalDistributionMessage implements SignalProtocolMessage {
   /**
    * The version of this message
    */
-  @JsonProperty("0")
-  @ProtobufIgnore
   private int version;
 
   /**
    * The jid of the sender
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 1, type = UINT32)
   private int id;
 
   /**
    * The iteration of the message
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 2, type = UINT32)
   private int iteration;
 
   /**
    * The value key of the message
    */
-  @JsonProperty("3")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 3, type = BYTES)
   private byte @NonNull [] chainKey;
 
   /**
    * The signing key of the message
    */
-  @JsonProperty("4")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 4, type = BYTES)
   private byte @NonNull[] signingKey;
 
   /**
    * This message in a serialized form
    */
-  @JsonProperty("5")
-  @ProtobufIgnore
   private byte[] serialized;
 
+  @SneakyThrows
   public SignalDistributionMessage(int id, int iteration, byte[] chainKey, byte[] signingKey) {
     this.version = CURRENT_VERSION;
     this.id = id;
@@ -69,14 +61,15 @@ public final class SignalDistributionMessage implements SignalProtocolMessage {
     this.chainKey = chainKey;
     this.signingKey = signingKey;
     this.serialized = Bytes.of(serializedVersion())
-            .append(ProtobufEncoder.encode(this))
+            .append(PROTOBUF.writeValueAsBytes(this))
             .toByteArray();
   }
 
   public static SignalDistributionMessage ofSerialized(byte[] serialized){
     try {
-      return ProtobufDecoder.forType(SignalDistributionMessage.class)
-              .decode(Bytes.of(serialized).slice(1).toByteArray())
+      return PROTOBUF.reader()
+              .with(ProtobufSchema.of(SignalDistributionMessage.class))
+              .readValue(Bytes.of(serialized).slice(1).toByteArray(), SignalDistributionMessage.class)
               .version(BytesHelper.bytesToVersion(serialized[0]))
               .serialized(serialized);
     } catch (IOException exception) {

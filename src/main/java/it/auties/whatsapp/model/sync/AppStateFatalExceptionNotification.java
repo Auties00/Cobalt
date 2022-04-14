@@ -1,30 +1,32 @@
 package it.auties.whatsapp.model.sync;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
-import java.util.List;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
+import java.util.*;
+import lombok.*;
+import lombok.experimental.*;
+import lombok.extern.jackson.*;
 
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class AppStateFatalExceptionNotification {
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+public class AppStateFatalExceptionNotification implements ProtobufMessage {
+
+  @ProtobufProperty(index = 1, type = STRING, repeated = true)
   private List<String> collectionNames;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("int64")
+  @ProtobufProperty(index = 2, type = INT64)
   private long timestamp;
+
+  public static class AppStateFatalExceptionNotificationBuilder {
+    public AppStateFatalExceptionNotificationBuilder collectionNames(List<String> collectionNames) {
+      if (this.collectionNames == null) this.collectionNames = new ArrayList<>();
+      this.collectionNames.addAll(collectionNames);
+      return this;
+    }
+  }
 }

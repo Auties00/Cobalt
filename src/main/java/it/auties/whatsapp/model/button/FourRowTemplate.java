@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.message.button.StructuredButtonMessage;
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
@@ -13,47 +15,41 @@ import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class FourRowTemplate {
-  @JsonProperty("1")
-  @JsonPropertyDescription("DocumentMessage")
+public class FourRowTemplate implements ProtobufMessage {
+  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = DocumentMessage.class)
   private DocumentMessage documentMessage;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("HighlyStructuredMessage")
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = StructuredButtonMessage.class)
   private StructuredButtonMessage highlyStructuredMessage;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("ImageMessage")
+  @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ImageMessage.class)
   private ImageMessage imageMessage;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("VideoMessage")
+  @ProtobufProperty(index = 4, type = MESSAGE, concreteType = VideoMessage.class)
   private VideoMessage videoMessage;
 
-  @JsonProperty("5")
-  @JsonPropertyDescription("LocationMessage")
+  @ProtobufProperty(index = 5, type = MESSAGE, concreteType = LocationMessage.class)
   private LocationMessage locationMessage;
 
-  @JsonProperty("6")
-  @JsonPropertyDescription("HighlyStructuredMessage")
+  @ProtobufProperty(index = 6, type = MESSAGE, concreteType = StructuredButtonMessage.class)
   private StructuredButtonMessage content;
 
-  @JsonProperty("7")
-  @JsonPropertyDescription("HighlyStructuredMessage")
+  @ProtobufProperty(index = 7, type = MESSAGE, concreteType = StructuredButtonMessage.class)
   private StructuredButtonMessage footer;
 
-  @JsonProperty("8")
-  @JsonPropertyDescription("TemplateButton")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  @ProtobufProperty(index = 8, type = MESSAGE,
+          concreteType = ButtonTemplate.class, repeated = true)
   private List<ButtonTemplate> buttons;
 
   public TitleType titleType() {
@@ -67,7 +63,7 @@ public class FourRowTemplate {
 
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum TitleType {
+  public enum TitleType implements ProtobufMessage {
     UNKNOWN(0),
     DOCUMENT_MESSAGE(1),
     HIGHLY_STRUCTURED_MESSAGE(2),
@@ -78,12 +74,19 @@ public class FourRowTemplate {
     @Getter
     private final int index;
 
-    @JsonCreator
     public static TitleType forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
           .findFirst()
           .orElse(TitleType.UNKNOWN);
+    }
+  }
+
+  public static class FourRowTemplateBuilder {
+    public FourRowTemplateBuilder hydratedButtons(List<ButtonTemplate> buttons) {
+      if (this.buttons == null) this.buttons = new ArrayList<>();
+      this.buttons.addAll(buttons);
+      return this;
     }
   }
 }

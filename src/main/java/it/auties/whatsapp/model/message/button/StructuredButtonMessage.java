@@ -3,8 +3,10 @@ package it.auties.whatsapp.model.message.button;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.business.BusinessLocalizableParameter;
+import it.auties.whatsapp.model.button.ButtonSection;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,7 +15,11 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 
 /**
  * A model class that represents a WhatsappMessage that contains a highly structured message inside.
@@ -25,71 +31,75 @@ import java.util.List;
 @NoArgsConstructor
 @Data
 @Jacksonized
-@Builder(builderClassName = "newHighlyStructuredMessage", buildMethodName = "create")
+@Builder(builderMethodName = "newHighlyStructuredMessage", buildMethodName = "create")
 @Accessors(fluent = true)
 public final class StructuredButtonMessage implements ButtonMessage {
   /**
    * Namespace
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 1, type = STRING)
   private String namespace;
 
   /**
    * Element Name
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 2, type = STRING)
   private String elementName;
 
   /**
    * Params
    */
-  @JsonProperty("3")
-  @JsonPropertyDescription("string")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  @ProtobufProperty(index = 3, type = STRING, repeated = true)
   private List<String> params;
 
   /**
    * FallbackLg
    */
-  @JsonProperty("4")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 4, type = STRING)
   private String fallbackLg;
 
   /**
    * FallbackLc
    */
-  @JsonProperty("5")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 5, type = STRING)
   private String fallbackLc;
 
   /**
    * Localizable Params
    */
-  @JsonProperty("6")
-  @JsonPropertyDescription("params")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  @ProtobufProperty(index = 6, type = MESSAGE,
+          concreteType = BusinessLocalizableParameter.class, repeated = true)
   private List<BusinessLocalizableParameter> localizableParams;
 
   /**
    * DeterministicLg
    */
-  @JsonProperty("7")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 7, type = STRING)
   private String deterministicLg;
 
   /**
    * DeterministicLc
    */
-  @JsonProperty("8")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 8, type = STRING)
   private String deterministicLc;
 
   /**
    * Hydrated message
    */
-  @JsonProperty("9")
-  @JsonPropertyDescription("message")
+  @ProtobufProperty(index = 9, type = MESSAGE, concreteType = TemplateMessage.class)
   private TemplateMessage hydratedHsm;
+
+  public static class StructuredButtonMessageBuilder {
+    public StructuredButtonMessageBuilder params(List<String> params){
+      if(this.params == null) this.params = new ArrayList<>();
+      this.params.addAll(params);
+      return this;
+    }
+
+    public StructuredButtonMessageBuilder localizableParams(List<BusinessLocalizableParameter> localizableParams){
+      if(this.localizableParams == null) this.localizableParams = new ArrayList<>();
+      this.localizableParams.addAll(localizableParams);
+      return this;
+    }
+  }
 }

@@ -3,36 +3,38 @@ package it.auties.whatsapp.model.business;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.BYTES;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class BusinessDateTime {
-  @JsonProperty("1")
-  @JsonPropertyDescription("HSMDateTimeComponent")
+public class BusinessDateTime implements ProtobufMessage {
+  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = BusinessDateTimeComponent.class)
   private BusinessDateTimeComponent component;
-  
-  @JsonProperty("2")
-  @JsonPropertyDescription("HSMDateTimeUnixEpoch")
+
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = BusinessDateTimeUnixEpoch.class)
   private BusinessDateTimeUnixEpoch unixEpoch;
 
-  public DatetimeOneof datetimeOneofType() {
-    if (component != null) return DatetimeOneof.COMPONENT;
-    if (unixEpoch != null) return DatetimeOneof.UNIX_EPOCH;
-    return DatetimeOneof.UNKNOWN;
+  public DateType dateType() {
+    if (component != null) return DateType.COMPONENT;
+    if (unixEpoch != null) return DateType.UNIX_EPOCH;
+    return DateType.UNKNOWN;
   }
 
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum DatetimeOneof {
+  public enum DateType implements ProtobufMessage {
     UNKNOWN(0),
     COMPONENT(1),
     UNIX_EPOCH(2);
@@ -40,12 +42,11 @@ public class BusinessDateTime {
     @Getter
     private final int index;
 
-    @JsonCreator
-    public static DatetimeOneof forIndex(int index) {
+    public static DateType forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
           .findFirst()
-          .orElse(DatetimeOneof.UNKNOWN);
+          .orElse(DateType.UNKNOWN);
     }
   }
 }

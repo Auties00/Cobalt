@@ -3,6 +3,9 @@ package it.auties.whatsapp.model.signal.sender;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.whatsapp.model.signal.auth.KeyIndexList;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -15,30 +18,28 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT32;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class SenderKeyState {
+public class SenderKeyState implements ProtobufMessage {
   private static final int MAX_MESSAGE_KEYS = 2000;
 
-  @JsonProperty("1")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 1, type = UINT32)
   private int id;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("SenderChainKey")
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = SenderChainKey.class)
   private SenderChainKey chainKey;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("SenderSigningKey")
+  @ProtobufProperty(index = 3, type = MESSAGE, concreteType = SenderSigningKey.class)
   private SenderSigningKey signingKey;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("SenderMessageKey")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  @ProtobufProperty(index = 4, type = MESSAGE,
+          concreteType = SenderMessageKey.class, repeated = true)
   @Default
   private List<SenderMessageKey> messageKeys = new ArrayList<>();
 
@@ -83,5 +84,12 @@ public class SenderKeyState {
   public boolean equals(Object other){
     return other instanceof SenderKeyState that
             && Objects.equals(this.id(), that.id());
+  }
+
+  public static class SenderKeyStateBuilder {
+    public SenderKeyStateBuilder messageKeys(List<SenderMessageKey> messageKeys) {
+      this.messageKeys$value.addAll(messageKeys);
+      return this;
+    }
   }
 }

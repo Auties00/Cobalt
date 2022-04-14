@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.contact;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.whatsapp.binary.BinaryFlag;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -14,7 +15,7 @@ import java.util.Arrays;
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum ContactStatus {
+public enum ContactStatus implements ProtobufMessage {
     /**
      * When the contact is online
      */
@@ -52,7 +53,6 @@ public enum ContactStatus {
         return name().toLowerCase();
     }
 
-    @JsonCreator
     private static ContactStatus forIndex(int index) {
         return Arrays.stream(values())
                 .filter(entry -> entry.ordinal() == index)

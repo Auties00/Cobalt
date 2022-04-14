@@ -2,6 +2,8 @@ package it.auties.whatsapp.model.product;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,54 +12,44 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class ProductSnapshot {
-  @JsonProperty("1")
-  @JsonPropertyDescription("ImageMessage")
+public class ProductSnapshot implements ProtobufMessage {
+  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = ImageMessage.class)
   private ImageMessage productImage;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 2, type = STRING)
   private String productId;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 3, type = STRING)
   private String title;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 4, type = STRING)
   private String description;
 
-  @JsonProperty("5")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 5, type = STRING)
   private String currencyCode;
 
-  @JsonProperty("6")
-  @JsonPropertyDescription("int64")
+  @ProtobufProperty(index = 6, type = INT64)
   private long priceAmount1000;
 
-  @JsonProperty("7")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 7, type = STRING)
   private String retailerId;
 
-  @JsonProperty("8")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 8, type = STRING)
   private String url;
 
-  @JsonProperty("9")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 9, type = UINT32)
   private int productImageCount;
 
-  @JsonProperty("11")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 11, type = STRING)
   private String firstImageId;
 
-  @JsonProperty("12")
-  @JsonPropertyDescription("int64")
+  @ProtobufProperty(index = 12, type = INT64)
   private long salePriceAmount1000;
 }

@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.chat;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.api.model.ProtobufMessage;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -12,7 +13,7 @@ import java.util.Arrays;
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum ChatMediaVisibility {
+public enum ChatMediaVisibility implements ProtobufMessage {
     /**
      * Default
      */
@@ -31,7 +32,6 @@ public enum ChatMediaVisibility {
     @Getter
     private final int index;
 
-    @JsonCreator
     public static ChatMediaVisibility forIndex(int index) {
         return Arrays.stream(values())
                 .filter(entry -> entry.index() == index)

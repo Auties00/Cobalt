@@ -3,127 +3,108 @@ package it.auties.whatsapp.model.sync;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.setting.*;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import it.auties.protobuf.api.model.ProtobufProperty;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
 @AllArgsConstructor
-@NoArgsConstructor
+@Builder
+@Jacksonized
 @ToString
 @Accessors(fluent = true)
-public class ActionValueSync {
+public class ActionValueSync implements ProtobufMessage {
     //<editor-fold desc="Metadata">
-    @JsonProperty("1")
-    @JsonPropertyDescription("int64")
+    @ProtobufProperty(index = 1, type = INT64)
     @Getter
     private long timestamp;
     //</editor-fold>
 
     //<editor-fold desc="Actions">
-    @JsonProperty("2")
-    @JsonPropertyDescription("StarAction")
+    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = StarAction.class)
     private StarAction starAction;
 
-    @JsonProperty("3")
-    @JsonPropertyDescription("ContactAction")
+    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ContactAction.class)
     private ContactAction contactAction;
 
-    @JsonProperty("4")
-    @JsonPropertyDescription("MuteAction")
+    @ProtobufProperty(index = 4, type = MESSAGE, concreteType = MuteAction.class)
     private MuteAction muteAction;
 
-    @JsonProperty("5")
-    @JsonPropertyDescription("PinAction")
+    @ProtobufProperty(index = 5, type = MESSAGE, concreteType = PinAction.class)
     private PinAction pinAction;
 
-    @JsonProperty("8")
-    @JsonPropertyDescription("QuickReplyAction")
+    @ProtobufProperty(index = 8, type = MESSAGE, concreteType = QuickReplyAction.class)
     private QuickReplyAction quickReplyAction;
 
-    @JsonProperty("9")
-    @JsonPropertyDescription("RecentStickerWeightsAction")
+    @ProtobufProperty(index = 9, type = MESSAGE, concreteType = RecentStickerWeightsAction.class)
     private RecentStickerWeightsAction recentStickerWeightsAction;
 
-    @JsonProperty("11")
-    @JsonPropertyDescription("RecentEmojiWeightsAction")
+    @ProtobufProperty(index = 11, type = MESSAGE, concreteType = RecentEmojiWeightsAction.class)
     private RecentEmojiWeightsAction recentEmojiWeightsAction;
 
-    @JsonProperty("14")
-    @JsonPropertyDescription("LabelEditAction")
+    @ProtobufProperty(index = 14, type = MESSAGE, concreteType = LabelEditAction.class)
     private LabelEditAction labelEditAction;
 
-    @JsonProperty("15")
-    @JsonPropertyDescription("LabelAssociationAction")
+    @ProtobufProperty(index = 15, type = MESSAGE, concreteType = LabelAssociationAction.class)
     private LabelAssociationAction labelAssociationAction;
 
-
-    @JsonProperty("17")
-    @JsonPropertyDescription("ArchiveChatAction")
+    @ProtobufProperty(index = 17, type = MESSAGE, concreteType = ArchiveChatAction.class)
     private ArchiveChatAction archiveChatAction;
 
-    @JsonProperty("18")
-    @JsonPropertyDescription("DeleteMessageForMeAction")
+    @ProtobufProperty(index = 18, type = MESSAGE, concreteType = DeleteMessageForMeAction.class)
     private DeleteMessageForMeAction deleteMessageForMeAction;
 
-    @JsonProperty("20")
-    @JsonPropertyDescription("MarkChatAsReadAction")
+    @ProtobufProperty(index = 20, type = MESSAGE, concreteType = MarkChatAsReadAction.class)
     private MarkChatAsReadAction markChatAsReadAction;
 
-    @JsonProperty("21")
-    @JsonPropertyDescription("ClearChatAction")
+    @ProtobufProperty(index = 21, type = MESSAGE, concreteType = ClearChatAction.class)
     private ClearChatAction clearChatAction;
 
-    @JsonProperty("22")
-    @JsonPropertyDescription("DeleteChatAction")
+    @ProtobufProperty(index = 22, type = MESSAGE, concreteType = DeleteChatAction.class)
     private DeleteChatAction deleteChatAction;
 
-    @JsonProperty("26")
-    @JsonPropertyDescription("FavoriteStickerAction")
+    @ProtobufProperty(index = 25, type = MESSAGE, concreteType = FavoriteStickerAction.class)
     private FavoriteStickerAction favoriteStickerAction;
 
-    @JsonProperty("25")
-    @JsonPropertyDescription("AndroidUnsupportedActions")
+    @ProtobufProperty(index = 26, type = MESSAGE, concreteType = AndroidUnsupportedActions.class)
     private AndroidUnsupportedActions androidUnsupportedActions;
     //</editor-fold>
 
     //<editor-fold desc="Settings">
-    @JsonProperty("6")
-    @JsonPropertyDescription("SecurityNotificationSetting")
+    @ProtobufProperty(index = 6, type = MESSAGE, concreteType = SecurityNotificationSetting.class)
     private SecurityNotificationSetting securityNotificationSetting;
 
-    @JsonProperty("7")
-    @JsonPropertyDescription("PushNameSetting")
+    @ProtobufProperty(index = 7, type = MESSAGE, concreteType = PushNameSetting.class)
     private PushNameSetting pushNameSetting;
 
-    @JsonProperty("16")
-    @JsonPropertyDescription("LocaleSetting")
+    @ProtobufProperty(index = 16, type = MESSAGE, concreteType = LocaleSetting.class)
     private LocaleSetting localeSetting;
 
-
-    @JsonProperty("23")
-    @JsonPropertyDescription("UnarchiveChatsSetting")
+    @ProtobufProperty(index = 23, type = MESSAGE, concreteType = UnarchiveChatsSetting.class)
     private UnarchiveChatsSetting unarchiveChatsSetting;
     //</editor-fold>
 
     //<editor-fold desc="Misc">
-    @JsonProperty("10")
-    @JsonPropertyDescription("RecentStickerMetadata")
+    @ProtobufProperty(index = 10, type = MESSAGE, concreteType = RecentStickerMetadata.class)
     @Getter
     private RecentStickerMetadata recentStickerMetadata;
 
-    @JsonProperty("19")
-    @JsonPropertyDescription("KeyExpiration")
+    @ProtobufProperty(index = 19, type = MESSAGE, concreteType = KeyExpiration.class)
     @Getter
     private KeyExpiration keyExpiration;
 
-    @JsonProperty("24")
-    @JsonPropertyDescription("PrimaryFeature")
+    @ProtobufProperty(index = 24, type = MESSAGE, concreteType = PrimaryFeature.class)
     @Getter
     private PrimaryFeature primaryFeature;
+
     //</editor-fold>
 
     //<editor-fold desc="Accessors">
@@ -164,11 +145,17 @@ public class ActionValueSync {
     @Jacksonized
     @Builder
     @Accessors(fluent = true)
-    public static class PrimaryFeature {
-        @JsonProperty("1")
-        @JsonPropertyDescription("string")
-        @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+    public static class PrimaryFeature implements ProtobufMessage{
+        @ProtobufProperty(index = 1, type = STRING, repeated = true)
         private List<String> flags;
+
+        public static class PrimaryFeatureBuilder {
+            public PrimaryFeatureBuilder flags(List<String> flags){
+                if(this.flags == null) this.flags = new ArrayList<>();
+                this.flags.addAll(flags);
+                return this;
+            }
+        }
     }
 
     //</editor-fold>

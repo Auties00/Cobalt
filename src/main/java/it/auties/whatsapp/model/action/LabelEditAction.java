@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.action;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,27 +10,24 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
 public final class LabelEditAction implements Action {
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 1, type = STRING)
   private String name;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("int32")
+  @ProtobufProperty(index = 2, type = INT32)
   private int color;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("int32")
+  @ProtobufProperty(index = 3, type = INT32)
   private int predefinedId;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 4, type = BOOLEAN)
   private boolean deleted;
 
   @Override

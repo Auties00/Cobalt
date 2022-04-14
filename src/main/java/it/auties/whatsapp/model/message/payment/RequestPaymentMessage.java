@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.message.payment;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
@@ -11,6 +12,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
 /**
  * A model class that represents a WhatsappMessage to try to place a {@link PaymentMessage}.
@@ -29,35 +32,30 @@ public final class RequestPaymentMessage implements PaymentMessage {
    * Follows the ISO-4217 Standard.
    * For a list of valid currency codes click <a href="https://en.wikipedia.org/wiki/ISO_4217">here</a>
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 1, type = STRING)
   private String currency;
 
   /**
    * The amount of money being paid
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("uint64")
+  @ProtobufProperty(index = 2, type = UINT64)
   private long amount;
 
   /**
    * The name of the Whatsapp business account that will receive the money
    */
-  @JsonProperty("3")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 3, type = STRING)
   private String requestFrom;
 
   /**
    * The caption message, that is the message below the payment request
    */
-  @JsonProperty("4")
-  @JsonPropertyDescription("message")
+  @ProtobufProperty(index = 4, type = MESSAGE, concreteType = MessageContainer.class)
   private MessageContainer noteMessage;
 
   /**
    * The timestamp, that is the endTimeStamp in seconds since {@link java.time.Instant#EPOCH}, for the expiration of this payment request
    */
-  @JsonProperty("5")
-  @JsonPropertyDescription("uint64")
+  @ProtobufProperty(index = 5, type = UINT64)
   private long expiryTimestamp;
 }

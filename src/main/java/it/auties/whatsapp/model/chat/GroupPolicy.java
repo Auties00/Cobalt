@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.chat;
 
+import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.whatsapp.api.Whatsapp;
 
 /**
@@ -7,7 +8,7 @@ import it.auties.whatsapp.api.Whatsapp;
  * Said chat should be a group: {@link Chat#isGroup()}.
  * Said actions can be executed using various methods in {@link Whatsapp}.
  */
-public enum GroupPolicy {
+public enum GroupPolicy implements ProtobufMessage {
     /**
      * Allows both admins and users
      */

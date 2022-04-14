@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.payment.RequestPaymentMessage;
@@ -11,78 +12,79 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
 /**
  * A model class that holds the information related to a payment.
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
  * Instead, methods inside {@link Whatsapp} should be used.
  */
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
 public final class PaymentInfo implements Info {
-  /**
-   * The status of this transaction
-   */
-  @JsonProperty("10")
-  private PaymentInfoTxnStatus transactionStatus;
-
-  /**
-   * The currency of this transaction
-   */
-  @JsonProperty("9")
-  private String currency;
-
-  /**
-   * Future proofed
-   */
-  @JsonProperty("8")
-  private boolean futureproofed;
-
-  /**
-   * The date of expiration of this transaction
-   */
-  @JsonProperty("7")
-  private long expiryTimestamp;
-
-  /**
-   * The MessageKey of the {@link RequestPaymentMessage} that originated this transaction
-   */
-  @JsonProperty("6")
-  private MessageKey requestMessageKey;
-
-  /**
-   * The timestamp, that is the seconds since {@link java.time.Instant#EPOCH}, when the {@link RequestPaymentMessage} that originated this transaction was sent
-   */
-  @JsonProperty("5")
-  private long transactionTimestamp;
-
-  /**
-   * The status of this payment
-   */
-  @JsonProperty("4")
-  private PaymentInfoStatus status;
-
-  /**
-   * The jid of the beneficiary of this transaction
-   */
-  @JsonProperty("3")
-  private String receiverJid;
-
-  /**
-   * The amount of money involved in this transaction
-   */
-  @JsonProperty("2")
-  private long amount1000;
-
   /**
    * The currency of this transaction
    */
   @Deprecated
   @JsonProperty("1")
   private PaymentInfoCurrency currencyDeprecated;
+
+  /**
+   * The amount of money involved in this transaction
+   */
+  @ProtobufProperty(index = 2, type = UINT64)
+  private long amount1000;
+
+  /**
+   * The jid of the beneficiary of this transaction
+   */
+  @ProtobufProperty(index = 3, type = STRING)
+  private String receiverJid;
+
+  /**
+   * The status of this payment
+   */
+  @ProtobufProperty(index = 4, type = MESSAGE, concreteType = PaymentInfoStatus.class)
+  private PaymentInfoStatus status;
+
+  /**
+   * The timestamp, that is the seconds since {@link java.time.Instant#EPOCH}, when the {@link RequestPaymentMessage} that originated this transaction was sent
+   */
+  @ProtobufProperty(index = 5, type = UINT64)
+  private long transactionTimestamp;
+
+  /**
+   * The MessageKey of the {@link RequestPaymentMessage} that originated this transaction
+   */
+  @ProtobufProperty(index = 6, type = MESSAGE, concreteType = MessageKey.class)
+  private MessageKey requestMessageKey;
+
+  /**
+   * The date of expiration of this transaction
+   */
+  @ProtobufProperty(index = 7, type = UINT64)
+  private long expiryTimestamp;
+
+  /**
+   * Future proofed
+   */
+  @ProtobufProperty(index = 8, type = BOOLEAN)
+  private boolean futureProofed;
+
+  /**
+   * The currency of this transaction
+   */
+  @ProtobufProperty(index = 9, type = STRING)
+  private String currency;
+
+  /**
+   * The status of this transaction
+   */
+  @ProtobufProperty(index = 10, type = MESSAGE, concreteType = PaymentInfoTxnStatus.class)
+  private PaymentInfoTxnStatus transactionStatus;
 
   /**
    * The constants of this enumerated type describe the currencies supported for a transaction described by a {@link PaymentInfo}

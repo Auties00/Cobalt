@@ -1,14 +1,15 @@
 package it.auties.whatsapp.model.request;
 
 import it.auties.bytes.Bytes;
-import it.auties.protobuf.encoder.ProtobufEncoder;
 import it.auties.whatsapp.binary.BinaryEncoder;
 import it.auties.whatsapp.controller.WhatsappKeys;
 import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.crypto.AesGmc;
+import it.auties.whatsapp.util.JacksonProvider;
 import jakarta.websocket.SendResult;
 import jakarta.websocket.Session;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import lombok.extern.java.Log;
 
 import java.util.concurrent.CompletableFuture;
@@ -23,7 +24,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 @Log
 @SuppressWarnings("UnusedReturnValue")
-public record Request(String id, @NonNull Object body, @NonNull CompletableFuture<Node> future) {
+public record Request(String id, @NonNull Object body, @NonNull CompletableFuture<Node> future) implements JacksonProvider {
     /**
      * The binary encoder, used to encode requests that take as a parameter a node
      */
@@ -55,8 +56,9 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     /**
      * Constructs a new request with the provided body expecting a response
      */
+    @SneakyThrows
     public static Request with(@NonNull Object body) {
-        return new Request(null, ProtobufEncoder.encode(body), new CompletableFuture<>());
+        return new Request(null, PROTOBUF.writeValueAsBytes(body), new CompletableFuture<>());
     }
 
     /**

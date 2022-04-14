@@ -3,15 +3,19 @@ package it.auties.whatsapp.model.message.payment;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
 /**
  * A model class that represents a WhatsappMessage to pay an order.
@@ -23,77 +27,67 @@ import java.util.Arrays;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Jacksonized
-@Builder
+@Builder(builderMethodName = "newPaymentOrderMessage", buildMethodName = "create")
 @Accessors(fluent = true)
 public final class PaymentOrderMessage extends ContextInfo implements PaymentMessage {
   /**
    * The jid of this order
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 1, type = STRING)
   private String id;
 
   /**
    * The thumbnail of this order
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 2, type = BYTES)
   private byte[] thumbnail;
 
   /**
    * The total number of items that was ordered
    */
-  @JsonProperty("3")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 3, type = UINT32)
   private int itemCount;
 
   /**
    * The status of this order
    */
-  @JsonProperty("4")
-  @JsonPropertyDescription("status")
+  @ProtobufProperty(index = 4, type = MESSAGE, concreteType = OrderMessageOrderStatus.class)
   private OrderMessageOrderStatus status;
 
   /**
    * The surface of this order
    */
-  @JsonProperty("5")
-  @JsonPropertyDescription("surface")
+  @ProtobufProperty(index = 5, type = MESSAGE, concreteType = OrderMessageOrderSurface.class)
   private OrderMessageOrderSurface surface;
 
   /**
    * The message of this order
    */
-  @JsonProperty("6")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 4, type = STRING)
   private String message;
 
   /**
    * The title of this order
    */
-  @JsonProperty("7")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 7, type = STRING)
   private String title;
 
   /**
    * The jid of the seller associated with this order
    */
-  @JsonProperty("8")
-  @JsonPropertyDescription("seller")
+  @ProtobufProperty(index = 8, type = MESSAGE, concreteType = ContactJid.class)
   private ContactJid sellerId;
 
   /**
    * The token of this order
    */
-  @JsonProperty("9")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 9, type = STRING)
   private String token;
 
   /**
    * The amount of money being paid for this order
    */
-  @JsonProperty("10")
-  @JsonPropertyDescription("uint64")
+  @ProtobufProperty(index = 10, type = UINT64)
   private long amount;
 
   /**
@@ -101,8 +95,7 @@ public final class PaymentOrderMessage extends ContextInfo implements PaymentMes
    * Follows the ISO-4217 Standard.
    * For a list of valid currency codes click <a href="https://en.wikipedia.org/wiki/ISO_4217">here</a>
    */
-  @JsonProperty("11")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 11, type = STRING)
   private String currency;
 
   /**

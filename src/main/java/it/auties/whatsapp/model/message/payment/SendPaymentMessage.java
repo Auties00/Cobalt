@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.message.payment;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageKey;
@@ -12,6 +13,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 
 /**
  * A model class that represents a WhatsappMessage to confirm a {@link RequestPaymentMessage}.
@@ -28,14 +31,12 @@ public final class SendPaymentMessage implements PaymentMessage {
   /**
    * The caption message, that is the message below the payment confirmation
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("note")
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = MessageContainer.class)
   private MessageContainer noteMessage;
 
   /**
    * The key of the original {@link RequestPaymentMessage} that this message confirms
    */
-  @JsonProperty("3")
-  @JsonPropertyDescription("key")
+  @ProtobufProperty(index = 3, type = MESSAGE, concreteType = MessageKey.class)
   private MessageKey requestMessageKey;
 }

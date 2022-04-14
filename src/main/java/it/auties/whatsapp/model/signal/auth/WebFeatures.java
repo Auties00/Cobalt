@@ -1,192 +1,163 @@
 package it.auties.whatsapp.model.signal.auth;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import lombok.*;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class WebFeatures {
-  @JsonProperty("46")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag mdForceUpgrade;
+public class WebFeatures implements ProtobufMessage {
+  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag labelsDisplay;
 
-  @JsonProperty("45")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag ephemeral24HDuration;
-
-  @JsonProperty("44")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag ephemeralAllowGroupMembers;
-
-  @JsonProperty("43")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag archiveV2;
-
-  @JsonProperty("42")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag settingsSync;
-
-  @JsonProperty("41")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag groupDogfoodingInternalOnly;
-
-  @JsonProperty("40")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag groupUiiCleanup;
-
-  @JsonProperty("39")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag support;
-
-  @JsonProperty("37")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag userNotice;
-
-  @JsonProperty("36")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag recentStickersV3;
-
-  @JsonProperty("34")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag recentStickersV2;
-
-  @JsonProperty("33")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag e2ENotificationSync;
-
-  @JsonProperty("32")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag ephemeralMessages;
-
-  @JsonProperty("31")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag templateMessageInteractivity;
-
-  @JsonProperty("30")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag templateMessage;
-
-  @JsonProperty("29")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag voipGroupCall;
-
-  @JsonProperty("28")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag starredStickers;
-
-  @JsonProperty("27")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag catalog;
-
-  @JsonProperty("26")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag recentStickers;
-
-  @JsonProperty("25")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag groupsV4JoinPermission;
-
-  @JsonProperty("24")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag frequentlyForwardedSetting;
-
-  @JsonProperty("23")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag thirdPartyStickers;
-
-  @JsonProperty("22")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag voipIndividualVideo;
-
-  @JsonProperty("21")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag statusRanking;
-
-  @JsonProperty("20")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag videoPlaybackUrl;
-
-  @JsonProperty("19")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag vnameV2;
-
-  @JsonProperty("18")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag mediaUploadRichQuickReplies;
-
-  @JsonProperty("15")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag mediaUpload;
-
-  @JsonProperty("14")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag labelsEdit;
-
-  @JsonProperty("13")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag liveLocationsFinal;
-
-  @JsonProperty("12")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag stickerPackQuery;
-
-  @JsonProperty("11")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag payments;
-
-  @JsonProperty("10")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag quickRepliesQuery;
-
-  @JsonProperty("9")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag voipIndividualIncoming;
-
-  @JsonProperty("8")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag queryVname;
-
-  @JsonProperty("7")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag liveLocations;
-
-  @JsonProperty("6")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag queryStatusV3Thumbnail;
-
-  @JsonProperty("5")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag changeNumberV2;
-
-  @JsonProperty("4")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag groupsV3Create;
-
-  @JsonProperty("3")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag groupsV3;
-
-  @JsonProperty("2")
-  @JsonPropertyDescription("WebFeaturesFlag")
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = WebFeaturesFlag.class)
   private WebFeaturesFlag voipIndividualOutgoing;
 
-  @JsonProperty("1")
-  @JsonPropertyDescription("WebFeaturesFlag")
-  private WebFeaturesFlag labelsDisplay;
+  @ProtobufProperty(index = 3, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag groupsV3;
+
+  @ProtobufProperty(index = 4, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag groupsV3Create;
+
+  @ProtobufProperty(index = 5, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag changeNumberV2;
+
+  @ProtobufProperty(index = 6, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag queryStatusV3Thumbnail;
+
+  @ProtobufProperty(index = 7, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag liveLocations;
+
+  @ProtobufProperty(index = 8, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag queryVname;
+
+  @ProtobufProperty(index = 9, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag voipIndividualIncoming;
+
+  @ProtobufProperty(index = 10, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag quickRepliesQuery;
+
+  @ProtobufProperty(index = 11, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag payments;
+
+  @ProtobufProperty(index = 12, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag stickerPackQuery;
+
+  @ProtobufProperty(index = 13, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag liveLocationsFinal;
+
+  @ProtobufProperty(index = 14, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag labelsEdit;
+
+  @ProtobufProperty(index = 15, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag mediaUpload;
+
+  @ProtobufProperty(index = 18, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag mediaUploadRichQuickReplies;
+
+  @ProtobufProperty(index = 19, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag vnameV2;
+
+  @ProtobufProperty(index = 20, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag videoPlaybackUrl;
+
+  @ProtobufProperty(index = 21, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag statusRanking;
+
+  @ProtobufProperty(index = 22, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag voipIndividualVideo;
+
+  @ProtobufProperty(index = 23, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag thirdPartyStickers;
+
+  @ProtobufProperty(index = 24, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag frequentlyForwardedSetting;
+
+  @ProtobufProperty(index = 25, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag groupsV4JoinPermission;
+
+  @ProtobufProperty(index = 26, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag recentStickers;
+
+  @ProtobufProperty(index = 27, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag catalog;
+
+  @ProtobufProperty(index = 28, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag starredStickers;
+
+  @ProtobufProperty(index = 29, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag voipGroupCall;
+
+  @ProtobufProperty(index = 30, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag templateMessage;
+
+  @ProtobufProperty(index = 31, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag templateMessageInteractivity;
+
+  @ProtobufProperty(index = 32, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag ephemeralMessages;
+
+  @ProtobufProperty(index = 33, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag e2ENotificationSync;
+
+  @ProtobufProperty(index = 34, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag recentStickersV2;
+
+  @ProtobufProperty(index = 36, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag recentStickersV3;
+
+  @ProtobufProperty(index = 37, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag userNotice;
+
+  @ProtobufProperty(index = 39, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag support;
+
+  @ProtobufProperty(index = 40, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag groupUiiCleanup;
+
+  @ProtobufProperty(index = 41, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag groupDogfoodingInternalOnly;
+
+  @ProtobufProperty(index = 42, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag settingsSync;
+
+  @ProtobufProperty(index = 43, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag archiveV2;
+
+  @ProtobufProperty(index = 44, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag ephemeralAllowGroupMembers;
+
+  @ProtobufProperty(index = 45, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag ephemeral24HDuration;
+
+  @ProtobufProperty(index = 46, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag mdForceUpgrade;
+
+  @ProtobufProperty(index = 47, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag disappearingMode;
+
+  @ProtobufProperty(index = 48, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag externalMdOptInAvailable;
+
+  @ProtobufProperty(index = 49, type = MESSAGE, concreteType = WebFeaturesFlag.class)
+  private WebFeaturesFlag noDeleteMessageTimeLimit;
 
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum WebFeaturesFlag {
+  public enum WebFeaturesFlag implements ProtobufMessage {
     NOT_STARTED(0),
     FORCE_UPGRADE(1),
     DEVELOPMENT(2),
@@ -195,12 +166,8 @@ public class WebFeatures {
     @Getter
     private final int index;
 
-    @JsonCreator
     public static WebFeaturesFlag forIndex(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
-          .orElse(null);
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
     }
   }
 }

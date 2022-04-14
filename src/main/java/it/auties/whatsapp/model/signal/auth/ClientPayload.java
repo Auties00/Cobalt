@@ -4,115 +4,98 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.whatsapp.model.signal.sender.SenderKeyRecord;
+import it.auties.whatsapp.model.signal.sender.SenderKeyState;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class ClientPayload {
-  @JsonProperty("1")
-  @JsonPropertyDescription("uint64")
+public class ClientPayload implements ProtobufMessage {
+  @ProtobufProperty(index = 1, type = UINT64)
   private long username;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 3, type = BOOLEAN)
   private boolean passive;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("ClientPayloadClientFeature")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  @ProtobufProperty(index = 4, type = MESSAGE,
+          concreteType = ClientPayloadClientFeature.class, repeated = true)
   private List<ClientPayloadClientFeature> clientFeatures;
 
-  @JsonProperty("5")
-  @JsonPropertyDescription("UserAgent")
+  @ProtobufProperty(index = 5, type = MESSAGE, concreteType = UserAgent.class)
   private UserAgent userAgent;
 
-  @JsonProperty("6")
-  @JsonPropertyDescription("WebInfo")
+  @ProtobufProperty(index = 6, type = MESSAGE, concreteType = WebInfo.class)
   private WebInfo webInfo;
 
-  @JsonProperty("7")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 7, type = STRING)
   private String pushName;
 
-  @JsonProperty("9")
-  @JsonPropertyDescription("sfixed32")
+  @ProtobufProperty(index = 9, type = SFIXED32)
   private int sessionId;
 
-  @JsonProperty("10")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 10, type = BOOLEAN)
   private boolean shortConnect;
 
-  @JsonProperty("12")
-  @JsonPropertyDescription("ClientPayloadConnectType")
+  @ProtobufProperty(index = 12, type = MESSAGE, concreteType = ClientPayloadConnectType.class)
   private ClientPayloadConnectType connectType;
 
-  @JsonProperty("13")
-  @JsonPropertyDescription("ClientPayloadConnectReason")
+  @ProtobufProperty(index = 13, type = MESSAGE, concreteType = ClientPayloadConnectReason.class)
   private ClientPayloadConnectReason connectReason;
 
-  @JsonProperty("14")
-  @JsonPropertyDescription("int32")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  @ProtobufProperty(index = 14, type = INT32, repeated = true)
   private List<Integer> shards;
 
-  @JsonProperty("15")
-  @JsonPropertyDescription("DNSSource")
+  @ProtobufProperty(index = 15, type = MESSAGE, concreteType = DNSSource.class)
   private DNSSource dnsSource;
 
-  @JsonProperty("16")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 16, type = UINT32)
   private int connectAttemptCount;
 
-  @JsonProperty("17")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 17, type = UINT32)
   private int agent;
 
-  @JsonProperty("18")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 18, type = UINT32)
   private int device;
 
-  @JsonProperty("19")
-  @JsonPropertyDescription("CompanionRegData")
+  @ProtobufProperty(index = 19, type = MESSAGE, concreteType = CompanionData.class)
   private CompanionData regData;
 
-  @JsonProperty("20")
-  @JsonPropertyDescription("ClientPayloadProduct")
+  @ProtobufProperty(index = 20, type = MESSAGE, concreteType = ClientPayloadProduct.class)
   private ClientPayloadProduct product;
 
-  @JsonProperty("21")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 21, type = BYTES)
   private byte[] fbCat;
 
-  @JsonProperty("22")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 22, type = BYTES)
   private byte[] fbUserAgent;
 
-  @JsonProperty("23")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 23, type = BOOLEAN)
   private boolean oc;
 
-  @JsonProperty("30")
-  @JsonPropertyDescription("ClientPayloadIOSAppExtension")
+  @ProtobufProperty(index = 30, type = MESSAGE, concreteType = ClientPayloadIOSAppExtension.class)
   private ClientPayloadIOSAppExtension iosAppExtension;
 
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum ClientPayloadClientFeature {
+  public enum ClientPayloadClientFeature implements ProtobufMessage {
     NONE(0);
 
     @Getter
     private final int index;
 
-    @JsonCreator
     public static ClientPayloadClientFeature forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
@@ -123,7 +106,7 @@ public class ClientPayload {
 
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum ClientPayloadIOSAppExtension {
+  public enum ClientPayloadIOSAppExtension implements ProtobufMessage {
     SHARE_EXTENSION(0),
     SERVICE_EXTENSION(1),
     INTENTS_EXTENSION(2);
@@ -131,7 +114,6 @@ public class ClientPayload {
     @Getter
     private final int index;
 
-    @JsonCreator
     public static ClientPayloadIOSAppExtension forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
@@ -142,7 +124,7 @@ public class ClientPayload {
 
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum ClientPayloadConnectType {
+  public enum ClientPayloadConnectType implements ProtobufMessage{
     CELLULAR_UNKNOWN(0),
     WIFI_UNKNOWN(1),
     CELLULAR_EDGE(100),
@@ -162,7 +144,6 @@ public class ClientPayload {
     @Getter
     private final int index;
 
-    @JsonCreator
     public static ClientPayloadConnectType forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
@@ -173,7 +154,7 @@ public class ClientPayload {
 
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum ClientPayloadConnectReason {
+  public enum ClientPayloadConnectReason implements ProtobufMessage {
     PUSH(0),
     USER_ACTIVATED(1),
     SCHEDULED(2),
@@ -184,7 +165,6 @@ public class ClientPayload {
     @Getter
     private final int index;
 
-    @JsonCreator
     public static ClientPayloadConnectReason forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
@@ -195,19 +175,32 @@ public class ClientPayload {
 
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum ClientPayloadProduct {
+  public enum ClientPayloadProduct implements ProtobufMessage{
     WHATSAPP(0),
     MESSENGER(1);
 
     @Getter
     private final int index;
 
-    @JsonCreator
     public static ClientPayloadProduct forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
           .findFirst()
           .orElse(null);
+    }
+  }
+
+  public static class ClientPayloadBuilder {
+    public ClientPayloadBuilder clientFeatures(List<ClientPayloadClientFeature> clientFeatures) {
+      if(this.clientFeatures == null) this.clientFeatures = new ArrayList<>();
+      this.clientFeatures.addAll(clientFeatures);
+      return this;
+    }
+
+    public ClientPayloadBuilder shards(List<Integer> shards) {
+      if(this.shards == null) this.shards = new ArrayList<>();
+      this.shards.addAll(shards);
+      return this;
     }
   }
 }

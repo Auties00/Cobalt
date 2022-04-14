@@ -1,7 +1,5 @@
 package it.auties.whatsapp.model.message.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import it.auties.protobuf.annotation.ProtobufIgnore;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.model.media.AttachmentProvider;
@@ -11,6 +9,7 @@ import it.auties.whatsapp.util.Medias;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Locale;
 import java.util.NoSuchElementException;
@@ -40,8 +39,6 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
     /**
      * The id of the store where this message is located
      */
-    @JsonProperty("store")
-    @ProtobufIgnore
     @Getter
     @Setter
     private int storeId;

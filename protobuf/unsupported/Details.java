@@ -7,10 +7,9 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
 public class Details {
 

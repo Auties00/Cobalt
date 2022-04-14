@@ -4,11 +4,14 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.button.Button;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
+import it.auties.whatsapp.model.message.model.InteractiveAnnotation;
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import it.auties.whatsapp.model.message.standard.LocationMessage;
@@ -17,8 +20,12 @@ import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 
 /**
  * A model class that represents a WhatsappMessage that contains buttons inside.
@@ -37,65 +44,56 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
   /**
    * The text of this message
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 1, type = STRING)
   private String text;
 
   /**
    * The document message attached to this message
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("document")
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = DocumentMessage.class)
   private DocumentMessage document;
 
   /**
    * The image message attached to this message
    */
-  @JsonProperty("3")
-  @JsonPropertyDescription("image")
+  @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ImageMessage.class)
   private ImageMessage image;
 
   /**
    * The video message attached to this message
    */
-  @JsonProperty("4")
-  @JsonPropertyDescription("video")
+  @ProtobufProperty(index = 4, type = MESSAGE, concreteType = VideoMessage.class)
   private VideoMessage video;
 
   /**
    * The location message attached to this message
    */
-  @JsonProperty("5")
-  @JsonPropertyDescription("location")
+  @ProtobufProperty(index = 5, type = MESSAGE, concreteType = LocationMessage.class)
   private LocationMessage location;
 
   /**
    * The image message attached to this message
    */
-  @JsonProperty("6")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 6, type = STRING)
   private String contentText;
 
   /**
    * The footer text of this message
    */
-  @JsonProperty("7")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 7, type = STRING)
   private String footerText;
 
   /**
    * The context info of this message
    */
-  @JsonProperty("8")
-  @JsonPropertyDescription("context")
+  @ProtobufProperty(index = 8, type = MESSAGE, concreteType = ContextInfo.class)
   private ContextInfo contextInfo; // Overrides ContextualMessage's context info
 
   /**
    * The buttons that this message wraps
    */
-  @JsonProperty("9")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  @JsonPropertyDescription("button")
+  @ProtobufProperty(index = 9, type = MESSAGE,
+          concreteType = Button.class, repeated = true)
   private List<Button> buttons;
 
   /**
@@ -117,7 +115,7 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
    */
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum HeaderType {
+  public enum HeaderType implements ProtobufMessage {
     /**
      * Unknown
      */
@@ -151,12 +149,19 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
     @Getter
     private final int index;
 
-    @JsonCreator
     public static HeaderType forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
           .findFirst()
           .orElse(HeaderType.UNKNOWN);
+    }
+  }
+
+  public static class ButtonsMessageBuilder {
+    public ButtonsMessageBuilder polygonVertices(List<Button> buttons){
+      if(this.buttons == null) this.buttons = new ArrayList<>();
+      this.buttons.addAll(buttons);
+      return this;
     }
   }
 }

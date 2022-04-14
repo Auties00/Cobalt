@@ -1,65 +1,62 @@
 package it.auties.whatsapp.model.sync;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Builder.Default;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class PatchSync {
-  @JsonProperty("1")
-  @JsonPropertyDescription("SyncdVersion")
-  private VersionSync version;
+public class PatchSync implements ProtobufMessage {
+    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = VersionSync.class)
+    private VersionSync version;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("SyncdMutation")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  @Default
-  private List<MutationSync> mutations = new ArrayList<>();
+    @ProtobufProperty(index = 2, type = MESSAGE,
+            concreteType = MutationSync.class, repeated = true)
+    private List<MutationSync> mutations;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("ExternalBlobReference")
-  private ExternalBlobReference externalMutations;
+    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ExternalBlobReference.class)
+    private ExternalBlobReference externalMutations;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("bytes")
-  private byte[] snapshotMac;
+    @ProtobufProperty(index = 4, type = BYTES)
+    private byte[] snapshotMac;
 
-  @JsonProperty("5")
-  @JsonPropertyDescription("bytes")
-  private byte[] patchMac;
+    @ProtobufProperty(index = 5, type = BYTES)
+    private byte[] patchMac;
 
-  @JsonProperty("6")
-  @JsonPropertyDescription("KeyId")
-  private KeyId keyId;
+    @ProtobufProperty(index = 6, type = MESSAGE, concreteType = KeyId.class)
+    private KeyId keyId;
 
-  @JsonProperty("7")
-  @JsonPropertyDescription("ExitCode")
-  private ExitCode exitCode;
+    @ProtobufProperty(index = 7, type = MESSAGE, concreteType = ExitCode.class)
+    private ExitCode exitCode;
 
-  @JsonProperty("8")
-  @JsonPropertyDescription("uint32")
-  private int deviceIndex;
+    @ProtobufProperty(index = 8, type = UINT32)
+    private int deviceIndex;
 
-  public boolean hasVersion(){
-    return version != null && version.version() != 0;
-  }
+    public boolean hasVersion() {
+        return version != null && version.version() != 0;
+    }
 
-  public boolean hasExternalMutations(){
-    return externalMutations != null;
-  }
+    public boolean hasExternalMutations() {
+        return externalMutations != null;
+    }
+
+    public static class PatchSyncBuilder {
+        public PatchSyncBuilder mutations(List<MutationSync> mutations) {
+            if (this.mutations == null) this.mutations = new ArrayList<>();
+            this.mutations.addAll(mutations);
+            return this;
+        }
+    }
 }

@@ -2,6 +2,8 @@ package it.auties.whatsapp.model.product;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,22 +12,21 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class ProductCatalog {
-  @JsonProperty("1")
-  @JsonPropertyDescription("ImageMessage")
+public class ProductCatalog implements ProtobufMessage {
+  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = ImageMessage.class)
   private ImageMessage catalogImage;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 2, type = STRING)
   private String title;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 3, type = STRING)
   private String description;
 }

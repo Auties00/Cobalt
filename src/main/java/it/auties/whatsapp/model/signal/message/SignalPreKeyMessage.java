@@ -1,57 +1,54 @@
 package it.auties.whatsapp.model.signal.message;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.bytes.Bytes;
-import it.auties.protobuf.decoder.ProtobufDecoder;
+import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.api.model.ProtobufSchema;
 import it.auties.whatsapp.util.BytesHelper;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Objects;
 
-import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.BYTES;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT32;
 
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public final class SignalPreKeyMessage implements SignalProtocolMessage{
+public final class SignalPreKeyMessage implements SignalProtocolMessage {
     private int version;
 
-    @JsonProperty("1")
-    @JsonPropertyDescription("uint32")
+    @ProtobufProperty(index = 1, type = UINT32)
     private int preKeyId;
 
-    @JsonProperty("2")
-    @JsonPropertyDescription("bytes")
+    @ProtobufProperty(index = 2, type = BYTES)
     private byte[] baseKey;
 
-    @JsonProperty("3")
-    @JsonPropertyDescription("bytes")
+    @ProtobufProperty(index = 3, type = BYTES)
     private byte[] identityKey;
 
-    @JsonProperty("4")
-    @JsonPropertyDescription("bytes")
+    @ProtobufProperty(index = 4, type = BYTES)
     private byte[] serializedSignalMessage;
 
-    @JsonProperty("5")
-    @JsonPropertyDescription("uint32")
+    @ProtobufProperty(index = 5, type = UINT32)
     private int registrationId;
 
-    @JsonProperty("6")
-    @JsonPropertyDescription("uint32")
+    @ProtobufProperty(index = 6, type = UINT32)
     private int signedPreKeyId;
 
     private byte[] serialized;
 
     @SneakyThrows
     public static SignalPreKeyMessage ofSerialized(byte[] serialized) {
-        return ProtobufDecoder.forType(SignalPreKeyMessage.class)
-                .decode(Bytes.of(serialized).slice(1).toByteArray())
+        return PROTOBUF.reader()
+                .with(ProtobufSchema.of(SignalPreKeyMessage.class))
+                .readValue(Bytes.of(serialized).slice(1).toByteArray(), SignalPreKeyMessage.class)
                 .version(BytesHelper.bytesToVersion(serialized[0]))
                 .serialized(serialized);
     }
@@ -65,9 +62,10 @@ public final class SignalPreKeyMessage implements SignalProtocolMessage{
                 () -> this.serialized = serialize());
     }
 
+    @SneakyThrows
     private byte[] serialize() {
         return Bytes.of(serializedVersion())
-                .append(encode(this))
+                .append(PROTOBUF.writeValueAsBytes(this))
                 .toByteArray();
     }
 }

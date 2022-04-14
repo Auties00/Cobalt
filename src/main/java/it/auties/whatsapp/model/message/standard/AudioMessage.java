@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -12,6 +13,8 @@ import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds an audio inside.
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
@@ -21,79 +24,69 @@ import lombok.extern.jackson.Jacksonized;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(buildMethodName = "create")
+@SuperBuilder(builderMethodName = "newRawAudioMessage", buildMethodName = "create")
 @Jacksonized
 @Accessors(fluent = true)
 public final class AudioMessage extends MediaMessage {
   /**
    * The upload url of the encoded media that this object wraps
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 1, type = STRING)
   private String url;
 
   /**
    * The mime type of the audio that this object wraps.
    * Most of the endTimeStamp this is {@link MediaMessageType#defaultMimeType()}
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 2, type = STRING)
   private String mimetype;
 
   /**
    * The sha256 of the decoded media that this object wraps
    */
-  @JsonProperty("3")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 3, type = BYTES)
   private byte[] fileSha256;
 
   /**
    * The unsigned size of the decoded media that this object wraps
    */
-  @JsonProperty("4")
-  @JsonPropertyDescription("uint64")
+  @ProtobufProperty(index = 4, type = UINT64)
   private long fileLength;
 
   /**
    * The unsigned length of the decoded audio in seconds
    */
-  @JsonProperty("5")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 5, type = UINT32)
   private int seconds;
 
   /**
    * Determines whether this object is a normal audio message, which might contain for example music, or a voice message
    */
-  @JsonProperty("6")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 6, type = BOOLEAN)
   private boolean voiceMessage;
 
   /**
    * The media key of the audio that this object wraps.
    */
-  @JsonProperty("7")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 7, type = BYTES)
   private byte[] key; 
 
   /**
    * The sha256 of the encoded media that this object wraps
    */
-  @JsonProperty("8")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 8, type = BYTES)
   private byte[] fileEncSha256;
 
   /**
    * The direct path to the encoded media that this object wraps
    */
-  @JsonProperty("9")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 9, type = STRING)
   private String directPath;
 
   /**
    * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link AudioMessage#key()}
    */
-  @JsonProperty("10")
-  @JsonPropertyDescription("int64")
+  @ProtobufProperty(index = 10, type = INT64)
   private long mediaKeyTimestamp;
 
   /**
@@ -101,8 +94,7 @@ public final class AudioMessage extends MediaMessage {
    * This allows to play and seek the audio without the need to fully decode it decrypt as CBC allows to read data from a random offset (block-size aligned).
    * Source: <a href="https://github.com/sigalor/whatsapp-web-reveng#encryption">WhatsApp Web reverse engineered</a>
    */
-  @JsonProperty("18")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 18, type = BYTES)
   private byte[] streamingSidecar;
 
   /**
@@ -116,7 +108,7 @@ public final class AudioMessage extends MediaMessage {
    *
    * @return a non-null new message
    */
-  @Builder(builderClassName= "NewAudioMessageBuilder", builderMethodName = "newAudioMessage", buildMethodName = "create")
+  @Builder(builderClassName= "SimpleAudioMessageBuilder", builderMethodName = "newAudioMessage", buildMethodName = "create")
   private static AudioMessage builder(byte @NonNull [] media, ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
     /*
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.AUDIO);
@@ -135,10 +127,6 @@ public final class AudioMessage extends MediaMessage {
             .create();
      */
     throw new UnsupportedOperationException("Work in progress");
-  }
-
-  private static AudioMessageBuilder<?, ?> builder() {
-    return new AudioMessageBuilderImpl();
   }
 
   /**

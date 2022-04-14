@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.chat;
 
+import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.whatsapp.api.Whatsapp;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -16,7 +17,7 @@ import java.util.Objects;
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum GroupRole {
+public enum GroupRole implements ProtobufMessage {
     /**
      * A participant of the group with no special powers
      */
@@ -35,7 +36,8 @@ public enum GroupRole {
     /**
      * The name of the role according to Whatsapp
      */
-    private final @Getter String data;
+    @Getter
+    private final String data;
 
     /**
      * Returns a GroupRole based on a String value obtained from Whatsapp
@@ -43,7 +45,7 @@ public enum GroupRole {
      * @param input the nullable value obtained from Whatsapp
      * @return a non-null GroupRole
      */
-    public static @NonNull GroupRole forData(String input) {
+    public static GroupRole forData(String input) {
         return Arrays.stream(values())
                 .filter(entry -> Objects.equals(entry.data(), input))
                 .findFirst()

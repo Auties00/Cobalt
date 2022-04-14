@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import lombok.AllArgsConstructor;
@@ -11,26 +12,23 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
 public final class NotificationMessageInfo implements Info {
-  @JsonProperty("1")
-  @JsonPropertyDescription("MessageKey")
+  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = MessageKey.class)
   private MessageKey key;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("Message")
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = Message.class)
   private Message message;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("uint64")
+  @ProtobufProperty(index = 3, type = UINT64)
   private long messageTimestamp;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 4, type = STRING)
   private String participant;
 }

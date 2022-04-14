@@ -1,40 +1,40 @@
 package it.auties.whatsapp.model.sync;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import lombok.*;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class RecordSync {
-  @JsonProperty("1")
-  @JsonPropertyDescription("SyncdIndex")
-  private IndexSync index;
+public class RecordSync implements ProtobufMessage {
+    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = IndexSync.class)
+    private IndexSync index;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("SyncdValue")
-  private ValueSync value;
+    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ValueSync.class)
+    private ValueSync value;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("KeyId")
-  private KeyId keyId;
+    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = KeyId.class)
+    private KeyId keyId;
 
-  @AllArgsConstructor
-  @Accessors(fluent = true)
-  public enum Operation {
-      SET(0, (byte) 0x01),
-      REMOVE(1, (byte) 0x02);
+    @AllArgsConstructor
+    @Accessors(fluent = true)
+    public enum Operation implements ProtobufMessage {
+        SET(0, (byte) 0x01), REMOVE(1, (byte) 0x02);
 
-      @Getter
-      private final int index;
+        @Getter
+        private final int index;
 
-      @Getter
-      private final byte value;
-  }
+        @Getter
+        private final byte content;
+    }
 }

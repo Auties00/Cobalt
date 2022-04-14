@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
@@ -14,6 +15,10 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT32;
 
 /**
  * A model class that represents a WhatsappMessage sent by a WhatsappBusiness account and that holds a product inside.
@@ -25,26 +30,24 @@ import lombok.experimental.SuperBuilder;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(builderMethodName = "newProductMessage", buildMethodName = "create")
+@Jacksonized
 @Accessors(fluent = true)
 public final class ProductMessage extends ContextualMessage implements Message {
   /**
    * The product that this message wraps
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("product")
+  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = ProductSnapshot.class)
   private ProductSnapshot product;
 
   /**
    * The jid of the WhatsappBusiness account that owns the product that this message wraps
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("businessOwnerId")
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ContactJid.class)
   private ContactJid businessOwnerId;
 
   /**
    * The catalog where the product that this message wraps is
    */
-  @JsonProperty("4")
-  @JsonPropertyDescription("catalog")
+  @ProtobufProperty(index = 4, type = MESSAGE, concreteType = ProductCatalog.class)
   private ProductCatalog catalog;
 }

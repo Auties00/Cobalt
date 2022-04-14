@@ -53,7 +53,7 @@ public class GithubSecrets implements JacksonProvider {
     private GithubKey getPublicKey() throws IOException, InterruptedException {
         var request = createPublicKeyRequest();
         var response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-        return JACKSON.readValue(response.body(), GithubKey.class);
+        return JSON.readValue(response.body(), GithubKey.class);
     }
 
     private HttpRequest createPublicKeyRequest() throws IOException {
@@ -79,7 +79,7 @@ public class GithubSecrets implements JacksonProvider {
 
     private HttpRequest createUpdateSecretRequest(String keyId, byte[] cypheredCredentials) throws IOException {
         return HttpRequest.newBuilder()
-                .PUT(ofString(JACKSON.writeValueAsString(createUpdateSecretParams(keyId, cypheredCredentials))))
+                .PUT(ofString(JSON.writeValueAsString(createUpdateSecretParams(keyId, cypheredCredentials))))
                 .uri(create("%s/%s".formatted(REQUEST_PATH, UPDATE_SECRET_PATH)))
                 .header("Accept", "application/vnd.github.v3+json")
                 .header("Authorization", "Bearer %s".formatted(loadGithubToken()))

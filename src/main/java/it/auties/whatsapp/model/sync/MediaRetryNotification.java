@@ -1,65 +1,44 @@
 package it.auties.whatsapp.model.sync;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import it.auties.whatsapp.api.Whatsapp;
-import lombok.*;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
-/**
- * A model class that holds the information related to a retry for uploading a media.
- * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
- * Instead, methods inside {@link Whatsapp} should be used.
- */
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class MediaRetryNotification {
-  /**
-   * The jid of the chat where the retry should happen
-   */
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
-  private String jid;
+public class MediaRetryNotification implements ProtobufMessage {
+    @ProtobufProperty(index = 1, type = STRING)
+    private String stanzaId;
 
-  /**
-   * The direct path to the media whose upload failed
-   */
-  @JsonProperty("2")
-  @JsonPropertyDescription("string")
-  private String directPath;
+    @ProtobufProperty(index = 2, type = STRING)
+    private String directPath;
 
-  /**
-   * The type problem that occurred while uploading the media
-   */
-  @JsonProperty("3")
-  @JsonPropertyDescription("MediaRetryNotificationResultType")
-  private Problem problem;
+    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = Result.class)
+    private Result result;
 
-  @AllArgsConstructor
-  @Accessors(fluent = true)
-  public enum Problem {
-    GENERAL_ERROR(0),
-    SUCCESS(1),
-    NOT_FOUND(2),
-    DECRYPTION_ERROR(3);
+    @AllArgsConstructor
+    @Accessors(fluent = true)
+    public enum Result implements ProtobufMessage {
+        GENERAL_ERROR(0), SUCCESS(1), NOT_FOUND(2), DECRYPTION_ERROR(3);
 
-    @Getter
-    private final int index;
+        @Getter
+        private final int index;
 
-    @JsonCreator
-    public static Problem forIndex(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
-          .orElse(null);
+        public static Result forIndex(int index) {
+            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+        }
     }
-  }
 }

@@ -3,6 +3,8 @@ package it.auties.whatsapp.model.info;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.whatsapp.model.contact.ContactJid;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,27 +14,24 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
 public final class WebNotificationsInfo implements Info {
-  @JsonProperty("2")
-  @JsonPropertyDescription("uint64")
+  @ProtobufProperty(index = 2, type = UINT64)
   private long timestamp;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 3, type = UINT32)
   private int unreadChats;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 4, type = UINT32)
   private int notifyMessageCount;
 
-  @JsonProperty("5")
-  @JsonPropertyDescription("WebMessageInfo")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  @ProtobufProperty(index = 5, type = MESSAGE,
+          concreteType = MessageInfo.class, repeated = true)
   private List<MessageInfo> notifyMessages;
 }

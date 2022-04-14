@@ -3,6 +3,8 @@ package it.auties.whatsapp.model.action;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.whatsapp.model.sync.RecentEmojiWeight;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,38 +12,42 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
 public final class QuickReplyAction implements Action {
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 1, type = STRING)
   private String shortcut;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 2, type = STRING)
   private String message;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("string")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  @ProtobufProperty(index = 3, type = STRING, repeated = true)
   private List<String> keywords;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("int32")
+  @ProtobufProperty(index = 4, type = INT32)
   private int count;
 
-  @JsonProperty("5")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 5, type = BOOLEAN)
   private boolean deleted;
 
   @Override
   public String indexName() {
     return "unknown";
+  }
+
+  public static class QuickReplyActionBuilder {
+    public QuickReplyActionBuilder keywords(List<String> keywords){
+      if(this.keywords == null) this.keywords = new ArrayList<>();
+      this.keywords.addAll(keywords);
+      return this;
+    }
   }
 }

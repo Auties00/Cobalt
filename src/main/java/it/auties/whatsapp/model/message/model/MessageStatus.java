@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.message.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.api.model.ProtobufMessage;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -12,7 +13,7 @@ import java.util.Arrays;
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum MessageStatus {
+public enum MessageStatus implements ProtobufMessage {
     /**
      * Unknown
      */
@@ -53,7 +54,6 @@ public enum MessageStatus {
                 .orElse(null);
     }
 
-    @JsonCreator
     public static MessageStatus forIndex(int index) {
         return Arrays.stream(values())
                 .filter(entry -> entry.index() == index)

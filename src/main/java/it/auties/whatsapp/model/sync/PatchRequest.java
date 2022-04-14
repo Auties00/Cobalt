@@ -12,7 +12,7 @@ public record PatchRequest(String type, ActionValueSync sync, String index, int 
 
     @SneakyThrows
     public static PatchRequest newRequest(String type, ActionValueSync sync, RecordSync.Operation operation, int version){
-        var index = JACKSON.writeValueAsString(createArguments(sync));
+        var index = JSON.writeValueAsString(createArguments(sync));
         return new PatchRequest(type, sync, index, version, operation);
     }
 

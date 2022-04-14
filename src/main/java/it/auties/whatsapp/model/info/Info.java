@@ -1,4 +1,8 @@
 package it.auties.whatsapp.model.info;
 
-public sealed interface Info permits AdReplyInfo, BusinessAccountInfo, BusinessIdentityInfo, CallInfo, ContextInfo, ExternalAdReplyInfo, MessageInfo, NativeFlowInfo, NotificationMessageInfo, PaymentInfo, ProductListInfo, WebNotificationsInfo {
+import it.auties.protobuf.api.model.ProtobufMessage;
+
+public sealed interface Info extends ProtobufMessage permits AdReplyInfo, BusinessAccountInfo, BusinessIdentityInfo, CallInfo,
+        ContextInfo, ExternalAdReplyInfo, MessageInfo, NativeFlowInfo, NotificationMessageInfo,
+        PaymentInfo, ProductListInfo, WebNotificationsInfo {
 }

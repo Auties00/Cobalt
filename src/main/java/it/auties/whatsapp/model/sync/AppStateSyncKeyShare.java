@@ -1,26 +1,36 @@
 package it.auties.whatsapp.model.sync;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class AppStateSyncKeyShare {
-  @JsonProperty("1")
-  @JsonPropertyDescription("AppStateSyncKey")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+public class AppStateSyncKeyShare implements ProtobufMessage {
+  @ProtobufProperty(
+          index = 1,
+          type = MESSAGE,
+          concreteType = AppStateSyncKey.class,
+          repeated = true)
   private List<AppStateSyncKey> keys;
+
+  public static class AppStateSyncKeyShareBuilder {
+    public AppStateSyncKeyShareBuilder keys(List<AppStateSyncKey> keys) {
+      if (this.keys == null) this.keys = new ArrayList<>();
+      this.keys.addAll(keys);
+      return this;
+    }
+  }
 }

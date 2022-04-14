@@ -47,7 +47,7 @@ public final class Preferences implements JacksonProvider {
 
     @SneakyThrows
     private <T> T readAsInternal(String value, TypeReference<T> reference) {
-        return JACKSON.readValue(value, reference);
+        return JSON.readValue(value, reference);
     }
 
     @SneakyThrows
@@ -63,7 +63,7 @@ public final class Preferences implements JacksonProvider {
     @SneakyThrows
     public void writeJson(@NonNull Object input) {
         Files.createDirectories(file.getParent());
-        Files.writeString(file, JACKSON.writeValueAsString(input),
+        Files.writeString(file, JSON.writeValueAsString(input),
                 StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
     }
 

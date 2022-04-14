@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.model;
 
+import it.auties.protobuf.api.model.ProtobufMessage;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -9,7 +10,7 @@ import lombok.experimental.Accessors;
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum MediaMessageType {
+public enum MediaMessageType implements ProtobufMessage {
     /**
      * The message is an image
      */

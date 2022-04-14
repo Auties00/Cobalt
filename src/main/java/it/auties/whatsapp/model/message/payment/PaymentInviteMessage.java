@@ -3,16 +3,19 @@ package it.auties.whatsapp.model.message.payment;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT64;
 
 
 /**
@@ -23,21 +26,20 @@ import java.util.Arrays;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@SuperBuilder(builderMethodName = "newPaymentInviteMessage", buildMethodName = "create")
+@Builder(builderMethodName = "newPaymentInviteMessage", buildMethodName = "create")
+@Jacksonized
 @Accessors(fluent = true)
 public final class PaymentInviteMessage implements PaymentMessage {
   /**
    * The type of service used for this payment
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("type")
+  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = PaymentInviteMessageServiceType.class)
   private PaymentInviteMessageServiceType serviceType;
 
   /**
    * The timestamp of expiration for this message
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("uint64")
+  @ProtobufProperty(index = 2, type = UINT64)
   private long expiryTimestamp;
 
   @AllArgsConstructor

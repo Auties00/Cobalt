@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -13,11 +14,15 @@ import it.auties.whatsapp.model.message.model.MediaMessageType;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
 
 import java.io.ByteArrayInputStream;
 import java.net.URLConnection;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds a video inside.
@@ -28,129 +33,113 @@ import java.util.List;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(buildMethodName = "create")
+@SuperBuilder(builderMethodName = "newRawVideoMessage", buildMethodName = "create")
+@Jacksonized
 @Accessors(fluent = true)
 public final class VideoMessage extends MediaMessage {
   /**
    * The upload url of the encoded video that this object wraps
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 1, type = STRING)
   private String url;
 
   /**
    * The mime type of the video that this object wraps.
    * Most of the endTimeStamp this is {@link MediaMessageType#defaultMimeType()}
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 2, type = STRING)
   private String mimetype;
 
   /**
    * The sha256 of the decoded video that this object wraps
    */
-  @JsonProperty("3")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 3, type = BYTES)
   private byte[] fileSha256;
 
   /**
    * The unsigned size of the decoded video that this object wraps
    */
-  @JsonProperty("4")
-  @JsonPropertyDescription("uint64")
+  @ProtobufProperty(index = 4, type = UINT64)
   private long fileLength;
 
   /**
    * The length in seconds of the video that this message wraps
    */
-  @JsonProperty("5")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 5, type = UINT32)
   private int seconds;
 
   /**
    * The media key of the video that this object wraps.
    */
-  @JsonProperty("6")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 6, type = BYTES)
   private byte[] key; 
 
   /**
    * The caption, that is the text below the video, of this video message
    */
-  @JsonProperty("7")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 7, type = STRING)
   private String caption;
 
   /**
    * Determines whether this object wraps a video that must be played as a gif
    */
-  @JsonProperty("8")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 8, type = BOOLEAN)
   private boolean gifPlayback;
 
   /**
    * The unsigned height of the decoded video that this object wraps
    */
-  @JsonProperty("9")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 9, type = UINT32)
   private int height;
 
   /**
    * The unsigned width of the decoded video that this object wraps
    */
-  @JsonProperty("10")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 10, type = UINT32)
   private int width;
 
   /**
    * The sha256 of the encoded video that this object wraps
    */
-  @JsonProperty("11")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 11, type = BYTES)
   private byte[] fileEncSha256;
 
   /**
    * Interactive annotations
    */
-  @JsonProperty("12")
-  @JsonPropertyDescription("interactiveAnnotations")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  @ProtobufProperty(index = 12, type = MESSAGE,
+          concreteType = InteractiveAnnotation.class, repeated = true)
   private List<InteractiveAnnotation> interactiveAnnotations;
 
   /**
    * The direct path to the encoded image that this object wraps
    */
-  @JsonProperty("13")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 13, type = STRING)
   private String directPath;
 
   /**
    * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link VideoMessage#key()}
    */
-  @JsonProperty("14")
-  @JsonPropertyDescription("int64")
+  @ProtobufProperty(index = 14, type = INT64)
   private long mediaKeyTimestamp;
 
   /**
    * The thumbnail for this video message encoded as jpeg in an array of bytes
    */
-  @JsonProperty("16")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 16, type = BYTES)
   private byte[] thumbnail;
 
   /**
    * The sidecar for the decoded video that this message wraps
    */
-  @JsonProperty("18")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 18, type = BYTES)
   private byte[] streamingSidecar;
 
   /**
    * The source from where the gif that this message wraps comes from.
    * This property is defined only if {@link VideoMessage#gifPlayback}.
    */
-  @JsonProperty("19")
-  @JsonPropertyDescription("gifAttribution")
+  @ProtobufProperty(index = 19, type = MESSAGE, concreteType = VideoMessageAttribution.class)
   private VideoMessageAttribution gifAttribution;
 
   /**
@@ -167,7 +156,7 @@ public final class VideoMessage extends MediaMessage {
    *
    * @return a non-null new message
    */
-  @Builder(builderClassName = "NewVideoMessageBuilder", builderMethodName = "newVideoMessage", buildMethodName = "create")
+  @Builder(builderClassName = "SimpleVideoMessageBuilder", builderMethodName = "newVideoMessage", buildMethodName = "create")
   private static VideoMessage videoBuilder(byte @NonNull [] media, String mimeType, String caption, int width, int height, int seconds, ContextInfo contextInfo) {
     /*
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.VIDEO);
@@ -206,7 +195,7 @@ public final class VideoMessage extends MediaMessage {
    *
    * @return a non-null new message
    */
-  @Builder(builderClassName = "NewGifMessageBuilder", builderMethodName = "newGifMessage", buildMethodName = "create")
+  @Builder(builderClassName = "SimpleGifBuilder", builderMethodName = "newGifMessage", buildMethodName = "create")
   private static VideoMessage gifBuilder(byte @NonNull [] media, String mimeType, String caption, int width, int height, VideoMessageAttribution gifAttribution, ContextInfo contextInfo) {
 /*
     Validate.isTrue(!Objects.equals(guessMimeType(media), "image/gif") && !Objects.equals(mimeType, "image/gif"), "Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
@@ -232,16 +221,12 @@ public final class VideoMessage extends MediaMessage {
     throw new UnsupportedOperationException("Work in progress");
   }
 
-  private static @NonNull String guessMimeType(byte[] media) {
+  private static String guessMimeType(byte[] media) {
     try {
       return URLConnection.guessContentTypeFromStream(new ByteArrayInputStream(media));
     } catch (Throwable ignored) {
       return "application/octet-stream";
     }
-  }
-
-  private static VideoMessageBuilder<?, ?> builder(){
-    return new VideoMessageBuilderImpl();
   }
 
   /**
@@ -278,12 +263,19 @@ public final class VideoMessage extends MediaMessage {
     @Getter
     private final int index;
 
-    @JsonCreator
     public static VideoMessageAttribution forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
           .findFirst()
           .orElse(null);
+    }
+  }
+
+  public static abstract class VideoMessageBuilder<C extends VideoMessage, B extends VideoMessageBuilder<C, B>> extends MediaMessageBuilder<C, B> {
+    public B interactiveAnnotations(List<InteractiveAnnotation> interactiveAnnotations) {
+      if(this.interactiveAnnotations == null) this.interactiveAnnotations = new ArrayList<>();
+      this.interactiveAnnotations.addAll(interactiveAnnotations);
+      return self();
     }
   }
 }

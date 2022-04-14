@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.*;
-import it.auties.protobuf.annotation.ProtobufIgnore;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.model.chat.Chat;
@@ -19,6 +19,8 @@ import lombok.experimental.Delegate;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
 /**
  * A model class that holds the information related to a {@link Message}.
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
@@ -34,8 +36,6 @@ public final class MessageInfo implements Info {
   /**
    * The id of the store associated with this message
    */
-  @JsonProperty("store")
-  @ProtobufIgnore
   private int storeId;
 
   /**
@@ -46,8 +46,8 @@ public final class MessageInfo implements Info {
   /**
    * The MessageKey of this message
    */
-  @JsonProperty(value = "1", required = true)
-  @JsonPropertyDescription("key")
+  @ProtobufProperty(index = 1, type = MESSAGE,
+          concreteType = MessageKey.class, required = true)
   @NonNull
   @Delegate
   private MessageKey key;
@@ -55,8 +55,7 @@ public final class MessageInfo implements Info {
   /**
    * The container of this message
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("message")
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = MessageContainer.class)
   @NonNull
   @Default
   private MessageContainer message = new MessageContainer();
@@ -69,165 +68,140 @@ public final class MessageInfo implements Info {
    * In this case it is guaranteed that every value stored in this map for each participant of this chat is equal or higher hierarchically then {@link MessageInfo#status()}.
    * It is important to remember that it is guaranteed that every participant will be present as a key.
    */
-  @JsonProperty("status")
-  @ProtobufIgnore
   @NonNull
   @Default
   private Map<Contact, MessageStatus> individualStatus = new ConcurrentHashMap<>();
+
+  /**
+   * The timestamp, that is the seconds since {@link java.time.Instant#EPOCH}, when this message was sent
+   */
+  @ProtobufProperty(index = 3, type = UINT64)
+  private long timestamp;
 
   /**
    * The global status of this message.
    * If the chat associated with this message is a group it is guaranteed that this field is equal or lower hierarchically then every value stored by {@link MessageInfo#individualStatus()}.
    * Otherwise, this field is guaranteed to be equal to the single value stored by {@link MessageInfo#individualStatus()} for the contact associated with the chat associated with this message.
    */
-  @JsonProperty("4")
-  @JsonPropertyDescription("status")
+  @ProtobufProperty(index = 4, type = MESSAGE, concreteType = MessageStatus.class)
   @NonNull
   @Default
   private MessageStatus status = MessageStatus.PENDING;
 
   /**
-   * The timestamp, that is the seconds since {@link java.time.Instant#EPOCH}, when this message was sent
-   */
-  @JsonProperty("3")
-  @JsonPropertyDescription("uint64")
-  private long timestamp;
-
-  /**
    * The jid of the participant that sent the message in a group.
    * This property is only populated if {@link MessageInfo#chat()} refers to a group.
    */
-  @JsonProperty("5")
-  @JsonPropertyDescription("jid")
+  @ProtobufProperty(index = 5, type = MESSAGE, concreteType = ContactJid.class)
   private ContactJid senderJid;
 
   /**
    * Duration
    */
-  @JsonProperty("27")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 27, type = UINT32)
   private int duration;
 
   /**
    * Whether this message should be ignored or counted as an unread message
    */
-  @JsonProperty("16")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 16, type = BOOLEAN)
   private boolean ignore;
 
   /**
    * Whether this message is starred
    */
-  @JsonProperty("17")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 17, type = BOOLEAN)
   private boolean starred;
 
   /**
    * Whether this message was sent using a broadcast list
    */
-  @JsonProperty("18")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 18, type = BOOLEAN)
   private boolean broadcast;
 
   /**
    * Multicast
    */
-  @JsonProperty("21")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 21, type = BOOLEAN)
   private boolean multicast;
 
   /**
    * Url text
    */
-  @JsonProperty("22")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 22, type = BOOLEAN)
   private boolean urlText;
 
   /**
    * Url number
    */
-  @JsonProperty("23")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 23, type = BOOLEAN)
   private boolean urlNumber;
 
   /**
    * Clear media
    */
-  @JsonProperty("25")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 25, type = BOOLEAN)
   private boolean clearMedia;
 
   /**
    * Push name
    */
-  @JsonProperty("19")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 19, type = STRING)
   private String pushName;
 
   /**
    * Ephemeral start timestamp
    */
-  @JsonProperty("32")
-  @JsonPropertyDescription("uint64")
+  @ProtobufProperty(index = 32, type = UINT64)
   private long ephemeralStartTimestamp;
 
   /**
    * Ephemeral duration
    */
-  @JsonProperty("33")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 33, type = UINT32)
   private int ephemeralDuration;
 
   /**
    * The stub type of this message.
    * This property is populated only if the message that {@link MessageInfo#message} wraps is a {@link ProtocolMessage}.
    */
-  @JsonProperty("24")
-  @JsonPropertyDescription("stub")
+  @ProtobufProperty(index = 24, type = MESSAGE, concreteType = StubType.class)
   private StubType stubType;
 
   /**
    * Message stub parameters
    */
-  @JsonProperty("26")
-  @JsonPropertyDescription("string")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  @ProtobufProperty(index = 26, type = STRING, repeated = true)
   private List<String> stubParameters;
 
   /**
    * Labels
    */
-  @JsonProperty("28")
-  @JsonPropertyDescription("string")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  @ProtobufProperty(index = 28, type = STRING, repeated = true)
   private List<String> labels;
 
   /**
    * PaymentInfo
    */
-  @JsonProperty("29")
-  @JsonPropertyDescription("info")
+  @ProtobufProperty(index = 29, type = MESSAGE, concreteType = PaymentInfo.class)
   private PaymentInfo paymentInfo;
 
   /**
    * Final live location
    */
-  @JsonProperty("30")
-  @JsonPropertyDescription("location")
+  @ProtobufProperty(index = 30, type = MESSAGE, concreteType = LiveLocationMessage.class)
   private LiveLocationMessage finalLiveLocation;
 
   /**
    * Quoted payment info
    */
-  @JsonProperty("31")
-  @JsonPropertyDescription("payment")
+  @ProtobufProperty(index = 31, type = MESSAGE, concreteType = PaymentInfo.class)
   private PaymentInfo quotedPaymentInfo;
 
   /**
    * Media Cipher Text SHA256
    */
-  @JsonProperty("20")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 20, type = BYTES)
   private byte[] mediaCiphertextSha256;
 
   public boolean equals(Object object){

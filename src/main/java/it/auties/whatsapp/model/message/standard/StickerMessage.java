@@ -2,15 +2,19 @@ package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
+import it.auties.whatsapp.model.product.ProductCatalog;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds a sticker inside.
@@ -21,107 +25,93 @@ import lombok.extern.jackson.Jacksonized;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(buildMethodName = "create")
+@SuperBuilder(builderMethodName = "newRawStickerMessage", buildMethodName = "create")
 @Jacksonized
 @Accessors(fluent = true)
 public final class StickerMessage extends MediaMessage {
   /**
    * The upload url of the encoded sticker that this object wraps
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 1, type = STRING)
   private String url;
 
   /**
    * The sha256 of the decoded sticker that this object wraps
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 2, type = BYTES)
   private byte[] fileSha256;
 
   /**
    * The sha256 of the encoded sticker that this object wraps
    */
-  @JsonProperty("3")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 3, type = BYTES)
   private byte[] fileEncSha256;
 
   /**
    * The media key of the sticker that this object wraps
    */
-  @JsonProperty("4")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 4, type = BYTES)
   private byte[] key; 
 
   /**
    * The mime type of the sticker that this object wraps.
    * Most of the endTimeStamp this is {@link MediaMessageType#defaultMimeType()}
    */
-  @JsonProperty("5")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 5, type = STRING)
   private String mimetype;
 
   /**
    * The unsigned height of the decoded sticker that this object wraps
    */
-  @JsonProperty("6")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 6, type = UINT32)
   private int height;
 
   /**
    * The unsigned width of the decoded sticker that this object wraps
    */
-  @JsonProperty("7")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 7, type = UINT32)
   private int width;
 
   /**
    * The direct path to the encoded sticker that this object wraps
    */
-  @JsonProperty("8")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 8, type = STRING)
   private String directPath;
 
   /**
    * The unsigned size of the decoded sticker that this object wraps
    */
-  @JsonProperty("9")
-  @JsonPropertyDescription("uint64")
+  @ProtobufProperty(index = 9, type = UINT64)
   private long fileLength;
 
   /**
    * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link StickerMessage#key()}
    */
-  @JsonProperty("10")
-  @JsonPropertyDescription("uint64")
+  @ProtobufProperty(index = 10, type = UINT64)
   private long mediaKeyTimestamp;
 
   /**
    * The length of the first frame
    */
-  @JsonProperty("11")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 11, type = UINT32)
   private int firstFrameLength;
 
   /**
    * The sidecar for the first frame
    */
-  @JsonProperty("12")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 12, type = BYTES)
   private byte[] firstFrameSidecar;
 
   /**
    * Determines whether this sticker message is animated
    */
-  @JsonProperty("13")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 13, type = BOOLEAN)
   private boolean animated;
 
   /**
    * The thumbnail for this sticker message encoded as png in an array of bytes
    */
-  @JsonProperty("16")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 16, type = BYTES)
   private byte[] thumbnail;
 
   /**
@@ -136,7 +126,7 @@ public final class StickerMessage extends MediaMessage {
    *
    * @return a non-null new message
    */
-  @Builder(builderClassName = "NewStickerMessageBuilder", builderMethodName = "newStickerMessage", buildMethodName = "create")
+  @Builder(builderClassName = "SimpleStickerMessageBuilder", builderMethodName = "newStickerMessage", buildMethodName = "create")
   private static StickerMessage builder(byte @NonNull [] media, String mimeType, byte[] pngThumbnail, boolean isAnimated, ContextInfo contextInfo) {
     /*
     var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.STICKER);
@@ -157,10 +147,6 @@ public final class StickerMessage extends MediaMessage {
             .create();
      */
     throw new UnsupportedOperationException("Work in progress");
-  }
-
-  private static StickerMessageBuilder<?, ?> builder(){
-    return new StickerMessageBuilderImpl();
   }
   
   /**

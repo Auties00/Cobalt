@@ -2,8 +2,7 @@ package it.auties.whatsapp.binary;
 
 import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
-import it.auties.protobuf.decoder.ProtobufDecoder;
-import it.auties.protobuf.encoder.ProtobufEncoder;
+import it.auties.protobuf.api.model.ProtobufSchema;
 import it.auties.whatsapp.api.QrHandler;
 import it.auties.whatsapp.api.SerializationStrategy;
 import it.auties.whatsapp.api.SerializationStrategy.Event;
@@ -62,7 +61,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static it.auties.protobuf.encoder.ProtobufEncoder.encode;
 import static it.auties.whatsapp.api.SerializationStrategy.Event.*;
 import static it.auties.whatsapp.model.request.Node.*;
 import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
@@ -77,7 +75,7 @@ import static java.util.stream.Collectors.*;
 @Accessors(fluent = true)
 @ClientEndpoint(configurator = BinarySocket.OriginPatcher.class)
 @Log
-public class BinarySocket implements SignalSpecification {
+public class BinarySocket implements JacksonProvider, SignalSpecification{
 
     @Getter(onMethod = @__(@NonNull))
     @Setter(onParam = @__(@NonNull))
@@ -406,8 +404,9 @@ public class BinarySocket implements SignalSpecification {
     private class AuthHandler {
         @SneakyThrows
         private void sendUserPayload(byte[] message) {
-            var serverHello = ProtobufDecoder.forType(HandshakeMessage.class)
-                    .decode(message)
+            var serverHello = PROTOBUF.reader()
+                    .with(ProtobufSchema.of(HandshakeMessage.class))
+                    .readValue(message, HandshakeMessage.class)
                     .serverHello();
             handshake.updateHash(serverHello.ephemeral());
             var sharedEphemeral = Curve25519.calculateAgreement(serverHello.ephemeral(), keys.ephemeralKeyPair().privateKey());
@@ -431,6 +430,7 @@ public class BinarySocket implements SignalSpecification {
                     .thenRunAsync(handshake::finish);
         }
 
+        @SneakyThrows
         private byte[] createUserPayload() {
             var builder = ClientPayload.builder()
                     .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
@@ -438,7 +438,7 @@ public class BinarySocket implements SignalSpecification {
                     .userAgent(createUserAgent())
                     .passive(keys.hasCompanion())
                     .webInfo(new WebInfo(WebInfo.WebInfoWebSubPlatform.WEB_BROWSER));
-            return ProtobufEncoder.encode(finishUserPayload(builder));
+            return PROTOBUF.writeValueAsBytes(finishUserPayload(builder));
         }
 
         private ClientPayload finishUserPayload(ClientPayloadBuilder builder) {
@@ -460,10 +460,11 @@ public class BinarySocket implements SignalSpecification {
                     .build();
         }
 
+        @SneakyThrows
         private CompanionData createRegisterData() {
             return CompanionData.builder()
                     .buildHash(options.whatsappVersion().toHash())
-                    .companion(encode(createCompanionProps()))
+                    .companion(PROTOBUF.writeValueAsBytes(createCompanionProps()))
                     .id(BytesHelper.intToBytes(keys.id(), 4))
                     .keyType(BytesHelper.intToBytes(KEY_TYPE, 1))
                     .identifier(keys.identityKeyPair().publicKey())
@@ -850,16 +851,18 @@ public class BinarySocket implements SignalSpecification {
             saveCompanion(container);
 
             var deviceIdentity = requireNonNull(container.findNode("device-identity"), "Missing device identity");
-            var advIdentity = ProtobufDecoder.forType(SignedDeviceIdentityHMAC.class)
-                    .decode(deviceIdentity.bytes());
+            var advIdentity = PROTOBUF.reader()
+                    .with(ProtobufSchema.of(SignedDeviceIdentityHMAC.class))
+                    .readValue(deviceIdentity.bytes(), SignedDeviceIdentityHMAC.class);
             var advSign = Hmac.calculateSha256(advIdentity.details(), keys.companionKey());
             if(!Arrays.equals(advIdentity.hmac(), advSign)) {
                 handleFailure(503, "hmac_validation", "login_adv_sign");
                 return;
             }
 
-            var account = ProtobufDecoder.forType(SignedDeviceIdentity.class)
-                    .decode(advIdentity.details());
+            var account = PROTOBUF.reader()
+                    .with(ProtobufSchema.of(SignedDeviceIdentity.class))
+                    .readValue(advIdentity.details(), SignedDeviceIdentity.class);
             var message = Bytes.of(MESSAGE_HEADER)
                     .append(account.details())
                     .append(keys.identityKeyPair().publicKey())
@@ -876,15 +879,16 @@ public class BinarySocket implements SignalSpecification {
                     .toByteArray();
             account.deviceSignature(Curve25519.calculateSignature(keys.identityKeyPair().privateKey(), deviceSignatureMessage));
 
-            var keyIndex = ProtobufDecoder.forType(DeviceIdentity.class)
-                    .decode(account.details())
+            var keyIndex = PROTOBUF.reader()
+                    .with(ProtobufSchema.of(DeviceIdentity.class))
+                    .readValue(account.details(), DeviceIdentity.class)
                     .keyIndex();
 
             var oldSignature = Arrays.copyOf(account.accountSignatureKey(), account.accountSignature().length);
             var devicePairNode = withChildren("pair-device-sign",
                     with("device-identity",
                             of("key-index", keyIndex),
-                            ProtobufEncoder.encode(account.accountSignatureKey(null))));
+                            PROTOBUF.writeValueAsBytes(account.accountSignatureKey(null))));
 
             keys.companionIdentity(account.accountSignatureKey(oldSignature));
             sendConfirmNode(node, devicePairNode);
@@ -919,11 +923,12 @@ public class BinarySocket implements SignalSpecification {
         }
 
         @SafeVarargs
+        @SneakyThrows
         public final Node encode(MessageInfo info, Entry<String, Object>... attributes) {
             if (isConversation(info)) {
-                var encodedMessage = BytesHelper.pad(ProtobufEncoder.encode(info.message()));
+                var encodedMessage = BytesHelper.pad(PROTOBUF.writeValueAsBytes(info.message()));
                 var deviceMessage = MessageContainer.of(DeviceSentMessage.newDeviceSentMessage(info.chatJid().toString(), info.message(), null));
-                var encodedDeviceMessage = BytesHelper.pad(ProtobufEncoder.encode(deviceMessage));
+                var encodedDeviceMessage = BytesHelper.pad(PROTOBUF.writeValueAsBytes(deviceMessage));
                 var knownDevices = List.of(keys.companion().toUserJid(), info.chatJid());
                 var devices = querySyncDevices(knownDevices, true);
                 var sessions = createConversationSessions(append(knownDevices, devices), encodedMessage, encodedDeviceMessage);
@@ -934,7 +939,7 @@ public class BinarySocket implements SignalSpecification {
             var groupBuilder = new GroupBuilder(keys);
             var groupSignalMessage = groupBuilder.createOutgoing(senderName);
             var groupCipher = new GroupCipher(senderName, keys);
-            var groupWhatsappMessage = groupCipher.encrypt(BytesHelper.pad(ProtobufEncoder.encode(info.message())));
+            var groupWhatsappMessage = groupCipher.encrypt(BytesHelper.pad(PROTOBUF.writeValueAsBytes(info.message())));
             var metadata =  groupsCache.getOptional(info.chatJid())
                     .orElseGet(() -> queryGroupMetadata(info.chatJid()));
            groupsCache.putAndGetValue(metadata.jid(), metadata);
@@ -944,6 +949,7 @@ public class BinarySocket implements SignalSpecification {
         }
 
         @SafeVarargs
+        @SneakyThrows
         private Node createEncodedMessageNode(MessageInfo info, List<Node> participants, Node descriptor, Entry<String, Object>... metadata) {
             var body = new ArrayList<Node>();
             if(descriptor != null){
@@ -955,7 +961,7 @@ public class BinarySocket implements SignalSpecification {
             }
 
             if(hasPreKeyMessage(participants)) {
-                body.add(with("device-identity", ProtobufEncoder.encode(keys.companionIdentity())));
+                body.add(with("device-identity", PROTOBUF.writeValueAsBytes(keys.companionIdentity())));
             }
 
             var attributes = Attributes.of(metadata)
@@ -980,6 +986,7 @@ public class BinarySocket implements SignalSpecification {
                     || info.chatJid().type() == ContactJid.Type.STATUS;
         }
 
+        @SneakyThrows
         private List<Node> createGroupSessions(MessageInfo info, SignalDistributionMessage signalMessage, List<ContactJid> participants) {
             var missingParticipants= participants.stream()
                     .filter(participant -> !keys.hasSession(participant.toSignalAddress()))
@@ -989,7 +996,7 @@ public class BinarySocket implements SignalSpecification {
             }
 
             var whatsappMessage = new SenderKeyDistributionMessage(info.chatJid().toString(), signalMessage.serialized());
-            var paddedMessage = BytesHelper.pad(ProtobufEncoder.encode(whatsappMessage));
+            var paddedMessage = BytesHelper.pad(PROTOBUF.writeValueAsBytes(whatsappMessage));
             return createSessions(missingParticipants, paddedMessage);
         }
 
@@ -1174,8 +1181,9 @@ public class BinarySocket implements SignalSpecification {
                     return;
                 }
 
-                var decodedMessage = ProtobufDecoder.forType(MessageContainer.class)
-                        .decode(BytesHelper.unpad(buffer.get()));
+                var decodedMessage = PROTOBUF.reader()
+                        .with(ProtobufSchema.of(MessageContainer.class))
+                        .readValue(BytesHelper.unpad(buffer.get()), MessageContainer.class);
                 info.message(decodedMessage.content() instanceof DeviceSentMessage deviceSentMessage ? MessageContainer.of(deviceSentMessage.message().content()) : decodedMessage);
                 handleStubMessage(info);
                 switch (info.message().content()){
@@ -1264,8 +1272,9 @@ public class BinarySocket implements SignalSpecification {
                 case HISTORY_SYNC_NOTIFICATION -> {
                     var compressed = Medias.download(protocolMessage.historySyncNotification(), store);
                     var decompressed = BytesHelper.deflate(compressed);
-                    var history = ProtobufDecoder.forType(HistorySync.class)
-                            .decode(decompressed);
+                    var history = PROTOBUF.reader()
+                            .with(ProtobufSchema.of(HistorySync.class))
+                            .readValue(decompressed, HistorySync.class);
 
                     switch(history.syncType()) {
                         case INITIAL_BOOTSTRAP -> {
@@ -1333,7 +1342,7 @@ public class BinarySocket implements SignalSpecification {
             var jid = ContactJid.of(pushName.id());
             var contact = store.findContactByJid(jid)
                     .orElseGet(() -> createContact(jid))
-                    .chosenName(pushName.pushname());
+                    .chosenName(pushName.name());
             store.findChatByJid(contact.jid()).ifPresentOrElse(chat -> {
                 if (chat.name() != null) {
                     return;
@@ -1341,8 +1350,8 @@ public class BinarySocket implements SignalSpecification {
 
                 chat.name(contact.name());
             }, () -> createChat(contact));
-            var firstName = pushName.pushname().contains(" ")  ? pushName.pushname().split(" ")[0] : null;
-            var action = new ContactAction(pushName.pushname(), firstName);
+            var firstName = pushName.name().contains(" ")  ? pushName.name().split(" ")[0] : null;
+            var action = new ContactAction(pushName.name(), firstName);
             store.callListeners(listener -> listener.onAction(action));
         }
 
@@ -1385,6 +1394,7 @@ public class BinarySocket implements SignalSpecification {
         private static final Semaphore PULL_SEMAPHORE = new Semaphore(1);
         private static final int MAX_SYNC_ATTEMPTS = 5;
 
+        @SneakyThrows
         public CompletableFuture<Void> push(PatchRequest patch) {
             var index = patch.index().getBytes(StandardCharsets.UTF_8);
             var key = keys.appStateKeys().getLast();
@@ -1395,7 +1405,7 @@ public class BinarySocket implements SignalSpecification {
                     .padding(new byte[0])
                     .version(patch.version())
                     .build();
-            var encodedActionData = ProtobufEncoder.encode(actionData);
+            var encodedActionData = PROTOBUF.writeValueAsBytes(actionData);
             var mutationKeys = MutationKeys.of(key.keyData().keyData());
             var encrypted = AesCbc.encrypt(encodedActionData, mutationKeys.macKey());
             var valueMac = generateMac(patch.operation(), encrypted, key.keyId().keyId(), mutationKeys.macKey());
@@ -1431,7 +1441,7 @@ public class BinarySocket implements SignalSpecification {
             var collectionNode = withAttributes("collection",
                     of("name", patch.type(), "version", hashState.version() - 1));
             var patchNode = with("patch",
-                    ProtobufEncoder.encode(sync));
+                    PROTOBUF.writeValueAsBytes(sync));
             return sendQuery("set", "w:sync:app:state",
                     withChildren("sync", collectionNode, patchNode))
                     .thenRunAsync(() -> parseSyncRequest(patch, hashState, sync));
@@ -1548,11 +1558,13 @@ public class BinarySocket implements SignalSpecification {
                 return null;
             }
 
-            var blob = ProtobufDecoder.forType(ExternalBlobReference.class)
-                    .decode(snapshot.bytes());
+            var blob = PROTOBUF.reader()
+                    .with(ProtobufSchema.of(ExternalBlobReference.class))
+                    .readValue(snapshot.bytes(), ExternalBlobReference.class);
             var syncedData = Medias.download(blob, store);
-            return ProtobufDecoder.forType(SnapshotSync.class)
-                    .decode(syncedData);
+            return PROTOBUF.reader()
+                    .with(ProtobufSchema.of(SnapshotSync.class))
+                    .readValue(syncedData, SnapshotSync.class);
         }
 
         private List<PatchSync> decodePatches(Node sync) {
@@ -1571,8 +1583,9 @@ public class BinarySocket implements SignalSpecification {
                 return Optional.empty();
             }
 
-            var patchSync = ProtobufDecoder.forType(PatchSync.class)
-                    .decode(patch.bytes());
+            var patchSync = PROTOBUF.reader()
+                    .with(ProtobufSchema.of(PatchSync.class))
+                    .readValue(patch.bytes(), PatchSync.class);
             if (!patchSync.hasVersion()) {
                 var version = new VersionSync(versionCode + 1);
                 patchSync.version(version);
@@ -1647,8 +1660,9 @@ public class BinarySocket implements SignalSpecification {
         private Optional<MutationsRecord> decodePatch(String name, long minimumVersionNumber, LTHashState newState, PatchSync patch) {
             if(patch.hasExternalMutations()) {
                 var blob = Medias.download(patch.externalMutations(), store);
-                var mutationsSync = ProtobufDecoder.forType(MutationsSync.class)
-                        .decode(blob);
+                var mutationsSync = PROTOBUF.reader()
+                        .with(ProtobufSchema.of(MutationsSync.class))
+                        .readValue(blob, MutationsSync.class);
                 patch.mutations().addAll(mutationsSync.mutations());
             }
 
@@ -1748,7 +1762,9 @@ public class BinarySocket implements SignalSpecification {
             }
 
             var result = AesCbc.decrypt(encryptedBlob, mutationKeys.encKey());
-            var actionSync = ProtobufDecoder.forType(ActionDataSync.class).decode(result);
+            var actionSync = PROTOBUF.reader()
+                    .with(ProtobufSchema.of(ActionDataSync.class))
+                    .readValue(result, ActionDataSync.class);
             if(!Arrays.equals(sync.index().blob(), Hmac.calculateSha256(actionSync.index(), mutationKeys.indexKey()))){
                 streamHandler.handleFailure(400, "decode_mutation", "index_blob");
                 throw new RuntimeException("Cannot decode mutation: hmc validation failed");
@@ -1759,7 +1775,7 @@ public class BinarySocket implements SignalSpecification {
         }
 
         private byte[] generateMac(Operation operation, byte[] data, byte[] keyId, byte[] key) {
-            var keyData = Bytes.of(operation.value())
+            var keyData = Bytes.of(operation.content())
                     .append(keyId)
                     .toByteArray();
 

@@ -1,11 +1,7 @@
 package it.auties.whatsapp.model.chat;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import it.auties.protobuf.annotation.ProtobufIgnore;
-import it.auties.protobuf.annotation.ProtobufType;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.model.contact.Contact;
@@ -15,17 +11,19 @@ import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.SortedMessageList;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.Data;
+import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
 /**
  * A model class that represents a Chat.
@@ -35,27 +33,22 @@ import java.util.concurrent.ConcurrentHashMap;
  * This class also offers a builder, accessible using {@link Chat#builder()}.
  */
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class Chat {
+public class Chat implements ProtobufMessage {
     /**
      * The non-null unique jid used to identify this chat
      */
-    @JsonProperty(value = "1", required = true)
-    @JsonPropertyDescription("string")
+    @ProtobufProperty(index = 1, type = STRING, required = true)
     @NonNull
     private ContactJid jid;
 
     /**
      * A non-null arrayList of messages in this chat sorted chronologically
      */
-    @JsonProperty("2")
-    @JsonPropertyDescription("HistorySyncMsg")
-    @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-    @ProtobufType(HistorySyncMessage.class)
+    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = HistorySyncMessage.class, repeated = true)
     @Default
     @NonNull
     private SortedMessageList messages = new SortedMessageList();
@@ -64,31 +57,27 @@ public class Chat {
      * The nullable new unique jid for this Chat.
      * This field is not null when a contact changes phone number and connects their new phone number with Whatsapp.
      */
-    @JsonProperty("3")
-    @JsonPropertyDescription("string")
+    @ProtobufProperty(index = 3, type = STRING)
     private ContactJid newJid;
 
     /**
      * The nullable old jid for this Chat.
      * This field is not null when a contact changes phone number and connects their new phone number with Whatsapp.
      */
-    @JsonProperty("4")
-    @JsonPropertyDescription("string")
+    @ProtobufProperty(index = 4, type = STRING)
     private ContactJid oldJid;
 
     /**
      * The timestamp of the latest message in seconds since {@link java.time.Instant#EPOCH}
      */
-    @JsonProperty("5")
-    @JsonPropertyDescription("uint64")
+    @ProtobufProperty(index = 5, type = UINT64)
     private long lastMessageTimestamp;
 
     /**
      * The number of unread messages in this chat.
      * If this field is negative, this chat is marked as unread.
      */
-    @JsonProperty("6")
-    @JsonPropertyDescription("uint32")
+    @ProtobufProperty(index = 6, type = UINT32)
     private int unreadMessages;
 
     /**
@@ -96,126 +85,108 @@ public class Chat {
      * If true, it means that it's not possible to send messages here.
      * This is the case, for example, for groups where only admins can send messages.
      */
-    @JsonProperty("7")
-    @JsonPropertyDescription("bool")
+    @ProtobufProperty(index = 7, type = BOOLEAN)
     private boolean readOnly;
 
     /**
      * The endTimeStamp in seconds before a message is automatically deleted from this chat both locally and from WhatsappWeb's servers.
      * If ephemeral messages aren't enabled, this field has a value of 0
      */
-    @JsonProperty("9")
-    @JsonPropertyDescription("uint32")
+    @ProtobufProperty(index = 9, type = UINT32)
     private long ephemeralMessageDuration;
 
     /**
      * The endTimeStamp in seconds since {@link java.time.Instant#EPOCH} when ephemeral messages were turned on.
      * If ephemeral messages aren't enabled, this field has a value of 0.
      */
-    @JsonProperty("10")
-    @JsonPropertyDescription("int64")
+    @ProtobufProperty(index = 10, type = INT64)
     private long ephemeralMessagesToggleTime;
 
     /**
      * The timestamp for the creation of this chat in seconds since {@link java.time.Instant#EPOCH}
      */
-    @JsonProperty("12")
-    @JsonPropertyDescription("uint64")
+    @ProtobufProperty(index = 12, type = UINT64)
     private long timestamp;
 
     /**
      * The non-null display name of this chat
      */
-    @JsonProperty("13")
-    @JsonPropertyDescription("string")
+    @ProtobufProperty(index = 13, type = STRING)
     private String name;
 
     /**
      * The hash of this chat
      */
-    @JsonProperty("14")
-    @JsonPropertyDescription("string")
+    @ProtobufProperty(index = 14, type = STRING)
     private String hash;
 
     /**
      * This field is used to determine whether a chat was marked as being spam or not.
      */
-    @JsonProperty("15")
-    @JsonPropertyDescription("bool")
+    @ProtobufProperty(index = 15, type = BOOLEAN)
     private boolean notSpam;
 
     /**
      * This field is used to determine whether a chat is archived or not.
      */
-    @JsonProperty("16")
-    @JsonPropertyDescription("bool")
+    @ProtobufProperty(index = 16, type = BOOLEAN)
     private boolean archived;
 
     /**
      * The initiator of disappearing chats
      */
-    @JsonProperty("17")
-    @JsonPropertyDescription("DisappearingMode")
-    @ProtobufType(ChatDisappear.Linker.class)
+    @ProtobufProperty(index = 17, type = MESSAGE, concreteType = ChatDisappear.class)
     private ChatDisappear disappearInitiator;
 
     /**
      * The number of unread messages in this chat that have a mention to the user linked to this session.
      * If this field is negative, this chat is marked as unread.
      */
-    @JsonProperty("18")
-    @JsonPropertyDescription("uint32")
+    @ProtobufProperty(index = 18, type = UINT32)
     private int unreadMentions;
 
     /**
      * Indicates whether this chat was manually marked as unread
      */
-    @JsonProperty("19")
-    @JsonPropertyDescription("bool")
+    @ProtobufProperty(index = 19, type = BOOLEAN)
     private boolean markedAsUnread;
 
     /**
      * If this chat is a group, this field is populated with the participants of this group
      */
-    @JsonProperty("20")
-    @JsonPropertyDescription("GroupParticipant")
-    @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+    @ProtobufProperty(index = 20, type = MESSAGE,
+            concreteType = GroupParticipant.class, repeated = true)
     private List<GroupParticipant> participants;
 
     /**
      * The token of this chat
      */
-    @JsonProperty("21")
-    @JsonPropertyDescription("bytes")
+    @ProtobufProperty(index = 21, type = BYTES)
     private byte[] token;
 
     /**
      * The timestamp of the token of this chat
      */
-    @JsonProperty(value = "22")
-    @JsonPropertyDescription("uint64")
+    @ProtobufProperty(index = 22, type = UINT64)
     private long tokenTimestamp;
 
     /**
      * The public identity key of this
      */
-    @JsonProperty("23")
-    @JsonPropertyDescription("bytes")
+    @ProtobufProperty(index = 23, type = BYTES)
     private byte[] identityKey;
 
     /**
      * The endTimeStamp in seconds since {@link java.time.Instant#EPOCH} when this chat was pinned to the top.
      * If the chat isn't pinned, this field has a value of 0.
      */
-    @JsonProperty("24")
-    @JsonPropertyDescription("uint32")
+    @ProtobufProperty(index = 24, type = UINT32)
     private long pinned;
 
     /**
      * The mute status of this chat
      */
-    @JsonProperty("25")
-    @JsonPropertyDescription("uint64")
+    @ProtobufProperty(index = 25, type = UINT64)
     @NonNull
     @Default
     private ChatMute mute = ChatMute.notMuted();
@@ -223,15 +194,13 @@ public class Chat {
     /**
      * The wallpaper of this chat
      */
-    @JsonProperty("26")
-    @JsonPropertyDescription("WallpaperSettings")
+    @ProtobufProperty(index = 26, type = MESSAGE, concreteType = ChatWallpaper.class)
     private ChatWallpaper wallpaper;
 
     /**
      * The type of this media visibility set for this chat
      */
-    @JsonProperty("27")
-    @JsonPropertyDescription("MediaVisibility")
+    @ProtobufProperty(index = 27, type = MESSAGE, concreteType = ChatMediaVisibility.class)
     @Default
     @NonNull
     private ChatMediaVisibility mediaVisibility = ChatMediaVisibility.DEFAULT;
@@ -239,15 +208,13 @@ public class Chat {
     /**
      * The timestamp of the sender of the token of this chat
      */
-    @JsonProperty("28")
-    @JsonPropertyDescription("uint64")
+    @ProtobufProperty(index = 28, type = UINT64)
     private long tokenSenderTimestamp;
 
     /**
      * Whether this chat was suspended and therefore cannot be accessed anymore
      */
-    @JsonProperty("29")
-    @JsonPropertyDescription("bool")
+    @ProtobufProperty(index = 29, type = BOOLEAN)
     private boolean suspended;
 
     /**
@@ -261,8 +228,6 @@ public class Chat {
      * The presence that this map indicates might not line up with {@link Contact#lastKnownPresence()} if the contact is composing, recording or paused.
      * This is because a contact can be online on Whatsapp and composing, recording or paused in a specific chat.
      */
-    @JsonProperty("presences")
-    @ProtobufIgnore
     @Default
     private Map<Contact, ContactStatus> presences = new ConcurrentHashMap<>();
 
@@ -271,7 +236,6 @@ public class Chat {
      *
      * @return a non-null string
      */
-    @JsonIgnore
     public String name(){
         return Objects.requireNonNullElseGet(name,
                 () -> this.name = jid.user());
@@ -282,7 +246,6 @@ public class Chat {
      *
      * @return true if this chat is a group
      */
-    @JsonIgnore
     public boolean isGroup() {
         return jid.type() == ContactJid.Type.GROUP;
     }
@@ -292,7 +255,6 @@ public class Chat {
      *
      * @return true if this chat is pinned
      */
-    @JsonIgnore
     public boolean isPinned() {
         return pinned != 0;
     }
@@ -302,7 +264,6 @@ public class Chat {
      *
      * @return true if ephemeral messages are enabled for this chat
      */
-    @JsonIgnore
     public boolean isEphemeral() {
         return ephemeralMessageDuration != 0 && ephemeralMessagesToggleTime != 0;
     }
@@ -413,5 +374,18 @@ public class Chat {
      */
     public Optional<MessageInfo> firstMessage() {
         return messages.isEmpty() ? Optional.empty() : Optional.of(messages.get(0));
+    }
+
+    public static class ChatBuilder {
+        public ChatBuilder messages(List<HistorySyncMessage> messages) {
+            this.messages$value.addAll(new SortedMessageList(messages));
+            return this;
+        }
+
+        public ChatBuilder participants(List<GroupParticipant> participants) {
+            if (this.participants == null) this.participants = new ArrayList<>();
+            this.participants.addAll(participants);
+            return this;
+        }
     }
 }

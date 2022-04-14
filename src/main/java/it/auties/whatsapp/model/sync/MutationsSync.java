@@ -3,6 +3,8 @@ package it.auties.whatsapp.model.sync;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,17 +12,26 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class MutationsSync {
-  @JsonProperty("1")
-  @JsonPropertyDescription("SyncdMutation")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+public class MutationsSync implements ProtobufMessage {
+  @ProtobufProperty(index = 1, type = MESSAGE,
+          concreteType = MutationsSync.class, repeated = true)
   private List<MutationSync> mutations;
+
+  public static class MutationsSyncBuilder {
+    public MutationsSyncBuilder mutations(List<MutationSync> mutations){
+      if(this.mutations == null) this.mutations = new ArrayList<>();
+      this.mutations.addAll(mutations);
+      return this;
+    }
+  }
 }

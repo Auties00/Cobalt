@@ -2,8 +2,7 @@ package it.auties.whatsapp.model.contact;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import it.auties.protobuf.annotation.ProtobufType;
-import it.auties.protobuf.encoder.ProtobufValueProvider;
+import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 import lombok.AllArgsConstructor;
@@ -22,10 +21,9 @@ import java.util.Objects;
  * Instead, methods inside {@link Whatsapp} should be used.
  * This class also offers a builder, accessible using {@link ContactJid#builder()}.
  */
-@ProtobufType(String.class)
 @Builder
 @Log
-public record ContactJid(String user, @NonNull Server server, int device, int agent) implements ProtobufValueProvider<String> {
+public record ContactJid(String user, @NonNull Server server, int device, int agent) implements ProtobufMessage {
     /**
      * The official business account address
      */
@@ -47,7 +45,6 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @param jid the non-null jid of the user
      * @return a non-null contact jid
      */
-    @JsonCreator
     public static ContactJid of(@NonNull String jid) {
         return of(jid, Server.forAddress(jid));
     }

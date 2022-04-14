@@ -1,8 +1,7 @@
 package it.auties.whatsapp.model.message.button;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.button.FourRowTemplate;
 import it.auties.whatsapp.model.button.HydratedFourRowTemplate;
@@ -14,6 +13,8 @@ import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 
 import java.util.Arrays;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 
 /**
  * A model class that represents a WhatsappMessage sent in a WhatsappBusiness chat that provides a list of buttons to choose from.
@@ -31,31 +32,27 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
    * Four row template.
    * This property is defined only if {@link TemplateMessage#type()} == {@link Format#FOUR_ROW_TEMPLATE}.
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("template")
+  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = FourRowTemplate.class)
   private FourRowTemplate fourRowTemplate;
 
   /**
    * Hydrated four row template.
    * This property is defined only if {@link TemplateMessage#type()} == {@link Format#HYDRATED_FOUR_ROW_TEMPLATE}.
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("template")
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = HydratedFourRowTemplate.class)
   private HydratedFourRowTemplate hydratedFourRowTemplate;
 
   /**
    * The context info of this message
    */
-  @JsonProperty("3")
-  @JsonPropertyDescription("context")
+  @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ContextInfo.class)
   private ContextInfo contextInfo; // Overrides ContextualMessage's context info
 
   /**
    * Hydrated template.
    * This property is defined only if {@link TemplateMessage#type()} == {@link Format#HYDRATED_FOUR_ROW_TEMPLATE}.
    */
-  @JsonProperty("4")
-  @JsonPropertyDescription("template")
+  @ProtobufProperty(index = 4, type = MESSAGE, concreteType = HydratedFourRowTemplate.class)
   private HydratedFourRowTemplate hydratedTemplate;
 
   /**

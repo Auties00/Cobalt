@@ -1,37 +1,33 @@
 package it.auties.whatsapp.model.sync;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.nio.charset.StandardCharsets;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class ActionDataSync {
-  @JsonProperty("1")
-  @JsonPropertyDescription("bytes")
+public class ActionDataSync implements ProtobufMessage {
+  @ProtobufProperty(index = 1, type = BYTES)
   private byte[] index;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("SyncActionValue")
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ActionValueSync.class)
   private ActionValueSync value;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 3, type = BYTES)
   private byte[] padding;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("int32")
+  @ProtobufProperty(index = 4, type = INT32)
   private int version;
 
   public MessageSync messageIndex(){

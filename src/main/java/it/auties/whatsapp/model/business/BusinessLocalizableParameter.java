@@ -3,53 +3,52 @@ package it.auties.whatsapp.model.business;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class BusinessLocalizableParameter {
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
+public class BusinessLocalizableParameter  implements ProtobufMessage {
+  @ProtobufProperty(index = 1, type = STRING)
   private String defaultValue;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("HSMCurrency")
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = BusinessCurrency.class)
   private BusinessCurrency currency;
-  
-  @JsonProperty("3")
-  @JsonPropertyDescription("HSMDateTime")
+
+  @ProtobufProperty(index = 3, type = MESSAGE, concreteType = BusinessDateTime.class)
   private BusinessDateTime dateTime;
 
-  public ParamOneof paramOneofType() {
-    if (currency != null) return ParamOneof.CURRENCY;
-    if (dateTime != null) return ParamOneof.DATE_TIME;
-    return ParamOneof.UNKNOWN;
+  public ParamType paramType() {
+    if (currency != null) return ParamType.CURRENCY;
+    if (dateTime != null) return ParamType.DATE_TIME;
+    return ParamType.UNKNOWN;
   }
 
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum ParamOneof {
+  public enum ParamType implements ProtobufMessage {
     UNKNOWN(0),
     CURRENCY(2),
     DATE_TIME(3);
 
     @Getter
     private final int index;
-    
-    @JsonCreator
-    public static ParamOneof forIndex(int index) {
+
+    public static ParamType forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
           .findFirst()
-          .orElse(ParamOneof.UNKNOWN);
+          .orElse(ParamType.UNKNOWN);
     }
   }
 }

@@ -2,6 +2,8 @@ package it.auties.whatsapp.model.button;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,54 +11,44 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class ButtonOpaqueData {
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
+public class ButtonOpaqueData implements ProtobufMessage {
+  @ProtobufProperty(index = 1, type = STRING)
   private String body;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 3, type = STRING)
   private String caption;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 4, type = STRING)
   private String clientUrl;
 
-  @JsonProperty("5")
-  @JsonPropertyDescription("double")
+  @ProtobufProperty(index = 5, type = DOUBLE)
   private double lng;
 
-  @JsonProperty("7")
-  @JsonPropertyDescription("double")
+  @ProtobufProperty(index = 7, type = DOUBLE)
   private double lat;
 
-  @JsonProperty("8")
-  @JsonPropertyDescription("int32")
+  @ProtobufProperty(index = 8, type = INT32)
   private int paymentAmount1000;
 
-  @JsonProperty("9")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 9, type = STRING)
   private String paymentNoteMsgBody;
 
-  @JsonProperty("10")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 10, type = STRING)
   private String canonicalUrl;
 
-  @JsonProperty("11")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 11, type = STRING)
   private String matchedText;
 
-  @JsonProperty("12")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 12, type = STRING)
   private String title;
 
-  @JsonProperty("13")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 13, type = STRING)
   private String description;
 }

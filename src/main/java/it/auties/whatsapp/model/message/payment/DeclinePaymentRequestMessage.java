@@ -2,15 +2,15 @@ package it.auties.whatsapp.model.message.payment;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 
 /**
  * A model class that represents a WhatsappMessage to decline a {@link RequestPaymentMessage}.
@@ -20,14 +20,13 @@ import lombok.extern.jackson.Jacksonized;
 @AllArgsConstructor(staticName = "newDeclinePaymentRequestMessage")
 @NoArgsConstructor
 @Data
+@Builder(builderMethodName = "newDeclinePaymentRequestMessage", buildMethodName = "create")
 @Jacksonized
-@Builder
 @Accessors(fluent = true)
 public final class DeclinePaymentRequestMessage implements PaymentMessage {
   /**
    * The key of the original {@link RequestPaymentMessage} that this message cancels
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("key")
+  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = MessageKey.class)
   private MessageKey key;
 }

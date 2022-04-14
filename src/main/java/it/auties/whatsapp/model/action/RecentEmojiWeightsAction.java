@@ -1,8 +1,6 @@
 package it.auties.whatsapp.model.action;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.sync.RecentEmojiWeight;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -11,7 +9,10 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Data
@@ -19,13 +20,20 @@ import java.util.List;
 @Jacksonized
 @Accessors(fluent = true)
 public final class RecentEmojiWeightsAction implements Action {
-    @JsonProperty("1")
-    @JsonPropertyDescription("RecentEmojiWeight")
-    @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+    @ProtobufProperty(index = 1, type = MESSAGE,
+            concreteType = RecentEmojiWeight.class, repeated = true)
     private List<RecentEmojiWeight> weights;
 
     @Override
     public String indexName() {
         return "unknown";
+    }
+
+    public static class RecentEmojiWeightsActionBuilder {
+        public RecentEmojiWeightsActionBuilder weights(List<RecentEmojiWeight> weights){
+            if(this.weights == null) this.weights = new ArrayList<>();
+            this.weights.addAll(weights);
+            return this;
+        }
     }
 }

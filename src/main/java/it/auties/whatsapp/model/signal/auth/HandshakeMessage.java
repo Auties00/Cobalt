@@ -2,6 +2,8 @@ package it.auties.whatsapp.model.signal.auth;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,23 +11,21 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class HandshakeMessage {
-  @JsonProperty("2")
-  @JsonPropertyDescription("ClientHello")
+public class HandshakeMessage implements ProtobufMessage {
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ClientHello.class)
   private ClientHello clientHello;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("ServerHello")
+  @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ServerHello.class)
   private ServerHello serverHello;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("ClientFinish")
+  @ProtobufProperty(index = 4, type = MESSAGE, concreteType = ClientFinish.class)
   private ClientFinish clientFinish;
 
   public HandshakeMessage(ClientHello clientHello){

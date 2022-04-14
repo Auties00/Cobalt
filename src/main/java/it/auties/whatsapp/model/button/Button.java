@@ -3,6 +3,8 @@ package it.auties.whatsapp.model.button;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.info.NativeFlowInfo;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -10,32 +12,30 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class Button {
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
+public class Button implements ProtobufMessage {
+  @ProtobufProperty(index = 1, type = STRING)
   private String buttonId;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("ButtonText")
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ButtonText.class)
   private ButtonText buttonText;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("ButtonType")
+  @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ButtonType.class)
   private ButtonType type;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("NativeFlowInfo")
+  @ProtobufProperty(index = 4, type = MESSAGE, concreteType = NativeFlowInfo.class)
   private NativeFlowInfo nativeFlowInfo;
 
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum ButtonType {
+  public enum ButtonType implements ProtobufMessage {
     UNKNOWN(0),
     RESPONSE(1),
     NATIVE_FLOW(2);
@@ -43,7 +43,6 @@ public class Button {
     @Getter
     private final int index;
 
-    @JsonCreator
     public static ButtonType forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)

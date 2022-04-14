@@ -3,50 +3,47 @@ package it.auties.whatsapp.model.business;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT32;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class BusinessDateTimeComponent {
-  @JsonProperty("1")
-  @JsonPropertyDescription("HSMDateTimeComponentDayOfWeekType")
+public class BusinessDateTimeComponent implements ProtobufMessage {
+  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = HSMDateTimeComponentDayOfWeekType.class)
   private HSMDateTimeComponentDayOfWeekType dayOfWeek;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 2, type = UINT32)
   private int year;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 3, type = UINT32)
   private int month;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 4, type = UINT32)
   private int dayOfMonth;
 
-  @JsonProperty("5")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 5, type = UINT32)
   private int hour;
 
-  @JsonProperty("6")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 6, type = UINT32)
   private int minute;
 
-  @JsonProperty("7")
-  @JsonPropertyDescription("HSMDateTimeComponentCalendarType")
+  @ProtobufProperty(index = 7, type = MESSAGE, concreteType = HSMDateTimeComponentCalendarType.class)
   private HSMDateTimeComponentCalendarType calendar;
 
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum HSMDateTimeComponentDayOfWeekType {
+  public enum HSMDateTimeComponentDayOfWeekType implements ProtobufMessage {
     MONDAY(1),
     TUESDAY(2),
     WEDNESDAY(3),
@@ -58,7 +55,6 @@ public class BusinessDateTimeComponent {
     @Getter
     private final int index;
 
-    @JsonCreator
     public static HSMDateTimeComponentDayOfWeekType forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
@@ -69,14 +65,13 @@ public class BusinessDateTimeComponent {
 
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum HSMDateTimeComponentCalendarType {
+  public enum HSMDateTimeComponentCalendarType implements ProtobufMessage {
     GREGORIAN(1),
     SOLAR_HIJRI(2);
 
     @Getter
     private final int index;
 
-    @JsonCreator
     public static HSMDateTimeComponentCalendarType forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)

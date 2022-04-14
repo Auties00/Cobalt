@@ -3,15 +3,19 @@ package it.auties.whatsapp.model.message.payment;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
 /**
  * A model class that represents a WhatsappMessage to notify the invoice about a successful payment.
@@ -23,77 +27,67 @@ import java.util.Arrays;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Jacksonized
-@Builder
+@SuperBuilder(builderMethodName = "newPaymentInvoiceMessage", buildMethodName = "create")
 @Accessors(fluent = true)
 public final class PaymentInvoiceMessage extends MediaMessage implements PaymentMessage {
   /**
    * The note of this invoice
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 1, type = STRING)
   private String note;
 
   /**
    * The token of this invoice
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 2, type = STRING)
   private String token;
 
   /**
    * The type of attachment that this invoice provides
    */
-  @JsonProperty("3")
-  @JsonPropertyDescription("type")
+  @ProtobufProperty(index = 3, type = MESSAGE, concreteType = AttachmentType.class)
   private AttachmentType type;
 
   /**
    * The mime type of the attachment that this invoice provides
    */
-  @JsonProperty("4")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 4, type = STRING)
   private String mimeType;
 
   /**
    * The media key of the attachment that this invoice provides
    */
-  @JsonProperty("5")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 5, type = BYTES)
   private byte[] key; 
 
   /**
    * The media key timestamp of the attachment that this invoice provides
    */
-  @JsonProperty("6")
-  @JsonPropertyDescription("uint64")
+  @ProtobufProperty(index = 6, type = UINT64)
   private long mediaKeyTimestamp;
 
   /**
    * The sha256 of the attachment that this invoice provides
    */
-  @JsonProperty("7")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 7, type = BYTES)
   private byte[] fileSha256;
 
   /**
    * The sha256 of the encrypted attachment that this invoice provides
    */
-  @JsonProperty("8")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 8, type = BYTES)
   private byte[] fileEncSha256;
 
   /**
    * The direct path to the attachment that this invoice provides
    */
-  @JsonProperty("9")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 9, type = STRING)
   private String directPath;
 
   /**
    * The thumbnail of the attachment that this invoice provides
    */
-  @JsonProperty("10")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 10, type = BYTES)
   private byte[] thumbnail;
 
   /**

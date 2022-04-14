@@ -12,7 +12,7 @@ import java.util.Optional;
 public record MessageSync(@NonNull String type, String chatJid, String messageId, boolean fromMe) implements JacksonProvider {
     public static MessageSync ofJson(@NonNull String json){
         try {
-            var array = JACKSON.readValue(json, new TypeReference<List<String>>() {});
+            var array = JSON.readValue(json, new TypeReference<List<String>>() {});
             var type = getProperty(array, 0)
                     .orElseThrow(() -> new NoSuchElementException("Cannot parse MessageSync: missing type"));
             var chatJid = getProperty(array, 1)

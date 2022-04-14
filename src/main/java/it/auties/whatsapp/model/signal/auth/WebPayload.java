@@ -2,6 +2,8 @@ package it.auties.whatsapp.model.signal.auth;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,54 +11,44 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class WebPayload {
-  @JsonProperty("1")
-  @JsonPropertyDescription("bool")
+public class WebPayload implements ProtobufMessage {
+  @ProtobufProperty(index = 1, type = BOOLEAN)
   private boolean usesParticipantInKey;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 2, type = BOOLEAN)
   private boolean supportsStarredMessages;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 3, type = BOOLEAN)
   private boolean supportsDocumentMessages;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 4, type = BOOLEAN)
   private boolean supportsUrlMessages;
 
-  @JsonProperty("5")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 5, type = BOOLEAN)
   private boolean supportsMediaRetry;
 
-  @JsonProperty("6")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 6, type = BOOLEAN)
   private boolean supportsE2EImage;
 
-  @JsonProperty("7")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 7, type = BOOLEAN)
   private boolean supportsE2EVideo;
 
-  @JsonProperty("8")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 8, type = BOOLEAN)
   private boolean supportsE2EAudio;
 
-  @JsonProperty("9")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 9, type = BOOLEAN)
   private boolean supportsE2EDocument;
 
-  @JsonProperty("10")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 10, type = STRING)
   private String documentTypes;
 
-  @JsonProperty("11")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 11, type = BYTES)
   private byte[] features;
 }

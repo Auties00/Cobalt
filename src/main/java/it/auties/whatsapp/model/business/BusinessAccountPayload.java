@@ -1,20 +1,17 @@
 package it.auties.whatsapp.model.business;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import it.auties.bytes.Bytes;
-import it.auties.protobuf.decoder.ProtobufDecoder;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.BusinessAccountInfo;
+import it.auties.whatsapp.util.JacksonProvider;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.io.IOException;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 
 /**
  * A model class that holds a payload about a business account.
@@ -22,40 +19,20 @@ import java.io.IOException;
  * Instead, methods inside {@link Whatsapp} should be used.
  */
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class BusinessAccountPayload {
+public class BusinessAccountPayload implements ProtobufMessage, JacksonProvider {
   /**
    * The certificate of this account
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("VerifiedNameCertificate")
+  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = BusinessCertificate.class)
   private BusinessCertificate certificate;
 
   /**
    * The info about this account
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = BusinessAccountInfo.class)
   private BusinessAccountInfo info;
-
-  /**
-   * Constructs a new BusinessAccountPayload from an encoded payload
-   *
-   * @param certificate the certificate of this account
-   * @param encodedInfo the encoded info of this account
-   * @throws IllegalArgumentException if the payload cannot be decoded
-   */
-  @JsonCreator
-  public BusinessAccountPayload(BusinessCertificate certificate, byte[] encodedInfo){
-    try {
-      this.certificate = certificate;
-      this.info = ProtobufDecoder.forType(BusinessAccountInfo.class).decode(encodedInfo);
-    }catch (IOException exception){
-      throw new IllegalArgumentException("Cannot construct BusinessAccountPayload from %s".formatted(Bytes.of(encodedInfo).toBase64()));
-    }
-  }
 }

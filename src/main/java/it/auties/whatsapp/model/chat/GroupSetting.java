@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.chat;
 
+import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.whatsapp.api.Whatsapp;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,7 +12,7 @@ import lombok.experimental.Accessors;
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum GroupSetting {
+public enum GroupSetting implements ProtobufMessage {
     /**
      * Who can edit the metadata of a group
      */
@@ -25,5 +26,6 @@ public enum GroupSetting {
     /**
      * The name of the setting linked to this enumerated constant
      */
-    private final @Getter String data;
+    @Getter
+    private final String data;
 }

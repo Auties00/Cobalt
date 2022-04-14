@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import lombok.AllArgsConstructor;
@@ -10,6 +11,9 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds a live location inside.
@@ -21,69 +25,61 @@ import lombok.experimental.SuperBuilder;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(builderMethodName = "newLiveLocationMessage", buildMethodName = "create")
+@Jacksonized
 @Accessors(fluent = true)
 public final class LiveLocationMessage extends ContextualMessage {
   /**
    * The latitude of the location that this message wraps
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("double")
+  @ProtobufProperty(index = 1, type = DOUBLE)
   private double latitude;
   
   /**
    * The longitude of the location that this message wraps
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("double")
+  @ProtobufProperty(index = 2, type = DOUBLE)
   private double longitude;
 
   /**
    * The accuracy in meters of the location that this message wraps
    */
-  @JsonProperty("3")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 3, type = UINT32)
   private int accuracy;
 
   /**
    * The speed in meters per second of the device that sent this live location message
    */
-  @JsonProperty("4")
-  @JsonPropertyDescription("float")
+  @ProtobufProperty(index = 4, type = FLOAT)
   private float speed;
 
   /**
    * Degrees Clockwise from Magnetic North
    */
-  @JsonProperty("5")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 5, type = UINT32)
   private int magneticNorthOffset;
 
   /**
    * The caption of this message
    */
-  @JsonProperty("6")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 6, type = STRING)
   private String caption;
 
   /**
    * This property probably refers to the number of updates that this live location message.
    */
-  @JsonProperty("7")
-  @JsonPropertyDescription("uint64")
+  @ProtobufProperty(index = 7, type = UINT64)
   private long sequenceNumber;
 
   /**
    * This offset probably refers to the endTimeStamp since the last update to this live location message.
    * In addition, it is measured in seconds since {@link java.time.Instant#EPOCH}.
    */
-  @JsonProperty("8")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 8, type = UINT32)
   private int timeOffset;
 
   /**
    * The thumbnail for this live location message encoded as jpeg in an array of bytes
    */
-  @JsonProperty("16")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 16, type = BYTES)
   private byte[] thumbnail;
 }

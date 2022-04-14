@@ -1,34 +1,39 @@
 package it.auties.whatsapp.model.sync;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.INT64;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class ActionMessageRangeSync {
-  @JsonProperty("1")
-  @JsonPropertyDescription("int64")
-  private long lastMessageTimestamp;
+public class ActionMessageRangeSync implements ProtobufMessage {
+    @ProtobufProperty(index = 1, type = INT64)
+    private long lastMessageTimestamp;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("int64")
-  private long lastSystemMessageTimestamp;
+    @ProtobufProperty(index = 2, type = INT64)
+    private long lastSystemMessageTimestamp;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("SyncActionMessage")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  private List<SyncActionMessage> messages;
+    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = SyncActionMessage.class, repeated = true)
+    private List<SyncActionMessage> messages;
+
+    public static class ActionMessageRangeSyncBuilder {
+        public ActionMessageRangeSyncBuilder messages(List<SyncActionMessage> messages) {
+            if (this.messages == null) this.messages = new ArrayList<>();
+            this.messages.addAll(messages);
+            return this;
+        }
+    }
 }

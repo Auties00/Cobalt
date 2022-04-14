@@ -3,13 +3,17 @@ package it.auties.whatsapp.model.message.standard;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds text inside.
@@ -21,62 +25,55 @@ import java.util.Arrays;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(builderMethodName = "newTextMessage", buildMethodName = "create")
+@Jacksonized
 @Accessors(fluent = true)
 public final class TextMessage extends ContextualMessage {
   /**
    * The text that this message wraps
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 1, type = STRING)
   private String text;
 
   /**
    * The substring of this text message that links to {@link TextMessage#canonicalUrl}, if available
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 2, type = STRING)
   private String matchedText;
 
   /**
    * The canonical url of the link that this text message wraps, if available
    */
-  @JsonProperty("4")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 4, type = STRING)
   private String canonicalUrl;
 
   /**
    * The description of the link that this text message wraps, if available
    */
-  @JsonProperty("5")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 5, type = STRING)
   private String description;
 
   /**
    * The title of the link that this text message wraps, if available
    */
-  @JsonProperty("6")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 6, type = STRING)
   private String title;
 
   /**
    * The color of this text message encoded as ARGB
    */
-  @JsonProperty("7")
-  @JsonPropertyDescription("fixed32")
+  @ProtobufProperty(index = 7, type = FIXED32)
   private int textArgb;
 
   /**
    * The background color of this text message encoded as ARGB
    */
-  @JsonProperty("8")
-  @JsonPropertyDescription("fixed32")
+  @ProtobufProperty(index = 8, type = FIXED32)
   private int backgroundArgb;
 
   /**
    * The type of font used for the text message.
    */
-  @JsonProperty("9")
-  @JsonPropertyDescription("font")
+  @ProtobufProperty(index = 9, type = MESSAGE, concreteType = TextMessageFontType.class)
   private TextMessageFontType font;
 
   /**
@@ -84,22 +81,19 @@ public final class TextMessage extends ContextualMessage {
    * If said message contains a link, this value will probably be {@link TextMessagePreviewType#VIDEO}.
    * Not all links, though, produce a preview.
    */
-  @JsonProperty("10")
-  @JsonPropertyDescription("previewType")
+  @ProtobufProperty(index = 10, type = MESSAGE, concreteType = TextMessagePreviewType.class)
   private TextMessagePreviewType previewType;
 
   /**
    * The thumbnail for this text message encoded as jpeg in an array of bytes
    */
-  @JsonProperty("16")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 16, type = BYTES)
   private byte[] thumbnail;
 
   /**
    * Determines whether the preview can be played inline
    */
-  @JsonProperty("18")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 18, type = BOOLEAN)
   private boolean doNotPlayInline;
 
   /**

@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import lombok.AllArgsConstructor;
@@ -10,6 +11,9 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds a location inside.
@@ -21,82 +25,72 @@ import lombok.experimental.SuperBuilder;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(builderMethodName = "newLocationMessage", buildMethodName = "create")
+@Jacksonized
 @Accessors(fluent = true)
 public final class LocationMessage extends ContextualMessage {
   /**
    * The latitude of the location that this message wraps
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("double")
+  @ProtobufProperty(index = 1, type = DOUBLE)
   private double latitude;
 
   /**
    * The longitude of the location that this message wraps
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("double")
+  @ProtobufProperty(index = 2, type = DOUBLE)
   private double longitude;
 
   /**
    * The name of the location that this message wraps
    */
-  @JsonProperty("3")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 3, type = STRING)
   private String name;
 
   /**
    * The address of the location that this message wraps
    */
-  @JsonProperty("4")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 4, type = STRING)
   private String address;
 
   /**
    * A URL to visit the location that this message wraps in Google Maps
    */
-  @JsonProperty("5")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 5, type = STRING)
   private String url;
 
   /**
    * Determines whether this message is a {@link LiveLocationMessage}
    */
-  @JsonProperty("6")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 6, type = BOOLEAN)
   private boolean live;
 
   /**
    * The accuracy in meters of the location that this message wraps
    */
-  @JsonProperty("7")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 7, type = UINT32)
   private int accuracy;
 
   /**
    * The speed in meters per second of the device that sent this live location message
    */
-  @JsonProperty("8")
-  @JsonPropertyDescription("float")
+  @ProtobufProperty(index = 8, type = FLOAT)
   private float speed;
 
   /**
    * Degrees Clockwise from Magnetic North
    */
-  @JsonProperty("9")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 9, type = UINT32)
   private int magneticNorthOffset;
 
   /**
    * The caption of this message
    */
-  @JsonProperty("11")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 11, type = STRING)
   private String caption;
 
   /**
    * The thumbnail for this image message encoded as jpeg in an array of bytes
    */
-  @JsonProperty("16")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 16, type = BYTES)
   private byte[] thumbnail;
 }

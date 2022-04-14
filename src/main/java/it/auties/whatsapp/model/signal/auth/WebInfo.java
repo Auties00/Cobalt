@@ -3,6 +3,7 @@ package it.auties.whatsapp.model.signal.auth;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -10,12 +11,11 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.Arrays;
 
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class WebInfo {
+public class WebInfo implements ProtobufMessage {
   @JsonProperty("4")
   @JsonPropertyDescription("WebInfoWebSubPlatform")
   private WebInfoWebSubPlatform webSubPlatform;
@@ -38,7 +38,7 @@ public class WebInfo {
 
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum WebInfoWebSubPlatform {
+  public enum WebInfoWebSubPlatform implements ProtobufMessage {
     WEB_BROWSER(0),
     APP_STORE(1),
     WIN_STORE(2),
@@ -48,7 +48,6 @@ public class WebInfo {
     @Getter
     private final int index;
 
-    @JsonCreator
     public static WebInfoWebSubPlatform forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)

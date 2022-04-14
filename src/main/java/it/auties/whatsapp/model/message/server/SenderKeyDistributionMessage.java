@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.message.server;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.message.model.ServerMessage;
 import lombok.AllArgsConstructor;
@@ -10,6 +11,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.BYTES;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 
 /**
  * A model class that represents a WhatsappMessage sent by WhatsappWeb for security purposes.
@@ -20,21 +24,19 @@ import lombok.extern.jackson.Jacksonized;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Jacksonized
 @Builder(builderMethodName = "newSenderKeyDistributionMessage", buildMethodName = "create")
+@Jacksonized
 @Accessors(fluent = true)
 public final class SenderKeyDistributionMessage implements ServerMessage {
   /**
    * The jid of the sender
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 1, type = STRING)
   private String groupId;
 
   /**
    * The sender key
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 2, type = BYTES)
   private byte[] data;
 }

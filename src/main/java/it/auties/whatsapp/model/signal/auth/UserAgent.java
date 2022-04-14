@@ -3,74 +3,65 @@ package it.auties.whatsapp.model.signal.auth;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class UserAgent {
-  @JsonProperty("1")
-  @JsonPropertyDescription("UserAgentPlatform")
+public class UserAgent implements ProtobufMessage {
+  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = UserAgentPlatform.class)
   private UserAgentPlatform platform;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("AppVersion")
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = Version.class)
   private Version appVersion;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 3, type = STRING)
   private String mcc;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 4, type = STRING)
   private String mnc;
 
-  @JsonProperty("5")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 5, type = STRING)
   private String osVersion;
 
-  @JsonProperty("6")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 6, type = STRING)
   private String manufacturer;
 
-  @JsonProperty("7")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 7, type = STRING)
   private String device;
 
-  @JsonProperty("8")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 8, type = STRING)
   private String osBuildNumber;
 
-  @JsonProperty("9")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 9, type = STRING)
   private String phoneId;
 
-  @JsonProperty("10")
-  @JsonPropertyDescription("UserAgentReleaseChannel")
+  @ProtobufProperty(index = 10, type = MESSAGE, concreteType = UserAgentReleaseChannel.class)
   private UserAgentReleaseChannel releaseChannel;
 
-  @JsonProperty("11")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 11, type = STRING)
   private String localeLanguageIso6391;
 
-  @JsonProperty("12")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 12, type = STRING)
   private String localeCountryIso31661Alpha2;
 
-  @JsonProperty("13")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 13, type = STRING)
   private String deviceBoard;
 
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum UserAgentPlatform {
+  public enum UserAgentPlatform implements ProtobufMessage {
     ANDROID(0),
     IOS(1),
     WINDOWS_PHONE(2),
@@ -101,7 +92,6 @@ public class UserAgent {
     @Getter
     private final int index;
 
-    @JsonCreator
     public static UserAgentPlatform forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
@@ -112,7 +102,7 @@ public class UserAgent {
 
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum UserAgentReleaseChannel {
+  public enum UserAgentReleaseChannel implements ProtobufMessage {
     RELEASE(0),
     BETA(1),
     ALPHA(2),
@@ -121,7 +111,6 @@ public class UserAgent {
     @Getter
     private final int index;
 
-    @JsonCreator
     public static UserAgentReleaseChannel forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)

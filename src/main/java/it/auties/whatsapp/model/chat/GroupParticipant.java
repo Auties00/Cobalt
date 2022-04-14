@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.chat;
 
+import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.request.Node;
 import lombok.NonNull;
@@ -12,7 +13,7 @@ import java.util.NoSuchElementException;
  * @param jid   the non-null jid of the participant
  * @param role non-null role of the participant
  */
-public record GroupParticipant(@NonNull ContactJid jid, @NonNull GroupRole role) {
+public record GroupParticipant(@NonNull ContactJid jid, @NonNull GroupRole role) implements ProtobufMessage {
     /**
      * Constructs a new GroupParticipant from an input node
      *

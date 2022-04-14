@@ -60,7 +60,7 @@ public class Medias implements JacksonProvider {
             var response = client.send(request, ofString());
             Validate.isTrue(response.statusCode() == 200,
                     "Invalid status code: %s", response.statusCode());
-            return ofNullable(JACKSON.readValue(response.body(), MediaUpload.class));
+            return ofNullable(JSON.readValue(response.body(), MediaUpload.class));
         }catch (Throwable ignored){
             return empty();
         }

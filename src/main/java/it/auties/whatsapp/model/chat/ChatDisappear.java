@@ -3,20 +3,22 @@ package it.auties.whatsapp.model.chat;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
+import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 
 /**
  * The constants of this enumerated type describe the various actors that can initialize disappearing messages in a chat
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum ChatDisappear {
+public enum ChatDisappear implements ProtobufMessage {
     /**
      * Changed in chat
      */
@@ -35,7 +37,6 @@ public enum ChatDisappear {
     @Getter
     private final int index;
 
-    @JsonCreator
     public static ChatDisappear forJson(Linker linker) {
         return linker.disappear();
     }
@@ -48,14 +49,14 @@ public enum ChatDisappear {
     }
 
     @AllArgsConstructor
-    @NoArgsConstructor
     @Data
-    public static class Linker {
-        @JsonProperty("1")
-        @JsonPropertyDescription("enum")
+    @Builder
+    @Jacksonized
+    @Accessors(fluent = true)
+    public static class Linker implements ProtobufMessage{
+        @ProtobufProperty(index = 1, type = MESSAGE, concreteType = ChatDisappear.class)
         private ChatDisappear disappear;
 
-        @JsonCreator
         public Linker(long index){
             this.disappear = ChatDisappear.forIndex((int) index);
         }

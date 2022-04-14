@@ -3,6 +3,7 @@ package it.auties.whatsapp.model.message.server;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.ServerMessage;
@@ -13,6 +14,9 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT64;
+
 /**
  * A model class that represents a WhatsappMessage sent by a WhatsappWeb.
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
@@ -21,74 +25,65 @@ import java.util.Arrays;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Jacksonized
 @Builder(builderMethodName = "newProtocolMessage", buildMethodName = "create")
+@Jacksonized
 @Accessors(fluent = true)
 public final class ProtocolMessage implements ServerMessage {
   /**
    * The key of message that this server message regards
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("key")
+  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = MessageKey.class)
   private MessageKey key;
 
   /**
    * The type of this server message
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("type")
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ProtocolMessageType.class)
   private ProtocolMessageType type;
 
   /**
    * The expiration, that is the endTimeStamp in seconds after which a message is automatically deleted, of messages in an ephemeral chat.
    * This property is defined only if {@link ProtocolMessage#type} == {@link ProtocolMessageType#EPHEMERAL_SETTING} || @link ProtocolMessageType#EPHEMERAL_SYNC_RESPONSE}.
    */
-  @JsonProperty("4")
-  @JsonPropertyDescription("uint64")
+  @ProtobufProperty(index = 4, type = UINT64)
   private long ephemeralExpiration;
 
   /**
    * The timestamp, that is the endTimeStamp in seconds since {@link java.time.Instant#EPOCH}, of the last modification to the ephemeral settings of a chat.
    * This property is defined only if {@link ProtocolMessage#type} == {@link ProtocolMessageType#EPHEMERAL_SETTING} || @link ProtocolMessageType#EPHEMERAL_SYNC_RESPONSE}.
    */
-  @JsonProperty("5")
-  @JsonPropertyDescription("uint64")
+  @ProtobufProperty(index = 5, type = UINT64)
   private long ephemeralSettingTimestamp;
 
   /**
    * History dataSync notification.
    * This property is defined only if {@link ProtocolMessage#type} == {@link ProtocolMessageType#HISTORY_SYNC_NOTIFICATION}.
    */
-  @JsonProperty("6")
-  @JsonPropertyDescription("historySyncNotification")
+  @ProtobufProperty(index = 6, type = MESSAGE, concreteType = HistorySyncNotification.class)
   private HistorySyncNotification historySyncNotification;
 
   /**
-   * Unknown
+   * The app state keys
    */
-  @JsonProperty("7")
-  @JsonPropertyDescription("appStateSyncKeyShare")
+  @ProtobufProperty(index = 7, type = MESSAGE, concreteType = AppStateSyncKeyShare.class)
   private AppStateSyncKeyShare appStateSyncKeyShare;
 
   /**
-   * Unknown
+   * An app state sync key
    */
-  @JsonProperty("8")
-  @JsonPropertyDescription("appStateSyncKeyRequest")
+  @ProtobufProperty(index = 8, type = MESSAGE, concreteType = AppStateSyncKeyShare.class)
   private AppStateSyncKeyRequest appStateSyncKeyRequest;
 
   /**
-   * Unknown
+   * Initial security settings sent by Whatsapp
    */
-  @JsonProperty("9")
-  @JsonPropertyDescription("initialSecurityNotificationSettingSync")
+  @ProtobufProperty(index = 9, type = MESSAGE, concreteType = AppStateSyncKeyShare.class)
   private InitialSecurityNotificationSettingSync initialSecurityNotificationSettingSync;
 
   /**
-   * Unknown
+   * App state exception notification
    */
-  @JsonProperty("10")
-  @JsonPropertyDescription("appStateFatalExceptionNotification")
+  @ProtobufProperty(index = 10, type = MESSAGE, concreteType = AppStateFatalExceptionNotification.class)
   private AppStateFatalExceptionNotification appStateFatalExceptionNotification;
 
   /**
@@ -128,7 +123,7 @@ public final class ProtocolMessage implements ServerMessage {
     APP_STATE_SYNC_KEY_REQUEST(7),
 
     /**
-     * Message back fill request
+     * Message back-fill request
      */
     MESSAGE_BACK_FILL_REQUEST(8),
 

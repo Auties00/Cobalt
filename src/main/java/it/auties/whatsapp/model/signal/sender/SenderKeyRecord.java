@@ -3,6 +3,10 @@ package it.auties.whatsapp.model.signal.sender;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.whatsapp.model.product.Product;
+import it.auties.whatsapp.model.product.ProductSection;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -11,22 +15,21 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.LinkedList;
-import java.util.NoSuchElementException;
-import java.util.Objects;
+import java.util.*;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class SenderKeyRecord {
+public class SenderKeyRecord implements ProtobufMessage {
   private static final int MAX_STATES = 5;
 
-  @JsonProperty("1")
-  @JsonPropertyDescription("SenderKeyStateStructure")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  @ProtobufProperty(index = 1, type = MESSAGE,
+          concreteType = SenderKeyState.class, repeated = true)
   @Default
   private LinkedList<SenderKeyState> states = new LinkedList<>();
 
@@ -58,5 +61,12 @@ public class SenderKeyRecord {
   public boolean equals(Object object){
     return object instanceof SenderKeyRecord that
             && Objects.equals(this.states(), that.states());
+  }
+
+  public static class SenderKeyRecordBuilder {
+    public SenderKeyRecordBuilder states(List<SenderKeyState> states) {
+      this.states$value.addAll(states);
+      return this;
+    }
   }
 }

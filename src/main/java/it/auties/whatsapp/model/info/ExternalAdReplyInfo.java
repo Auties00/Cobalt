@@ -3,6 +3,7 @@ package it.auties.whatsapp.model.info;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -10,79 +11,71 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
 /**
  * A model class that holds the information related to an advertisement.
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
  * Instead, methods inside {@link Whatsapp} should be used.
  */
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
 public final class ExternalAdReplyInfo implements Info {
   /**
    * The title of this advertisement
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 1, type = STRING)
   private String title;
 
   /**
    * The body of this advertisement
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 2, type = STRING)
   private String body;
 
   /**
    * The media type of this ad, if any is specified
    */
-  @JsonProperty("3")
-  @JsonPropertyDescription("ExternalAdReplyInfoMediaType")
+  @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ExternalAdReplyInfoMediaType.class)
   private ExternalAdReplyInfoMediaType mediaType;
 
   /**
    * The url of the thumbnail for the media of this ad, if any is specified
    */
-  @JsonProperty("4")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 4, type = STRING)
   private String thumbnailUrl;
 
   /**
    * The url of the media of this ad, if any is specified
    */
-  @JsonProperty("5")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 5, type = STRING)
   private String mediaUrl;
 
   /**
    * The thumbnail for the media of this ad, if any is specified
    */
-  @JsonProperty("6")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 6, type = BYTES)
   private byte[] thumbnail;
 
   /**
    * The source type of this ad
    */
-  @JsonProperty("7")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 7, type = STRING)
   private String sourceType;
 
   /**
    * The source jid of this ad
    */
-  @JsonProperty("8")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 8, type = STRING)
   private String sourceId;
 
   /**
    * The source url of this ad
    */
-  @JsonProperty("9")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 9, type = STRING)
   private String sourceUrl;
 
   /**

@@ -2,6 +2,8 @@ package it.auties.whatsapp.model.signal.auth;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.util.Validate;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -13,31 +15,28 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT32;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class Version {
-    @JsonProperty("1")
-    @JsonPropertyDescription("uint32")
+public class Version implements ProtobufMessage {
+    @ProtobufProperty(index = 1, type = UINT32)
     private int primary;
 
-    @JsonProperty("2")
-    @JsonPropertyDescription("uint32")
+    @ProtobufProperty(index = 2, type = UINT32)
     private int secondary;
 
-    @JsonProperty("3")
-    @JsonPropertyDescription("uint32")
+    @ProtobufProperty(index = 3, type = UINT32)
     private int tertiary;
 
-    @JsonProperty("4")
-    @JsonPropertyDescription("uint32")
+    @ProtobufProperty(index = 4, type = UINT32)
     private int quaternary;
 
-    @JsonProperty("5")
-    @JsonPropertyDescription("uint32")
+    @ProtobufProperty(index = 5, type = UINT32)
     private int quinary;
 
     public Version(int primary) {

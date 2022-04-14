@@ -1,9 +1,11 @@
 package it.auties.whatsapp.model.chat;
 
+import it.auties.protobuf.api.model.ProtobufMessage;
+
 /**
  * The constants of this enumerated type describe the various types of mute a {@link ChatMute} can describe
  */
-public enum ChatMuteType {
+public enum ChatMuteType implements ProtobufMessage {
     /**
      * This constant describes a {@link ChatMute} that holds a endTimeStamp greater than 0
      * Simply put, {@link ChatMute#endTimeStamp()} > 0

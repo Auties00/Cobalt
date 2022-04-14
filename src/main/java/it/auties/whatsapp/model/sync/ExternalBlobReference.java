@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.sync;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.whatsapp.model.media.AttachmentProvider;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,35 +11,36 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
-@Jacksonized
-@Builder
-@Accessors(fluent = true)
-public final class ExternalBlobReference implements AttachmentProvider {
-  @JsonProperty("1")
-  @JsonPropertyDescription("bytes")
-  private byte[] key; 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("string")
+import it.auties.protobuf.api.model.ProtobufProperty;
+import java.util.*;
+import lombok.*;
+import lombok.experimental.*;
+import lombok.extern.jackson.*;
+
+@AllArgsConstructor
+@Data
+@Builder
+@Jacksonized
+@Accessors(fluent = true)
+public final class ExternalBlobReference implements ProtobufMessage, AttachmentProvider {
+  @ProtobufProperty(index = 1, type = BYTES)
+  private byte[] key;
+
+  @ProtobufProperty(index = 2, type = STRING)
   private String directPath;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 3, type = STRING)
   private String handle;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("uint64")
+  @ProtobufProperty(index = 4, type = UINT64)
   private long fileLength;
 
-  @JsonProperty("5")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 5, type = BYTES)
   private byte[] fileSha256;
 
-  @JsonProperty("6")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 6, type = BYTES)
   private byte[] fileEncSha256;
 
   @Override

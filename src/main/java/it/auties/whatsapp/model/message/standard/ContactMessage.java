@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -11,6 +12,8 @@ import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds a contact inside.
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
@@ -18,7 +21,7 @@ import lombok.extern.jackson.Jacksonized;
  */
 @AllArgsConstructor
 @NoArgsConstructor
-@SuperBuilder(buildMethodName = "create")
+@SuperBuilder(builderMethodName = "newContactMessage", buildMethodName = "create")
 @Jacksonized
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -27,37 +30,12 @@ public final class ContactMessage extends ContextualMessage {
   /**
    * The name of the contact that this message wraps
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 1, type = STRING)
   private String name;
 
   /**
    * The info about the contact that this message wraps encoded as a vcard
    */
-  @JsonProperty("16")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 16, type = STRING)
   private String vcard;
-
-  /**
-   * Constructs a new builder to create a ContactMessage.
-   * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
-   *
-   * @param displayName the display name of the contact that the new message wraps
-   * @param vcard       the info about the contact that the new message wraps encoded as a vcard
-   * @param contextInfo the context info that the new message wraps
-   *
-   * @return a non-null new message
-   */
-  @Builder(builderClassName = "NewContactMessageBuilder", builderMethodName = "newContactMessage", buildMethodName = "create")
-  private static ContactMessage builder(String displayName, String vcard, ContextInfo contextInfo) {
-    return ContactMessage.builder()
-            .vcard(vcard)
-            .name(displayName)
-            .contextInfo(contextInfo)
-            .create();
-  }
-
-  private static ContactMessageBuilder<?, ?> builder() {
-    return new ContactMessageBuilderImpl();
-  }
 }

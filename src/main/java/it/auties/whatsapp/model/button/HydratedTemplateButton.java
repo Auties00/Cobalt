@@ -3,33 +3,32 @@ package it.auties.whatsapp.model.button;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class HydratedTemplateButton {
-  @JsonProperty("1")
-  @JsonPropertyDescription("HydratedQuickReplyButton")
+public class HydratedTemplateButton implements ProtobufMessage {
+  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = HydratedQuickReplyButton.class)
   private HydratedQuickReplyButton quickReplyButton;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("HydratedURLButton")
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = HydratedURLButton.class)
   private HydratedURLButton urlButton;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("HydratedCallButton")
+  @ProtobufProperty(index = 3, type = MESSAGE, concreteType = HydratedCallButton.class)
   private HydratedCallButton callButton;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 4, type = UINT32)
   private int index;
 
   public HydratedButtonType hydratedButtonType() {
@@ -50,7 +49,6 @@ public class HydratedTemplateButton {
     @Getter
     private final int index;
 
-    @JsonCreator
     public static HydratedButtonType forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)

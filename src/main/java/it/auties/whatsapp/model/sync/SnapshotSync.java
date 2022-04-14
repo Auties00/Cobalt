@@ -1,38 +1,38 @@
 package it.auties.whatsapp.model.sync;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
-import java.util.List;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
+import java.util.*;
+import lombok.*;
+import lombok.experimental.*;
+import lombok.extern.jackson.*;
 
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class SnapshotSync {
-  @JsonProperty("1")
-  @JsonPropertyDescription("SyncdVersion")
+public class SnapshotSync implements ProtobufMessage {
+  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = VersionSync.class)
   private VersionSync version;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("SyncdRecord")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  @ProtobufProperty(index = 2, type = MESSAGE,
+          concreteType = RecordSync.class, repeated = true)
   private List<RecordSync> records;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 3, type = BYTES)
   private byte[] mac;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("KeyId")
+  @ProtobufProperty(index = 4, type = MESSAGE, concreteType = KeyId.class)
   private KeyId keyId;
+
+  public static class SnapshotSyncBuilder {
+    public SnapshotSyncBuilder records(List<RecordSync> records) {
+      if (this.records == null) this.records = new ArrayList<>();
+      this.records.addAll(records);
+      return this;
+    }
+  }
 }

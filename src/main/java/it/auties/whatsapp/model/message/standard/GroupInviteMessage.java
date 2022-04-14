@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.ContextInfo;
@@ -12,6 +13,9 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds a whatsapp group invite inside.
@@ -23,54 +27,48 @@ import lombok.experimental.SuperBuilder;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(builderMethodName = "newGroupInviteMessage", buildMethodName = "create")
+@Jacksonized
 @Accessors(fluent = true)
 public final class GroupInviteMessage extends ContextualMessage {
   /**
    * The jid of the group that this invite regards
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("group")
+  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = ContactJid.class)
   private ContactJid groupId;
 
   /**
    * The invite code of this message
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 2, type = STRING)
   private String code;
 
   /**
    * The expiration of this invite in milliseconds since {@link java.time.Instant#EPOCH}
    */
-  @JsonProperty("3")
-  @JsonPropertyDescription("uint64")
+  @ProtobufProperty(index = 3, type = UINT64)
   private long expiration;
   
   /**
    * The name of the group that this invite regards
    */
-  @JsonProperty("4")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 4, type = STRING)
   private String groupName;
 
   /**
    * The thumbnail of the group that this invite regards encoded as jpeg in an array of bytes
    */
-  @JsonProperty("5")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 5, type = BYTES)
   private byte[] thumbnail;
 
   /**
    * The caption of this invite
    */
-  @JsonProperty("6")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 6, type = STRING)
   private String caption;
   
   /**
    * The context info of this message
    */
-  @JsonProperty("7")
-  @JsonPropertyDescription("context")
+  @ProtobufProperty(index = 7, type = MESSAGE, concreteType = ContextInfo.class)
   private ContextInfo contextInfo; // Overrides ContextualMessage's context info
 }

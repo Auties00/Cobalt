@@ -3,33 +3,32 @@ package it.auties.whatsapp.model.signal.auth;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class Companion {
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
+public class Companion implements ProtobufMessage {
+  @ProtobufProperty(index = 1, type = STRING)
   private String os;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("AppVersion")
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = Version.class)
   private Version version;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("CompanionPropsPlatformType")
+  @ProtobufProperty(index = 3, type = MESSAGE, concreteType = CompanionPropsPlatformType.class)
   private CompanionPropsPlatformType platformType;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("bool")
+  @ProtobufProperty(index = 4, type = BOOLEAN)
   private boolean requireFullSync;
 
   @AllArgsConstructor

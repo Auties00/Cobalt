@@ -86,17 +86,18 @@
         <nexus.staging.maven.plugin.version>1.6.7</nexus.staging.maven.plugin.version>
         <bouncy.castle.version>1.70</bouncy.castle.version>
         <zxing.version>3.4.1</zxing.version>
-        <protoc.version>1.10-SNAPSHOT</protoc.version>
+        <protoc.version>1.11</protoc.version>
         <tyrus.version>2.0.2</tyrus.version>
         <lombok.version>1.18.22</lombok.version>
         <junit.version>5.8.2</junit.version>
-        <jna.version>5.10.0</jna.version>
-        <jackson.version>2.13.2</jackson.version>
-        <jackson.map.version>1.1-SNAPSHOT</jackson.map.version>
+        <jna.version>5.11.0</jna.version>
+        <jackson.version>2.13.2.2</jackson.version>
+        <jackson.modules.version>2.13.2</jackson.modules.version>
+        <jackson.map.version>1.1</jackson.map.version>
         <noise.version>1.2</noise.version>
         <curve25519.version>1.0</curve25519.version>
         <bytes.version>1.2</bytes.version>
-        <classgraph.version>4.8.140</classgraph.version>
+        <classgraph.version>4.8.143</classgraph.version>
         <delombok.input>${project.basedir}\src\main\java</delombok.input>
         <delombok.output>${project.build.directory}\delombok</delombok.output>
     </properties>
@@ -125,8 +126,8 @@
                 <version>${maven.compiler.plugin.version}</version>
                 <configuration>
                     <compileSourceRoots>${delombok.input}</compileSourceRoots>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <source>17</source>
+                    <target>17</target>
                     <release>${java.version}</release>
                     <annotationProcessorPaths>
                         <path>
@@ -216,6 +217,11 @@
             <version>${protoc.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>reflection</artifactId>
+            <version>1.2</version>
+        </dependency>
+        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
@@ -223,12 +229,12 @@
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>${jackson.version}</version>
+            <version>${jackson.modules.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jdk8</artifactId>
-            <version>${jackson.version}</version>
+            <version>${jackson.modules.version}</version>
         </dependency>
         <dependency>
             <groupId>com.github.auties00</groupId>
@@ -266,12 +272,6 @@
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna</artifactId>
             <version>${jna.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
-            <version>4.0.0-rc-2</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

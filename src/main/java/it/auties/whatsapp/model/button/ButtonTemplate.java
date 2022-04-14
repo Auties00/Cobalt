@@ -3,33 +3,33 @@ package it.auties.whatsapp.model.button;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT32;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class ButtonTemplate {
-  @JsonProperty("1")
-  @JsonPropertyDescription("QuickReplyButton")
+public class ButtonTemplate implements ProtobufMessage {
+  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = QuickReplyButton.class)
   private QuickReplyButton quickReplyButton;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("URLButton")
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = URLButton.class)
   private URLButton urlButton;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("CallButton")
+  @ProtobufProperty(index = 3, type = MESSAGE, concreteType = CallButton.class)
   private CallButton callButton;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 4, type = UINT32)
   private int index;
 
   public ButtonType buttonType() {
@@ -41,7 +41,7 @@ public class ButtonTemplate {
 
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum ButtonType {
+  public enum ButtonType implements ProtobufMessage{
     UNKNOWN(0),
     QUICK_REPLY_BUTTON(1),
     URL_BUTTON(2),
@@ -50,7 +50,6 @@ public class ButtonTemplate {
     @Getter
     private final int index;
 
-    @JsonCreator
     public static ButtonType forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)

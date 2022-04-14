@@ -2,6 +2,8 @@ package it.auties.whatsapp.model.signal.auth;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,42 +11,36 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.BYTES;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
-public class CompanionData {
-  @JsonProperty("1")
-  @JsonPropertyDescription("bytes")
+public class CompanionData implements ProtobufMessage {
+  @ProtobufProperty(index = 1, type = BYTES)
   private byte[] id;
 
-  @JsonProperty("2")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 2, type = BYTES)
   private byte[] keyType;
 
-  @JsonProperty("3")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 3, type = BYTES)
   private byte[] identifier;
 
-  @JsonProperty("4")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 4, type = BYTES)
   private byte[] signatureId;
 
-  @JsonProperty("5")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 5, type = BYTES)
   private byte[] signaturePublicKey;
 
-  @JsonProperty("6")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 6, type = BYTES)
   private byte[] signature;
 
-  @JsonProperty("7")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 7, type = BYTES)
   private byte[] buildHash;
 
-  @JsonProperty("8")
-  @JsonPropertyDescription("bytes")
+  @ProtobufProperty(index = 8, type = BYTES)
   private byte[] companion;
 }

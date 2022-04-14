@@ -3,6 +3,7 @@ package it.auties.whatsapp.model.info;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.product.ProductListHeaderImage;
@@ -16,37 +17,35 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
 
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+
 /**
  * A model class that holds the information related to a list of products.
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
  * Instead, methods inside {@link Whatsapp} should be used.
  */
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Jacksonized
 @Builder
+@Jacksonized
 @Accessors(fluent = true)
 public final class ProductListInfo implements Info {
   /**
    * The products that this message wraps
    */
-  @JsonProperty("1")
-  @JsonPropertyDescription("ProductSection")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+  @ProtobufProperty(index = 1, type = MESSAGE,
+          concreteType = ProductSection.class, repeated = true)
   private List<ProductSection> productSections;
 
   /**
    * The header image of the messages that this message wraps
    */
-  @JsonProperty("2")
-  @JsonPropertyDescription("ProductListHeaderImage")
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ProductListHeaderImage.class)
   private ProductListHeaderImage headerImage;
 
   /**
    * The jid of the seller of the products that this message wraps
    */
-  @JsonProperty("3")
-  @JsonPropertyDescription("ContactJid")
+  @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ContactJid.class)
   private ContactJid sellerId;
 }
