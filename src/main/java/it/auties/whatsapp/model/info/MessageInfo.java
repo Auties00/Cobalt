@@ -92,7 +92,8 @@ public final class MessageInfo implements Info {
    * The jid of the participant that sent the message in a group.
    * This property is only populated if {@link MessageInfo#chat()} refers to a group.
    */
-  @ProtobufProperty(index = 5, type = MESSAGE, concreteType = ContactJid.class)
+  @ProtobufProperty(index = 5, type = STRING,
+          concreteType = ContactJid.class, requiresConversion = true)
   private ContactJid senderJid;
 
   /**

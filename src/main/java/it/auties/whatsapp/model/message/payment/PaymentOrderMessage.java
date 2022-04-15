@@ -75,7 +75,8 @@ public final class PaymentOrderMessage extends ContextInfo implements PaymentMes
   /**
    * The jid of the seller associated with this order
    */
-  @ProtobufProperty(index = 8, type = MESSAGE, concreteType = ContactJid.class)
+  @ProtobufProperty(index = 8, type = STRING,
+          concreteType = ContactJid.class, requiresConversion = true)
   private ContactJid sellerId;
 
   /**

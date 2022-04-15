@@ -86,7 +86,7 @@
         <nexus.staging.maven.plugin.version>1.6.7</nexus.staging.maven.plugin.version>
         <bouncy.castle.version>1.70</bouncy.castle.version>
         <zxing.version>3.4.1</zxing.version>
-        <protoc.version>1.11</protoc.version>
+        <protoc.version>1.12-SNAPSHOT</protoc.version>
         <tyrus.version>2.0.2</tyrus.version>
         <lombok.version>1.18.22</lombok.version>
         <junit.version>5.8.2</junit.version>
@@ -127,8 +127,8 @@
                 <version>${maven.compiler.plugin.version}</version>
                 <configuration>
                     <compileSourceRoots>${delombok.input}</compileSourceRoots>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <source>17</source>
+                    <target>17</target>
                     <release>${java.version}</release>
                     <annotationProcessorPaths>
                         <path>

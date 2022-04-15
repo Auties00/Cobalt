@@ -40,7 +40,8 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
   /**
    * The jid of the contact that sent the message that this ContextualMessage quotes
    */
-  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ContactJid.class)
+  @ProtobufProperty(index = 2, type = STRING,
+          concreteType = ContactJid.class, requiresConversion = true)
   private ContactJid quotedMessageSenderId;
 
   /**

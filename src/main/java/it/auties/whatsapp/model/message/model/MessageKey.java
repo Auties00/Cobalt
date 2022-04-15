@@ -33,7 +33,8 @@ public class MessageKey implements ProtobufMessage {
   /**
    * The jid of the contact or group that sent the message.
    */
-  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = ContactJid.class)
+  @ProtobufProperty(index = 1, type = STRING,
+          concreteType = ContactJid.class, requiresConversion = true)
   @NonNull
   private ContactJid chatJid;
 

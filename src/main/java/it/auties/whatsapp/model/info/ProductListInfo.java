@@ -18,6 +18,7 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.List;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 
 /**
  * A model class that holds the information related to a list of products.
@@ -46,6 +47,7 @@ public final class ProductListInfo implements Info {
   /**
    * The jid of the seller of the products that this message wraps
    */
-  @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ContactJid.class)
+  @ProtobufProperty(index = 3, type = STRING,
+          concreteType = ContactJid.class, requiresConversion = true)
   private ContactJid sellerId;
 }

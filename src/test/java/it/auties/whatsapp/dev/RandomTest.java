@@ -1,22 +1,38 @@
 package it.auties.whatsapp.dev;
 
-import java.io.IOException;
-import java.util.Arrays;
+import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.api.model.ProtobufSchema;
+import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.util.JacksonProvider;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 
-public class RandomTest {
+import java.io.IOException;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+
+public class RandomTest implements JacksonProvider {
     public static void main(String[] args) throws IOException {
-        var a = new int[]{200, 86, 184, 26, 101, 28, 16, 19, 28, 86, 48, 138, 94, 245, 187, 149, 68, 107, 141, 53, 172, 47, 189, 69, 199, 58, 13, 184, 84, 131, 157, 243, 151, 148, 26, 47, 0, 244, 92, 242, 244, 28, 117, 243, 199, 242, 214, 187};
-        var b = new byte[]{-56, 86, -72, 26, 101, 28, 16, 19, 28, 86, 48, -118, 94, -11, -69, -107, 68, 107, -115, 53, -84, 47, -67, 69, -57, 58, 13, -72, 84, -125, -99, -13, -105, -108, 26, 47, 0, -12, 92, -14, -12, 28, 117, -13, -57, -14, -42, -69};
-        System.out.println(Arrays.toString(toBytes(a)));
-        System.out.println(Arrays.toString(b));
+        var test = new Test(ContactJid.of("393495089819@s.whatsapp.net"));
+        var encoded = PROTOBUF.writeValueAsBytes(test);
+        var decoded = PROTOBUF.reader()
+                .with(ProtobufSchema.of(Test.class))
+                .readValue(encoded, Test.class);
+        System.out.println(decoded);
     }
 
-    private static byte[] toBytes(int[] a) {
-        var b = new byte[a.length];
-        for (var x = 0; x < a.length; x++) {
-            b[x] = (byte) a[x];
-        }
-
-        return b;
+    @AllArgsConstructor
+    @Data
+    @Builder
+    @Jacksonized
+    @Accessors(fluent = true)
+    public static class Test implements ProtobufMessage {
+        @ProtobufProperty(index = 1, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
+        private ContactJid test;
     }
 }

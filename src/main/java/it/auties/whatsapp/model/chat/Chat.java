@@ -41,7 +41,8 @@ public class Chat implements ProtobufMessage {
     /**
      * The non-null unique jid used to identify this chat
      */
-    @ProtobufProperty(index = 1, type = STRING, required = true)
+    @ProtobufProperty(index = 1, type = STRING,
+            concreteType = ContactJid.class, required = true, requiresConversion = true)
     @NonNull
     private ContactJid jid;
 
@@ -57,14 +58,16 @@ public class Chat implements ProtobufMessage {
      * The nullable new unique jid for this Chat.
      * This field is not null when a contact changes phone number and connects their new phone number with Whatsapp.
      */
-    @ProtobufProperty(index = 3, type = STRING)
+    @ProtobufProperty(index = 3, type = STRING,
+            concreteType = ContactJid.class, requiresConversion = true)
     private ContactJid newJid;
 
     /**
      * The nullable old jid for this Chat.
      * This field is not null when a contact changes phone number and connects their new phone number with Whatsapp.
      */
-    @ProtobufProperty(index = 4, type = STRING)
+    @ProtobufProperty(index = 4, type = STRING,
+            concreteType = ContactJid.class, requiresConversion = true)
     private ContactJid oldJid;
 
     /**

@@ -2,7 +2,10 @@ package it.auties.whatsapp.model.contact;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import it.auties.protobuf.api.exception.ProtobufSerializationException;
+import it.auties.protobuf.api.model.ProtobufConverter;
 import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufValue;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 import lombok.AllArgsConstructor;
@@ -10,6 +13,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 import lombok.extern.java.Log;
 
 import java.util.Arrays;
@@ -22,6 +26,7 @@ import java.util.Objects;
  * This class also offers a builder, accessible using {@link ContactJid#builder()}.
  */
 @Builder
+@ProtobufValue
 @Log
 public record ContactJid(String user, @NonNull Server server, int device, int agent) implements ProtobufMessage {
     /**
@@ -38,6 +43,13 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * The ID of Whatsapp, used to send nodes
      */
     public static final ContactJid SOCKET = ofServer(Server.WHATSAPP);
+
+    public ContactJid(String user, Server server, int device, int agent){
+        this.user = user;
+        this.server = server;
+        this.device = device;
+        this.agent = agent;
+    }
 
     /**
      * Constructs a new ContactId for a user from a jid
@@ -75,12 +87,12 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
             return new ContactJid(user, server, device, 0);
         }
 
-        if(complexUser.contains("_")){
-            var simpleUserAgent = complexUser.split("_", 2);
-            return new ContactJid(simpleUserAgent[0], server, 0, Integer.parseUnsignedInt(simpleUserAgent[1]));
+        if (!complexUser.contains("_")) {
+            return new ContactJid(complexUser, server, 0, 0);
         }
 
-        return new ContactJid(complexUser, server, 0, 0);
+        var simpleUserAgent = complexUser.split("_", 2);
+        return new ContactJid(simpleUserAgent[0], server, 0, Integer.parseUnsignedInt(simpleUserAgent[1]));
     }
 
     /**
@@ -196,6 +208,19 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
     @Override
     public String value() {
         return toString();
+    }
+
+    @ProtobufConverter
+    public static Object convert(Object input){
+        if(input == null){
+            return null;
+        }
+
+        if(input instanceof String string) {
+            return ContactJid.of(string);
+        }
+
+        throw new ProtobufSerializationException(input.toString());
     }
 
     /**

@@ -17,8 +17,7 @@ import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT32;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
 /**
  * A model class that represents a WhatsappMessage sent by a WhatsappBusiness account and that holds a product inside.
@@ -42,7 +41,8 @@ public final class ProductMessage extends ContextualMessage implements Message {
   /**
    * The jid of the WhatsappBusiness account that owns the product that this message wraps
    */
-  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ContactJid.class)
+  @ProtobufProperty(index = 2, type = STRING,
+          concreteType = ContactJid.class, requiresConversion = true)
   private ContactJid businessOwnerId;
 
   /**
