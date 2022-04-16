@@ -65,6 +65,11 @@ public class SenderKeyRecord implements ProtobufMessage {
 
   public static class SenderKeyRecordBuilder {
     public SenderKeyRecordBuilder states(List<SenderKeyState> states) {
+      if(states$value == null){
+        this.states$value = new LinkedList<>(states);
+        return this;
+      }
+
       this.states$value.addAll(states);
       return this;
     }

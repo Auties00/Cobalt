@@ -380,7 +380,14 @@ public class Chat implements ProtobufMessage {
     }
 
     public static class ChatBuilder {
+        @SuppressWarnings("ConstantConditions")
         public ChatBuilder messages(List<HistorySyncMessage> messages) {
+            var value = new SortedMessageList(messages);
+            if(messages$value == null){
+                this.messages$value = value;
+                return this;
+            }
+
             this.messages$value.addAll(new SortedMessageList(messages));
             return this;
         }
