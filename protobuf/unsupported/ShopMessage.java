@@ -1,10 +1,12 @@
-package it.auties.whatsapp.model.signal.session;
+package it.auties.whatsapp;
 
-import com.fasterxml.jackson.annotation.*;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
+import it.auties.protobuf.api.model.ProtobufProperty;
 import java.util.*;
 import lombok.*;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import lombok.experimental.*;
+import lombok.extern.jackson.*;
 
 @AllArgsConstructor
 @Data
@@ -12,18 +14,6 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Accessors(fluent = true)
 public class ShopMessage {
-
-  @JsonProperty(value = "3", required = false)
-  @JsonPropertyDescription("int32")
-  private int messageVersion;
-
-  @JsonProperty(value = "2", required = false)
-  @JsonPropertyDescription("ShopMessageSurface")
-  private ShopMessageSurface surface;
-
-  @JsonProperty(value = "1", required = false)
-  @JsonPropertyDescription("string")
-  private String id;
 
   @AllArgsConstructor
   @Accessors(fluent = true)
@@ -33,10 +23,8 @@ public class ShopMessage {
     IG(2),
     WA(3);
 
-    @Getter
-    private final int index;
+    @Getter private final int index;
 
-    @JsonCreator
     public static ShopMessageSurface forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
@@ -44,4 +32,13 @@ public class ShopMessage {
           .orElse(null);
     }
   }
+
+  @ProtobufProperty(index = 1, type = STRING)
+  private String id;
+
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ShopMessageSurface.class)
+  private ShopMessageSurface surface;
+
+  @ProtobufProperty(index = 3, type = INT32)
+  private int messageVersion;
 }

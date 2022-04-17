@@ -15,6 +15,7 @@ import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.experimental.Delegate;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,6 +31,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @NoArgsConstructor
 @Data
 @Builder(builderMethodName = "newMessageInfo", buildMethodName = "create")
+@Jacksonized
 @Accessors(fluent = true)
 @ToString(exclude = "storeId")
 public final class MessageInfo implements Info {

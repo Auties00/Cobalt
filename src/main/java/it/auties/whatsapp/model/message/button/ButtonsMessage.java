@@ -149,6 +149,7 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
     @Getter
     private final int index;
 
+    @JsonCreator
     public static HeaderType forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)

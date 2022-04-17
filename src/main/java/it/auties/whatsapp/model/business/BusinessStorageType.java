@@ -27,6 +27,7 @@ public enum BusinessStorageType implements ProtobufMessage {
     @Getter
     private final int index;
 
+    @JsonCreator
     public static BusinessStorageType forIndex(int index) {
         return Arrays.stream(values())
                 .filter(entry -> entry.index() == index)

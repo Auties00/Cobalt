@@ -1,12 +1,8 @@
 package it.auties.whatsapp.model.message.button;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.model.button.Button;
 import it.auties.whatsapp.model.button.ButtonSection;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.ProductListInfo;
@@ -36,7 +32,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class ListMessage extends ContextualMessage implements ButtonMessage {
+public final class ButtonListMessage extends ContextualMessage implements ButtonMessage {
   /**
    * The title of this message
    */
@@ -87,7 +83,7 @@ public final class ListMessage extends ContextualMessage implements ButtonMessag
   private ContextInfo contextInfo; // Overrides ContextualMessage's context info
 
   /**
-   * The constants of this enumerated type describe the various types of {@link ListMessage}
+   * The constants of this enumerated type describe the various types of {@link ButtonListMessage}
    */
   @AllArgsConstructor
   @Accessors(fluent = true)
@@ -110,6 +106,7 @@ public final class ListMessage extends ContextualMessage implements ButtonMessag
     @Getter
     private final int index;
 
+    @JsonCreator
     public static Type forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
@@ -118,8 +115,8 @@ public final class ListMessage extends ContextualMessage implements ButtonMessag
     }
   }
 
-  public static class ListMessageBuilder {
-    public ListMessageBuilder sections(List<ButtonSection> sections){
+  public static class ButtonListMessageBuilder {
+    public ButtonListMessageBuilder sections(List<ButtonSection> sections){
       if(this.sections == null) this.sections = new ArrayList<>();
       this.sections.addAll(sections);
       return this;

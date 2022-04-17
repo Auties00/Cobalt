@@ -1,5 +1,6 @@
 package it.auties.whatsapp.controller;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.bytes.Bytes;
@@ -49,14 +50,12 @@ public final class WhatsappStore implements WhatsappController {
     /**
      * The session id of this store
      */
-    @JsonProperty
     private int id;
 
     /**
      * The non-null list of chats
      */
     @NonNull
-    @JsonProperty        
     @Default
     private Vector<Chat> chats = new Vector<>();
 
@@ -64,7 +63,6 @@ public final class WhatsappStore implements WhatsappController {
      * The non-null list of status messages
      */
     @NonNull
-    @JsonProperty        
     @Default
     private Vector<MessageInfo> status = new Vector<>();
 
@@ -72,7 +70,6 @@ public final class WhatsappStore implements WhatsappController {
      * The non-null list of contacts
      */
     @NonNull
-    @JsonProperty        
     @Default
     private Vector<Contact> contacts = new Vector<>();
 
@@ -80,20 +77,21 @@ public final class WhatsappStore implements WhatsappController {
      * Whether this store has already received the snapshot from
      * Whatsapp Web containing chats and contacts
      */
-    @JsonProperty
     private boolean hasSnapshot;
 
     /**
      * The non-null list of requests that are waiting for a response from Whatsapp
      */
-    @NonNull        
+    @NonNull
+    @JsonIgnore
     @Default
     private Vector<Request> pendingRequests = new Vector<>();
 
     /**
      * The non-null list of listeners
      */
-    @NonNull        
+    @NonNull
+    @JsonIgnore
     @Default
     private Vector<WhatsappListener> listeners = new Vector<>();
 
@@ -101,6 +99,7 @@ public final class WhatsappStore implements WhatsappController {
      * Request counter
      */
     @NonNull
+    @JsonIgnore
     @Default
     private AtomicLong counter = new AtomicLong();
 
@@ -108,6 +107,7 @@ public final class WhatsappStore implements WhatsappController {
      * The request tag, used to create messages
      */
     @NonNull
+    @JsonIgnore
     @Default
     private String tag = Bytes.ofRandom(1)
             .toHex()
@@ -115,7 +115,8 @@ public final class WhatsappStore implements WhatsappController {
 
     /**
      * The timestamp in seconds for the initialization of this object
-     */        
+     */
+    @JsonIgnore
     @Default
     private long initializationTimeStamp = Clock.now();
 
@@ -124,6 +125,7 @@ public final class WhatsappStore implements WhatsappController {
      * This is needed in order to not block the socket.
      */
     @NonNull
+    @JsonIgnore
     @Default
     private ExecutorService requestsService = newSingleThreadExecutor();
 
@@ -131,6 +133,7 @@ public final class WhatsappStore implements WhatsappController {
      * The media connection semaphore
      */
     @NonNull
+    @JsonIgnore
     @Default
     private Semaphore mediaConnectionSemaphore = new Semaphore(1);
 
@@ -138,6 +141,7 @@ public final class WhatsappStore implements WhatsappController {
      * The media connection associated with this store
      */
     @Setter
+    @JsonIgnore
     private MediaConnection mediaConnection;
 
     /**
@@ -192,7 +196,7 @@ public final class WhatsappStore implements WhatsappController {
     public Optional<Contact> findContactByJid(ContactJid jid) {
         return jid == null ? Optional.empty() : Collections.synchronizedList(contacts())
                 .parallelStream()
-                .filter(contact -> contact.jid().equals(jid))
+                .filter(contact -> contact.jid().user().equals(jid.user()))
                 .findAny();
     }
 
@@ -235,7 +239,7 @@ public final class WhatsappStore implements WhatsappController {
     public Optional<Chat> findChatByJid(ContactJid jid) {
         return jid == null ? Optional.empty() : Collections.synchronizedList(chats())
                 .parallelStream()
-                .filter(chat -> chat.jid().equals(jid))
+                .filter(chat -> chat.jid().user().equals(jid.user()))
                 .findAny();
     }
 

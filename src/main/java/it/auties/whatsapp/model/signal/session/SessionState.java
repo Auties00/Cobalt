@@ -19,40 +19,29 @@ import java.util.*;
 public class SessionState {
     private static final int MAX_SESSIONS = 40;
 
-    @JsonProperty("version")
     private int version;
 
-    @JsonProperty("id")
     private int registrationId;
 
-    @JsonProperty("root_key")
     private byte @NonNull [] rootKey;
 
-    @JsonProperty("ephemeral_key_pair")
     @NonNull
     private SignalKeyPair ephemeralKeyPair;
 
-    @JsonProperty("last_remote_ephemeral_key")
     private byte @NonNull [] lastRemoteEphemeralKey;
 
-    @JsonProperty("previous_counter")
     private int previousCounter;
 
-    @JsonProperty("remote_identity_key")
     private byte @NonNull [] remoteIdentityKey;
 
-    @JsonProperty("chains")
     @NonNull
     @Default
     private Map<String, SessionChain> chains = new HashMap<>();
 
-    @JsonProperty("pending_pre_key")
     private SessionPreKey pendingPreKey;
 
-    @JsonProperty("base_key")
     private byte @NonNull [] baseKey;
 
-    @JsonProperty("closed")
     private boolean closed;
 
     public boolean hasChain(byte[] senderEphemeral) {

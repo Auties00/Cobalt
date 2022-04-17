@@ -96,6 +96,7 @@ public class ClientPayload implements ProtobufMessage {
     @Getter
     private final int index;
 
+    @JsonCreator
     public static ClientPayloadClientFeature forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)

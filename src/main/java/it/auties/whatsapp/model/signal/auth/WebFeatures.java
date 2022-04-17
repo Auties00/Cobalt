@@ -166,6 +166,7 @@ public class WebFeatures implements ProtobufMessage {
     @Getter
     private final int index;
 
+    @JsonCreator
     public static WebFeaturesFlag forIndex(int index) {
       return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
     }

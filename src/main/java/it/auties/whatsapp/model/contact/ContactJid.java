@@ -322,7 +322,6 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
         @Getter
         private final String address;
 
-        @JsonCreator
         public static Server forAddress(String address) {
             return Arrays.stream(values())
                     .filter(entry -> address != null && address.endsWith(entry.address()))

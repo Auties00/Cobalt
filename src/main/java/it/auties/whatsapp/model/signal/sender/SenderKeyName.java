@@ -7,7 +7,6 @@ import it.auties.whatsapp.model.signal.session.SessionAddress;
 import java.util.Objects;
 
 public record SenderKeyName(String groupId, SessionAddress sender) {
-  @JsonCreator
   public static SenderKeyName of(String serialized){
     var split = serialized.split("::", 3);
     var address = new SessionAddress(split[1], Integer.parseUnsignedInt( split[2]));

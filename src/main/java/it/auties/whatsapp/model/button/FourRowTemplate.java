@@ -1,12 +1,9 @@
 package it.auties.whatsapp.model.button;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
-import it.auties.whatsapp.model.message.button.StructuredButtonMessage;
+import it.auties.whatsapp.model.message.button.ButtonStructureMessage;
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import it.auties.whatsapp.model.message.standard.LocationMessage;
@@ -30,8 +27,8 @@ public class FourRowTemplate implements ProtobufMessage {
   @ProtobufProperty(index = 1, type = MESSAGE, concreteType = DocumentMessage.class)
   private DocumentMessage documentMessage;
 
-  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = StructuredButtonMessage.class)
-  private StructuredButtonMessage highlyStructuredMessage;
+  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ButtonStructureMessage.class)
+  private ButtonStructureMessage highlyStructuredMessage;
 
   @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ImageMessage.class)
   private ImageMessage imageMessage;
@@ -42,11 +39,11 @@ public class FourRowTemplate implements ProtobufMessage {
   @ProtobufProperty(index = 5, type = MESSAGE, concreteType = LocationMessage.class)
   private LocationMessage locationMessage;
 
-  @ProtobufProperty(index = 6, type = MESSAGE, concreteType = StructuredButtonMessage.class)
-  private StructuredButtonMessage content;
+  @ProtobufProperty(index = 6, type = MESSAGE, concreteType = ButtonStructureMessage.class)
+  private ButtonStructureMessage content;
 
-  @ProtobufProperty(index = 7, type = MESSAGE, concreteType = StructuredButtonMessage.class)
-  private StructuredButtonMessage footer;
+  @ProtobufProperty(index = 7, type = MESSAGE, concreteType = ButtonStructureMessage.class)
+  private ButtonStructureMessage footer;
 
   @ProtobufProperty(index = 8, type = MESSAGE,
           concreteType = ButtonTemplate.class, repeated = true)
@@ -74,6 +71,7 @@ public class FourRowTemplate implements ProtobufMessage {
     @Getter
     private final int index;
 
+    @JsonCreator
     public static TitleType forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)

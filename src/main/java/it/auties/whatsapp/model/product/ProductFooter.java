@@ -1,4 +1,4 @@
-package it.auties.whatsapp;
+package it.auties.whatsapp.model.product;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
@@ -13,14 +13,7 @@ import lombok.extern.jackson.*;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class CollectionMessage {
-
+public class ProductFooter {
   @ProtobufProperty(index = 1, type = STRING)
-  private String bizJid;
-
-  @ProtobufProperty(index = 2, type = STRING)
-  private String id;
-
-  @ProtobufProperty(index = 3, type = INT32)
-  private int messageVersion;
+  private String text;
 }

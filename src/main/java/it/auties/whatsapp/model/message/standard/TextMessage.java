@@ -111,7 +111,8 @@ public final class TextMessage extends ContextualMessage {
    * @param text the text to wrap
    * @return a non-null TextMessage
    */
-  public static TextMessage of(String text){
+  @JsonCreator
+    public static TextMessage of(String text){
     return new TextMessage(text);
   }
 
@@ -155,7 +156,6 @@ public final class TextMessage extends ContextualMessage {
     @Getter
     private final int index;
 
-    @JsonCreator
     public static TextMessageFontType forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
@@ -183,7 +183,6 @@ public final class TextMessage extends ContextualMessage {
     @Getter
     private final int index;
 
-    @JsonCreator
     public static TextMessagePreviewType forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)

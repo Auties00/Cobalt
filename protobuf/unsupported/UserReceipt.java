@@ -1,10 +1,12 @@
-package it.auties.whatsapp.model.signal.session;
+package it.auties.whatsapp;
 
-import com.fasterxml.jackson.annotation.*;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
+import it.auties.protobuf.api.model.ProtobufProperty;
 import java.util.*;
 import lombok.*;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import lombok.experimental.*;
+import lombok.extern.jackson.*;
 
 @AllArgsConstructor
 @Data
@@ -13,29 +15,37 @@ import lombok.extern.jackson.Jacksonized;
 @Accessors(fluent = true)
 public class UserReceipt {
 
-  @JsonProperty(value = "6", required = false)
-  @JsonPropertyDescription("string")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  private List<String> deliveredDeviceJid;
+  @ProtobufProperty(index = 1, type = STRING)
+  @NonNull
+  private String userJid;
 
-  @JsonProperty(value = "5", required = false)
-  @JsonPropertyDescription("string")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  private List<String> pendingDeviceJid;
-
-  @JsonProperty(value = "4", required = false)
-  @JsonPropertyDescription("int64")
-  private long playedTimestamp;
-
-  @JsonProperty(value = "3", required = false)
-  @JsonPropertyDescription("int64")
-  private long readTimestamp;
-
-  @JsonProperty(value = "2", required = false)
-  @JsonPropertyDescription("int64")
+  @ProtobufProperty(index = 2, type = INT64)
   private long receiptTimestamp;
 
-  @JsonProperty(value = "1", required = true)
-  @JsonPropertyDescription("string")
-  private String userJid;
+  @ProtobufProperty(index = 3, type = INT64)
+  private long readTimestamp;
+
+  @ProtobufProperty(index = 4, type = INT64)
+  private long playedTimestamp;
+
+  @ProtobufProperty(index = 5, type = STRING, repeated = true)
+  private List<String> pendingDeviceJid;
+
+  @ProtobufProperty(index = 6, type = STRING, repeated = true)
+  private List<String> deliveredDeviceJid;
+
+  public static class UserReceiptBuilder {
+
+    public UserReceiptBuilder pendingDeviceJid(List<String> pendingDeviceJid) {
+      if (this.pendingDeviceJid == null) this.pendingDeviceJid = new ArrayList<>();
+      this.pendingDeviceJid.addAll(pendingDeviceJid);
+      return this;
+    }
+
+    public UserReceiptBuilder deliveredDeviceJid(List<String> deliveredDeviceJid) {
+      if (this.deliveredDeviceJid == null) this.deliveredDeviceJid = new ArrayList<>();
+      this.deliveredDeviceJid.addAll(deliveredDeviceJid);
+      return this;
+    }
+  }
 }

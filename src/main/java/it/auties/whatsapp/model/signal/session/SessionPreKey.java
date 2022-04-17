@@ -7,6 +7,5 @@ import lombok.extern.jackson.Jacksonized;
 
 @Builder
 @Jacksonized
-public record SessionPreKey(@JsonProperty("id") int preKeyId, @JsonProperty("key") byte @NonNull [] baseKey,
-                            @JsonProperty("signed_id") int signedKeyId) {
+public record SessionPreKey(int preKeyId, byte @NonNull [] baseKey, int signedKeyId) {
 }

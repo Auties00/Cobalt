@@ -32,6 +32,7 @@ public enum ChatMediaVisibility implements ProtobufMessage {
     @Getter
     private final int index;
 
+    @JsonCreator
     public static ChatMediaVisibility forIndex(int index) {
         return Arrays.stream(values())
                 .filter(entry -> entry.index() == index)

@@ -1,12 +1,8 @@
 package it.auties.whatsapp.model.message.button;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.business.BusinessLocalizableParameter;
-import it.auties.whatsapp.model.button.ButtonSection;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,7 +29,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Jacksonized
 @Builder(builderMethodName = "newHighlyStructuredMessage", buildMethodName = "create")
 @Accessors(fluent = true)
-public final class StructuredButtonMessage implements ButtonMessage {
+public final class ButtonStructureMessage implements ButtonMessage {
   /**
    * Namespace
    */
@@ -86,17 +82,17 @@ public final class StructuredButtonMessage implements ButtonMessage {
   /**
    * Hydrated message
    */
-  @ProtobufProperty(index = 9, type = MESSAGE, concreteType = TemplateMessage.class)
-  private TemplateMessage hydratedHsm;
+  @ProtobufProperty(index = 9, type = MESSAGE, concreteType = ButtonTemplateMessage.class)
+  private ButtonTemplateMessage hydratedHsm;
 
-  public static class StructuredButtonMessageBuilder {
-    public StructuredButtonMessageBuilder params(List<String> params){
+  public static class ButtonStructureMessageBuilder {
+    public ButtonStructureMessageBuilder params(List<String> params){
       if(this.params == null) this.params = new ArrayList<>();
       this.params.addAll(params);
       return this;
     }
 
-    public StructuredButtonMessageBuilder localizableParams(List<BusinessLocalizableParameter> localizableParams){
+    public ButtonStructureMessageBuilder localizableParams(List<BusinessLocalizableParameter> localizableParams){
       if(this.localizableParams == null) this.localizableParams = new ArrayList<>();
       this.localizableParams.addAll(localizableParams);
       return this;

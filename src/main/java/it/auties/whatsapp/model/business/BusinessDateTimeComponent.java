@@ -55,6 +55,7 @@ public class BusinessDateTimeComponent implements ProtobufMessage {
     @Getter
     private final int index;
 
+    @JsonCreator
     public static HSMDateTimeComponentDayOfWeekType forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)

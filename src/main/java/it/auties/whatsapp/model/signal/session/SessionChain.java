@@ -18,13 +18,10 @@ import java.util.Map;
 @Data
 @Accessors(fluent = true)
 public class SessionChain {
-    @JsonProperty("counter")
     private int counter;
 
-    @JsonProperty("key")
     private byte[] key;
 
-    @JsonProperty("message_keys")
     @NonNull
     private Map<Integer, byte[]> messageKeys;
 

@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.chat;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
@@ -138,7 +139,7 @@ public class Chat implements ProtobufMessage {
     /**
      * The initiator of disappearing chats
      */
-    @ProtobufProperty(index = 17, type = MESSAGE, concreteType = ChatDisappear.class)
+    @ProtobufProperty(index = 17, type = MESSAGE, concreteType = ChatDisappear.Linker.class)
     private ChatDisappear disappearInitiator;
 
     /**
@@ -380,6 +381,16 @@ public class Chat implements ProtobufMessage {
     }
 
     public static class ChatBuilder {
+        @JsonSetter
+        public ChatBuilder disappearInitiator(ChatDisappear.Linker linker){
+            return disappearInitiator(linker.disappear());
+        }
+
+        public ChatBuilder disappearInitiator(ChatDisappear disappearInitiator){
+            this.disappearInitiator = disappearInitiator;
+            return this;
+        }
+
         @SuppressWarnings("ConstantConditions")
         public ChatBuilder messages(List<HistorySyncMessage> messages) {
             var value = new SortedMessageList(messages);
@@ -388,7 +399,7 @@ public class Chat implements ProtobufMessage {
                 return this;
             }
 
-            this.messages$value.addAll(new SortedMessageList(messages));
+            this.messages$value.addAll(value);
             return this;
         }
 

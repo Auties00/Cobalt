@@ -13,14 +13,20 @@ import lombok.extern.jackson.*;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class CollectionMessage {
+public class NoiseCertificateDetails {
 
-  @ProtobufProperty(index = 1, type = STRING)
-  private String bizJid;
+  @ProtobufProperty(index = 1, type = UINT32)
+  private int serial;
 
   @ProtobufProperty(index = 2, type = STRING)
-  private String id;
+  private String issuer;
 
-  @ProtobufProperty(index = 3, type = INT32)
-  private int messageVersion;
+  @ProtobufProperty(index = 3, type = UINT64)
+  private long expires;
+
+  @ProtobufProperty(index = 4, type = STRING)
+  private String subject;
+
+  @ProtobufProperty(index = 5, type = BYTES)
+  private byte[] key;
 }

@@ -4,11 +4,15 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 
 @AllArgsConstructor
 @Data
@@ -16,24 +20,20 @@ import java.util.Arrays;
 @Jacksonized
 @Accessors(fluent = true)
 public class WebInfo implements ProtobufMessage {
-  @JsonProperty("4")
-  @JsonPropertyDescription("WebInfoWebSubPlatform")
-  private WebInfoWebSubPlatform webSubPlatform;
-
-  @JsonProperty("3")
-  @JsonPropertyDescription("WebdPayload")
-  private WebPayload webdPayload;
-
-  @JsonProperty("2")
-  @JsonPropertyDescription("string")
-  private String version;
-
-  @JsonProperty("1")
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 1, type = STRING)
   private String refToken;
 
-  public WebInfo(@NonNull WebInfoWebSubPlatform webSubPlatform){
-    this.webSubPlatform = webSubPlatform;
+  @ProtobufProperty(index = 2, type = STRING)
+  private String version;
+
+  @ProtobufProperty(index = 3, type = MESSAGE, concreteType = WebPayload.class)
+  private WebPayload payload;
+
+  @ProtobufProperty(index = 4, type = MESSAGE, concreteType = WebInfoWebSubPlatform.class)
+  private WebInfoWebSubPlatform platform;
+
+  public WebInfo(@NonNull WebInfoWebSubPlatform platform){
+    this.platform = platform;
   }
 
   @AllArgsConstructor
@@ -48,6 +48,7 @@ public class WebInfo implements ProtobufMessage {
     @Getter
     private final int index;
 
+    @JsonCreator
     public static WebInfoWebSubPlatform forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)

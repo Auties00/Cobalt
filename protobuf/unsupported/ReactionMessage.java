@@ -1,10 +1,12 @@
-package it.auties.whatsapp.model.signal.session;
+package it.auties.whatsapp;
 
-import com.fasterxml.jackson.annotation.*;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
+import it.auties.protobuf.api.model.ProtobufProperty;
 import java.util.*;
 import lombok.*;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import lombok.experimental.*;
+import lombok.extern.jackson.*;
 
 @AllArgsConstructor
 @Data
@@ -13,19 +15,15 @@ import lombok.extern.jackson.Jacksonized;
 @Accessors(fluent = true)
 public class ReactionMessage {
 
-  @JsonProperty(value = "4", required = false)
-  @JsonPropertyDescription("int64")
-  private long senderTimestampMs;
+  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = MessageKey.class)
+  private MessageKey key;
 
-  @JsonProperty(value = "3", required = false)
-  @JsonPropertyDescription("string")
-  private String groupingKey;
-
-  @JsonProperty(value = "2", required = false)
-  @JsonPropertyDescription("string")
+  @ProtobufProperty(index = 2, type = STRING)
   private String text;
 
-  @JsonProperty(value = "1", required = false)
-  @JsonPropertyDescription("MessageKey")
-  private MessageKey key;
+  @ProtobufProperty(index = 3, type = STRING)
+  private String groupingKey;
+
+  @ProtobufProperty(index = 4, type = INT64)
+  private long senderTimestampMs;
 }

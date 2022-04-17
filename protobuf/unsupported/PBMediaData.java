@@ -13,11 +13,20 @@ import lombok.extern.jackson.*;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class NoiseCertificate {
+public class PBMediaData {
 
   @ProtobufProperty(index = 1, type = BYTES)
-  private byte[] details;
+  private byte[] mediaKey;
 
-  @ProtobufProperty(index = 2, type = BYTES)
-  private byte[] signature;
+  @ProtobufProperty(index = 2, type = INT64)
+  private long mediaKeyTimestamp;
+
+  @ProtobufProperty(index = 3, type = BYTES)
+  private byte[] fileSha256;
+
+  @ProtobufProperty(index = 4, type = BYTES)
+  private byte[] fileEncSha256;
+
+  @ProtobufProperty(index = 5, type = STRING)
+  private String directPath;
 }

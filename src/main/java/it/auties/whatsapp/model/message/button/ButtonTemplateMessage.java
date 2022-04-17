@@ -27,17 +27,17 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(builderMethodName = "newTemplateMessage", buildMethodName = "create")
 @Accessors(fluent = true)
-public final class TemplateMessage extends ContextualMessage implements ButtonMessage {
+public final class ButtonTemplateMessage extends ContextualMessage implements ButtonMessage {
   /**
    * Four row template.
-   * This property is defined only if {@link TemplateMessage#type()} == {@link Format#FOUR_ROW_TEMPLATE}.
+   * This property is defined only if {@link ButtonTemplateMessage#type()} == {@link Format#FOUR_ROW_TEMPLATE}.
    */
   @ProtobufProperty(index = 1, type = MESSAGE, concreteType = FourRowTemplate.class)
   private FourRowTemplate fourRowTemplate;
 
   /**
    * Hydrated four row template.
-   * This property is defined only if {@link TemplateMessage#type()} == {@link Format#HYDRATED_FOUR_ROW_TEMPLATE}.
+   * This property is defined only if {@link ButtonTemplateMessage#type()} == {@link Format#HYDRATED_FOUR_ROW_TEMPLATE}.
    */
   @ProtobufProperty(index = 2, type = MESSAGE, concreteType = HydratedFourRowTemplate.class)
   private HydratedFourRowTemplate hydratedFourRowTemplate;
@@ -50,7 +50,7 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
 
   /**
    * Hydrated template.
-   * This property is defined only if {@link TemplateMessage#type()} == {@link Format#HYDRATED_FOUR_ROW_TEMPLATE}.
+   * This property is defined only if {@link ButtonTemplateMessage#type()} == {@link Format#HYDRATED_FOUR_ROW_TEMPLATE}.
    */
   @ProtobufProperty(index = 4, type = MESSAGE, concreteType = HydratedFourRowTemplate.class)
   private HydratedFourRowTemplate hydratedTemplate;
@@ -67,7 +67,7 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
   }
 
   /**
-   * The constant of this enumerated type define the various of types of visual formats for a {@link TemplateMessage}
+   * The constant of this enumerated type define the various of types of visual formats for a {@link ButtonTemplateMessage}
    */
   @AllArgsConstructor
   @Accessors(fluent = true)

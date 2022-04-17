@@ -136,7 +136,6 @@ public final class PaymentOrderMessage extends ContextInfo implements PaymentMes
     @Getter
     private final int index;
 
-    @JsonCreator
     public static OrderMessageOrderSurface forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)

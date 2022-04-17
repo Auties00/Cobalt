@@ -16,7 +16,6 @@ public final class SortedMessageList implements List<MessageInfo> {
 
     private final List<HistorySyncMessage> internal;
 
-    @JsonCreator
     public SortedMessageList(List<HistorySyncMessage> internal) {
         this.internal = internal;
     }
@@ -26,7 +25,7 @@ public final class SortedMessageList implements List<MessageInfo> {
     }
 
     public boolean add(@NonNull MessageInfo message) {
-        internal.removeIf(entry -> message.id().equals(entry.message().id()));
+        internal.removeIf(entry -> Objects.equals(message.id(), entry.message().id()));
         var initialSize = internal.size();
         var newEntry = new HistorySyncMessage(message, -1);
         var insertionPoint = Collections.binarySearch(internal, newEntry, ENTRY_COMPARATOR);

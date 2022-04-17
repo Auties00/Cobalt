@@ -13,14 +13,14 @@ import lombok.extern.jackson.*;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class CollectionMessage {
+public class VerifiedNameCertificate {
 
-  @ProtobufProperty(index = 1, type = STRING)
-  private String bizJid;
+  @ProtobufProperty(index = 1, type = BYTES)
+  private byte[] details;
 
-  @ProtobufProperty(index = 2, type = STRING)
-  private String id;
+  @ProtobufProperty(index = 2, type = BYTES)
+  private byte[] signature;
 
-  @ProtobufProperty(index = 3, type = INT32)
-  private int messageVersion;
+  @ProtobufProperty(index = 3, type = BYTES)
+  private byte[] serverSignature;
 }

@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.sync;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.media.AttachmentProvider;
@@ -67,6 +68,7 @@ public final class HistorySyncNotification implements ProtobufMessage, Attachmen
         @Getter
         private final int index;
 
+        @JsonCreator
         public static HistorySyncNotificationHistorySyncType forIndex(int index) {
             return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
         }

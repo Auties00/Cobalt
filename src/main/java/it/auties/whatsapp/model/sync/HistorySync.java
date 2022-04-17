@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.sync;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.chat.Chat;
@@ -41,7 +42,7 @@ public class HistorySync implements ProtobufMessage {
 
     @ProtobufProperty(index = 7, type = MESSAGE, concreteType = PushName.class, repeated = true)
     @Default
-    private List<PushName> pushNames  = new ArrayList<>();
+    private List<PushName> pushNames = new ArrayList<>();
 
     @ProtobufProperty(index = 9, type = BYTES)
     private byte[] threadIdUserSecret;
@@ -57,6 +58,7 @@ public class HistorySync implements ProtobufMessage {
         @Getter
         private final int index;
 
+        @JsonCreator
         public static HistorySyncHistorySyncType forIndex(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)

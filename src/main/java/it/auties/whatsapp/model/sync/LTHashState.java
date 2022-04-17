@@ -25,16 +25,12 @@ import static java.util.Map.of;
 @Data
 @Accessors(fluent = true)
 public class LTHashState {
-    @JsonProperty("name")
     private String name;
 
-    @JsonProperty("version")
     private long version;
 
-    @JsonProperty("hash")
     private byte[] hash;
 
-    @JsonProperty("values")
     private Map<String, byte[]> indexValueMap;
 
     public LTHashState(BinarySync name){

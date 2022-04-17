@@ -1,10 +1,12 @@
-package it.auties.whatsapp.model.signal.session;
+package it.auties.whatsapp;
 
-import com.fasterxml.jackson.annotation.*;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+
+import it.auties.protobuf.api.model.ProtobufProperty;
 import java.util.*;
 import lombok.*;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import lombok.experimental.*;
+import lombok.extern.jackson.*;
 
 @AllArgsConstructor
 @Data
@@ -13,15 +15,12 @@ import lombok.extern.jackson.Jacksonized;
 @Accessors(fluent = true)
 public class Money {
 
-  @JsonProperty(value = "3", required = false)
-  @JsonPropertyDescription("string")
-  private String currencyCode;
+  @ProtobufProperty(index = 1, type = INT64)
+  private long value;
 
-  @JsonProperty(value = "2", required = false)
-  @JsonPropertyDescription("uint32")
+  @ProtobufProperty(index = 2, type = UINT32)
   private int offset;
 
-  @JsonProperty(value = "1", required = false)
-  @JsonPropertyDescription("int64")
-  private long value;
+  @ProtobufProperty(index = 3, type = STRING)
+  private String currencyCode;
 }

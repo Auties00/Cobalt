@@ -37,11 +37,8 @@ public enum ChatDisappear implements ProtobufMessage {
     @Getter
     private final int index;
 
-    public static ChatDisappear forJson(Linker linker) {
-        return linker.disappear();
-    }
-
-    private static ChatDisappear forIndex(int index) {
+    @JsonCreator
+    public static ChatDisappear forIndex(int index) {
         return Arrays.stream(values())
                 .filter(entry -> entry.index() == index)
                 .findFirst()
@@ -53,11 +50,11 @@ public enum ChatDisappear implements ProtobufMessage {
     @Builder
     @Jacksonized
     @Accessors(fluent = true)
-    public static class Linker implements ProtobufMessage{
+    protected static class Linker implements ProtobufMessage{
         @ProtobufProperty(index = 1, type = MESSAGE, concreteType = ChatDisappear.class)
-        private ChatDisappear disappear;
+        protected ChatDisappear disappear;
 
-        public Linker(long index){
+        protected Linker(long index){
             this.disappear = ChatDisappear.forIndex((int) index);
         }
     }

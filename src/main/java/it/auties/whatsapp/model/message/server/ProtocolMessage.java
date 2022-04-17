@@ -71,13 +71,13 @@ public final class ProtocolMessage implements ServerMessage {
   /**
    * An app state sync key
    */
-  @ProtobufProperty(index = 8, type = MESSAGE, concreteType = AppStateSyncKeyShare.class)
+  @ProtobufProperty(index = 8, type = MESSAGE, concreteType = AppStateSyncKeyRequest.class)
   private AppStateSyncKeyRequest appStateSyncKeyRequest;
 
   /**
    * Initial security settings sent by Whatsapp
    */
-  @ProtobufProperty(index = 9, type = MESSAGE, concreteType = AppStateSyncKeyShare.class)
+  @ProtobufProperty(index = 9, type = MESSAGE, concreteType = InitialSecurityNotificationSettingSync.class)
   private InitialSecurityNotificationSettingSync initialSecurityNotificationSettingSync;
 
   /**
@@ -139,7 +139,7 @@ public final class ProtocolMessage implements ServerMessage {
 
     @Getter
     private final int index;
-
+    
     @JsonCreator
     public static ProtocolMessageType forIndex(int index) {
       return Arrays.stream(values())

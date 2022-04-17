@@ -1,5 +1,6 @@
 package it.auties.whatsapp.controller;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -43,13 +44,11 @@ public final class WhatsappKeys implements WhatsappController {
     /**
      * The client id
      */
-    @JsonProperty
     private int id;
 
     /**
      * The secret key pair used for buffer messages
      */
-    @JsonProperty
     @Default
     @NonNull
     private SignalKeyPair companionKeyPair = SignalKeyPair.random();
@@ -57,7 +56,6 @@ public final class WhatsappKeys implements WhatsappController {
     /**
      * The ephemeral key pair
      */
-    @JsonProperty
     @Default
     @NonNull
     private SignalKeyPair ephemeralKeyPair = SignalKeyPair.random();
@@ -65,7 +63,6 @@ public final class WhatsappKeys implements WhatsappController {
     /**
      * The signed identity key
      */
-    @JsonProperty
     @Default
     @NonNull
     private SignalKeyPair identityKeyPair = SignalKeyPair.random();
@@ -73,13 +70,11 @@ public final class WhatsappKeys implements WhatsappController {
     /**
      * The signed pre key
      */
-    @JsonProperty
     private SignalSignedKeyPair signedKeyPair;
 
     /**
      * Whether these keys have generated pre keys assigned to them
      */
-    @JsonProperty
     @Default
     @NonNull
     private LinkedList<SignalPreKeyPair> preKeys = new LinkedList<>();
@@ -87,26 +82,22 @@ public final class WhatsappKeys implements WhatsappController {
     /**
      * The user using these keys
      */
-    @JsonProperty
     private ContactJid companion;
 
     /**
      * The companion secret key
      */
-    @JsonProperty
     @Default
     private byte[] companionKey = SignalKeyPair.random().publicKey();
 
     /**
      * The bytes of the encoded {@link SignedDeviceIdentityHMAC} received during the auth process
      */
-    @JsonProperty
     private SignedDeviceIdentity companionIdentity;
 
     /**
      * Sender keys for signal implementation
      */
-    @JsonProperty
     @NonNull
     @Default
     private Map<SenderKeyName, SenderKeyRecord> senderKeys = new ConcurrentHashMap<>();
@@ -114,7 +105,6 @@ public final class WhatsappKeys implements WhatsappController {
     /**
      * Receiver keys for signal implementation
      */
-    @JsonProperty
     @NonNull
     @Default
     private Map<SenderKeyName, SenderKeyDistributionMessage> receiverKeys = new ConcurrentHashMap<>();
@@ -122,7 +112,6 @@ public final class WhatsappKeys implements WhatsappController {
     /**
      * App state keys
      */
-    @JsonProperty
     @NonNull
     @Default
     private LinkedList<AppStateSyncKey> appStateKeys = new LinkedList<>();
@@ -130,7 +119,6 @@ public final class WhatsappKeys implements WhatsappController {
     /**
      * Sessions map
      */
-    @JsonProperty
     @NonNull
     @Default
     private Map<SessionAddress, Session> sessions = new ConcurrentHashMap<>();
@@ -138,7 +126,6 @@ public final class WhatsappKeys implements WhatsappController {
     /**
      * Hash state
      */
-    @JsonProperty
     @NonNull
     @Default
     private Map<String, LTHashState> hashStates = new ConcurrentHashMap<>();
@@ -147,6 +134,7 @@ public final class WhatsappKeys implements WhatsappController {
      * Write counter for IV
      */
     @NonNull
+    @JsonIgnore
     @Default
     private AtomicLong writeCounter = new AtomicLong();
 
@@ -154,12 +142,14 @@ public final class WhatsappKeys implements WhatsappController {
      * Read counter for IV
      */
     @NonNull
+    @JsonIgnore
     @Default
     private AtomicLong readCounter = new AtomicLong();
 
     /**
      * Session dependent keys to write and read cyphered messages
      */
+    @JsonIgnore
     private Bytes writeKey, readKey;
 
     /**

@@ -64,6 +64,7 @@ public class HydratedFourRowTemplate implements ProtobufMessage {
     @Getter
     private final int index;
 
+    @JsonCreator
     public static Title forIndex(int index) {
       return Arrays.stream(values())
               .filter(entry -> entry.index() == index)

@@ -13,14 +13,11 @@ import lombok.extern.jackson.*;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class CollectionMessage {
+public class ActionLink {
 
   @ProtobufProperty(index = 1, type = STRING)
-  private String bizJid;
+  private String url;
 
   @ProtobufProperty(index = 2, type = STRING)
-  private String id;
-
-  @ProtobufProperty(index = 3, type = INT32)
-  private int messageVersion;
+  private String buttonTitle;
 }

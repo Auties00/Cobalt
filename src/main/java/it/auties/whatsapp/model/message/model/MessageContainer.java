@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.model;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
@@ -122,14 +123,14 @@ public class MessageContainer implements ProtobufMessage {
   /**
    * Highly structured message
    */
-  @ProtobufProperty(index = 14, type = MESSAGE, concreteType = StructuredButtonMessage.class)
-  private StructuredButtonMessage highlyStructured;
+  @ProtobufProperty(index = 14, type = MESSAGE, concreteType = ButtonStructureMessage.class)
+  private ButtonStructureMessage highlyStructured;
   
   /**
    * Fast ratchet key sender key distribution message
    */
   @ProtobufProperty(index = 15, type = MESSAGE, concreteType = SignalDistributionMessage.class)
-  private SignalDistributionMessage fastRatchetKeySenderKeyDistribution;
+  private SenderKeyDistributionMessage fastRatchetKeySenderKeyDistribution;
   
   /**
    * Send payment message
@@ -164,8 +165,8 @@ public class MessageContainer implements ProtobufMessage {
   /**
    * Template message
    */
-  @ProtobufProperty(index = 25, type = MESSAGE, concreteType = TemplateMessage.class)
-  private TemplateMessage template;
+  @ProtobufProperty(index = 25, type = MESSAGE, concreteType = ButtonTemplateMessage.class)
+  private ButtonTemplateMessage template;
 
   /**
    * Sticker message
@@ -182,8 +183,8 @@ public class MessageContainer implements ProtobufMessage {
   /**
    * Template button reply message
    */
-  @ProtobufProperty(index = 29, type = MESSAGE, concreteType = TemplateButtonReplyMessage.class)
-  private TemplateButtonReplyMessage templateButtonReply;
+  @ProtobufProperty(index = 29, type = MESSAGE, concreteType = ButtonTemplateReplyMessage.class)
+  private ButtonTemplateReplyMessage templateButtonReply;
   
   /**
    * Product message
@@ -206,8 +207,8 @@ public class MessageContainer implements ProtobufMessage {
   /**
    * List message
    */
-  @ProtobufProperty(index = 36, type = MESSAGE, concreteType = ListMessage.class)
-  private ListMessage buttonsList;
+  @ProtobufProperty(index = 36, type = MESSAGE, concreteType = ButtonListMessage.class)
+  private ButtonListMessage buttonList;
 
   /**
    * View once message
@@ -224,8 +225,8 @@ public class MessageContainer implements ProtobufMessage {
   /**
    * List response message
    */
-  @ProtobufProperty(index = 39, type = MESSAGE, concreteType = ListResponseMessage.class)
-  private ListResponseMessage listResponse;
+  @ProtobufProperty(index = 39, type = MESSAGE, concreteType = ButtonListResponseMessage.class)
+  private ButtonListResponseMessage buttonListResponse;
 
   /**
    * Ephemeral message
@@ -270,6 +271,17 @@ public class MessageContainer implements ProtobufMessage {
   }
 
   /**
+   * Constructs a new MessageContainer from a text message with no context
+   *
+   * @param message the text message with no context
+   */
+  public static MessageContainer of(@NonNull String message){
+    return MessageContainer.newMessageContainer()
+            .textWithNoContext(message)
+            .create();
+  }
+
+  /**
    * Constructs a new MessageContainer from a message of any type that can only be seen once
    *
    * @param message the message that the new container should wrap
@@ -294,17 +306,6 @@ public class MessageContainer implements ProtobufMessage {
   }
 
   /**
-   * Constructs a new MessageContainer from a text message with no context
-   *
-   * @param message the text message with no context
-   */
-  public static MessageContainer ofConversation(@NonNull String message){
-    return MessageContainer.newMessageContainer()
-            .textWithNoContext(message)
-            .create();
-  }
-
-  /**
    * Constructs a new MessageContainer from a message of any type
    * 
    * @param message the message that the new container should wrap
@@ -322,22 +323,22 @@ public class MessageContainer implements ProtobufMessage {
       case VideoMessage video -> this.video = video;
       case ProtocolMessage protocol -> this.protocol = protocol;
       case ContactsArrayMessage contactsArray -> this.contactsArray = contactsArray;
-      case StructuredButtonMessage highlyStructured -> this.highlyStructured = highlyStructured;
+      case ButtonStructureMessage highlyStructured -> this.highlyStructured = highlyStructured;
       case SendPaymentMessage sendPayment -> this.sendPayment = sendPayment;
       case LiveLocationMessage liveLocation -> this.liveLocation = liveLocation;
       case RequestPaymentMessage requestPayment -> this.requestPayment = requestPayment;
       case DeclinePaymentRequestMessage declinePaymentRequest -> this.declinePaymentRequest = declinePaymentRequest;
       case CancelPaymentRequestMessage cancelPaymentRequest -> this.cancelPaymentRequest = cancelPaymentRequest;
-      case TemplateMessage template -> this.template = template;
+      case ButtonTemplateMessage template -> this.template = template;
       case StickerMessage sticker -> this.sticker = sticker;
       case GroupInviteMessage groupInvite -> this.groupInvite = groupInvite;
-      case TemplateButtonReplyMessage templateButtonReply -> this.templateButtonReply = templateButtonReply;
+      case ButtonTemplateReplyMessage templateButtonReply -> this.templateButtonReply = templateButtonReply;
       case ProductMessage product -> this.product = product;
       case DeviceSentMessage deviceSent -> this.deviceSent = deviceSent;
       case DeviceSyncMessage deviceSync -> this.deviceSync = deviceSync;
-      case ListMessage buttonsList -> this.buttonsList = buttonsList;
+      case ButtonListMessage buttonsList -> this.buttonList = buttonsList;
       case PaymentOrderMessage order -> this.order = order;
-      case ListResponseMessage listResponse -> this.listResponse = listResponse;
+      case ButtonListResponseMessage listResponse -> this.buttonListResponse = listResponse;
       case PaymentInvoiceMessage invoice -> this.invoice = invoice;
       case ButtonsMessage buttons -> this.buttons = buttons;
       case ButtonsResponseMessage buttonsResponse -> this.buttonsResponse = buttonsResponse;
@@ -352,6 +353,7 @@ public class MessageContainer implements ProtobufMessage {
    * @return a nullable Message
    */
   public Message content(){
+    if(this.textWithNoContext != null) return TextMessage.of(textWithNoContext);
     if(this.senderKeyDistribution != null) return senderKeyDistribution;
     if(this.image != null) return image;
     if(this.contact != null) return contact;
@@ -363,6 +365,7 @@ public class MessageContainer implements ProtobufMessage {
     if(this.protocol != null) return protocol;
     if(this.contactsArray != null) return contactsArray;
     if(this.highlyStructured != null) return highlyStructured;
+    if(this.fastRatchetKeySenderKeyDistribution != null) return fastRatchetKeySenderKeyDistribution;
     if(this.sendPayment != null) return sendPayment;
     if(this.liveLocation != null) return liveLocation;
     if(this.requestPayment != null) return requestPayment;
@@ -375,13 +378,15 @@ public class MessageContainer implements ProtobufMessage {
     if(this.product != null) return product;
     if(this.deviceSent != null) return deviceSent;
     if(this.deviceSync != null) return deviceSync;
-    if(buttonsList != null) return buttonsList;
-    if(order != null) return order;
-    if(listResponse != null) return listResponse;
-    if(invoice != null) return invoice;
-    if(buttons != null) return buttons;
-    if(buttonsResponse != null) return buttonsResponse;
-    if(paymentInvite != null) return paymentInvite;
+    if(this.buttonList != null) return buttonList;
+    if(this.viewOnce != null) return viewOnce;
+    if(this.order != null) return order;
+    if(this.buttonListResponse != null) return buttonListResponse;
+    if(this.ephemeral != null) return ephemeral;
+    if(this.invoice != null) return invoice;
+    if(this.buttons != null) return buttons;
+    if(this.buttonsResponse != null) return buttonsResponse;
+    if(this.paymentInvite != null) return paymentInvite;
     return null;
   }
 
@@ -405,10 +410,10 @@ public class MessageContainer implements ProtobufMessage {
     if(this.groupInvite != null) return Optional.of(groupInvite);
     if(this.templateButtonReply != null) return Optional.of(templateButtonReply);
     if(this.product != null) return Optional.of(product);
-    if(buttonsList != null) return Optional.of(buttonsList);
-    if(invoice != null) return Optional.of(invoice);
-    if(buttons != null) return Optional.of(buttons);
-    if(buttonsResponse != null) return Optional.of(buttonsResponse);
+    if(this.buttonList != null) return Optional.of(buttonList);
+    if(this.invoice != null) return Optional.of(invoice);
+    if(this.buttons != null) return Optional.of(buttons);
+    if(this.buttonsResponse != null) return Optional.of(buttonsResponse);
     return Optional.empty();
   }
 
@@ -522,5 +527,27 @@ public class MessageContainer implements ProtobufMessage {
   @Override
   public String toString() {
     return Objects.toString(content());
+  }
+
+  public static class MessageContainerBuilder {
+    @JsonSetter
+    public MessageContainerBuilder ephemeral(@NonNull MessageContainer container){
+      return ephemeral(container.content());
+    }
+
+    public MessageContainerBuilder ephemeral(Message ephemeral){
+      this.ephemeral = ephemeral;
+      return this;
+    }
+
+    @JsonSetter
+    public MessageContainerBuilder viewOnce(@NonNull MessageContainer container){
+      return viewOnce(container.content());
+    }
+
+    public MessageContainerBuilder viewOnce(Message viewOnce){
+      this.viewOnce = viewOnce;
+      return this;
+    }
   }
 }

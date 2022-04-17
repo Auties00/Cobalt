@@ -29,7 +29,7 @@ public final class PaymentInfo implements Info {
    * The currency of this transaction
    */
   @Deprecated
-  @JsonProperty("1")
+  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = PaymentInfoCurrency.class)
   private PaymentInfoCurrency currencyDeprecated;
 
   /**
@@ -187,7 +187,6 @@ public final class PaymentInfo implements Info {
     @Getter
     private final int index;
 
-    @JsonCreator
     public static PaymentInfoStatus forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)
@@ -231,7 +230,6 @@ public final class PaymentInfo implements Info {
     @Getter
     private final int index;
 
-    @JsonCreator
     public static PaymentInfoTxnStatus forIndex(int index) {
       return Arrays.stream(values())
           .filter(entry -> entry.index() == index)

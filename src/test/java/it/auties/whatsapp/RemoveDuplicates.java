@@ -18,8 +18,8 @@ public class RemoveDuplicates {
             var inputs = inputWalker.filter(file -> !file.toString().contains(output.toString()) && file.toString().endsWith(".java"))
                     .map(Path::getFileName)
                     .toList();
-            try(var walker = Files.walk(output)){
-                walker.filter(file -> inputs.contains(file.getFileName()))
+            try(var outputWalker = Files.walk(output)){
+                outputWalker.filter(file -> inputs.contains(file.getFileName()))
                         .forEach(RemoveDuplicates::deleteAndPrint);
             }
         }

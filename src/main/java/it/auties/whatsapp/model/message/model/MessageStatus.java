@@ -54,6 +54,7 @@ public enum MessageStatus implements ProtobufMessage {
                 .orElse(null);
     }
 
+    @JsonCreator
     public static MessageStatus forIndex(int index) {
         return Arrays.stream(values())
                 .filter(entry -> entry.index() == index)

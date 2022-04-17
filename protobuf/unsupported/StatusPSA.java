@@ -13,14 +13,12 @@ import lombok.extern.jackson.*;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class CollectionMessage {
+public class StatusPSA {
 
-  @ProtobufProperty(index = 1, type = STRING)
-  private String bizJid;
+  @ProtobufProperty(index = 44, type = STRING)
+  @NonNull
+  private String campaignId;
 
-  @ProtobufProperty(index = 2, type = STRING)
-  private String id;
-
-  @ProtobufProperty(index = 3, type = INT32)
-  private int messageVersion;
+  @ProtobufProperty(index = 45, type = UINT64)
+  private long campaignExpirationTimestamp;
 }

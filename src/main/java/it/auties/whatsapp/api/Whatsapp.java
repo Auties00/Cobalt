@@ -252,7 +252,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJid chat, @NonNull String message) {
-        return sendMessage(chat, MessageContainer.ofConversation(message));
+        return sendMessage(chat, MessageContainer.of(message));
     }
 
     /**

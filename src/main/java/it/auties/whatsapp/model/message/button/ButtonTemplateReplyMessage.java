@@ -1,7 +1,5 @@
 package it.auties.whatsapp.model.message.button;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
@@ -17,7 +15,7 @@ import lombok.experimental.SuperBuilder;
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
 /**
- * A model class that represents a WhatsappMessage that contains a response to a previous {@link StructuredButtonMessage}.
+ * A model class that represents a WhatsappMessage that contains a response to a previous {@link ButtonStructureMessage}.
  * Not much is known about this type of message as no one has encountered it.
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
  * Instead, methods inside {@link Whatsapp} should be used.
@@ -28,7 +26,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(builderMethodName = "newTemplateButtonReplyMessage", buildMethodName = "create")
 @Accessors(fluent = true)
-public final class TemplateButtonReplyMessage extends ContextualMessage implements ButtonMessage {
+public final class ButtonTemplateReplyMessage extends ContextualMessage implements ButtonMessage {
   /**
    * The id of the button that was selected from the previous template message
    */
