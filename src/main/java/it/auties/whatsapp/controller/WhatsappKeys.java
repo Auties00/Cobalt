@@ -166,7 +166,7 @@ public final class WhatsappKeys implements WhatsappController {
      * @param id the id of the keys
      */
     public static void deleteKeys(int id) {
-        var preferences = Preferences.of("keys/%s.json", id);
+        var preferences = Preferences.of("%s/keys.json", id);
         preferences.delete();
     }
 
@@ -178,7 +178,7 @@ public final class WhatsappKeys implements WhatsappController {
      */
     public static WhatsappKeys newKeys(int id){
         var result = WhatsappKeys.builder()
-                .id(WhatsappController.saveId(id))
+                .id(id)
                 .build();
         return result.signedKeyPair(SignalSignedKeyPair.of(result.id(), result.identityKeyPair()));
     }
@@ -190,7 +190,7 @@ public final class WhatsappKeys implements WhatsappController {
      * @return a non-null instance of WhatsappKeys
      */
     public static WhatsappKeys fromMemory(int id){
-        var preferences = Preferences.of("keys/%s.json", id);
+        var preferences = Preferences.of("%s/keys.json", id);
         return Objects.requireNonNullElseGet(preferences.readJson(new TypeReference<>() {}),
                 () -> newKeys(id));
     }
@@ -402,7 +402,7 @@ public final class WhatsappKeys implements WhatsappController {
      */
     @Override
     public void save(boolean async){
-        var preferences = Preferences.of("keys/%s.json", id);
+        var preferences = Preferences.of("%s/keys.json", id);
         if(async) {
             preferences.writeJsonAsync(this);
             return;

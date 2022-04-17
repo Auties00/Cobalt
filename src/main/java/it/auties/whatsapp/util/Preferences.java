@@ -22,6 +22,10 @@ public final class Preferences implements JacksonProvider {
 
     private String cache;
 
+    public static Path home(){
+        return DEFAULT_DIRECTORY;
+    }
+
     @SneakyThrows
     public static Preferences of(String path, Object... args) {
         var location = Path.of("%s/%s".formatted(DEFAULT_DIRECTORY, path.formatted(args)));

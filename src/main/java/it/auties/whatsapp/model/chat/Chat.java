@@ -393,6 +393,7 @@ public class Chat implements ProtobufMessage {
 
         @SuppressWarnings("ConstantConditions")
         public ChatBuilder messages(List<HistorySyncMessage> messages) {
+            this.messages$set = true;
             var value = new SortedMessageList(messages);
             if(messages$value == null){
                 this.messages$value = value;

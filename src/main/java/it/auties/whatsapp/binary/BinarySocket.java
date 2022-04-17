@@ -50,6 +50,7 @@ import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.java.Log;
 
+import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
@@ -131,6 +132,10 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     }
 
     private void serialize(Event event) {
+        if(!options.serialization()){
+            return;
+        }
+
         if(options.debug()){
             System.out.printf("Serializing for event %s%n", event.name().toLowerCase(Locale.ROOT));
         }
@@ -751,18 +756,11 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                 return;
             }
 
-            store.mediaConnectionSemaphore().acquire();
             sendQuery("set", "w:m", with("media_conn"))
                     .thenApplyAsync(MediaConnection::ofNode)
                     .thenApplyAsync(this::scheduleMediaConnection)
                     .thenApplyAsync(store::mediaConnection)
-                    .thenRunAsync(store.mediaConnectionSemaphore()::release)
-                    .exceptionallyAsync(this::handleMediaConnectionError);
-        }
-
-        private Void handleMediaConnectionError(Throwable throwable){
-            store.mediaConnectionSemaphore().release();
-            return handleError(throwable);
+                    .exceptionallyAsync(BinarySocket.this::handleError);
         }
 
         private MediaConnection scheduleMediaConnection(MediaConnection connection) {

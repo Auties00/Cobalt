@@ -88,6 +88,7 @@ public class SenderKeyState implements ProtobufMessage {
 
   public static class SenderKeyStateBuilder {
     public SenderKeyStateBuilder messageKeys(List<SenderMessageKey> messageKeys) {
+      this.messageKeys$set = true;
       if(messageKeys$value == null){
         this.messageKeys$value = messageKeys;
         return this;

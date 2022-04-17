@@ -50,6 +50,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
             return;
         }
 
+        log.warning("%s timed out: no response from WhatsApp".formatted(node));
         future.completeExceptionally(new TimeoutException("%s timed out: no response from WhatsApp".formatted(node)));
     }
 

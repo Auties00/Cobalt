@@ -17,9 +17,10 @@ import static it.auties.whatsapp.model.request.Node.with;
 import static java.util.Map.of;
 
 public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys keys) implements SignalSpecification{
+    private static final Semaphore ENCRYPTION_SEMAPHORE  = new Semaphore(1);
     public Node encrypt(byte[] data) {
         try {
-            SEMAPHORE.acquire();
+            ENCRYPTION_SEMAPHORE.acquire();
             var record = keys.findSenderKeyByName(name)
                     .orElseThrow(() -> new NoSuchElementException("Missing record for name: %s".formatted(name)));
             var messageKey = record.currentState()
@@ -46,7 +47,7 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys key
         }catch (Throwable throwable){
             throw new RuntimeException("Cannot encrypt message: an exception occured", throwable);
         }finally {
-            SEMAPHORE.release();
+            ENCRYPTION_SEMAPHORE.release();
         }
     }
 

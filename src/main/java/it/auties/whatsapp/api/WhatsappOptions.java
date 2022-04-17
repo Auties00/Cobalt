@@ -57,6 +57,13 @@ public class WhatsappOptions {
     private boolean debug = true;
 
     /**
+     * A flag to specify whether sensible data associated with a session should be serialized.
+     * If this flag is set to false, {@link WhatsappOptions#serializationStrategies()} are ignored
+     */
+    @Default
+    private boolean serialization = true;
+
+    /**
      * A list of strategies to serialize sensible data associated with a session.
      * By default, all data is serialized synchronously when the socket is closed in a json locally.
      */

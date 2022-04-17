@@ -4,7 +4,6 @@ import it.auties.bytes.Bytes;
 import it.auties.whatsapp.controller.WhatsappKeys;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
-import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalMessage;
 import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.model.signal.session.Session;
@@ -31,9 +30,10 @@ import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 
 public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) implements SignalSpecification {
+    private static final Semaphore ENCRYPTION_SEMAPHORE = new Semaphore(1);
     public Node encrypt(byte @NonNull [] data){
         try {
-            SEMAPHORE.acquire();
+            ENCRYPTION_SEMAPHORE.acquire();
             var session = loadSession();
             var currentState = session.currentState();
 
@@ -68,7 +68,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         }catch (Throwable throwable){
             throw new RuntimeException("Cannot encrypt message: an exception occured", throwable);
         }finally {
-            SEMAPHORE.release();
+            ENCRYPTION_SEMAPHORE.release();
         }
     }
 

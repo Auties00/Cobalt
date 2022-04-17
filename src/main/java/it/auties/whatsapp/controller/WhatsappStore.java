@@ -130,14 +130,6 @@ public final class WhatsappStore implements WhatsappController {
     private ExecutorService requestsService = newSingleThreadExecutor();
 
     /**
-     * The media connection semaphore
-     */
-    @NonNull
-    @JsonIgnore
-    @Default
-    private Semaphore mediaConnectionSemaphore = new Semaphore(1);
-
-    /**
      * The media connection associated with this store
      */
     @Setter
@@ -152,7 +144,7 @@ public final class WhatsappStore implements WhatsappController {
      */
     public static WhatsappStore newStore(int id){
         var result = WhatsappStore.builder()
-                .id(WhatsappController.saveId(id))
+                .id(id)
                 .build();
         stores.add(result);
         return result;
@@ -165,7 +157,7 @@ public final class WhatsappStore implements WhatsappController {
      * @return a non-null instance of WhatsappStore
      */
     public static WhatsappStore fromMemory(int id){
-        var preferences = Preferences.of("store/%s.json", id);
+        var preferences = Preferences.of("%s/store.json", id);
         var result = Objects.requireNonNullElseGet(preferences.readJson(new TypeReference<>() {}),
                 () -> newStore(id));
         stores.add(result);
@@ -401,7 +393,7 @@ public final class WhatsappStore implements WhatsappController {
      */
     @Override
     public void save(boolean async){
-        var preferences = Preferences.of("store/%s.json", id);
+        var preferences = Preferences.of("%s/store.json", id);
         if(async) {
             preferences.writeJsonAsync(this);
             return;
@@ -416,24 +408,8 @@ public final class WhatsappStore implements WhatsappController {
      * @return this
      */
     public WhatsappStore delete(){
-        var preferences = Preferences.of("store/%s.json", id);
+        var preferences = Preferences.of("%s/store.json", id);
         preferences.delete();
         return this;
-    }
-
-    /**
-     * Returns this media connection when it becomes available
-     *
-     * @return a non-null media connection
-     */
-    public MediaConnection mediaConnection(){
-        try {
-            mediaConnectionSemaphore.acquire();
-            return mediaConnection;
-        }catch (InterruptedException exception){
-            throw new IllegalStateException("Cannot use media connection", exception);
-        }finally {
-            mediaConnectionSemaphore.release();
-        }
     }
 }

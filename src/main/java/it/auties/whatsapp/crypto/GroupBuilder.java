@@ -9,10 +9,14 @@ import it.auties.whatsapp.util.Keys;
 import it.auties.whatsapp.util.SignalSpecification;
 import lombok.NonNull;
 
+import java.util.concurrent.Semaphore;
+
 public record GroupBuilder(@NonNull WhatsappKeys keys) implements SignalSpecification {
+    private static final Semaphore ENCRYPTION_SEMAPHORE = new Semaphore(1);
+
     public SignalDistributionMessage createOutgoing(SenderKeyName name) {
         try {
-            SEMAPHORE.acquire();
+            ENCRYPTION_SEMAPHORE.acquire();
             var senderKeyRecord = keys.findSenderKeyByName(name)
                     .orElseGet(() -> createRecord(name));
             if (senderKeyRecord.isEmpty()) {
@@ -29,7 +33,7 @@ public record GroupBuilder(@NonNull WhatsappKeys keys) implements SignalSpecific
         }catch (Throwable throwable){
             throw new RuntimeException("Cannot create outgoing: an exception occured", throwable);
         }finally {
-            SEMAPHORE.release();
+            ENCRYPTION_SEMAPHORE.release();
         }
     }
 
