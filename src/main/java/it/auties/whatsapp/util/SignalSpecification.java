@@ -1,7 +1,5 @@
 package it.auties.whatsapp.util;
 
-import java.util.concurrent.Semaphore;
-
 public interface SignalSpecification {
     int CURRENT_VERSION = 3;
     int IV_LENGTH = 16;

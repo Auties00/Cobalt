@@ -128,24 +128,14 @@ public final class WhatsappStore implements WhatsappController {
     @NonNull
     @JsonIgnore
     @Default
-    private ScheduledExecutorService requestsService = newScheduledThreadPool(3);
+    private ScheduledExecutorService requestsService = newScheduledThreadPool(5);
 
     /**
      * The media connection associated with this store
      */
     @Setter
-    @Getter(AccessLevel.NONE)
     @JsonIgnore
     private MediaConnection mediaConnection;
-
-    @NonNull
-    @JsonIgnore
-    @Default
-    private Semaphore mediaConnectionSemaphore = new Semaphore(1);
-
-    @NonNull
-    @Default
-    private long mediaConnectionSemaphoreTimeout = 60;
 
     /**
      * Constructs a new default instance of WhatsappStore
@@ -195,24 +185,6 @@ public final class WhatsappStore implements WhatsappController {
                 .parallelStream()
                 .filter(entry -> entry.id() == id)
                 .findFirst();
-    }
-
-    /**
-     * Returns this media connection when it becomes available if a query operation is in action.
-     * Otherwise, returns the cached value.
-     * This is a blocking operation.
-     *
-     * @return a non-null media connection
-     */
-    @SneakyThrows
-    public MediaConnection acquireMediaConnection(){
-        if(mediaConnectionSemaphore.availablePermits() == 0){
-            Validate.isTrue(mediaConnectionSemaphore.tryAcquire(mediaConnectionSemaphoreTimeout, TimeUnit.SECONDS),
-                    "Media connection lock cannot be acquired");
-            mediaConnectionSemaphore.release();
-        }
-
-        return Objects.requireNonNull(mediaConnection, "Missing media connection");
     }
 
     /**
