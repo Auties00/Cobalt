@@ -8,13 +8,13 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
+import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
+
 public interface SerializationStrategy {
     void serialize(WhatsappStore store, WhatsappKeys keys);
     Event trigger();
-
-    default void dispose(){
-
-    }
+    default long period() { return 0; }
+    default TimeUnit unit(){ return TimeUnit.SECONDS; }
 
     static SerializationStrategy onClose(){
         return new SerializationStrategy() {
@@ -67,13 +67,10 @@ public interface SerializationStrategy {
 
     static SerializationStrategy periodically(long period, TimeUnit unit, boolean async){
         return new SerializationStrategy() {
-            private static final ScheduledExecutorService SERIALIZATION_EXECUTOR = Executors.newSingleThreadScheduledExecutor();
             @Override
             public void serialize(WhatsappStore store, WhatsappKeys keys) {
-                SERIALIZATION_EXECUTOR.scheduleAtFixedRate(() -> {
-                    store.save(async);
-                    keys.save(async);
-                }, 0L, period, unit);
+                store.save(async);
+                keys.save(async);
             }
 
             @Override
@@ -82,8 +79,13 @@ public interface SerializationStrategy {
             }
 
             @Override
-            public void dispose() {
-                SERIALIZATION_EXECUTOR.shutdown();
+            public long period() {
+                return period;
+            }
+
+            @Override
+            public TimeUnit unit() {
+                return unit;
             }
         };
     }

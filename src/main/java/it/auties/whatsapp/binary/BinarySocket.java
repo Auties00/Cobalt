@@ -56,6 +56,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -76,14 +77,11 @@ import static java.util.stream.Collectors.*;
 @ClientEndpoint(configurator = BinarySocket.OriginPatcher.class)
 @Log
 public class BinarySocket implements JacksonProvider, SignalSpecification{
-
     @Getter(onMethod = @__(@NonNull))
     @Setter(onParam = @__(@NonNull))
     private Session session;
 
     private boolean loggedIn;
-
-    private ScheduledExecutorService pingService;
 
     @NonNull
     private final WhatsappOptions options;
@@ -117,7 +115,6 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     }
 
     public BinarySocket(@NonNull WhatsappOptions options, @NonNull WhatsappStore store, @NonNull WhatsappKeys keys) {
-        this.pingService = Executors.newSingleThreadScheduledExecutor();
         this.options = options;
         this.store = store;
         this.keys = keys;
@@ -126,11 +123,21 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         this.messageHandler = new MessageHandler();
         this.appStateHandler = new AppStateHandler();
         getRuntime().addShutdownHook(new Thread(() -> serialize(ON_CLOSE)));
-        serialize(PERIODICALLY);
+        serialize(PERIODICALLY, this::schedulePeriodicSerialization);
         serialize(CUSTOM);
     }
 
+    private void schedulePeriodicSerialization(SerializationStrategy strategy) {
+        store.requestsService()
+                .scheduleAtFixedRate(() -> strategy.serialize(store, keys),
+                        0, strategy.period(), strategy.unit());
+    }
+
     private void serialize(Event event) {
+        serialize(event, strategy -> strategy.serialize(store, keys));
+    }
+
+    private void serialize(Event event, Consumer<SerializationStrategy> strategyConsumer) {
         if(!options.serialization()){
             return;
         }
@@ -142,7 +149,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         options.serializationStrategies()
                 .stream()
                 .filter(strategy -> strategy.trigger() == event)
-                .forEach(strategy -> strategy.serialize(store, keys));
+                .forEach(strategyConsumer);
     }
 
     @OnOpen
@@ -205,7 +212,8 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     @SneakyThrows
     @SuppressWarnings("ResultOfMethodCallIgnored")
     public void await(){
-        pingService.awaitTermination(Integer.MAX_VALUE, TimeUnit.DAYS);
+        store.requestsService()
+                .awaitTermination(Integer.MAX_VALUE, TimeUnit.DAYS);
     }
 
     public CompletableFuture<Void> reconnect(){
@@ -254,7 +262,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
         store.callListeners(listener -> listener.onDisconnected(false));
         store.dispose();
-        dispose();
+        serialize(ON_CLOSE);
     }
 
     @OnError
@@ -391,13 +399,6 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         var newStore = WhatsappStore.newStore(newId);
         newStore.listeners().addAll(store.listeners());
         this.store = newStore;
-    }
-
-    private void dispose(){
-        pingService.shutdownNow();
-        serialize(ON_CLOSE);
-        options.serializationStrategies()
-                .forEach(SerializationStrategy::dispose);
     }
 
     public static class OriginPatcher extends Configurator{
@@ -703,7 +704,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         private void digestSuccess() {
             confirmConnection();
             sendPreKeys();
-            createPingService();
+            store.requestsService().scheduleAtFixedRate(this::sendPing, 20L, 20L, TimeUnit.SECONDS);
             sendStatusUpdate();
             loginFuture.complete(null);
             store.callListeners(WhatsappListener::onLoggedIn);
@@ -734,18 +735,8 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             store.callListeners(listener -> listener.onMetadata(properties));
         }
 
-        private void createPingService() {
-            if(pingService.isShutdown()){
-                pingService = Executors.newSingleThreadScheduledExecutor();
-            }
-
-            pingService.scheduleAtFixedRate(this::sendPing,
-                    20L, 20L, TimeUnit.SECONDS);
-        }
-
         private void sendPing() {
             if(!loggedIn){
-                pingService.shutdownNow();
                 return;
             }
 
@@ -758,11 +749,18 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                 return;
             }
 
+            store.mediaConnectionSemaphore().acquire();
             sendQuery("set", "w:m", with("media_conn"))
                     .thenApplyAsync(MediaConnection::ofNode)
                     .thenApplyAsync(this::scheduleMediaConnection)
                     .thenApplyAsync(store::mediaConnection)
-                    .exceptionallyAsync(BinarySocket.this::handleError);
+                    .thenRunAsync(store.mediaConnectionSemaphore()::release)
+                    .exceptionallyAsync(this::handleMediaConnectionError);
+        }
+
+        private Void handleMediaConnectionError(Throwable throwable){
+            store.mediaConnectionSemaphore().release();
+            return handleError(throwable);
         }
 
         private MediaConnection scheduleMediaConnection(MediaConnection connection) {

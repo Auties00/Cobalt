@@ -33,7 +33,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     /**
      * The timeout in seconds before a Request wrapping a Node fails
      */
-    private static final int TIMEOUT = 30;
+    private static final int TIMEOUT = 60;
 
     /**
      * Constructs a new request with the provided body expecting a response

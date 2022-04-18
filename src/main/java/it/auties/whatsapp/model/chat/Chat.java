@@ -382,12 +382,14 @@ public class Chat implements ProtobufMessage {
 
     public static class ChatBuilder {
         @JsonSetter
-        public ChatBuilder disappearInitiator(ChatDisappear.Linker linker){
-            return disappearInitiator(linker.disappear());
-        }
+        public ChatBuilder disappearInitiator(Object object){
+            this.disappearInitiator = switch (object){
+                case ChatDisappear.Linker linker -> linker.disappear();
+                case ChatDisappear disappear -> disappear;
+                case Number number -> ChatDisappear.forIndex(number.intValue());
+                default -> throw new IllegalStateException("Unexpected value: " + object);
+            };
 
-        public ChatBuilder disappearInitiator(ChatDisappear disappearInitiator){
-            this.disappearInitiator = disappearInitiator;
             return this;
         }
 

@@ -57,6 +57,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @param jid the non-null jid of the user
      * @return a non-null contact jid
      */
+    @JsonCreator
     public static ContactJid of(@NonNull String jid) {
         return of(jid, Server.forAddress(jid));
     }
@@ -196,6 +197,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      *
      * @return a non-null String
      */
+    @JsonValue
     @Override
     public String toString() {
         var user = Objects.requireNonNullElse(user(), "");
@@ -322,6 +324,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
         @Getter
         private final String address;
 
+        @JsonCreator
         public static Server forAddress(String address) {
             return Arrays.stream(values())
                     .filter(entry -> address != null && address.endsWith(entry.address()))

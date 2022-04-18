@@ -3,6 +3,7 @@ package it.auties.whatsapp.model.chat;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.*;
@@ -54,8 +55,8 @@ public enum ChatDisappear implements ProtobufMessage {
         @ProtobufProperty(index = 1, type = MESSAGE, concreteType = ChatDisappear.class)
         protected ChatDisappear disappear;
 
-        protected Linker(long index){
-            this.disappear = ChatDisappear.forIndex((int) index);
+        protected Linker(int index){
+            this.disappear = ChatDisappear.forIndex(index);
         }
     }
 }

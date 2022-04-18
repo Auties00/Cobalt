@@ -1,7 +1,6 @@
 package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.api.WhatsappListener;
@@ -14,6 +13,7 @@ import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Preferences;
+import it.auties.whatsapp.util.Validate;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
@@ -22,14 +22,15 @@ import lombok.extern.java.Log;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.util.concurrent.Executors.newSingleThreadExecutor;
+import static java.util.concurrent.Executors.*;
 
 /**
  * This controller holds the user-related data regarding a WhatsappWeb session
@@ -127,14 +128,24 @@ public final class WhatsappStore implements WhatsappController {
     @NonNull
     @JsonIgnore
     @Default
-    private ExecutorService requestsService = newSingleThreadExecutor();
+    private ScheduledExecutorService requestsService = newScheduledThreadPool(3);
 
     /**
      * The media connection associated with this store
      */
     @Setter
+    @Getter(AccessLevel.NONE)
     @JsonIgnore
     private MediaConnection mediaConnection;
+
+    @NonNull
+    @JsonIgnore
+    @Default
+    private Semaphore mediaConnectionSemaphore = new Semaphore(1);
+
+    @NonNull
+    @Default
+    private long mediaConnectionSemaphoreTimeout = 60;
 
     /**
      * Constructs a new default instance of WhatsappStore
@@ -172,6 +183,13 @@ public final class WhatsappStore implements WhatsappController {
         preferences.delete();
     }
 
+
+    /**
+     * Queries the first store whose id is equal to {@code id}
+     *
+     * @param id the id to search
+     * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional
+     */
     public static Optional<WhatsappStore> findStoreById(int id){
         return Collections.synchronizedSet(stores)
                 .parallelStream()
@@ -180,10 +198,28 @@ public final class WhatsappStore implements WhatsappController {
     }
 
     /**
+     * Returns this media connection when it becomes available if a query operation is in action.
+     * Otherwise, returns the cached value.
+     * This is a blocking operation.
+     *
+     * @return a non-null media connection
+     */
+    @SneakyThrows
+    public MediaConnection acquireMediaConnection(){
+        if(mediaConnectionSemaphore.availablePermits() == 0){
+            Validate.isTrue(mediaConnectionSemaphore.tryAcquire(mediaConnectionSemaphoreTimeout, TimeUnit.SECONDS),
+                    "Media connection lock cannot be acquired");
+            mediaConnectionSemaphore.release();
+        }
+
+        return Objects.requireNonNull(mediaConnection, "Missing media connection");
+    }
+
+    /**
      * Queries the first contact whose jid is equal to {@code jid}
      *
      * @param jid the jid to search
-     * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional empty
+     * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional
      */
     public Optional<Contact> findContactByJid(ContactJid jid) {
         return jid == null ? Optional.empty() : Collections.synchronizedList(contacts())
@@ -196,7 +232,7 @@ public final class WhatsappStore implements WhatsappController {
      * Queries the first contact whose name is equal to {@code name}
      *
      * @param name the name to search
-     * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional empty
+     * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional
      */
     public Optional<Contact> findContactByName(String name) {
         return findContactsStream(name)
@@ -226,7 +262,7 @@ public final class WhatsappStore implements WhatsappController {
      * Queries the first chat whose jid is equal to {@code jid}
      *
      * @param jid the jid to search
-     * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional empty
+     * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional
      */
     public Optional<Chat> findChatByJid(ContactJid jid) {
         return jid == null ? Optional.empty() : Collections.synchronizedList(chats())
@@ -240,7 +276,7 @@ public final class WhatsappStore implements WhatsappController {
      *
      * @param chat the chat to search in
      * @param id   the jid to search
-     * @return a non-empty Optional containing the result if it is found otherwise an empty Optional empty
+     * @return a non-empty Optional containing the result if it is found otherwise an empty Optional
      */
     public Optional<MessageInfo> findMessageById(Chat chat, String id) {
         return chat == null || id == null ? Optional.empty() : Collections.synchronizedList(chat.messages())
@@ -253,7 +289,7 @@ public final class WhatsappStore implements WhatsappController {
      * Queries the first chat whose name is equal to {@code name}
      *
      * @param name the name to search
-     * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional empty
+     * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional
      */
     public Optional<Chat> findChatByName(String name) {
         return findChatsStream(name)
@@ -281,7 +317,7 @@ public final class WhatsappStore implements WhatsappController {
      * Queries the first request whose jid is equal to {@code jid}
      *
      * @param id the jid to search, can be null
-     * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional empty
+     * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional
      */
     public Optional<Request> findPendingRequest(String id) {
         return id == null ? Optional.empty() : Collections.synchronizedList(pendingRequests())
@@ -367,7 +403,7 @@ public final class WhatsappStore implements WhatsappController {
 
     private void callListener(Consumer<WhatsappListener> consumer, WhatsappListener listener) {
         if(requestsService.isShutdown()){
-            this.requestsService = newSingleThreadExecutor();
+            this.requestsService = newSingleThreadScheduledExecutor();
         }
 
         requestsService.execute(() -> consumer.accept(listener));

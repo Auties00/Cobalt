@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.message.model;
 
-import com.fasterxml.jackson.annotation.JsonSetter;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
@@ -13,10 +12,7 @@ import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.model.signal.message.SignalDistributionMessage;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
@@ -213,8 +209,8 @@ public class MessageContainer implements ProtobufMessage {
   /**
    * View once message
    */
-  @ProtobufProperty(index = 37, type = MESSAGE, concreteType = MessageContainer.class)
-  private Message viewOnce;
+  @ProtobufProperty(index = 37, type = MESSAGE, concreteType = FutureMessageContainer.class)
+  private FutureMessageContainer viewOnce;
 
   /**
    * Order message
@@ -231,8 +227,8 @@ public class MessageContainer implements ProtobufMessage {
   /**
    * Ephemeral message
    */
-  @ProtobufProperty(index = 40, type = MESSAGE, concreteType = MessageContainer.class)
-  private Message ephemeral;
+  @ProtobufProperty(index = 40, type = MESSAGE, concreteType = FutureMessageContainer.class)
+  private FutureMessageContainer ephemeral;
 
   /**
    * Invoice message
@@ -289,7 +285,7 @@ public class MessageContainer implements ProtobufMessage {
    */
   public static <T extends Message> MessageContainer ofViewOnce(@NonNull T message){
     return MessageContainer.newMessageContainer()
-            .viewOnce(message)
+            .viewOnce(FutureMessageContainer.of(MessageContainer.of(message)))
             .create();
   }
 
@@ -301,7 +297,7 @@ public class MessageContainer implements ProtobufMessage {
    */
   public static <T extends Message> MessageContainer ofEphemeral(@NonNull T message){
     return MessageContainer.newMessageContainer()
-            .ephemeral(message)
+            .ephemeral(FutureMessageContainer.of(MessageContainer.of(message)))
             .create();
   }
 
@@ -379,10 +375,10 @@ public class MessageContainer implements ProtobufMessage {
     if(this.deviceSent != null) return deviceSent;
     if(this.deviceSync != null) return deviceSync;
     if(this.buttonList != null) return buttonList;
-    if(this.viewOnce != null) return viewOnce;
+    if(this.viewOnce != null) return viewOnce.content().content();
     if(this.order != null) return order;
     if(this.buttonListResponse != null) return buttonListResponse;
-    if(this.ephemeral != null) return ephemeral;
+    if(this.ephemeral != null) return ephemeral.content().content();
     if(this.invoice != null) return invoice;
     if(this.buttons != null) return buttons;
     if(this.buttonsResponse != null) return buttonsResponse;
@@ -527,27 +523,5 @@ public class MessageContainer implements ProtobufMessage {
   @Override
   public String toString() {
     return Objects.toString(content());
-  }
-
-  public static class MessageContainerBuilder {
-    @JsonSetter
-    public MessageContainerBuilder ephemeral(@NonNull MessageContainer container){
-      return ephemeral(container.content());
-    }
-
-    public MessageContainerBuilder ephemeral(Message ephemeral){
-      this.ephemeral = ephemeral;
-      return this;
-    }
-
-    @JsonSetter
-    public MessageContainerBuilder viewOnce(@NonNull MessageContainer container){
-      return viewOnce(container.content());
-    }
-
-    public MessageContainerBuilder viewOnce(Message viewOnce){
-      this.viewOnce = viewOnce;
-      return this;
-    }
   }
 }

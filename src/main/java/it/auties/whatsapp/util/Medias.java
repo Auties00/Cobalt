@@ -31,8 +31,8 @@ import static java.util.Optional.ofNullable;
 public class Medias implements JacksonProvider {
     public MediaUpload upload(byte[] file, MediaMessageType type, WhatsappStore store) {
         var client = HttpClient.newHttpClient();
-        var auth = URLEncoder.encode(store.mediaConnection().auth(), StandardCharsets.UTF_8);
-        return store.mediaConnection().hosts()
+        var auth = URLEncoder.encode(store.acquireMediaConnection().auth(), StandardCharsets.UTF_8);
+        return store.acquireMediaConnection().hosts()
                 .stream()
                 .map(host -> upload(file, type, client, auth, host))
                 .flatMap(Optional::stream)
@@ -118,7 +118,7 @@ public class Medias implements JacksonProvider {
         }
 
         var fileEncSha256 = Base64.getEncoder().encode(provider.fileEncSha256());
-        return store.mediaConnection()
+        return store.acquireMediaConnection()
                 .hosts()
                 .stream()
                 .map(host -> "https://%s%s&hash=%s&mms-type=%s&__wa-mms=".formatted(host, provider.directPath(), fileEncSha256, provider.name()))

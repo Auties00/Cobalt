@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Objects;
 
 public record SessionAddress(String name, int deviceId) {
+    @JsonCreator
     public static SessionAddress of(String serialized){
         var split = serialized.split("\\.", 2);
         return new SessionAddress(split[0], Integer.parseInt(split[1]));
