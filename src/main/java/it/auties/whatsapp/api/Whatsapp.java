@@ -393,7 +393,7 @@ public class Whatsapp {
         var contactNodes = Arrays.stream(contacts)
                 .map(jid -> with("contact", "+%s".formatted(jid.user())))
                 .toArray(Node[]::new);
-        return socket.sendQuery(with("contact"), withChildren("user", contactNodes))
+        return socket.sendInteractiveQuery(with("contact"), withChildren("user", contactNodes))
                 .thenApplyAsync(nodes -> nodes.stream().map(ContactHasWhatsapp::new).toList());
     }
 
@@ -424,7 +424,7 @@ public class Whatsapp {
     public CompletableFuture<List<ContactStatus>> queryUserStatus(@NonNull Contact contact) {
         var query = with("status");
         var body = withAttributes("user", Map.of("jid", contact.jid()));
-        return socket.sendQuery(query, body)
+        return socket.sendInteractiveQuery(query, body)
                 .thenApplyAsync(response -> Nodes.findAll(response, "status"))
                 .thenApplyAsync(nodes -> nodes.stream().map(ContactStatus::new).toList());
     }

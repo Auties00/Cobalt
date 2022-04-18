@@ -53,7 +53,7 @@ public class ApiTest {
         public void onChats() {
             System.out.println("Called on chats");
             whatsapp.store()
-                    .findChatByJid(ContactJid.of("393495089819@s.whatsapp.net"))
+                    .findChatByJid(ContactJid.of("15414367949@s.whatsapp.net"))
                     .ifPresent(chat -> {
                         System.out.printf("Sending message to %s%n", chat.jid());
                         whatsapp.sendMessage(chat.jid(), "Test da md");

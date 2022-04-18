@@ -50,7 +50,6 @@ import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.java.Log;
 
-import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
@@ -313,7 +312,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         return send(withChildren("iq", attributes, body));
     }
 
-    public CompletableFuture<List<Node>> sendQuery(Node queryNode, Node... queryBody) {
+    public CompletableFuture<List<Node>> sendInteractiveQuery(Node queryNode, Node... queryBody) {
         var query = withChildren("query", queryNode);
         var list = withChildren("list", queryBody);
         var sync = withChildren("usync",
@@ -343,7 +342,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     private void sendSyncReceipt(MessageInfo info, String type){
         var receipt = withAttributes("receipt",
                 of("to",  ContactJid.of(keys.companion().user(), ContactJid.Server.USER), "type", type, "id", info.key().id()));
-        send(receipt);
+        sendWithNoResponse(receipt);
     }
 
     private void sendReceipt(ContactJid jid, ContactJid participant, List<String> messages, String type) {
@@ -353,13 +352,13 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
         var attributes = Attributes.empty()
                 .put("id", messages.get(0))
-                .put("t", Clock.now() / 1000L)
+                .put("t", Clock.now() / 1000)
                 .put("to", jid)
                 .put("type", type, Objects::nonNull)
                 .put("participant", participant, Objects::nonNull, value -> !Objects.equals(jid, value));
         var receipt = withChildren("receipt",
                 attributes.map(), toMessagesNode(messages));
-        send(receipt);
+        sendWithNoResponse(receipt);
     }
     private List<Node> toMessagesNode(List<String> messages) {
         if (messages.size() <= 1) {
@@ -373,13 +372,16 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     }
 
     private void sendMessageAck(Node node, Map<String, Object> metadata){
+        var to = node.attributes()
+                .getJid("from")
+                .orElseThrow(() -> new NoSuchElementException("Missing from in message ack"));
         var attributes = Attributes.of(metadata)
                 .put("id", node.id())
-                .put("to", node.attributes().getJid("from").orElseThrow(() -> new NoSuchElementException("Missing from in message ack")))
+                .put("to", to)
                 .put("participant", node.attributes().getNullableString("participant"), Objects::nonNull)
                 .map();
         var receipt = withAttributes("ack", attributes);
-        send(receipt);
+        sendWithNoResponse(receipt);
     }
 
     private void changeKeys() {
@@ -618,7 +620,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     .orElseThrow(() -> new NoSuchElementException("Cannot digest ack: missing from"));
             var receipt = withAttributes("ack",
                     of("class", "receipt", "id", node.id(), "from", from));
-            send(receipt);
+            sendWithNoResponse(receipt);
         }
 
         private void digestNotification(Node node) {
@@ -893,8 +895,13 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         }
 
         private void sendConfirmNode(Node node, Node content) {
-            sendQuery(node.id(), ContactJid.SOCKET,
-                    "result", null, of(), content);
+            var attributes = Attributes.empty()
+                    .put("id", node.id())
+                    .put("type", "result")
+                    .put("to", ContactJid.SOCKET)
+                    .map();
+            var request = withChildren("iq", attributes, content);
+            sendWithNoResponse(request);
         }
 
         private void saveCompanion(Node container) {

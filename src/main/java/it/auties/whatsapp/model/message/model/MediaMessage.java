@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.model.media.AttachmentProvider;
@@ -46,6 +47,7 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
     /**
      * The cached store
      */
+    @JsonIgnore
     private WhatsappStore cachedStore;
 
     public WhatsappStore store(){

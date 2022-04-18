@@ -21,6 +21,7 @@ public interface JacksonProvider {
             .registerModule(new Jdk8Module())
             .registerModule(new SimpleMapModule())
             .registerModule(new JavaTimeModule())
+            .setSerializationInclusion(Include.NON_DEFAULT)
             .enable(SerializationFeature.WRITE_ENUMS_USING_INDEX)
             .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, true)
             .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true)

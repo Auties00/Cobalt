@@ -43,6 +43,7 @@ public final class MessageInfo implements Info {
   /**
    * The cached store
    */
+  @JsonIgnore
   private WhatsappStore cachedStore;
   
   /**

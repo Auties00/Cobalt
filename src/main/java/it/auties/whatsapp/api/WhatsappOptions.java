@@ -25,7 +25,7 @@ public class WhatsappOptions {
      * If the version is too outdated, the server will refuse to connect
      */
     @Default
-    private final Version whatsappVersion = new Version(2, 2210, 9);
+    private final Version whatsappVersion = new Version(2, 2212, 7);
 
     /**
      * The url of the multi device beta socket
