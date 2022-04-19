@@ -18,7 +18,7 @@ public record SignalKeyPair(byte @NonNull [] publicKey, byte[] privateKey) imple
     }
 
     public static SignalKeyPair random(){
-        var keyPair = Curve25519.generateKeyPair();
+        var keyPair = Curve25519.randomKeyPair();
         var publicKey = XecUtils.toBytes((XECPublicKey) keyPair.getPublic());
         var privateKey = XecUtils.toBytes((XECPrivateKey) keyPair.getPrivate());
         return new SignalKeyPair(publicKey, privateKey);

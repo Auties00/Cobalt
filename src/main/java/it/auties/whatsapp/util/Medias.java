@@ -6,9 +6,11 @@ import it.auties.whatsapp.crypto.AesCbc;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.Sha256;
 import it.auties.whatsapp.model.media.AttachmentProvider;
+import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.media.MediaKeys;
 import it.auties.whatsapp.model.media.MediaUpload;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
+import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 
 import java.net.URI;
@@ -32,8 +34,7 @@ public class Medias implements JacksonProvider {
     public MediaUpload upload(byte[] file, MediaMessageType type, WhatsappStore store) {
         var client = HttpClient.newHttpClient();
         var auth = URLEncoder.encode(store.mediaConnection().auth(), StandardCharsets.UTF_8);
-        return store.mediaConnection()
-                .hosts()
+        return hosts(store)
                 .stream()
                 .map(host -> upload(file, type, client, auth, host))
                 .flatMap(Optional::stream)
@@ -119,10 +120,15 @@ public class Medias implements JacksonProvider {
         }
 
         var fileEncSha256 = Base64.getEncoder().encode(provider.fileEncSha256());
-        return store.mediaConnection()
-                .hosts()
+        return hosts(store)
                 .stream()
                 .map(host -> "https://%s%s&hash=%s&mms-type=%s&__wa-mms=".formatted(host, provider.directPath(), fileEncSha256, provider.name()))
                 .toList();
+    }
+
+    private List<String> hosts(WhatsappStore store) {
+        return Optional.ofNullable(store.mediaConnection())
+                .map(MediaConnection::hosts)
+                .orElse(List.of("mmg.whatsapp.net"));
     }
 }

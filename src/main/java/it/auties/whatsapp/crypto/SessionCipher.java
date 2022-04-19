@@ -24,7 +24,7 @@ import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.function.Supplier;
 
-import static it.auties.curve25519.Curve25519.calculateAgreement;
+import static it.auties.curve25519.Curve25519.sharedKey;
 import static it.auties.whatsapp.model.request.Node.with;
 import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
@@ -224,7 +224,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
     }
 
     private void calculateRatchet(SignalMessage message, SessionState state, boolean sending) {
-        var sharedSecret = calculateAgreement(Keys.withoutHeader(message.ephemeralPublicKey()),
+        var sharedSecret = sharedKey(Keys.withoutHeader(message.ephemeralPublicKey()),
                 state.ephemeralKeyPair().privateKey());
         var masterKey = Hkdf.deriveSecrets(sharedSecret, state.rootKey(),
                 "WhisperRatchet".getBytes(StandardCharsets.UTF_8), 2);

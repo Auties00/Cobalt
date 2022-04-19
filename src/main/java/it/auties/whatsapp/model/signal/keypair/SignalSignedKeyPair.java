@@ -10,7 +10,7 @@ import java.util.Optional;
 public record SignalSignedKeyPair(int id, @NonNull SignalKeyPair keyPair, byte[] signature) implements ISignalKeyPair{
     public static SignalSignedKeyPair of(int id, @NonNull SignalKeyPair identityKeyPair){
         var keyPair = SignalKeyPair.random();
-        var signature = Curve25519.calculateSignature(identityKeyPair.privateKey(), keyPair.encodedPublicKey());
+        var signature = Curve25519.sign(identityKeyPair.privateKey(), keyPair.encodedPublicKey(), true);
         return new SignalSignedKeyPair(id, keyPair, signature);
     }
 

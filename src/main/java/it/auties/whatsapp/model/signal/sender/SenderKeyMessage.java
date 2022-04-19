@@ -51,7 +51,7 @@ public class SenderKeyMessage implements ProtobufMessage, JacksonProvider, Signa
     var encoded =  PROTOBUF.writeValueAsBytes(this);
     var encodedMessage = Bytes.of(encodedVersion)
             .append(encoded);
-    this.signature = Curve25519.calculateSignature(signingKey, encodedMessage.toByteArray());
+    this.signature = Curve25519.sign(signingKey, encodedMessage.toByteArray(), true);
     this.serialized = encodedMessage.append(signature).toByteArray();
   }
 

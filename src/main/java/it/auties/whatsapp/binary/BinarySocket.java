@@ -71,6 +71,7 @@ import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.stream.Collectors.*;
 
 @Accessors(fluent = true)
@@ -82,6 +83,8 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     private Session session;
 
     private boolean loggedIn;
+
+    private ScheduledExecutorService pingService;
 
     @NonNull
     private final WhatsappOptions options;
@@ -122,6 +125,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         this.streamHandler = new StreamHandler();
         this.messageHandler = new MessageHandler();
         this.appStateHandler = new AppStateHandler();
+        this.pingService = newSingleThreadScheduledExecutor();
         getRuntime().addShutdownHook(new Thread(() -> serialize(ON_CLOSE)));
         serialize(PERIODICALLY, this::schedulePeriodicSerialization);
         serialize(CUSTOM);
@@ -212,8 +216,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     @SneakyThrows
     @SuppressWarnings("ResultOfMethodCallIgnored")
     public void await(){
-        store.requestsService()
-                .awaitTermination(Integer.MAX_VALUE, TimeUnit.DAYS);
+        pingService.awaitTermination(Integer.MAX_VALUE, TimeUnit.DAYS);
     }
 
     public CompletableFuture<Void> reconnect(){
@@ -263,6 +266,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         store.callListeners(listener -> listener.onDisconnected(false));
         store.dispose();
         serialize(ON_CLOSE);
+        pingService.shutdownNow();
     }
 
     @OnError
@@ -417,16 +421,16 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     .readValue(message, HandshakeMessage.class)
                     .serverHello();
             handshake.updateHash(serverHello.ephemeral());
-            var sharedEphemeral = Curve25519.calculateAgreement(serverHello.ephemeral(), keys.ephemeralKeyPair().privateKey());
+            var sharedEphemeral = Curve25519.sharedKey(serverHello.ephemeral(), keys.ephemeralKeyPair().privateKey());
             handshake.mixIntoKey(sharedEphemeral);
 
             var decodedStaticText = handshake.cipher(serverHello.staticText(), false);
-            var sharedStatic = Curve25519.calculateAgreement(decodedStaticText, keys.ephemeralKeyPair().privateKey());
+            var sharedStatic = Curve25519.sharedKey(decodedStaticText, keys.ephemeralKeyPair().privateKey());
             handshake.mixIntoKey(sharedStatic);
             handshake.cipher(serverHello.payload(), false);
 
             var encodedKey = handshake.cipher(keys.companionKeyPair().publicKey(), true);
-            var sharedPrivate = Curve25519.calculateAgreement(serverHello.ephemeral(), keys.companionKeyPair().privateKey());
+            var sharedPrivate = Curve25519.sharedKey(serverHello.ephemeral(), keys.companionKeyPair().privateKey());
             handshake.mixIntoKey(sharedPrivate);
 
             var encodedPayload = handshake.cipher(createUserPayload(), true);
@@ -444,7 +448,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
                     .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
                     .userAgent(createUserAgent())
-                    .passive(keys.hasCompanion())
+                    .passive(true)
                     .webInfo(new WebInfo(WebInfo.WebInfoWebSubPlatform.WEB_BROWSER));
             return PROTOBUF.writeValueAsBytes(finishUserPayload(builder));
         }
@@ -465,6 +469,14 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     .appVersion(options.whatsappVersion())
                     .platform(UserAgent.UserAgentPlatform.WEB)
                     .releaseChannel(UserAgent.UserAgentReleaseChannel.RELEASE)
+                    .mcc("000")
+                    .mnc("000")
+                    .osVersion("0.1")
+                    .manufacturer("")
+                    .device("Desktop")
+                    .osBuildNumber("0.1")
+                    .localeLanguageIso6391("en")
+                    .localeCountryIso31661Alpha2("US")
                     .build();
         }
 
@@ -485,7 +497,9 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         private Companion createCompanionProps() {
             return Companion.builder()
                     .os(options.description())
-                    .platformType(Companion.CompanionPropsPlatformType.DESKTOP)
+                    .version(new Version(4, 0, 0))
+                    .platformType(Companion.CompanionPropsPlatformType.CHROME)
+                    .requireFullSync(false)
                     .build();
         }
     }
@@ -704,7 +718,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         private void digestSuccess() {
             confirmConnection();
             sendPreKeys();
-            store.requestsService().scheduleAtFixedRate(this::sendPing, 20L, 20L, TimeUnit.SECONDS);
+            createPingTask();
             sendStatusUpdate();
             loginFuture.complete(null);
             store.callListeners(WhatsappListener::onLoggedIn);
@@ -714,6 +728,14 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
             store.callListeners(WhatsappListener::onChats);
             store.callListeners(WhatsappListener::onContacts);
+        }
+
+        private void createPingTask() {
+            if(pingService.isShutdown()){
+                pingService = newSingleThreadScheduledExecutor();
+            }
+
+            pingService.scheduleAtFixedRate(this::sendPing, 20L, 20L, TimeUnit.SECONDS);
         }
 
         private void sendStatusUpdate() {
@@ -737,6 +759,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
         private void sendPing() {
             if(!loggedIn){
+                pingService.shutdownNow();
                 return;
             }
 
@@ -803,7 +826,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         }
 
         private Node createPreKeysType() {
-            return with("type", "");
+            return with("type", KEY_BUNDLE_TYPE);
         }
 
         private Node createPreKeysRegistration() {
@@ -868,20 +891,19 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     .append(keys.identityKeyPair().publicKey())
                     .append(account.accountSignatureKey())
                     .toByteArray();
-            account.deviceSignature(Curve25519.calculateSignature(keys.identityKeyPair().privateKey(), deviceSignatureMessage));
+            account.deviceSignature(Curve25519.sign(keys.identityKeyPair().privateKey(), deviceSignatureMessage, true));
 
             var keyIndex = PROTOBUF.reader()
                     .with(ProtobufSchema.of(DeviceIdentity.class))
                     .readValue(account.details(), DeviceIdentity.class)
                     .keyIndex();
 
-            var oldSignature = Arrays.copyOf(account.accountSignatureKey(), account.accountSignature().length);
             var devicePairNode = withChildren("pair-device-sign",
                     with("device-identity",
                             of("key-index", keyIndex),
-                            PROTOBUF.writeValueAsBytes(account.accountSignatureKey(null))));
+                            PROTOBUF.writeValueAsBytes(account.withoutKey())));
 
-            keys.companionIdentity(account.accountSignatureKey(oldSignature));
+            keys.companionIdentity(account);
             sendConfirmNode(node, devicePairNode);
         }
 
@@ -938,7 +960,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             var groupWhatsappMessage = groupCipher.encrypt(BytesHelper.pad(PROTOBUF.writeValueAsBytes(info.message())));
             var metadata =  groupsCache.getOptional(info.chatJid())
                     .orElseGet(() -> queryGroupMetadata(info.chatJid()));
-           groupsCache.putAndGetValue(metadata.jid(), metadata);
+           groupsCache.put(metadata.jid(), metadata);
            var devices = querySyncDevices(metadata.participantsJids(), false);
            var distributionMessage = createGroupSessions(info, groupSignalMessage, devices);
            return createEncodedMessageNode(info, distributionMessage, groupWhatsappMessage, attributes);

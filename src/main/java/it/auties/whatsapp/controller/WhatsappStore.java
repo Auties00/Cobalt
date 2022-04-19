@@ -128,7 +128,7 @@ public final class WhatsappStore implements WhatsappController {
     @NonNull
     @JsonIgnore
     @Default
-    private ScheduledExecutorService requestsService = newScheduledThreadPool(5);
+    private ScheduledExecutorService requestsService = newScheduledThreadPool(10);
 
     /**
      * The media connection associated with this store
