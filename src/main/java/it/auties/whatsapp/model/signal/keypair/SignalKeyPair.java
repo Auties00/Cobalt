@@ -24,14 +24,10 @@ public record SignalKeyPair(byte @NonNull [] publicKey, byte[] privateKey) imple
         return new SignalKeyPair(publicKey, privateKey);
     }
 
-    public byte[] encodedPublicKey(){
-        return Keys.withHeader(publicKey);
-    }
-
     @Override
     public boolean equals(Object other) {
         return other instanceof SignalKeyPair that
-                && Arrays.equals(publicKey, that.publicKey) && Arrays.equals(privateKey, that.privateKey);
+                && Arrays.equals(publicKey(), that.publicKey()) && Arrays.equals(privateKey(), that.privateKey());
     }
 
     @Override

@@ -113,7 +113,8 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
             return state;
         }
 
-        var initSecret = Curve25519.sharedKey(Keys.withoutHeader(theirSignedPubKey), state.ephemeralKeyPair().privateKey());
+        var initSecret = Curve25519.sharedKey(Keys.withoutHeader(theirSignedPubKey),
+                state.ephemeralKeyPair().privateKey());
         var initKey = Hkdf.deriveSecrets(initSecret, state.rootKey(),
                 "WhisperRatchet".getBytes(StandardCharsets.UTF_8));
         var chain = new SessionChain(-1, masterKey[1]);
@@ -148,7 +149,8 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
             return sharedSecret;
         }
 
-        var additional = Curve25519.sharedKey(Keys.withoutHeader(theirEphemeralPubKey), ourEphemeralKey.privateKey());
+        var additional = Curve25519.sharedKey(Keys.withoutHeader(theirEphemeralPubKey),
+                ourEphemeralKey.privateKey());
         return sharedSecret.append(additional);
     }
 }

@@ -184,10 +184,10 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         var hmacInput = Bytes.of(state.remoteIdentityKey())
                 .append(keys.identityKeyPair().encodedPublicKey())
                 .append(message.serialized())
-                .cut(-SignalMessage.MAC_LENGTH)
+                .cut(-MAC_LENGTH)
                 .toByteArray();
         var hmac = Bytes.of(Hmac.calculateSha256(hmacInput, secrets[1]))
-                .cut(SignalMessage.MAC_LENGTH)
+                .cut(MAC_LENGTH)
                 .toByteArray();
         Validate.isTrue(Arrays.equals(message.signature(), hmac),
                 "Cannot decode message: Hmac validation failed", SecurityException.class);

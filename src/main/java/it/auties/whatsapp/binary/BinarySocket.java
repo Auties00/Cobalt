@@ -90,7 +90,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     private final WhatsappOptions options;
 
     @NonNull
-    private final AuthHandler authHandler;
+    private final HandshakeHandler handshakeHandler;
 
     @NonNull
     private final StreamHandler streamHandler;
@@ -100,6 +100,9 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
     @NonNull
     private final AppStateHandler appStateHandler;
+
+    @NonNull
+    private final PreKeysHandler preKeysHandler;
 
     @Getter
     @NonNull
@@ -121,11 +124,12 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         this.options = options;
         this.store = store;
         this.keys = keys;
-        this.authHandler = new AuthHandler();
+        this.handshakeHandler = new HandshakeHandler();
         this.streamHandler = new StreamHandler();
         this.messageHandler = new MessageHandler();
         this.appStateHandler = new AppStateHandler();
         this.pingService = newSingleThreadScheduledExecutor();
+        this.preKeysHandler = new PreKeysHandler();
         getRuntime().addShutdownHook(new Thread(() -> serialize(ON_CLOSE)));
         serialize(PERIODICALLY, this::schedulePeriodicSerialization);
         serialize(CUSTOM);
@@ -185,7 +189,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
         var header = message.decoded().getFirst();
         if(!loggedIn){
-            authHandler.sendUserPayload(header.toByteArray());
+            handshakeHandler.sendUserPayload(header.toByteArray());
             return;
         }
 
@@ -413,7 +417,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         }
     }
 
-    private class AuthHandler {
+    private class HandshakeHandler {
         @SneakyThrows
         private void sendUserPayload(byte[] message) {
             var serverHello = PROTOBUF.reader()
@@ -489,7 +493,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     .keyType(BytesHelper.intToBytes(KEY_TYPE, 1))
                     .identifier(keys.identityKeyPair().publicKey())
                     .signatureId(keys.signedKeyPair().encodedId())
-                    .signaturePublicKey(keys.signedKeyPair().keyPair().publicKey())
+                    .signaturePublicKey(keys.signedKeyPair().publicKey())
                     .signature(keys.signedKeyPair().signature())
                     .build();
         }
@@ -717,7 +721,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
         private void digestSuccess() {
             confirmConnection();
-            sendPreKeys();
+            preKeysHandler.upload();
             createPingTask();
             sendStatusUpdate();
             loginFuture.complete(null);
@@ -808,41 +812,6 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     .thenRunAsync(this::createMediaConnection);
         }
 
-        private void sendPreKeys() {
-            if(keys.hasPreKeys()){
-                return;
-            }
-
-            sendQuery("set", "encrypt", createPreKeysContent());
-        }
-
-        private Node[] createPreKeysContent() {
-            return new Node[]{createPreKeysRegistration(), createPreKeysType(),
-                    createPreKeysIdentity(), createPreKeys(), keys.signedKeyPair().toNode()};
-        }
-
-        private Node createPreKeysIdentity() {
-            return with("identity", keys.identityKeyPair().publicKey());
-        }
-
-        private Node createPreKeysType() {
-            return with("type", KEY_BUNDLE_TYPE);
-        }
-
-        private Node createPreKeysRegistration() {
-            return with("registration", BytesHelper.intToBytes(keys.id(), 4));
-        }
-
-        private Node createPreKeys() {
-            var nodes = IntStream.range(0, 30)
-                    .mapToObj(SignalPreKeyPair::ofIndex)
-                    .peek(keys.preKeys()::add)
-                    .map(SignalPreKeyPair::toNode)
-                    .toList();
-
-            return with("list", nodes);
-        }
-
         private void generateQrCode(Node node, Node container) {
             printQrCode(container);
             sendConfirmNode(node, null);
@@ -925,6 +894,31 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         }
     }
 
+    private class PreKeysHandler {
+        private static final int DEFAULT_PRE_KEYS_SIZE = 30;
+
+        public void upload() {
+            if(keys.hasPreKeys()){
+                return;
+            }
+
+            var preKeys = IntStream.range(0, DEFAULT_PRE_KEYS_SIZE)
+                    .mapToObj(SignalPreKeyPair::ofIndex)
+                    .peek(keys.preKeys()::add)
+                    .map(SignalPreKeyPair::toNode)
+                    .toList();
+
+
+            sendQuery("set", "encrypt",
+                    with("registration", BytesHelper.intToBytes(keys.id(), 4)),
+                    with("type", KEY_BUNDLE_TYPE),
+                    with("identity", keys.signedKeyPair().publicKey()),
+                    with("list", preKeys),
+                    keys.signedKeyPair().toNode()
+            );
+        }
+    }
+
     private class MessageHandler {
         private final CacheMap<ContactJid, GroupMetadata> groupsCache;
         private final CacheMap<String, List<ContactJid>> devicesCache;
@@ -948,8 +942,8 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                 var deviceMessage = MessageContainer.of(DeviceSentMessage.newDeviceSentMessage(info.chatJid().toString(), info.message(), null));
                 var encodedDeviceMessage = BytesHelper.pad(PROTOBUF.writeValueAsBytes(deviceMessage));
                 var knownDevices = List.of(keys.companion().toUserJid(), info.chatJid());
-                var devices = querySyncDevices(knownDevices, true);
-                var sessions = createConversationSessions(append(knownDevices, devices), encodedMessage, encodedDeviceMessage);
+                var otherDevices = querySyncDevices(knownDevices, true);
+                var sessions = createConversationSessions(append(knownDevices, otherDevices), encodedMessage, encodedDeviceMessage);
                 return createEncodedMessageNode(info, sessions, null, attributes);
             }
 
@@ -1097,8 +1091,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     .flatMap(Collection::stream)
                     .toList();
             var missing = partitioned.get(false);
-            return missing.isEmpty() ? cached
-                    : append(cached, querySyncDevicesFromWhatsapp(missing, excludeSelf));
+            return missing.isEmpty() ? cached : append(cached, querySyncDevicesFromWhatsapp(missing, excludeSelf));
         }
 
         @SneakyThrows

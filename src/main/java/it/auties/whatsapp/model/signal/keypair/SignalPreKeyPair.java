@@ -19,16 +19,12 @@ public record SignalPreKeyPair(int id, byte @NonNull [] publicKey, byte[] privat
 
     @Override
     public SignalKeyPair toGenericKeyPair() {
-        return new SignalKeyPair(publicKey, privateKey);
+        return new SignalKeyPair(publicKey(), privateKey());
     }
 
     @Override
     public Node toNode(){
         return Node.withChildren("key", Node.with("id", encodedId()),
-                Node.with("value", publicKey));
-    }
-
-    public byte[] encodedId(){
-        return BytesHelper.intToBytes(id, 3);
+                Node.with("value", publicKey()));
     }
 }
