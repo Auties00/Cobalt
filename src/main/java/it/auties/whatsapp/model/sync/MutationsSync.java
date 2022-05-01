@@ -24,7 +24,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @Accessors(fluent = true)
 public class MutationsSync implements ProtobufMessage {
   @ProtobufProperty(index = 1, type = MESSAGE,
-          concreteType = MutationsSync.class, repeated = true)
+          concreteType = MutationSync.class, repeated = true)
   private List<MutationSync> mutations;
 
   public static class MutationsSyncBuilder {

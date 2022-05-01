@@ -50,14 +50,6 @@ public class SenderKeyState implements ProtobufMessage {
     this.messageKeys = new ArrayList<>();
   }
 
-  public byte[] signingKeyPublic() {
-    return signingKey().publicKey();
-  }
-
-  public byte[] signingKeyPrivate() {
-    return signingKey().privateKey();
-  }
-
   public boolean hasSenderMessageKey(int iteration) {
     return messageKeys.stream()
             .anyMatch(senderMessageKey -> senderMessageKey.iteration() == iteration);

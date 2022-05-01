@@ -21,10 +21,10 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys key
     public Node encrypt(byte[] data) {
         try {
             ENCRYPTION_SEMAPHORE.acquire();
-            var record = keys.findSenderKeyByName(name)
-                    .orElseThrow(() -> new NoSuchElementException("Missing record for name: %s".formatted(name)));
-            var messageKey = record.currentState()
-                    .chainKey()
+            var currentState = keys.findSenderKeyByName(name)
+                    .orElseThrow(() -> new NoSuchElementException("Missing record for name: %s".formatted(name)))
+                    .currentState();
+            var messageKey = currentState.chainKey()
                     .toSenderMessageKey();
             var ciphertext = AesCbc.encrypt(
                     messageKey.iv(),
@@ -33,15 +33,14 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys key
             );
 
             var senderKeyMessage = new SenderKeyMessage(
-                    record.currentState().id(),
+                    currentState.id(),
                     messageKey.iteration(),
                     ciphertext,
-                    record.currentState().signingKeyPrivate()
+                    currentState.signingKey().privateKey()
             );
 
-            var next = record.currentState().chainKey().next();
-            record.currentState().chainKey(next);
-            keys.addSenderKey(name, record);
+            var next = currentState.chainKey().next();
+            currentState.chainKey(next);
             return with("enc", of("v", "2", "type", "skmsg"),
                     senderKeyMessage.serialized());
         }catch (Throwable throwable){

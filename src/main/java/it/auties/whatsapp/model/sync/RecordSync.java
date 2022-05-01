@@ -1,13 +1,17 @@
 package it.auties.whatsapp.model.sync;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.whatsapp.model.chat.ChatMediaVisibility;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
+
+import java.util.Arrays;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 
@@ -36,5 +40,13 @@ public class RecordSync implements ProtobufMessage {
 
         @Getter
         private final byte content;
+
+        @JsonCreator
+        public static Operation forIndex(int index) {
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(null);
+        }
     }
 }

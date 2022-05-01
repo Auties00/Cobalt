@@ -1,7 +1,6 @@
 package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.bytes.Bytes;
@@ -28,6 +27,8 @@ import lombok.extern.java.Log;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -51,7 +52,7 @@ public final class WhatsappKeys implements WhatsappController {
      */
     @Default
     @NonNull
-    private SignalKeyPair companionKeyPair = SignalKeyPair.random();
+    private SignalKeyPair noiseKeyPair = SignalKeyPair.random();
 
     /**
      * The ephemeral key pair
@@ -77,7 +78,7 @@ public final class WhatsappKeys implements WhatsappController {
      */
     @Default
     @NonNull
-    private LinkedList<SignalPreKeyPair> preKeys = new LinkedList<>();
+    private ConcurrentLinkedDeque<SignalPreKeyPair> preKeys = new ConcurrentLinkedDeque<>();
 
     /**
      * The user using these keys
@@ -114,7 +115,7 @@ public final class WhatsappKeys implements WhatsappController {
      */
     @NonNull
     @Default
-    private LinkedList<AppStateSyncKey> appStateKeys = new LinkedList<>();
+    private ConcurrentLinkedDeque<AppStateSyncKey> appStateKeys = new ConcurrentLinkedDeque<>();
 
     /**
      * Sessions map

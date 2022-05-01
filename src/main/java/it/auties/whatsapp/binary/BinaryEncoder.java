@@ -10,7 +10,7 @@ import java.util.Collection;
 
 import static it.auties.whatsapp.binary.BinaryTag.*;
 
-public final class BinaryEncoder {
+public class BinaryEncoder {
     private static final int UNSIGNED_BYTE_MAX_VALUE = 256;
     private static final int UNSIGNED_SHORT_MAX_VALUE = 65536;
     private static final int INT_20_MAX_VALUE = 1048576;

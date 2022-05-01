@@ -37,11 +37,12 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
             var session = loadSession();
             var currentState = session.currentState();
 
-            Validate.isTrue(keys.hasTrust(address, session.currentState().remoteIdentityKey()),
+            Validate.isTrue(keys.hasTrust(address, currentState.remoteIdentityKey()),
                     "Untrusted key", SecurityException.class);
 
             var chain = currentState.findChain(currentState.ephemeralKeyPair().encodedPublicKey())
                     .orElseThrow(() -> new NoSuchElementException("Missing chain for %s".formatted(address)));
+            System.out.println("Id: " + address);
             System.out.println("Counter: " + chain.counter());
             fillMessageKeys(chain, chain.counter() + 1);
 
@@ -59,12 +60,12 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
             var encrypted = AesCbc.encrypt(iv, data, secrets[0]);
             System.out.println("Cipher text: " + Bytes.of(encrypted).toHex());
 
-            var encryptedMessage = encrypt(currentState, chain, secrets, encrypted);
+            var encryptedMessage = encrypt(currentState, chain, secrets[1], encrypted);
             System.out.println("Result: " + Bytes.of(encryptedMessage).toHex());
             keys.addSession(address, session);
 
             return with("enc",
-                    of("v", "2", "type", currentState.hasPreKey() ? "pkmsg" : "msg"), encryptedMessage);
+                    of("v", "2", "type", getMessageType(currentState)), encryptedMessage);
         }catch (Throwable throwable){
             throw new RuntimeException("Cannot encrypt message: an exception occured", throwable);
         }finally {
@@ -72,39 +73,48 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         }
     }
 
-    private byte[] encrypt(SessionState state, SessionChain chain, byte[][] whisperKeys, byte[] encrypted) {
+    private String getMessageType(SessionState currentState) {
+        return currentState.hasPreKey() ? "pkmsg" : "msg";
+    }
+
+    private byte[] encrypt(SessionState state, SessionChain chain, byte[] key, byte[] encrypted) {
         var message = new SignalMessage(
                 state.ephemeralKeyPair().encodedPublicKey(),
                 chain.counter(),
                 state.previousCounter(),
                 encrypted,
-                encodedMessage -> createMessageSignature(state, whisperKeys, encodedMessage)
+                encodedMessage -> createMessageSignature(state, key, encodedMessage)
         );
 
-        return state.hasPreKey() ? createPreKeyMessage(state, message)
-                : message.serialized();
+        System.out.printf("%s: needs pre key? %s(%s)%n", address, state.hasPreKey(), (state.hasPreKey() ? state.pendingPreKey().preKeyId() : -1));
+        var serializedMessage = message.serialized();
+        return state.hasPreKey() ? createPreKeyMessage(state, serializedMessage)
+                : serializedMessage;
     }
 
-    private byte[] createPreKeyMessage(SessionState state, SignalMessage message) {
-        return SignalPreKeyMessage.builder()
+    private byte[] createPreKeyMessage(SessionState state, byte[] message) {
+        var preKeyMessage =  SignalPreKeyMessage.builder()
                 .version(CURRENT_VERSION)
                 .identityKey(keys.identityKeyPair().encodedPublicKey())
                 .registrationId(keys.id())
                 .baseKey(state.pendingPreKey().baseKey())
                 .signedPreKeyId(state.pendingPreKey().signedKeyId())
-                .serializedSignalMessage(message.serialized())
-                .preKeyId(state.pendingPreKey().preKeyId())
-                .build()
-                .serialized();
+                .serializedSignalMessage(message);
+        if(state.pendingPreKey().preKeyId() != 0){
+            preKeyMessage.preKeyId(state.pendingPreKey().preKeyId());
+        }
+
+        System.out.printf("Message for %s: %s%n", address, Bytes.of(preKeyMessage.build().serialized()).toHex());
+        return preKeyMessage.build().serialized();
     }
 
-    private byte[] createMessageSignature(SessionState state, byte[][] whisperKeys, byte[] encodedMessage) {
+    private byte[] createMessageSignature(SessionState state, byte[] key, byte[] encodedMessage) {
         var macInput = Bytes.of(keys.identityKeyPair().encodedPublicKey())
                 .append(state.remoteIdentityKey())
                 .append(encodedMessage)
                 .assertSize(encodedMessage.length + 33 + 33)
                 .toByteArray();
-        return Bytes.of(Hmac.calculateSha256(macInput, whisperKeys[1]))
+        return Bytes.of(Hmac.calculateSha256(macInput, key))
                 .cut(MAC_LENGTH)
                 .toByteArray();
     }
@@ -184,10 +194,10 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         var hmacInput = Bytes.of(state.remoteIdentityKey())
                 .append(keys.identityKeyPair().encodedPublicKey())
                 .append(message.serialized())
-                .cut(-SignalMessage.MAC_LENGTH)
+                .cut(-MAC_LENGTH)
                 .toByteArray();
         var hmac = Bytes.of(Hmac.calculateSha256(hmacInput, secrets[1]))
-                .cut(SignalMessage.MAC_LENGTH)
+                .cut(MAC_LENGTH)
                 .toByteArray();
         Validate.isTrue(Arrays.equals(message.signature(), hmac),
                 "Cannot decode message: Hmac validation failed", SecurityException.class);
@@ -238,6 +248,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
     }
 
     private Session loadSession(Supplier<Session> defaultSupplier) {
+        System.out.println("Loading session: " + address);
         return keys.findSessionByAddress(address)
                 .orElseGet(() -> requireNonNull(defaultSupplier.get(), "Missing session for %s. Known sessions: %s".formatted(address, keys.sessions())));
     }

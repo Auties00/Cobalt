@@ -106,14 +106,4 @@ public class Contact implements ProtobufMessage {
     public Optional<ZonedDateTime> lastSeen() {
         return Optional.ofNullable(lastSeen);
     }
-
-    /**
-     * Updates this contact using the information from the provided sync
-     *
-     * @param action the non-null sync
-     */
-    public void update(@NonNull ContactAction action) {
-        this.fullName = action.fullName();
-        this.shortName = action.firstName();
-    }
 }

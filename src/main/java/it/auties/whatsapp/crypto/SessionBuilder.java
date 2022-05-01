@@ -102,23 +102,20 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
                 ourSignedKey.privateKey());
         var sharedSecret = createStateSecret(isInitiator, ourEphemeralKey, ourSignedKey,
                 theirEphemeralPubKey, theirSignedPubKey, signedSecret, identitySecret);
-        var masterKeyInput = sharedSecret
-                .assertSize(ourEphemeralKey == null || theirEphemeralPubKey == null ? 128 : 160)
-                .toByteArray();
-        var masterKey = Hkdf.deriveSecrets(masterKeyInput,
+        var masterKey = Hkdf.deriveSecrets(sharedSecret.toByteArray(),
                 "WhisperText".getBytes(StandardCharsets.UTF_8));
         var state = createState(isInitiator, ourEphemeralKey, ourSignedKey, theirIdentityPubKey,
                 theirEphemeralPubKey, theirSignedPubKey, registrationId, version, masterKey);
-        if (!isInitiator) {
-            return state;
-        }
+        return isInitiator ? calculateSendingRatchet(state, theirSignedPubKey) : state;
+    }
 
-        var initSecret = Curve25519.sharedKey(Keys.withoutHeader(theirSignedPubKey), state.ephemeralKeyPair().privateKey());
+    private SessionState calculateSendingRatchet(SessionState state, byte[] theirSignedPubKey) {
+        var initSecret = Curve25519.sharedKey(Keys.withoutHeader(theirSignedPubKey),
+                state.ephemeralKeyPair().privateKey());
         var initKey = Hkdf.deriveSecrets(initSecret, state.rootKey(),
                 "WhisperRatchet".getBytes(StandardCharsets.UTF_8));
-        var chain = new SessionChain(-1, masterKey[1]);
-        return state.addChain(state.ephemeralKeyPair().encodedPublicKey(), chain)
-                .rootKey(initKey[0]);
+        var chain = new SessionChain(-1, initKey[1]);
+        return state.addChain(state.ephemeralKeyPair().encodedPublicKey(), chain).rootKey(initKey[0]);
     }
 
     private SessionState createState(boolean isInitiator, SignalKeyPair ourEphemeralKey, SignalKeyPair ourSignedKey,
@@ -148,7 +145,8 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
             return sharedSecret;
         }
 
-        var additional = Curve25519.sharedKey(Keys.withoutHeader(theirEphemeralPubKey), ourEphemeralKey.privateKey());
+        var additional = Curve25519.sharedKey(Keys.withoutHeader(theirEphemeralPubKey),
+                ourEphemeralKey.privateKey());
         return sharedSecret.append(additional);
     }
 }

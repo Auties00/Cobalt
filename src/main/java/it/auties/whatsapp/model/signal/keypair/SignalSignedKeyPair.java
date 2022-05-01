@@ -20,25 +20,34 @@ public record SignalSignedKeyPair(int id, @NonNull SignalKeyPair keyPair, byte[]
         }
 
         var id = BytesHelper.bytesToInt(node.findNode("id").bytes(), 3);
-        var keyPair = new SignalKeyPair(node.findNode("value").bytes(), null);
-        var signature = node.findNode("signature");
-        return Optional.of(new SignalSignedKeyPair(id, keyPair, signature != null ? signature.bytes() : null));
+        var publicKey = node.findNode("value").bytes();
+        var keyPair = new SignalKeyPair(publicKey, null);
+        var signature = Optional.ofNullable(node.findNode("signature"))
+                .map(Node::bytes)
+                .orElse(null);
+        return Optional.of(new SignalSignedKeyPair(id, keyPair, signature));
     }
 
     @Override
     public SignalKeyPair toGenericKeyPair() {
-        return keyPair;
+        return keyPair();
+    }
+
+    @Override
+    public byte[] publicKey() {
+        return keyPair.publicKey();
+    }
+
+    @Override
+    public byte[] privateKey() {
+        return keyPair.privateKey();
     }
 
     public Node toNode(){
         return Node.withChildren("skey",
                 Node.with("id", encodedId()),
-                Node.with("value", keyPair.publicKey()),
-                Node.with("signature", signature)
+                Node.with("value", publicKey()),
+                Node.with("signature", signature())
         );
-    }
-
-    public byte[] encodedId(){
-        return BytesHelper.intToBytes(id, 3);
     }
 }

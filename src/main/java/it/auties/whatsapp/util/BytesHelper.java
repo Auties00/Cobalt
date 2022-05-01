@@ -49,6 +49,7 @@ public class BytesHelper {
                 .cut(-bytes[bytes.length - 1])
                 .toByteArray();
     }
+
     public byte[] longToBytes(long number){
         return Bytes.newBuffer()
                 .appendLong(number)
@@ -56,20 +57,20 @@ public class BytesHelper {
                 .toByteArray();
     }
 
-    public int bytesToInt(byte[] bytes, int length){
-        var result = 0;
-        for (var i = 0; i < length; i++) {
-            result = 256 * result + Byte.toUnsignedInt(bytes[i]);
-        }
-
-        return result;
-    }
-
     public byte[] intToBytes(int input, int length) {
         var result = new byte[length];
         for(var i = length - 1; i >= 0; i--){
             result[i] = (byte) (255 & input);
             input >>>= 8;
+        }
+
+        return result;
+    }
+
+    public int bytesToInt(byte[] bytes, int length){
+        var result = 0;
+        for (var i = 0; i < length; i++) {
+            result = 256 * result + Byte.toUnsignedInt(bytes[i]);
         }
 
         return result;

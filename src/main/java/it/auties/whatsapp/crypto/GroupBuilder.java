@@ -20,16 +20,23 @@ public record GroupBuilder(@NonNull WhatsappKeys keys) implements SignalSpecific
             var senderKeyRecord = keys.findSenderKeyByName(name)
                     .orElseGet(() -> createRecord(name));
             if (senderKeyRecord.isEmpty()) {
-                var keyId = Keys.senderKeyId();
-                var senderKey = Keys.senderKey();
                 var signingKey = SignalKeyPair.random();
-                senderKeyRecord.addState(keyId, 0, senderKey, signingKey.publicKey(), signingKey.privateKey());
-                keys.addSenderKey(name, senderKeyRecord);
+                senderKeyRecord.addState(
+                        Keys.senderKeyId(),
+                        0,
+                        Keys.senderKey(),
+                        signingKey.publicKey(),
+                        signingKey.privateKey()
+                );
             }
 
             var state = senderKeyRecord.currentState();
-            return new SignalDistributionMessage(state.id(), state.chainKey().iteration(),
-                    state.chainKey().seed(), state.signingKeyPublic());
+            return new SignalDistributionMessage(
+                    state.id(),
+                    state.chainKey().iteration(),
+                    state.chainKey().seed(),
+                    state.signingKey().publicKey()
+            );
         }catch (Throwable throwable){
             throw new RuntimeException("Cannot create outgoing: an exception occured", throwable);
         }finally {
