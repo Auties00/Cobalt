@@ -25,7 +25,7 @@ public class QrGenerator {
     public BitMatrix generate(@NonNull WhatsappKeys keys, @NonNull String ref) {
         var qr = "%s,%s,%s,%s".formatted(
                 ref,
-                of(keys.companionKeyPair().publicKey()).toBase64(),
+                of(keys.noiseKeyPair().publicKey()).toBase64(),
                 of(keys.identityKeyPair().publicKey()).toBase64(),
                 of(keys.companionKey()).toBase64()
         );

@@ -1,16 +1,14 @@
 package it.auties.whatsapp.dev;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSetter;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.binary.BinarySocket;
 import it.auties.whatsapp.controller.WhatsappKeys;
 import it.auties.whatsapp.controller.WhatsappStore;
+import it.auties.whatsapp.crypto.SessionBuilder;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MessageContainer;
@@ -31,20 +29,16 @@ import it.auties.whatsapp.model.signal.session.SessionState;
 import it.auties.whatsapp.model.sync.AppStateSyncKeyData;
 import it.auties.whatsapp.model.sync.AppStateSyncKeyFingerprint;
 import it.auties.whatsapp.model.sync.AppStateSyncKeyId;
-import it.auties.whatsapp.util.Attributes;
 import it.auties.whatsapp.util.CacheMap;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.experimental.Accessors;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.stream.Collectors;
 
 import static it.auties.whatsapp.util.SignalSpecification.CURRENT_VERSION;
@@ -59,7 +53,7 @@ public class BaileysTest {
         var whatsappKeys = createKeys();
         var whatsappStore = WhatsappStore.newStore(33);
 
-        var contact = ContactJid.of("393495089819@s.whatsapp.net");
+        var contact = ContactJid.of("15414367949@s.whatsapp.net");
         var key = MessageKey.newMessageKey()
                 .id(MESSAGE_ID)
                 .chatJid(contact)
@@ -71,13 +65,16 @@ public class BaileysTest {
                 .message(MessageContainer.of(TextMessage.of(MESSAGE_CONTENT)))
                 .create();
 
-
-        var messageHandler = createMessageHandler(whatsappKeys, whatsappStore);
-        var encodeMethod = messageHandler.getClass().getMethod("encodeBeta", MessageInfo.class, byte[].class);
-        encodeMethod.setAccessible(true);
-
-        var completed = (Node) encodeMethod.invoke(messageHandler, info, Bytes.ofHex("fa01270a1b33393334393530383938313940732e77686174736170702e6e6574120832060a044369616f01").toByteArray());
-        System.out.println(completed);
+        var address = ContactJid.of("15414367949@s.whatsapp.net").toSignalAddress();
+        var builder = new SessionBuilder(address, whatsappKeys);
+        builder.createOutgoing(
+                256206937,
+                Bytes.ofHex("059328c7d02c9016a8fe052aad077648181a4d56d28eefbac970bb5ba07b11ee13").toByteArray(),
+                new SignalSignedKeyPair(4, new SignalKeyPair(Bytes.ofHex("05b9818932a02b9961e99c472fed96a46f552d4321de9179ecc85071d60eeb9b72").toByteArray(), null), Bytes.ofHex("67d74137e74ac908ed342ec2525e5408df5edd46834ec6cb9946cbd5adea8a526b5baf45a753be08687cf899a0b6f5af788078a9df3813c0e97d3629a7fe220f").toByteArray()),
+                new SignalSignedKeyPair(7567753, new SignalKeyPair(Bytes.ofHex("05787a4127a299bc8b182876cea00efe106c776e9274f90f1ed7882533a0d8ec17").toByteArray(), null), null)
+        );
+        var result = whatsappKeys.findSessionByAddress(address);
+        System.out.println(result);
     }
 
 
@@ -96,22 +93,18 @@ public class BaileysTest {
     }
 
     private void addSessions(WhatsappKeys whatsappKeys, CacheMap<String, List<ContactJid>> devicesCache) {
-        whatsappKeys.sessions()
+        var data = whatsappKeys.sessions()
                 .keySet()
                 .stream()
                 .map(SessionAddress::name)
-                .distinct()
-                .forEach(name -> addSession(whatsappKeys, devicesCache, name));
-    }
+                .collect(Collectors.groupingBy(address -> {
+                    if(!address.contains(":")){
+                        return address;
+                    }
 
-    private void addSession(WhatsappKeys whatsappKeys, CacheMap<String, List<ContactJid>> devicesCache, String name) {
-        var sessions = whatsappKeys.sessions()
-                .keySet()
-                .stream()
-                .filter(entry -> entry.name().equals(name))
-                .map(entry -> ContactJid.ofDevice(entry.name(), entry.deviceId()))
-                .toList();
-        devicesCache.put(name, sessions);
+                    return address.split(":", 2)[0];
+                }));
+        data.forEach((user, devices) -> devicesCache.put(user, devices.stream().map(ContactJid::of).toList()));
     }
 
     private WhatsappKeys createKeys() throws URISyntaxException, IOException {
@@ -119,11 +112,11 @@ public class BaileysTest {
         var baileysKeys = new ObjectMapper().readValue(path.toFile(), BaileysKeys.class);
         return WhatsappKeys.builder()
                 .id(baileysKeys.creds().registrationId())
-                .companionKeyPair(new SignalKeyPair(baileysKeys.creds().noiseKey().publicKey().data(), baileysKeys.creds().noiseKey().privateKey().data()))
+                .noiseKeyPair(new SignalKeyPair(baileysKeys.creds().noiseKey().publicKey().data(), baileysKeys.creds().noiseKey().privateKey().data()))
                 .ephemeralKeyPair(new SignalKeyPair(baileysKeys.creds().noiseKey().publicKey().data(), baileysKeys.creds().noiseKey().privateKey().data()))
-                .identityKeyPair(new SignalKeyPair(baileysKeys.creds().signedIdentityKey().publicKey().data(), baileysKeys.creds().noiseKey().privateKey().data()))
+                .identityKeyPair(new SignalKeyPair(baileysKeys.creds().signedIdentityKey().publicKey().data(), baileysKeys.creds().signedIdentityKey().privateKey().data()))
                 .signedKeyPair(new SignalSignedKeyPair(baileysKeys.creds().signedPreKey().keyId(), new SignalKeyPair(baileysKeys.creds().signedPreKey().keyPair().publicKey().data(), baileysKeys.creds().signedPreKey().keyPair().privateKey().data()), baileysKeys.creds().signedPreKey().signature().data()))
-                .preKeys(baileysKeys.keys().preKeys()
+                .preKeys(baileysKeys.keys() == null || baileysKeys.keys().preKeys() == null ? new ConcurrentLinkedDeque<>() : baileysKeys.keys().preKeys()
                         .keySet()
                         .stream()
                         .filter(id -> baileysKeys.keys().preKeys().get(id) != null)
@@ -133,16 +126,16 @@ public class BaileysTest {
                                         baileysKeys.keys().preKeys().get(id).privateKey().data()
                                 )
                         )
-                        .collect(Collectors.toCollection(LinkedList::new)))
-                .companion(ContactJid.of(baileysKeys.creds().me().id()))
+                        .collect(Collectors.toCollection(ConcurrentLinkedDeque::new)))
+                .companion(baileysKeys.keys() == null || baileysKeys.creds().me() == null ? null : ContactJid.of(baileysKeys.creds().me().id()))
                 .companionKey(baileysKeys.creds().advSecretKey())
-                .companionIdentity(SignedDeviceIdentity.builder()
+                .companionIdentity(baileysKeys.creds().account() == null ? null : SignedDeviceIdentity.builder()
                         .deviceSignature(baileysKeys.creds().account().deviceSignature())
                         .accountSignature(baileysKeys.creds().account().accountSignature())
                         .accountSignatureKey(baileysKeys.creds().account().accountSignatureKey())
                         .details(baileysKeys.creds().account().details())
                         .build())
-                .appStateKeys(baileysKeys.keys().appStateSyncKeys() != null ? baileysKeys.keys().appStateSyncKeys()
+                .appStateKeys(baileysKeys.keys() == null ? new ConcurrentLinkedDeque<>() : baileysKeys.keys().appStateSyncKeys() != null ? baileysKeys.keys().appStateSyncKeys()
                         .keySet()
                         .stream()
                         .map(name -> it.auties.whatsapp.model.sync.AppStateSyncKey.builder()
@@ -156,8 +149,8 @@ public class BaileysTest {
                                                 .build())
                                         .build())
                                 .build())
-                        .collect(Collectors.toCollection(LinkedList::new)) : new LinkedList<>())
-                .sessions(baileysKeys.keys().sessions()
+                        .collect(Collectors.toCollection(ConcurrentLinkedDeque::new)) : new ConcurrentLinkedDeque<>())
+                .sessions(baileysKeys.keys() == null ? new ConcurrentHashMap<>() : baileysKeys.keys().sessions()
                         .keySet()
                         .stream()
                         .map(key -> Map.entry(key,
@@ -192,7 +185,7 @@ public class BaileysTest {
                                         })
                                         .collect(Collectors.toCollection(LinkedHashSet::new)))))
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)))
-                .senderKeys(baileysKeys.keys().senderKeys() != null ? baileysKeys.keys().senderKeys()
+                .senderKeys(baileysKeys.keys() == null ? new ConcurrentHashMap<>() : baileysKeys.keys().senderKeys() != null ? baileysKeys.keys().senderKeys()
                         .keySet()
                         .stream()
                         .map(keyName -> {
@@ -213,7 +206,7 @@ public class BaileysTest {
 
     }
 
-    @JsonIgnoreProperties("signalIdentities")
+    @JsonIgnoreProperties({"signalIdentities", "accountSettings"})
     record Credentials(KeyPair noiseKey, KeyPair signedIdentityKey, SignedKeyPair signedPreKey,
                        int registrationId, byte[] advSecretKey, int nextPreKeyId, int firstUnuploadedPreKeyId, boolean serverHasPreKeys,
                        Account account, Me me, byte[] myAppStateKeyId, long lastAccountSyncTimestamp) {

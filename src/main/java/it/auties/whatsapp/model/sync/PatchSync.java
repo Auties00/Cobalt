@@ -4,6 +4,7 @@ import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -24,7 +25,8 @@ public class PatchSync implements ProtobufMessage {
 
     @ProtobufProperty(index = 2, type = MESSAGE,
             concreteType = MutationSync.class, repeated = true)
-    private List<MutationSync> mutations;
+    @Default
+    private List<MutationSync> mutations = new ArrayList<>();
 
     @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ExternalBlobReference.class)
     private ExternalBlobReference externalMutations;
@@ -54,8 +56,12 @@ public class PatchSync implements ProtobufMessage {
 
     public static class PatchSyncBuilder {
         public PatchSyncBuilder mutations(List<MutationSync> mutations) {
-            if (this.mutations == null) this.mutations = new ArrayList<>();
-            this.mutations.addAll(mutations);
+            if (this.mutations$value == null){
+                this.mutations$value = mutations;
+                return this;
+            }
+
+            this.mutations$value.addAll(mutations);
             return this;
         }
     }

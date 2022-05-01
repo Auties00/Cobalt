@@ -18,7 +18,7 @@ import static it.auties.whatsapp.model.contact.ContactJid.Server.forAddress;
 import static it.auties.whatsapp.model.request.Node.with;
 import static it.auties.whatsapp.model.request.Node.withAttributes;
 
-public final class BinaryDecoder {
+public class BinaryDecoder {
     private Bytes buffer;
 
     public synchronized Node decode(byte @NonNull [] input) {

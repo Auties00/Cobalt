@@ -35,10 +35,12 @@ public class ApiTest {
             return;
         }
 
-        whatsapp.store().findChatByName(contact).ifPresentOrElse(chat -> {
-            System.out.println("Sending message to " + contact);
-            whatsapp.sendMessage(chat, "Ciao!");
-        }, () -> System.out.println("No match for " + contact));
+        whatsapp.store().findChatByName(contact)
+                .or(() -> whatsapp.store().findChatByJid(ContactJid.of(contact)))
+                .ifPresentOrElse(chat -> {
+                    System.out.println("Sending message to " + contact);
+                    whatsapp.sendMessage(chat, "Ciao!");
+                }, () -> System.out.println("No match for " + contact));
         waitForInput(whatsapp);
     }
 
@@ -59,6 +61,7 @@ public class ApiTest {
                         whatsapp.sendMessage(chat.jid(), "Test da md");
                     });
         }
+
 
         @Override
         public void onAction(Action action) {

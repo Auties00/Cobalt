@@ -1,0 +1,60 @@
+      @SneakyThrows
+        public String relayMessage(ContactJid jid, MessageContainer message, ContactJid participant) {
+            var meId = keys.companion();
+            var user = jid.user();
+            var isGroup = jid.type() == ContactJid.Type.GROUP;
+            var msgId = Bytes.ofRandom(8).toHex().toUpperCase(Locale.ROOT);
+            var encodedMsg = BytesHelper.pad(PROTOBUF.writeValueAsBytes(message));
+            var participants = new ArrayList<Node>();
+
+            var destinationJid = ContactJid.of(user, isGroup ? ContactJid.Server.GROUP: ContactJid.Server.WHATSAPP);
+            var binaryNodeContent = new ArrayList<Node>();
+            var devices = new ArrayList<ContactJid>();
+
+            if(participant != null) {
+                devices.add(participant);
+            }
+
+            var meUser = meId.user();
+            var encodedMeMsg = BytesHelper.pad(PROTOBUF.writeValueAsBytes(DeviceSentMessage.newDeviceSentMessage(destinationJid.toString(), message, null)));
+            if(participant == null) {
+                devices.add(ContactJid.of(user, ContactJid.Server.WHATSAPP));
+                devices.add(ContactJid.of(meUser, ContactJid.Server.WHATSAPP));
+                var additionalDevices = querySyncDevices(List.of(meId, jid), true);
+                devices.addAll(additionalDevices);
+
+                var meJids = new ArrayList<ContactJid>();
+                var otherJids = new ArrayList<ContactJid>();
+                for(var device : devices) {
+                    var user1 = device.user();
+                    var device1 = device.device();
+                    var jid1 = new ContactJid(user1, ContactJid.Server.WHATSAPP, device1, 0);
+                    var isMe = Objects.equals(user1, meUser);
+                    if(isMe) {
+                        meJids.add(jid1);
+                    } else {
+                        otherJids.add(jid1);
+                    }
+                }
+
+                var meNodes = createSessions(meJids, encodedMeMsg);
+                var otherNodes = createSessions(otherJids, encodedMsg);
+                participants.addAll(meNodes);
+                participants.addAll(otherNodes);
+            }
+
+            if(!participants.isEmpty()) {
+                binaryNodeContent.add(withChildren("participants", participants));
+            }
+
+            if(hasPreKeyMessage(participants)) {
+                binaryNodeContent.add(with("device-identity", PROTOBUF.writeValueAsBytes(keys.companionIdentity())));
+            }
+
+            var stanza = withChildren("message",
+                    of("id", msgId, "type", "text", "to", destinationJid),
+                    binaryNodeContent);
+
+            send(stanza).get();
+            return msgId;
+        }

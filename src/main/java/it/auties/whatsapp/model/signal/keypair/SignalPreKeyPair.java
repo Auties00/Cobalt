@@ -1,7 +1,6 @@
 package it.auties.whatsapp.model.signal.keypair;
 
 import it.auties.whatsapp.model.request.Node;
-import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Keys;
 import lombok.NonNull;
 
@@ -12,9 +11,9 @@ public record SignalPreKeyPair(int id, byte @NonNull [] publicKey, byte[] privat
         this.privateKey = privateKey;
     }
 
-    public static SignalPreKeyPair ofIndex(int index){
+    public static SignalPreKeyPair random(int id){
         var keyPair = SignalKeyPair.random();
-        return new SignalPreKeyPair(index, keyPair.publicKey(), keyPair.privateKey());
+        return new SignalPreKeyPair(id, keyPair.publicKey(), keyPair.privateKey());
     }
 
     @Override
