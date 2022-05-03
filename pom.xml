@@ -88,7 +88,7 @@
         <zxing.version>3.4.1</zxing.version>
         <protoc.version>1.12</protoc.version>
         <tyrus.version>2.0.2</tyrus.version>
-        <lombok.version>1.18.22</lombok.version>
+        <lombok.version>1.18.24</lombok.version>
         <junit.version>5.8.2</junit.version>
         <jna.version>5.11.0</jna.version>
         <jackson.version>2.13.2.2</jackson.version>
@@ -96,8 +96,9 @@
         <jackson.map.version>1.1</jackson.map.version>
         <curve25519.version>1.1</curve25519.version>
         <bytes.version>1.2</bytes.version>
-        <classgraph.version>4.8.143</classgraph.version>
+        <classgraph.version>4.8.146</classgraph.version>
         <reflection.version>1.2</reflection.version>
+        <caffeine.version>3.1.0</caffeine.version>
         <delombok.input>${project.basedir}/src/main/java</delombok.input>
         <delombok.output>${project.build.directory}/delombok</delombok.output>
     </properties>
@@ -250,6 +251,11 @@
             <groupId>io.github.classgraph</groupId>
             <artifactId>classgraph</artifactId>
             <version>${classgraph.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+            <version>${caffeine.version}</version>
         </dependency>
         <dependency>
             <groupId>com.github.auties00</groupId>

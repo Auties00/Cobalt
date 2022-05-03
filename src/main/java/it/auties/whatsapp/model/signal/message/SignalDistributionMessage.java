@@ -46,23 +46,26 @@ public final class SignalDistributionMessage implements SignalProtocolMessage {
    * The signing key of the message
    */
   @ProtobufProperty(index = 4, type = BYTES)
-  private byte @NonNull[] signingKey;
+  private byte @NonNull [] signingKey;
 
   /**
    * This message in a serialized form
    */
   private byte[] serialized;
 
-  @SneakyThrows
-  public SignalDistributionMessage(int id, int iteration, byte[] chainKey, byte[] signingKey) {
-    this.version = CURRENT_VERSION;
-    this.id = id;
-    this.iteration = iteration;
-    this.chainKey = chainKey;
-    this.signingKey = signingKey;
-    this.serialized = Bytes.of(serializedVersion())
-            .append(PROTOBUF.writeValueAsBytes(this))
-            .toByteArray();
+  public SignalDistributionMessage(int id, int iteration, byte @NonNull [] chainKey, byte @NonNull [] signingKey) {
+    try {
+      this.version = CURRENT_VERSION;
+      this.id = id;
+      this.iteration = iteration;
+      this.chainKey = chainKey;
+      this.signingKey = signingKey;
+      this.serialized = Bytes.of(serializedVersion())
+              .append(PROTOBUF.writeValueAsBytes(this))
+              .toByteArray();
+    }catch (IOException exception){
+      throw new RuntimeException("Cannot encode SenderKeyMessage", exception);
+    }
   }
 
   public static SignalDistributionMessage ofSerialized(byte[] serialized){

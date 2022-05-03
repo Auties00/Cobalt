@@ -52,20 +52,8 @@ public class ApiTest {
         }
 
         @Override
-        public void onChats() {
-            System.out.println("Called on chats");
-            whatsapp.store()
-                    .findChatByJid(ContactJid.of("15414367949@s.whatsapp.net"))
-                    .ifPresent(chat -> {
-                        System.out.printf("Sending message to %s%n", chat.jid());
-                        whatsapp.sendMessage(chat.jid(), "Test da md");
-                    });
-        }
-
-
-        @Override
         public void onAction(Action action) {
-            System.out.println("ACTION: " + action);
+            System.out.printf("New action: %s%n" , action);
         }
 
         @Override
@@ -94,7 +82,7 @@ public class ApiTest {
 
         @Override
         public void onMessageStatus(Chat chat, Contact contact, MessageInfo message, MessageStatus status) {
-            System.out.printf("Message with jid %s in chat %s%s has now status %s%n", message.id(), chat.name(), contact == null ? "" : " sent by %s".formatted(contact.name()), status.name());
+            System.out.printf("Message with id %s sent by %s in chat %s has now status %s for %s%n", message.id(), message.senderName(), chat.name(), status.name(), contact.name());
         }
     }
 }

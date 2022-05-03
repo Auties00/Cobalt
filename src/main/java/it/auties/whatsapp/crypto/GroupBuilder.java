@@ -20,17 +20,15 @@ public record GroupBuilder(@NonNull WhatsappKeys keys) implements SignalSpecific
             var senderKeyRecord = keys.findSenderKeyByName(name)
                     .orElseGet(() -> createRecord(name));
             if (senderKeyRecord.isEmpty()) {
-                var signingKey = SignalKeyPair.random();
                 senderKeyRecord.addState(
                         Keys.senderKeyId(),
                         0,
                         Keys.senderKey(),
-                        signingKey.publicKey(),
-                        signingKey.privateKey()
+                        SignalKeyPair.random()
                 );
             }
 
-            var state = senderKeyRecord.currentState();
+            var state = senderKeyRecord.headState();
             return new SignalDistributionMessage(
                     state.id(),
                     state.chainKey().iteration(),

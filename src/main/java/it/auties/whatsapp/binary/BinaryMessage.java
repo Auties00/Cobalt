@@ -4,7 +4,6 @@ import it.auties.bytes.Bytes;
 import it.auties.whatsapp.controller.WhatsappKeys;
 import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.model.request.Node;
-import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.Accessors;
@@ -53,7 +52,7 @@ public class BinaryMessage {
     }
 
     private Node toNode(Bytes encoded, WhatsappKeys keys) {
-        var plainText = AesGmc.with(keys.readKey(), keys.readCounter(true), false)
+        var plainText = AesGmc.of(keys.readKey(), keys.readCounter(true), false)
                 .process(encoded.toByteArray());
         return DECODER.decode(plainText);
     }

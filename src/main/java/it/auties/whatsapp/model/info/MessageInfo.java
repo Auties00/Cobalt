@@ -92,8 +92,7 @@ public final class MessageInfo implements Info {
   private MessageStatus status = MessageStatus.PENDING;
 
   /**
-   * The jid of the participant that sent the message in a group.
-   * This property is only populated if {@link MessageInfo#chat()} refers to a group.
+   * The jid of the sender
    */
   @ProtobufProperty(index = 5, type = STRING,
           concreteType = ContactJid.class, requiresConversion = true)
@@ -262,16 +261,6 @@ public final class MessageInfo implements Info {
   @JsonIgnore
   public Optional<Chat> chat(){
     return store().findChatByJid(chatJid());
-  }
-
-  /**
-   * Returns the jid of the contact that sent the message
-   *
-   * @return a non-null ContactId
-   */
-  @JsonIgnore
-  public ContactJid senderJid(){
-    return Objects.requireNonNullElse(senderJid, chatJid());
   }
 
   /**

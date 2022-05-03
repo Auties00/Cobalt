@@ -168,7 +168,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
             return body;
         }
 
-        return AesGmc.with(keys.writeKey(), keys.writeCounter(true), true)
+        return AesGmc.of(keys.writeKey(), keys.writeCounter(true), true)
                 .process(body);
     }
 }

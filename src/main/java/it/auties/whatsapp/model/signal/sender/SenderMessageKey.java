@@ -28,9 +28,9 @@ public class SenderMessageKey implements ProtobufMessage, SignalSpecification {
     @ProtobufProperty(index = 2, type = BYTES)
     private byte[] seed;
 
-    private byte[] cipherKey;
-
     private byte[] iv;
+
+    private byte[] cipherKey;
 
     public SenderMessageKey(int iteration, byte[] seed) {
         var derivative = Hkdf.deriveSecrets(seed,
@@ -40,9 +40,12 @@ public class SenderMessageKey implements ProtobufMessage, SignalSpecification {
         this.iv = Bytes.of(derivative[0])
                 .cut(IV_LENGTH)
                 .toByteArray();
-        var cipherKey = new byte[32];
-        System.arraycopy(derivative[0], 16, cipherKey, 0, 16);
-        System.arraycopy(derivative[1], 0, cipherKey, 16, 16);
-        this.cipherKey = cipherKey;
+        this.cipherKey = Bytes.of(derivative[0])
+                .slice(IV_LENGTH)
+                .assertSize(IV_LENGTH)
+                .append(derivative[1])
+                .cut(KEY_LENGTH)
+                .assertSize(KEY_LENGTH)
+                .toByteArray();
     }
 }

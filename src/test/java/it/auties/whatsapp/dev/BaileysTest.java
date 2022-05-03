@@ -14,7 +14,6 @@ import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.standard.TextMessage;
-import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
@@ -29,7 +28,6 @@ import it.auties.whatsapp.model.signal.session.SessionState;
 import it.auties.whatsapp.model.sync.AppStateSyncKeyData;
 import it.auties.whatsapp.model.sync.AppStateSyncKeyFingerprint;
 import it.auties.whatsapp.model.sync.AppStateSyncKeyId;
-import it.auties.whatsapp.util.CacheMap;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 
@@ -75,36 +73,6 @@ public class BaileysTest {
         );
         var result = whatsappKeys.findSessionByAddress(address);
         System.out.println(result);
-    }
-
-
-    private Object createMessageHandler(WhatsappKeys whatsappKeys, WhatsappStore whatsappStore) throws NoSuchFieldException, IllegalAccessException {
-        var dummy = new BinarySocket(WhatsappOptions.defaultOptions(), whatsappStore, whatsappKeys);
-        var messageHandlerField = dummy.getClass().getDeclaredField("messageHandler");
-        messageHandlerField.setAccessible(true);
-        var messageHandler = messageHandlerField.get(dummy);
-        var devicesCacheField = messageHandler.getClass().getDeclaredField("devicesCache");
-        devicesCacheField.setAccessible(true);
-        @SuppressWarnings("unchecked")
-        var devicesCache = (CacheMap<String, List<ContactJid>>) devicesCacheField.get(messageHandler);
-        addSessions(whatsappKeys, devicesCache);
-        System.out.println(devicesCache);
-        return messageHandler;
-    }
-
-    private void addSessions(WhatsappKeys whatsappKeys, CacheMap<String, List<ContactJid>> devicesCache) {
-        var data = whatsappKeys.sessions()
-                .keySet()
-                .stream()
-                .map(SessionAddress::name)
-                .collect(Collectors.groupingBy(address -> {
-                    if(!address.contains(":")){
-                        return address;
-                    }
-
-                    return address.split(":", 2)[0];
-                }));
-        data.forEach((user, devices) -> devicesCache.put(user, devices.stream().map(ContactJid::of).toList()));
     }
 
     private WhatsappKeys createKeys() throws URISyntaxException, IOException {

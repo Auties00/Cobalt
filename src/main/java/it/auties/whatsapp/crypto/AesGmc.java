@@ -11,11 +11,11 @@ import org.bouncycastle.crypto.params.KeyParameter;
 public record AesGmc(@NonNull GCMBlockCipher cipher) {
     private static final int NONCE = 128;
 
-    public static AesGmc with(@NonNull Bytes key, long ivCounter, boolean encrypt) {
-        return with(key, null, ivCounter, encrypt);
+    public static AesGmc of(@NonNull Bytes key, long ivCounter, boolean encrypt) {
+        return of(key, null, ivCounter, encrypt);
     }
 
-    public static AesGmc with(@NonNull Bytes key, byte[] data, long ivCounter, boolean encrypt) {
+    public static AesGmc of(@NonNull Bytes key, byte[] data, long ivCounter, boolean encrypt) {
         var cipher = new GCMBlockCipher(new AESEngine());
         var parameters = new AEADParameters(new KeyParameter(key.toByteArray()), NONCE, createIv(ivCounter), data);
         cipher.init(encrypt, parameters);

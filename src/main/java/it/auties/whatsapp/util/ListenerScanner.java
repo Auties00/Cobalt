@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 @UtilityClass
-public class RegisterListenerScanner {
+public class ListenerScanner {
     public List<WhatsappListener> scan(Whatsapp whatsapp){
         try(var scanner = createScanner()) {
             return scanner.getClassesWithAnnotation(RegisterListener.class)

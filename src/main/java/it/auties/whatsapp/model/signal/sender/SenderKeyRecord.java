@@ -1,12 +1,8 @@
 package it.auties.whatsapp.model.signal.sender;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
-import it.auties.whatsapp.model.product.Product;
-import it.auties.whatsapp.model.product.ProductSection;
+import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -33,7 +29,7 @@ public class SenderKeyRecord implements ProtobufMessage {
   @Default
   private LinkedList<SenderKeyState> states = new LinkedList<>();
 
-  public SenderKeyState currentState() {
+  public SenderKeyState headState() {
     return states.getFirst();
   }
 
@@ -44,13 +40,12 @@ public class SenderKeyRecord implements ProtobufMessage {
             .orElseThrow(() -> new NoSuchElementException("Cannot find state with id %s".formatted(keyId)));
   }
 
-  public void addState(int id, int iteration, byte[] chainKey, byte[] signatureKey){
-    addState(id, iteration, chainKey, signatureKey, null);
+  public void addState(int id, int iteration, byte[] seed, byte[] signatureKey){
+    addState(id, iteration, seed, SignalKeyPair.of(signatureKey));
   }
 
-  public void addState(int id, int iteration, byte[] chainKey, byte[] signaturePublic, byte[] signaturePrivate){
-    states.removeIf(item -> item.id() == id);
-    var state = new SenderKeyState(id, iteration, chainKey, signaturePublic, signaturePrivate);
+  public void addState(int id, int iteration, byte[] seed, SignalKeyPair signingKey){
+    var state = new SenderKeyState(id, iteration, seed, signingKey);
     states.add(state);
   }
 

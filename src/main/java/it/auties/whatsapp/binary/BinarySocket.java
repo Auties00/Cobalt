@@ -1,5 +1,6 @@
 package it.auties.whatsapp.binary;
 
+import com.github.benmanes.caffeine.cache.*;
 import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
 import it.auties.protobuf.api.model.ProtobufSchema;
@@ -52,6 +53,7 @@ import lombok.extern.java.Log;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.Map.Entry;
@@ -348,7 +350,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     private CompletableFuture<GroupMetadata> queryGroupMetadata(ContactJid group){
         var body = withAttributes("query", of("request", "interactive"));
         return sendQuery(group, "get", "w:g2", body)
-                .thenApplyAsync(node -> GroupMetadata.of(node.findNode("group"))); //  content=[Node[description=error, attributes={code=403, text=forbidden}]]P
+                .thenApplyAsync(node -> GroupMetadata.of(node.findNode("group")));
     }
 
     private void sendSyncReceipt(MessageInfo info, String type){
@@ -912,11 +914,19 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     }
 
     private class MessageHandler {
-        private final CacheMap<ContactJid, GroupMetadata> groupsCache;
-        private final CacheMap<String, List<ContactJid>> devicesCache;
+        private static final int CACHE_EXPIRATION = 5;
+
+        private final Cache<ContactJid, GroupMetadata> groupsCache;
+        private final Cache<String, List<ContactJid>> devicesCache;
         public MessageHandler() {
-            this.groupsCache = new CacheMap<>();
-            this.devicesCache = new CacheMap<>();
+            this.groupsCache = createCache();
+            this.devicesCache = createCache();
+        }
+
+        private <K, V> Cache<K, V> createCache() {
+            return Caffeine.newBuilder()
+                    .expireAfterWrite(Duration.ofMinutes(CACHE_EXPIRATION))
+                    .build();
         }
 
         @SafeVarargs
@@ -929,7 +939,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                 var knownDevices = List.of(keys.companion().toUserJid(), info.chatJid());
                 return getDevices(knownDevices, true)
                         .thenApplyAsync(otherDevices -> append(knownDevices, otherDevices))
-                        .thenComposeAsync(allDevices -> createConversationSessions(allDevices, encodedMessage, encodedDeviceMessage))
+                        .thenApplyAsync(allDevices -> createConversationNodes(allDevices, encodedMessage, encodedDeviceMessage))
                         .thenApplyAsync(sessions -> createEncodedMessageNode(info, sessions, null, attributes));
             }
 
@@ -938,12 +948,12 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             var groupSignalMessage = groupBuilder.createOutgoing(senderName);
             var groupCipher = new GroupCipher(senderName, keys);
             var groupWhatsappMessage = groupCipher.encrypt(encodedMessage);
-            return groupsCache.getOptional(info.chatJid())
+            return Optional.ofNullable(groupsCache.getIfPresent(info.chatJid()))
                     .map(CompletableFuture::completedFuture)
                     .orElseGet(() -> queryGroupMetadata(info.chatJid()))
                     .thenComposeAsync(this::getDevices)
-                    .thenComposeAsync(allDevices -> createGroupSessions(info, groupSignalMessage, allDevices))
-                    .thenApplyAsync(distributionMessages -> createEncodedMessageNode(info, distributionMessages, groupWhatsappMessage, attributes));
+                    .thenApplyAsync(allDevices -> createGroupNodes(info, groupSignalMessage, allDevices))
+                    .thenApplyAsync(preKeys -> createEncodedMessageNode(info, preKeys, groupWhatsappMessage, attributes));
         }
 
         private boolean isConversation(MessageInfo info) {
@@ -953,18 +963,19 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
         @SafeVarargs
         @SneakyThrows
-        private Node createEncodedMessageNode(MessageInfo info, List<Node> participants, Node descriptor, Entry<String, Object>... metadata) {
+        private Node createEncodedMessageNode(MessageInfo info, List<Node> preKeys, Node descriptor, Entry<String, Object>... metadata) {
             var body = new ArrayList<Node>();
             if(descriptor != null){
                 body.add(descriptor);
             }
 
-            if(!participants.isEmpty()){
-                body.add(withChildren("participants", participants));
+            if(!preKeys.isEmpty()){
+                body.add(withChildren("participants", preKeys));
             }
 
-            if(hasPreKeyMessage(participants)) {
-                body.add(with("device-identity", PROTOBUF.writeValueAsBytes(keys.companionIdentity())));
+            if(hasPreKeyMessage(preKeys)) {
+                var identity = PROTOBUF.writeValueAsBytes(keys.companionIdentity());
+                body.add(with("device-identity", identity));
             }
 
             var attributes = Attributes.of(metadata)
@@ -984,76 +995,40 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     .anyMatch("pkmsg"::equals);
         }
 
-        private CompletableFuture<List<Node>> createConversationSessions(List<ContactJid> contacts, byte[] message, byte[] deviceMessage) {
+        private List<Node> createConversationNodes(List<ContactJid> contacts, byte[] message, byte[] deviceMessage) {
             var partitioned = contacts.stream()
                     .collect(partitioningBy(contact -> Objects.equals(contact.user(), keys.companion().user())));
-            var companions = partitioned.get(true);
-            var others = partitioned.get(false);
-            return createSessions(companions, deviceMessage)
-                    .thenCombineAsync(createSessions(others, message), this::append);
+            var companions = createMessageNodes(partitioned.get(true), deviceMessage);
+            var others = createMessageNodes(partitioned.get(false), message);
+            return append(companions, others);
         }
 
         @SneakyThrows
-        private CompletableFuture<List<Node>> createGroupSessions(MessageInfo info, SignalDistributionMessage signalMessage, List<ContactJid> participants) {
+        private List<Node> createGroupNodes(MessageInfo info, SignalDistributionMessage signalMessage, List<ContactJid> participants) {
+            var group = info.chat()
+                    .filter(Chat::isGroup)
+                    .orElseThrow(() -> new IllegalArgumentException("%s is not a group".formatted(info.chatJid())));
             var missingParticipants= participants.stream()
-                    .filter(participant -> !keys.hasSession(participant.toSignalAddress()))
+                    .filter(participant -> !group.participantsPreKeys().contains(participant))
                     .toList();
             if(missingParticipants.isEmpty()){
-                return completedFuture(List.of());
+                return List.of();
             }
 
             var whatsappMessage = MessageContainer.of(new SenderKeyDistributionMessage(info.chatJid().toString(), signalMessage.serialized()));
             var paddedMessage = BytesHelper.pad(PROTOBUF.writeValueAsBytes(whatsappMessage));
-            return createSessions(missingParticipants, paddedMessage);
+            var nodes = createMessageNodes(missingParticipants, paddedMessage);
+            group.participantsPreKeys().addAll(missingParticipants);
+            return nodes;
         }
 
-        private CompletableFuture<List<Node>> createSessions(List<ContactJid> contacts, byte[] message) {
-            var missingSessions = contacts.stream()
-                    .filter(contact -> !keys.hasSession(contact.toSignalAddress()))
-                    .map(contact -> withAttributes("user", of("jid", contact, "reason", "identity")))
-                    .toList();
-            if(missingSessions.isEmpty()){
-                return completedFuture(encryptSessions(contacts, message));
-            }
-
-            return sendQuery("get", "encrypt", withChildren("key", missingSessions))
-                    .thenAcceptAsync(this::parseSessions)
-                    .thenApplyAsync(ignored -> encryptSessions(contacts, message));
-        }
-
-        private void parseSessions(Node result) {
-            result.findNode("list")
-                    .findNodes("user")
-                    .forEach(this::parseSession);
-        }
-
-        private void parseSession(Node node) {
-            Validate.isTrue(!node.hasNode("error"),
-                    "Erroneous session node",
-                    SecurityException.class);
-            var jid = node.attributes().getJid("jid")
-                    .orElseThrow(() -> new NoSuchElementException("Missing jid for session"));
-            var signedKey = node.findNode("skey");
-            var key = node.findNode("key");
-            var identity = node.findNode("identity");
-            var registrationId = node.findNode("registration");
-
-            var builder = new SessionBuilder(jid.toSignalAddress(), keys);
-            builder.createOutgoing(
-                    BytesHelper.bytesToInt(registrationId.bytes(), 4),
-                    Keys.withHeader(identity.bytes()),
-                    SignalSignedKeyPair.of(signedKey).orElseThrow(),
-                    SignalSignedKeyPair.of(key).orElse(null)
-            );
-        }
-
-        private List<Node> encryptSessions(List<ContactJid> contacts, byte[] message) {
+        private List<Node> createMessageNodes(List<ContactJid> contacts, byte[] message) {
             return contacts.stream()
-                    .map(contact -> encryptSession(contact, message))
+                    .map(contact -> createMessageNode(contact, message))
                     .toList();
         }
 
-        private Node encryptSession(ContactJid contact, byte[] message) {
+        private Node createMessageNode(ContactJid contact, byte[] message) {
             if(options.debug()){
                 System.out.println("Creating session for " + contact.toSignalAddress());
             }
@@ -1070,12 +1045,12 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
         private CompletableFuture<List<ContactJid>> getDevices(List<ContactJid> contacts, boolean excludeSelf) {
             var partitioned = contacts.stream()
-                    .collect(partitioningBy(contact -> devicesCache.containsKey(contact.user()), toUnmodifiableList()));
+                    .collect(partitioningBy(contact -> devicesCache.asMap().containsKey(contact.user()), toUnmodifiableList()));
             var cached = partitioned.get(true)
                     .stream()
                     .map(ContactJid::user)
-                    .map(devicesCache::getOptional)
-                    .flatMap(Optional::stream)
+                    .map(devicesCache::getIfPresent)
+                    .filter(Objects::nonNull)
                     .flatMap(Collection::stream)
                     .toList();
             var missing = partitioned.get(false);
@@ -1084,7 +1059,8 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             }
 
             return queryDevices(missing, excludeSelf)
-                    .thenApplyAsync(missingDevices -> append(cached, missingDevices));
+                    .thenApplyAsync(missingDevices -> append(cached, missingDevices))
+                    .thenComposeAsync(this::createSessions);
         }
 
         @SneakyThrows
@@ -1135,6 +1111,46 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     && (deviceId == 0 || child.attributes().hasKey("key-index")) ? Optional.of(deviceId) : Optional.empty();
         }
 
+        private CompletableFuture<List<ContactJid>> createSessions(List<ContactJid> contacts) {
+            var missingSessions = contacts.stream()
+                    .filter(contact -> !keys.hasSession(contact.toSignalAddress()))
+                    .map(contact -> withAttributes("user", of("jid", contact, "reason", "identity")))
+                    .toList();
+            if(missingSessions.isEmpty()){
+                return completedFuture(contacts);
+            }
+
+            return sendQuery("get", "encrypt", withChildren("key", missingSessions))
+                    .thenAcceptAsync(this::parseSessions)
+                    .thenApplyAsync(ignored -> contacts);
+        }
+
+        private void parseSessions(Node result) {
+            result.findNode("list")
+                    .findNodes("user")
+                    .forEach(this::parseSession);
+        }
+
+        private void parseSession(Node node) {
+            Validate.isTrue(!node.hasNode("error"),
+                    "Erroneous session node",
+                    SecurityException.class);
+            var jid = node.attributes().getJid("jid")
+                    .orElseThrow(() -> new NoSuchElementException("Missing jid for session"));
+            var signedKey = node.findNode("skey");
+            var key = node.findNode("key");
+            var identity = node.findNode("identity");
+            var registrationId = node.findNode("registration");
+
+            var builder = new SessionBuilder(jid.toSignalAddress(), keys);
+            builder.createOutgoing(
+                    BytesHelper.bytesToInt(registrationId.bytes(), 4),
+                    Keys.withHeader(identity.bytes()),
+                    SignalSignedKeyPair.of(signedKey).orElseThrow(),
+                    SignalSignedKeyPair.of(key).orElse(null)
+            );
+        }
+
         public void decode(Node node) {
             var pushName = node.attributes().getString("notify");
             var timestamp = node.attributes().getLong("t");
@@ -1158,9 +1174,8 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                 }
 
                 case GROUP, GROUP_CALL, BROADCAST -> {
-                    var sender = requireNonNull(participant, "Missing participant in group message");
                     keyBuilder.chatJid(from);
-                    messageBuilder.senderJid(sender);
+                    messageBuilder.senderJid(requireNonNull(participant, "Missing participant in group message"));
                 }
 
                 default -> throw new IllegalArgumentException("Cannot decode message, unsupported type: %s".formatted(from.type().name()));
@@ -1274,74 +1289,74 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
         @SneakyThrows
         private void handleProtocolMessage(MessageInfo info, ProtocolMessage protocolMessage, boolean peer){
-            switch(protocolMessage.type()) {
-                case HISTORY_SYNC_NOTIFICATION -> {
-                    var compressed = Medias.download(protocolMessage.historySyncNotification(), store);
-                    var decompressed = BytesHelper.deflate(compressed);
-                    var history = PROTOBUF.reader()
-                            .with(ProtobufSchema.of(HistorySync.class))
-                            .readValue(decompressed, HistorySync.class);
+                switch(protocolMessage.type()) {
+                    case HISTORY_SYNC_NOTIFICATION -> {
+                        var compressed = Medias.download(protocolMessage.historySyncNotification(), store);
+                        var decompressed = BytesHelper.deflate(compressed);
+                        var history = PROTOBUF.reader()
+                                .with(ProtobufSchema.of(HistorySync.class))
+                                .readValue(decompressed, HistorySync.class);
 
-                    switch(history.syncType()) {
-                        case INITIAL_BOOTSTRAP -> {
-                            history.conversations().forEach(store::addChat);
-                            store.hasSnapshot(true);
-                            store.callListeners(WhatsappListener::onChats);
+                        switch(history.syncType()) {
+                            case INITIAL_BOOTSTRAP -> {
+                                history.conversations().forEach(store::addChat);
+                                store.hasSnapshot(true);
+                                store.callListeners(WhatsappListener::onChats);
+                            }
+
+                            case FULL -> history.conversations().forEach(store::addChat);
+
+                            case INITIAL_STATUS_V3 -> {
+                                history.statusV3Messages()
+                                        .stream()
+                                        .peek(message -> message.storeId(store.id()))
+                                        .forEach(store.status()::add);
+                                store.callListeners(WhatsappListener::onStatus);
+                            }
+
+                            case RECENT -> history.conversations()
+                                    .forEach(this::handleRecentMessage);
+
+                            case PUSH_NAME -> {
+                                history.pushNames()
+                                        .forEach(this::handNewPushName);
+                                store.callListeners(WhatsappListener::onContacts);
+                            }
                         }
 
-                        case FULL -> history.conversations().forEach(store::addChat);
-
-                        case INITIAL_STATUS_V3 -> {
-                            history.statusV3Messages()
-                                    .stream()
-                                    .peek(message -> message.storeId(store.id()))
-                                    .forEach(store.status()::add);
-                            store.callListeners(WhatsappListener::onStatus);
-                        }
-
-                        case RECENT -> history.conversations()
-                                .forEach(this::handleRecentMessage);
-
-                        case PUSH_NAME -> {
-                            history.pushNames()
-                                    .forEach(this::handNewPushName);
-                            store.callListeners(WhatsappListener::onContacts);
-                        }
+                        sendSyncReceipt(info, "hist_sync");
                     }
 
-                    sendSyncReceipt(info, "hist_sync");
+                    case APP_STATE_SYNC_KEY_SHARE -> {
+                        keys.addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
+                        if(options.debug()) System.out.println("Initial pull");
+                        appStateHandler.pull(BinarySync.values());
+                    }
+
+                    case REVOKE -> {
+                        var chat = info.chat()
+                                .orElseThrow(() -> new NoSuchElementException("Missing chat: %s".formatted(info.chatJid())));
+                        var message = store.findMessageById(chat, protocolMessage.key().id())
+                                .orElseThrow(() -> new NoSuchElementException("Missing message"));
+                        chat.messages().add(message);
+                        store.callListeners(listener -> listener.onMessageDeleted(message, true));
+                    }
+
+                    case EPHEMERAL_SETTING -> {
+                        var chat = info.chat()
+                                .orElseThrow(() -> new NoSuchElementException("Missing chat: %s".formatted(info.chatJid())));
+                        chat.ephemeralMessagesToggleTime(info.timestamp())
+                                .ephemeralMessageDuration(protocolMessage.ephemeralExpiration());
+                        var setting = new EphemeralSetting(info.ephemeralDuration(), info.timestamp());
+                        store.callListeners(listener -> listener.onSetting(setting));
+                    }
                 }
 
-                case APP_STATE_SYNC_KEY_SHARE -> {
-                    keys.addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
-                    if(options.debug()) System.out.println("Initial pull");
-                    appStateHandler.pull(BinarySync.values());
+                if (!peer) {
+                    return;
                 }
 
-                case REVOKE -> {
-                    var chat = info.chat()
-                            .orElseThrow(() -> new NoSuchElementException("Missing chat: %s".formatted(info.chatJid())));
-                    var message = store.findMessageById(chat, protocolMessage.key().id())
-                            .orElseThrow(() -> new NoSuchElementException("Missing message"));
-                    chat.messages().add(message);
-                    store.callListeners(listener -> listener.onMessageDeleted(message, true));
-                }
-
-                case EPHEMERAL_SETTING -> {
-                    var chat = info.chat()
-                            .orElseThrow(() -> new NoSuchElementException("Missing chat: %s".formatted(info.chatJid())));
-                    chat.ephemeralMessagesToggleTime(info.timestamp())
-                            .ephemeralMessageDuration(protocolMessage.ephemeralExpiration());
-                    var setting = new EphemeralSetting(info.ephemeralDuration(), info.timestamp());
-                    store.callListeners(listener -> listener.onSetting(setting));
-                }
-            }
-
-            if (!peer) {
-                return;
-            }
-
-            sendSyncReceipt(info, "peer_msg");
+                sendSyncReceipt(info, "peer_msg");
         }
 
         private void handNewPushName(PushName pushName) {

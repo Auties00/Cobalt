@@ -23,7 +23,7 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys key
             ENCRYPTION_SEMAPHORE.acquire();
             var currentState = keys.findSenderKeyByName(name)
                     .orElseThrow(() -> new NoSuchElementException("Missing record for name: %s".formatted(name)))
-                    .currentState();
+                    .headState();
             var messageKey = currentState.chainKey()
                     .toSenderMessageKey();
             var ciphertext = AesCbc.encrypt(

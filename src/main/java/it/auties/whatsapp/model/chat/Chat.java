@@ -236,6 +236,14 @@ public class Chat implements ProtobufMessage {
     private Map<Contact, ContactStatus> presences = new ConcurrentHashMap<>();
 
     /**
+     * A set that hold all the jids of the participants in this chat that have received pre keys.
+     * This set is only used if the chat is a group chat.
+     * It's not important for anything other than message ciphering.
+     */
+    @Default
+    private Set<ContactJid> participantsPreKeys = new HashSet<>();
+
+    /**
      * Returns the name of this chat
      *
      * @return a non-null string

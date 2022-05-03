@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.signal.auth.KeyIndexList;
+import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -41,12 +42,12 @@ public class SenderKeyState implements ProtobufMessage {
   @ProtobufProperty(index = 4, type = MESSAGE,
           concreteType = SenderMessageKey.class, repeated = true)
   @Default
-  private List<SenderMessageKey> messageKeys = new ArrayList<>();
+  private List<SenderMessageKey> messageKeys = new ArrayList<>(); // A map would be better but the proto says otherwise
 
-  public SenderKeyState(int id, int iteration, byte[] chainKey, byte[] signatureKeyPublic, byte[] signatureKeyPrivate) {
+  public SenderKeyState(int id, int iteration, byte[] seed, SignalKeyPair signingKey) {
     this.id = id;
-    this.chainKey = new SenderChainKey(iteration, chainKey);
-    this.signingKey = new SenderSigningKey(signatureKeyPublic, signatureKeyPrivate);
+    this.chainKey = new SenderChainKey(iteration, seed);
+    this.signingKey = new SenderSigningKey(signingKey.encodedPublicKey(), signingKey.privateKey());
     this.messageKeys = new ArrayList<>();
   }
 

@@ -34,27 +34,26 @@ public class SenderKeyMessage implements ProtobufMessage, JacksonProvider, Signa
   @ProtobufProperty(index = 3, type = BYTES)
   private byte @NonNull [] cipherText;
 
-  @ProtobufProperty(index = 4, type = BYTES)
   private byte[] signingKey;
 
   private byte[] signature;
 
   private byte[] serialized;
 
-  @SneakyThrows
-  public SenderKeyMessage(int id, int iteration, byte[] cipherText, byte[] signingKey) {
-    this.version = CURRENT_VERSION;
-    this.id = id;
-    this.iteration = iteration;
-    this.cipherText = cipherText;
-    var serialized = Bytes.of(BytesHelper.versionToBytes(version))
-            .append(PROTOBUF.writeValueAsBytes(this));
-    if(signingKey != null) {
+  public SenderKeyMessage(int id, int iteration, byte @NonNull [] cipherText, byte @NonNull [] signingKey) {
+    try {
+      this.version = CURRENT_VERSION;
+      this.id = id;
+      this.iteration = iteration;
+      this.cipherText = cipherText;
+      var serialized = Bytes.of(BytesHelper.versionToBytes(version))
+              .append(PROTOBUF.writeValueAsBytes(this));
       this.signature = Curve25519.sign(signingKey, serialized.toByteArray(), true);
+      this.serialized = serialized.append(signature)
+              .toByteArray();
+    }catch (IOException exception){
+      throw new RuntimeException("Cannot encode SenderKeyMessage", exception);
     }
-
-    this.serialized = serialized.appendNullable(signature)
-            .toByteArray();
   }
 
   public static SenderKeyMessage ofSerialized(byte[] serialized) {

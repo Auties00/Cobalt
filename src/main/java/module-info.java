@@ -22,6 +22,7 @@ open module it.auties.whatsapp4j {
     requires org.bouncycastle.provider;
     requires it.auties.bytebuffer;
     requires it.auties.curve;
+    requires com.github.benmanes.caffeine;
 
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;
