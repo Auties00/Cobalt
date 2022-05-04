@@ -42,10 +42,8 @@ public class SenderMessageKey implements ProtobufMessage, SignalSpecification {
                 .toByteArray();
         this.cipherKey = Bytes.of(derivative[0])
                 .slice(IV_LENGTH)
-                .assertSize(IV_LENGTH)
                 .append(derivative[1])
                 .cut(KEY_LENGTH)
-                .assertSize(KEY_LENGTH)
                 .toByteArray();
     }
 }

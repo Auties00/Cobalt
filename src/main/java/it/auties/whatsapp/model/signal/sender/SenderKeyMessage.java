@@ -40,7 +40,7 @@ public class SenderKeyMessage implements ProtobufMessage, JacksonProvider, Signa
 
   private byte[] serialized;
 
-  public SenderKeyMessage(int id, int iteration, byte @NonNull [] cipherText, byte @NonNull [] signingKey) {
+  public SenderKeyMessage(int id, int iteration, byte @NonNull [] cipherText, byte[] signingKey) {
     try {
       this.version = CURRENT_VERSION;
       this.id = id;
@@ -48,8 +48,11 @@ public class SenderKeyMessage implements ProtobufMessage, JacksonProvider, Signa
       this.cipherText = cipherText;
       var serialized = Bytes.of(BytesHelper.versionToBytes(version))
               .append(PROTOBUF.writeValueAsBytes(this));
-      this.signature = Curve25519.sign(signingKey, serialized.toByteArray(), true);
-      this.serialized = serialized.append(signature)
+      if(signingKey != null) {
+        this.signature = Curve25519.sign(signingKey, serialized.toByteArray(), true);
+      }
+
+      this.serialized = serialized.appendNullable(signature)
               .toByteArray();
     }catch (IOException exception){
       throw new RuntimeException("Cannot encode SenderKeyMessage", exception);
