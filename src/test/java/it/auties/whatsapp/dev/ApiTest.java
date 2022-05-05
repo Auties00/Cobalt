@@ -39,7 +39,8 @@ public class ApiTest {
                 .or(() -> whatsapp.store().findChatByJid(ContactJid.of(contact)))
                 .ifPresentOrElse(chat -> {
                     System.out.println("Sending message to " + contact);
-                    whatsapp.sendMessage(chat, "Ciao!");
+                    whatsapp.sendMessage(chat, "Ciao!")
+                            .thenRunAsync(() -> System.out.println("Sent message to " + contact));
                 }, () -> System.out.println("No match for " + contact));
         waitForInput(whatsapp);
     }

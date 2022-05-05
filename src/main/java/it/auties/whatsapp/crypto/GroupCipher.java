@@ -22,7 +22,6 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys key
         try {
             ENCRYPTION_SEMAPHORE.acquire();
             var currentState = keys.findSenderKeyByName(name)
-                    .orElseThrow(() -> new NoSuchElementException("Missing record for name: %s".formatted(name)))
                     .headState();
             var messageKey = currentState.chainKey()
                     .toSenderMessageKey();
@@ -51,8 +50,7 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys key
     }
 
     public byte[] decrypt(byte[] data) {
-        var record = keys.findSenderKeyByName(name)
-                .orElseThrow(() -> new NoSuchElementException("Missing record for name: %s. Known records: %s".formatted(name, keys.senderKeys())));
+        var record = keys.findSenderKeyByName(name);
         var senderKeyMessage = SenderKeyMessage.ofSerialized(data);
         var senderKeyState = record.findStateById(senderKeyMessage.id());
         var senderKey = getSenderKey(senderKeyState, senderKeyMessage.iteration());

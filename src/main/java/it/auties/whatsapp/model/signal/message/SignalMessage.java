@@ -45,7 +45,7 @@ public final class SignalMessage implements SignalProtocolMessage {
         this.counter = counter;
         this.previousCounter = previousCounter;
         this.ciphertext = ciphertext;
-        var encodedMessage = Bytes.of(BytesHelper.versionToBytes(version))
+        var encodedMessage = Bytes.of(serializedVersion())
                 .append(PROTOBUF.writeValueAsBytes(this));
         this.signature = signer.apply(encodedMessage.toByteArray());
         this.serialized = encodedMessage.append(signature)

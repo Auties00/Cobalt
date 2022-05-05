@@ -17,8 +17,7 @@ public record GroupBuilder(@NonNull WhatsappKeys keys) implements SignalSpecific
     public SignalDistributionMessage createOutgoing(SenderKeyName name) {
         try {
             ENCRYPTION_SEMAPHORE.acquire();
-            var senderKeyRecord = keys.findSenderKeyByName(name)
-                    .orElseGet(() -> createRecord(name));
+            var senderKeyRecord = keys.findSenderKeyByName(name);
             if (senderKeyRecord.isEmpty()) {
                 senderKeyRecord.addState(
                         Keys.senderKeyId(),
@@ -43,15 +42,9 @@ public record GroupBuilder(@NonNull WhatsappKeys keys) implements SignalSpecific
     }
 
     public void createIncoming(SenderKeyName name, SignalDistributionMessage message) {
-        var senderKeyRecord = keys.findSenderKeyByName(name)
-                .orElseGet(() -> createRecord(name));
+        var senderKeyRecord = keys.findSenderKeyByName(name);
         senderKeyRecord.addState(message.id(), message.iteration(),
                 message.chainKey(), message.signingKey());
         keys.addSenderKey(name, senderKeyRecord);
-    }
-    private SenderKeyRecord createRecord(SenderKeyName name) {
-        var record = new SenderKeyRecord();
-        keys.addSenderKey(name, record);
-        return record;
     }
 }

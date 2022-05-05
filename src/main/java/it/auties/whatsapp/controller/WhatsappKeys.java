@@ -242,10 +242,14 @@ public final class WhatsappKeys implements WhatsappController {
      * Queries the first {@link SenderKeyRecord} that matches {@code name}
      *
      * @param name the non-null name to search
-     * @return a non-null Optional SenderKeyRecord
+     * @return a non-null SenderKeyRecord
      */
-    public Optional<SenderKeyRecord> findSenderKeyByName(@NonNull SenderKeyName name) {
-        return Optional.ofNullable(senderKeys.get(name));
+    public SenderKeyRecord findSenderKeyByName(@NonNull SenderKeyName name) {
+        return Objects.requireNonNullElseGet(senderKeys.get(name), () -> {
+            var record = new SenderKeyRecord();
+            addSenderKey(name, record);
+            return record;
+        });
     }
 
     /**

@@ -14,17 +14,6 @@ public record SenderKeyName(String groupId, SessionAddress sender) {
     return new SenderKeyName(split[0], address);
   }
 
-  @Override
-  public boolean equals(Object other) {
-    return other instanceof SenderKeyName keyName
-            && Objects.equals(keyName.groupId(), groupId());
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(groupId());
-  }
-
   @JsonValue
   @Override
   public String toString() {

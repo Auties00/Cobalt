@@ -1188,10 +1188,10 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     .create();
 
             node.findNodes("enc")
-                    .forEach(messageNode -> decodeMessage(info, node, messageNode, from));
+                    .forEach(messageNode -> decodeMessage(info, node, messageNode));
         }
 
-        private void decodeMessage(MessageInfo info, Node container, Node messageNode, ContactJid from) {
+        private void decodeMessage(MessageInfo info, Node container, Node messageNode) {
             try {
                 sendMessageAck(container, of("class", "receipt"));
                 var encodedMessage = messageNode.bytes();
@@ -1207,7 +1207,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                 info.message(decodedMessage.content() instanceof DeviceSentMessage deviceSentMessage ? MessageContainer.of(deviceSentMessage.message().content()) : decodedMessage);
                 handleStubMessage(info);
                 switch (info.message().content()){
-                    case SenderKeyDistributionMessage distributionMessage -> handleDistributionMessage(distributionMessage, from);
+                    case SenderKeyDistributionMessage distributionMessage -> handleDistributionMessage(distributionMessage, info.senderJid());
                     case ProtocolMessage protocolMessage -> handleProtocolMessage(info, protocolMessage, Objects.equals(container.attributes().getString("category"), "peer"));
                     default -> saveMessage(info);
                 }
