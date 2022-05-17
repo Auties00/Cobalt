@@ -315,7 +315,10 @@ public final class WhatsappStore implements WhatsappController {
      */
     public Chat addChat(Chat chat) {
         chat.messages().forEach(message -> message.storeId(id()));
-        chats.add(chat);
+        if(!chats.add(chat)){
+            log.warning("Chat already exists: %s".formatted(chat.jid()));
+        }
+
         return chat;
     }
 
@@ -326,7 +329,10 @@ public final class WhatsappStore implements WhatsappController {
      * @return the input contact
      */
     public Contact addContact(Contact contact) {
-        contacts.add(contact);
+        if(!contacts.add(contact)){
+            log.warning("Contact already exists: %s".formatted(contact.jid()));
+        }
+
         return contact;
     }
 

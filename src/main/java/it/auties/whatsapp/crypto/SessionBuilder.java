@@ -7,6 +7,7 @@ import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.model.signal.session.*;
+import it.auties.whatsapp.util.Jobs;
 import it.auties.whatsapp.util.Keys;
 import it.auties.whatsapp.util.SignalSpecification;
 import it.auties.whatsapp.util.Validate;
@@ -15,14 +16,11 @@ import lombok.SneakyThrows;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
-import java.util.concurrent.Semaphore;
 
 public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) implements SignalSpecification {
-    private static final Semaphore ENCRYPTION_SEMAPHORE = new Semaphore(1);
-
+    @SneakyThrows
     public void createOutgoing(int id, byte[] identityKey, SignalSignedKeyPair signedPreKey, SignalSignedKeyPair preKey){
-        try {
-            ENCRYPTION_SEMAPHORE.acquire();
+        Jobs.run(() -> {
             Validate.isTrue(keys.hasTrust(address, identityKey),
                     "Untrusted key", SecurityException.class);
             Validate.isTrue(Curve25519.verifySignature(Keys.withoutHeader(identityKey), signedPreKey.keyPair().encodedPublicKey(), signedPreKey.signature()),
@@ -42,18 +40,17 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
 
             var pendingPreKey = new SessionPreKey(preKey == null ? 0 : preKey.id(), baseKey.encodedPublicKey(), signedPreKey.id());
             state.pendingPreKey(pendingPreKey);
-
-            var session = keys.findSessionByAddress(address)
+            keys.findSessionByAddress(address)
                     .map(Session::closeCurrentState)
-                    .orElseGet(Session::new);
+                    .orElseGet(this::createSession)
+                    .addState(state);
+        }).get();
+    }
 
-            session.addState(state);
-            keys.addSession(address, session);
-        }catch (Throwable throwable){
-            throw new RuntimeException("Cannot create outgoing: an exception occured", throwable);
-        }finally {
-            ENCRYPTION_SEMAPHORE.release();
-        }
+    private Session createSession() {
+        var session = new Session();
+        keys.addSession(address, session);
+        return session;
     }
 
     public void createIncoming(Session session, SignalPreKeyMessage message){
@@ -115,7 +112,8 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
         var initKey = Hkdf.deriveSecrets(initSecret, state.rootKey(),
                 "WhisperRatchet".getBytes(StandardCharsets.UTF_8));
         var chain = new SessionChain(-1, initKey[1]);
-        return state.addChain(state.ephemeralKeyPair().encodedPublicKey(), chain).rootKey(initKey[0]);
+        return state.addChain(state.ephemeralKeyPair().encodedPublicKey(), chain)
+                .rootKey(initKey[0]);
     }
 
     private SessionState createState(boolean isInitiator, SignalKeyPair ourEphemeralKey, SignalKeyPair ourSignedKey,

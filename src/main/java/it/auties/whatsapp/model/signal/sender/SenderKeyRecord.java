@@ -3,6 +3,7 @@ package it.auties.whatsapp.model.signal.sender;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
+import it.auties.whatsapp.util.Validate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -12,6 +13,7 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 
@@ -27,9 +29,10 @@ public class SenderKeyRecord implements ProtobufMessage {
   @ProtobufProperty(index = 1, type = MESSAGE,
           concreteType = SenderKeyState.class, repeated = true)
   @Default
-  private LinkedList<SenderKeyState> states = new LinkedList<>();
+  private ConcurrentLinkedDeque<SenderKeyState> states = new ConcurrentLinkedDeque<>();
 
   public SenderKeyState headState() {
+    Validate.isTrue(!isEmpty(), "Cannot get head state for empty record", NoSuchElementException.class);
     return states.getFirst();
   }
 
@@ -59,10 +62,10 @@ public class SenderKeyRecord implements ProtobufMessage {
   }
 
   public static class SenderKeyRecordBuilder {
-    public SenderKeyRecordBuilder states(List<SenderKeyState> states) {
-      this.states$set = true;
-      if(states$value == null){
-        this.states$value = new LinkedList<>(states);
+    public SenderKeyRecordBuilder states(ConcurrentLinkedDeque<SenderKeyState> states) {
+      if(!this.states$set){
+        this.states$value = states;
+        this.states$set = true;
         return this;
       }
 

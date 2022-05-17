@@ -5,6 +5,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -14,17 +15,25 @@ import java.util.concurrent.CompletableFuture;
 
 @RequiredArgsConstructor
 public final class Preferences implements JacksonProvider {
-    private static final Path DEFAULT_DIRECTORY
-            = Path.of(System.getProperty("user.home") + "/.whatsappweb4j/");
+    private static final Path DEFAULT_DIRECTORY;
+
+    static {
+        try {
+            DEFAULT_DIRECTORY = Path.of(System.getProperty("user.home") + "/.whatsappweb4j/");
+            Files.createDirectories(DEFAULT_DIRECTORY);
+        }catch (IOException exception){
+            throw new RuntimeException("Cannot create home path", exception);
+        }
+    }
+
+    public static Path home(){
+        return DEFAULT_DIRECTORY;
+    }
 
     @NonNull
     private final Path file;
 
     private String cache;
-
-    public static Path home(){
-        return DEFAULT_DIRECTORY;
-    }
 
     @SneakyThrows
     public static Preferences of(String path, Object... args) {

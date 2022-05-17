@@ -247,7 +247,7 @@ public final class WhatsappKeys implements WhatsappController {
     public SenderKeyRecord findSenderKeyByName(@NonNull SenderKeyName name) {
         return Objects.requireNonNullElseGet(senderKeys.get(name), () -> {
             var record = new SenderKeyRecord();
-            addSenderKey(name, record);
+            senderKeys.put(name, record);
             return record;
         });
     }
@@ -354,18 +354,6 @@ public final class WhatsappKeys implements WhatsappController {
      */
     public WhatsappKeys addSession(@NonNull SessionAddress address, @NonNull Session record){
         sessions.put(address, record);
-        return this;
-    }
-
-    /**
-     * Adds the provided name and key record to the known sender keys
-     *
-     * @param name the non-null name
-     * @param record the non-null record
-     * @return this
-     */
-    public WhatsappKeys addSenderKey(@NonNull SenderKeyName name, @NonNull SenderKeyRecord record){
-        senderKeys.put(name, record);
         return this;
     }
 

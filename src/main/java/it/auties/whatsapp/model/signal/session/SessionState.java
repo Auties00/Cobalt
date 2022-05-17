@@ -1,7 +1,5 @@
 package it.auties.whatsapp.model.signal.session;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.OptBoolean;
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import lombok.*;
@@ -10,6 +8,7 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @AllArgsConstructor
 @Data
@@ -36,7 +35,7 @@ public class SessionState {
 
     @NonNull
     @Default
-    private Map<String, SessionChain> chains = new HashMap<>();
+    private ConcurrentHashMap<String, SessionChain> chains = new ConcurrentHashMap<>();
 
     private SessionPreKey pendingPreKey;
 
@@ -57,10 +56,9 @@ public class SessionState {
         return this;
     }
 
-    public SessionState removeChain(byte[] senderEphemeral) {
-        Objects.requireNonNull(chains.remove(Bytes.of(senderEphemeral).toHex()),
-                "Cannot remove chain");
-        return this;
+    public void removeChain(byte[] senderEphemeral) {
+        var hex = Bytes.of(senderEphemeral).toHex();
+        Objects.requireNonNull(chains.remove(hex), "Cannot remove chain");
     }
 
     public boolean hasPreKey(){

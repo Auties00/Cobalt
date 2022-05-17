@@ -69,9 +69,9 @@ public class HistorySync implements ProtobufMessage {
 
     public static class HistorySyncBuilder {
         public HistorySyncBuilder conversations(List<Chat> conversations) {
-            this.conversations$set = true;
-            if(conversations$value == null){
+            if(!conversations$set){
                 this.conversations$value = conversations;
+                this.conversations$set = true;
                 return this;
             }
 
@@ -80,9 +80,9 @@ public class HistorySync implements ProtobufMessage {
         }
 
         public HistorySyncBuilder statusV3Messages(List<MessageInfo> statusV3Messages) {
-            this.statusV3Messages$set = true;
-            if(statusV3Messages$value == null){
+            if(!statusV3Messages$set){
                 this.statusV3Messages$value = statusV3Messages;
+                this.statusV3Messages$set = true;
                 return this;
             }
 
@@ -91,9 +91,9 @@ public class HistorySync implements ProtobufMessage {
         }
 
         public HistorySyncBuilder pushNames(List<PushName> pushNames) {
-            this.pushNames$set = true;
-            if(pushNames$value == null){
+            if(!pushNames$set){
                 this.pushNames$value = pushNames;
+                this.pushNames$set = true;
                 return this;
             }
 

@@ -1,14 +1,11 @@
 package it.auties.whatsapp.model.signal.sender;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.crypto.Hmac;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
@@ -30,7 +27,7 @@ public class SenderChainKey implements ProtobufMessage {
   @ProtobufProperty(index = 2, type = BYTES)
   private byte[] seed;
 
-  public SenderMessageKey toSenderMessageKey() {
+  public SenderMessageKey toMessageKey() {
     var hmac = Hmac.calculateSha256(MESSAGE_KEY_SEED, seed);
     return new SenderMessageKey(iteration, hmac);
   }

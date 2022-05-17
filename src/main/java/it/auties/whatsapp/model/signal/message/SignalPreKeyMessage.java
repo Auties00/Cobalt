@@ -45,6 +45,20 @@ public final class SignalPreKeyMessage implements SignalProtocolMessage {
     private byte[] serialized;
 
     @SneakyThrows
+    public SignalPreKeyMessage(int preKeyId, byte[] baseKey, byte[] identityKey, byte[] serializedSignalMessage, int registrationId, int signedPreKeyId) {
+        this.version = CURRENT_VERSION;
+        this.preKeyId = preKeyId;
+        this.baseKey = baseKey;
+        this.identityKey = identityKey;
+        this.serializedSignalMessage = serializedSignalMessage;
+        this.registrationId = registrationId;
+        this.signedPreKeyId = signedPreKeyId;
+        this.serialized = Bytes.of(serializedVersion())
+                .append(PROTOBUF.writeValueAsBytes(this))
+                .toByteArray();
+    }
+
+    @SneakyThrows
     public static SignalPreKeyMessage ofSerialized(byte[] serialized) {
         return PROTOBUF.reader()
                 .with(ProtobufSchema.of(SignalPreKeyMessage.class))
@@ -55,17 +69,5 @@ public final class SignalPreKeyMessage implements SignalProtocolMessage {
 
     public SignalMessage signalMessage(){
         return SignalMessage.ofSerialized(serializedSignalMessage);
-    }
-
-    public byte[] serialized() {
-        return Objects.requireNonNullElseGet(serialized,
-                () -> this.serialized = serialize());
-    }
-
-    @SneakyThrows
-    private byte[] serialize() {
-        return Bytes.of(serializedVersion())
-                .append(PROTOBUF.writeValueAsBytes(this))
-                .toByteArray();
     }
 }

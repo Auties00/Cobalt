@@ -330,7 +330,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
             return Arrays.stream(values())
                     .filter(entry -> address != null && address.endsWith(entry.address()))
                     .findFirst()
-                    .orElse(WHATSAPP); // FIXME: 22/03/2022 TESTING ONLY!!!!
+                    .orElse(WHATSAPP);
         }
 
         @Override

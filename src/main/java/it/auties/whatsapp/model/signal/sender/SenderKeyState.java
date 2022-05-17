@@ -18,6 +18,8 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT32;
@@ -42,13 +44,13 @@ public class SenderKeyState implements ProtobufMessage {
   @ProtobufProperty(index = 4, type = MESSAGE,
           concreteType = SenderMessageKey.class, repeated = true)
   @Default
-  private List<SenderMessageKey> messageKeys = new ArrayList<>(); // A map would be better but the proto says otherwise
+  private CopyOnWriteArrayList<SenderMessageKey> messageKeys = new CopyOnWriteArrayList<>(); // A map would be better but the proto says otherwise
 
   public SenderKeyState(int id, int iteration, byte[] seed, SignalKeyPair signingKey) {
     this.id = id;
     this.chainKey = new SenderChainKey(iteration, seed);
     this.signingKey = new SenderSigningKey(signingKey.encodedPublicKey(), signingKey.privateKey());
-    this.messageKeys = new ArrayList<>();
+    this.messageKeys = new CopyOnWriteArrayList<>();
   }
 
   public boolean hasSenderMessageKey(int iteration) {
@@ -74,16 +76,20 @@ public class SenderKeyState implements ProtobufMessage {
             .orElse(null);
   }
 
+  public void nextChainKey(){
+    this.chainKey = chainKey.next();
+  }
+
   public boolean equals(Object other){
     return other instanceof SenderKeyState that
             && Objects.equals(this.id(), that.id());
   }
 
   public static class SenderKeyStateBuilder {
-    public SenderKeyStateBuilder messageKeys(List<SenderMessageKey> messageKeys) {
-      this.messageKeys$set = true;
-      if(messageKeys$value == null){
+    public SenderKeyStateBuilder messageKeys(CopyOnWriteArrayList<SenderMessageKey> messageKeys) {
+      if(!messageKeys$set){
         this.messageKeys$value = messageKeys;
+        this.messageKeys$set = true;
         return this;
       }
 

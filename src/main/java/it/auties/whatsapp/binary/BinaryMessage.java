@@ -53,7 +53,7 @@ public class BinaryMessage {
 
     private Node toNode(Bytes encoded, WhatsappKeys keys) {
         var plainText = AesGmc.of(keys.readKey(), keys.readCounter(true), false)
-                .process(encoded.toByteArray());
+                .encrypt(encoded.toByteArray());
         return DECODER.decode(plainText);
     }
 }

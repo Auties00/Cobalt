@@ -7,6 +7,7 @@ import it.auties.protobuf.api.model.ProtobufSchema;
 import it.auties.whatsapp.crypto.AesCbc;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.message.model.MessageContainer;
+import it.auties.whatsapp.model.signal.session.SessionAddress;
 import it.auties.whatsapp.util.JacksonProvider;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,6 +16,7 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.HexFormat;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
@@ -22,13 +24,10 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 
 public class RandomTest implements JacksonProvider {
     public static void main(String[] args) throws IOException {
-        var iv = Bytes.ofHex("320459788ac33e2c074b177d4c7c9568")
-                .toByteArray();
-        var data = Bytes.ofHex("32130a1153746f2074657374616e646f207369756d01")
-                .toByteArray();
-        var key = Bytes.ofHex("23bca7ae5d68e3f099d687e73a04e6f8c7bba0c5671430658075916cacbf4ff0")
-                .toByteArray();
-        var ciphered = AesCbc.encrypt(iv, data, key);
-        System.out.println(Bytes.of(ciphered).toHex());
+        var map = new HashMap<SessionAddress, Boolean>();
+        map.put(ContactJid.ofCompanion("393495089819", 10, 0).toSignalAddress(), true);
+        map.put(ContactJid.ofCompanion("393495089819", 11, 0).toSignalAddress(), true);
+        map.put(ContactJid.of("393495089819").toSignalAddress(), true);
+        System.out.println(map);
     }
 }

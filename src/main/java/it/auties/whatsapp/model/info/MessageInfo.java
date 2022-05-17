@@ -33,7 +33,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @Builder(builderMethodName = "newMessageInfo", buildMethodName = "create")
 @Jacksonized
 @Accessors(fluent = true)
-@ToString(exclude = "storeId")
+@ToString(exclude = {"storeId", "cachedStore"})
 public final class MessageInfo implements Info {
   /**
    * The id of the store associated with this message

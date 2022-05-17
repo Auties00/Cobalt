@@ -17,36 +17,28 @@ import static it.auties.whatsapp.model.request.Node.with;
 import static java.util.Map.of;
 
 public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys keys) implements SignalSpecification{
-    private static final Semaphore ENCRYPTION_SEMAPHORE  = new Semaphore(1);
     public Node encrypt(byte[] data) {
-        try {
-            ENCRYPTION_SEMAPHORE.acquire();
-            var currentState = keys.findSenderKeyByName(name)
-                    .headState();
-            var messageKey = currentState.chainKey()
-                    .toSenderMessageKey();
-            var ciphertext = AesCbc.encrypt(
-                    messageKey.iv(),
-                    data,
-                    messageKey.cipherKey()
-            );
+        var currentState = keys.findSenderKeyByName(name)
+                .headState();
+        var messageKey = currentState.chainKey()
+                .toMessageKey();
+        var ciphertext = AesCbc.encrypt(
+                messageKey.iv(),
+                data,
+                messageKey.cipherKey()
+        );
 
-            var senderKeyMessage = new SenderKeyMessage(
-                    currentState.id(),
-                    messageKey.iteration(),
-                    ciphertext,
-                    currentState.signingKey().privateKey()
-            );
+        var senderKeyMessage = new SenderKeyMessage(
+                currentState.id(),
+                messageKey.iteration(),
+                ciphertext,
+                currentState.signingKey().privateKey()
+        );
 
-            var next = currentState.chainKey().next();
-            currentState.chainKey(next);
-            return with("enc", of("v", "2", "type", "skmsg"),
-                    senderKeyMessage.serialized());
-        }catch (Throwable throwable){
-            throw new RuntimeException("Cannot encrypt message: an exception occured", throwable);
-        }finally {
-            ENCRYPTION_SEMAPHORE.release();
-        }
+        var next = currentState.chainKey().next();
+        currentState.chainKey(next);
+        return with("enc", of("v", "2", "type", "skmsg"),
+                senderKeyMessage.serialized());
     }
 
     public byte[] decrypt(byte[] data) {
@@ -54,14 +46,11 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys key
         var senderKeyMessage = SenderKeyMessage.ofSerialized(data);
         var senderKeyState = record.findStateById(senderKeyMessage.id());
         var senderKey = getSenderKey(senderKeyState, senderKeyMessage.iteration());
-        var plaintext = AesCbc.decrypt(
+        return AesCbc.decrypt(
                 senderKey.iv(),
                 senderKeyMessage.cipherText(),
                 senderKey.cipherKey()
         );
-
-        keys.addSenderKey(name, record);
-        return plaintext;
     }
 
     private SenderMessageKey getSenderKey(SenderKeyState senderKeyState, int iteration) {
@@ -77,11 +66,11 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys key
 
         var lastChainKey = senderKeyState.chainKey();
         while (lastChainKey.iteration() < iteration) {
-            senderKeyState.addSenderMessageKey(lastChainKey.toSenderMessageKey());
+            senderKeyState.addSenderMessageKey(lastChainKey.toMessageKey());
             lastChainKey = lastChainKey.next();
         }
 
         senderKeyState.chainKey(lastChainKey.next());
-        return lastChainKey.toSenderMessageKey();
+        return lastChainKey.toMessageKey();
     }
 }

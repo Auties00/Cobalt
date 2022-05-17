@@ -2,13 +2,14 @@ package it.auties.whatsapp.model.signal.session;
 
 import lombok.NonNull;
 
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentSkipListSet;
 
-public record Session(LinkedHashSet<@NonNull SessionState> states) {
+public record Session(ConcurrentLinkedDeque<@NonNull SessionState> states) {
   public Session(){
-    this(new LinkedHashSet<>());
+    this(new ConcurrentLinkedDeque<>());
   }
 
   public SessionState currentState(){
@@ -38,8 +39,7 @@ public record Session(LinkedHashSet<@NonNull SessionState> states) {
             .findFirst();
   }
 
-  public Session addState(SessionState state) {
+  public void addState(SessionState state) {
     states.add(state);
-    return this;
   }
 }

@@ -30,7 +30,7 @@ public record AesGmc(@NonNull GCMBlockCipher cipher) {
     }
 
     @SneakyThrows
-    public byte[] process(byte[] bytes) {
+    public byte[] encrypt(byte[] bytes) {
         var outputLength = cipher.getOutputSize(bytes.length);
         var output = new byte[outputLength];
         var outputOffset = cipher.processBytes(bytes, 0, bytes.length, output, 0);

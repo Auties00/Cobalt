@@ -29,7 +29,7 @@ import java.util.Objects;
 @SuperBuilder(buildMethodName = "create")
 @NoArgsConstructor
 @Accessors(fluent = true)
-@EqualsAndHashCode(exclude = "storeId", callSuper = true)
+@EqualsAndHashCode(exclude = {"storeId", "cachedStore"}, callSuper = true)
 public abstract sealed class MediaMessage extends ContextualMessage implements AttachmentProvider
         permits PaymentInvoiceMessage, AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoMessage {
     /**

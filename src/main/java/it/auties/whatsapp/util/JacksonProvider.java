@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.deser.std.MapDeserializer;
 import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -13,7 +14,7 @@ import it.auties.map.SimpleMapModule;
 import it.auties.protobuf.api.jackson.ProtobufMapper;
 
 public interface JacksonProvider {
-    ObjectMapper PROTOBUF = new ProtobufMapper()
+    ProtobufMapper PROTOBUF = (ProtobufMapper) new ProtobufMapper()
             .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, true)
             .registerModule(new Jdk8Module())
             .registerModule(new SimpleMapModule());

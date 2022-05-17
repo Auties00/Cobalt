@@ -8,6 +8,8 @@ import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.binary.BinarySocket;
 import it.auties.whatsapp.controller.WhatsappKeys;
 import it.auties.whatsapp.controller.WhatsappStore;
+import it.auties.whatsapp.crypto.GroupBuilder;
+import it.auties.whatsapp.crypto.GroupCipher;
 import it.auties.whatsapp.crypto.SessionBuilder;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -18,6 +20,7 @@ import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
+import it.auties.whatsapp.model.signal.sender.SenderKeyMessage;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
 import it.auties.whatsapp.model.signal.sender.SenderKeyRecord;
 import it.auties.whatsapp.model.signal.sender.SenderKeyState;
@@ -63,16 +66,13 @@ public class BaileysTest {
                 .message(MessageContainer.of(TextMessage.of(MESSAGE_CONTENT)))
                 .create();
 
-        var address = ContactJid.of("15414367949@s.whatsapp.net").toSignalAddress();
-        var builder = new SessionBuilder(address, whatsappKeys);
-        builder.createOutgoing(
-                256206937,
-                Bytes.ofHex("059328c7d02c9016a8fe052aad077648181a4d56d28eefbac970bb5ba07b11ee13").toByteArray(),
-                new SignalSignedKeyPair(4, new SignalKeyPair(Bytes.ofHex("05b9818932a02b9961e99c472fed96a46f552d4321de9179ecc85071d60eeb9b72").toByteArray(), null), Bytes.ofHex("67d74137e74ac908ed342ec2525e5408df5edd46834ec6cb9946cbd5adea8a526b5baf45a753be08687cf899a0b6f5af788078a9df3813c0e97d3629a7fe220f").toByteArray()),
-                new SignalSignedKeyPair(7567753, new SignalKeyPair(Bytes.ofHex("05787a4127a299bc8b182876cea00efe106c776e9274f90f1ed7882533a0d8ec17").toByteArray(), null), null)
-        );
-        var result = whatsappKeys.findSessionByAddress(address);
-        System.out.println(result);
+        var address = ContactJid.of("120363020967782887@g.us");
+        var sender = ContactJid.of("393495089819:86@s.whatsapp.net");
+        var name = new SenderKeyName(address.toString(), sender.toSignalAddress());
+        var cipher = new GroupCipher(name, whatsappKeys);
+        var ww4j = SenderKeyMessage.ofSerialized(cipher.encrypt(Bytes.ofHex("0a054369616f2101").toByteArray()).bytes());
+        var baileys = SenderKeyMessage.ofSerialized(Bytes.ofHex("3308b59fc8f50310011a1044e6182c4644a698abe887c43d3831ec9a033b8a647d60e9f801ebfe0f7f3d6bda7bd1e6419f4d3c89589a6cf286a0b6ccf310d6a3cbd7c5734bfcf9b92b1160477f3a60b1381e58c492de803fabef06").toByteArray());
+        System.out.println(ww4j.equals(baileys));
     }
 
     private WhatsappKeys createKeys() throws URISyntaxException, IOException {
@@ -143,15 +143,15 @@ public class BaileysTest {
                                                                             .keySet()
                                                                             .stream()
                                                                             .map(messageKey -> Map.entry(messageKey, sessionState._chains().get(chainKey).messageKeys().get(messageKey)))
-                                                                            .collect(Collectors.toConcurrentMap(Map.Entry::getKey, Map.Entry::getValue)))
+                                                                            .collect(Collectors.toConcurrentMap(Map.Entry::getKey, Map.Entry::getValue, (first, second) -> first, ConcurrentHashMap::new)))
                                                                     .build()))
-                                                            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)))
+                                                            .collect(Collectors.toConcurrentMap(Map.Entry::getKey, Map.Entry::getValue, (first, second) -> first, ConcurrentHashMap::new)))
                                                     .pendingPreKey(sessionState.pendingPreKey() != null ? new SessionPreKey(sessionState.pendingPreKey().preKeyId(), sessionState.pendingPreKey().baseKey(), sessionState.pendingPreKey().signedKeyId()) : null)
                                                     .baseKey(sessionState.indexInfo().baseKey())
                                                     .closed(sessionState.indexInfo().closed() > 0)
                                                     .build();
                                         })
-                                        .collect(Collectors.toCollection(LinkedHashSet::new)))))
+                                        .collect(Collectors.toCollection(ConcurrentLinkedDeque::new)))))
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)))
                 .senderKeys(baileysKeys.keys() == null ? new ConcurrentHashMap<>() : baileysKeys.keys().senderKeys() != null ? baileysKeys.keys().senderKeys()
                         .keySet()
@@ -164,7 +164,7 @@ public class BaileysTest {
                                             .chainKey(new it.auties.whatsapp.model.signal.sender.SenderChainKey(keyEntry.senderChainKey().iteration(), keyEntry.senderChainKey().seed()))
                                             .signingKey(new it.auties.whatsapp.model.signal.sender.SenderSigningKey(keyEntry.senderSigningKey().publicKey(), keyEntry.senderSigningKey().privateKey()))
                                             .build())
-                                    .collect(Collectors.toCollection(LinkedList::new))));
+                                    .collect(Collectors.toCollection(ConcurrentLinkedDeque::new))));
                         })
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)) : new HashMap<>())
                 .build();

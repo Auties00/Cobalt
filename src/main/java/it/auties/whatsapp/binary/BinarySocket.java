@@ -274,12 +274,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     @OnError
     public void onError(Throwable throwable){
         serialize(ON_ERROR);
-        handleError(throwable);
-    }
-
-    private <T> T handleError(Throwable throwable){
-        throwable.printStackTrace();
-        return null;
+        streamHandler.handleFailure(503, throwable.getMessage(), "unknown");
     }
 
     public CompletableFuture<Node> send(Node node){
@@ -288,7 +283,8 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         }
 
         return node.toRequest(node.id() == null ? store.nextTag() : null)
-                .send(session(), keys, store);
+                .send(session(), keys, store)
+                .exceptionallyAsync(throwable -> streamHandler.handleFailure(503, throwable.getMessage(), "node"));
     }
 
     public CompletableFuture<Void> sendWithNoResponse(Node node){
@@ -298,8 +294,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
     @SafeVarargs
     public final CompletableFuture<Node> sendMessage(MessageInfo info, Entry<String, Object>... metadata){
-        return messageHandler.encode(info, metadata)
-                .thenComposeAsync(this::send);
+        return messageHandler.encode(info, metadata);
     }
 
     public CompletableFuture<Node> sendQuery(String method, String category, Node... body){
@@ -405,6 +400,18 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         var newStore = WhatsappStore.newStore(newId);
         newStore.listeners().addAll(store.listeners());
         this.store = newStore;
+    }
+
+    private Contact createContact(ContactJid jid) {
+        var newContact = Contact.ofJid(jid);
+        store.addContact(newContact);
+        return newContact;
+    }
+
+    private Chat createChat(ContactJid jid){
+        var newChat = Chat.ofJid(jid);
+        store.addChat(newChat);
+        return newChat;
     }
 
     public static class OriginPatcher extends Configurator{
@@ -680,13 +687,14 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             handleFailure(statusCode, reason, reason);
         }
 
-        private void handleFailure(long statusCode, String reason, String location) {
+        private <T> T handleFailure(long statusCode, String reason, String location) {
             Validate.isTrue(shouldHandleFailure(statusCode, reason),
                     "Invalid or expired credentials: socket failed with status code %s at %s", statusCode, location);
             log.warning("Handling failure caused by %s at %s with status code %s: restoring session".formatted(reason, location, statusCode));
             store.clear();
             changeKeys();
             reconnect();
+            return null;
         }
 
         private boolean shouldHandleFailure(long statusCode, String reason) {
@@ -778,7 +786,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     .thenApplyAsync(MediaConnection::ofNode)
                     .thenApplyAsync(this::scheduleMediaConnection)
                     .thenApplyAsync(store::mediaConnection)
-                    .exceptionallyAsync(BinarySocket.this::handleError);
+                    .exceptionallyAsync(throwable -> streamHandler.handleFailure(503, throwable.getMessage(), "media_connection"));
         }
 
         private MediaConnection scheduleMediaConnection(MediaConnection connection) {
@@ -915,6 +923,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
     private class MessageHandler {
         private static final int CACHE_EXPIRATION = 5;
+        private static final Semaphore LOCK = new Semaphore(1);
 
         private final Cache<ContactJid, GroupMetadata> groupsCache;
         private final Cache<String, List<ContactJid>> devicesCache;
@@ -932,6 +941,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         @SafeVarargs
         @SneakyThrows
         public final CompletableFuture<Node> encode(MessageInfo info, Entry<String, Object>... attributes) {
+            LOCK.acquire();
             var encodedMessage = BytesHelper.pad(PROTOBUF.writeValueAsBytes(info.message()));
             if (isConversation(info)) {
                 var deviceMessage = MessageContainer.of(DeviceSentMessage.newDeviceSentMessage(info.chatJid().toString(), info.message(), null));
@@ -940,7 +950,10 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                 return getDevices(knownDevices, true)
                         .thenApplyAsync(otherDevices -> append(knownDevices, otherDevices))
                         .thenComposeAsync(allDevices -> createConversationNodes(allDevices, encodedMessage, encodedDeviceMessage))
-                        .thenApplyAsync(sessions -> createEncodedMessageNode(info, sessions, null, attributes));
+                        .thenApplyAsync(sessions -> createEncodedMessageNode(info, sessions, null, attributes))
+                        .thenComposeAsync(BinarySocket.this::send)
+                        .thenApplyAsync(this::releaseMessageLock)
+                        .exceptionallyAsync(this::handleMessageFailure);
             }
 
             var senderName = new SenderKeyName(info.chatJid().toString(), keys.companion().toSignalAddress());
@@ -952,8 +965,21 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     .map(CompletableFuture::completedFuture)
                     .orElseGet(() -> queryGroupMetadata(info.chatJid()))
                     .thenComposeAsync(this::getDevices)
-                    .thenComposeAsync(allDevices -> createGroupNodes(info, groupSignalMessage, allDevices))
-                    .thenApplyAsync(preKeys -> createEncodedMessageNode(info, preKeys, groupWhatsappMessage, attributes));
+                    .thenComposeAsync(allDevices -> createGroupNodes(info, groupSignalMessage.serialized(), allDevices))
+                    .thenApplyAsync(preKeys -> createEncodedMessageNode(info, preKeys, groupWhatsappMessage, attributes))
+                    .thenComposeAsync(BinarySocket.this::send)
+                    .thenApplyAsync(this::releaseMessageLock)
+                    .exceptionallyAsync(this::handleMessageFailure);
+        }
+
+        private Node handleMessageFailure(Throwable throwable) {
+            LOCK.release();
+            return streamHandler.handleFailure(503, throwable.getMessage(), "message");
+        }
+
+        private Node releaseMessageLock(Node node) {
+            LOCK.release();
+            return node;
         }
 
         private boolean isConversation(MessageInfo info) {
@@ -965,12 +991,12 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         @SneakyThrows
         private Node createEncodedMessageNode(MessageInfo info, List<Node> preKeys, Node descriptor, Entry<String, Object>... metadata) {
             var body = new ArrayList<Node>();
-            if(descriptor != null){
-                body.add(descriptor);
-            }
-
             if(!preKeys.isEmpty()){
                 body.add(withChildren("participants", preKeys));
+            }
+
+            if(descriptor != null){
+                body.add(descriptor);
             }
 
             if(hasPreKeyMessage(preKeys)) {
@@ -1004,8 +1030,9 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         }
 
         @SneakyThrows
-        private CompletableFuture<List<Node>> createGroupNodes(MessageInfo info, SignalDistributionMessage signalMessage, List<ContactJid> participants) {
+        private CompletableFuture<List<Node>> createGroupNodes(MessageInfo info, byte[] distributionMessage, List<ContactJid> participants) {
             var group = info.chat()
+                    .or(() -> Optional.of(createChat(info.chatJid())))
                     .filter(Chat::isGroup)
                     .orElseThrow(() -> new IllegalArgumentException("%s is not a group".formatted(info.chatJid())));
             var missingParticipants= participants.stream()
@@ -1015,7 +1042,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                 return completedFuture(List.of());
             }
 
-            var whatsappMessage = MessageContainer.of(new SenderKeyDistributionMessage(info.chatJid().toString(), signalMessage.serialized()));
+            var whatsappMessage = MessageContainer.of(new SenderKeyDistributionMessage(info.chatJid().toString(), distributionMessage));
             var paddedMessage = BytesHelper.pad(PROTOBUF.writeValueAsBytes(whatsappMessage));
             return createMessageNodes(missingParticipants, paddedMessage)
                     .thenApplyAsync(results -> savePreKeys(group, missingParticipants, results));
@@ -1276,6 +1303,10 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                 return;
             }
 
+            if(!info.ignore()) {
+                chat.unreadMessages(chat.unreadMessages() + 1);
+            }
+
             store.callListeners(listener -> listener.onNewMessage(info));
         }
 
@@ -1365,12 +1396,6 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     .chosenName(pushName.name());
             var action = new ContactAction(pushName.name(), null);
             store.callListeners(listener -> listener.onAction(action));
-        }
-
-        private Contact createContact(ContactJid jid) {
-            var newContact = Contact.ofJid(jid);
-            store.addContact(newContact);
-            return newContact;
         }
 
         private void handleRecentMessage(Chat recent) {
@@ -1489,7 +1514,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
         private Void handlePullError(Throwable exception) {
             PULL_SEMAPHORE.release();
-            return handleError(exception);
+            return streamHandler.handleFailure(503, exception.getMessage(), "app_state_pull");
         }
 
         private List<ActionDataSync> parsePatches(List<SnapshotSyncRecord> patches) {
@@ -1613,7 +1638,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                 switch (action) {
                     case AndroidUnsupportedActions ignored -> {}
                     case ClearChatAction ignored -> targetChat.map(Chat::messages).ifPresent(SortedMessageList::clear);
-                    case ContactAction contactAction -> updateName(targetContact.orElse(null), targetChat.orElse(null), contactAction);
+                    case ContactAction contactAction -> updateName(targetContact.orElseGet(() -> createContact(jid)), targetChat.orElseGet(() -> createChat(jid)), contactAction);
                     case DeleteChatAction ignored -> targetChat.ifPresent(store.chats()::remove);
                     case DeleteMessageForMeAction ignored -> targetMessage.ifPresent(message -> targetChat.ifPresent(chat -> deleteMessage(message, chat)));
                     case MarkChatAsReadAction markAction -> targetChat.ifPresent(chat -> chat.unreadMessages(markAction.read() ? 0 : -1));

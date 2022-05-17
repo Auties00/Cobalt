@@ -106,7 +106,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      */
     public CompletableFuture<Node> send(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store, boolean prologue, boolean response) {
         try {
-            var ciphered = cipherMessage(keys);
+            var ciphered = encryptMessage(keys);
             var buffer = Bytes.of(prologue ? PROLOGUE : new byte[0])
                     .appendInt(ciphered.length >> 16)
                     .appendShort(65535 & ciphered.length)
@@ -156,7 +156,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
         store.pendingRequests().add(this);
     }
 
-    private byte[] cipherMessage(WhatsappKeys keys) {
+    private byte[] encryptMessage(WhatsappKeys keys) {
         var encodedBody = body();
         var body = switch (encodedBody) {
             case byte[] bytes -> bytes;
@@ -169,6 +169,6 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
         }
 
         return AesGmc.of(keys.writeKey(), keys.writeCounter(true), true)
-                .process(body);
+                .encrypt(body);
     }
 }

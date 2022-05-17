@@ -72,12 +72,6 @@ public class Chat implements ProtobufMessage {
     private ContactJid oldJid;
 
     /**
-     * The timestamp of the latest message in seconds since {@link java.time.Instant#EPOCH}
-     */
-    @ProtobufProperty(index = 5, type = UINT64)
-    private long lastMessageTimestamp;
-
-    /**
      * The number of unread messages in this chat.
      * If this field is negative, this chat is marked as unread.
      */
@@ -156,13 +150,6 @@ public class Chat implements ProtobufMessage {
     private boolean markedAsUnread;
 
     /**
-     * If this chat is a group, this field is populated with the participants of this group
-     */
-    @ProtobufProperty(index = 20, type = MESSAGE,
-            concreteType = GroupParticipant.class, repeated = true)
-    private List<GroupParticipant> participants;
-
-    /**
      * The token of this chat
      */
     @ProtobufProperty(index = 21, type = BYTES)
@@ -175,7 +162,7 @@ public class Chat implements ProtobufMessage {
     private long tokenTimestamp;
 
     /**
-     * The public identity key of this
+     * The public identity key of this chat
      */
     @ProtobufProperty(index = 23, type = BYTES)
     private byte[] identityKey;
@@ -242,6 +229,18 @@ public class Chat implements ProtobufMessage {
      */
     @Default
     private Set<ContactJid> participantsPreKeys = new HashSet<>();
+
+    /**
+     * Constructs a chat from a jid
+     *
+     * @param jid the non-null jid
+     * @return a non-null chat
+     */
+    public static Chat ofJid(@NonNull ContactJid jid){
+        return Chat.builder()
+                .jid(jid)
+                .build();
+    }
 
     /**
      * Returns the name of this chat
@@ -326,15 +325,6 @@ public class Chat implements ProtobufMessage {
     }
 
     /**
-     * Returns an optional value containing the participants of this chat, if it is a group
-     *
-     * @return a non-empty optional if this chat is a group
-     */
-    public Optional<List<GroupParticipant>> participants() {
-        return Optional.ofNullable(participants);
-    }
-
-    /**
      * Returns an optional value containing the wallpaper of this chat, if any is set
      *
      * @return a non-empty optional if this chat has a custom wallpaper
@@ -401,22 +391,15 @@ public class Chat implements ProtobufMessage {
             return this;
         }
 
-        @SuppressWarnings("ConstantConditions")
         public ChatBuilder messages(List<HistorySyncMessage> messages) {
-            this.messages$set = true;
             var value = new SortedMessageList(messages);
-            if(messages$value == null){
+            if(!messages$set){
                 this.messages$value = value;
+                this.messages$set = true;
                 return this;
             }
 
             this.messages$value.addAll(value);
-            return this;
-        }
-
-        public ChatBuilder participants(List<GroupParticipant> participants) {
-            if (this.participants == null) this.participants = new ArrayList<>();
-            this.participants.addAll(participants);
             return this;
         }
     }

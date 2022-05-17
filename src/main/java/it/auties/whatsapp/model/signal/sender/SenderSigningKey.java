@@ -17,7 +17,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.BYTES;
 @Accessors(fluent = true)
 public class SenderSigningKey implements ProtobufMessage {
   @ProtobufProperty(index = 1, type = BYTES)
-  private byte[] publicKey;
+  private byte[] encodedPublicKey;
 
   @ProtobufProperty(index = 2, type = BYTES)
   private byte[] privateKey;

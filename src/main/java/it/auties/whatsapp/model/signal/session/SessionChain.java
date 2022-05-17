@@ -11,6 +11,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @AllArgsConstructor
 @Builder
@@ -18,15 +19,17 @@ import java.util.Map;
 @Data
 @Accessors(fluent = true)
 public class SessionChain {
+    private SessionChainType type;
+
     private int counter;
 
     private byte[] key;
 
     @NonNull
-    private Map<Integer, byte[]> messageKeys;
+    private ConcurrentHashMap<Integer, byte[]> messageKeys;
 
-    public SessionChain(int counter, @NonNull byte[] key) {
-        this(counter, key, new HashMap<>());
+    public SessionChain(int counter, byte @NonNull [] key) {
+        this(null, counter, key, new ConcurrentHashMap<>());
     }
 
     public boolean hasMessageKey(int counter){
