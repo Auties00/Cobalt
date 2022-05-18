@@ -2,6 +2,7 @@ package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.whatsapp.util.Preferences;
+import lombok.NonNull;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -39,6 +40,22 @@ public sealed interface WhatsappController permits WhatsappStore, WhatsappKeys {
             return Optional.empty();
         }
     }
+
+    /**
+     * Saves this object as a JSON
+     *
+     * @param preferences the non-null preferences
+     * @param async whether to perform the write operation asynchronously or not
+     */
+    void save(@NonNull Preferences preferences, boolean async);
+
+    /**
+     * Saves this object as a JSON
+     *
+     * @param path the non-null path
+     * @param async whether to perform the write operation asynchronously or not
+     */
+    void save(@NonNull Path path, boolean async);
 
     /**
      * Saves this object as a JSON

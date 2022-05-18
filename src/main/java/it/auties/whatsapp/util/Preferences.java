@@ -13,7 +13,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-@RequiredArgsConstructor
+@RequiredArgsConstructor(staticName = "of")
 public final class Preferences implements JacksonProvider {
     private static final Path DEFAULT_DIRECTORY;
 

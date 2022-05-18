@@ -20,6 +20,7 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 import lombok.extern.java.Log;
 
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -404,6 +405,17 @@ public final class WhatsappStore implements WhatsappController {
     @Override
     public void save(boolean async){
         var preferences = Preferences.of("%s/store.json", id);
+        save(preferences, async);
+    }
+
+    @Override
+    public void save(@NonNull Path path, boolean async) {
+        var preferences = Preferences.of("%s/store.json", id);
+        save(preferences, async);
+    }
+
+    @Override
+    public void save(@NonNull Preferences preferences, boolean async) {
         if(async) {
             preferences.writeJsonAsync(this);
             return;

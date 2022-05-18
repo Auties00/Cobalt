@@ -39,7 +39,8 @@ public final class SignalMessage implements SignalProtocolMessage {
     private byte[] serialized;
 
     @SneakyThrows
-    public SignalMessage(byte[] ephemeralPublicKey, int counter, int previousCounter, byte[] ciphertext, Function<byte[], byte[]> signer) {
+    public SignalMessage(byte @NonNull [] ephemeralPublicKey, int counter, int previousCounter, byte @NonNull [] ciphertext,
+                         Function<byte[], byte[]> signer) {
         this.version = CURRENT_VERSION;
         this.ephemeralPublicKey = ephemeralPublicKey;
         this.counter = counter;

@@ -1,6 +1,8 @@
 package it.auties.whatsapp.util;
 
 import it.auties.bytes.Bytes;
+import it.auties.whatsapp.model.message.model.MessageContainer;
+import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
 import java.io.ByteArrayOutputStream;
@@ -8,7 +10,7 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
 @UtilityClass
-public class BytesHelper {
+public class BytesHelper implements JacksonProvider {
     public byte versionToBytes(int version){
         return (byte) (version << 4 | SignalSpecification.CURRENT_VERSION);
     }
@@ -34,20 +36,23 @@ public class BytesHelper {
        }
     }
 
-    public byte[] pad(byte[] bytes){
+    @SneakyThrows
+    public byte[] messageToBytes(MessageContainer container){
         var padRandomByte = Keys.header();
         var padding = Bytes.newBuffer(padRandomByte)
                 .fill((byte) padRandomByte)
                 .toByteArray();
-        return Bytes.of(bytes)
+        return Bytes.of(PROTOBUF.writeValueAsBytes(container))
                 .append(padding)
                 .toByteArray();
     }
 
-    public byte[] unpad(byte[] bytes){
-        return Bytes.of(bytes)
+    @SneakyThrows
+    public MessageContainer bytesToMessage(byte[] bytes){
+        var message = Bytes.of(bytes)
                 .cut(-bytes[bytes.length - 1])
                 .toByteArray();
+        return PROTOBUF.readMessage(message, MessageContainer.class);
     }
 
     public byte[] longToBytes(long number){

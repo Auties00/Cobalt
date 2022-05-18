@@ -22,6 +22,7 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys key
                 .headState();
         var messageKey = currentState.chainKey()
                 .toMessageKey();
+
         var ciphertext = AesCbc.encrypt(
                 messageKey.iv(),
                 data,

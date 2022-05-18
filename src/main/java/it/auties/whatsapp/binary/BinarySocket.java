@@ -691,6 +691,10 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             Validate.isTrue(shouldHandleFailure(statusCode, reason),
                     "Invalid or expired credentials: socket failed with status code %s at %s", statusCode, location);
             log.warning("Handling failure caused by %s at %s with status code %s: restoring session".formatted(reason, location, statusCode));
+            if(true){
+                return null;
+            }
+
             store.clear();
             changeKeys();
             reconnect();
@@ -942,10 +946,10 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         @SneakyThrows
         public final CompletableFuture<Node> encode(MessageInfo info, Entry<String, Object>... attributes) {
             LOCK.acquire();
-            var encodedMessage = BytesHelper.pad(PROTOBUF.writeValueAsBytes(info.message()));
+            var encodedMessage = BytesHelper.messageToBytes(info.message());
             if (isConversation(info)) {
                 var deviceMessage = MessageContainer.of(DeviceSentMessage.newDeviceSentMessage(info.chatJid().toString(), info.message(), null));
-                var encodedDeviceMessage = BytesHelper.pad(PROTOBUF.writeValueAsBytes(deviceMessage));
+                var encodedDeviceMessage = BytesHelper.messageToBytes(deviceMessage);
                 var knownDevices = List.of(keys.companion().toUserJid(), info.chatJid());
                 return getDevices(knownDevices, true)
                         .thenApplyAsync(otherDevices -> append(knownDevices, otherDevices))
@@ -958,15 +962,15 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
             var senderName = new SenderKeyName(info.chatJid().toString(), keys.companion().toSignalAddress());
             var groupBuilder = new GroupBuilder(keys);
-            var groupSignalMessage = groupBuilder.createOutgoing(senderName);
+            var signalMessage = groupBuilder.createOutgoing(senderName);
             var groupCipher = new GroupCipher(senderName, keys);
-            var groupWhatsappMessage = groupCipher.encrypt(encodedMessage);
+            var groupMessage = groupCipher.encrypt(encodedMessage);
             return Optional.ofNullable(groupsCache.getIfPresent(info.chatJid()))
                     .map(CompletableFuture::completedFuture)
                     .orElseGet(() -> queryGroupMetadata(info.chatJid()))
                     .thenComposeAsync(this::getDevices)
-                    .thenComposeAsync(allDevices -> createGroupNodes(info, groupSignalMessage.serialized(), allDevices))
-                    .thenApplyAsync(preKeys -> createEncodedMessageNode(info, preKeys, groupWhatsappMessage, attributes))
+                    .thenComposeAsync(allDevices -> createGroupNodes(info, signalMessage.serialized(), allDevices))
+                    .thenApplyAsync(preKeys -> createEncodedMessageNode(info, preKeys, groupMessage, attributes))
                     .thenComposeAsync(BinarySocket.this::send)
                     .thenApplyAsync(this::releaseMessageLock)
                     .exceptionallyAsync(this::handleMessageFailure);
@@ -1043,7 +1047,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             }
 
             var whatsappMessage = MessageContainer.of(new SenderKeyDistributionMessage(info.chatJid().toString(), distributionMessage));
-            var paddedMessage = BytesHelper.pad(PROTOBUF.writeValueAsBytes(whatsappMessage));
+            var paddedMessage = BytesHelper.messageToBytes(whatsappMessage);
             return createMessageNodes(missingParticipants, paddedMessage)
                     .thenApplyAsync(results -> savePreKeys(group, missingParticipants, results));
         }
@@ -1228,16 +1232,17 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     return;
                 }
 
-                var decodedMessage = PROTOBUF.reader()
-                        .with(ProtobufSchema.of(MessageContainer.class))
-                        .readValue(BytesHelper.unpad(buffer.get()), MessageContainer.class);
-                info.message(decodedMessage.content() instanceof DeviceSentMessage deviceSentMessage ? MessageContainer.of(deviceSentMessage.message().content()) : decodedMessage);
+                var messageContainer = BytesHelper.bytesToMessage(buffer.get());
+                var message = messageContainer.content() instanceof DeviceSentMessage deviceSentMessage
+                        ? MessageContainer.of(deviceSentMessage.message().content()) : messageContainer;
+                info.message(message);
                 handleStubMessage(info);
                 switch (info.message().content()){
                     case SenderKeyDistributionMessage distributionMessage -> handleDistributionMessage(distributionMessage, info.senderJid());
                     case ProtocolMessage protocolMessage -> handleProtocolMessage(info, protocolMessage, Objects.equals(container.attributes().getString("category"), "peer"));
                     default -> saveMessage(info);
                 }
+
                 sendReceipt(info.chatJid(), info.senderJid(), List.of(info.key().id()), null);
             }catch (Throwable throwable){
                 log.warning("An exception occurred while processing a message: " + throwable.getMessage());

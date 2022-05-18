@@ -97,8 +97,12 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
                 keys.identityKeyPair().privateKey());
         var identitySecret = Curve25519.sharedKey(Keys.withoutHeader(theirIdentityPubKey),
                 ourSignedKey.privateKey());
-        var sharedSecret = createStateSecret(isInitiator, ourEphemeralKey, ourSignedKey,
-                theirEphemeralPubKey, theirSignedPubKey, signedSecret, identitySecret);
+        var signedIdentitySecret = Curve25519.sharedKey(Keys.withoutHeader(theirSignedPubKey),
+                ourSignedKey.privateKey());
+        var ephemeralSecret =  theirEphemeralPubKey == null || ourEphemeralKey == null ? null :
+                Curve25519.sharedKey(Keys.withoutHeader(theirEphemeralPubKey), ourEphemeralKey.privateKey());
+        var sharedSecret = createStateSecret(isInitiator, signedSecret, identitySecret,
+                signedIdentitySecret, ephemeralSecret);
         var masterKey = Hkdf.deriveSecrets(sharedSecret.toByteArray(),
                 "WhisperText".getBytes(StandardCharsets.UTF_8));
         var state = createState(isInitiator, ourEphemeralKey, ourSignedKey, theirIdentityPubKey,
@@ -111,8 +115,9 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
                 state.ephemeralKeyPair().privateKey());
         var initKey = Hkdf.deriveSecrets(initSecret, state.rootKey(),
                 "WhisperRatchet".getBytes(StandardCharsets.UTF_8));
+        var key = state.ephemeralKeyPair().encodedPublicKey();
         var chain = new SessionChain(-1, initKey[1]);
-        return state.addChain(state.ephemeralKeyPair().encodedPublicKey(), chain)
+        return state.addChain(key, chain)
                 .rootKey(initKey[0]);
     }
 
@@ -132,19 +137,12 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
                 .build();
     }
 
-    private Bytes createStateSecret(boolean isInitiator, SignalKeyPair ourEphemeralKey, SignalKeyPair ourSignedKey,
-                                    byte[] theirEphemeralPubKey, byte[] theirSignedPubKey, byte[] signedSecret, byte[] identitySecret) {
-        var sharedSecret = Bytes.newBuffer(32)
+    private Bytes createStateSecret(boolean isInitiator, byte[] signedSecret, byte[] identitySecret, byte[] signedIdentitySecret, byte[] ephemeralSecret) {
+        return Bytes.newBuffer(32)
                 .fill(0xff)
                 .append(isInitiator ? signedSecret : identitySecret)
                 .append(isInitiator ? identitySecret : signedSecret)
-                .append(Curve25519.sharedKey(Keys.withoutHeader(theirSignedPubKey), ourSignedKey.privateKey()));
-        if (ourEphemeralKey == null || theirEphemeralPubKey == null) {
-            return sharedSecret;
-        }
-
-        var additional = Curve25519.sharedKey(Keys.withoutHeader(theirEphemeralPubKey),
-                ourEphemeralKey.privateKey());
-        return sharedSecret.append(additional);
+                .append(signedIdentitySecret)
+                .appendNullable(ephemeralSecret);
     }
 }

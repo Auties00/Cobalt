@@ -45,7 +45,7 @@ import static java.util.Objects.requireNonNullElseGet;
  * It can be configured using a default configuration or a custom one.
  * Multiple instances of this class can be initialized, though it is not advisable as; is a singleton and cannot distinguish between the data associated with each session.
  */
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@AllArgsConstructor(staticName = "newConnection")
 @SuppressWarnings("unused")
 public class Whatsapp {
     /**
@@ -60,12 +60,12 @@ public class Whatsapp {
      * @param id the jid of the session
      * @return a non-null Whatsapp instance
      */
-    public static Whatsapp connect(int id){
+    public static Whatsapp newConnection(int id){
         return new Whatsapp(id);
     }
 
     /**
-     * Constructs a new instance of the API from a fresh connection using a random jid.
+     * Constructs a new instance of the API from a fresh connection using a random id
      *
      * @return a non-null Whatsapp instance
      */
@@ -110,7 +110,7 @@ public class Whatsapp {
     public static Stream<Whatsapp> streamConnections(){
         return knownIds()
                 .stream()
-                .map(Whatsapp::connect);
+                .map(Whatsapp::newConnection);
     }
 
     /**

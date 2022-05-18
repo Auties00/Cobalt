@@ -3,8 +3,7 @@ package it.auties.whatsapp.api;
 import it.auties.whatsapp.controller.WhatsappKeys;
 import it.auties.whatsapp.controller.WhatsappStore;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
@@ -17,11 +16,14 @@ public interface SerializationStrategy {
     default TimeUnit unit(){ return TimeUnit.SECONDS; }
 
     static SerializationStrategy onClose(){
+        return onClose(null);
+    }
+
+    static SerializationStrategy onClose(Path path){
         return new SerializationStrategy() {
             @Override
             public void serialize(WhatsappStore store, WhatsappKeys keys) {
-                store.save(false);
-                keys.save(false);
+                save(store, keys, path, false);
             }
 
             @Override
@@ -32,11 +34,14 @@ public interface SerializationStrategy {
     }
 
     static SerializationStrategy onError(boolean async){
+        return onError(null, async);
+    }
+
+    static SerializationStrategy onError(Path path, boolean async){
         return new SerializationStrategy() {
             @Override
             public void serialize(WhatsappStore store, WhatsappKeys keys) {
-                store.save(async);
-                keys.save(async);
+                save(store, keys, path, async);
             }
 
             @Override
@@ -47,11 +52,14 @@ public interface SerializationStrategy {
     }
 
     static SerializationStrategy onMessage(boolean async){
+        return onMessage(null, async);
+    }
+
+    static SerializationStrategy onMessage(Path path, boolean async){
         return new SerializationStrategy() {
             @Override
             public void serialize(WhatsappStore store, WhatsappKeys keys) {
-                store.save(async);
-                keys.save(async);
+                save(store, keys, path, async);
             }
 
             @Override
@@ -62,15 +70,18 @@ public interface SerializationStrategy {
     }
 
     static SerializationStrategy periodically(long period, boolean async){
-        return periodically(period, TimeUnit.SECONDS, async);
+        return periodically(period, null, async);
     }
 
-    static SerializationStrategy periodically(long period, TimeUnit unit, boolean async){
+    static SerializationStrategy periodically(long period, Path path, boolean async){
+        return periodically(period, TimeUnit.SECONDS, path, async);
+    }
+
+    static SerializationStrategy periodically(long period, TimeUnit unit, Path path, boolean async){
         return new SerializationStrategy() {
             @Override
             public void serialize(WhatsappStore store, WhatsappKeys keys) {
-                store.save(async);
-                keys.save(async);
+                save(store, keys, path, async);
             }
 
             @Override
@@ -102,6 +113,17 @@ public interface SerializationStrategy {
                 return event;
             }
         };
+    }
+
+    private static void save(WhatsappStore store, WhatsappKeys keys, Path path, boolean async) {
+        if(path == null) {
+            store.save(async);
+            keys.save(async);
+            return;
+        }
+
+        store.save(path, async);
+        keys.save(path, async);
     }
 
     enum Event {

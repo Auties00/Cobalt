@@ -12,7 +12,6 @@ import lombok.NonNull;
 import java.util.concurrent.Semaphore;
 
 public record GroupBuilder(@NonNull WhatsappKeys keys) implements SignalSpecification {
-
     public SignalDistributionMessage createOutgoing(SenderKeyName name) {
         var senderKeyRecord = keys.findSenderKeyByName(name);
         if (senderKeyRecord.isEmpty()) {

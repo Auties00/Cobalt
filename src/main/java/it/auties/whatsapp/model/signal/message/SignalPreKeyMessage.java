@@ -45,7 +45,8 @@ public final class SignalPreKeyMessage implements SignalProtocolMessage {
     private byte[] serialized;
 
     @SneakyThrows
-    public SignalPreKeyMessage(int preKeyId, byte[] baseKey, byte[] identityKey, byte[] serializedSignalMessage, int registrationId, int signedPreKeyId) {
+    public SignalPreKeyMessage(int preKeyId, byte[] baseKey, byte[] identityKey, byte[] serializedSignalMessage,
+                               int registrationId, int signedPreKeyId) {
         this.version = CURRENT_VERSION;
         this.preKeyId = preKeyId;
         this.baseKey = baseKey;

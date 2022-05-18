@@ -4,13 +4,18 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.bytes.Bytes;
+import it.auties.whatsapp.api.SerializationStrategy;
+import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.binary.BinarySocket;
+import it.auties.whatsapp.controller.WhatsappController;
 import it.auties.whatsapp.controller.WhatsappKeys;
 import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.crypto.GroupBuilder;
 import it.auties.whatsapp.crypto.GroupCipher;
 import it.auties.whatsapp.crypto.SessionBuilder;
+import it.auties.whatsapp.model.chat.Chat;
+import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MessageContainer;
@@ -32,10 +37,13 @@ import it.auties.whatsapp.model.sync.AppStateSyncKeyData;
 import it.auties.whatsapp.model.sync.AppStateSyncKeyFingerprint;
 import it.auties.whatsapp.model.sync.AppStateSyncKeyId;
 import lombok.SneakyThrows;
+import org.checkerframework.checker.units.qual.C;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,37 +53,63 @@ import java.util.stream.Collectors;
 import static it.auties.whatsapp.util.SignalSpecification.CURRENT_VERSION;
 
 public class BaileysTest {
-    public static final String MESSAGE_ID = "ABCABCABCABCABCC";
-    public static final String MESSAGE_CONTENT = "Ciao";
-
-    @Test
-    @SneakyThrows
-    public void toWW4J()  {
-        var whatsappKeys = createKeys();
-        var whatsappStore = WhatsappStore.newStore(33);
-
-        var contact = ContactJid.of("15414367949@s.whatsapp.net");
-        var key = MessageKey.newMessageKey()
-                .id(MESSAGE_ID)
-                .chatJid(contact)
-                .fromMe(true)
-                .create();
-        var info = MessageInfo.newMessageInfo()
-                .storeId(whatsappStore.id())
-                .key(key)
-                .message(MessageContainer.of(TextMessage.of(MESSAGE_CONTENT)))
-                .create();
-
-        var address = ContactJid.of("120363020967782887@g.us");
-        var sender = ContactJid.of("393495089819:86@s.whatsapp.net");
-        var name = new SenderKeyName(address.toString(), sender.toSignalAddress());
-        var cipher = new GroupCipher(name, whatsappKeys);
-        var ww4j = SenderKeyMessage.ofSerialized(cipher.encrypt(Bytes.ofHex("0a054369616f2101").toByteArray()).bytes());
-        var baileys = SenderKeyMessage.ofSerialized(Bytes.ofHex("3308b59fc8f50310011a1044e6182c4644a698abe887c43d3831ec9a033b8a647d60e9f801ebfe0f7f3d6bda7bd1e6419f4d3c89589a6cf286a0b6ccf310d6a3cbd7c5734bfcf9b92b1160477f3a60b1381e58c492de803fabef06").toByteArray());
-        System.out.println(ww4j.equals(baileys));
+    public static void main(String[] args) throws Throwable {
+        var knownIds = WhatsappController.knownIds();
+        var keys = createKeys();
+        var whatsappKeys = knownIds.contains(keys.id()) ? WhatsappKeys.fromMemory(keys.id()) : keys;
+        var whatsappStore = knownIds.contains(keys.id()) ? WhatsappStore.fromMemory(keys.id()) : createStore();
+        var socket = new BinarySocket(WhatsappOptions.defaultOptions(), whatsappStore, whatsappKeys);
+        var whatsapp = Whatsapp.newConnection(socket);
+        whatsapp.connect().get();
+        waitForInput(whatsapp);
     }
 
-    private WhatsappKeys createKeys() throws URISyntaxException, IOException {
+    private static void waitForInput(Whatsapp whatsapp){
+        var scanner = new Scanner(System.in);
+        var contact = scanner.nextLine();
+        if(Objects.equals(contact, "stop")){
+            return;
+        }
+
+        try {
+            var jid = whatsapp.store().findChatByName(contact)
+                    .map(Chat::jid)
+                    .orElseGet(() -> ContactJid.of(contact));
+            System.out.println("Sending message to " + contact);
+            whatsapp.sendMessage(jid, "Ciao!")
+                    .thenRunAsync(() -> System.out.println("Sent message to " + contact));
+        }catch (Throwable throwable){
+            System.out.println("No match for " + contact);
+        }finally {
+            waitForInput(whatsapp);
+        }
+    }
+
+    private static WhatsappStore createStore() throws URISyntaxException, IOException {
+        var path = Path.of(Objects.requireNonNull(ClassLoader.getSystemClassLoader().getResource("test.json")).toURI());
+        var baileysKeys = new ObjectMapper().readValue(path.toFile(), BaileysKeys.class);
+        var store = WhatsappStore.newStore(baileysKeys.creds().registrationId());
+        if(baileysKeys.keys().senderKeyMemory() == null){
+            return store;
+        }
+
+        baileysKeys.keys().senderKeyMemory().forEach((group, keys) -> {
+            var chat = store.findChatByJid(group).orElseGet(() -> {
+                var newChat = Chat.ofJid(group);
+                store.addChat(newChat);
+                return newChat;
+            });
+            keys.forEach((participant, value) -> {
+                if(!value) {
+                    chat.participantsPreKeys().add(participant);
+                }
+            });
+        });
+
+        return store;
+    }
+
+    private static WhatsappKeys createKeys() throws URISyntaxException, IOException {
         var path = Path.of(Objects.requireNonNull(ClassLoader.getSystemClassLoader().getResource("test.json")).toURI());
         var baileysKeys = new ObjectMapper().readValue(path.toFile(), BaileysKeys.class);
         return WhatsappKeys.builder()
@@ -203,11 +237,12 @@ public class BaileysTest {
 
     }
 
-    @JsonIgnoreProperties({"appStateVersions", "senderKeyMemory"})
-    record Keys(Map<Integer, KeyPair> preKeys, Map<SessionAddress, SessionWrapper> sessions, Map<String, AppStateSyncKey> appStateSyncKeys, Map<SenderKeyName, List<SenderKey>> senderKeys) {
+    @JsonIgnoreProperties({"appStateVersions"})
+    record Keys(Map<Integer, KeyPair> preKeys, Map<SessionAddress, SessionWrapper> sessions, Map<String, AppStateSyncKey> appStateSyncKeys, Map<SenderKeyName, List<SenderKey>> senderKeys, Map<ContactJid, Map<ContactJid, Boolean>> senderKeyMemory) {
 
     }
 
+    @JsonIgnoreProperties("senderMessageKeys")
     record SenderKey(int senderKeyId, SenderChainKey senderChainKey, SenderSigningKey senderSigningKey){
 
     }

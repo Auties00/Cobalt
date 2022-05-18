@@ -7,16 +7,17 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 
+import java.util.HashSet;
 import java.util.Set;
 
 /**
  * A configuration class used to specify the behaviour of {@link Whatsapp}.
  * Each field is immutable, this means that once this class has been initialized, cannot be changed.
  * If reflection is used, it is not guaranteed that the settings will effectively change.
- * This class should be configured using its builder, accessible using {@link WhatsappOptions#builder()}.
+ * This class should be configured using its builder, accessible using {@link WhatsappOptions#newOptions()}.
  * An all arguments' constructor is also available if considered more suitable for the coding style of the project.
  */
-@Builder
+@Builder(builderMethodName = "newOptions", buildMethodName = "create")
 @Data
 @Accessors(fluent = true)
 public class WhatsappOptions {
@@ -78,6 +79,18 @@ public class WhatsappOptions {
      * @return a new instance of WhatsappConfiguration with the above characteristics
      */
     public static WhatsappOptions defaultOptions() {
-        return WhatsappOptions.builder().build();
+        return newOptions().create();
+    }
+
+    public static class WhatsappOptionsBuilder {
+        public WhatsappOptionsBuilder serializationStrategy(SerializationStrategy strategy){
+            if(!serializationStrategies$set){
+                this.serializationStrategies$set = true;
+                this.serializationStrategies$value = new HashSet<>();
+            }
+
+            serializationStrategies$value.add(strategy);
+            return this;
+        }
     }
 }
