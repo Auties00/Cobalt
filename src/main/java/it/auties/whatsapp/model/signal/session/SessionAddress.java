@@ -3,9 +3,7 @@ package it.auties.whatsapp.model.signal.session;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
-import java.util.Objects;
-
-public record SessionAddress(String name, int deviceId) {
+public record SessionAddress(String name, int id) {
     @JsonCreator
     public static SessionAddress of(String serialized){
         var split = serialized.split("\\.", 2);
@@ -15,6 +13,6 @@ public record SessionAddress(String name, int deviceId) {
     @JsonValue
     @Override
     public String toString() {
-        return "%s.%s".formatted(name(), deviceId());
+        return "%s.%s".formatted(name(), id());
     }
 }

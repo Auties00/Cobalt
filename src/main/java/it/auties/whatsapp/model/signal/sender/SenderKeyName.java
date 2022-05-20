@@ -4,8 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 
-import java.util.Objects;
-
 public record SenderKeyName(String groupId, SessionAddress sender) {
   @JsonCreator
   public static SenderKeyName of(String serialized){
@@ -17,6 +15,6 @@ public record SenderKeyName(String groupId, SessionAddress sender) {
   @JsonValue
   @Override
   public String toString() {
-    return "%s::%s::%s".formatted(groupId(), sender().name(), sender().deviceId());
+    return "%s::%s::%s".formatted(groupId(), sender().name(), sender().id());
   }
 }
