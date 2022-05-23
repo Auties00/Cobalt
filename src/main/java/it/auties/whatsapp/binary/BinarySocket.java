@@ -610,7 +610,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
         private void updateMessageStatus(MessageStatus status, Contact participant, MessageInfo message) {
             var chat = message.chat()
-                    .orElseThrow(() -> new NoSuchElementException("Missing chat in status update"));
+                    .orElseGet(() -> createChat(message.chatJid()));
             message.status(status);
             if(participant != null){
                 message.individualStatus().put(participant, status);
@@ -952,7 +952,6 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                 var encodedDeviceMessage = BytesHelper.messageToBytes(deviceMessage);
                 var knownDevices = List.of(keys.companion().toUserJid(), info.chatJid());
                 return getDevices(knownDevices, true)
-                        .thenApplyAsync(otherDevices -> append(knownDevices, otherDevices))
                         .thenComposeAsync(allDevices -> createConversationNodes(allDevices, encodedMessage, encodedDeviceMessage))
                         .thenApplyAsync(sessions -> createEncodedMessageNode(info, sessions, null, attributes))
                         .thenComposeAsync(BinarySocket.this::send)
@@ -1030,7 +1029,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     .collect(partitioningBy(contact -> Objects.equals(contact.user(), keys.companion().user())));
             return createMessageNodes(partitioned.get(true), deviceMessage)
                     .thenCombineAsync(createMessageNodes(partitioned.get(false), message),
-                            this::append);
+                            (first, second) -> append(first, second));
         }
 
         @SneakyThrows
@@ -1100,11 +1099,11 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     .toList();
             var missing = partitioned.get(false);
             if (missing.isEmpty()) {
-                return completedFuture(cached);
+                return completedFuture(excludeSelf ? append(contacts, cached) : cached);
             }
 
             return queryDevices(missing, excludeSelf)
-                    .thenApplyAsync(missingDevices -> append(cached, missingDevices));
+                    .thenApplyAsync(missingDevices -> excludeSelf ? append(contacts, cached, missingDevices) : append(cached, missingDevices));
         }
 
         @SneakyThrows
@@ -1302,7 +1301,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             }
 
             var chat = info.chat()
-                    .orElseThrow(() -> new NoSuchElementException("Missing chat: %s".formatted(info.chatJid())));
+                    .orElseGet(() -> createChat(info.chatJid()));
             chat.messages().add(info);
             if(info.timestamp() <= store.initializationTimeStamp()){
                 return;
@@ -1370,7 +1369,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
                     case REVOKE -> {
                         var chat = info.chat()
-                                .orElseThrow(() -> new NoSuchElementException("Missing chat: %s".formatted(info.chatJid())));
+                                .orElseGet(() -> createChat(info.chatJid()));
                         var message = store.findMessageById(chat, protocolMessage.key().id())
                                 .orElseThrow(() -> new NoSuchElementException("Missing message"));
                         chat.messages().add(message);
@@ -1379,7 +1378,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
                     case EPHEMERAL_SETTING -> {
                         var chat = info.chat()
-                                .orElseThrow(() -> new NoSuchElementException("Missing chat: %s".formatted(info.chatJid())));
+                                .orElseGet(() -> createChat(info.chatJid()));
                         chat.ephemeralMessagesToggleTime(info.timestamp())
                                 .ephemeralMessageDuration(protocolMessage.ephemeralExpiration());
                         var setting = new EphemeralSetting(info.ephemeralDuration(), info.timestamp());
@@ -1417,8 +1416,9 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             store.callListeners(listener -> listener.onChatRecentMessages(oldChat.get()));
         }
 
-        private <T> List<T> append(List<T> first, List<T> second) {
-            return Stream.of(first, second)
+        @SafeVarargs
+        private <T> List<T> append(List<T>... all) {
+            return Stream.of(all)
                     .flatMap(Collection::stream)
                     .toList();
         }

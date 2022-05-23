@@ -9,6 +9,7 @@ import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 import it.auties.whatsapp.util.JacksonProvider;
+import it.auties.whatsapp.util.Keys;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,10 +25,8 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 
 public class RandomTest implements JacksonProvider {
     public static void main(String[] args) throws IOException {
-        var map = new HashMap<SessionAddress, Boolean>();
-        map.put(ContactJid.ofCompanion("393495089819", 10, 0).toSignalAddress(), true);
-        map.put(ContactJid.ofCompanion("393495089819", 11, 0).toSignalAddress(), true);
-        map.put(ContactJid.of("393495089819").toSignalAddress(), true);
-        System.out.println(map);
+        var keyId = Keys.senderKeyId();
+        var senderKey = Keys.senderKey();
+        System.out.println("Done");
     }
 }

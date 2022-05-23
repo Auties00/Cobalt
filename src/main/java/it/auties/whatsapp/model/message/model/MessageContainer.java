@@ -11,8 +11,10 @@ import it.auties.whatsapp.model.message.payment.*;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.model.message.standard.*;
-import it.auties.whatsapp.model.signal.message.SignalDistributionMessage;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
@@ -24,10 +26,10 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 
 /**
  * A container for all types of messages known currently to WhatsappWeb.
- *
+ * <p>
  * Only one of these properties should be populated, however it's not certain as Whatsapp's Protobuf doesn't use a oneof instruction as it would be logical to in said case.
  * This may imply that in some particular and rare cases more than one property can be populated.
- *
+ * <p>
  * There are several categories of messages:
  * <ul>
  *     <li>Server messages</li>
@@ -121,12 +123,6 @@ public class MessageContainer implements ProtobufMessage {
    */
   @ProtobufProperty(index = 14, type = MESSAGE, concreteType = ButtonStructureMessage.class)
   private ButtonStructureMessage highlyStructured;
-  
-  /**
-   * Fast ratchet key sender key distribution message
-   */
-  @ProtobufProperty(index = 15, type = MESSAGE, concreteType = SignalDistributionMessage.class)
-  private SenderKeyDistributionMessage fastRatchetKeySenderKeyDistribution;
   
   /**
    * Send payment message
@@ -307,13 +303,14 @@ public class MessageContainer implements ProtobufMessage {
    * @param message the message that the new container should wrap
    * @param <T> the type of the message
    */
+  @SuppressWarnings("PatternVariableHidesField")
   public <T extends Message> MessageContainer(@NonNull T message){
     switch (message) {
       case SenderKeyDistributionMessage senderKeyDistribution -> this.senderKeyDistribution = senderKeyDistribution;
       case ImageMessage image -> this.image = image;
       case ContactMessage contact -> this.contact = contact;
       case LocationMessage location -> this.location = location;
-      case TextMessage extendedText -> this.text = extendedText;
+      case TextMessage text -> this.text = text;
       case DocumentMessage document -> this.document = document;
       case AudioMessage audio -> this.audio = audio;
       case VideoMessage video -> this.video = video;
@@ -361,7 +358,6 @@ public class MessageContainer implements ProtobufMessage {
     if(this.protocol != null) return protocol;
     if(this.contactsArray != null) return contactsArray;
     if(this.highlyStructured != null) return highlyStructured;
-    if(this.fastRatchetKeySenderKeyDistribution != null) return fastRatchetKeySenderKeyDistribution;
     if(this.sendPayment != null) return sendPayment;
     if(this.liveLocation != null) return liveLocation;
     if(this.requestPayment != null) return requestPayment;
@@ -375,10 +371,10 @@ public class MessageContainer implements ProtobufMessage {
     if(this.deviceSent != null) return deviceSent;
     if(this.deviceSync != null) return deviceSync;
     if(this.buttonList != null) return buttonList;
-    if(this.viewOnce != null) return viewOnce.content().content();
+    if(this.viewOnce != null) return viewOnce.unbox();
     if(this.order != null) return order;
     if(this.buttonListResponse != null) return buttonListResponse;
-    if(this.ephemeral != null) return ephemeral.content().content();
+    if(this.ephemeral != null) return ephemeral.unbox();
     if(this.invoice != null) return invoice;
     if(this.buttons != null) return buttons;
     if(this.buttonsResponse != null) return buttonsResponse;

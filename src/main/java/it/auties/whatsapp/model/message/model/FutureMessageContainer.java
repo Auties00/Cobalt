@@ -13,13 +13,15 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @AllArgsConstructor
 @Builder
 @Jacksonized
-@Data
-@Accessors(fluent = true)
 class FutureMessageContainer implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, concreteType = MessageContainer.class)
-    protected MessageContainer content;
+    private MessageContainer content;
 
     protected static FutureMessageContainer of(MessageContainer container){
         return new FutureMessageContainer(container);
+    }
+
+    protected Message unbox(){
+        return content.content();
     }
 }

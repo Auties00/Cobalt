@@ -68,6 +68,6 @@ public class Keys implements SignalSpecification {
     @SneakyThrows
     public int senderKeyId() {
         var secureRandom = SecureRandom.getInstance(SHA_PRNG);
-        return secureRandom.nextInt(2147483647);
+        return secureRandom.nextInt(0, 2147483647);
     }
 }

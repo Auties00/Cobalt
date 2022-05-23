@@ -22,7 +22,7 @@ import java.util.Scanner;
 public class ApiTest {
     @SneakyThrows
     public static void main(String[] args) {
-        var api = Whatsapp.lastConnection()
+        var api = Whatsapp.newConnection()
                 .connect()
                 .get();
         waitForInput(api);
