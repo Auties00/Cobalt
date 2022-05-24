@@ -1027,9 +1027,11 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         private CompletableFuture<List<Node>> createConversationNodes(List<ContactJid> contacts, byte[] message, byte[] deviceMessage) {
             var partitioned = contacts.stream()
                     .collect(partitioningBy(contact -> Objects.equals(contact.user(), keys.companion().user())));
-            return createMessageNodes(partitioned.get(true), deviceMessage)
-                    .thenCombineAsync(createMessageNodes(partitioned.get(false), message),
-                            (first, second) -> append(first, second));
+            var companions = querySessions(partitioned.get(true))
+                    .thenApplyAsync(ignored -> createMessageNodes(partitioned.get(true), deviceMessage));
+            var others = querySessions(partitioned.get(false))
+                    .thenApplyAsync(ignored -> createMessageNodes(partitioned.get(false), message));
+            return companions.thenCombineAsync(others, (first, second) -> append(first, second));
         }
 
         @SneakyThrows
@@ -1047,7 +1049,8 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
             var whatsappMessage = MessageContainer.of(new SenderKeyDistributionMessage(info.chatJid().toString(), distributionMessage));
             var paddedMessage = BytesHelper.messageToBytes(whatsappMessage);
-            return createMessageNodes(missingParticipants, paddedMessage)
+            return querySessions(missingParticipants)
+                    .thenApplyAsync(ignored -> createMessageNodes(missingParticipants, paddedMessage))
                     .thenApplyAsync(results -> savePreKeys(group, missingParticipants, results));
         }
 
@@ -1056,27 +1059,26 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             return results;
         }
 
-        private CompletableFuture<List<Node>> createMessageNodes(List<ContactJid> contacts, byte[] message) {
+        private CompletableFuture<Void> querySessions(List<ContactJid> contacts){
             var missingSessions = contacts.stream()
                     .filter(contact -> !keys.hasSession(contact.toSignalAddress()))
                     .map(contact -> withAttributes("user", of("jid", contact, "reason", "identity")))
                     .toList();
             if(missingSessions.isEmpty()){
-                return completedFuture(createMessageNodesContent(contacts, message));
+                return completedFuture(null);
             }
 
             return sendQuery("get", "encrypt", withChildren("key", missingSessions))
-                    .thenAcceptAsync(this::parseSessions)
-                    .thenApplyAsync(ignored -> createMessageNodesContent(contacts, message));
+                    .thenAcceptAsync(this::parseSessions);
         }
 
-        private List<Node> createMessageNodesContent(List<ContactJid> contacts, byte[] message) {
+        private List<Node> createMessageNodes(List<ContactJid> contacts, byte[] message) {
             return contacts.stream()
-                    .map(contact -> createMessageNodeContent(contact, message))
+                    .map(contact -> createMessageNode(contact, message))
                     .toList();
         }
 
-        private Node createMessageNodeContent(ContactJid contact, byte[] message) {
+        private Node createMessageNode(ContactJid contact, byte[] message) {
             var cipher = new SessionCipher(contact.toSignalAddress(), keys);
             var encrypted = cipher.encrypt(message);
             return withChildren("to", of("jid", contact), encrypted);
@@ -1154,8 +1156,8 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     && (deviceId == 0 || child.attributes().hasKey("key-index")) ? Optional.of(deviceId) : Optional.empty();
         }
 
-        private void parseSessions(Node result) {
-            result.findNode("list")
+        private void parseSessions(Node node) {
+            node.findNode("list")
                     .findNodes("user")
                     .forEach(this::parseSession);
         }

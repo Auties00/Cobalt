@@ -44,7 +44,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
                     .map(Session::closeCurrentState)
                     .orElseGet(this::createSession)
                     .addState(state);
-        }).get();
+        });
     }
 
     private Session createSession() {
@@ -137,7 +137,8 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
                 .build();
     }
 
-    private Bytes createStateSecret(boolean isInitiator, byte[] signedSecret, byte[] identitySecret, byte[] signedIdentitySecret, byte[] ephemeralSecret) {
+    private Bytes createStateSecret(boolean isInitiator, byte[] signedSecret, byte[] identitySecret,
+                                    byte[] signedIdentitySecret, byte[] ephemeralSecret) {
         return Bytes.newBuffer(32)
                 .fill(0xff)
                 .append(isInitiator ? signedSecret : identitySecret)

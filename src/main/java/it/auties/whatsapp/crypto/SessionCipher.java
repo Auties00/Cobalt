@@ -54,7 +54,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
             var encryptedMessage = encrypt(currentState, chain, secrets[1], encrypted);
             return with("enc",
                     of("v", "2", "type", encryptedMessageType), encryptedMessage);
-        }).get();
+        });
     }
 
     private String getMessageType(SessionState currentState) {
@@ -122,19 +122,20 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
     @SneakyThrows
     public byte[] decrypt(SignalPreKeyMessage message) {
        return Jobs.run(() -> {
-           var session = loadSession(() -> {
-               Validate.isTrue(message.registrationId() != 0, "Missing registration jid");
-               return new Session();
-           });
-
+           var session = loadSession(() -> createSession(message));
            var builder = new SessionBuilder(address, keys);
            builder.createIncoming(session, message);
            var state = session.findState(message.version(), message.baseKey())
                    .orElseThrow(() -> new NoSuchElementException("Missing state"));
-           var plaintext = decrypt(message.signalMessage(), state);
-           keys.addSession(address, session);
-           return plaintext;
-       }).get();
+           return decrypt(message.signalMessage(), state);
+       });
+    }
+
+    private Session createSession(SignalPreKeyMessage message) {
+        Validate.isTrue(message.registrationId() != 0, "Missing registration jid");
+        var newSession = new Session();
+        keys.addSession(address, newSession);
+        return newSession;
     }
 
     @SneakyThrows
@@ -143,19 +144,18 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
            var session = loadSession();
            return session.states()
                    .stream()
-                   .map(state -> decrypt(message, session, state))
+                   .map(state -> tryDecrypt(message, state))
                    .flatMap(Optional::stream)
                    .findFirst()
                    .orElseThrow(() -> new NoSuchElementException("Cannot decrypt message: no suitable session found"));
-       }).get();
+       });
     }
 
-    private Optional<byte[]> decrypt(SignalMessage message, Session session, SessionState state) {
+    private Optional<byte[]> tryDecrypt(SignalMessage message, SessionState state) {
         try {
             Validate.isTrue(keys.hasTrust(address, state.remoteIdentityKey()),
                     "Untrusted key");
             var result = decrypt(message, state);
-            keys.addSession(address, session);
             return Optional.of(result);
         }catch (Throwable ignored){
             return Optional.empty();
