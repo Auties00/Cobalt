@@ -25,7 +25,7 @@ public class Reaction {
   private String groupingKey;
 
   @ProtobufProperty(index = 4, type = INT64)
-  private long senderTimestampMs;
+  private Long senderTimestampMs;
 
   @ProtobufProperty(index = 5, type = BOOL)
   private boolean unread;

@@ -22,5 +22,5 @@ public class CollectionMessage {
   private String id;
 
   @ProtobufProperty(index = 3, type = INT32)
-  private int messageVersion;
+  private Integer messageVersion;
 }

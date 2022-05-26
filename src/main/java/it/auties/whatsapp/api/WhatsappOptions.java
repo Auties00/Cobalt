@@ -44,25 +44,17 @@ public class WhatsappOptions {
     private final String description = "Whatsapp4j";
 
     /**
-     * The short description provided to Whatsapp during the authentication process
-     * This should be, for example, an acronym for your service
-     */
-    @Default
-    @NonNull
-    private final String shortDescription = "W4J";
-
-    /**
-     * A debug flag to print incoming and out-coming nodes
-     */
-    @Default
-    private boolean debug = true;
-
-    /**
      * A flag to specify whether sensible data associated with a session should be serialized.
      * If this flag is set to false, {@link WhatsappOptions#serializationStrategies()} are ignored
      */
     @Default
     private boolean serialization = true;
+
+    /**
+     * Describes how much chat history Whatsapp should send when the QR is first scanned
+     */
+    @Default
+    private HistoryLength historyLength = HistoryLength.THREE_MONTHS;
 
     /**
      * A list of strategies to serialize sensible data associated with a session.

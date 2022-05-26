@@ -26,10 +26,10 @@ public final class SignalMessage implements SignalProtocolMessage {
     private byte @NonNull [] ephemeralPublicKey;
 
     @ProtobufProperty(index = 2, type = UINT32)
-    private int counter;
+    private Integer counter;
 
     @ProtobufProperty(index = 3, type = UINT32)
-    private int previousCounter;
+    private Integer previousCounter;
 
     @ProtobufProperty(index = 4, type = BYTES)
     private byte @NonNull [] ciphertext;
@@ -53,17 +53,12 @@ public final class SignalMessage implements SignalProtocolMessage {
                 .toByteArray();
     }
 
+    @SneakyThrows
     public static SignalMessage ofSerialized(byte[] serialized) {
-        try {
-            var buffer = Bytes.of(serialized);
-            return PROTOBUF.reader()
-                    .with(ProtobufSchema.of(SignalMessage.class))
-                    .readValue(buffer.slice(1, -MAC_LENGTH).toByteArray(), SignalMessage.class)
-                    .version(BytesHelper.bytesToVersion(serialized[0]))
-                    .signature(buffer.slice(-MAC_LENGTH).toByteArray())
-                    .serialized(serialized);
-        } catch (IOException exception) {
-            throw new RuntimeException("Cannot decode SignalMessage", exception);
-        }
+        var buffer = Bytes.of(serialized);
+        return PROTOBUF.readMessage(buffer.slice(1, -MAC_LENGTH).toByteArray(), SignalMessage.class)
+                .version(BytesHelper.bytesToVersion(serialized[0]))
+                .signature(buffer.slice(-MAC_LENGTH).toByteArray())
+                .serialized(serialized);
     }
 }

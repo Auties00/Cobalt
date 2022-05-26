@@ -30,7 +30,7 @@ public final class BusinessAccountInfo implements Info {
    * The facebook jid
    */
   @ProtobufProperty(index = 1, type = UINT64)
-  private long facebookId;
+  private Long facebookId;
 
   /**
    * The account phone number
@@ -42,7 +42,7 @@ public final class BusinessAccountInfo implements Info {
    * The timestamp of the account
    */
   @ProtobufProperty(index = 3, type = UINT64)
-  private long timestamp;
+  private Long timestamp;
 
   /**
    * Indicates here this account is hosted

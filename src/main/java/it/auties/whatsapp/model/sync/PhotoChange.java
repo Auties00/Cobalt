@@ -24,5 +24,5 @@ public class PhotoChange implements ProtobufMessage {
   private byte[] newPhoto;
 
   @ProtobufProperty(index = 3, type = UINT32)
-  private int newPhotoId;
+  private Integer newPhotoId;
 }

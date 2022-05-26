@@ -22,5 +22,5 @@ public class AppStateSyncKeyData implements ProtobufMessage {
   private AppStateSyncKeyFingerprint fingerprint;
 
   @ProtobufProperty(index = 3, type = INT64)
-  private long timestamp;
+  private Long timestamp;
 }

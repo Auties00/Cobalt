@@ -19,7 +19,7 @@ public class PBMediaData {
   private byte[] mediaKey;
 
   @ProtobufProperty(index = 2, type = INT64)
-  private long mediaKeyTimestamp;
+  private Long mediaKeyTimestamp;
 
   @ProtobufProperty(index = 3, type = BYTES)
   private byte[] fileSha256;

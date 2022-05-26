@@ -72,13 +72,13 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
    * Conversation delay in seconds
    */
   @ProtobufProperty(index = 20, type = UINT32)
-  private int conversionDelaySeconds;
+  private Integer conversionDelaySeconds;
 
   /**
    * Forwarding score
    */
   @ProtobufProperty(index = 21, type = UINT32)
-  private int forwardingScore;
+  private Integer forwardingScore;
 
   /**
    * Whether this ContextualMessage is forwarded
@@ -103,14 +103,14 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
    * Only valid if the chat where this message was sent is ephemeral.
    */
   @ProtobufProperty(index = 25, type = UINT32)
-  private int expiration;
+  private Integer expiration;
 
   /**
    * The timestamp, that is the endTimeStamp in seconds since {@link java.time.Instant#EPOCH}, of the last modification to the ephemeral settings
    * for the chat where this ContextualMessage was sent.
    */
   @ProtobufProperty(index = 26, type = INT64)
-  private long ephemeralSettingTimestamp;
+  private Long ephemeralSettingTimestamp;
 
   /**
    * Ephemeral shared secret
@@ -140,7 +140,7 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
    * Entry point conversion delay in seconds
    */
   @ProtobufProperty(index = 31, type = UINT32)
-  private int entryPointConversionDelaySeconds;
+  private Integer entryPointConversionDelaySeconds;
 
   /**
    * Constructs a ContextInfo from a quoted message

@@ -62,13 +62,13 @@ public final class TextMessage extends ContextualMessage {
    * The color of this text message encoded as ARGB
    */
   @ProtobufProperty(index = 7, type = FIXED32)
-  private int textArgb;
+  private Integer textArgb;
 
   /**
    * The background color of this text message encoded as ARGB
    */
   @ProtobufProperty(index = 8, type = FIXED32)
-  private int backgroundArgb;
+  private Integer backgroundArgb;
 
   /**
    * The type of font used for the text message.

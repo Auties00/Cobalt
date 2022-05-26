@@ -33,7 +33,7 @@ public class SenderKeyState implements ProtobufMessage {
   private static final int MAX_MESSAGE_KEYS = 2000;
 
   @ProtobufProperty(index = 1, type = UINT32)
-  private int id;
+  private Integer id;
 
   @ProtobufProperty(index = 2, type = MESSAGE, concreteType = SenderChainKey.class)
   private SenderChainKey chainKey;

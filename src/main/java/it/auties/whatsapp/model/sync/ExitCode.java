@@ -18,7 +18,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT64;
 @Accessors(fluent = true)
 public class ExitCode implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = UINT64)
-    private long code;
+    private Long code;
 
     @ProtobufProperty(index = 2, type = STRING)
     private String text;

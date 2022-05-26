@@ -76,7 +76,7 @@ public class Chat implements ProtobufMessage {
      * If this field is negative, this chat is marked as unread.
      */
     @ProtobufProperty(index = 6, type = UINT32)
-    private int unreadMessages;
+    private Integer unreadMessages;
 
     /**
      * This field is used to determine whether a chat is read only or not.
@@ -98,13 +98,13 @@ public class Chat implements ProtobufMessage {
      * If ephemeral messages aren't enabled, this field has a value of 0.
      */
     @ProtobufProperty(index = 10, type = INT64)
-    private long ephemeralMessagesToggleTime;
+    private Long ephemeralMessagesToggleTime;
 
     /**
      * The timestamp for the creation of this chat in seconds since {@link java.time.Instant#EPOCH}
      */
     @ProtobufProperty(index = 12, type = UINT64)
-    private long timestamp;
+    private Long timestamp;
 
     /**
      * The non-null display name of this chat
@@ -141,7 +141,7 @@ public class Chat implements ProtobufMessage {
      * If this field is negative, this chat is marked as unread.
      */
     @ProtobufProperty(index = 18, type = UINT32)
-    private int unreadMentions;
+    private Integer unreadMentions;
 
     /**
      * Indicates whether this chat was manually marked as unread
@@ -159,7 +159,7 @@ public class Chat implements ProtobufMessage {
      * The timestamp of the token of this chat
      */
     @ProtobufProperty(index = 22, type = UINT64)
-    private long tokenTimestamp;
+    private Long tokenTimestamp;
 
     /**
      * The public identity key of this chat
@@ -200,7 +200,7 @@ public class Chat implements ProtobufMessage {
      * The timestamp of the sender of the token of this chat
      */
     @ProtobufProperty(index = 28, type = UINT64)
-    private long tokenSenderTimestamp;
+    private Long tokenSenderTimestamp;
 
     /**
      * Whether this chat was suspended and therefore cannot be accessed anymore

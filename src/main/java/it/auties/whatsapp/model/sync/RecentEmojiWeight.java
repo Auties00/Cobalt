@@ -24,5 +24,5 @@ public class RecentEmojiWeight implements ProtobufMessage {
   private String emoji;
 
   @ProtobufProperty(index = 2, type = FLOAT)
-  private float weight;
+  private Float weight;
 }

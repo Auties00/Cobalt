@@ -25,7 +25,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @Accessors(fluent = true)
 public class ClientPayload implements ProtobufMessage {
   @ProtobufProperty(index = 1, type = UINT64)
-  private long username;
+  private Long username;
 
   @ProtobufProperty(index = 3, type = BOOLEAN)
   private boolean passive;
@@ -44,7 +44,7 @@ public class ClientPayload implements ProtobufMessage {
   private String pushName;
 
   @ProtobufProperty(index = 9, type = SFIXED32)
-  private int sessionId;
+  private Integer sessionId;
 
   @ProtobufProperty(index = 10, type = BOOLEAN)
   private boolean shortConnect;
@@ -62,13 +62,13 @@ public class ClientPayload implements ProtobufMessage {
   private DNSSource dnsSource;
 
   @ProtobufProperty(index = 16, type = UINT32)
-  private int connectAttemptCount;
+  private Integer connectAttemptCount;
 
   @ProtobufProperty(index = 17, type = UINT32)
-  private int agent;
+  private Integer agent;
 
   @ProtobufProperty(index = 18, type = UINT32)
-  private int device;
+  private Integer device;
 
   @ProtobufProperty(index = 19, type = MESSAGE, concreteType = CompanionData.class)
   private CompanionData regData;

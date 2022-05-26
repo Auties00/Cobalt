@@ -24,5 +24,5 @@ public class RecentStickerWeight implements ProtobufMessage {
   private String hash;
 
   @ProtobufProperty(index = 2, type = FLOAT)
-  private float weight;
+  private Float weight;
 }

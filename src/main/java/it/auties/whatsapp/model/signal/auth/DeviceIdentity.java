@@ -20,11 +20,11 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @Accessors(fluent = true)
 public class DeviceIdentity implements ProtobufMessage {
   @ProtobufProperty(index = 1, type = UINT32)
-  private int rawId;
+  private Integer rawId;
 
   @ProtobufProperty(index = 2, type = UINT64)
-  private long timestamp;
+  private Long timestamp;
 
   @ProtobufProperty(index = 3, type = UINT32)
-  private int keyIndex;
+  private Integer keyIndex;
 }

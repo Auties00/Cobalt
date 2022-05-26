@@ -17,5 +17,5 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT64;
 @Accessors(fluent = true)
 public class VersionSync implements ProtobufMessage {
   @ProtobufProperty(index = 1, type = UINT64)
-  private long version;
+  private Long version;
 }

@@ -81,66 +81,20 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
        return decodedMedia();
     }
 
-    /**
-     * Returns the upload url of the encoded media that this object wraps
-     *
-     * @return a non-null string
-     */
-    public abstract @NonNull String url();
-
-    /**
-     * Returns the direct path to the encoded media that this object wraps
-     *
-     * @return a non-null string
-     */
-    public abstract @NonNull String directPath();
-
 
     /**
      * Returns the media type of the media that this object wraps
      *
      * @return a non-null {@link MediaMessageType}
      */
-    public abstract @NonNull MediaMessageType type();
-
-
-    /**
-     * Returns the media key of the media that this object wraps
-     *
-     * @return a non-null array of bytes
-     */
-    public abstract byte @NonNull [] key();
+    public abstract MediaMessageType type();
 
     /**
      * Returns the timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link MediaMessage#key()}
      *
      * @return an unsigned long
      */
-    public abstract long mediaKeyTimestamp();
-
-
-    /**
-     * Returns the sha256 of the decoded media that this object wraps
-     *
-     * @return a non-null array of bytes
-     */
-    public abstract byte @NonNull [] fileSha256();
-
-
-    /**
-     * Returns the sha256 of the encoded media that this object wraps
-     *
-     * @return a non-null array of bytes
-     */
-    public abstract byte @NonNull [] fileEncSha256();
-
-
-    /**
-     * Returns the size of the decoded media that this object wraps
-     *
-     * @return an unsigned int
-     */
-    public abstract long fileLength();
+    public abstract Long mediaKeyTimestamp();
 
     @Override
     public String name() {

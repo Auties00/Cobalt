@@ -110,13 +110,13 @@ public class InteractiveAnnotation implements ProtobufMessage {
      * X coordinate
      */
     @ProtobufProperty(index = 3, type = DOUBLE)
-    private double x;
+    private Double x;
 
     /**
      * Y coordinate
      */
     @ProtobufProperty(index = 4, type = DOUBLE)
-    private double y;
+    private Double y;
   }
 
   /**
@@ -133,13 +133,13 @@ public class InteractiveAnnotation implements ProtobufMessage {
      * The latitude of this location, in degrees
      */
     @ProtobufProperty(index = 1, type = DOUBLE)
-    private double latitude;
+    private Double latitude;
 
     /**
      * The longitude of this location, in degrees
      */
     @ProtobufProperty(index = 2, type = DOUBLE)
-    private double longitude;
+    private Double longitude;
 
     /**
      * The name of this location

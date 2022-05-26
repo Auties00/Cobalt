@@ -1,6 +1,7 @@
 package it.auties.whatsapp.util;
 
 import it.auties.bytes.Bytes;
+import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
@@ -34,6 +35,10 @@ public class BytesHelper implements JacksonProvider {
        }catch (DataFormatException exception){
            throw new IllegalArgumentException("Cannot deflate", exception);
        }
+    }
+
+    public byte[] messageToBytes(Message message){
+        return messageToBytes(MessageContainer.of(message));
     }
 
     @SneakyThrows

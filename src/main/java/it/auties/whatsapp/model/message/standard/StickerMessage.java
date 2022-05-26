@@ -64,13 +64,13 @@ public final class StickerMessage extends MediaMessage {
    * The unsigned height of the decoded sticker that this object wraps
    */
   @ProtobufProperty(index = 6, type = UINT32)
-  private int height;
+  private Integer height;
 
   /**
    * The unsigned width of the decoded sticker that this object wraps
    */
   @ProtobufProperty(index = 7, type = UINT32)
-  private int width;
+  private Integer width;
 
   /**
    * The direct path to the encoded sticker that this object wraps
@@ -82,19 +82,19 @@ public final class StickerMessage extends MediaMessage {
    * The unsigned size of the decoded sticker that this object wraps
    */
   @ProtobufProperty(index = 9, type = UINT64)
-  private long fileLength;
+  private Long fileLength;
 
   /**
    * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link StickerMessage#key()}
    */
   @ProtobufProperty(index = 10, type = UINT64)
-  private long mediaKeyTimestamp;
+  private Long mediaKeyTimestamp;
 
   /**
    * The length of the first frame
    */
   @ProtobufProperty(index = 11, type = UINT32)
-  private int firstFrameLength;
+  private Integer firstFrameLength;
 
   /**
    * The sidecar for the first frame

@@ -60,13 +60,13 @@ public final class VideoMessage extends MediaMessage {
    * The unsigned size of the decoded video that this object wraps
    */
   @ProtobufProperty(index = 4, type = UINT64)
-  private long fileLength;
+  private Long fileLength;
 
   /**
    * The length in seconds of the video that this message wraps
    */
   @ProtobufProperty(index = 5, type = UINT32)
-  private int seconds;
+  private Integer seconds;
 
   /**
    * The media key of the video that this object wraps.
@@ -90,13 +90,13 @@ public final class VideoMessage extends MediaMessage {
    * The unsigned height of the decoded video that this object wraps
    */
   @ProtobufProperty(index = 9, type = UINT32)
-  private int height;
+  private Integer height;
 
   /**
    * The unsigned width of the decoded video that this object wraps
    */
   @ProtobufProperty(index = 10, type = UINT32)
-  private int width;
+  private Integer width;
 
   /**
    * The sha256 of the encoded video that this object wraps
@@ -121,7 +121,7 @@ public final class VideoMessage extends MediaMessage {
    * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link VideoMessage#key()}
    */
   @ProtobufProperty(index = 14, type = INT64)
-  private long mediaKeyTimestamp;
+  private Long mediaKeyTimestamp;
 
   /**
    * The thumbnail for this video message encoded as jpeg in an array of bytes

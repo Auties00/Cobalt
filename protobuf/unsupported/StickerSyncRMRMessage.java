@@ -22,7 +22,7 @@ public class StickerSyncRMRMessage {
   private String rmrSource;
 
   @ProtobufProperty(index = 3, type = INT64)
-  private long requestTimestamp;
+  private Long requestTimestamp;
 
   public static class StickerSyncRMRMessageBuilder {
 

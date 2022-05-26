@@ -35,10 +35,10 @@ public class HistorySync implements ProtobufMessage {
     private List<MessageInfo> statusV3Messages = new ArrayList<>();
 
     @ProtobufProperty(index = 5, type = UINT32)
-    private int chunkOrder;
+    private Integer chunkOrder;
 
     @ProtobufProperty(index = 6, type = UINT32)
-    private int progress;
+    private Integer progress;
 
     @ProtobufProperty(index = 7, type = MESSAGE, concreteType = PushName.class, repeated = true)
     @Default
@@ -48,7 +48,7 @@ public class HistorySync implements ProtobufMessage {
     private byte[] threadIdUserSecret;
 
     @ProtobufProperty(index = 10, type = UINT32)
-    private int threadDsTimeframeOffset;
+    private Integer threadDsTimeframeOffset;
 
     @AllArgsConstructor
     @Accessors(fluent = true)

@@ -1,14 +1,11 @@
 package it.auties.whatsapp.binary;
 
-import com.github.benmanes.caffeine.cache.*;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
-import it.auties.protobuf.api.model.ProtobufSchema;
-import it.auties.whatsapp.api.QrHandler;
-import it.auties.whatsapp.api.SerializationStrategy;
+import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.api.SerializationStrategy.Event;
-import it.auties.whatsapp.api.WhatsappListener;
-import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.controller.WhatsappKeys;
 import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.crypto.*;
@@ -44,12 +41,10 @@ import it.auties.whatsapp.model.sync.RecordSync.Operation;
 import it.auties.whatsapp.util.*;
 import jakarta.websocket.*;
 import jakarta.websocket.ClientEndpointConfig.Configurator;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-import lombok.SneakyThrows;
+import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.java.Log;
+import org.xml.sax.ErrorHandler;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -57,7 +52,10 @@ import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -65,6 +63,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static it.auties.whatsapp.api.SerializationStrategy.Event.*;
+import static it.auties.whatsapp.binary.BinarySocket.ErrorLocation.*;
 import static it.auties.whatsapp.model.request.Node.*;
 import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
 import static java.lang.Long.parseLong;
@@ -102,6 +101,9 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
     @NonNull
     private final AppStateHandler appStateHandler;
+    
+    @NonNull
+    private final ErrorHandler errorHandler;
 
     @Getter
     @NonNull
@@ -127,6 +129,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         this.streamHandler = new StreamHandler();
         this.messageHandler = new MessageHandler();
         this.appStateHandler = new AppStateHandler();
+        this.errorHandler = new ErrorHandler();
         this.pingService = newSingleThreadScheduledExecutor();
         getRuntime().addShutdownHook(new Thread(() -> serialize(ON_CLOSE)));
         serialize(PERIODICALLY, this::schedulePeriodicSerialization);
@@ -148,10 +151,6 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             return;
         }
 
-        if(options.debug()){
-            System.out.printf("Serializing for event %s%n", event.name().toLowerCase(Locale.ROOT));
-        }
-
         options.serializationStrategies()
                 .stream()
                 .filter(strategy -> strategy.trigger() == event)
@@ -161,10 +160,6 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     @OnOpen
     @SneakyThrows
     public void onOpen(@NonNull Session session) {
-        if(options.debug()){
-            System.out.println("Opened");
-        }
-
         session(session);
         if(loggedIn){
             return;
@@ -196,13 +191,9 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     }
 
     private void handleNode(Node deciphered) {
-        if(options.debug()) {
-            var pretty = deciphered.toString();
-            System.out.println("Received: " + (pretty.length() > 1000 ? pretty.substring(0, 1000) : pretty));
-        }
-
         store.resolvePendingRequest(deciphered, false);
         streamHandler.digest(deciphered);
+        store.callListeners(listener -> listener.onNodeReceived(deciphered));
     }
 
     @SneakyThrows
@@ -251,10 +242,6 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
     @OnClose
     public void onClose(){
-        if(options.debug()){
-            System.out.println("Closed");
-        }
-
         if(loginFuture != null && !loginFuture.isDone()){
             loginFuture.complete(null);
         }
@@ -274,22 +261,21 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     @OnError
     public void onError(Throwable throwable){
         serialize(ON_ERROR);
-        streamHandler.handleFailure(503, throwable.getMessage(), "unknown");
+        errorHandler.handleFailure(503, throwable.getMessage(), UNKNOWN);
     }
 
-    public CompletableFuture<Node> send(Node node){
-        if(options.debug()){
-            System.out.println("Sending: " + node);
-        }
-
+    public CompletableFuture<Node> send(Node node) {
+        store.callListeners(listener -> listener.onNodeSent(node));
         return node.toRequest(node.id() == null ? store.nextTag() : null)
                 .send(session(), keys, store)
-                .exceptionallyAsync(throwable -> streamHandler.handleFailure(503, throwable.getMessage(), "node"));
+                .exceptionallyAsync(throwable -> errorHandler.handleFailure(503, throwable.getMessage(), ERRONEOUS_NODE));
     }
 
-    public CompletableFuture<Void> sendWithNoResponse(Node node){
+    public CompletableFuture<Void> sendWithNoResponse(Node node) {
+        store.callListeners(listener -> listener.onNodeSent(node));
         return node.toRequest(node.id() == null ? store.nextTag() : null)
-                .sendWithNoResponse(session(), keys, store);
+                .sendWithNoResponse(session(), keys, store)
+                .exceptionallyAsync(throwable -> errorHandler.handleFailure(503, throwable.getMessage(), UNKNOWN));
     }
 
     @SafeVarargs
@@ -425,9 +411,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     private class AuthHandler {
         @SneakyThrows
         private void sendUserPayload(byte[] message) {
-            var serverHello = PROTOBUF.reader()
-                    .with(ProtobufSchema.of(HandshakeMessage.class))
-                    .readValue(message, HandshakeMessage.class)
+            var serverHello = PROTOBUF.readMessage(message, HandshakeMessage.class)
                     .serverHello();
             handshake.updateHash(serverHello.ephemeral());
             var sharedEphemeral = Curve25519.sharedKey(serverHello.ephemeral(), keys.ephemeralKeyPair().privateKey());
@@ -478,14 +462,6 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     .appVersion(options.whatsappVersion())
                     .platform(UserAgent.UserAgentPlatform.WEB)
                     .releaseChannel(UserAgent.UserAgentReleaseChannel.RELEASE)
-                    .mcc("000")
-                    .mnc("000")
-                    .osVersion("0.1")
-                    .manufacturer("")
-                    .device("Desktop")
-                    .osBuildNumber("0.1")
-                    .localeLanguageIso6391("en")
-                    .localeCountryIso31661Alpha2("US")
                     .build();
         }
 
@@ -506,9 +482,8 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         private Companion createCompanionProps() {
             return Companion.builder()
                     .os(options.description())
-                    .version(new Version(4, 0, 0))
-                    .platformType(Companion.CompanionPropsPlatformType.CHROME)
-                    .requireFullSync(false)
+                    .platformType(Companion.CompanionPropsPlatformType.DESKTOP)
+                    .requireFullSync(options.historyLength() == HistoryLength.ONE_YEAR)
                     .build();
         }
     }
@@ -531,6 +506,12 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                 case "notification" -> digestNotification(node);
                 case "presence", "chatstate" -> digestChatState(node);
             }
+        }
+
+        private void digestFailure(Node node) {
+            var statusCode = node.attributes().getLong("reason");
+            var reason = node.attributes().getString("location");
+            errorHandler.handleFailure(statusCode, reason, ERRONEOUS_NODE);
         }
 
         private void digestMessage(Node node) {
@@ -681,52 +662,20 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     withAttributes("clean", of("type", type, "timestamp", timestamp)));
         }
 
-        private void digestFailure(Node node) {
-            var statusCode = node.attributes().getLong("reason");
-            var reason = node.attributes().getString("location");
-            handleFailure(statusCode, reason, reason);
-        }
-
-        private <T> T handleFailure(long statusCode, String reason, String location) {
-            Validate.isTrue(shouldHandleFailure(statusCode, reason),
-                    "Invalid or expired credentials: socket failed with status code %s at %s", statusCode, location);
-            log.warning("Handling failure caused by %s at %s with status code %s: restoring session".formatted(reason, location, statusCode));
-            if(true){
-                return null;
-            }
-
-            store.clear();
-            changeKeys();
-            reconnect();
-            return null;
-        }
-
-        private boolean shouldHandleFailure(long statusCode, String reason) {
-            return store.listeners()
-                    .stream()
-                    .allMatch(listener -> listener.onFailure(statusCode, reason));
-        }
-
         private void digestError(Node node) {
             var statusCode = node.attributes().getInt("code");
             switch (statusCode) {
                 case 515 -> reconnect();
                 case 401 -> handleStreamError(node, statusCode);
-                default -> handleStreamError(node);
+                default -> node.children().forEach(error -> store.resolvePendingRequest(error, true));
             }
-        }
-
-        private void handleStreamError(Node node) {
-            Validate.isTrue(node.findNode("xml-not-well-formed") == null,
-                    "An invalid node was sent to Whatsapp");
-            node.children().forEach(error -> store.resolvePendingRequest(error, true));
         }
 
         private void handleStreamError(Node node, int statusCode) {
             var child = node.children().getFirst();
             var type = child.attributes().getString("type");
             var reason = child.attributes().getString("reason", null);
-            handleFailure(statusCode, requireNonNullElse(reason, type), requireNonNullElse(reason, type));
+            errorHandler.handleFailure(statusCode, requireNonNullElse(reason, type), STREAM);
         }
 
         private void digestSuccess() {
@@ -790,7 +739,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     .thenApplyAsync(MediaConnection::ofNode)
                     .thenApplyAsync(this::scheduleMediaConnection)
                     .thenApplyAsync(store::mediaConnection)
-                    .exceptionallyAsync(throwable -> streamHandler.handleFailure(503, throwable.getMessage(), "media_connection"));
+                    .exceptionallyAsync(throwable -> errorHandler.handleFailure(503, throwable.getMessage(), MEDIA_CONNECTION));
         }
 
         private MediaConnection scheduleMediaConnection(MediaConnection connection) {
@@ -865,24 +814,20 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             saveCompanion(container);
 
             var deviceIdentity = requireNonNull(container.findNode("device-identity"), "Missing device identity");
-            var advIdentity = PROTOBUF.reader()
-                    .with(ProtobufSchema.of(SignedDeviceIdentityHMAC.class))
-                    .readValue(deviceIdentity.bytes(), SignedDeviceIdentityHMAC.class);
+            var advIdentity = PROTOBUF.readMessage(deviceIdentity.bytes(), SignedDeviceIdentityHMAC.class);
             var advSign = Hmac.calculateSha256(advIdentity.details(), keys.companionKey());
             if(!Arrays.equals(advIdentity.hmac(), advSign)) {
-                handleFailure(503, "hmac_validation", "login_adv_sign");
+                errorHandler.handleFailure(503, "hmac_validation", LOGIN);
                 return;
             }
 
-            var account = PROTOBUF.reader()
-                    .with(ProtobufSchema.of(SignedDeviceIdentity.class))
-                    .readValue(advIdentity.details(), SignedDeviceIdentity.class);
+            var account = PROTOBUF.readMessage(advIdentity.details(), SignedDeviceIdentity.class);
             var message = Bytes.of(MESSAGE_HEADER)
                     .append(account.details())
                     .append(keys.identityKeyPair().publicKey())
                     .toByteArray();
             if(!Curve25519.verifySignature(account.accountSignatureKey(), message, account.accountSignature())) {
-                handleFailure(503, "hmac_validation", "login_verify_signature");
+                errorHandler.handleFailure(503, "hmac_validation", LOGIN);
                 return;
             }
 
@@ -893,11 +838,8 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     .toByteArray();
             account.deviceSignature(Curve25519.sign(keys.identityKeyPair().privateKey(), deviceSignatureMessage, true));
 
-            var keyIndex = PROTOBUF.reader()
-                    .with(ProtobufSchema.of(DeviceIdentity.class))
-                    .readValue(account.details(), DeviceIdentity.class)
+            var keyIndex = PROTOBUF.readMessage(account.details(), DeviceIdentity.class)
                     .keyIndex();
-
             var devicePairNode = withChildren("pair-device-sign",
                     with("device-identity",
                             of("key-index", keyIndex),
@@ -948,7 +890,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             LOCK.acquire();
             var encodedMessage = BytesHelper.messageToBytes(info.message());
             if (isConversation(info)) {
-                var deviceMessage = MessageContainer.of(DeviceSentMessage.newDeviceSentMessage(info.chatJid().toString(), info.message(), null));
+                var deviceMessage = DeviceSentMessage.newDeviceSentMessage(info.chatJid().toString(), info.message(), null);
                 var encodedDeviceMessage = BytesHelper.messageToBytes(deviceMessage);
                 var knownDevices = List.of(keys.companion().toUserJid(), info.chatJid());
                 return getDevices(knownDevices, true)
@@ -968,7 +910,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     .map(CompletableFuture::completedFuture)
                     .orElseGet(() -> queryGroupMetadata(info.chatJid()))
                     .thenComposeAsync(this::getDevices)
-                    .thenComposeAsync(allDevices -> createGroupNodes(info, signalMessage.serialized(), allDevices))
+                    .thenComposeAsync(allDevices -> createGroupNodes(info, signalMessage, allDevices))
                     .thenApplyAsync(preKeys -> createEncodedMessageNode(info, preKeys, groupMessage, attributes))
                     .thenComposeAsync(BinarySocket.this::send)
                     .thenApplyAsync(this::releaseMessageLock)
@@ -977,7 +919,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
         private Node handleMessageFailure(Throwable throwable) {
             LOCK.release();
-            return streamHandler.handleFailure(503, throwable.getMessage(), "message");
+            return errorHandler.handleFailure(503, throwable.getMessage(), LOGIN);
         }
 
         private Node releaseMessageLock(Node node) {
@@ -1036,22 +978,22 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
         @SneakyThrows
         private CompletableFuture<List<Node>> createGroupNodes(MessageInfo info, byte[] distributionMessage, List<ContactJid> participants) {
-            var group = info.chat()
-                    .or(() -> Optional.of(createChat(info.chatJid())))
-                    .filter(Chat::isGroup)
-                    .orElseThrow(() -> new IllegalArgumentException("%s is not a group".formatted(info.chatJid())));
+            var chat = info.chat()
+                    .orElseGet(() -> createChat(info.chatJid()));
+            Validate.isTrue(chat.isGroup(), "Cannot send group message to non-group");
+
             var missingParticipants= participants.stream()
-                    .filter(participant -> !group.participantsPreKeys().contains(participant))
+                    .filter(participant -> !chat.participantsPreKeys().contains(participant))
                     .toList();
             if(missingParticipants.isEmpty()){
                 return completedFuture(List.of());
             }
 
-            var whatsappMessage = MessageContainer.of(new SenderKeyDistributionMessage(info.chatJid().toString(), distributionMessage));
+            var whatsappMessage = new SenderKeyDistributionMessage(info.chatJid().toString(), distributionMessage);
             var paddedMessage = BytesHelper.messageToBytes(whatsappMessage);
             return querySessions(missingParticipants)
                     .thenApplyAsync(ignored -> createMessageNodes(missingParticipants, paddedMessage))
-                    .thenApplyAsync(results -> savePreKeys(group, missingParticipants, results));
+                    .thenApplyAsync(results -> savePreKeys(chat, missingParticipants, results));
         }
 
         private List<Node> savePreKeys(Chat group, List<ContactJid> missingParticipants, List<Node> results) {
@@ -1186,10 +1128,6 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             var pushName = node.attributes().getString("notify");
             var timestamp = node.attributes().getLong("t");
             var id = node.attributes().getRequiredString("id");
-            if(options.debug()) {
-                System.out.printf("Decoding message with id %s%n", id);
-            }
-
             var from = node.attributes().getJid("from")
                     .orElseThrow(() -> new NoSuchElementException("Missing from"));
             var recipient = node.attributes().getJid("recipient")
@@ -1246,9 +1184,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
                 sendReceipt(info.chatJid(), info.senderJid(), List.of(info.key().id()), null);
             }catch (Throwable throwable){
-                log.warning("An exception occurred while processing a message: " + throwable.getMessage());
-                log.warning("The application will continue running normally, but submit an issue on GitHub");
-                throwable.printStackTrace();
+                errorHandler.handleFailure(503, throwable.getMessage(), MESSAGE, throwable);
             }
         }
 
@@ -1283,10 +1219,10 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
                     default -> throw new IllegalArgumentException("Unsupported encoded message type: %s".formatted(type));
                 });
-            }catch (Exception exception){
-                streamHandler.handleFailure(400,
-                        exception instanceof SecurityException ? "hmac_validation" : "%s: %s".formatted(exception.getClass().getSimpleName(), exception.getMessage()),
-                        "message_decoding");
+            }catch (Throwable throwable){
+                var description = throwable instanceof SecurityException ? "hmac_validation"
+                        : "%s: %s".formatted(throwable.getClass().getSimpleName(), throwable.getMessage());
+                errorHandler.handleFailure(400, description, MESSAGE, throwable);
                 return Optional.empty();
             }
         }
@@ -1329,9 +1265,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     case HISTORY_SYNC_NOTIFICATION -> {
                         var compressed = Medias.download(protocolMessage.historySyncNotification(), store);
                         var decompressed = BytesHelper.deflate(compressed);
-                        var history = PROTOBUF.reader()
-                                .with(ProtobufSchema.of(HistorySync.class))
-                                .readValue(decompressed, HistorySync.class);
+                        var history = PROTOBUF.readMessage(decompressed, HistorySync.class);
 
                         switch(history.syncType()) {
                             case INITIAL_BOOTSTRAP -> {
@@ -1365,7 +1299,6 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
                     case APP_STATE_SYNC_KEY_SHARE -> {
                         keys.addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
-                        if(options.debug()) System.out.println("Initial pull");
                         appStateHandler.pull(BinarySync.values());
                     }
 
@@ -1495,10 +1428,6 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         @SneakyThrows
         private void pull(BinarySync... syncs) {
             PULL_SEMAPHORE.acquire();
-            if(options.debug()){
-                System.out.printf("Pulling %s%n", Arrays.toString(syncs));
-            }
-
             var states = Arrays.stream(syncs)
                     .map(LTHashState::new)
                     .peek(state -> keys.hashStates().put(state.name(), state))
@@ -1521,7 +1450,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
         private Void handlePullError(Throwable exception) {
             PULL_SEMAPHORE.release();
-            return streamHandler.handleFailure(503, exception.getMessage(), "app_state_pull");
+            return errorHandler.handleFailure(503, exception.getMessage(), PULL, exception);
         }
 
         private List<ActionDataSync> parsePatches(List<SnapshotSyncRecord> patches) {
@@ -1594,13 +1523,9 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                 return null;
             }
 
-            var blob = PROTOBUF.reader()
-                    .with(ProtobufSchema.of(ExternalBlobReference.class))
-                    .readValue(snapshot.bytes(), ExternalBlobReference.class);
+            var blob = PROTOBUF.readMessage(snapshot.bytes(), ExternalBlobReference.class);
             var syncedData = Medias.download(blob, store);
-            return PROTOBUF.reader()
-                    .with(ProtobufSchema.of(SnapshotSync.class))
-                    .readValue(syncedData, SnapshotSync.class);
+            return PROTOBUF.readMessage(syncedData, SnapshotSync.class);
         }
 
         private List<PatchSync> decodePatches(Node sync) {
@@ -1614,14 +1539,12 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         }
 
         @SneakyThrows
-        private Optional<PatchSync> decodePatch(Node patch, int versionCode) {
+        private Optional<PatchSync> decodePatch(Node patch, long versionCode) {
             if (!patch.hasContent()) {
                 return Optional.empty();
             }
 
-            var patchSync = PROTOBUF.reader()
-                    .with(ProtobufSchema.of(PatchSync.class))
-                    .readValue(patch.bytes(), PatchSync.class);
+            var patchSync = PROTOBUF.readMessage(patch.bytes(), PatchSync.class);
             if (!patchSync.hasVersion()) {
                 var version = new VersionSync(versionCode + 1);
                 patchSync.version(version);
@@ -1702,17 +1625,15 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         private Optional<MutationsRecord> decodePatch(String name, long minimumVersionNumber, LTHashState newState, PatchSync patch) {
             if(patch.hasExternalMutations()) {
                 var blob = Medias.download(patch.externalMutations(), store);
-                var mutationsSync = PROTOBUF.reader()
-                        .with(ProtobufSchema.of(MutationsSync.class))
-                        .readValue(blob, MutationsSync.class);
+                var mutationsSync = PROTOBUF.readMessage(blob, MutationsSync.class);
                 patch.mutations().addAll(mutationsSync.mutations());
             }
 
             newState.version(patch.version().version());
-            //   if(!Arrays.equals(calculateSyncMac(patch, name), patch.patchMac())){
-            //                streamHandler.handleFailure(400, "sync_mac", "decode_patch");
-            //                return Optional.empty();
-            //            }
+            if(!Arrays.equals(calculateSyncMac(patch, name), patch.patchMac())){
+                errorHandler.handleFailure(400, "sync_mac", PULL);
+                return Optional.empty();
+            }
 
             var records = patch.mutations()
                     .stream()
@@ -1720,10 +1641,10 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             var mutations = decodeMutations(records, newState);
             newState.hash(mutations.hash());
             newState.indexValueMap(mutations.indexValueMap());
-            //    if(!Arrays.equals(generatePatchMac(name, newState, patch), patch.snapshotMac())){
-            //                streamHandler.handleFailure(400, "patch_mac", "decode_patch");
-            //                return Optional.empty();
-            //            }
+            if(!Arrays.equals(generatePatchMac(name, newState, patch), patch.snapshotMac())){
+                errorHandler.handleFailure(400, "patch_mac", PULL);
+                return Optional.empty();
+            }
 
             return Optional.of(mutations)
                     .filter(ignored -> patch.version().version() == 0 || patch.version().version() > minimumVersionNumber);
@@ -1758,7 +1679,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             newState.hash(mutations.hash());
             newState.indexValueMap(mutations.indexValueMap());
             if(!Arrays.equals(snapshot.mac(), computeSnapshotMac(name, snapshot, newState))){
-                streamHandler.handleFailure(400, "decode_snapshot", "compute_snapshot_mac");
+                errorHandler.handleFailure(400, "decode_snapshot", PULL);
                 return mutations;
             }
 
@@ -1799,16 +1720,14 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             var encryptedBlob = blob.cut(-KEY_LENGTH).toByteArray();
             var encryptedMac = blob.slice(-KEY_LENGTH).toByteArray();
             if(!Arrays.equals(generateMac(operation, encryptedBlob, sync.keyId().id(), mutationKeys.macKey()), encryptedMac)){
-                streamHandler.handleFailure(400, "decode_mutation", "generate_mac");
+                errorHandler.handleFailure(400, "decode_mutation", PULL);
                 throw new RuntimeException("Cannot decode mutation: hmc validation failed");
             }
 
             var result = AesCbc.decrypt(encryptedBlob, mutationKeys.encKey());
-            var actionSync = PROTOBUF.reader()
-                    .with(ProtobufSchema.of(ActionDataSync.class))
-                    .readValue(result, ActionDataSync.class);
+            var actionSync = PROTOBUF.readMessage(result, ActionDataSync.class);
             if(!Arrays.equals(sync.index().blob(), Hmac.calculateSha256(actionSync.index(), mutationKeys.indexKey()))){
-                streamHandler.handleFailure(400, "decode_mutation", "index_blob");
+                errorHandler.handleFailure(400, "decode_mutation", PULL);
                 throw new RuntimeException("Cannot decode mutation: hmc validation failed");
             }
 
@@ -1847,5 +1766,46 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     .toByteArray();
             return Hmac.calculateSha256(total, key);
         }
+    }
+    
+    private class ErrorHandler {
+        private <T> T handleFailure(long statusCode, String reason, ErrorLocation location) {
+            return handleFailure(statusCode, reason, location, null);
+        }
+
+        private <T> T handleFailure(long statusCode, String reason, ErrorLocation location, Throwable throwable) {
+            log.warning("Received status code %s at %s(%s): handling failure"
+                    .formatted(statusCode, location, reason));
+            Objects.requireNonNullElseGet(throwable, RuntimeException::new).printStackTrace();
+            if(location != ERRONEOUS_NODE
+                    && !(location == MESSAGE && Objects.equals(reason, "hmac_validation"))
+                    && !shouldHandleFailure(statusCode, reason)){
+                log.warning("Ignoring failure");
+                return null;
+            }
+
+            log.warning("Restoring session");
+            store.clear();
+            changeKeys();
+            reconnect();
+            return null;
+        }
+
+        private boolean shouldHandleFailure(long statusCode, String reason) {
+            return store.listeners()
+                    .stream()
+                    .allMatch(listener -> listener.onFailure(statusCode, reason));
+        }
+    }
+
+    enum ErrorLocation {
+        UNKNOWN,
+        ERRONEOUS_NODE,
+        MEDIA_CONNECTION,
+        STREAM,
+        LOGIN,
+        PULL,
+        PUSH,
+        MESSAGE
     }
 }

@@ -21,10 +21,10 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @Accessors(fluent = true)
 public class ActionMessageRangeSync implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = INT64)
-    private long lastMessageTimestamp;
+    private Long lastMessageTimestamp;
 
     @ProtobufProperty(index = 2, type = INT64)
-    private long lastSystemMessageTimestamp;
+    private Long lastSystemMessageTimestamp;
 
     @ProtobufProperty(index = 3, type = MESSAGE, concreteType = SyncActionMessage.class, repeated = true)
     private List<SyncActionMessage> messages;

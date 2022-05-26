@@ -23,13 +23,13 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @Accessors(fluent = true)
 public final class WebNotificationsInfo implements Info {
   @ProtobufProperty(index = 2, type = UINT64)
-  private long timestamp;
+  private Long timestamp;
 
   @ProtobufProperty(index = 3, type = UINT32)
-  private int unreadChats;
+  private Integer unreadChats;
 
   @ProtobufProperty(index = 4, type = UINT32)
-  private int notifyMessageCount;
+  private Integer notifyMessageCount;
 
   @ProtobufProperty(index = 5, type = MESSAGE,
           concreteType = MessageInfo.class, repeated = true)

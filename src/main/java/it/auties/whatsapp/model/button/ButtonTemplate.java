@@ -30,7 +30,7 @@ public class ButtonTemplate implements ProtobufMessage {
   private CallButton callButton;
 
   @ProtobufProperty(index = 4, type = UINT32)
-  private int index;
+  private Integer index;
 
   public ButtonType buttonType() {
     if (quickReplyButton != null) return ButtonType.QUICK_REPLY_BUTTON;

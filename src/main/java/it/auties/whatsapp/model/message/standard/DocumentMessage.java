@@ -57,13 +57,13 @@ public final class DocumentMessage extends MediaMessage {
    * The unsigned size of the decoded media that this object wraps
    */
   @ProtobufProperty(index = 5, type = UINT64)
-  private long fileLength;
+  private Long fileLength;
 
   /**
    * The unsigned length in pages of the document that this object wraps
    */
   @ProtobufProperty(index = 6, type = UINT32)
-  private int pageCount;
+  private Integer pageCount;
 
   /**
    * The media key of the document that this object wraps.
@@ -93,7 +93,7 @@ public final class DocumentMessage extends MediaMessage {
    * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link DocumentMessage#key()}
    */
   @ProtobufProperty(index = 11, type = UINT64)
-  private long mediaKeyTimestamp;
+  private Long mediaKeyTimestamp;
   
   /**
    * The thumbnail for this document encoded as jpeg in an array of bytes

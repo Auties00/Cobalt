@@ -27,7 +27,7 @@ public final class SortedMessageList implements List<MessageInfo> {
     public boolean add(@NonNull MessageInfo message) {
         internal.removeIf(entry -> Objects.equals(message.id(), entry.message().id()));
         var initialSize = internal.size();
-        var newEntry = new HistorySyncMessage(message, -1);
+        var newEntry = new HistorySyncMessage(message, -1L);
         var insertionPoint = Collections.binarySearch(internal, newEntry, ENTRY_COMPARATOR);
         internal.add(insertionPoint > -1 ? insertionPoint : -insertionPoint - 1, newEntry);
         return internal.size() != initialSize;

@@ -25,7 +25,7 @@ public final class SignalPreKeyMessage implements SignalProtocolMessage {
     private int version;
 
     @ProtobufProperty(index = 1, type = UINT32)
-    private int preKeyId;
+    private Integer preKeyId;
 
     @ProtobufProperty(index = 2, type = BYTES)
     private byte[] baseKey;
@@ -37,10 +37,10 @@ public final class SignalPreKeyMessage implements SignalProtocolMessage {
     private byte[] serializedSignalMessage;
 
     @ProtobufProperty(index = 5, type = UINT32)
-    private int registrationId;
+    private Integer registrationId;
 
     @ProtobufProperty(index = 6, type = UINT32)
-    private int signedPreKeyId;
+    private Integer signedPreKeyId;
 
     private byte[] serialized;
 
@@ -61,9 +61,7 @@ public final class SignalPreKeyMessage implements SignalProtocolMessage {
 
     @SneakyThrows
     public static SignalPreKeyMessage ofSerialized(byte[] serialized) {
-        return PROTOBUF.reader()
-                .with(ProtobufSchema.of(SignalPreKeyMessage.class))
-                .readValue(Bytes.of(serialized).slice(1).toByteArray(), SignalPreKeyMessage.class)
+        return PROTOBUF.readMessage(Bytes.of(serialized).slice(1).toByteArray(), SignalPreKeyMessage.class)
                 .version(BytesHelper.bytesToVersion(serialized[0]))
                 .serialized(serialized);
     }

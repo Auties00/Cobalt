@@ -24,19 +24,19 @@ public class BusinessDateTimeComponent implements ProtobufMessage {
   private HSMDateTimeComponentDayOfWeekType dayOfWeek;
 
   @ProtobufProperty(index = 2, type = UINT32)
-  private int year;
+  private Integer year;
 
   @ProtobufProperty(index = 3, type = UINT32)
-  private int month;
+  private Integer month;
 
   @ProtobufProperty(index = 4, type = UINT32)
-  private int dayOfMonth;
+  private Integer dayOfMonth;
 
   @ProtobufProperty(index = 5, type = UINT32)
-  private int hour;
+  private Integer hour;
 
   @ProtobufProperty(index = 6, type = UINT32)
-  private int minute;
+  private Integer minute;
 
   @ProtobufProperty(index = 7, type = MESSAGE, concreteType = HSMDateTimeComponentCalendarType.class)
   private HSMDateTimeComponentCalendarType calendar;

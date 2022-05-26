@@ -23,7 +23,7 @@ public final class MuteAction implements Action {
   private boolean muted;
 
   @ProtobufProperty(index = 2, type = INT64)
-  private long muteEndTimestamp;
+  private Long muteEndTimestamp;
 
   @Override
   public String indexName() {

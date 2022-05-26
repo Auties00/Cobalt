@@ -23,7 +23,7 @@ public final class DeleteMessageForMeAction implements Action {
   private boolean deleteMedia;
 
   @ProtobufProperty(index = 2, type = INT64)
-  private long messageTimestamp;
+  private Long messageTimestamp;
 
   @Override
   public String indexName() {

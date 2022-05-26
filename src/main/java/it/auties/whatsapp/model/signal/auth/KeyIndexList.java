@@ -21,13 +21,13 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT64;
 @Accessors(fluent = true)
 public class KeyIndexList implements ProtobufMessage {
   @ProtobufProperty(index = 1, type = UINT32)
-  private int rawId;
+  private Integer rawId;
 
   @ProtobufProperty(index = 2, type = UINT64)
-  private long timestamp;
+  private Long timestamp;
 
   @ProtobufProperty(index = 3, type = UINT32)
-  private int currentIndex;
+  private Integer currentIndex;
 
   @ProtobufProperty(index = 4, type = UINT32, repeated = true, packed = true)
   private List<Integer> validIndexes;

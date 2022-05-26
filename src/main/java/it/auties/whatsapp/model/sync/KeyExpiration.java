@@ -21,5 +21,5 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.INT32;
 @Accessors(fluent = true)
 public class KeyExpiration implements ProtobufMessage {
   @ProtobufProperty(index = 1, type = INT32)
-  private int expiredKeyEpoch;
+  private Integer expiredKeyEpoch;
 }

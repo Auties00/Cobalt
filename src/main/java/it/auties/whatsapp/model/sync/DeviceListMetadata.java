@@ -23,7 +23,7 @@ public class DeviceListMetadata implements ProtobufMessage {
     private byte[] senderKeyHash;
 
     @ProtobufProperty(index = 2, type = UINT64)
-    private long senderTimestamp;
+    private Long senderTimestamp;
 
     @ProtobufProperty(index = 3, type = UINT32, repeated = true, packed = true)
     private List<Integer> senderKeyIndexes;
@@ -32,7 +32,7 @@ public class DeviceListMetadata implements ProtobufMessage {
     private byte[] recipientKeyHash;
 
     @ProtobufProperty(index = 9, type = UINT64)
-    private long recipientTimestamp;
+    private Long recipientTimestamp;
 
     @ProtobufProperty(index = 10, type = UINT32, repeated = true, packed = true)
     private List<Integer> recipientKeyIndexes;

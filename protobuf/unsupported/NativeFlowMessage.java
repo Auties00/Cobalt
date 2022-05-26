@@ -26,7 +26,7 @@ public class NativeFlowMessage {
   private String messageParamsJson;
 
   @ProtobufProperty(index = 3, type = INT32)
-  private int messageVersion;
+  private Integer messageVersion;
 
   public static class NativeFlowMessageBuilder {
 

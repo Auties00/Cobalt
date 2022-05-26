@@ -51,13 +51,13 @@ public final class AudioMessage extends MediaMessage {
    * The unsigned size of the decoded media that this object wraps
    */
   @ProtobufProperty(index = 4, type = UINT64)
-  private long fileLength;
+  private Long fileLength;
 
   /**
    * The unsigned length of the decoded audio in seconds
    */
   @ProtobufProperty(index = 5, type = UINT32)
-  private int seconds;
+  private Integer seconds;
 
   /**
    * Determines whether this object is a normal audio message, which might contain for example music, or a voice message
@@ -87,7 +87,7 @@ public final class AudioMessage extends MediaMessage {
    * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link AudioMessage#key()}
    */
   @ProtobufProperty(index = 10, type = INT64)
-  private long mediaKeyTimestamp;
+  private Long mediaKeyTimestamp;
 
   /**
    * The sidecar is an array of bytes obtained by concatenating every [n*64K, (n+1)*64K+16] chunk of the encoded media signed with the mac key and truncated to ten bytes.

@@ -28,13 +28,13 @@ public final class SignalDistributionMessage implements SignalProtocolMessage {
    * The jid of the sender
    */
   @ProtobufProperty(index = 1, type = UINT32)
-  private int id;
+  private Integer id;
 
   /**
    * The iteration of the message
    */
   @ProtobufProperty(index = 2, type = UINT32)
-  private int iteration;
+  private Integer iteration;
 
   /**
    * The value key of the message
@@ -53,30 +53,22 @@ public final class SignalDistributionMessage implements SignalProtocolMessage {
    */
   private byte[] serialized;
 
+  @SneakyThrows
   public SignalDistributionMessage(int id, int iteration, byte @NonNull [] chainKey, byte @NonNull [] signingKey) {
-    try {
-      this.version = CURRENT_VERSION;
-      this.id = id;
-      this.iteration = iteration;
-      this.chainKey = chainKey;
-      this.signingKey = signingKey;
-      this.serialized = Bytes.of(serializedVersion())
-              .append(PROTOBUF.writeValueAsBytes(this))
-              .toByteArray();
-    }catch (IOException exception){
-      throw new RuntimeException("Cannot encode SenderKeyMessage", exception);
-    }
+    this.version = CURRENT_VERSION;
+    this.id = id;
+    this.iteration = iteration;
+    this.chainKey = chainKey;
+    this.signingKey = signingKey;
+    this.serialized = Bytes.of(serializedVersion())
+            .append(PROTOBUF.writeValueAsBytes(this))
+            .toByteArray();
   }
 
+  @SneakyThrows
   public static SignalDistributionMessage ofSerialized(byte[] serialized){
-    try {
-      return PROTOBUF.reader()
-              .with(ProtobufSchema.of(SignalDistributionMessage.class))
-              .readValue(Bytes.of(serialized).slice(1).toByteArray(), SignalDistributionMessage.class)
-              .version(BytesHelper.bytesToVersion(serialized[0]))
-              .serialized(serialized);
-    } catch (IOException exception) {
-      throw new RuntimeException("Cannot decode SenderKeyMessage", exception);
-    }
+    return PROTOBUF.readMessage(Bytes.of(serialized).slice(1).toByteArray(), SignalDistributionMessage.class)
+            .version(BytesHelper.bytesToVersion(serialized[0]))
+            .serialized(serialized);
   }
 }

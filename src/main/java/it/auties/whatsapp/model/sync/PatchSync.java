@@ -44,7 +44,7 @@ public class PatchSync implements ProtobufMessage {
     private ExitCode exitCode;
 
     @ProtobufProperty(index = 8, type = UINT32)
-    private int deviceIndex;
+    private Integer deviceIndex;
 
     public boolean hasVersion() {
         return version != null && version.version() != 0;

@@ -47,7 +47,7 @@ public class InvoiceMessage {
   private byte[] attachmentMediaKey;
 
   @ProtobufProperty(index = 6, type = INT64)
-  private long attachmentMediaKeyTimestamp;
+  private Long attachmentMediaKeyTimestamp;
 
   @ProtobufProperty(index = 7, type = BYTES)
   private byte[] attachmentFileSha256;

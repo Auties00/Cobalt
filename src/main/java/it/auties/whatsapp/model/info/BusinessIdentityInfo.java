@@ -68,5 +68,5 @@ public final class BusinessIdentityInfo implements Info {
    * The privacy mode of this account
    */
   @ProtobufProperty(index = 7, type = UINT64)
-  private long privacyModeTs;
+  private Long privacyModeTs;
 }

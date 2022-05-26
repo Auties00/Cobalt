@@ -22,7 +22,7 @@ public class SenderChainKey implements ProtobufMessage {
   private static final byte[] CHAIN_KEY_SEED = {0x02};
 
   @ProtobufProperty(index = 1, type = UINT32)
-  private int iteration;
+  private Integer iteration;
 
   @ProtobufProperty(index = 2, type = BYTES)
   private byte[] seed;

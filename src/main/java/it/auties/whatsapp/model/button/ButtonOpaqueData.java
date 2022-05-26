@@ -29,13 +29,13 @@ public class ButtonOpaqueData implements ProtobufMessage {
   private String clientUrl;
 
   @ProtobufProperty(index = 5, type = DOUBLE)
-  private double lng;
+  private Double lng;
 
   @ProtobufProperty(index = 7, type = DOUBLE)
-  private double lat;
+  private Double lat;
 
   @ProtobufProperty(index = 8, type = INT32)
-  private int paymentAmount1000;
+  private Integer paymentAmount1000;
 
   @ProtobufProperty(index = 9, type = STRING)
   private String paymentNoteMsgBody;

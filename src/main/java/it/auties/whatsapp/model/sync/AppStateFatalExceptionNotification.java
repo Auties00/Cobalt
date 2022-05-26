@@ -20,7 +20,7 @@ public class AppStateFatalExceptionNotification implements ProtobufMessage {
   private List<String> collectionNames;
 
   @ProtobufProperty(index = 2, type = INT64)
-  private long timestamp;
+  private Long timestamp;
 
   public static class AppStateFatalExceptionNotificationBuilder {
     public AppStateFatalExceptionNotificationBuilder collectionNames(List<String> collectionNames) {

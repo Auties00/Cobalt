@@ -23,7 +23,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT32;
 @Accessors(fluent = true)
 public class SenderMessageKey implements ProtobufMessage, SignalSpecification {
     @ProtobufProperty(index = 1, type = UINT32)
-    private int iteration;
+    private Integer iteration;
 
     @ProtobufProperty(index = 2, type = BYTES)
     private byte[] seed;

@@ -9,6 +9,7 @@ import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MessageStatus;
+import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.setting.Setting;
 
 import java.util.List;
@@ -21,6 +22,24 @@ import java.util.Map;
  */
 @SuppressWarnings("unused")
 public interface WhatsappListener {
+    /**
+     * Called when {@link BinarySocket} sends a node to Whatsapp
+     *
+     * @param outgoing the non-null node that was just sent
+     */
+    default void onNodeSent(Node outgoing) {
+
+    }
+
+    /**
+     * Called when {@link BinarySocket} receives a node from Whatsapp
+     *
+     * @param incoming the non-null node that was just received
+     */
+    default void onNodeReceived(Node incoming){
+
+    }
+
     /**
      * Called when {@link BinarySocket} successfully establishes a connection with new secrets.
      * By default, the QR code is printed to the console.
@@ -63,15 +82,14 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when {@link BinarySocket} receives a failure from Whatsapp.
-     * This usually indicates that the pair device has been disconnect forcefully.
+     * Called when {@link BinarySocket} fails unexpectedly
      *
      * @param statusCode the status code for the failure
      * @param reason the reason for the failure, might be null
      * @return whether the keys should be deleted and a new session should be opened
      */
     default boolean onFailure(long statusCode, String reason) {
-        return true;
+        return false;
     }
 
     /**

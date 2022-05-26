@@ -79,7 +79,7 @@ public final class MessageInfo implements Info {
    * The timestamp, that is the seconds since {@link java.time.Instant#EPOCH}, when this message was sent
    */
   @ProtobufProperty(index = 3, type = UINT64)
-  private long timestamp;
+  private Long timestamp;
 
   /**
    * The global status of this message.
@@ -102,7 +102,7 @@ public final class MessageInfo implements Info {
    * Duration
    */
   @ProtobufProperty(index = 27, type = UINT32)
-  private int duration;
+  private Integer duration;
 
   /**
    * Whether this message should be ignored or counted as an unread message
@@ -156,13 +156,13 @@ public final class MessageInfo implements Info {
    * Ephemeral start timestamp
    */
   @ProtobufProperty(index = 32, type = UINT64)
-  private long ephemeralStartTimestamp;
+  private Long ephemeralStartTimestamp;
 
   /**
    * Ephemeral duration
    */
   @ProtobufProperty(index = 33, type = UINT32)
-  private int ephemeralDuration;
+  private Integer ephemeralDuration;
 
   /**
    * The stub type of this message.

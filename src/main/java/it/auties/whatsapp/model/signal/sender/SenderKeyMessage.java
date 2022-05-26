@@ -26,10 +26,10 @@ public class SenderKeyMessage implements ProtobufMessage, JacksonProvider, Signa
   private int version;
 
   @ProtobufProperty(index = 1, type = UINT32)
-  private int id;
+  private Integer id;
 
   @ProtobufProperty(index = 2, type = UINT32)
-  private int iteration;
+  private Integer iteration;
 
   @ProtobufProperty(index = 3, type = BYTES)
   private byte @NonNull [] cipherText;
@@ -57,17 +57,12 @@ public class SenderKeyMessage implements ProtobufMessage, JacksonProvider, Signa
     }
   }
 
+  @SneakyThrows
   public static SenderKeyMessage ofSerialized(byte[] serialized) {
-    try {
-      var buffer = Bytes.of(serialized);
-      return PROTOBUF.reader()
-              .with(ProtobufSchema.of(SenderKeyMessage.class))
-              .readValue(buffer.slice(1, -SIGNATURE_LENGTH).toByteArray(), SenderKeyMessage.class)
-              .version(BytesHelper.bytesToVersion(serialized[0]))
-              .signature(buffer.slice(-SIGNATURE_LENGTH).toByteArray())
-              .serialized(serialized);
-    } catch (IOException exception) {
-      throw new RuntimeException("Cannot decode SenderKeyMessage", exception);
-    }
+    var buffer = Bytes.of(serialized);
+    return PROTOBUF.readMessage(buffer.slice(1, -SIGNATURE_LENGTH).toByteArray(), SenderKeyMessage.class)
+            .version(BytesHelper.bytesToVersion(serialized[0]))
+            .signature(buffer.slice(-SIGNATURE_LENGTH).toByteArray())
+            .serialized(serialized);
   }
 }

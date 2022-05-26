@@ -54,10 +54,11 @@ import static it.auties.whatsapp.util.SignalSpecification.CURRENT_VERSION;
 
 public class BaileysTest {
     public static void main(String[] args) throws Throwable {
+        var flag = Boolean.parseBoolean(args[0]);
         var knownIds = WhatsappController.knownIds();
         var keys = createKeys();
-        var whatsappKeys = knownIds.contains(keys.id()) ? WhatsappKeys.fromMemory(keys.id()) : keys;
-        var whatsappStore = knownIds.contains(keys.id()) ? WhatsappStore.fromMemory(keys.id()) : createStore();
+        var whatsappKeys = !flag && knownIds.contains(keys.id()) ? WhatsappKeys.fromMemory(keys.id()) : keys;
+        var whatsappStore = !flag && knownIds.contains(keys.id()) ? WhatsappStore.fromMemory(keys.id()) : createStore();
         var socket = new BinarySocket(WhatsappOptions.defaultOptions(), whatsappStore, whatsappKeys);
         var whatsapp = Whatsapp.newConnection(socket);
         whatsapp.connect().get();
@@ -152,7 +153,7 @@ public class BaileysTest {
                                         .build())
                                 .build())
                         .collect(Collectors.toCollection(ConcurrentLinkedDeque::new)) : new ConcurrentLinkedDeque<>())
-                .sessions(baileysKeys.keys() == null ? new ConcurrentHashMap<>() : baileysKeys.keys().sessions()
+                .sessions(baileysKeys.keys() == null || baileysKeys.keys().sessions() == null ? new ConcurrentHashMap<>() : baileysKeys.keys().sessions()
                         .keySet()
                         .stream()
                         .map(key -> Map.entry(key,
@@ -208,7 +209,7 @@ public class BaileysTest {
 
     }
 
-    @JsonIgnoreProperties({"signalIdentities", "accountSettings"})
+    @JsonIgnoreProperties({"signalIdentities", "accountSettings", "platform"})
     record Credentials(KeyPair noiseKey, KeyPair signedIdentityKey, SignedKeyPair signedPreKey,
                        int registrationId, byte[] advSecretKey, int nextPreKeyId, int firstUnuploadedPreKeyId, boolean serverHasPreKeys,
                        Account account, Me me, byte[] myAppStateKeyId, long lastAccountSyncTimestamp) {

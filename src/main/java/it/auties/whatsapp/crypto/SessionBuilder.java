@@ -16,6 +16,7 @@ import lombok.SneakyThrows;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+import java.util.Optional;
 
 public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) implements SignalSpecification {
     @SneakyThrows
@@ -61,7 +62,8 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
             return;
         }
 
-        var preKeyPair = keys.findPreKeyById(message.preKeyId())
+        var preKeyPair = Optional.ofNullable(message.preKeyId())
+                .flatMap(keys::findPreKeyById)
                 .orElse(null);
         Validate.isTrue(message.preKeyId() == 0 || preKeyPair != null,
                 "Invalid pre key id: %s", SecurityException.class, message.preKeyId());

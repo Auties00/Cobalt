@@ -12,6 +12,7 @@ import lombok.extern.jackson.Jacksonized;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -25,19 +26,19 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT32;
 @Accessors(fluent = true)
 public class Version implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = UINT32)
-    private int primary;
+    private Integer primary;
 
     @ProtobufProperty(index = 2, type = UINT32)
-    private int secondary;
+    private Integer secondary;
 
     @ProtobufProperty(index = 3, type = UINT32)
-    private int tertiary;
+    private Integer tertiary;
 
     @ProtobufProperty(index = 4, type = UINT32)
-    private int quaternary;
+    private Integer quaternary;
 
     @ProtobufProperty(index = 5, type = UINT32)
-    private int quinary;
+    private Integer quinary;
 
     public Version(int primary) {
         this.primary = primary;
@@ -59,7 +60,7 @@ public class Version implements ProtobufMessage {
     @Override
     public String toString(){
         return Stream.of(primary, secondary, tertiary, quaternary, quinary)
-                .filter(entry -> entry != 0)
+                .filter(Objects::nonNull)
                 .map(String::valueOf)
                 .collect(Collectors.joining("."));
     }

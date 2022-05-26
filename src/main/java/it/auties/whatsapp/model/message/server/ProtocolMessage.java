@@ -46,14 +46,14 @@ public final class ProtocolMessage implements ServerMessage {
    * This property is defined only if {@link ProtocolMessage#type} == {@link ProtocolMessageType#EPHEMERAL_SETTING} || @link ProtocolMessageType#EPHEMERAL_SYNC_RESPONSE}.
    */
   @ProtobufProperty(index = 4, type = UINT64)
-  private long ephemeralExpiration;
+  private Long ephemeralExpiration;
 
   /**
    * The timestamp, that is the endTimeStamp in seconds since {@link java.time.Instant#EPOCH}, of the last modification to the ephemeral settings of a chat.
    * This property is defined only if {@link ProtocolMessage#type} == {@link ProtocolMessageType#EPHEMERAL_SETTING} || @link ProtocolMessageType#EPHEMERAL_SYNC_RESPONSE}.
    */
   @ProtobufProperty(index = 5, type = UINT64)
-  private long ephemeralSettingTimestamp;
+  private Long ephemeralSettingTimestamp;
 
   /**
    * History dataSync notification.

@@ -23,5 +23,5 @@ public class HistorySyncMessage implements ProtobufMessage {
     private MessageInfo message;
 
     @ProtobufProperty(index = 2, type = UINT64)
-    private long msgOrderId;
+    private Long msgOrderId;
 }

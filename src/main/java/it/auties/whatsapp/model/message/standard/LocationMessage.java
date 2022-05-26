@@ -32,13 +32,13 @@ public final class LocationMessage extends ContextualMessage {
    * The latitude of the location that this message wraps
    */
   @ProtobufProperty(index = 1, type = DOUBLE)
-  private double latitude;
+  private Double latitude;
 
   /**
    * The longitude of the location that this message wraps
    */
   @ProtobufProperty(index = 2, type = DOUBLE)
-  private double longitude;
+  private Double longitude;
 
   /**
    * The name of the location that this message wraps
@@ -68,19 +68,19 @@ public final class LocationMessage extends ContextualMessage {
    * The accuracy in meters of the location that this message wraps
    */
   @ProtobufProperty(index = 7, type = UINT32)
-  private int accuracy;
+  private Integer accuracy;
 
   /**
    * The speed in meters per second of the device that sent this live location message
    */
   @ProtobufProperty(index = 8, type = FLOAT)
-  private float speed;
+  private Float speed;
 
   /**
    * Degrees Clockwise from Magnetic North
    */
   @ProtobufProperty(index = 9, type = UINT32)
-  private int magneticNorthOffset;
+  private Integer magneticNorthOffset;
 
   /**
    * The caption of this message

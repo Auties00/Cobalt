@@ -59,19 +59,19 @@ public final class ImageMessage extends MediaMessage {
    * The unsigned size of the decoded image that this object wraps
    */
   @ProtobufProperty(index = 5, type = UINT64)
-  private long fileLength;
+  private Long fileLength;
 
   /**
    * The unsigned height of the decoded image that this object wraps
    */
   @ProtobufProperty(index = 6, type = UINT32)
-  private int height;
+  private Integer height;
 
   /**
    * The unsigned width of the decoded image that this object wraps
    */
   @ProtobufProperty(index = 7, type = UINT32)
-  private int width;
+  private Integer width;
 
   /**
    * The media key of the image that this object wraps
@@ -102,7 +102,7 @@ public final class ImageMessage extends MediaMessage {
    * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link ImageMessage#key()}
    */
   @ProtobufProperty(index = 12, type = UINT64)
-  private long mediaKeyTimestamp;
+  private Long mediaKeyTimestamp;
   
   /**
    * The thumbnail for this image message encoded as jpeg in an array of bytes
@@ -120,13 +120,13 @@ public final class ImageMessage extends MediaMessage {
    * The length of the first scan
    */
   @ProtobufProperty(index = 19, type = UINT32)
-  private int firstScanLength;
+  private Integer firstScanLength;
 
   /**
    * Experiment Group Id
    */
   @ProtobufProperty(index = 20, type = UINT32)
-  private int experimentGroupId;
+  private Integer experimentGroupId;
   
   /**
    * The sidecar for the scans of the decoded image

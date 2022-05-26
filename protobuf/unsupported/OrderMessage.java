@@ -52,7 +52,7 @@ public class OrderMessage {
   private byte[] thumbnail;
 
   @ProtobufProperty(index = 3, type = INT32)
-  private int itemCount;
+  private Integer itemCount;
 
   @ProtobufProperty(index = 4, type = MESSAGE, concreteType = OrderMessageOrderStatus.class)
   private OrderMessageOrderStatus status;
@@ -73,7 +73,7 @@ public class OrderMessage {
   private String token;
 
   @ProtobufProperty(index = 10, type = INT64)
-  private long totalAmount1000;
+  private Long totalAmount1000;
 
   @ProtobufProperty(index = 11, type = STRING)
   private String totalCurrencyCode;

@@ -40,7 +40,7 @@ public final class PaymentInviteMessage implements PaymentMessage {
    * The timestamp of expiration for this message
    */
   @ProtobufProperty(index = 2, type = UINT64)
-  private long expiryTimestamp;
+  private Long expiryTimestamp;
 
   @AllArgsConstructor
   @Accessors(fluent = true)

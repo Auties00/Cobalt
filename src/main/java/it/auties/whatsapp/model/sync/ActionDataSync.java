@@ -28,7 +28,7 @@ public class ActionDataSync implements ProtobufMessage {
   private byte[] padding;
 
   @ProtobufProperty(index = 4, type = INT32)
-  private int version;
+  private Integer version;
 
   public MessageSync messageIndex(){
     var jsonIndex = new String(index, StandardCharsets.UTF_8);

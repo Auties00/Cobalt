@@ -36,7 +36,7 @@ public final class PaymentInfo implements Info {
    * The amount of money involved in this transaction
    */
   @ProtobufProperty(index = 2, type = UINT64)
-  private long amount1000;
+  private Long amount1000;
 
   /**
    * The jid of the beneficiary of this transaction
@@ -54,7 +54,7 @@ public final class PaymentInfo implements Info {
    * The timestamp, that is the seconds since {@link java.time.Instant#EPOCH}, when the {@link RequestPaymentMessage} that originated this transaction was sent
    */
   @ProtobufProperty(index = 5, type = UINT64)
-  private long transactionTimestamp;
+  private Long transactionTimestamp;
 
   /**
    * The MessageKey of the {@link RequestPaymentMessage} that originated this transaction
@@ -66,7 +66,7 @@ public final class PaymentInfo implements Info {
    * The date of expiration of this transaction
    */
   @ProtobufProperty(index = 7, type = UINT64)
-  private long expiryTimestamp;
+  private Long expiryTimestamp;
 
   /**
    * Future proofed

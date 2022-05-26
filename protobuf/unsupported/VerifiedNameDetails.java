@@ -16,7 +16,7 @@ import lombok.extern.jackson.*;
 public class VerifiedNameDetails {
 
   @ProtobufProperty(index = 1, type = UINT64)
-  private long serial;
+  private Long serial;
 
   @ProtobufProperty(index = 2, type = STRING)
   private String issuer;
@@ -28,7 +28,7 @@ public class VerifiedNameDetails {
   private List<LocalizedName> localizedNames;
 
   @ProtobufProperty(index = 10, type = UINT64)
-  private long issueTime;
+  private Long issueTime;
 
   public static class VerifiedNameDetailsBuilder {
 
