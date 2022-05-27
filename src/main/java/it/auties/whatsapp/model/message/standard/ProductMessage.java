@@ -1,7 +1,5 @@
 package it.auties.whatsapp.model.message.standard;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.contact.ContactJid;
@@ -17,7 +15,8 @@ import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 
 /**
  * A model class that represents a WhatsappMessage sent by a WhatsappBusiness account and that holds a product inside.

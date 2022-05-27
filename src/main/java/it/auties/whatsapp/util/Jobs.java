@@ -3,7 +3,6 @@ package it.auties.whatsapp.util;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
 import java.util.function.Supplier;
 

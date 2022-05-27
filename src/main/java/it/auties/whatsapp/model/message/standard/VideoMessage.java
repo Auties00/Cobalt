@@ -1,28 +1,30 @@
 package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.media.MediaDimensions;
 import it.auties.whatsapp.model.message.model.InteractiveAnnotation;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
+import it.auties.whatsapp.util.Clock;
+import it.auties.whatsapp.util.Medias;
+import it.auties.whatsapp.util.Validate;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
-import java.io.ByteArrayInputStream;
-import java.net.URLConnection;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.whatsapp.model.message.model.MediaMessageType.VIDEO;
+import static it.auties.whatsapp.util.Medias.Format.JPG;
+import static java.util.Objects.requireNonNullElse;
+import static java.util.Objects.requireNonNullElseGet;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds a video inside.
@@ -66,7 +68,7 @@ public final class VideoMessage extends MediaMessage {
    * The length in seconds of the video that this message wraps
    */
   @ProtobufProperty(index = 5, type = UINT32)
-  private Integer seconds;
+  private Integer duration;
 
   /**
    * The media key of the video that this object wraps.
@@ -146,37 +148,38 @@ public final class VideoMessage extends MediaMessage {
    * Constructs a new builder to create a VideoMessage that wraps a video.
    * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
    *
+   * @param storeId     the id of the store where this message will be stored
    * @param media       the non-null video that the new message wraps
    * @param mimeType    the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
    * @param caption     the caption of the new message
-   * @param width       the width of the video that the new message wraps
-   * @param height      the height of the video that the new message wraps
-   * @param seconds     the length in seconds of the video that the new message wraps
+   * @param thumbnail   the thumbnail of the sticker that the new message wraps as a jpg
    * @param contextInfo the context info that the new message wraps
    *
    * @return a non-null new message
    */
   @Builder(builderClassName = "SimpleVideoMessageBuilder", builderMethodName = "newVideoMessage", buildMethodName = "create")
-  private static VideoMessage videoBuilder(byte @NonNull [] media, String mimeType, String caption, int width, int height, int seconds, ContextInfo contextInfo) {
-    /*
-    var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.VIDEO);
-    return VideoMessage.builder()
+  private static VideoMessage videoBuilder(int storeId, byte @NonNull [] media, String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
+    var store = WhatsappStore.findStoreById(storeId)
+            .orElseThrow(() -> new NoSuchElementException("Cannot create video message, invalid store id: %s".formatted(storeId)));
+    var dimensions = Medias.getDimensions(media);
+    var upload = Medias.upload(media, VIDEO, store);
+    return VideoMessage.newRawVideoMessage()
+            .storeId(storeId)
             .fileSha256(upload.fileSha256())
             .fileEncSha256(upload.fileEncSha256())
-            .mediaKey(upload.mediaKey().toByteArray())
-            .mediaKeyTimestamp(ZonedDateTime.now().toEpochSecond())
+            .key(upload.mediaKey())
+            .mediaKeyTimestamp(Clock.now())
             .url(upload.url())
             .directPath(upload.directPath())
-            .fileLength(media.length)
-            .mimetype(Optional.ofNullable(mimeType).orElse(MediaMessageType.VIDEO.defaultMimeType()))
+            .fileLength(upload.fileLength())
+            .mimetype(requireNonNullElse(mimeType, VIDEO.defaultMimeType()))
+            .thumbnail(requireNonNullElseGet(thumbnail, () -> Medias.getThumbnail(media, JPG).orElse(null)))
             .caption(caption)
-            .width(width)
-            .height(height)
-            .seconds(seconds)
+            .width(dimensions.map(MediaDimensions::width).orElse(null))
+            .height(dimensions.map(MediaDimensions::height).orElse(null))
+            .duration(Medias.getDuration(media).orElse(null))
             .contextInfo(contextInfo)
             .create();
-    */
-    throw new UnsupportedOperationException("Work in progress");
   }
 
   /**
@@ -185,48 +188,47 @@ public final class VideoMessage extends MediaMessage {
    * This is because Whatsapp doesn't support standard gifs.
    * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
    *
+   * @param storeId     the id of the store where this message will be stored
    * @param media       the non-null video that the new message wraps
    * @param mimeType    the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
    * @param caption     the caption of the new message
-   * @param width       the width of the video that the new message wraps
-   * @param height      the height of the video that the new message wraps
    * @param gifAttribution     the length in seconds of the video that the new message wraps
+   * @param thumbnail   the thumbnail of the sticker that the new message wraps as a jpg
    * @param contextInfo the context info that the new message wraps
    *
    * @return a non-null new message
    */
   @Builder(builderClassName = "SimpleGifBuilder", builderMethodName = "newGifMessage", buildMethodName = "create")
-  private static VideoMessage gifBuilder(byte @NonNull [] media, String mimeType, String caption, int width, int height, VideoMessageAttribution gifAttribution, ContextInfo contextInfo) {
-/*
-    Validate.isTrue(!Objects.equals(guessMimeType(media), "image/gif") && !Objects.equals(mimeType, "image/gif"), "Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
-    var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.VIDEO);
-    return VideoMessage.builder()
+  private static VideoMessage gifBuilder(int storeId, byte @NonNull [] media, String mimeType, String caption, VideoMessageAttribution gifAttribution, byte[] thumbnail, ContextInfo contextInfo) {
+    Validate.isTrue(isGif(media, mimeType), "Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
+    var store = WhatsappStore.findStoreById(storeId)
+            .orElseThrow(() -> new NoSuchElementException("Cannot create video message, invalid store id: %s".formatted(storeId)));
+    var dimensions = Medias.getDimensions(media);
+    var upload = Medias.upload(media, VIDEO, store);
+    return VideoMessage.newRawVideoMessage()
+            .storeId(storeId)
             .fileSha256(upload.fileSha256())
             .fileEncSha256(upload.fileEncSha256())
-            .mediaKey(upload.mediaKey().toByteArray())
-            .mediaKeyTimestamp(ZonedDateTime.now().toEpochSecond())
+            .key(upload.mediaKey())
+            .mediaKeyTimestamp(Clock.now())
             .url(upload.url())
             .directPath(upload.directPath())
-            .fileLength(media.length)
-            .mimetype(Optional.ofNullable(mimeType).orElse(MediaMessageType.VIDEO.defaultMimeType()))
+            .fileLength(upload.fileLength())
+            .mimetype(requireNonNullElse(mimeType, VIDEO.defaultMimeType()))
+            .thumbnail(requireNonNullElseGet(thumbnail, () -> Medias.getThumbnail(media, JPG).orElse(null)))
             .caption(caption)
-            .width(width)
-            .height(height)
+            .width(dimensions.map(MediaDimensions::width).orElse(null))
+            .height(dimensions.map(MediaDimensions::height).orElse(null))
+            .duration(Medias.getDuration(media).orElse(null))
             .gifPlayback(true)
-            .gifAttribution(Optional.ofNullable(gifAttribution).orElse(VideoMessageAttribution.NONE))
-            .caption(caption)
+            .gifAttribution(requireNonNullElse(gifAttribution, VideoMessageAttribution.NONE))
             .contextInfo(contextInfo)
             .create();
- */
-    throw new UnsupportedOperationException("Work in progress");
   }
 
-  private static String guessMimeType(byte[] media) {
-    try {
-      return URLConnection.guessContentTypeFromStream(new ByteArrayInputStream(media));
-    } catch (Throwable ignored) {
-      return "application/octet-stream";
-    }
+  private static boolean isGif(byte[] media, String mimeType) {
+    return Medias.getMimeType(media).filter("image/gif"::equals).isEmpty()
+            && !Objects.equals(mimeType, "image/gif");
   }
 
   /**

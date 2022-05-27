@@ -3,7 +3,6 @@ package it.auties.whatsapp.model.sync;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
-import it.auties.whatsapp.model.chat.ChatMediaVisibility;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

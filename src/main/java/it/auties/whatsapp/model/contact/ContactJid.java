@@ -13,7 +13,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
 import lombok.extern.java.Log;
 
 import java.util.Arrays;

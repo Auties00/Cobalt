@@ -1,10 +1,7 @@
 package it.auties.whatsapp.util;
 
-import lombok.Lombok;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-
-import static lombok.Lombok.sneakyThrow;
 
 @UtilityClass
 public class Validate {

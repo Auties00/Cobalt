@@ -17,10 +17,9 @@ import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.response.ContactHasWhatsapp;
 import it.auties.whatsapp.model.response.ContactStatus;
 import it.auties.whatsapp.util.Keys;
-import it.auties.whatsapp.util.Nodes;
 import it.auties.whatsapp.util.ListenerScanner;
+import it.auties.whatsapp.util.Nodes;
 import it.auties.whatsapp.util.Validate;
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 
@@ -121,7 +120,7 @@ public class Whatsapp {
      * @apiNote not accessible, please use named constructors
      */
     private Whatsapp(int id){
-        this(new BinarySocket(defaultOptions(), WhatsappStore.fromMemory(id), WhatsappKeys.fromMemory(id)));
+        this(new BinarySocket(defaultOptions(), WhatsappStore.of(id), WhatsappKeys.of(id)));
         ListenerScanner.scan(this)
                 .forEach(this::registerListener);
     }

@@ -1,8 +1,6 @@
 package it.auties.whatsapp.model.message.payment;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.contact.ContactJid;
@@ -10,7 +8,6 @@ import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
-import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;

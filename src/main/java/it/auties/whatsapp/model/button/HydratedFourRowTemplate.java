@@ -1,18 +1,22 @@
 package it.auties.whatsapp.model.button;
 
-import com.fasterxml.jackson.annotation.*;
-import java.util.*;
-
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
-import it.auties.whatsapp.model.button.HydratedTemplateButton;
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import it.auties.whatsapp.model.message.standard.LocationMessage;
 import it.auties.whatsapp.model.message.standard.VideoMessage;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;

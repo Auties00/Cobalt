@@ -1,17 +1,20 @@
 package it.auties.whatsapp.model.product;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.api.model.ProtobufProperty;
-import java.util.*;
-
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import it.auties.whatsapp.model.message.standard.VideoMessage;
-import lombok.*;
-import lombok.experimental.*;
-import lombok.extern.jackson.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.Getter;
+import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
+
+import java.util.Arrays;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
 @AllArgsConstructor
 @Data

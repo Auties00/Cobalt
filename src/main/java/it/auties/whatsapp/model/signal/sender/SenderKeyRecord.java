@@ -12,7 +12,8 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.*;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;

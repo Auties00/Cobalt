@@ -1,9 +1,7 @@
 package it.auties.whatsapp.model.sync;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.setting.*;
 import lombok.*;
@@ -13,7 +11,6 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.ArrayList;
 import java.util.List;
 
-import it.auties.protobuf.api.model.ProtobufProperty;
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
 @AllArgsConstructor

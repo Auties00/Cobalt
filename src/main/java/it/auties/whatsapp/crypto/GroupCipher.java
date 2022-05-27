@@ -10,9 +10,6 @@ import it.auties.whatsapp.util.SignalSpecification;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 
-import java.util.NoSuchElementException;
-import java.util.concurrent.Semaphore;
-
 import static it.auties.whatsapp.model.request.Node.with;
 import static java.util.Map.of;
 

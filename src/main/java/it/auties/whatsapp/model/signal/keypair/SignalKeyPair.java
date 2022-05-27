@@ -4,7 +4,6 @@ import it.auties.curve25519.Curve25519;
 import it.auties.curve25519.XecUtils;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.Keys;
-import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 
 import java.security.interfaces.XECPrivateKey;

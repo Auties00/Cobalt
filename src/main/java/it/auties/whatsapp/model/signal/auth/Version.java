@@ -1,22 +1,20 @@
 package it.auties.whatsapp.model.signal.auth;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
-import it.auties.whatsapp.util.Validate;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT32;
 
 @AllArgsConstructor

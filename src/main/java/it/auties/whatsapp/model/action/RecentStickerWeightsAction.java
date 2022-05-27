@@ -1,10 +1,6 @@
 package it.auties.whatsapp.model.action;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.protobuf.api.model.ProtobufProperty;
-import it.auties.whatsapp.model.sync.RecentEmojiWeight;
 import it.auties.whatsapp.model.sync.RecentStickerWeight;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

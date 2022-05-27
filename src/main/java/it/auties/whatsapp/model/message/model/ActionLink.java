@@ -1,6 +1,5 @@
-package it.auties.whatsapp.model.sync;
+package it.auties.whatsapp.model.message.model;
 
-import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,12 +9,24 @@ import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 
+/**
+ * An action link for a button
+ */
 @AllArgsConstructor
 @Data
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class ServerErrorReceipt implements ProtobufMessage {
+public class ActionLink {
+  /**
+   * The url of the action
+   */
   @ProtobufProperty(index = 1, type = STRING)
-  private String jid;
+  private String url;
+
+  /**
+   * The title of the action
+   */
+  @ProtobufProperty(index = 2, type = STRING)
+  private String buttonTitle;
 }

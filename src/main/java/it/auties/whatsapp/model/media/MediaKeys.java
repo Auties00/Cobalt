@@ -7,7 +7,7 @@ import lombok.NonNull;
 
 import java.nio.charset.StandardCharsets;
 
-public record MediaKeys(byte[] iv, byte[] cipherKey, byte[] macKey, byte[] ref) implements SignalSpecification {
+public record MediaKeys(byte[] mediaKey, byte[] iv, byte[] cipherKey, byte[] macKey, byte[] ref) implements SignalSpecification {
     private static final int EXPANDED_SIZE = 112;
 
     public static MediaKeys random(@NonNull String type){
@@ -25,6 +25,6 @@ public record MediaKeys(byte[] iv, byte[] cipherKey, byte[] macKey, byte[] ref) 
                 .toByteArray();
         var ref = buffer.slice(IV_LENGTH + (KEY_LENGTH * 2))
                 .toByteArray();
-        return new MediaKeys(iv, cipherKey, macKey, ref);
+        return new MediaKeys(key, iv, cipherKey, macKey, ref);
     }
 }

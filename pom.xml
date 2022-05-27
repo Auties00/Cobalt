@@ -85,17 +85,18 @@
         <delombok.plugin.version>1.18.20.0</delombok.plugin.version>
         <nexus.staging.maven.plugin.version>1.6.7</nexus.staging.maven.plugin.version>
         <bouncy.castle.version>1.70</bouncy.castle.version>
-        <zxing.version>3.4.1</zxing.version>
-        <protoc.version>1.13-SNAPSHOT</protoc.version>
+        <zxing.version>3.5.0</zxing.version>
+        <protoc.version>1.13</protoc.version>
         <tyrus.version>2.0.2</tyrus.version>
         <lombok.version>1.18.24</lombok.version>
         <junit.version>5.8.2</junit.version>
         <jna.version>5.11.0</jna.version>
-        <jackson.version>2.13.2.2</jackson.version>
-        <jackson.modules.version>2.13.2</jackson.modules.version>
-        <jackson.map.version>1.2-SNAPSHOT</jackson.map.version>
+        <jackson.version>2.13.3</jackson.version>
+        <jackson.modules.version>2.13.3</jackson.modules.version>
+        <jackson.map.version>1.2</jackson.map.version>
         <curve25519.version>1.1</curve25519.version>
         <bytes.version>1.2</bytes.version>
+        <ffmpeg.version>0.7.0</ffmpeg.version>
         <classgraph.version>4.8.146</classgraph.version>
         <reflection.version>1.2</reflection.version>
         <caffeine.version>3.1.0</caffeine.version>

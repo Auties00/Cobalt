@@ -1,9 +1,6 @@
 package it.auties.whatsapp.model.message.button;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
@@ -11,7 +8,6 @@ import it.auties.whatsapp.model.button.Button;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
-import it.auties.whatsapp.model.message.model.InteractiveAnnotation;
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import it.auties.whatsapp.model.message.standard.LocationMessage;

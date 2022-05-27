@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.sync;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.whatsapp.binary.BinarySync;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.Attributes;
@@ -16,8 +15,6 @@ import java.util.Map;
 import java.util.Objects;
 
 import static it.auties.whatsapp.model.request.Node.withAttributes;
-import static it.auties.whatsapp.model.request.Node.withChildren;
-import static java.util.Map.of;
 
 @AllArgsConstructor
 @Builder

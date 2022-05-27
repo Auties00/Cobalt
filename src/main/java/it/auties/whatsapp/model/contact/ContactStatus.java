@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.contact;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.whatsapp.binary.BinaryFlag;
 import lombok.AllArgsConstructor;

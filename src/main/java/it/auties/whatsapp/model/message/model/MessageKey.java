@@ -1,7 +1,5 @@
 package it.auties.whatsapp.model.message.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
@@ -15,7 +13,8 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Locale;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.BOOLEAN;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 
 /**
  * A container for unique identifiers and metadata linked to a {@link Message} and contained in {@link MessageInfo}.

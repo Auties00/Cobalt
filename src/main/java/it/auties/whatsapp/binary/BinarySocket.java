@@ -41,10 +41,12 @@ import it.auties.whatsapp.model.sync.RecordSync.Operation;
 import it.auties.whatsapp.util.*;
 import jakarta.websocket.*;
 import jakarta.websocket.ClientEndpointConfig.Configurator;
-import lombok.*;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.java.Log;
-import org.xml.sax.ErrorHandler;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -85,6 +87,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
     private boolean loggedIn;
 
+    @NonNull
     private ScheduledExecutorService pingService;
 
     @NonNull
@@ -382,8 +385,8 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     private void changeKeys() {
         keys.delete();
         var newId = Keys.registrationId();
-        this.keys = WhatsappKeys.newKeys(newId);
-        var newStore = WhatsappStore.newStore(newId);
+        this.keys = WhatsappKeys.random(newId);
+        var newStore = WhatsappStore.random(newId);
         newStore.listeners().addAll(store.listeners());
         this.store = newStore;
     }

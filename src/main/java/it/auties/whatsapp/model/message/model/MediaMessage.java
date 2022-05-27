@@ -10,7 +10,6 @@ import it.auties.whatsapp.util.Medias;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
-import lombok.extern.jackson.Jacksonized;
 
 import java.util.Locale;
 import java.util.NoSuchElementException;
@@ -50,7 +49,7 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
     @JsonIgnore
     private WhatsappStore cachedStore;
 
-    public WhatsappStore store(){
+    protected WhatsappStore store(){
         return Objects.requireNonNullElseGet(cachedStore,
                 () -> this.cachedStore = cacheStore());
     }
@@ -80,7 +79,6 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
        this.decodedMedia = null;
        return decodedMedia();
     }
-
 
     /**
      * Returns the media type of the media that this object wraps

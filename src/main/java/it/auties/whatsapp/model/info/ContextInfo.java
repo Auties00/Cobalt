@@ -1,12 +1,10 @@
 package it.auties.whatsapp.model.info;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.model.business.BusinessVerifiedLevel;
+import it.auties.whatsapp.model.chat.ChatDisappear;
 import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.message.model.ActionLink;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageKey;
@@ -54,7 +52,7 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
    * A list of the contacts' jids mentioned in this ContextualMessage
    */
   @ProtobufProperty(index = 15, type = STRING, repeated = true)
-  private List<String> mentionedJid;
+  private List<String> mentionedJids;
 
   /**
    * Conversation source
@@ -141,6 +139,30 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
    */
   @ProtobufProperty(index = 31, type = UINT32)
   private Integer entryPointConversionDelaySeconds;
+
+  /**
+   * Disappearing mode
+   */
+  @ProtobufProperty(index = 32, type = MESSAGE, concreteType = ChatDisappear.class)
+  private ChatDisappear disappearingMode;
+
+  /**
+   * Action link
+   */
+  @ProtobufProperty(index = 33, type = STRING)
+  private ActionLink actionLink;
+
+  /**
+   * Group subject
+   */
+  @ProtobufProperty(index = 34, type = STRING)
+  private String groupSubject;
+
+  /**
+   * Parent group jid
+   */
+  @ProtobufProperty(index = 35, type = STRING)
+  private String parentGroupJid;
 
   /**
    * Constructs a ContextInfo from a quoted message

@@ -1,6 +1,5 @@
 package it.auties.whatsapp.util;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;

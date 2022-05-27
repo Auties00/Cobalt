@@ -4,7 +4,6 @@ import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.whatsapp.api.Whatsapp;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.experimental.Accessors;
 
 import java.util.Arrays;

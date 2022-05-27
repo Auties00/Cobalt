@@ -4,28 +4,18 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.auties.bytes.Bytes;
-import it.auties.whatsapp.api.SerializationStrategy;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.binary.BinarySocket;
 import it.auties.whatsapp.controller.WhatsappController;
 import it.auties.whatsapp.controller.WhatsappKeys;
 import it.auties.whatsapp.controller.WhatsappStore;
-import it.auties.whatsapp.crypto.GroupBuilder;
-import it.auties.whatsapp.crypto.GroupCipher;
-import it.auties.whatsapp.crypto.SessionBuilder;
 import it.auties.whatsapp.model.chat.Chat;
-import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.message.model.MessageContainer;
-import it.auties.whatsapp.model.message.model.MessageKey;
-import it.auties.whatsapp.model.message.standard.TextMessage;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
-import it.auties.whatsapp.model.signal.sender.SenderKeyMessage;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
 import it.auties.whatsapp.model.signal.sender.SenderKeyRecord;
 import it.auties.whatsapp.model.signal.sender.SenderKeyState;
@@ -36,14 +26,9 @@ import it.auties.whatsapp.model.signal.session.SessionState;
 import it.auties.whatsapp.model.sync.AppStateSyncKeyData;
 import it.auties.whatsapp.model.sync.AppStateSyncKeyFingerprint;
 import it.auties.whatsapp.model.sync.AppStateSyncKeyId;
-import lombok.SneakyThrows;
-import org.checkerframework.checker.units.qual.C;
-import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -57,8 +42,8 @@ public class BaileysTest {
         var flag = Boolean.parseBoolean(args[0]);
         var knownIds = WhatsappController.knownIds();
         var keys = createKeys();
-        var whatsappKeys = !flag && knownIds.contains(keys.id()) ? WhatsappKeys.fromMemory(keys.id()) : keys;
-        var whatsappStore = !flag && knownIds.contains(keys.id()) ? WhatsappStore.fromMemory(keys.id()) : createStore();
+        var whatsappKeys = !flag && knownIds.contains(keys.id()) ? WhatsappKeys.of(keys.id()) : keys;
+        var whatsappStore = !flag && knownIds.contains(keys.id()) ? WhatsappStore.of(keys.id()) : createStore();
         var socket = new BinarySocket(WhatsappOptions.defaultOptions(), whatsappStore, whatsappKeys);
         var whatsapp = Whatsapp.newConnection(socket);
         whatsapp.connect().get();
@@ -89,7 +74,7 @@ public class BaileysTest {
     private static WhatsappStore createStore() throws URISyntaxException, IOException {
         var path = Path.of(Objects.requireNonNull(ClassLoader.getSystemClassLoader().getResource("test.json")).toURI());
         var baileysKeys = new ObjectMapper().readValue(path.toFile(), BaileysKeys.class);
-        var store = WhatsappStore.newStore(baileysKeys.creds().registrationId());
+        var store = WhatsappStore.random(baileysKeys.creds().registrationId());
         if(baileysKeys.keys().senderKeyMemory() == null){
             return store;
         }

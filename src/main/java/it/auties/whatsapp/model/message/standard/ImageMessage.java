@@ -2,11 +2,14 @@ package it.auties.whatsapp.model.message.standard;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.InteractiveAnnotation;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
+import it.auties.whatsapp.util.Clock;
+import it.auties.whatsapp.util.Medias;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
@@ -14,8 +17,13 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.whatsapp.model.message.model.MediaMessageType.IMAGE;
+import static it.auties.whatsapp.util.Medias.Format.JPG;
+import static java.util.Objects.requireNonNullElse;
+import static java.util.Objects.requireNonNullElseGet;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds an image inside.
@@ -156,36 +164,38 @@ public final class ImageMessage extends MediaMessage {
    * Constructs a new builder to create a ImageMessage.
    * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
    *
+   * @param storeId     the id of the store where this message will be stored
    * @param media       the non-null image that the new message wraps
    * @param mimeType    the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
    * @param caption     the caption of the new message
    * @param width       the width of the image that the new message wraps
    * @param height      the height of the image that the new message wraps
+   * @param thumbnail   the thumbnail of the document that the new message wraps
    * @param contextInfo the context info that the new message wraps
    *
    * @return a non-null new message
    */
   @Builder(builderClassName = "SimpleImageBuilder", builderMethodName = "newImageMessage", buildMethodName = "create")
-  private static ImageMessage simpleBuilder(byte @NonNull [] media, String mimeType, String caption, int width, int height, ContextInfo contextInfo) {
-    /*
-    var upload = CypherUtils.mediaEncrypt(media, MediaMessageType.IMAGE);
+  private static ImageMessage simpleBuilder(int storeId, byte @NonNull [] media, String mimeType, String caption, int width, int height, byte[] thumbnail, ContextInfo contextInfo) {
+    var store = WhatsappStore.findStoreById(storeId)
+            .orElseThrow(() -> new NoSuchElementException("Cannot create image message, invalid store id: %s".formatted(storeId)));
+    var upload = Medias.upload(media, IMAGE, store);
     return ImageMessage.newRawImageMessage()
+            .storeId(storeId)
             .fileSha256(upload.fileSha256())
             .fileEncSha256(upload.fileEncSha256())
-            .mediaKey(upload.mediaKey().toByteArray())
-            .mediaKeyTimestamp(ZonedDateTime.now().toEpochSecond())
+            .key(upload.mediaKey())
+            .mediaKeyTimestamp(Clock.now())
             .url(upload.url())
             .directPath(upload.directPath())
-            .fileLength(media.length)
-            .mimetype(Optional.ofNullable(mimeType).orElse(MediaMessageType.IMAGE.defaultMimeType()))
+            .fileLength(upload.fileLength())
+            .mimetype(requireNonNullElse(mimeType, IMAGE.defaultMimeType()))
             .caption(caption)
             .width(width)
             .height(height)
+            .thumbnail(requireNonNullElseGet(thumbnail, () -> Medias.getThumbnail(media, JPG).orElse(null)))
             .contextInfo(contextInfo)
             .create();
-     */
-
-    throw new UnsupportedOperationException("Work in progress");
   }
 
   /**

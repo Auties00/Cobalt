@@ -2,7 +2,6 @@ package it.auties.whatsapp.model.signal.message;
 
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.api.model.ProtobufProperty;
-import it.auties.protobuf.api.model.ProtobufSchema;
 import it.auties.whatsapp.util.BytesHelper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,8 +9,6 @@ import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
-
-import java.util.Objects;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.BYTES;
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT32;

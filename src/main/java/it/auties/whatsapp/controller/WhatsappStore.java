@@ -1,7 +1,6 @@
 package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.model.chat.Chat;
@@ -13,7 +12,6 @@ import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Preferences;
-import it.auties.whatsapp.util.Validate;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
@@ -22,13 +20,17 @@ import lombok.extern.java.Log;
 
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.util.concurrent.Executors.*;
+import static java.util.Objects.requireNonNullElseGet;
+import static java.util.concurrent.Executors.newScheduledThreadPool;
+import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 /**
  * This controller holds the user-related data regarding a WhatsappWeb session
@@ -44,7 +46,8 @@ public final class WhatsappStore implements WhatsappController {
     /**
      * All the known stores
      */
-    private static Set<WhatsappStore> stores = new HashSet<>();
+    @JsonIgnore
+    private static Set<WhatsappStore> stores = ConcurrentHashMap.newKeySet();
 
     /**
      * The session id of this store
@@ -141,7 +144,7 @@ public final class WhatsappStore implements WhatsappController {
      * @param id the unsigned jid of this store
      * @return a non-null instance of WhatsappStore
      */
-    public static WhatsappStore newStore(int id){
+    public static WhatsappStore random(int id){
         var result = WhatsappStore.builder()
                 .id(id)
                 .build();
@@ -155,10 +158,9 @@ public final class WhatsappStore implements WhatsappController {
      * @param id the jid of this session
      * @return a non-null instance of WhatsappStore
      */
-    public static WhatsappStore fromMemory(int id){
+    public static WhatsappStore of(int id){
         var preferences = Preferences.of("%s/store.json", id);
-        var result = Objects.requireNonNullElseGet(preferences.readJson(new TypeReference<>() {}),
-                () -> newStore(id));
+        var result = requireNonNullElseGet(preferences.readJson(), () -> random(id));
         stores.add(result);
         return result;
     }

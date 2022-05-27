@@ -2,10 +2,8 @@ package it.auties.whatsapp.model.signal.session;
 
 import lombok.NonNull;
 
-import java.util.*;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentSkipListSet;
 
 public record Session(ConcurrentLinkedDeque<@NonNull SessionState> states) {
   public Session(){

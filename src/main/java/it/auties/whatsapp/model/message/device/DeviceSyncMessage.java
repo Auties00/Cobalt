@@ -1,7 +1,5 @@
 package it.auties.whatsapp.model.message.device;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.message.model.DeviceMessage;
@@ -13,7 +11,6 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.BYTES;
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 
 /**
  * A model class that represents a WhatsappMessage that refers to a message sent by the device paired with the active WhatsappWeb session to dataSync.

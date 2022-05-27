@@ -1,6 +1,5 @@
 package it.auties.whatsapp.controller;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.whatsapp.util.Preferences;
 import lombok.NonNull;
 
@@ -9,7 +8,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedList;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 

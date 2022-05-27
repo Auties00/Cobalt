@@ -2,7 +2,6 @@ package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
-import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
@@ -29,8 +28,9 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static java.util.Objects.requireNonNullElseGet;
 
 /**
  * This controller holds the cryptographic-related data regarding a WhatsappWeb session
@@ -178,7 +178,7 @@ public final class WhatsappKeys implements WhatsappController {
      * @param id the unsigned id of these keys
      * @return a non-null instance of WhatsappKeys
      */
-    public static WhatsappKeys newKeys(int id){
+    public static WhatsappKeys random(int id){
         var result = WhatsappKeys.builder()
                 .id(id)
                 .build();
@@ -191,10 +191,9 @@ public final class WhatsappKeys implements WhatsappController {
      * @param id the id of this session
      * @return a non-null instance of WhatsappKeys
      */
-    public static WhatsappKeys fromMemory(int id){
+    public static WhatsappKeys of(int id){
         var preferences = Preferences.of("%s/keys.json", id);
-        return Objects.requireNonNullElseGet(preferences.readJson(new TypeReference<>() {}),
-                () -> newKeys(id));
+        return requireNonNullElseGet(preferences.readJson(), () -> random(id));
     }
 
     /**
@@ -246,7 +245,7 @@ public final class WhatsappKeys implements WhatsappController {
      * @return a non-null SenderKeyRecord
      */
     public SenderKeyRecord findSenderKeyByName(@NonNull SenderKeyName name) {
-        return Objects.requireNonNullElseGet(senderKeys.get(name), () -> {
+        return requireNonNullElseGet(senderKeys.get(name), () -> {
             var record = new SenderKeyRecord();
             senderKeys.put(name, record);
             return record;
