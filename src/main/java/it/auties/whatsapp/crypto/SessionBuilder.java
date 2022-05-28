@@ -15,6 +15,7 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 
 import java.nio.charset.StandardCharsets;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -64,9 +65,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
 
         var preKeyPair = Optional.ofNullable(message.preKeyId())
                 .flatMap(keys::findPreKeyById)
-                .orElse(null);
-        Validate.isTrue(message.preKeyId() == 0 || preKeyPair != null,
-                "Invalid pre key id: %s", SecurityException.class, message.preKeyId());
+                .orElseThrow(() -> new NoSuchElementException("Invalid pre key id: %s".formatted(message.preKeyId())));
 
         var signedPreKeyPair = keys.findSignedKeyPairById(message.signedPreKeyId());
         session.closeCurrentState();

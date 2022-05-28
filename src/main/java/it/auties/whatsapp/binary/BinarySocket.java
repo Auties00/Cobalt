@@ -802,14 +802,19 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
         private void printQrCode(Node container) {
             var ref = container.findNode("ref");
-            var qr = new String(ref.bytes(), StandardCharsets.UTF_8);
-            var matrix = QrGenerator.generate(keys, qr);
+            var qr = "%s,%s,%s,%s".formatted(
+                    new String(ref.bytes(), StandardCharsets.UTF_8),
+                    Bytes.of(keys.noiseKeyPair().publicKey()).toBase64(),
+                    Bytes.of(keys.identityKeyPair().publicKey()).toBase64(),
+                    Bytes.of(keys.companionKey()).toBase64()
+            );
+
             if (!store.listeners().isEmpty()) {
-                store.callListeners(listener -> Objects.requireNonNull(listener.onQRCode(matrix), "Invalid QR handler").accept(matrix));
+                store.callListeners(listener -> Objects.requireNonNull(listener.onQRCode(), "Invalid QR handler").accept(qr));
                 return;
             }
 
-            QrHandler.toTerminal().accept(matrix);
+            QrHandler.toTerminal().accept(qr);
         }
 
         @SneakyThrows
@@ -1249,7 +1254,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             }
 
             if(!info.ignore()) {
-                chat.unreadMessages(chat.unreadMessages() + 1);
+                chat.unreadMessages(requireNonNullElse(chat.unreadMessages(), 0) + 1);
             }
 
             store.callListeners(listener -> listener.onNewMessage(info));
@@ -1603,7 +1608,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             }
 
             if(chat != null) {
-                var name = Objects.requireNonNullElse(contactAction.firstName(), contactAction.fullName());
+                var name = requireNonNullElse(contactAction.firstName(), contactAction.fullName());
                 chat.name(name);
             }
         }

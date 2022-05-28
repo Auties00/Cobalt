@@ -12,10 +12,15 @@ import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MessageStatus;
+import it.auties.whatsapp.model.message.standard.ImageMessage;
+import it.auties.whatsapp.model.message.standard.VideoMessage;
+import it.auties.whatsapp.utils.MediaUtils;
 import lombok.SneakyThrows;
 import lombok.extern.java.Log;
 
+import java.io.IOException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Scanner;
 
 @Log
@@ -29,20 +34,27 @@ public class ApiTest {
     }
 
     private static void waitForInput(Whatsapp whatsapp){
-        var scanner = new Scanner(System.in);
-        var contact = scanner.nextLine();
-        if(Objects.equals("contact", "stop")){
-            return;
-        }
+        try {
+            var scanner = new Scanner(System.in);
+            var contact = scanner.nextLine();
+            if(Objects.equals("contact", "stop")){
+                return;
+            }
 
-        whatsapp.store().findChatByName(contact)
-                .or(() -> whatsapp.store().findChatByJid(ContactJid.of(contact)))
-                .ifPresentOrElse(chat -> {
-                    System.out.println("Sending message to " + contact);
-                    whatsapp.sendMessage(chat, "Ciao!")
-                            .thenRunAsync(() -> System.out.println("Sent message to " + contact));
-                }, () -> System.out.println("No match for " + contact));
-        waitForInput(whatsapp);
+            var chat = ContactJid.of(contact);
+            var video = VideoMessage.newVideoMessage()
+                    .storeId(whatsapp.store().id())
+                    .media(MediaUtils.readBytes("http://techslides.com/demos/sample-videos/small.mp4"))
+                    .caption("Video")
+                    .create();
+            System.out.println("Sending message to " + contact);
+            whatsapp.sendMessage(chat, video)
+                    .thenRunAsync(() -> System.out.println("Sent message to " + contact));
+        }catch (Throwable throwable) {
+            throwable.printStackTrace();
+        }finally {
+            waitForInput(whatsapp);
+        }
     }
 
     @RegisterListener
@@ -55,11 +67,6 @@ public class ApiTest {
         @Override
         public void onAction(Action action) {
             System.out.printf("New action: %s%n" , action);
-        }
-
-        @Override
-        public QrHandler onQRCode(BitMatrix qr) {
-            return QrHandler.toFile();
         }
 
         @Override

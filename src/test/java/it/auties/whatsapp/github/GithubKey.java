@@ -1,4 +1,4 @@
-package it.auties.whatsapp;
+package it.auties.whatsapp.github;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

@@ -45,9 +45,11 @@ public class BaileysTest {
         var whatsappKeys = !flag && knownIds.contains(keys.id()) ? WhatsappKeys.of(keys.id()) : keys;
         var whatsappStore = !flag && knownIds.contains(keys.id()) ? WhatsappStore.of(keys.id()) : createStore();
         var socket = new BinarySocket(WhatsappOptions.defaultOptions(), whatsappStore, whatsappKeys);
+      /*
         var whatsapp = Whatsapp.newConnection(socket);
         whatsapp.connect().get();
         waitForInput(whatsapp);
+       */
     }
 
     private static void waitForInput(Whatsapp whatsapp){

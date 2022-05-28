@@ -7,8 +7,8 @@ import lombok.NonNull;
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 
-public record ContactStatus(@NonNull Node response, @NonNull String status, @NonNull ZonedDateTime timestamp) implements ResponseWrapper {
-    public ContactStatus(Node source) {
+public record ContactStatusResponse(@NonNull Node response, @NonNull String status, @NonNull ZonedDateTime timestamp) implements ResponseWrapper {
+    public ContactStatusResponse(Node source) {
         this(source,
                 new String(source.bytes(), StandardCharsets.UTF_8),
                 Clock.parse(source.attributes().getLong("t")).orElse(ZonedDateTime.now()));

@@ -7,6 +7,7 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
@@ -38,7 +39,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class Chat implements ProtobufMessage {
+public final class Chat implements ProtobufMessage, ContactJidProvider {
     /**
      * The non-null unique jid used to identify this chat
      */
@@ -214,7 +215,7 @@ public class Chat implements ProtobufMessage {
      * Otherwise, it will range from 0 to the number of participants - 1.
      * It is important to remember that is not guaranteed that every participant will be present as a key.
      * In this case, if this chat is a group, it can be safely assumed that the user is not available.
-     * Otherwise, it's recommended to use {@link Whatsapp#subscribeToContactPresence(Contact)} to force Whatsapp to send updates regarding the status of the other participant.
+     * Otherwise, it's recommended to use {@link Whatsapp#subscribeToContactPresence(ContactJidProvider)} to force Whatsapp to send updates regarding the status of the other participant.
      * It's also possible to listen for updates to a contact's presence in a group or in a conversation by implementing {@link WhatsappListener#onContactPresence}.
      * The presence that this map indicates might not line up with {@link Contact#lastKnownPresence()} if the contact is composing, recording or paused.
      * This is because a contact can be online on Whatsapp and composing, recording or paused in a specific chat.
@@ -376,6 +377,16 @@ public class Chat implements ProtobufMessage {
      */
     public Optional<MessageInfo> firstMessage() {
         return messages.isEmpty() ? Optional.empty() : Optional.of(messages.get(0));
+    }
+
+    /**
+     * Returns this object as a jid
+     *
+     * @return a non-null jid
+     */
+    @Override
+    public ContactJid toJid() {
+        return jid();
     }
 
     public static class ChatBuilder {

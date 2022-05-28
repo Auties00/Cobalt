@@ -22,7 +22,7 @@ import java.util.Optional;
 @Jacksonized
 @Accessors(fluent = true)
 @ToString
-public class Contact implements ProtobufMessage {
+public final class Contact implements ProtobufMessage, ContactJidProvider {
     /**
      * The non-null unique jid used to identify this contact
      */
@@ -52,7 +52,7 @@ public class Contact implements ProtobufMessage {
      * If, for example, this contact is composing, recording or paused in a group this field will not be affected.
      * Instead, {@link Chat#presences()} should be used.
      * By default, Whatsapp will not send updates about a contact's status unless they send a message or are in the recent contacts.
-     * To force Whatsapp to send updates, use {@link Whatsapp#subscribeToContactPresence(Contact)}.
+     * To force Whatsapp to send updates, use {@link Whatsapp#subscribeToContactPresence(ContactJidProvider)}.
      */
     private ContactStatus lastKnownPresence;
 
@@ -104,5 +104,15 @@ public class Contact implements ProtobufMessage {
      */
     public Optional<ZonedDateTime> lastSeen() {
         return Optional.ofNullable(lastSeen);
+    }
+
+    /**
+     * Returns this object as a jid
+     *
+     * @return a non-null jid
+     */
+    @Override
+    public ContactJid toJid() {
+        return jid();
     }
 }

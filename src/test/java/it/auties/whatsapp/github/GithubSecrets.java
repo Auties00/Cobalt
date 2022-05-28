@@ -1,6 +1,8 @@
-package it.auties.whatsapp;
+package it.auties.whatsapp.github;
 
+import it.auties.whatsapp.utils.ConfigUtils;
 import it.auties.whatsapp.util.JacksonProvider;
+import it.auties.whatsapp.utils.SodiumUtils;
 import lombok.experimental.UtilityClass;
 import lombok.extern.java.Log;
 

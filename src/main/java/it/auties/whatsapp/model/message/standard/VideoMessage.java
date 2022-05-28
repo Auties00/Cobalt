@@ -161,7 +161,8 @@ public final class VideoMessage extends MediaMessage {
   private static VideoMessage videoBuilder(int storeId, byte @NonNull [] media, String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
     var store = WhatsappStore.findStoreById(storeId)
             .orElseThrow(() -> new NoSuchElementException("Cannot create video message, invalid store id: %s".formatted(storeId)));
-    var dimensions = Medias.getDimensions(media);
+    var dimensions = Medias.getDimensions(media, true);
+    var duration = Medias.getDuration(media, true);
     var upload = Medias.upload(media, VIDEO, store);
     return VideoMessage.newRawVideoMessage()
             .storeId(storeId)
@@ -173,11 +174,11 @@ public final class VideoMessage extends MediaMessage {
             .directPath(upload.directPath())
             .fileLength(upload.fileLength())
             .mimetype(requireNonNullElse(mimeType, VIDEO.defaultMimeType()))
-            .thumbnail(requireNonNullElseGet(thumbnail, () -> Medias.getThumbnail(media, JPG).orElse(null)))
+            .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, Medias.Format.VIDEO))
             .caption(caption)
-            .width(dimensions.map(MediaDimensions::width).orElse(null))
-            .height(dimensions.map(MediaDimensions::height).orElse(null))
-            .duration(Medias.getDuration(media).orElse(null))
+            .width(dimensions.width())
+            .height(dimensions.height())
+            .duration(duration)
             .contextInfo(contextInfo)
             .create();
   }
@@ -203,7 +204,8 @@ public final class VideoMessage extends MediaMessage {
     Validate.isTrue(isGif(media, mimeType), "Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
     var store = WhatsappStore.findStoreById(storeId)
             .orElseThrow(() -> new NoSuchElementException("Cannot create video message, invalid store id: %s".formatted(storeId)));
-    var dimensions = Medias.getDimensions(media);
+    var dimensions = Medias.getDimensions(media, true);
+    var duration = Medias.getDuration(media, true);
     var upload = Medias.upload(media, VIDEO, store);
     return VideoMessage.newRawVideoMessage()
             .storeId(storeId)
@@ -215,11 +217,11 @@ public final class VideoMessage extends MediaMessage {
             .directPath(upload.directPath())
             .fileLength(upload.fileLength())
             .mimetype(requireNonNullElse(mimeType, VIDEO.defaultMimeType()))
-            .thumbnail(requireNonNullElseGet(thumbnail, () -> Medias.getThumbnail(media, JPG).orElse(null)))
+            .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, Medias.Format.VIDEO))
             .caption(caption)
-            .width(dimensions.map(MediaDimensions::width).orElse(null))
-            .height(dimensions.map(MediaDimensions::height).orElse(null))
-            .duration(Medias.getDuration(media).orElse(null))
+            .width(dimensions.width())
+            .height(dimensions.height())
+            .duration(duration)
             .gifPlayback(true)
             .gifAttribution(requireNonNullElse(gifAttribution, VideoMessageAttribution.NONE))
             .contextInfo(contextInfo)

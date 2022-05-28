@@ -18,6 +18,7 @@ import java.util.NoSuchElementException;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 import static it.auties.whatsapp.model.message.model.MediaMessageType.STICKER;
+import static it.auties.whatsapp.util.Medias.Format.JPG;
 import static it.auties.whatsapp.util.Medias.Format.PNG;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.Objects.requireNonNullElseGet;
@@ -147,7 +148,7 @@ public final class StickerMessage extends MediaMessage {
             .directPath(upload.directPath())
             .fileLength(upload.fileLength())
             .mimetype(requireNonNullElse(mimeType, STICKER.defaultMimeType()))
-            .thumbnail(requireNonNullElseGet(thumbnail, () -> Medias.getThumbnail(media, PNG).orElse(null)))
+            .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, PNG))
             .animated(animated)
             .contextInfo(contextInfo)
             .create();

@@ -1,4 +1,4 @@
-package it.auties.whatsapp;
+package it.auties.whatsapp.utils;
 
 import com.sun.jna.Library;
 

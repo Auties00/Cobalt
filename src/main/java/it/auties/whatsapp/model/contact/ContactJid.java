@@ -27,7 +27,7 @@ import java.util.Objects;
 @Builder
 @ProtobufValue
 @Log
-public record ContactJid(String user, @NonNull Server server, int device, int agent) implements ProtobufMessage {
+public record ContactJid(String user, @NonNull Server server, int device, int agent) implements ProtobufMessage, ContactJidProvider {
     /**
      * The official business account address
      */
@@ -233,6 +233,15 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
     public SessionAddress toSignalAddress(){
         var name = toString().split("@", 2)[0];
         return new SessionAddress(name, 0);
+    }
+    /**
+     * Returns this object as a jid
+     *
+     * @return a non-null jid
+     */
+    @Override
+    public ContactJid toJid() {
+        return this;
     }
 
     /**

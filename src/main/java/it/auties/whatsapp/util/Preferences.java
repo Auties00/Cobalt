@@ -52,10 +52,10 @@ public final class Preferences implements JacksonProvider {
     }
 
     @SneakyThrows
-    public <T> T readJson() {
+    public <T> T readJson(TypeReference<T> reference) {
         var json = read();
         return json.isEmpty() ? null :
-                readAsInternal(json.get(), new TypeReference<>() {});
+                readAsInternal(json.get(), reference);
     }
 
     @SneakyThrows

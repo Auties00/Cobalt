@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Data;
 import lombok.NonNull;
+import lombok.With;
 import lombok.experimental.Accessors;
 
 import java.util.HashSet;
@@ -18,9 +19,15 @@ import java.util.Set;
  * An all arguments' constructor is also available if considered more suitable for the coding style of the project.
  */
 @Builder(builderMethodName = "newOptions", buildMethodName = "create")
+@With
 @Data
 @Accessors(fluent = true)
 public class WhatsappOptions {
+    /**
+     * The id of the session
+     */
+    private final int id;
+
     /**
      * The version of WhatsappWeb to use
      * If the version is too outdated, the server will refuse to connect

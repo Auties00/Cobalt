@@ -2,6 +2,7 @@ package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
@@ -193,7 +194,7 @@ public final class WhatsappKeys implements WhatsappController {
      */
     public static WhatsappKeys of(int id){
         var preferences = Preferences.of("%s/keys.json", id);
-        return requireNonNullElseGet(preferences.readJson(), () -> random(id));
+        return requireNonNullElseGet(preferences.readJson(new TypeReference<>() {}), () -> random(id));
     }
 
     /**

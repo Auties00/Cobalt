@@ -1,12 +1,14 @@
-package it.auties.whatsapp;
+package it.auties.whatsapp.ci;
 
+import it.auties.whatsapp.github.GithubActions;
+import it.auties.whatsapp.github.GithubSecrets;
 import lombok.extern.java.Log;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
 @Log
-public class CredentialsTest {
+public class GithubCredentialsTest {
     @Test
     public void updateCredentials() throws IOException, InterruptedException {
         if(GithubActions.isActionsEnvironment()){

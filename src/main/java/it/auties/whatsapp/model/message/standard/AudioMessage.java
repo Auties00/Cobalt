@@ -116,6 +116,7 @@ public final class AudioMessage extends MediaMessage {
   private static AudioMessage builder(int storeId, byte @NonNull [] media, ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
     var store = WhatsappStore.findStoreById(storeId)
             .orElseThrow(() -> new NoSuchElementException("Cannot create audio message, invalid store id: %s".formatted(storeId)));
+    var duration = Medias.getDuration(media, true);
     var upload = Medias.upload(media, AUDIO, store);
     return AudioMessage.newRawAudioMessage()
             .storeId(storeId)
@@ -127,7 +128,7 @@ public final class AudioMessage extends MediaMessage {
             .directPath(upload.directPath())
             .fileLength(upload.fileLength())
             .contextInfo(contextInfo)
-            .duration(Medias.getDuration(media).orElse(null))
+            .duration(duration)
             .mimetype(mimeType)
             .voiceMessage(voiceMessage)
             .create();

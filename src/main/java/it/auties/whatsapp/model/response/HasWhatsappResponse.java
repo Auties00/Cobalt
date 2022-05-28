@@ -6,8 +6,8 @@ import lombok.NonNull;
 
 import java.util.NoSuchElementException;
 
-public record ContactHasWhatsapp(@NonNull Node response, @NonNull ContactJid contact, boolean hasWhatsapp) implements ResponseWrapper {
-    public ContactHasWhatsapp(@NonNull Node source) {
+public record HasWhatsappResponse(@NonNull Node response, @NonNull ContactJid contact, boolean hasWhatsapp) implements ResponseWrapper {
+    public HasWhatsappResponse(@NonNull Node source) {
         this(
                 source,
                 source.attributes().getJid("jid").orElseThrow(() -> new NoSuchElementException("Missing jid in response")),

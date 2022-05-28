@@ -140,7 +140,7 @@ public final class DocumentMessage extends MediaMessage {
             .fileName(fileName)
             .pageCount(pageCount)
             .title(title)
-            .thumbnail(requireNonNullElseGet(thumbnail, () -> Medias.getThumbnail(media, FILE).orElse(null)))
+            .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, FILE))
             .contextInfo(contextInfo)
             .create();
   }

@@ -3,23 +3,25 @@ package it.auties.whatsapp.api;
 import it.auties.whatsapp.binary.BinarySocket;
 import it.auties.whatsapp.controller.WhatsappKeys;
 import it.auties.whatsapp.controller.WhatsappStore;
-import it.auties.whatsapp.model.chat.*;
-import it.auties.whatsapp.model.contact.Contact;
+import it.auties.whatsapp.model.chat.GroupAction;
+import it.auties.whatsapp.model.chat.GroupMetadata;
+import it.auties.whatsapp.model.chat.GroupPolicy;
+import it.auties.whatsapp.model.chat.GroupSetting;
 import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.contact.ContactJidProvider;
+import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.message.model.ContextualMessage;
-import it.auties.whatsapp.model.message.model.Message;
-import it.auties.whatsapp.model.message.model.MessageContainer;
-import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.standard.TextMessage;
 import it.auties.whatsapp.model.request.Node;
-import it.auties.whatsapp.model.response.ContactHasWhatsapp;
-import it.auties.whatsapp.model.response.ContactStatus;
+import it.auties.whatsapp.model.response.ContactStatusResponse;
+import it.auties.whatsapp.model.response.HasWhatsappResponse;
 import it.auties.whatsapp.util.Keys;
 import it.auties.whatsapp.util.ListenerScanner;
 import it.auties.whatsapp.util.Nodes;
 import it.auties.whatsapp.util.Validate;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 
@@ -44,7 +46,7 @@ import static java.util.Objects.requireNonNullElseGet;
  * It can be configured using a default configuration or a custom one.
  * Multiple instances of this class can be initialized, though it is not advisable as; is a singleton and cannot distinguish between the data associated with each session.
  */
-@AllArgsConstructor(staticName = "newConnection")
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @SuppressWarnings("unused")
 public class Whatsapp {
     /**
@@ -53,23 +55,46 @@ public class Whatsapp {
     private final BinarySocket socket;
 
     /**
-     * Constructs a new instance of the API from a known id.
+     * Constructs a new instance of the API.
      * If the id is not associated with any session, a new one will be created.
      *
-     * @param id the jid of the session
+     * @param id the id of the session
      * @return a non-null Whatsapp instance
      */
     public static Whatsapp newConnection(int id){
-        return new Whatsapp(id);
+        return newConnection(WhatsappOptions.defaultOptions().withId(id));
+    }
+
+    /**
+     * Constructs a new instance of the API
+     *
+     * @return a non-null Whatsapp instance
+     */
+    public static Whatsapp newConnection(){
+        return newConnection(defaultOptions().withId(Keys.registrationId()));
+    }
+
+    /**
+     * Constructs a new instance of the API.
+     * If the id is not associated with any session, a new one will be created.
+     *
+     * @param options the non-null options used to create this session
+     * @return a non-null Whatsapp instance
+     */
+    public static Whatsapp newConnection(@NonNull WhatsappOptions options){
+        return new Whatsapp(options);
     }
 
     /**
      * Constructs a new instance of the API from a fresh connection using a random id
      *
+     * @param options the non-null options used to create this session
+     * @param store   the non-null store used to create this session
+     * @param keys    the non-null keys used to create this session
      * @return a non-null Whatsapp instance
      */
-    public static Whatsapp newConnection(){
-        return new Whatsapp(Keys.registrationId());
+    public static Whatsapp newConnection(@NonNull WhatsappOptions options, @NonNull WhatsappStore store, @NonNull WhatsappKeys keys){
+        return new Whatsapp(options, store, keys);
     }
 
     /**
@@ -79,7 +104,7 @@ public class Whatsapp {
      * @return a non-null Whatsapp instance
      */
     public static Whatsapp firstConnection(){
-        return new Whatsapp(requireNonNullElseGet(knownIds().peekFirst(), Keys::registrationId));
+        return newConnection(requireNonNullElseGet(knownIds().peekFirst(), Keys::registrationId));
     }
 
     /**
@@ -89,7 +114,7 @@ public class Whatsapp {
      * @return a non-null Whatsapp instance
      */
     public static Whatsapp lastConnection(){
-        return new Whatsapp(requireNonNullElseGet(knownIds().peekLast(), Keys::registrationId));
+        return newConnection(requireNonNullElseGet(knownIds().peekLast(), Keys::registrationId));
     }
 
     /**
@@ -112,15 +137,12 @@ public class Whatsapp {
                 .map(Whatsapp::newConnection);
     }
 
-    /**
-     * Constructs a new instance of the API from a known id.
-     * If the id is not associated with any session, a new one will be created.
-     *
-     * @param id the jid of the session
-     * @apiNote not accessible, please use named constructors
-     */
-    private Whatsapp(int id){
-        this(new BinarySocket(defaultOptions(), WhatsappStore.of(id), WhatsappKeys.of(id)));
+    private Whatsapp(WhatsappOptions options){
+        this(options, WhatsappStore.of(options.id()), WhatsappKeys.of(options.id()));
+    }
+
+    private Whatsapp(WhatsappOptions options, WhatsappStore store, WhatsappKeys keys){
+        this(new BinarySocket(options, store, keys));
         ListenerScanner.scan(this)
                 .forEach(this::registerListener);
     }
@@ -144,11 +166,10 @@ public class Whatsapp {
     }
 
     /**
-     * Registers a listener manually
+     * Registers a listener
      *
      * @param listener the listener to register
      * @return the same instance
-     * @throws IllegalArgumentException if the {@code listener} cannot be added
      */
     public Whatsapp registerListener(@NonNull WhatsappListener listener) {
         Validate.isTrue(socket.store().listeners().add(listener),
@@ -157,11 +178,10 @@ public class Whatsapp {
     }
 
     /**
-     * Removes a listener manually
+     * Removes a listener
      *
      * @param listener the listener to remove
      * @return the same instance
-     * @throws IllegalArgumentException if the {@code listener} cannot be added
      */
     public Whatsapp removeListener(@NonNull WhatsappListener listener) {
         Validate.isTrue(socket.store().listeners().remove(listener),
@@ -172,7 +192,7 @@ public class Whatsapp {
     /**
      * Opens a connection with Whatsapp Web's WebSocket if a previous connection doesn't exist
      *
-     * @return the same instance
+     * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Whatsapp> connect() {
         return socket.connect()
@@ -189,7 +209,7 @@ public class Whatsapp {
     /**
      * Disconnects from Whatsapp Web's WebSocket if a previous connection exists
      *
-     * @return the same instance
+     * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Whatsapp> disconnect() {
         return socket.disconnect()
@@ -199,7 +219,7 @@ public class Whatsapp {
     /**
      * Disconnects and reconnects to Whatsapp Web's WebSocket if a previous connection exists
      *
-     * @return the same instance
+     * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Whatsapp> reconnect() {
         return socket.reconnect()
@@ -207,31 +227,29 @@ public class Whatsapp {
     }
 
     /**
-     * Disconnects from Whatsapp Web's WebSocket and logs out of WhatsappWeb invalidating the previous saved credentials
-     * The next endTimeStamp the API is used, the QR code will need to be scanned again
+     * Disconnects from Whatsapp Web's WebSocket and logs out of WhatsappWeb invalidating the previous saved credentials.
+     * The next time the API is used, the QR code will need to be scanned again.
      *
-     * @return the same instance
+     * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Whatsapp> logout() {
         return socket.logout()
                 .thenApplyAsync(ignored -> this);
     }
-
+    
     /**
      * Sends a request to Whatsapp in order to receive updates when the status of a contact changes.
      * These changes include the last known presence and the endTimeStamp the contact was last seen.
-     * To listen to these updates implement;.
      *
-     * @param contact the contact whose status the api should receive updates on
-     * @return a CompletableFuture    
+     * @param jid the contact whose status the api should receive updates on
+     * @return a CompletableFuture
      */
-    public CompletableFuture<Void> subscribeToContactPresence(@NonNull Contact contact) {
+    public CompletableFuture<Void> subscribeToContactPresence(@NonNull ContactJidProvider jid) {
         var node = withAttributes("presence",
-                Map.of("to", contact.jid(), "type", "subscribe"));
+                Map.of("to", jid.toJid(), "type", "subscribe"));
         return socket.sendWithNoResponse(node);
     }
 
-
     /**
      * Builds and sends a message from a chat and a message
      *
@@ -239,54 +257,48 @@ public class Whatsapp {
      * @param message the message to send
      * @return a CompletableFuture
      */
-    public CompletableFuture<MessageInfo> sendMessage(@NonNull Chat chat, @NonNull String message) {
-        return sendMessage(chat.jid(), message);
-    }
-
-    /**
-     * Builds and sends a message from a chat and a message
-     *
-     * @param chat    the chat where the message should be sent
-     * @param message the message to send
-     * @return a CompletableFuture
-     */
-    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJid chat, @NonNull String message) {
+    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJidProvider chat, @NonNull String message) {
         return sendMessage(chat, MessageContainer.of(message));
     }
-
+    
     /**
      * Builds and sends a message from a chat, a message and a quoted message
      *
      * @param chat          the chat where the message should be sent
      * @param message       the message to send
-     * @param quotedMessage the message that; should quote
-     * @return a CompletableFuture 
-     */
-    public CompletableFuture<MessageInfo> sendMessage(@NonNull Chat chat, @NonNull String message, @NonNull MessageInfo quotedMessage) {
-        return sendMessage(chat.jid(), message, quotedMessage);
-    }
-
-    /**
-     * Builds and sends a message from a chat, a message and a quoted message
-     *
-     * @param chat          the chat where the message should be sent
-     * @param message       the message to send
-     * @param quotedMessage the message that; should quote
+     * @param quotedMessage the quoted message
      * @return a CompletableFuture
      */
-    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJid chat, @NonNull String message, @NonNull MessageInfo quotedMessage) {
+    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJidProvider chat, @NonNull String message, @NonNull MessageInfo quotedMessage) {
         return sendMessage(chat, TextMessage.of(message), quotedMessage);
     }
 
     /**
+     * Builds and sends a message from a chat, a message and a quoted message
+     *
+     * @param chat          the chat where the message should be sent
+     * @param message       the message to send
+     * @param quotedMessage the quoted message
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJidProvider chat, @NonNull ContextualMessage message, @NonNull MessageInfo quotedMessage) {
+        var context = ContextInfo.newContextInfo()
+                .quotedMessageId(quotedMessage.id())
+                .quotedMessageContainer(quotedMessage.message())
+                .quotedMessageSenderId(quotedMessage.senderJid())
+                .create();
+        return sendMessage(chat, message, context);
+    }
+    
+    /**
      * Builds and sends a message from a chat and a message
      *
      * @param chat    the chat where the message should be sent
      * @param message the message to send
      * @return a CompletableFuture 
      */
-    public CompletableFuture<MessageInfo> sendMessage(@NonNull Chat chat, @NonNull Message message) {
-        return sendMessage(chat.jid(), MessageContainer.of(message));
+    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJidProvider chat, @NonNull Message message) {
+        return sendMessage(chat, MessageContainer.of(message));
     }
 
     /**
@@ -296,9 +308,9 @@ public class Whatsapp {
      * @param message the message to send
      * @return a CompletableFuture
      */
-    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJid chat, @NonNull MessageContainer message) {
+    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJidProvider chat, @NonNull MessageContainer message) {
         var key = MessageKey.newMessageKey()
-                .chatJid(chat)
+                .chatJid(chat.toJid())
                 .fromMe(true)
                 .create();
         var info = MessageInfo.newMessageInfo()
@@ -308,48 +320,7 @@ public class Whatsapp {
                 .create();
         return sendMessage(info);
     }
-
-    /**
-     * Builds and sends a message from a chat, a message and a quoted message
-     *
-     * @param chat          the chat where the message should be sent
-     * @param message       the message to send
-     * @param quotedMessage the message that; should quote
-     * @return a CompletableFuture 
-     */
-    public CompletableFuture<MessageInfo> sendMessage(@NonNull Chat chat, @NonNull ContextualMessage message, @NonNull MessageInfo quotedMessage) {
-        return sendMessage(chat.jid(), message, quotedMessage);
-    }
-
-    /**
-     * Builds and sends a message from a chat, a message and a quoted message
-     *
-     * @param chat          the chat where the message should be sent
-     * @param message       the message to send
-     * @param quotedMessage the message that; should quote
-     * @return a CompletableFuture
-     */
-    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJid chat, @NonNull ContextualMessage message, @NonNull MessageInfo quotedMessage) {
-        var context = ContextInfo.newContextInfo()
-                .quotedMessageId(quotedMessage.id())
-                .quotedMessageContainer(quotedMessage.message())
-                .quotedMessageSenderId(quotedMessage.senderJid())
-                .create();
-        return sendMessage(chat, message, context);
-    }
-
-    /**
-     * Builds and sends a message from a chat, a message and a context
-     *
-     * @param chat        the chat where the message should be sent
-     * @param message     the message to send
-     * @param contextInfo the context of the message to send
-     * @return a CompletableFuture 
-     */
-    public CompletableFuture<MessageInfo> sendMessage(@NonNull Chat chat, @NonNull ContextualMessage message, @NonNull ContextInfo contextInfo) {
-        return sendMessage(chat.jid(), message, contextInfo);
-    }
-
+    
     /**
      * Builds and sends a message from a chat, a message and a context
      *
@@ -358,9 +329,9 @@ public class Whatsapp {
      * @param contextInfo the context of the message to send
      * @return a CompletableFuture
      */
-    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJid chat, @NonNull ContextualMessage message, @NonNull ContextInfo contextInfo) {
+    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJidProvider chat, @NonNull ContextualMessage message, @NonNull ContextInfo contextInfo) {
         var key = MessageKey.newMessageKey()
-                .chatJid(chat)
+                .chatJid(chat.toJid())
                 .fromMe(true)
                 .create();
         var info = MessageInfo.newMessageInfo()
@@ -378,28 +349,32 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull MessageInfo message) {
+        if(message.message().content() instanceof MediaMessage mediaMessage){
+            mediaMessage.storeId(store().id());
+        }
+
         return socket.sendMessage(message)
                 .thenApplyAsync(ignored -> message);
     }
 
     /**
-     * Executes a query to determine whether any number of jids have an account on Whatsapp
+     * Executes a query to determine whether any number of users have an account on Whatsapp
      *
-     * @param contacts the contacts to check
+     * @param chats the users to check
      * @return a CompletableFuture that wraps a non-null list of HasWhatsappResponse
      */
-    public CompletableFuture<List<ContactHasWhatsapp>> hasWhatsapp(@NonNull ContactJid... contacts) {
-        var contactNodes = Arrays.stream(contacts)
-                .map(jid -> with("contact", "+%s".formatted(jid.user())))
+    public CompletableFuture<List<HasWhatsappResponse>> hasWhatsapp(@NonNull ContactJidProvider... chats) {
+        var contactNodes = Arrays.stream(chats)
+                .map(jid -> with("contact", "+%s".formatted(jid.toJid().user())))
                 .toArray(Node[]::new);
         return socket.sendInteractiveQuery(with("contact"), withChildren("user", contactNodes))
-                .thenApplyAsync(nodes -> nodes.stream().map(ContactHasWhatsapp::new).toList());
+                .thenApplyAsync(nodes -> nodes.stream().map(HasWhatsappResponse::new).toList());
     }
 
     /**
      * Queries the block list
      *
-     * @return a CompletableFuture that wraps a non-null list of ContactId
+     * @return a CompletableFuture that wraps a non-null list of ContactJid
      */
     public CompletableFuture<List<ContactJid>> queryBlockList() {
         return socket.sendQuery("get", "blocklist", (Node) null)
@@ -417,46 +392,26 @@ public class Whatsapp {
     /**
      * Queries the written whatsapp status of a Contact
      *
-     * @param contact the target contact
-     * @return a CompletableFuture that wraps a non-null list of StatusResponse
+     * @param chat the target contact
+     * @return a CompletableFuture that wraps an optional contact status response
      */
-    public CompletableFuture<List<ContactStatus>> queryUserStatus(@NonNull Contact contact) {
+    public CompletableFuture<Optional<ContactStatusResponse>> queryStatus(@NonNull ContactJidProvider chat) {
         var query = with("status");
-        var body = withAttributes("user", Map.of("jid", contact.jid()));
+        var body = withAttributes("user", Map.of("jid", chat.toJid()));
         return socket.sendInteractiveQuery(query, body)
-                .thenApplyAsync(response -> Nodes.findAll(response, "status"))
-                .thenApplyAsync(nodes -> nodes.stream().map(ContactStatus::new).toList());
+                .thenApplyAsync(response -> Nodes.findFirst(response, "status"))
+                .thenApplyAsync(node -> node.map(ContactStatusResponse::new));
     }
 
     /**
      * Queries the profile picture of a chat.
      *
-     * @param chat the chat to query
+     * @param chat the chat of the chat to query
      * @return a CompletableFuture that wraps nullable jpg url hosted on Whatsapp's servers
      */
-    public CompletableFuture<URI> queryChatPicture(@NonNull Chat chat) {
-        return queryChatPicture(chat.jid());
-    }
-
-    /**
-     * Queries the profile picture of a chat.
-     *
-     * @param contact the contact to query
-     * @return a CompletableFuture that wraps nullable jpg url hosted on Whatsapp's servers
-     */
-    public CompletableFuture<URI> queryChatPicture(@NonNull Contact contact) {
-        return queryChatPicture(contact.jid());
-    }
-
-    /**
-     * Queries the profile picture of a chat.
-     *
-     * @param jid the jid of the chat to query
-     * @return a CompletableFuture that wraps nullable jpg url hosted on Whatsapp's servers
-     */
-    public CompletableFuture<URI> queryChatPicture(@NonNull ContactJid jid) {
+    public CompletableFuture<URI> queryChatPicture(@NonNull ContactJidProvider chat) {
         var body = withAttributes("picture", Map.of("query", "url"));
-        return socket.sendQuery("get", "w:profile:picture", Map.of("target", jid), body)
+        return socket.sendQuery("get", "w:profile:picture", Map.of("target", chat.toJid()), body)
                 .thenApplyAsync(this::parseChatPicture);
     }
 
@@ -471,12 +426,11 @@ public class Whatsapp {
      * Queries the metadata of a group
      *
      * @param chat the target group
-     * @return a CompletableFuture     
-     * @throws IllegalArgumentException if the provided chat is not a group
+     * @return a CompletableFuture
      */
-    public CompletableFuture<GroupMetadata> queryGroupMetadata(@NonNull Chat chat) {
+    public CompletableFuture<GroupMetadata> queryGroupMetadata(@NonNull ContactJidProvider chat) {
         var query = withAttributes("query", Map.of("request", "interactive"));
-        return socket.sendQuery(chat.jid(), "get", "w:g2", query)
+        return socket.sendQuery(chat.toJid(), "get", "w:g2", query)
                 .thenApplyAsync(result -> result.findNode("group"))
                 .thenApplyAsync(GroupMetadata::of);
     }
@@ -485,11 +439,10 @@ public class Whatsapp {
      * Queries the invite code of a group
      *
      * @param chat the target group
-     * @return a CompletableFuture     
-     * @throws IllegalArgumentException if the provided chat is not a group
+     * @return a CompletableFuture
      */
-    public CompletableFuture<String> queryGroupInviteCode(@NonNull Chat chat) {
-        return socket.sendQuery(chat.jid(), "get", "w:g2", with("invite"))
+    public CompletableFuture<String> queryGroupInviteCode(@NonNull ContactJidProvider chat) {
+        return socket.sendQuery(chat.toJid(), "get", "w:g2", with("invite"))
                 .thenApplyAsync(result -> result.findNode("invite").attributes().getString("code"));
     }
 
@@ -499,7 +452,10 @@ public class Whatsapp {
      * @param contact the target contact
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> queryGroupsInCommon(@NonNull Contact contact) {
+    public CompletableFuture<?> queryGroupsInCommon(@NonNull ContactJidProvider contact) {
+        //     ((0,
+        //                l.participantCreateTable)(), [new s.default("groupId"), new a.default("senderKey"), new a.default("participants"), new a.default("pastParticipants"), new a.default("admins"), new a.default("rotateKey"), new a.default("version"), new i.default("participants"), new a.default("deviceSyncComplete"), new a.default("staleType")]).view((e=>e))
+        //
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -510,7 +466,7 @@ public class Whatsapp {
      * @param count the amount of messages
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> queryFavouriteMessagesInChat(@NonNull Chat chat, int count) {
+    public CompletableFuture<?> queryFavouriteMessagesInChat(@NonNull ContactJidProvider chat, int count) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -520,8 +476,8 @@ public class Whatsapp {
      * @param available whether you are online or not
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> changePresence(boolean available) {
-        var presence = available ? it.auties.whatsapp.model.contact.ContactStatus.AVAILABLE : it.auties.whatsapp.model.contact.ContactStatus.UNAVAILABLE;
+    public CompletableFuture<Void> changePresence(boolean available) {
+        var presence = available ? ContactStatus.AVAILABLE : ContactStatus.UNAVAILABLE;
         var node = withAttributes("presence", Map.of("type", presence.data()));
         return socket.sendWithNoResponse(node);
     }
@@ -533,8 +489,8 @@ public class Whatsapp {
      * @param presence the new status
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> changePresence(@NonNull Chat chat, @NonNull it.auties.whatsapp.model.contact.ContactStatus presence) {
-        var node = withAttributes("presence", Map.of("to", chat.jid(), "type", presence.data()));
+    public CompletableFuture<?> changePresence(@NonNull ContactJidProvider chat, @NonNull ContactStatus presence) {
+        var node = withAttributes("presence", Map.of("to", chat.toJid(), "type", presence.data()));
         return socket.sendWithNoResponse(node);
     }
 
@@ -543,10 +499,9 @@ public class Whatsapp {
      *
      * @param group    the target group
      * @param contacts the target contacts
-     * @return a CompletableFuture     
-     * @throws IllegalArgumentException if the provided chat is not a group
+     * @return a CompletableFuture
      */
-    public CompletableFuture<?> promote(@NonNull Chat group, @NonNull Contact... contacts) {
+    public CompletableFuture<?> promote(@NonNull ContactJidProvider group, @NonNull ContactJidProvider... contacts) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -555,10 +510,9 @@ public class Whatsapp {
      *
      * @param group    the target group
      * @param contacts the target contacts
-     * @return a CompletableFuture     
-     * @throws IllegalArgumentException if the provided chat is not a group
+     * @return a CompletableFuture
      */
-    public CompletableFuture<?> demote(@NonNull Chat group, @NonNull Contact... contacts) {
+    public CompletableFuture<?> demote(@NonNull ContactJidProvider group, @NonNull ContactJidProvider... contacts) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -567,10 +521,9 @@ public class Whatsapp {
      *
      * @param group    the target group
      * @param contacts the target contact/s
-     * @return a CompletableFuture     
-     * @throws IllegalArgumentException if the provided chat is not a group
+     * @return a CompletableFuture
      */
-    public CompletableFuture<?> add(@NonNull Chat group, @NonNull Contact... contacts) {
+    public CompletableFuture<?> add(@NonNull ContactJidProvider group, @NonNull ContactJidProvider... contacts) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -579,10 +532,9 @@ public class Whatsapp {
      *
      * @param group    the target group
      * @param contacts the target contact/s
-     * @return a CompletableFuture     
-     * @throws IllegalArgumentException if the provided chat is not a group
+     * @return a CompletableFuture
      */
-    public CompletableFuture<?> remove(@NonNull Chat group, @NonNull Contact... contacts) {
+    public CompletableFuture<?> remove(@NonNull ContactJidProvider group, @NonNull ContactJidProvider... contacts) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -592,11 +544,10 @@ public class Whatsapp {
      * @param group  the target group
      * @param action the sync to execute
      * @param jids   the raw WhatsappNodes representing the contacts the sync should be executed on
-     * @return a CompletableFuture     
-     * @throws IllegalArgumentException if the provided chat is not a group
+     * @return a CompletableFuture
      * @throws IllegalArgumentException if no jids are provided
      */
-    public CompletableFuture<?> executeActionOnGroupParticipant(@NonNull Chat group, @NonNull GroupAction action, @NonNull List<Node> jids) {
+    public CompletableFuture<?> executeActionOnGroupParticipant(@NonNull ContactJidProvider group, @NonNull GroupAction action, @NonNull List<Node> jids) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -605,11 +556,10 @@ public class Whatsapp {
      *
      * @param group   the target group
      * @param newName the new name for the group
-     * @return a CompletableFuture     
-     * @throws IllegalArgumentException if the provided chat is not a group
+     * @return a CompletableFuture
      * @throws IllegalArgumentException if the provided new name is empty or blank
      */
-    public CompletableFuture<?> changeGroupName(@NonNull Chat group, @NonNull String newName) {
+    public CompletableFuture<?> changeGroupName(@NonNull ContactJidProvider group, @NonNull String newName) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -618,10 +568,9 @@ public class Whatsapp {
      *
      * @param group          the target group
      * @param newDescription the new name for the group
-     * @return a CompletableFuture     
-     * @throws IllegalArgumentException if the provided chat is not a group
+     * @return a CompletableFuture
      */
-    public CompletableFuture<?> changeGroupDescription(@NonNull Chat group, @NonNull String newDescription) {
+    public CompletableFuture<?> changeGroupDescription(@NonNull ContactJidProvider group, @NonNull String newDescription) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -630,10 +579,9 @@ public class Whatsapp {
      *
      * @param group  the target group
      * @param policy the new policy to enforce
-     * @return a CompletableFuture     
-     * @throws IllegalArgumentException if the provided chat is not a group
+     * @return a CompletableFuture
      */
-    public CompletableFuture<?> changeWhoCanSendMessagesInGroup(@NonNull Chat group, @NonNull GroupPolicy policy) {
+    public CompletableFuture<?> changeWhoCanSendMessagesInGroup(@NonNull ContactJidProvider group, @NonNull GroupPolicy policy) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -642,10 +590,9 @@ public class Whatsapp {
      *
      * @param group  the target group
      * @param policy the new policy to enforce
-     * @return a CompletableFuture     
-     * @throws IllegalArgumentException if the provided chat is not a group
+     * @return a CompletableFuture
      */
-    public CompletableFuture<?> changeWhoCanEditGroupInfo(@NonNull Chat group, @NonNull GroupPolicy policy) {
+    public CompletableFuture<?> changeWhoCanEditGroupInfo(@NonNull ContactJidProvider group, @NonNull GroupPolicy policy) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -655,10 +602,9 @@ public class Whatsapp {
      * @param group   the target group
      * @param setting the target setting
      * @param policy  the new policy to enforce
-     * @return a CompletableFuture     
-     * @throws IllegalArgumentException if the provided chat is not a group
+     * @return a CompletableFuture
      */
-    public CompletableFuture<?> changeGroupSetting(@NonNull Chat group, @NonNull GroupSetting setting, @NonNull GroupPolicy policy) {
+    public CompletableFuture<?> changeGroupSetting(@NonNull ContactJidProvider group, @NonNull GroupSetting setting, @NonNull GroupPolicy policy) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -668,10 +614,9 @@ public class Whatsapp {
      *
      * @param group the target group
      * @param image the new image
-     * @return a CompletableFuture     
-     * @throws IllegalArgumentException if the provided chat is not a group
+     * @return a CompletableFuture
      */
-    public CompletableFuture<?> changeGroupPicture(@NonNull Chat group, byte @NonNull [] image) {
+    public CompletableFuture<?> changeGroupPicture(@NonNull ContactJidProvider group, byte @NonNull [] image) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -679,10 +624,9 @@ public class Whatsapp {
      * Removes the picture of a group
      *
      * @param group the target group
-     * @return a CompletableFuture     
-     * @throws IllegalArgumentException if the provided chat is not a group
+     * @return a CompletableFuture
      */
-    public CompletableFuture<?> removeGroupPicture(@NonNull Chat group) {
+    public CompletableFuture<?> removeGroupPicture(@NonNull ContactJidProvider group) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -692,7 +636,7 @@ public class Whatsapp {
      * @param group the target group
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    public CompletableFuture<?> leave(@NonNull Chat group) {
+    public CompletableFuture<?> leave(@NonNull ContactJidProvider group) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -702,7 +646,7 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> mute(@NonNull Chat chat) {
+    public CompletableFuture<?> mute(@NonNull ContactJidProvider chat) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -713,7 +657,7 @@ public class Whatsapp {
      * @param until the date the mute ends
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> mute(@NonNull Chat chat, @NonNull ZonedDateTime until) {
+    public CompletableFuture<?> mute(@NonNull ContactJidProvider chat, @NonNull ZonedDateTime until) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -724,7 +668,7 @@ public class Whatsapp {
      * @param untilInSeconds the date the mute ends expressed in seconds since the epoch
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> mute(@NonNull Chat chat, long untilInSeconds) {
+    public CompletableFuture<?> mute(@NonNull ContactJidProvider chat, long untilInSeconds) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -734,17 +678,17 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> unmute(@NonNull Chat chat) {
+    public CompletableFuture<?> unmute(@NonNull ContactJidProvider chat) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
      * Blocks a contact
      *
-     * @param contact the target contact
+     * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> block(@NonNull Contact contact) {
+    public CompletableFuture<?> block(@NonNull ContactJidProvider chat) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -754,7 +698,7 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> enableEphemeralMessages(@NonNull Chat chat) {
+    public CompletableFuture<?> enableEphemeralMessages(@NonNull ContactJidProvider chat) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -764,7 +708,7 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> disableEphemeralMessages(@NonNull Chat chat) {
+    public CompletableFuture<?> disableEphemeralMessages(@NonNull ContactJidProvider chat) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -775,7 +719,7 @@ public class Whatsapp {
      * @param time the endTimeStamp to live for a message expressed in seconds
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> changeEphemeralStatus(@NonNull Chat chat, int time) {
+    public CompletableFuture<?> changeEphemeralStatus(@NonNull ContactJidProvider chat, int time) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -785,7 +729,7 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> markAsUnread(@NonNull Chat chat) {
+    public CompletableFuture<?> markAsUnread(@NonNull ContactJidProvider chat) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -795,7 +739,7 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> markAsRead(@NonNull Chat chat) {
+    public CompletableFuture<?> markAsRead(@NonNull ContactJidProvider chat) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -810,7 +754,7 @@ public class Whatsapp {
      * @param newFlag the new flag represented by an int
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> markChat(@NonNull Chat chat, int flag, int newFlag) {
+    public CompletableFuture<?> markChat(@NonNull ContactJidProvider chat, int flag, int newFlag) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -824,7 +768,7 @@ public class Whatsapp {
      * @param newFlag     the new flag represented by an int
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> markChat(@NonNull Chat chat, @NonNull MessageInfo lastMessage, int flag, int newFlag) {
+    public CompletableFuture<?> markChat(@NonNull ContactJidProvider chat, @NonNull MessageInfo lastMessage, int flag, int newFlag) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -836,7 +780,7 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> pin(@NonNull Chat chat) {
+    public CompletableFuture<?> pin(@NonNull ContactJidProvider chat) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -846,7 +790,7 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> unpin(@NonNull Chat chat) {
+    public CompletableFuture<?> unpin(@NonNull ContactJidProvider chat) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -857,7 +801,7 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> archive(@NonNull Chat chat) {
+    public CompletableFuture<?> archive(@NonNull ContactJidProvider chat) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -867,7 +811,7 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> unarchive(@NonNull Chat chat) {
+    public CompletableFuture<?> unarchive(@NonNull ContactJidProvider chat) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -878,9 +822,9 @@ public class Whatsapp {
      * @param contacts at least one contact to add to the group
      * @return a CompletableFuture
      */
-    public CompletableFuture<GroupMetadata> createGroup(@NonNull String subject, @NonNull Contact... contacts) {
+    public CompletableFuture<GroupMetadata> createGroup(@NonNull String subject, @NonNull ContactJidProvider... contacts) {
         var participants = Arrays.stream(contacts)
-                .map(contact -> withAttributes("participant", Map.of("jid", contact.jid())))
+                .map(contact -> withAttributes("participant", Map.of("jid", contact.toJid())))
                 .toArray(Node[]::new);
         var body = withChildren("create", Map.of("subject", subject, "key", ofRandom(12).toHex()), participants);
         return socket.sendQuery(ContactJid.ofServer(ContactJid.Server.GROUP), "set", "w:g2", body)
@@ -896,5 +840,235 @@ public class Whatsapp {
     private void unstarMessagePlaceholder() {
         // Sent Binary Message Node[description=iq, attributes={xmlns=w:dataSync:app:state, to=s.whatsapp.net, jid=54595.12796-301, type=set}, content=[Node[description=dataSync, attributes={}, content=[Node[description=internal, attributes={name=regular_high, return_snapshot=false, version=14}, content=[Node[description=patch, attributes={}, content=[B@73ce9a0b]]]]]]]
         // Received Binary Message Node[description=iq, attributes={from=s.whatsapp.net, jid=54595.12796-301, type=result}, content=[Node[description=dataSync, attributes={}, content=[Node[description=internal, attributes={name=regular_high, version=15}, content=null]]]]]
+    }
+
+    private void groupRelatedStuff(){
+        //         t.resetGroupInviteCode = function(e) {
+        //            return f((0,
+        //            i.wap)("iq", {
+        //                type: "set",
+        //                xmlns: "w:g2",
+        //                to: (0,
+        //                d.GROUP_JID)(e),
+        //                id: (0,
+        //                i.generateId)()
+        //            }, (0,
+        //            i.wap)("invite", null)))
+
+        //        i.wap)("iq", {
+        //                    type: "set",
+        //                    xmlns: "w:g2",
+        //                    to: (0,
+        //                    c.JID)(e),
+        //                    id: (0,
+        //                    i.generateId)()
+        //                }, (0,
+        //                i.wap)("join_linked_group", {
+        //                    type: n,
+        //                    jid: (0,
+        //                    c.JID)(t)
+        //                }))
+        //                  , s = yield(0,
+        //                u.sendIq)(r, f);
+        //                return s.success ? s.result : (__LOG__(2)`joinSubgroup failed: ${s.errorCode}:${s.errorType}`,
+        //                Promise.reject(new o.ServerStatusCodeError(s.errorCode)))
+
+
+        //        t.setGroupDescription = function(e, t, a, n) {
+        //            const r = t ? (0,
+        //            i.wap)("description", {
+        //                id: (0,
+        //                i.CUSTOM_STRING)(a),
+        //                prev: (0,
+        //                i.MAYBE_CUSTOM_STRING)(n)
+        //            }, (0,
+        //            i.wap)("body", null, t)) : (0,
+        //            i.wap)("description", {
+        //                delete: "true",
+        //                prev: (0,
+        //                i.MAYBE_CUSTOM_STRING)(n)
+        //            });
+        //            return f((0,
+        //            i.wap)("iq", {
+        //                to: (0,
+        //                d.GROUP_JID)(e),
+        //                type: "set",
+        //                xmlns: "w:g2",
+        //                id: (0,
+        //                i.generateId)()
+        //            }, r))
+        //        }
+
+
+        //        t.setGroupProperty = function(e, t, a) {
+        //            let n;
+        //            switch (t) {
+        //            case l.GROUP_SETTING_TYPE.ANNOUNCEMENT:
+        //                n = 1 === a ? (0,
+        //                i.wap)("announcement", null) : (0,
+        //                i.wap)("not_announcement", null);
+        //                break;
+        //            case l.GROUP_SETTING_TYPE.RESTRICT:
+        //                n = 1 === a ? (0,
+        //                i.wap)("locked", null) : (0,
+        //                i.wap)("unlocked", null);
+        //                break;
+        //            case l.GROUP_SETTING_TYPE.NO_FREQUENTLY_FORWARDED:
+        //                n = 1 === a ? (0,
+        //                i.wap)("no_frequently_forwarded", null) : (0,
+        //                i.wap)("frequently_forwarded_ok", null);
+        //                break;
+        //            case l.GROUP_SETTING_TYPE.EPHEMERAL:
+        //                n = a > 0 ? (0,
+        //                i.wap)("ephemeral", {
+        //                    expiration: (0,
+        //                    i.INT)(a)
+        //                }) : (0,
+        //                i.wap)("not_ephemeral", null);
+        //                break;
+        //            default:
+        //                return Promise.reject(new Error(`invalid group property ${t}`))
+        //            }
+        //            return f((0,
+        //            i.wap)("iq", {
+        //                to: (0,
+        //                d.GROUP_JID)(e),
+        //                type: "set",
+        //                xmlns: "w:g2",
+        //                id: (0,
+        //                i.generateId)()
+        //            }, n))
+        //        }
+
+
+        //     t.setGroupSubject = function(e, t) {
+        //            return f((0,
+        //            i.wap)("iq", {
+        //                to: (0,
+        //                d.GROUP_JID)(e),
+        //                type: "set",
+        //                xmlns: "w:g2",
+        //                id: (0,
+        //                i.generateId)()
+        //            }, (0,
+        //            i.wap)("subject", null, t)))
+        //        }
+
+
+        //         function h() {
+        //            return (h = (0,
+        //            r.default)((function*(e) {
+        //                const t = (0,
+        //                i.wap)("iq", {
+        //                    to: (0,
+        //                    d.GROUP_JID)(e),
+        //                    type: "get",
+        //                    xmlns: "w:g2",
+        //                    id: (0,
+        //                    i.generateId)()
+        //                }, (0,
+        //                i.wap)("sub_groups", null))
+        //                  , a = yield(0,
+        //                l.sendIq)(t, c);
+        //                return a.success ? a.result : (__LOG__(2)`queryAllSubgroups failed: ${a.errorCode}:${a.errorType}`,
+        //                Promise.reject(new o.ServerStatusCodeError(a.errorCode,a.errorText)))
+        //            }
+        //            ))).apply(this, arguments)
+        //        }
+        //        function p() {
+        //            return (p = (0,
+        //            r.default)((function*(e, t) {
+        //                const a = (0,
+        //                i.wap)("iq", {
+        //                    to: (0,
+        //                    d.GROUP_JID)(t),
+        //                    type: "get",
+        //                    xmlns: "w:g2",
+        //                    id: (0,
+        //                    i.generateId)()
+        //                }, (0,
+        //                i.wap)("query_linked", {
+        //                    type: "sub_group",
+        //                    jid: (0,
+        //                    d.GROUP_JID)(e)
+        //                }))
+        //                  , n = yield(0,
+        //                l.sendIq)(a, f);
+        //                return n.success ? n.result[0] : (__LOG__(2)`queryAllSubgroups failed: ${n.errorCode}:${n.errorType}`,
+        //                Promise.reject(new o.ServerStatusCodeError(n.errorCode,n.errorText)))
+        //            }
+
+
+        //   function u() {
+        //            return (u = (0,
+        //            r.default)((function*(e) {
+        //                const t = (0,
+        //                i.wap)("iq", {
+        //                    xmlns: "disappearing_mode",
+        //                    to: i.S_WHATSAPP_NET,
+        //                    type: "set",
+        //                    id: (0,
+        //                    i.generateId)()
+        //                }, (0,
+        //                i.wap)("disappearing_mode", {
+        //                    duration: (0,
+        //                    i.CUSTOM_STRING)(String(e))
+        //                }))
+        //                  , a = yield(0,
+        //                o.sendIq)(t, l);
+        //                if (!a.success) {
+        //                    const {errorCode: e, errorText: t} = a;
+        //                    throw __LOG__(3)`setDisappearingMode: failed ${e}, ${t}`,
+        //                    new Error({
+        //                        errorCode: e,
+        //                        errorText: t
+        //                    })
+        //                }
+        //            }
+        //            ))).apply(this, arguments)
+        //        }
+
+        //    function f() {
+        //            return (f = (0,
+        //            r.default)((function*(e) {
+        //                const t = e.map((e=>{
+        //                    const {name: t, value: a, users: n, dhash: r} = e;
+        //                    return (0,
+        //                    i.wap)("category", {
+        //                        name: (0,
+        //                        i.CUSTOM_STRING)(t),
+        //                        value: (0,
+        //                        i.CUSTOM_STRING)(a),
+        //                        dhash: null == n ? i.DROP_ATTR : (0,
+        //                        i.CUSTOM_STRING)(null != r ? r : "none")
+        //                    }, null == n ? null : n.map((e=>{
+        //                        let {action: t, wid: a} = e;
+        //                        return (0,
+        //                        i.wap)("user", {
+        //                            action: (0,
+        //                            i.CUSTOM_STRING)(t),
+        //                            jid: (0,
+        //                            u.JID)(a)
+        //                        })
+        //                    }
+        //                    )))
+        //                }
+        //                ))
+        //                  , a = yield(0,
+        //                l.sendIq)((0,
+        //                i.wap)("iq", {
+        //                    to: i.S_WHATSAPP_NET,
+        //                    type: "set",
+        //                    xmlns: "privacy",
+        //                    id: (0,
+        //                    i.generateId)()
+        //                }, (0,
+        //                i.wap)("privacy", null, t)), d);
+        //                if (!0 === a.success)
+        //                    return a.result;
+        //                throw new o.ServerStatusCodeError(a.errorCode,a.errorText)
+        //            }
+        //            ))).apply(this, arguments)
+        //        }
     }
 }

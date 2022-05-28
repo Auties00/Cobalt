@@ -44,10 +44,9 @@ public interface WhatsappListener {
      * Called when {@link BinarySocket} successfully establishes a connection with new secrets.
      * By default, the QR code is printed to the console.
      *
-     * @param qr the generator code to consume
      * @return a non-null handler to process the qr code
      */
-    default QrHandler onQRCode(BitMatrix qr){
+    default QrHandler onQRCode(){
         return QrHandler.toTerminal();
     }
 

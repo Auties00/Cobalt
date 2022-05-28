@@ -35,4 +35,11 @@ public class Nodes {
                 .flatMap(Collection::stream)
                 .toList();
     }
+
+    public static Optional<Node> findFirst(@NonNull List<Node> nodes, @NonNull String description) {
+        return nodes.stream()
+                .map(node -> node.findNodes(description))
+                .flatMap(Collection::stream)
+                .findFirst();
+    }
 }

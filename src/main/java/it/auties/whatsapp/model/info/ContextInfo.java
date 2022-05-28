@@ -143,7 +143,7 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
   /**
    * Disappearing mode
    */
-  @ProtobufProperty(index = 32, type = MESSAGE, concreteType = ChatDisappear.class)
+  @ProtobufProperty(index = 32, type = MESSAGE, concreteType = ChatDisappear.Linker.class)
   private ChatDisappear disappearingMode;
 
   /**

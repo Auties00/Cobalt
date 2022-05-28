@@ -51,7 +51,7 @@ public enum ChatDisappear implements ProtobufMessage {
     @Builder
     @Jacksonized
     @Accessors(fluent = true)
-    protected static class Linker implements ProtobufMessage{
+    public static class Linker implements ProtobufMessage{
         @ProtobufProperty(index = 1, type = MESSAGE, concreteType = ChatDisappear.class)
         protected ChatDisappear disappear;
 

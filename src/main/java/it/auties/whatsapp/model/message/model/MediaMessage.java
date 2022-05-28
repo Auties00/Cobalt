@@ -101,6 +101,6 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
 
     @Override
     public String keyName() {
-        return type().whatsappName();
+        return type().keyName();
     }
 }

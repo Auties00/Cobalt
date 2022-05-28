@@ -15,8 +15,8 @@ public class Clock {
         return Instant.now().getEpochSecond();
     }
 
-    public Optional<ZonedDateTime> parse(long input) {
-        return Optional.of(input)
+    public Optional<ZonedDateTime> parse(Long input) {
+        return Optional.ofNullable(input)
                 .filter(time -> time != 0)
                 .map(time -> ofInstant(Instant.ofEpochSecond(time), systemDefault()));
     }

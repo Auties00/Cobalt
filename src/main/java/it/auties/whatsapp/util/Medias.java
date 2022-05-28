@@ -12,6 +12,8 @@ import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
 import javax.imageio.ImageIO;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.UnsupportedAudioFileException;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
@@ -52,27 +54,27 @@ public class Medias implements JacksonProvider {
     public MediaFile upload(byte[] file, MediaMessageType type, WhatsappStore store) {
         var client = HttpClient.newHttpClient();
         var auth = URLEncoder.encode(store.mediaConnection().auth(), StandardCharsets.UTF_8);
-        return getHosts(store)
-                .stream()
+        var hosts = getHosts(store);
+        return hosts.stream()
                 .map(host -> upload(file, type, client, auth, host))
                 .flatMap(Optional::stream)
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Cannot upload media: no suitable host found"));
+                .orElseThrow(() -> new IllegalStateException("Cannot upload media: no suitable host found: %s".formatted(hosts)));
     }
 
     private Optional<MediaFile> upload(byte[] file, MediaMessageType type, HttpClient client, String auth, String host) {
         try {
             var fileSha256 = Sha256.calculate(file);
-            var keys = MediaKeys.random(type.whatsappName());
+            var keys = MediaKeys.random(type.keyName());
             var encryptedMedia = AesCbc.encrypt(keys.iv(), file, keys.cipherKey());
             var hmac = calculateMac(encryptedMedia, keys);
             var encrypted = Bytes.of(encryptedMedia)
                     .append(hmac)
                     .toByteArray();
             var fileEncSha256 = Sha256.calculate(encrypted);
-            var token = Bytes.of(fileEncSha256).toBase64();
+            var token = Base64.getUrlEncoder().withoutPadding().encodeToString(fileEncSha256);
             var uri = URI.create("https://%s/%s/%s?auth=%s&token=%s"
-                    .formatted(host, type.uploadPath(), token, auth, token));
+                    .formatted(host, type.path(), token, auth, token));
             var request = HttpRequest.newBuilder()
                     .POST(ofByteArray(encrypted))
                     .uri(uri)
@@ -164,72 +166,72 @@ public class Medias implements JacksonProvider {
         }
     }
 
-    private Optional<String> getMediaExtension(byte[] media){
-        var guess = getMimeType(media);
-        if(guess.isEmpty()){
-            return Optional.empty();
-        }
-
-        var extension = MIME_TO_EXTENSION.get(guess.get());
-        return Optional.ofNullable(extension);
-    }
-
     @SneakyThrows
-    public Optional<Integer> getDuration(byte[] file) {
-        var input = createTempFile(file, true);
-        if(input.isEmpty()){
-            return Optional.empty();
+    public int getDuration(byte[] file, boolean video) {
+        if(!video){
+            try {
+                var audioInputStream = AudioSystem.getAudioInputStream(new ByteArrayInputStream(file));
+                var format = audioInputStream.getFormat();
+                var audioFileLength = file.length;
+                var frameSize = format.getFrameSize();
+                var frameRate = format.getFrameRate();
+                return (int) (audioFileLength / (frameSize * frameRate));
+            }catch (UnsupportedAudioFileException exception){
+                return getDuration(file, true);
+            }
         }
 
         try {
+            var input = createTempFile(file, true);
             var process = Runtime.getRuntime()
                     .exec("ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 %s"
-                            .formatted(input.get()));
+                            .formatted(input));
             if(process.waitFor() != 0){
-                return Optional.empty();
+                return 0;
             }
 
             var result = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-            return Optional.of(Math.round(Float.parseFloat(result)));
+            return (int) Float.parseFloat(result);
         }catch (Throwable throwable){
-            return Optional.empty();
+            return 0;
         }
     }
 
     @SneakyThrows
-    public Optional<MediaDimensions> getDimensions(byte[] file) {
-        var input = createTempFile(file, true);
-        if(input.isEmpty()){
-            return Optional.empty();
+    public MediaDimensions getDimensions(byte[] file, boolean video) {
+        if(!video) {
+            var originalImage = ImageIO.read(new ByteArrayInputStream(file));
+            return new MediaDimensions(originalImage.getWidth(), originalImage.getHeight());
+        }
+
+        record FfprobeResult(List<MediaDimensions> streams){
+
         }
 
         try {
+            var input = createTempFile(file, true);
             var process = Runtime.getRuntime()
                     .exec("ffprobe -v error -select_streams v -show_entries stream=width,height -of json %s"
-                            .formatted(input.get()));
+                            .formatted(input));
             if(process.waitFor() != 0){
-                return Optional.empty();
+                return MediaDimensions.DEFAULT;
             }
 
             var result = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
             var ffprobe = JSON.readValue(result, FfprobeResult.class);
             if(ffprobe.streams() == null || ffprobe.streams().isEmpty()){
-                return Optional.empty();
+                return MediaDimensions.DEFAULT;
             }
 
 
-            return Optional.of(ffprobe.streams().get(0));
+            return ffprobe.streams().get(0);
         }catch (Throwable throwable){
-            return Optional.empty();
+            return MediaDimensions.DEFAULT;
         }
     }
 
-    private record FfprobeResult(@JsonProperty("streams") List<MediaDimensions> streams){
-
-    }
-
     @SneakyThrows
-    public Optional<byte[]> getThumbnail(byte[] file, Format format) {
+    public byte[] getThumbnail(byte[] file, Format format) {
         return switch (format){
             case JPG, PNG -> {
                 var originalImage = ImageIO.read(new ByteArrayInputStream(file));
@@ -244,61 +246,48 @@ public class Medias implements JacksonProvider {
                 graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 var outputStream = new ByteArrayOutputStream();
                 ImageIO.write(resizedImage, format.name().toLowerCase(), outputStream);
-                yield Optional.of(outputStream.toByteArray());
+                yield outputStream.toByteArray();
             }
 
             case VIDEO -> {
                 var input = createTempFile(file, true);
-                if(input.isEmpty()){
-                    yield Optional.empty();
-                }
-
                 var output = createTempFile(file, false);
-                if(output.isEmpty()){
-                    yield Optional.empty();
-                }
-
                 try {
                     var process = Runtime.getRuntime()
                             .exec("ffmpeg -ss 00:00:00 -i %s -y -vf scale=%s:-1 -vframes 1 -f image2 %s"
-                                    .formatted(input.get(), SIZE, output.get()));
+                                    .formatted(input, SIZE, output));
                     if(process.waitFor() != 0){
-                        yield Optional.empty();
+                        yield null;
                     }
 
-                    yield Optional.of(Files.readAllBytes(output.get()));
+                    yield Files.readAllBytes(output);
                 }catch (Throwable throwable){
-                    yield Optional.empty();
+                    yield null;
                 } finally {
-                    Files.delete(output.get());
+                    Files.delete(output);
                 }
             }
 
-            case FILE -> Optional.empty();
+            case FILE -> null;
         };
     }
 
     @SneakyThrows
-    private Optional<Path> createTempFile(byte[] media, boolean useCache){
-        var extension = getMediaExtension(media);
-        if(extension.isEmpty()){
-            return Optional.empty();
-        }
-
+    private Path createTempFile(byte[] media, boolean useCache){
         var hex = Bytes.of(media).toHex();
         var cached = CACHE.get(hex);
         if(useCache && cached != null){
-            return Optional.of(cached);
+            return cached;
         }
 
         var name = Bytes.ofRandom(RANDOM_FILE_NAME_LENGTH).toHex();
-        var input = Files.createTempFile(name, ".%s".formatted(extension.get()));
+        var input = Files.createTempFile(name, "");
         if(useCache) {
             Files.write(input, media);
             CACHE.put(hex, input);
         }
 
-        return Optional.of(input);
+        return input;
     }
 
     public enum Format {

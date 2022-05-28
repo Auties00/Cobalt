@@ -1,6 +1,7 @@
 package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.model.chat.Chat;
@@ -160,7 +161,7 @@ public final class WhatsappStore implements WhatsappController {
      */
     public static WhatsappStore of(int id){
         var preferences = Preferences.of("%s/store.json", id);
-        var result = requireNonNullElseGet(preferences.readJson(), () -> random(id));
+        var result = requireNonNullElseGet(preferences.readJson(new TypeReference<>(){}), () -> random(id));
         stores.add(result);
         return result;
     }
