@@ -287,12 +287,12 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     }
 
     public CompletableFuture<Node> sendQuery(String method, String category, Node... body){
-        return sendQuery(null, ContactJid.SOCKET,
+        return sendQuery(null, ContactJid.WHATSAPP,
                 method, category, null, body);
     }
 
     public CompletableFuture<Node> sendQuery(String method, String category, Map<String, Object> metadata, Node... body){
-        return sendQuery(null, ContactJid.SOCKET,
+        return sendQuery(null, ContactJid.WHATSAPP,
                 method, category, metadata, body);
     }
 
@@ -331,7 +331,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     }
 
     @SneakyThrows
-    private CompletableFuture<GroupMetadata> queryGroupMetadata(ContactJid group){
+    public CompletableFuture<GroupMetadata> queryGroupMetadata(ContactJid group){
         var body = withAttributes("query", of("request", "interactive"));
         return sendQuery(group, "get", "w:g2", body)
                 .thenApplyAsync(node -> GroupMetadata.of(node.findNode("group")));
@@ -861,7 +861,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             var attributes = Attributes.empty()
                     .put("id", node.id())
                     .put("type", "result")
-                    .put("to", ContactJid.SOCKET)
+                    .put("to", ContactJid.WHATSAPP)
                     .map();
             var request = withChildren("iq", attributes, content);
             sendWithNoResponse(request);
@@ -1446,7 +1446,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     .toList();
 
             var request = withChildren("iq",
-                    of("id", store.nextTag(), "to", ContactJid.SOCKET, "xmlns", "w:sync:app:state", "type", "set"),
+                    of("id", store.nextTag(), "to", ContactJid.WHATSAPP, "xmlns", "w:sync:app:state", "type", "set"),
                     withChildren("sync", nodes));
             send(request)
                     .thenApplyAsync(this::parseSyncRequest)

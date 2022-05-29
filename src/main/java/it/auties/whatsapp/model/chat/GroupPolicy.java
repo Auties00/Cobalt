@@ -28,13 +28,4 @@ public enum GroupPolicy implements ProtobufMessage {
     public static GroupPolicy forData(boolean input) {
         return input ? ADMINS : ANYONE;
     }
-
-    /**
-     * Returns a boolean parsed as a string for Whatsapp
-     *
-     * @return a non-null String
-     */
-    public String data() {
-        return String.valueOf(this == ADMINS);
-    }
 }

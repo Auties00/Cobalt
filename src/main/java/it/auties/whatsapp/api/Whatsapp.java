@@ -3,10 +3,7 @@ package it.auties.whatsapp.api;
 import it.auties.whatsapp.binary.BinarySocket;
 import it.auties.whatsapp.controller.WhatsappKeys;
 import it.auties.whatsapp.controller.WhatsappStore;
-import it.auties.whatsapp.model.chat.GroupAction;
-import it.auties.whatsapp.model.chat.GroupMetadata;
-import it.auties.whatsapp.model.chat.GroupPolicy;
-import it.auties.whatsapp.model.chat.GroupSetting;
+import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.contact.ContactStatus;
@@ -17,20 +14,15 @@ import it.auties.whatsapp.model.message.standard.TextMessage;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.response.ContactStatusResponse;
 import it.auties.whatsapp.model.response.HasWhatsappResponse;
-import it.auties.whatsapp.util.Keys;
-import it.auties.whatsapp.util.ListenerScanner;
-import it.auties.whatsapp.util.Nodes;
-import it.auties.whatsapp.util.Validate;
+import it.auties.whatsapp.util.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
@@ -38,6 +30,7 @@ import static it.auties.bytes.Bytes.ofRandom;
 import static it.auties.whatsapp.api.WhatsappOptions.defaultOptions;
 import static it.auties.whatsapp.controller.WhatsappController.knownIds;
 import static it.auties.whatsapp.model.request.Node.*;
+import static java.util.Map.of;
 import static java.util.Objects.requireNonNullElseGet;
 
 /**
@@ -246,7 +239,7 @@ public class Whatsapp {
      */
     public CompletableFuture<Void> subscribeToContactPresence(@NonNull ContactJidProvider jid) {
         var node = withAttributes("presence",
-                Map.of("to", jid.toJid(), "type", "subscribe"));
+                of("to", jid.toJid(), "type", "subscribe"));
         return socket.sendWithNoResponse(node);
     }
 
@@ -397,7 +390,7 @@ public class Whatsapp {
      */
     public CompletableFuture<Optional<ContactStatusResponse>> queryStatus(@NonNull ContactJidProvider chat) {
         var query = with("status");
-        var body = withAttributes("user", Map.of("jid", chat.toJid()));
+        var body = withAttributes("user", of("jid", chat.toJid()));
         return socket.sendInteractiveQuery(query, body)
                 .thenApplyAsync(response -> Nodes.findFirst(response, "status"))
                 .thenApplyAsync(node -> node.map(ContactStatusResponse::new));
@@ -410,8 +403,8 @@ public class Whatsapp {
      * @return a CompletableFuture that wraps nullable jpg url hosted on Whatsapp's servers
      */
     public CompletableFuture<URI> queryChatPicture(@NonNull ContactJidProvider chat) {
-        var body = withAttributes("picture", Map.of("query", "url"));
-        return socket.sendQuery("get", "w:profile:picture", Map.of("target", chat.toJid()), body)
+        var body = withAttributes("picture", of("query", "url"));
+        return socket.sendQuery("get", "w:profile:picture", of("target", chat.toJid()), body)
                 .thenApplyAsync(this::parseChatPicture);
     }
 
@@ -428,11 +421,8 @@ public class Whatsapp {
      * @param chat the target group
      * @return a CompletableFuture
      */
-    public CompletableFuture<GroupMetadata> queryGroupMetadata(@NonNull ContactJidProvider chat) {
-        var query = withAttributes("query", Map.of("request", "interactive"));
-        return socket.sendQuery(chat.toJid(), "get", "w:g2", query)
-                .thenApplyAsync(result -> result.findNode("group"))
-                .thenApplyAsync(GroupMetadata::of);
+    public CompletableFuture<GroupMetadata> queryMetadata(@NonNull ContactJidProvider chat) {
+        return socket.queryGroupMetadata(chat.toJid());
     }
 
     /**
@@ -441,9 +431,33 @@ public class Whatsapp {
      * @param chat the target group
      * @return a CompletableFuture
      */
-    public CompletableFuture<String> queryGroupInviteCode(@NonNull ContactJidProvider chat) {
+    public CompletableFuture<String> queryInviteCode(@NonNull ContactJidProvider chat) {
         return socket.sendQuery(chat.toJid(), "get", "w:g2", with("invite"))
                 .thenApplyAsync(result -> result.findNode("invite").attributes().getString("code"));
+    }
+
+    /**
+     * Revokes the invite code of a group
+     *
+     * @param chat the target group
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<?> revokeInviteCode(@NonNull ContactJidProvider chat) {
+        return socket.sendQuery(chat.toJid(), "set", "w:g2", with("invite"));
+    }
+
+    /**
+     * Accepts the invite for a group
+     *
+     * @param inviteCode the invite code
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<Optional<Chat>> acceptInvite(@NonNull String inviteCode) {
+        return socket.sendQuery(ContactJid.GROUP, "set", "w:g2", withAttributes("invite", of("invite", inviteCode)))
+                .thenApplyAsync(result -> result.findNode("group"))
+                .thenApplyAsync(group -> group.attributes()
+                        .getJid("jid")
+                        .map(Chat::ofJid));
     }
 
     /**
@@ -466,7 +480,7 @@ public class Whatsapp {
      * @param count the amount of messages
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> queryFavouriteMessagesInChat(@NonNull ContactJidProvider chat, int count) {
+    public CompletableFuture<?> queryFavouriteMessages(@NonNull ContactJidProvider chat, int count) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -478,7 +492,7 @@ public class Whatsapp {
      */
     public CompletableFuture<Void> changePresence(boolean available) {
         var presence = available ? ContactStatus.AVAILABLE : ContactStatus.UNAVAILABLE;
-        var node = withAttributes("presence", Map.of("type", presence.data()));
+        var node = withAttributes("presence", of("type", presence.data()));
         return socket.sendWithNoResponse(node);
     }
 
@@ -490,7 +504,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> changePresence(@NonNull ContactJidProvider chat, @NonNull ContactStatus presence) {
-        var node = withAttributes("presence", Map.of("to", chat.toJid(), "type", presence.data()));
+        var node = withAttributes("presence", of("to", chat.toJid(), "type", presence.data()));
         return socket.sendWithNoResponse(node);
     }
 
@@ -501,8 +515,8 @@ public class Whatsapp {
      * @param contacts the target contacts
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> promote(@NonNull ContactJidProvider group, @NonNull ContactJidProvider... contacts) {
-        throw new UnsupportedOperationException("Not implemented");
+    public CompletableFuture<List<ContactJid>> promote(@NonNull ContactJidProvider group, @NonNull ContactJidProvider... contacts) {
+        return executeActionOnGroupParticipant(group, GroupAction.PROMOTE, contacts);
     }
 
     /**
@@ -512,8 +526,8 @@ public class Whatsapp {
      * @param contacts the target contacts
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> demote(@NonNull ContactJidProvider group, @NonNull ContactJidProvider... contacts) {
-        throw new UnsupportedOperationException("Not implemented");
+    public CompletableFuture<List<ContactJid>> demote(@NonNull ContactJidProvider group, @NonNull ContactJidProvider... contacts) {
+        return executeActionOnGroupParticipant(group, GroupAction.DEMOTE, contacts);
     }
 
     /**
@@ -523,8 +537,8 @@ public class Whatsapp {
      * @param contacts the target contact/s
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> add(@NonNull ContactJidProvider group, @NonNull ContactJidProvider... contacts) {
-        throw new UnsupportedOperationException("Not implemented");
+    public CompletableFuture<List<ContactJid>> add(@NonNull ContactJidProvider group, @NonNull ContactJidProvider... contacts) {
+        return executeActionOnGroupParticipant(group, GroupAction.ADD, contacts);
     }
 
     /**
@@ -534,21 +548,22 @@ public class Whatsapp {
      * @param contacts the target contact/s
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> remove(@NonNull ContactJidProvider group, @NonNull ContactJidProvider... contacts) {
-        throw new UnsupportedOperationException("Not implemented");
+    public CompletableFuture<List<ContactJid>> remove(@NonNull ContactJidProvider group, @NonNull ContactJidProvider... contacts) {
+        return executeActionOnGroupParticipant(group, GroupAction.REMOVE, contacts);
     }
 
-    /**
-     * Executes an sync on any number of contacts represented by a raw list of WhatsappNodes
-     *
-     * @param group  the target group
-     * @param action the sync to execute
-     * @param jids   the raw WhatsappNodes representing the contacts the sync should be executed on
-     * @return a CompletableFuture
-     * @throws IllegalArgumentException if no jids are provided
-     */
-    public CompletableFuture<?> executeActionOnGroupParticipant(@NonNull ContactJidProvider group, @NonNull GroupAction action, @NonNull List<Node> jids) {
-        throw new UnsupportedOperationException("Not implemented");
+    private CompletableFuture<List<ContactJid>> executeActionOnGroupParticipant(ContactJidProvider group, GroupAction action, ContactJidProvider... jids) {
+        var body = Arrays.stream(jids)
+                .map(ContactJidProvider::toJid)
+                .map(jid -> withChildren(action.data(), withAttributes("participant", of("jid", jid))))
+                .toArray(Node[]::new);
+        return socket.sendQuery(group.toJid(), "set", "w:g2", body)
+                .thenApplyAsync(result -> result.findNode(action.data()))
+                .thenApplyAsync(result -> result.findNodes("participant"))
+                .thenApplyAsync(participants -> participants.stream()
+                        .filter(participant -> !participant.attributes().hasKey("error"))
+                        .map(participant -> participant.attributes().getJid("jid").orElseThrow())
+                        .toList());
     }
 
     /**
@@ -559,19 +574,32 @@ public class Whatsapp {
      * @return a CompletableFuture
      * @throws IllegalArgumentException if the provided new name is empty or blank
      */
-    public CompletableFuture<?> changeGroupName(@NonNull ContactJidProvider group, @NonNull String newName) {
-        throw new UnsupportedOperationException("Not implemented");
+    public CompletableFuture<?> changeSubject(@NonNull ContactJidProvider group, @NonNull String newName) {
+        var body = with("subject", newName.getBytes(StandardCharsets.UTF_8));
+        return socket.sendQuery(group.toJid(), "set", "w:g2", body);
     }
 
     /**
      * Changes the description of a group
      *
      * @param group          the target group
-     * @param newDescription the new name for the group
+     * @param newDescription the new name for the group, can be null if you want to remove it
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> changeGroupDescription(@NonNull ContactJidProvider group, @NonNull String newDescription) {
-        throw new UnsupportedOperationException("Not implemented");
+    public CompletableFuture<?> changeDescription(@NonNull ContactJidProvider group, String newDescription) {
+        return socket.queryGroupMetadata(group.toJid())
+                .thenApplyAsync(GroupMetadata::descriptionId)
+                .thenComposeAsync(descriptionId -> changeDescription(group, newDescription, descriptionId));
+    }
+
+    private CompletableFuture<Node> changeDescription(ContactJidProvider group, String newDescription, String descriptionId) {
+        var description = Optional.ofNullable(newDescription)
+                .map(content -> with("body", content.getBytes(StandardCharsets.UTF_8)))
+                .orElse(null);
+        var key = newDescription != null ? "description" : "delete";
+        var value = descriptionId != null ? MessageKey.randomId() : "true";
+        var body = withChildren("description", of(key, value), description);
+        return socket.sendQuery(group.toJid(), "set", "w:g2", body);
     }
 
     /**
@@ -581,8 +609,9 @@ public class Whatsapp {
      * @param policy the new policy to enforce
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> changeWhoCanSendMessagesInGroup(@NonNull ContactJidProvider group, @NonNull GroupPolicy policy) {
-        throw new UnsupportedOperationException("Not implemented");
+    public CompletableFuture<?> changeWhoCanSendMessages(@NonNull ContactJidProvider group, @NonNull GroupPolicy policy) {
+        var body = with(policy != GroupPolicy.ANYONE ? "not_announcement" : "announcement");
+        return socket.sendQuery(group.toJid(), "set", "w:g2", body);
     }
 
     /**
@@ -592,42 +621,49 @@ public class Whatsapp {
      * @param policy the new policy to enforce
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> changeWhoCanEditGroupInfo(@NonNull ContactJidProvider group, @NonNull GroupPolicy policy) {
-        throw new UnsupportedOperationException("Not implemented");
+    public CompletableFuture<?> changeWhoCanEditInfo(@NonNull ContactJidProvider group, @NonNull GroupPolicy policy) {
+        var body = with(policy != GroupPolicy.ANYONE ? "locked" : "unlocked");
+        return socket.sendQuery(group.toJid(), "set", "w:g2", body);
     }
 
     /**
-     * Enforces a new policy for a setting in a group
+     * Changes the profile picture of yourself
      *
-     * @param group   the target group
-     * @param setting the target setting
-     * @param policy  the new policy to enforce
+     * @param image the new image, can be null if you want to remove it
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> changeGroupSetting(@NonNull ContactJidProvider group, @NonNull GroupSetting setting, @NonNull GroupPolicy policy) {
-        throw new UnsupportedOperationException("Not implemented");
+    public CompletableFuture<?> changePicture(byte[] image) {
+        return changePicture(keys().companion().toUserJid(), image);
     }
 
     /**
      * Changes the picture of a group
-     * This is still in beta
      *
      * @param group the target group
-     * @param image the new image
+     * @param image the new image, can be null if you want to remove it
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> changeGroupPicture(@NonNull ContactJidProvider group, byte @NonNull [] image) {
-        throw new UnsupportedOperationException("Not implemented");
+    public CompletableFuture<?> changePicture(@NonNull ContactJidProvider group, byte[] image) {
+        var profilePic = image != null ? Medias.getProfilePic(image) : null;
+        var body = with("picture", of("type", "image"), profilePic);
+        return socket.sendQuery(group.toJid(), "set", "w:profile:picture", body);
     }
 
     /**
-     * Removes the picture of a group
+     * Creates a new group with the provided name and with at least one contact
      *
-     * @param group the target group
+     * @param subject  the new group's name
+     * @param contacts at least one contact to add to the group
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> removeGroupPicture(@NonNull ContactJidProvider group) {
-        throw new UnsupportedOperationException("Not implemented");
+    public CompletableFuture<GroupMetadata> createGroup(@NonNull String subject, @NonNull ContactJidProvider... contacts) {
+        var participants = Arrays.stream(contacts)
+                .map(contact -> withAttributes("participant", of("jid", contact.toJid())))
+                .toArray(Node[]::new);
+        var body = withChildren("create", of("subject", subject, "key", ofRandom(12).toHex()), participants);
+        return socket.sendQuery(ContactJid.GROUP, "set", "w:g2", body)
+                .thenApplyAsync(response -> response.findNode("group"))
+                .thenApplyAsync(GroupMetadata::of);
     }
 
     /**
@@ -637,7 +673,8 @@ public class Whatsapp {
      * @throws IllegalArgumentException if the provided chat is not a group
      */
     public CompletableFuture<?> leave(@NonNull ContactJidProvider group) {
-        throw new UnsupportedOperationException("Not implemented");
+        var body = withChildren("leave", withAttributes("group", of("id", group.toJid())));
+        return socket.sendQuery(ContactJid.GROUP, "set", "w:g2", body);
     }
 
     /**
@@ -689,8 +726,21 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> block(@NonNull ContactJidProvider chat) {
-        throw new UnsupportedOperationException("Not implemented");
+        var body = withAttributes("item", of("action", "block", "jid", chat.toJid()));
+        return socket.sendQuery("set", "blocklist", body);
     }
+
+    /**
+     * Unblocks a contact
+     *
+     * @param chat the target chat
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<?> unblock(@NonNull ContactJidProvider chat) {
+        var body = withAttributes("item", of("action", "unblock", "jid", chat.toJid()));
+        return socket.sendQuery("set", "blocklist", body);
+    }
+
 
     /**
      * Enables ephemeral messages in a chat, this means that messages will be automatically cancelled in said chat after a week
@@ -698,7 +748,7 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> enableEphemeralMessages(@NonNull ContactJidProvider chat) {
+    public CompletableFuture<?> enableEphemeral(@NonNull ContactJidProvider chat) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -708,7 +758,7 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> disableEphemeralMessages(@NonNull ContactJidProvider chat) {
+    public CompletableFuture<?> disableEphemeral(@NonNull ContactJidProvider chat) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -740,6 +790,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> markAsRead(@NonNull ContactJidProvider chat) {
+        // Node[description=ack, attributes={to=120363043753948701@g.us, id=914C55A427DEA6E754331DB7457B2FFE, type=read, class=receipt, participant=393913594579@s.whatsapp.net}];
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -754,7 +805,7 @@ public class Whatsapp {
      * @param newFlag the new flag represented by an int
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> markChat(@NonNull ContactJidProvider chat, int flag, int newFlag) {
+    public CompletableFuture<?> markAs(@NonNull ContactJidProvider chat, int flag, int newFlag) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -768,7 +819,7 @@ public class Whatsapp {
      * @param newFlag     the new flag represented by an int
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> markChat(@NonNull ContactJidProvider chat, @NonNull MessageInfo lastMessage, int flag, int newFlag) {
+    public CompletableFuture<?> markAs(@NonNull ContactJidProvider chat, @NonNull MessageInfo lastMessage, int flag, int newFlag) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -813,23 +864,6 @@ public class Whatsapp {
      */
     public CompletableFuture<?> unarchive(@NonNull ContactJidProvider chat) {
         throw new UnsupportedOperationException("Not implemented");
-    }
-
-    /**
-     * Creates a new group with the provided name and with at least one contact
-     *
-     * @param subject  the new group's name
-     * @param contacts at least one contact to add to the group
-     * @return a CompletableFuture
-     */
-    public CompletableFuture<GroupMetadata> createGroup(@NonNull String subject, @NonNull ContactJidProvider... contacts) {
-        var participants = Arrays.stream(contacts)
-                .map(contact -> withAttributes("participant", Map.of("jid", contact.toJid())))
-                .toArray(Node[]::new);
-        var body = withChildren("create", Map.of("subject", subject, "key", ofRandom(12).toHex()), participants);
-        return socket.sendQuery(ContactJid.ofServer(ContactJid.Server.GROUP), "set", "w:g2", body)
-                .thenApplyAsync(response -> response.findNode("group"))
-                .thenApplyAsync(GroupMetadata::of);
     }
 
     private void starMessagePlaceholder() {

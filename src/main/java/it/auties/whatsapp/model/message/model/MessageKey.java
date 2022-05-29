@@ -49,7 +49,16 @@ public class MessageKey implements ProtobufMessage {
   @ProtobufProperty(index = 3, type = STRING)
   @NonNull
   @Default
-  private String id = Bytes.ofRandom(8)
-          .toHex()
-          .toUpperCase(Locale.ROOT);
+  private String id = randomId();
+
+  /**
+   * Generates a random message id
+   *
+   * @return a non-null String
+   */
+  public static String randomId() {
+    return Bytes.ofRandom(8)
+            .toHex()
+            .toUpperCase(Locale.ROOT);
+  }
 }

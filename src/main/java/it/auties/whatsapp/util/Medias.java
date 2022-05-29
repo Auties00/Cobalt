@@ -1,6 +1,5 @@
 package it.auties.whatsapp.util;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.crypto.AesCbc;
@@ -11,7 +10,10 @@ import it.auties.whatsapp.model.message.model.MediaMessageType;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
+import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import java.awt.*;
@@ -39,17 +41,10 @@ import static java.util.Optional.of;
 
 @UtilityClass
 public class Medias implements JacksonProvider {
-    private static final int SIZE = 32;
+    private static final int THUMBNAIL_SIZE = 32;
     private static final int RANDOM_FILE_NAME_LENGTH = 8;
     private static final Map<String, Path> CACHE = new ConcurrentHashMap<>();
-    private static final Map<String, String> MIME_TO_EXTENSION = Map.of(
-            "video/mp4", "mp4",
-            "video/webm", "webm",
-            "video/x-m4v", "m4v",
-            "video/quicktime", "mov",
-            "audio/mpeg", "mp3",
-            "audio/x-wav", "wav"
-    );
+    public static final int PROFILE_PIC_SIZE = 640;
 
     public MediaFile upload(byte[] file, MediaMessageType type, WhatsappStore store) {
         var client = HttpClient.newHttpClient();
@@ -234,16 +229,8 @@ public class Medias implements JacksonProvider {
     public byte[] getThumbnail(byte[] file, Format format) {
         return switch (format){
             case JPG, PNG -> {
-                var originalImage = ImageIO.read(new ByteArrayInputStream(file));
-                var type = originalImage.getType() == 0 ? BufferedImage.TYPE_INT_ARGB : originalImage.getType();
-                var resizedImage = new BufferedImage(SIZE, SIZE, type);
-                var graphics = resizedImage.createGraphics();
-                graphics.drawImage(originalImage, 0, 0, SIZE, SIZE, null);
-                graphics.dispose();
-                graphics.setComposite(AlphaComposite.Src);
-                graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-                graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-                graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                var image = ImageIO.read(new ByteArrayInputStream(file));
+                var resizedImage = getResizedImage(image, THUMBNAIL_SIZE);
                 var outputStream = new ByteArrayOutputStream();
                 ImageIO.write(resizedImage, format.name().toLowerCase(), outputStream);
                 yield outputStream.toByteArray();
@@ -255,7 +242,7 @@ public class Medias implements JacksonProvider {
                 try {
                     var process = Runtime.getRuntime()
                             .exec("ffmpeg -ss 00:00:00 -i %s -y -vf scale=%s:-1 -vframes 1 -f image2 %s"
-                                    .formatted(input, SIZE, output));
+                                    .formatted(input, THUMBNAIL_SIZE, output));
                     if(process.waitFor() != 0){
                         yield null;
                     }
@@ -270,6 +257,35 @@ public class Medias implements JacksonProvider {
 
             case FILE -> null;
         };
+    }
+
+    @SneakyThrows
+    public byte[] getProfilePic(byte[] file){
+        var originalImage = ImageIO.read(new ByteArrayInputStream(file));
+        var size = Math.min(originalImage.getWidth(), originalImage.getHeight());
+        var subImage = originalImage.getSubimage(0, 0, size, size);
+        var actual = getResizedImage(subImage, PROFILE_PIC_SIZE);
+        var outputStream = new ByteArrayOutputStream();
+        var writer = (ImageWriter) ImageIO.getImageWritersByFormatName("jpeg").next();
+        writer.getDefaultWriteParam().setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+        writer.getDefaultWriteParam().setCompressionQuality(0.5F);
+        writer.setOutput(outputStream);
+        writer.write(actual);
+        writer.dispose();
+        return outputStream.toByteArray();
+    }
+
+    private static BufferedImage getResizedImage(BufferedImage originalImage, int size) {
+        var type = originalImage.getType() == 0 ? BufferedImage.TYPE_INT_ARGB : originalImage.getType();
+        var resizedImage = new BufferedImage(size, size, type);
+        var graphics = resizedImage.createGraphics();
+        graphics.drawImage(originalImage, 0, 0, THUMBNAIL_SIZE, THUMBNAIL_SIZE, null);
+        graphics.dispose();
+        graphics.setComposite(AlphaComposite.Src);
+        graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        return resizedImage;
     }
 
     @SneakyThrows

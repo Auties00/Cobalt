@@ -1,7 +1,6 @@
 package it.auties.whatsapp.ci;
 
 import it.auties.bytes.Bytes;
-import it.auties.whatsapp.api.RegisterListener;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.api.WhatsappOptions;
@@ -146,7 +145,7 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
     @Order(6)
     public void testFavouriteMessagesQuery() throws Exception {
         log("Loading 20 favourite messages...");
-        var favouriteMessagesResponse = api.queryFavouriteMessagesInChat(contact, 20).get();
+        var favouriteMessagesResponse = api.queryFavouriteMessages(contact, 20).get();
         log("Loaded favourite messages: %s", favouriteMessagesResponse);
     }
 
@@ -200,7 +199,7 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
     @Order(11)
     public void testChangeGroupName() throws Exception {
         log("Changing group name...");
-        var changeGroupResponse = api.changeGroupName(group, "omega").get();
+        var changeGroupResponse = api.changeSubject(group, "omega").get();
         log("Changed group name: %s", changeGroupResponse);
     }
 
@@ -208,7 +207,7 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
     @Order(12)
     public void testChangeGroupDescription() throws Exception {
         log("Changing group description...");
-        var changeGroupResponse = api.changeGroupDescription(group, Bytes.ofRandom(12).toHex()).get();
+        var changeGroupResponse = api.changeDescription(group, Bytes.ofRandom(12).toHex()).get();
         log("Changed group description: %s", changeGroupResponse);
     }
 
@@ -250,7 +249,7 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
         for (var setting : GroupSetting.values()) {
             for (var policy : GroupPolicy.values()) {
                 log("Changing setting %s to %s...", setting.name(), policy.name());
-                var changeGroupResponse = api.changeGroupSetting(group, setting, policy).get();
+                var changeGroupResponse = api.changeSetting(group, setting, policy).get();
                 log("Changed setting %s to %s: %s", setting.name(), policy.name(), changeGroupResponse);
             }
         }
@@ -266,7 +265,7 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
     @Order(19)
     public void testGroupQuery() throws Exception {
         log("Querying group %s...", group);
-        api.queryGroupMetadata(group).get();
+        api.queryMetadata(group).get();
         log("Queried group");
     }
 
@@ -446,7 +445,7 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
     @Order(34)
     public void testGroupInviteMessage() throws Exception {
         log("Querying group invite code");
-        var code = api.queryGroupInviteCode(group).get();
+        var code = api.queryInviteCode(group).get();
         log("Queried %s", code);
 
         log("Sending group invite message...");
@@ -464,7 +463,7 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
     @Order(35)
     public void testEnableEphemeralMessages() throws Exception {
         log("Enabling ephemeral messages...");
-        var ephemeralResponse = api.enableEphemeralMessages(group).get();
+        var ephemeralResponse = api.enableEphemeral(group).get();
         log("Enabled ephemeral messages: %s", ephemeralResponse);
     }
 
@@ -472,7 +471,7 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
     @Order(36)
     public void testDisableEphemeralMessages() throws Exception {
         log("Disabling ephemeral messages...");
-        var ephemeralResponse = api.disableEphemeralMessages(group).get();
+        var ephemeralResponse = api.disableEphemeral(group).get();
         log("Disabled ephemeral messages: %s", ephemeralResponse);
     }
 

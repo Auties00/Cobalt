@@ -41,7 +41,12 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
     /**
      * The ID of Whatsapp, used to send nodes
      */
-    public static final ContactJid SOCKET = ofServer(Server.WHATSAPP);
+    public static final ContactJid WHATSAPP = ofServer(Server.WHATSAPP);
+
+    /**
+     * The ID of Groups, used to send nodes
+     */
+    public static final ContactJid GROUP = ofServer(Server.GROUP);
 
     public ContactJid(String user, Server server, int device, int agent){
         this.user = user;
