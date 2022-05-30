@@ -26,7 +26,7 @@ public final class RecentEmojiWeightsAction implements Action {
 
     @Override
     public String indexName() {
-        return "unknown";
+        throw new UnsupportedOperationException("Cannot send action: no index name");
     }
 
     public static class RecentEmojiWeightsActionBuilder {

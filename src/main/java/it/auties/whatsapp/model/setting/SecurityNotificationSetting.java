@@ -20,6 +20,6 @@ public final class SecurityNotificationSetting implements Setting {
 
   @Override
   public String indexName() {
-    return "unknown";
+    throw new UnsupportedOperationException("Cannot send setting: no index name");
   }
 }

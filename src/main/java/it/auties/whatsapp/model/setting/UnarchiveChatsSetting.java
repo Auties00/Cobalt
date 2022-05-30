@@ -20,6 +20,6 @@ public final class UnarchiveChatsSetting implements Setting {
 
   @Override
   public String indexName() {
-    return "unknown";
+    return "setting_unarchiveChats";
   }
 }

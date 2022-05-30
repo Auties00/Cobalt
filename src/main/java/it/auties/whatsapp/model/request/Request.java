@@ -115,7 +115,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
             session.getAsyncRemote()
                     .sendBinary(buffer, result -> handleSendResult(store, result, response));
         }catch (Exception exception){
-            future.completeExceptionally(new RuntimeException("Cannot send request", exception));
+            future.completeExceptionally(new RuntimeException("Cannot send %s".formatted(this), exception));
         }
 
         return future;

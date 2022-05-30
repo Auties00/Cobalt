@@ -1,4 +1,4 @@
-package it.auties.whatsapp.dev;
+package it.auties.whatsapp.ci;
 
 import lombok.SneakyThrows;
 

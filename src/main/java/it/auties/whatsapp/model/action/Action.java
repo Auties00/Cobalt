@@ -10,8 +10,4 @@ public sealed interface Action extends ProtobufMessage permits AndroidUnsupporte
         MuteAction, PinAction, QuickReplyAction, RecentEmojiWeightsAction, RecentStickerWeightsAction, StarAction {
 
     String indexName();
-
-    default List<String> indexArguments(){
-        return List.of();
-    }
 }

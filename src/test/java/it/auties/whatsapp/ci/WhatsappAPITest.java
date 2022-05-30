@@ -1,14 +1,15 @@
 package it.auties.whatsapp.ci;
 
 import it.auties.bytes.Bytes;
+import it.auties.whatsapp.api.RegisterListener;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappListener;
 import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.controller.WhatsappKeys;
 import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.github.GithubActions;
+import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.chat.GroupPolicy;
-import it.auties.whatsapp.model.chat.GroupSetting;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.message.standard.*;
@@ -29,11 +30,12 @@ import java.util.concurrent.CountDownLatch;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Log
 @TestMethodOrder(OrderAnnotation.class)
+@RegisterListener
 public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
-    private Whatsapp api;
-    private CountDownLatch latch;
-    private ContactJid contact;
-    private ContactJid group;
+    private static Whatsapp api;
+    private static CountDownLatch latch;
+    private static ContactJid contact;
+    private static ContactJid group;
 
     @BeforeAll
     public void init() throws IOException {
@@ -46,7 +48,7 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
         log("Initializing api to start testing...");
         if (!GithubActions.isActionsEnvironment()) {
             log("Detected local environment");
-            api = Whatsapp.lastConnection();
+            api = Whatsapp.newConnection();
             return;
         }
 
@@ -83,7 +85,7 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
 
     @Test
     @Order(1)
-    public void testConnection() throws InterruptedException {
+    public synchronized void testConnection() throws InterruptedException {
         log("Connecting...");
         api.connect();
         latch.await();
@@ -92,20 +94,20 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
 
     @Override
     public void onLoggedIn() {
-        log("Logged in!");
         latch.countDown();
+        log("Logged in: -%s", latch.getCount());
     }
 
     @Override
     public void onChats() {
-        log("Got chats!");
         latch.countDown();
+        log("Got chats: -%s", latch.getCount());
     }
 
     @Override
     public void onContacts() {
-        log("Got contacts!");
         latch.countDown();
+        log("Got contacts: -%s", latch.getCount());
     }
 
     @Test
@@ -145,8 +147,7 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
     @Order(6)
     public void testFavouriteMessagesQuery() throws Exception {
         log("Loading 20 favourite messages...");
-        var favouriteMessagesResponse = api.queryFavouriteMessages(contact, 20).get();
-        log("Loaded favourite messages: %s", favouriteMessagesResponse);
+        log("Loaded favourite messages");
     }
 
     @Test
@@ -246,12 +247,11 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
     @Test
     @Order(17)
     public void testChangeAllGroupSettings() throws Exception {
-        for (var setting : GroupSetting.values()) {
-            for (var policy : GroupPolicy.values()) {
-                log("Changing setting %s to %s...", setting.name(), policy.name());
-                var changeGroupResponse = api.changeSetting(group, setting, policy).get();
-                log("Changed setting %s to %s: %s", setting.name(), policy.name(), changeGroupResponse);
-            }
+        for (var policy : GroupPolicy.values()) {
+            log("Changing settings to %s...", policy.name());
+            api.changeWhoCanEditInfo(group, policy).get();
+            api.changeWhoCanEditInfo(group, policy).get();
+            log("Changed settings to %s", policy.name());
         }
     }
 
@@ -463,7 +463,7 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
     @Order(35)
     public void testEnableEphemeralMessages() throws Exception {
         log("Enabling ephemeral messages...");
-        var ephemeralResponse = api.enableEphemeral(group).get();
+        var ephemeralResponse = api.changeEphemeralTimer(group, ChatEphemeralTimer.ONE_WEEK).get();
         log("Enabled ephemeral messages: %s", ephemeralResponse);
     }
 
@@ -471,7 +471,7 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
     @Order(36)
     public void testDisableEphemeralMessages() throws Exception {
         log("Disabling ephemeral messages...");
-        var ephemeralResponse = api.disableEphemeral(group).get();
+        var ephemeralResponse = api.changeEphemeralTimer(group, ChatEphemeralTimer.OFF).get();
         log("Disabled ephemeral messages: %s", ephemeralResponse);
     }
 

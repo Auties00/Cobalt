@@ -20,6 +20,6 @@ public final class PushNameSetting implements Setting {
 
   @Override
   public String indexName() {
-    return "unknown";
+    return "setting_pushName";
   }
 }

@@ -35,7 +35,7 @@ public final class QuickReplyAction implements Action {
 
   @Override
   public String indexName() {
-    return "unknown";
+    return "quick_reply";
   }
 
   public static class QuickReplyActionBuilder {

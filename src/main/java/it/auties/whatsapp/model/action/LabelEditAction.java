@@ -29,6 +29,6 @@ public final class LabelEditAction implements Action {
 
   @Override
   public String indexName() {
-    return "unknown";
+    return "label_edit";
   }
 }

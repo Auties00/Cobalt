@@ -91,8 +91,8 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * The endTimeStamp in seconds before a message is automatically deleted from this chat both locally and from WhatsappWeb's servers.
      * If ephemeral messages aren't enabled, this field has a value of 0
      */
-    @ProtobufProperty(index = 9, type = UINT32)
-    private long ephemeralMessageDuration;
+    @ProtobufProperty(index = 9, type = UINT32, requiresConversion = true)
+    private ChatEphemeralTimer ephemeralMessageDuration;
 
     /**
      * The endTimeStamp in seconds since {@link java.time.Instant#EPOCH} when ephemeral messages were turned on.
@@ -277,7 +277,9 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return true if ephemeral messages are enabled for this chat
      */
     public boolean isEphemeral() {
-        return ephemeralMessageDuration != 0 && ephemeralMessagesToggleTime != 0;
+        return ephemeralMessageDuration != ChatEphemeralTimer.OFF
+                && ephemeralMessagesToggleTime != null
+                && ephemeralMessagesToggleTime != 0;
     }
 
     /**
@@ -344,12 +346,21 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     }
 
     /**
+     * Returns the type of ephemeral timer used in this chat
+     *
+     * @return a non-null ephemeral timer
+     */
+    public ChatEphemeralTimer ephemeralMessageType() {
+        return Objects.requireNonNullElse(ephemeralMessageDuration, ChatEphemeralTimer.OFF);
+    }
+
+    /**
      * Returns an optional value containing the endTimeStamp in seconds before a message is automatically deleted from this chat both locally and from WhatsappWeb's servers
      *
      * @return a non-empty optional if ephemeral messages are enabled for this chat
      */
     public Optional<ZonedDateTime> ephemeralMessageDuration() {
-        return Clock.parse(ephemeralMessageDuration);
+        return Clock.parse(ephemeralMessageDuration.timeInSeconds());
     }
 
     /**
@@ -377,6 +388,17 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      */
     public Optional<MessageInfo> firstMessage() {
         return messages.isEmpty() ? Optional.empty() : Optional.of(messages.get(0));
+    }
+
+    /**
+     * Returns all the starred messages in this chat
+     *
+     * @return a non-null list of messages
+     */
+    public List<MessageInfo> starredMessages(){
+        return messages.stream()
+                .filter(MessageInfo::starred)
+                .toList();
     }
 
     /**

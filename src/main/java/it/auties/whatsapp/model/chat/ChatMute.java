@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.chat;
 
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.util.Clock;
 
 import java.time.Instant;
@@ -10,7 +11,7 @@ import java.util.Optional;
 
 /**
  * An immutable model class that represents a WhatsappMute.
- * To change the mute status of a {@link Chat} use {@link Whatsapp#mute(Chat)} and {@link Whatsapp#unmute(Chat)}.
+ * To change the mute status of a {@link Chat} use {@link Whatsapp#mute(ContactJidProvider)} and {@link Whatsapp#unmute(ContactJidProvider)}.
  *
  * @param endTimeStamp the end date of the mute associated with this object stored as second since {@link Instant#EPOCH}
  */

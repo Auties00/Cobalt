@@ -21,6 +21,6 @@ public final class ClearChatAction implements Action {
 
   @Override
   public String indexName() {
-    return "unknown";
+    return "clearChat";
   }
 }

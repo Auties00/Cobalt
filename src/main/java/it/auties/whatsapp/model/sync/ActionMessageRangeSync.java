@@ -2,9 +2,11 @@ package it.auties.whatsapp.model.sync;
 
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.whatsapp.model.info.MessageInfo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
@@ -28,6 +30,12 @@ public class ActionMessageRangeSync implements ProtobufMessage {
 
     @ProtobufProperty(index = 3, type = MESSAGE, concreteType = SyncActionMessage.class, repeated = true)
     private List<SyncActionMessage> messages;
+
+    public ActionMessageRangeSync(@NonNull MessageInfo info){
+        this.lastMessageTimestamp = info.timestamp();
+        var syncMessage = new SyncActionMessage(info.key(), lastMessageTimestamp);
+        this.messages = List.of(syncMessage);
+    }
 
     public static class ActionMessageRangeSyncBuilder {
         public ActionMessageRangeSyncBuilder messages(List<SyncActionMessage> messages) {

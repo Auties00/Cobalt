@@ -8,6 +8,8 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.Objects;
+
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT64;
 
 @AllArgsConstructor
@@ -18,4 +20,8 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT64;
 public class VersionSync implements ProtobufMessage {
   @ProtobufProperty(index = 1, type = UINT64)
   private Long version;
+
+  public long version(){
+    return Objects.requireNonNullElse(version, 0L);
+  }
 }

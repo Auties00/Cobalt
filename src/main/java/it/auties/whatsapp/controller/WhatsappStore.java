@@ -352,6 +352,18 @@ public final class WhatsappStore implements WhatsappController {
     }
 
     /**
+     * Returns all the starred messages
+     *
+     * @return a non-null list of messages
+     */
+    public List<MessageInfo> starredMessages(){
+        return chats().parallelStream()
+                .map(Chat::starredMessages)
+                .flatMap(Collection::stream)
+                .toList();
+    }
+
+    /**
      * Clears all the data that this object holds and closes the pending requests
      */
     public void clear() {

@@ -41,6 +41,6 @@ public final class FavoriteStickerAction implements Action {
 
   @Override
   public String indexName() {
-    return "unknown";
+    return "star";
   }
 }

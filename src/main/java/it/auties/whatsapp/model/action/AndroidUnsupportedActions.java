@@ -20,6 +20,6 @@ public final class AndroidUnsupportedActions implements Action {
 
   @Override
   public String indexName() {
-    return "unknown";
+    return "android_unsupported_actions";
   }
 }

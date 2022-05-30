@@ -11,6 +11,7 @@ import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.crypto.*;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.chat.Chat;
+import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.chat.ChatMute;
 import it.auties.whatsapp.model.chat.GroupMetadata;
 import it.auties.whatsapp.model.contact.Contact;
@@ -279,6 +280,10 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         return node.toRequest(node.id() == null ? store.nextTag() : null)
                 .sendWithNoResponse(session(), keys, store)
                 .exceptionallyAsync(throwable -> errorHandler.handleFailure(503, throwable.getMessage(), UNKNOWN));
+    }
+
+    public CompletableFuture<Void> push(PatchRequest request){
+        return appStateHandler.push(request);
     }
 
     @SafeVarargs
@@ -1323,7 +1328,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                         var chat = info.chat()
                                 .orElseGet(() -> createChat(info.chatJid()));
                         chat.ephemeralMessagesToggleTime(info.timestamp())
-                                .ephemeralMessageDuration(protocolMessage.ephemeralExpiration());
+                                .ephemeralMessageDuration(ChatEphemeralTimer.forSeconds(protocolMessage.ephemeralExpiration()));
                         var setting = new EphemeralSetting(info.ephemeralDuration(), info.timestamp());
                         store.callListeners(listener -> listener.onSetting(setting));
                     }
@@ -1375,7 +1380,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         public CompletableFuture<Void> push(PatchRequest patch) {
             var index = patch.index().getBytes(StandardCharsets.UTF_8);
             var key = keys.appStateKeys().getLast();
-            var hashState = keys.findHashStateByName(patch.type()).copy();
+            var hashState = keys.findHashStateByName(patch.type().toString()).copy();
             var actionData = ActionDataSync.builder()
                     .index(index)
                     .value(patch.sync())
@@ -1396,9 +1401,9 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             hashState.indexValueMap(result.indexValueMap());
             hashState.version(hashState.version() + 1);
 
-            var snapshotMac = generateSnapshotMac(hashState.hash(), hashState.version(), patch.type(), mutationKeys.snapshotMacKey());
+            var snapshotMac = generateSnapshotMac(hashState.hash(), hashState.version(), patch.type().toString(), mutationKeys.snapshotMacKey());
             var syncId = new KeyId(key.keyId().keyId());
-            var patchMac = generatePatchMac(snapshotMac, Bytes.of(valueMac), hashState.version(), patch.type(), mutationKeys.patchMacKey());
+            var patchMac = generatePatchMac(snapshotMac, Bytes.of(valueMac), hashState.version(), patch.type().toString(), mutationKeys.patchMacKey());
             var record = RecordSync.builder()
                     .index(new IndexSync(indexMac))
                     .value(new ValueSync(Bytes.of(encrypted, valueMac).toByteArray()))
@@ -1425,8 +1430,8 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         }
 
         private void parseSyncRequest(PatchRequest patch, LTHashState hashState, PatchSync sync) {
-            keys.hashStates().put(patch.type(), hashState);
-            decodePatch(patch.type(), hashState.version(), hashState, sync)
+            keys.hashStates().put(patch.type().toString(), hashState);
+            decodePatch(patch.type().toString(), hashState.version(), hashState, sync)
                     .stream()
                     .map(MutationsRecord::records)
                     .flatMap(Collection::stream)

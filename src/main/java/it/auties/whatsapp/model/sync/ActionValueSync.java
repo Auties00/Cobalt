@@ -10,6 +10,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
@@ -101,6 +102,43 @@ public class ActionValueSync implements ProtobufMessage {
     @ProtobufProperty(index = 24, type = MESSAGE, concreteType = PrimaryFeature.class)
     @Getter
     private PrimaryFeature primaryFeature;
+
+    //</editor-fold>
+
+    //<editor-fold desc="Constructors">
+    @SuppressWarnings("PatternVariableHidesField")
+    public ActionValueSync(@NonNull Action action){
+        switch (action){
+            case StarAction starAction -> this.starAction = starAction;
+            case ContactAction contactAction -> this.contactAction = contactAction;
+            case MuteAction muteAction -> this.muteAction = muteAction;
+            case PinAction pinAction -> this.pinAction = pinAction;
+            case QuickReplyAction quickReplyAction -> this.quickReplyAction = quickReplyAction;
+            case RecentStickerWeightsAction recentStickerWeightsAction -> this.recentStickerWeightsAction = recentStickerWeightsAction;
+            case RecentEmojiWeightsAction recentEmojiWeightsAction -> this.recentEmojiWeightsAction = recentEmojiWeightsAction;
+            case LabelEditAction labelEditAction -> this.labelEditAction = labelEditAction;
+            case LabelAssociationAction labelAssociationAction -> this.labelAssociationAction = labelAssociationAction;
+            case ArchiveChatAction archiveChatAction -> this.archiveChatAction = archiveChatAction;
+            case DeleteMessageForMeAction deleteMessageForMeAction -> this.deleteMessageForMeAction = deleteMessageForMeAction;
+            case MarkChatAsReadAction markChatAsReadAction -> this.markChatAsReadAction = markChatAsReadAction;
+            case ClearChatAction clearChatAction -> this.clearChatAction = clearChatAction;
+            case DeleteChatAction deleteChatAction -> this.deleteChatAction = deleteChatAction;
+            case FavoriteStickerAction favoriteStickerAction -> this.favoriteStickerAction = favoriteStickerAction;
+            case AndroidUnsupportedActions androidUnsupportedActions -> this.androidUnsupportedActions = androidUnsupportedActions;
+        }
+    }
+
+    @SuppressWarnings("PatternVariableHidesField")
+    public ActionValueSync(@NonNull Setting setting){
+        switch (setting){
+            case SecurityNotificationSetting securityNotificationSetting -> this.securityNotificationSetting = securityNotificationSetting;
+            case PushNameSetting pushNameSetting -> this.pushNameSetting = pushNameSetting;
+            case LocaleSetting localeSetting -> this.localeSetting = localeSetting;
+            case UnarchiveChatsSetting unarchiveChatsSetting -> this.unarchiveChatsSetting = unarchiveChatsSetting;
+            case EphemeralSetting ephemeralSetting -> throw new UnsupportedOperationException("Cannot wrap %s in action value sync"
+                    .formatted(ephemeralSetting));
+        }
+    }
 
     //</editor-fold>
 

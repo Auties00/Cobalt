@@ -3,6 +3,7 @@ package it.auties.whatsapp.api;
 import it.auties.whatsapp.binary.BinarySocket;
 import it.auties.whatsapp.controller.WhatsappKeys;
 import it.auties.whatsapp.controller.WhatsappStore;
+import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJidProvider;
@@ -10,10 +11,14 @@ import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.*;
+import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.standard.TextMessage;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.response.ContactStatusResponse;
 import it.auties.whatsapp.model.response.HasWhatsappResponse;
+import it.auties.whatsapp.model.sync.ActionMessageRangeSync;
+import it.auties.whatsapp.model.sync.ActionValueSync;
+import it.auties.whatsapp.model.sync.PatchRequest;
 import it.auties.whatsapp.util.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -28,8 +33,12 @@ import java.util.stream.Stream;
 
 import static it.auties.bytes.Bytes.ofRandom;
 import static it.auties.whatsapp.api.WhatsappOptions.defaultOptions;
+import static it.auties.whatsapp.binary.BinarySync.REGULAR_HIGH;
+import static it.auties.whatsapp.binary.BinarySync.REGULAR_LOW;
 import static it.auties.whatsapp.controller.WhatsappController.knownIds;
+import static it.auties.whatsapp.model.contact.ContactJid.Server.GROUP;
 import static it.auties.whatsapp.model.request.Node.*;
+import static it.auties.whatsapp.model.sync.RecordSync.Operation.SET;
 import static java.util.Map.of;
 import static java.util.Objects.requireNonNullElseGet;
 
@@ -467,20 +476,6 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> queryGroupsInCommon(@NonNull ContactJidProvider contact) {
-        //     ((0,
-        //                l.participantCreateTable)(), [new s.default("groupId"), new a.default("senderKey"), new a.default("participants"), new a.default("pastParticipants"), new a.default("admins"), new a.default("rotateKey"), new a.default("version"), new i.default("participants"), new a.default("deviceSyncComplete"), new a.default("staleType")]).view((e=>e))
-        //
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    /**
-     * Queries a specified amount of starred/favourite messages in a chat, including ones not in memory
-     *
-     * @param chat  the target chat
-     * @param count the amount of messages
-     * @return a CompletableFuture 
-     */
-    public CompletableFuture<?> queryFavouriteMessages(@NonNull ContactJidProvider chat, int count) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -684,29 +679,32 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> mute(@NonNull ContactJidProvider chat) {
-        throw new UnsupportedOperationException("Not implemented");
+        return mute(chat, (Long) null);
     }
 
     /**
      * Mutes a chat until a specific date
      *
      * @param chat  the target chat
-     * @param until the date the mute ends
+     * @param until the date the mute ends, can be null
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> mute(@NonNull ContactJidProvider chat, @NonNull ZonedDateTime until) {
-        throw new UnsupportedOperationException("Not implemented");
+    public CompletableFuture<?> mute(@NonNull ContactJidProvider chat, ZonedDateTime until) {
+        return mute(chat, until != null ? until.toEpochSecond() : null);
     }
 
     /**
      * Mutes a chat until a specific date expressed in seconds since the epoch
      *
      * @param chat           the target chat
-     * @param untilInSeconds the date the mute ends expressed in seconds since the epoch
+     * @param untilInSeconds the date the mute ends expressed in seconds since the epoch, can be null
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> mute(@NonNull ContactJidProvider chat, long untilInSeconds) {
-        throw new UnsupportedOperationException("Not implemented");
+    public CompletableFuture<Void> mute(@NonNull ContactJidProvider chat, Long untilInSeconds) {
+        var muteAction = new MuteAction(true, untilInSeconds);
+        var syncAction = new ActionValueSync(muteAction);
+        var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 2, chat.toJid().toString());
+        return socket.push(request);
     }
 
     /**
@@ -716,7 +714,10 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> unmute(@NonNull ContactJidProvider chat) {
-        throw new UnsupportedOperationException("Not implemented");
+        var muteAction = new MuteAction(false, null);
+        var syncAction = new ActionValueSync(muteAction);
+        var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 2, chat.toJid().toString());
+        return socket.push(request);
     }
 
     /**
@@ -748,30 +749,37 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture 
      */
-    public CompletableFuture<?> enableEphemeral(@NonNull ContactJidProvider chat) {
-        throw new UnsupportedOperationException("Not implemented");
+    public CompletableFuture<?> changeEphemeralTimer(@NonNull ContactJidProvider chat, @NonNull ChatEphemeralTimer timer) {
+        return switch (chat.toJid().server()){
+            case USER, WHATSAPP -> {
+                var message = ProtocolMessage.newProtocolMessage()
+                        .type(ProtocolMessage.ProtocolMessageType.EPHEMERAL_SETTING)
+                        .ephemeralExpiration(timer.timeInSeconds())
+                        .create();
+                yield sendMessage(chat, message);
+            }
+
+            case GROUP -> {
+                var body = timer == ChatEphemeralTimer.OFF ? with("not_ephemeral")
+                        : with("ephemeral", of("expiration", timer.timeInSeconds()));
+                yield socket.sendQuery(chat.toJid(), "set", "w:g2", body);
+            }
+
+            default -> throw new IllegalArgumentException("Unexpected chat %s: ephemeral messages are only supported for conversations and groups"
+                    .formatted(chat.toJid()));
+        };
     }
 
     /**
-     * Disables ephemeral messages in a chat, this means that messages sent in said chat will never be cancelled
+     * Marks a chat as read
      *
      * @param chat the target chat
-     * @return a CompletableFuture 
+     * @return a CompletableFuture
      */
-    public CompletableFuture<?> disableEphemeral(@NonNull ContactJidProvider chat) {
-        throw new UnsupportedOperationException("Not implemented");
+    public CompletableFuture<?> markAsRead(@NonNull ContactJidProvider chat) {
+        return markAs(chat, true);
     }
 
-    /**
-     * Changes the ephemeral status of a chat, this means that messages will be automatically cancelled in said chat after the provided endTimeStamp
-     *
-     * @param chat the target chat
-     * @param time the endTimeStamp to live for a message expressed in seconds
-     * @return a CompletableFuture 
-     */
-    public CompletableFuture<?> changeEphemeralStatus(@NonNull ContactJidProvider chat, int time) {
-        throw new UnsupportedOperationException("Not implemented");
-    }
 
     /**
      * Marks a chat as unread
@@ -780,47 +788,15 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> markAsUnread(@NonNull ContactJidProvider chat) {
-        throw new UnsupportedOperationException("Not implemented");
+        return markAs(chat, false);
     }
 
-    /**
-     * Marks a chat as read
-     *
-     * @param chat the target chat
-     * @return a CompletableFuture 
-     */
-    public CompletableFuture<?> markAsRead(@NonNull ContactJidProvider chat) {
-        // Node[description=ack, attributes={to=120363043753948701@g.us, id=914C55A427DEA6E754331DB7457B2FFE, type=read, class=receipt, participant=393913594579@s.whatsapp.net}];
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    /**
-     * Marks a chat with a flag represented by an integer.
-     * If this chat has no history, an attempt to load the chat's history is made.
-     * If no messages can be found after said attempt, the request will fail automatically.
-     * If the request is successful, sets the number of unread messages to;.
-     *
-     * @param chat    the target chat
-     * @param flag    the flag represented by an int
-     * @param newFlag the new flag represented by an int
-     * @return a CompletableFuture 
-     */
-    public CompletableFuture<?> markAs(@NonNull ContactJidProvider chat, int flag, int newFlag) {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    /**
-     * Marks a chat with a flag represented by an integer.
-     * If the request is successful, sets the number of unread messages to;.
-     *
-     * @param chat        the target chat
-     * @param lastMessage the real last message in this chat
-     * @param flag        the flag represented by an int
-     * @param newFlag     the new flag represented by an int
-     * @return a CompletableFuture 
-     */
-    public CompletableFuture<?> markAs(@NonNull ContactJidProvider chat, @NonNull MessageInfo lastMessage, int flag, int newFlag) {
-        throw new UnsupportedOperationException("Not implemented");
+    private CompletableFuture<?> markAs(@NonNull ContactJidProvider chat, boolean read) {
+        var range = createLastMessageRange(chat);
+        var muteAction = new MarkChatAsReadAction(read, range);
+        var syncAction = new ActionValueSync(muteAction);
+        var request = PatchRequest.of(REGULAR_LOW, syncAction, SET, 3, chat.toJid().toString());
+        return socket.push(request);
     }
 
     /**
@@ -832,7 +808,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> pin(@NonNull ContactJidProvider chat) {
-        throw new UnsupportedOperationException("Not implemented");
+        return pin(chat, true);
     }
 
     /**
@@ -842,7 +818,43 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> unpin(@NonNull ContactJidProvider chat) {
-        throw new UnsupportedOperationException("Not implemented");
+        return pin(chat, false);
+    }
+
+    private CompletableFuture<Void> pin(ContactJidProvider chat, boolean pin) {
+        var pinAction = new PinAction(pin);
+        var syncAction = new ActionValueSync(pinAction);
+        var request = PatchRequest.of(REGULAR_LOW, syncAction, SET, 5, chat.toJid().toString());
+        return socket.push(request);
+    }
+
+    /**
+     * Stars a message
+     *
+     * @param info the target message
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<?> star(@NonNull MessageInfo info) {
+        return star(info, true);
+    }
+
+    /**
+     * Removes star from a message
+     *
+     * @param info the target message
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<?> unstar(@NonNull MessageInfo info) {
+        return star(info, false);
+    }
+
+    private CompletableFuture<Void> star(MessageInfo info, boolean star) {
+        var starAction = new StarAction(star);
+        var syncAction = new ActionValueSync(starAction);
+        var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 3,
+                info.chatJid().toString(), info.id(), String.valueOf(info.fromMe() ? 1 : 0),
+                info.chatJid().server() == GROUP && !info.fromMe() ? info.senderJid().toString() : "0");
+        return socket.push(request);
     }
 
     /**
@@ -853,7 +865,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> archive(@NonNull ContactJidProvider chat) {
-        throw new UnsupportedOperationException("Not implemented");
+        return archive(chat, true);
     }
 
     /**
@@ -863,246 +875,21 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<?> unarchive(@NonNull ContactJidProvider chat) {
-        throw new UnsupportedOperationException("Not implemented");
+        return archive(chat, false);
     }
 
-    private void starMessagePlaceholder() {
-        // Sent Binary Message Node[description=iq, attributes={xmlns=w:dataSync:app:state, to=s.whatsapp.net, jid=54595.12796-297, type=set}, content=[Node[description=dataSync, attributes={}, content=[Node[description=internal, attributes={name=regular_high, return_snapshot=false, version=13}, content=[Node[description=patch, attributes={}, content=[B@1cd3e518]]]]]]]
-        // Received Binary Message Node[description=iq, attributes={from=s.whatsapp.net, jid=54595.12796-297, type=result}, content=[Node[description=dataSync, attributes={}, content=[Node[description=internal, attributes={name=regular_high, version=14}, content=null]]]]]
+    private CompletableFuture<Void> archive(ContactJidProvider chat, boolean archive) {
+        var range = createLastMessageRange(chat);
+        var muteAction = new MarkChatAsReadAction(archive, range);
+        var syncAction = new ActionValueSync(muteAction);
+        var request = PatchRequest.of(REGULAR_LOW, syncAction, SET, 3, chat.toJid().toString());
+        return socket.push(request);
     }
 
-    private void unstarMessagePlaceholder() {
-        // Sent Binary Message Node[description=iq, attributes={xmlns=w:dataSync:app:state, to=s.whatsapp.net, jid=54595.12796-301, type=set}, content=[Node[description=dataSync, attributes={}, content=[Node[description=internal, attributes={name=regular_high, return_snapshot=false, version=14}, content=[Node[description=patch, attributes={}, content=[B@73ce9a0b]]]]]]]
-        // Received Binary Message Node[description=iq, attributes={from=s.whatsapp.net, jid=54595.12796-301, type=result}, content=[Node[description=dataSync, attributes={}, content=[Node[description=internal, attributes={name=regular_high, version=15}, content=null]]]]]
-    }
-
-    private void groupRelatedStuff(){
-        //         t.resetGroupInviteCode = function(e) {
-        //            return f((0,
-        //            i.wap)("iq", {
-        //                type: "set",
-        //                xmlns: "w:g2",
-        //                to: (0,
-        //                d.GROUP_JID)(e),
-        //                id: (0,
-        //                i.generateId)()
-        //            }, (0,
-        //            i.wap)("invite", null)))
-
-        //        i.wap)("iq", {
-        //                    type: "set",
-        //                    xmlns: "w:g2",
-        //                    to: (0,
-        //                    c.JID)(e),
-        //                    id: (0,
-        //                    i.generateId)()
-        //                }, (0,
-        //                i.wap)("join_linked_group", {
-        //                    type: n,
-        //                    jid: (0,
-        //                    c.JID)(t)
-        //                }))
-        //                  , s = yield(0,
-        //                u.sendIq)(r, f);
-        //                return s.success ? s.result : (__LOG__(2)`joinSubgroup failed: ${s.errorCode}:${s.errorType}`,
-        //                Promise.reject(new o.ServerStatusCodeError(s.errorCode)))
-
-
-        //        t.setGroupDescription = function(e, t, a, n) {
-        //            const r = t ? (0,
-        //            i.wap)("description", {
-        //                id: (0,
-        //                i.CUSTOM_STRING)(a),
-        //                prev: (0,
-        //                i.MAYBE_CUSTOM_STRING)(n)
-        //            }, (0,
-        //            i.wap)("body", null, t)) : (0,
-        //            i.wap)("description", {
-        //                delete: "true",
-        //                prev: (0,
-        //                i.MAYBE_CUSTOM_STRING)(n)
-        //            });
-        //            return f((0,
-        //            i.wap)("iq", {
-        //                to: (0,
-        //                d.GROUP_JID)(e),
-        //                type: "set",
-        //                xmlns: "w:g2",
-        //                id: (0,
-        //                i.generateId)()
-        //            }, r))
-        //        }
-
-
-        //        t.setGroupProperty = function(e, t, a) {
-        //            let n;
-        //            switch (t) {
-        //            case l.GROUP_SETTING_TYPE.ANNOUNCEMENT:
-        //                n = 1 === a ? (0,
-        //                i.wap)("announcement", null) : (0,
-        //                i.wap)("not_announcement", null);
-        //                break;
-        //            case l.GROUP_SETTING_TYPE.RESTRICT:
-        //                n = 1 === a ? (0,
-        //                i.wap)("locked", null) : (0,
-        //                i.wap)("unlocked", null);
-        //                break;
-        //            case l.GROUP_SETTING_TYPE.NO_FREQUENTLY_FORWARDED:
-        //                n = 1 === a ? (0,
-        //                i.wap)("no_frequently_forwarded", null) : (0,
-        //                i.wap)("frequently_forwarded_ok", null);
-        //                break;
-        //            case l.GROUP_SETTING_TYPE.EPHEMERAL:
-        //                n = a > 0 ? (0,
-        //                i.wap)("ephemeral", {
-        //                    expiration: (0,
-        //                    i.INT)(a)
-        //                }) : (0,
-        //                i.wap)("not_ephemeral", null);
-        //                break;
-        //            default:
-        //                return Promise.reject(new Error(`invalid group property ${t}`))
-        //            }
-        //            return f((0,
-        //            i.wap)("iq", {
-        //                to: (0,
-        //                d.GROUP_JID)(e),
-        //                type: "set",
-        //                xmlns: "w:g2",
-        //                id: (0,
-        //                i.generateId)()
-        //            }, n))
-        //        }
-
-
-        //     t.setGroupSubject = function(e, t) {
-        //            return f((0,
-        //            i.wap)("iq", {
-        //                to: (0,
-        //                d.GROUP_JID)(e),
-        //                type: "set",
-        //                xmlns: "w:g2",
-        //                id: (0,
-        //                i.generateId)()
-        //            }, (0,
-        //            i.wap)("subject", null, t)))
-        //        }
-
-
-        //         function h() {
-        //            return (h = (0,
-        //            r.default)((function*(e) {
-        //                const t = (0,
-        //                i.wap)("iq", {
-        //                    to: (0,
-        //                    d.GROUP_JID)(e),
-        //                    type: "get",
-        //                    xmlns: "w:g2",
-        //                    id: (0,
-        //                    i.generateId)()
-        //                }, (0,
-        //                i.wap)("sub_groups", null))
-        //                  , a = yield(0,
-        //                l.sendIq)(t, c);
-        //                return a.success ? a.result : (__LOG__(2)`queryAllSubgroups failed: ${a.errorCode}:${a.errorType}`,
-        //                Promise.reject(new o.ServerStatusCodeError(a.errorCode,a.errorText)))
-        //            }
-        //            ))).apply(this, arguments)
-        //        }
-        //        function p() {
-        //            return (p = (0,
-        //            r.default)((function*(e, t) {
-        //                const a = (0,
-        //                i.wap)("iq", {
-        //                    to: (0,
-        //                    d.GROUP_JID)(t),
-        //                    type: "get",
-        //                    xmlns: "w:g2",
-        //                    id: (0,
-        //                    i.generateId)()
-        //                }, (0,
-        //                i.wap)("query_linked", {
-        //                    type: "sub_group",
-        //                    jid: (0,
-        //                    d.GROUP_JID)(e)
-        //                }))
-        //                  , n = yield(0,
-        //                l.sendIq)(a, f);
-        //                return n.success ? n.result[0] : (__LOG__(2)`queryAllSubgroups failed: ${n.errorCode}:${n.errorType}`,
-        //                Promise.reject(new o.ServerStatusCodeError(n.errorCode,n.errorText)))
-        //            }
-
-
-        //   function u() {
-        //            return (u = (0,
-        //            r.default)((function*(e) {
-        //                const t = (0,
-        //                i.wap)("iq", {
-        //                    xmlns: "disappearing_mode",
-        //                    to: i.S_WHATSAPP_NET,
-        //                    type: "set",
-        //                    id: (0,
-        //                    i.generateId)()
-        //                }, (0,
-        //                i.wap)("disappearing_mode", {
-        //                    duration: (0,
-        //                    i.CUSTOM_STRING)(String(e))
-        //                }))
-        //                  , a = yield(0,
-        //                o.sendIq)(t, l);
-        //                if (!a.success) {
-        //                    const {errorCode: e, errorText: t} = a;
-        //                    throw __LOG__(3)`setDisappearingMode: failed ${e}, ${t}`,
-        //                    new Error({
-        //                        errorCode: e,
-        //                        errorText: t
-        //                    })
-        //                }
-        //            }
-        //            ))).apply(this, arguments)
-        //        }
-
-        //    function f() {
-        //            return (f = (0,
-        //            r.default)((function*(e) {
-        //                const t = e.map((e=>{
-        //                    const {name: t, value: a, users: n, dhash: r} = e;
-        //                    return (0,
-        //                    i.wap)("category", {
-        //                        name: (0,
-        //                        i.CUSTOM_STRING)(t),
-        //                        value: (0,
-        //                        i.CUSTOM_STRING)(a),
-        //                        dhash: null == n ? i.DROP_ATTR : (0,
-        //                        i.CUSTOM_STRING)(null != r ? r : "none")
-        //                    }, null == n ? null : n.map((e=>{
-        //                        let {action: t, wid: a} = e;
-        //                        return (0,
-        //                        i.wap)("user", {
-        //                            action: (0,
-        //                            i.CUSTOM_STRING)(t),
-        //                            jid: (0,
-        //                            u.JID)(a)
-        //                        })
-        //                    }
-        //                    )))
-        //                }
-        //                ))
-        //                  , a = yield(0,
-        //                l.sendIq)((0,
-        //                i.wap)("iq", {
-        //                    to: i.S_WHATSAPP_NET,
-        //                    type: "set",
-        //                    xmlns: "privacy",
-        //                    id: (0,
-        //                    i.generateId)()
-        //                }, (0,
-        //                i.wap)("privacy", null, t)), d);
-        //                if (!0 === a.success)
-        //                    return a.result;
-        //                throw new o.ServerStatusCodeError(a.errorCode,a.errorText)
-        //            }
-        //            ))).apply(this, arguments)
-        //        }
+    private ActionMessageRangeSync createLastMessageRange(ContactJidProvider chat) {
+        return store().findChatByJid(chat.toJid())
+                .flatMap(Chat::lastMessage)
+                .map(ActionMessageRangeSync::new)
+                .orElseThrow(() -> new NoSuchElementException("Missing chat or last message"));
     }
 }

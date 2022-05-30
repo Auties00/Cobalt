@@ -23,6 +23,6 @@ public final class ContactAction implements Action {
 
   @Override
   public String indexName() {
-    return "unknown";
+    return "contact";
   }
 }

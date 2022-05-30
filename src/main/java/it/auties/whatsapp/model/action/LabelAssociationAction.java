@@ -20,6 +20,6 @@ public final class LabelAssociationAction implements Action {
 
   @Override
   public String indexName() {
-    return "unknown";
+    return "label_message";
   }
 }
