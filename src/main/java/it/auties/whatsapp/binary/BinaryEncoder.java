@@ -7,6 +7,7 @@ import it.auties.whatsapp.util.Nodes;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.Objects;
 
 import static it.auties.whatsapp.binary.BinaryTag.*;
 
@@ -198,6 +199,7 @@ public class BinaryEncoder {
             case byte[] bytes -> writeBytes(bytes);
             case ContactJid jid -> writeJid(jid);
             case Collection<?> collection -> writeList(collection);
+            case Enum<?> serializable -> writeString(Objects.toString(serializable));
             case Node ignored -> throw new IllegalArgumentException("Invalid payload type(nodes should be wrapped by a collection): %s".formatted(input));
             default -> throw new IllegalArgumentException("Invalid payload type(%s): %s".formatted(input.getClass().getName(), input));
         }

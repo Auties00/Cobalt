@@ -282,12 +282,14 @@ public final class WhatsappKeys implements WhatsappController {
      * Queries the trusted key that matches {@code id}
      *
      * @param id the non-null id to search
-     * @return a non-null Optional signal pre key
+     * @return a non-null pre key
      */
-    public Optional<SignalPreKeyPair> findPreKeyById(int id) {
+    public SignalPreKeyPair findPreKeyById(@NonNull Integer id) {
         return preKeys.stream()
                 .filter(preKey -> preKey.id() == id)
-                .findFirst();
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException("Cannot find a pre key with id %s"
+                        .formatted(id)));
     }
 
     /**

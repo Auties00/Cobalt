@@ -20,10 +20,7 @@ import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.device.DeviceSentMessage;
-import it.auties.whatsapp.model.message.model.MediaMessage;
-import it.auties.whatsapp.model.message.model.MessageContainer;
-import it.auties.whatsapp.model.message.model.MessageKey;
-import it.auties.whatsapp.model.message.model.MessageStatus;
+import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.model.request.Node;
@@ -59,6 +56,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -265,25 +263,25 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     @OnError
     public void onError(Throwable throwable){
         serialize(ON_ERROR);
-        errorHandler.handleFailure(503, throwable.getMessage(), UNKNOWN);
+        errorHandler.handleFailure(503, throwable.getMessage(), UNKNOWN, throwable);
     }
 
     public CompletableFuture<Node> send(Node node) {
         store.callListeners(listener -> listener.onNodeSent(node));
         return node.toRequest(node.id() == null ? store.nextTag() : null)
                 .send(session(), keys, store)
-                .exceptionallyAsync(throwable -> errorHandler.handleFailure(503, throwable.getMessage(), ERRONEOUS_NODE));
+                .exceptionallyAsync(throwable -> errorHandler.handleFailure(503, throwable.getMessage(), ERRONEOUS_NODE, throwable));
     }
 
     public CompletableFuture<Void> sendWithNoResponse(Node node) {
         store.callListeners(listener -> listener.onNodeSent(node));
         return node.toRequest(node.id() == null ? store.nextTag() : null)
                 .sendWithNoResponse(session(), keys, store)
-                .exceptionallyAsync(throwable -> errorHandler.handleFailure(503, throwable.getMessage(), UNKNOWN));
+                .exceptionallyAsync(throwable -> errorHandler.handleFailure(503, throwable.getMessage(), UNKNOWN, throwable));
     }
 
     public CompletableFuture<Void> push(PatchRequest request){
-        return appStateHandler.push(request);
+        return appStateHandler.pullAndPush(request);
     }
 
     @SafeVarargs
@@ -815,7 +813,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             );
 
             if (!store.listeners().isEmpty()) {
-                store.callListeners(listener -> Objects.requireNonNull(listener.onQRCode(), "Invalid QR handler").accept(qr));
+                store.callListeners(listener -> requireNonNull(listener.onQRCode(), "Invalid QR handler").accept(qr));
                 return;
             }
 
@@ -1189,12 +1187,16 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                         ? MessageContainer.of(deviceSentMessage.message().content()) : messageContainer;
                 info.message(message);
                 handleStubMessage(info);
-                switch (info.message().content()){
-                    case SenderKeyDistributionMessage distributionMessage -> handleDistributionMessage(distributionMessage, info.senderJid());
-                    case ProtocolMessage protocolMessage -> handleProtocolMessage(info, protocolMessage, Objects.equals(container.attributes().getString("category"), "peer"));
-                    default -> saveMessage(info);
+                Message content = info.message().content();
+                if (content instanceof SenderKeyDistributionMessage distributionMessage) {
+                    handleDistributionMessage(distributionMessage, info.senderJid());
                 }
 
+                if (content instanceof ProtocolMessage protocolMessage) {
+                    handleProtocolMessage(info, protocolMessage, Objects.equals(container.attributes().getString("category"), "peer"));
+                }
+
+                saveMessage(info);
                 sendReceipt(info.chatJid(), info.senderJid(), List.of(info.key().id()), null);
             }catch (Throwable throwable){
                 errorHandler.handleFailure(503, throwable.getMessage(), MESSAGE, throwable);
@@ -1318,10 +1320,11 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     case REVOKE -> {
                         var chat = info.chat()
                                 .orElseGet(() -> createChat(info.chatJid()));
-                        var message = store.findMessageById(chat, protocolMessage.key().id())
-                                .orElseThrow(() -> new NoSuchElementException("Missing message"));
-                        chat.messages().add(message);
-                        store.callListeners(listener -> listener.onMessageDeleted(message, true));
+                        store.findMessageById(chat, protocolMessage.key().id())
+                                .ifPresent(message -> {
+                                    chat.messages().remove(message);
+                                    store.callListeners(listener -> listener.onMessageDeleted(message, true));
+                                });
                     }
 
                     case EPHEMERAL_SETTING -> {
@@ -1373,65 +1376,81 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     }
 
     private class AppStateHandler {
-        private static final Semaphore PULL_SEMAPHORE = new Semaphore(1);
+        private static final Semaphore SEMAPHORE = new Semaphore(1);
         private static final int MAX_SYNC_ATTEMPTS = 5;
 
-        @SneakyThrows
-        public CompletableFuture<Void> push(PatchRequest patch) {
-            var index = patch.index().getBytes(StandardCharsets.UTF_8);
-            var key = keys.appStateKeys().getLast();
-            var hashState = keys.findHashStateByName(patch.type().toString()).copy();
-            var actionData = ActionDataSync.builder()
-                    .index(index)
-                    .value(patch.sync())
-                    .padding(new byte[0])
-                    .version(patch.version())
-                    .build();
-            var encodedActionData = PROTOBUF.writeValueAsBytes(actionData);
-            var mutationKeys = MutationKeys.of(key.keyData().keyData());
-            var encrypted = AesCbc.encrypt(encodedActionData, mutationKeys.macKey());
-            var valueMac = generateMac(patch.operation(), encrypted, key.keyId().keyId(), mutationKeys.macKey());
-            var indexMac = Hmac.calculateSha256(index, mutationKeys.indexKey());
-
-            var generator = new LTHash(hashState);
-            generator.mix(indexMac, valueMac, patch.operation());
-
-            var result = generator.finish();
-            hashState.hash(result.hash());
-            hashState.indexValueMap(result.indexValueMap());
-            hashState.version(hashState.version() + 1);
-
-            var snapshotMac = generateSnapshotMac(hashState.hash(), hashState.version(), patch.type().toString(), mutationKeys.snapshotMacKey());
-            var syncId = new KeyId(key.keyId().keyId());
-            var patchMac = generatePatchMac(snapshotMac, Bytes.of(valueMac), hashState.version(), patch.type().toString(), mutationKeys.patchMacKey());
-            var record = RecordSync.builder()
-                    .index(new IndexSync(indexMac))
-                    .value(new ValueSync(Bytes.of(encrypted, valueMac).toByteArray()))
-                    .keyId(syncId)
-                    .build();
-            var mutation = MutationSync.builder()
-                    .operation(patch.operation())
-                    .record(record)
-                    .build();
-            var sync = PatchSync.builder()
-                    .patchMac(patchMac)
-                    .keyId(syncId)
-                    .mutations(List.of(mutation))
-                    .build();
-            hashState.indexValueMap().put(Bytes.of(indexMac).toBase64(), valueMac);
-
-            var collectionNode = withAttributes("collection",
-                    of("name", patch.type(), "version", hashState.version() - 1));
-            var patchNode = with("patch",
-                    PROTOBUF.writeValueAsBytes(sync));
-            return sendQuery("set", "w:sync:app:state",
-                    withChildren("sync", collectionNode, patchNode))
-                    .thenRunAsync(() -> parseSyncRequest(patch, hashState, sync));
+        public CompletableFuture<Void> pullAndPush(@NonNull PatchRequest patch) {
+            return pull(patch.type())
+                    .thenComposeAsync(ignored -> push(patch));
         }
 
-        private void parseSyncRequest(PatchRequest patch, LTHashState hashState, PatchSync sync) {
-            keys.hashStates().put(patch.type().toString(), hashState);
-            decodePatch(patch.type().toString(), hashState.version(), hashState, sync)
+        @SneakyThrows
+        public CompletableFuture<Void> push(PatchRequest patch){
+            try {
+                SEMAPHORE.acquire();
+                var type = patch.type().toString();
+                var index = patch.index().getBytes(StandardCharsets.UTF_8);
+                var key = requireNonNull(keys.appStateKeys().peekLast(), "No keys available for push");
+                var oldState = keys.findHashStateByName(type);
+                var newState = oldState.copy();
+                var actionData = ActionDataSync.builder()
+                        .index(index)
+                        .value(patch.sync())
+                        .padding(new byte[0])
+                        .version(patch.version())
+                        .build();
+                var encoded = PROTOBUF.writeValueAsBytes(actionData);
+                var mutationKeys = MutationKeys.of(key.keyData().keyData());
+                var encrypted = AesCbc.encryptAndPrefix(encoded, mutationKeys.encKey());
+                var valueMac = generateMac(patch.operation(), encrypted, key.keyId().keyId(), mutationKeys.macKey());
+                var indexMac = Hmac.calculateSha256(index, mutationKeys.indexKey());
+
+                var generator = new LTHash(newState);
+                generator.mix(indexMac, valueMac, patch.operation());
+                var result = generator.finish();
+                newState.hash(result.hash());
+                newState.indexValueMap(result.indexValueMap());
+                newState.version(newState.version() + 1);
+
+                var snapshotMac = generateSnapshotMac(newState.hash(), newState.version(),
+                        type, mutationKeys.snapshotMacKey());
+                var syncId = new KeyId(key.keyId().keyId());
+                var patchMac = generatePatchMac(snapshotMac, Bytes.of(valueMac),
+                        newState.version(), type, mutationKeys.patchMacKey());
+                var record = RecordSync.builder()
+                        .index(new IndexSync(indexMac))
+                        .value(new ValueSync(Bytes.of(encrypted, valueMac).toByteArray()))
+                        .keyId(syncId)
+                        .build();
+                var mutation = MutationSync.builder()
+                        .operation(patch.operation())
+                        .record(record)
+                        .build();
+                var sync = PatchSync.builder()
+                        .patchMac(patchMac)
+                        .snapshotMac(snapshotMac)
+                        .keyId(syncId)
+                        .mutations(List.of(mutation))
+                        .build();
+                newState.indexValueMap().put(Bytes.of(indexMac).toBase64(), valueMac);
+
+                var body = withChildren("collection",
+                        of("name", patch.type(), "version", newState.version() - 1, "return_snapshot", false),
+                        with("patch", PROTOBUF.writeValueAsBytes(sync)));
+                return sendQuery("set", "w:sync:app:state", withChildren("sync", body))
+                        .thenRunAsync(() -> keys.hashStates().put(type, newState))
+                        .thenRunAsync(() -> sync.version(new VersionSync(newState.version())))
+                        .thenRunAsync(() -> parseSyncRequest(type, oldState.copy(), sync))
+                        .thenRunAsync(SEMAPHORE::release)
+                        .exceptionallyAsync(this::handleSyncError);
+            }catch (Throwable throwable) {
+                SEMAPHORE.release();
+                throw new RuntimeException("Cannot push patch", throwable);
+            }
+        }
+
+        private void parseSyncRequest(String type, LTHashState state, PatchSync sync) {
+            decodePatch(type, state.version(), state, sync)
                     .stream()
                     .map(MutationsRecord::records)
                     .flatMap(Collection::stream)
@@ -1439,31 +1458,36 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         }
 
         @SneakyThrows
-        private void pull(BinarySync... syncs) {
-            PULL_SEMAPHORE.acquire();
-            var states = Arrays.stream(syncs)
-                    .map(LTHashState::new)
-                    .peek(state -> keys.hashStates().put(state.name(), state))
-                    .toList();
+        private CompletableFuture<Void> pull(BinarySync... syncs) {
+            try {
+                SEMAPHORE.acquire();
+                var states = Arrays.stream(syncs)
+                        .map(LTHashState::new)
+                        .peek(state -> keys.hashStates().put(state.name(), state))
+                        .toList();
 
-            var nodes = states.stream()
-                    .map(LTHashState::toNode)
-                    .toList();
+                var nodes = states.stream()
+                        .map(LTHashState::toNode)
+                        .toList();
 
-            var request = withChildren("iq",
-                    of("id", store.nextTag(), "to", ContactJid.WHATSAPP, "xmlns", "w:sync:app:state", "type", "set"),
-                    withChildren("sync", nodes));
-            send(request)
-                    .thenApplyAsync(this::parseSyncRequest)
-                    .thenApplyAsync(this::parsePatches)
-                    .thenAcceptAsync(actions -> actions.forEach(this::processSyncActions))
-                    .thenRunAsync(PULL_SEMAPHORE::release)
-                    .exceptionallyAsync(this::handlePullError);
+                var request = withChildren("iq",
+                        of("id", store.nextTag(), "to", ContactJid.WHATSAPP, "xmlns", "w:sync:app:state", "type", "set"),
+                        withChildren("sync", nodes));
+                return send(request)
+                        .thenApplyAsync(this::parseSyncRequest)
+                        .thenApplyAsync(this::parsePatches)
+                        .thenAcceptAsync(actions -> actions.forEach(this::processSyncActions))
+                        .thenRunAsync(SEMAPHORE::release)
+                        .exceptionallyAsync(this::handleSyncError);
+            }catch (Throwable throwable) {
+                SEMAPHORE.release();
+                throw new RuntimeException("Cannot pull patches", throwable);
+            }
         }
 
-        private Void handlePullError(Throwable exception) {
-            PULL_SEMAPHORE.release();
-            return errorHandler.handleFailure(503, exception.getMessage(), PULL, exception);
+        private Void handleSyncError(Throwable exception) {
+            SEMAPHORE.release();
+            return errorHandler.handleFailure(503, exception.getMessage(), APP_STATE_SYNC, exception);
         }
 
         private List<ActionDataSync> parsePatches(List<SnapshotSyncRecord> patches) {
@@ -1490,25 +1514,27 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
                 return results;
             } catch (Throwable throwable) {
+                var actualThrowable = createPatchException(throwable, previousException);
                 keys.hashStates().put(patch.name(), new LTHashState(BinarySync.forName(patch.name())));
                 if (tries > MAX_SYNC_ATTEMPTS) {
-                    throw new RuntimeException("Cannot parse patch", throwable);
+                    throw new RuntimeException("Cannot parse patch", actualThrowable);
                 }
 
-                return parsePatch(patch, tries + 1, createPatchException(throwable, previousException));
+                return parsePatch(patch, tries + 1, actualThrowable);
             }
         }
 
+        @SuppressWarnings("ThrowableNotThrown")
         private Throwable createPatchException(Throwable current, Throwable previous){
+            if(current == null){
+                return previous;
+            }
+
             if(previous == null){
                 return current;
             }
 
-            var innerException = current;
-            while (innerException.getCause() != null){
-                innerException = innerException.getCause();
-            }
-
+            var innerException = createPatchException(current.getCause(), current);
             innerException.initCause(previous);
             return current;
         }
@@ -1642,9 +1668,9 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                 patch.mutations().addAll(mutationsSync.mutations());
             }
 
-            newState.version(patch.version().version());
+            newState.version(patch.version());
             if(!Arrays.equals(calculateSyncMac(patch, name), patch.patchMac())){
-                errorHandler.handleFailure(400, "sync_mac", PULL);
+                errorHandler.handleFailure(400, "sync_mac", APP_STATE_SYNC);
                 return Optional.empty();
             }
 
@@ -1655,12 +1681,12 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             newState.hash(mutations.hash());
             newState.indexValueMap(mutations.indexValueMap());
             if(!Arrays.equals(generatePatchMac(name, newState, patch), patch.snapshotMac())){
-                errorHandler.handleFailure(400, "patch_mac", PULL);
+                errorHandler.handleFailure(400, "patch_mac", APP_STATE_SYNC);
                 return Optional.empty();
             }
 
             return Optional.of(mutations)
-                    .filter(ignored -> patch.version().version() == 0 || patch.version().version() > minimumVersionNumber);
+                    .filter(ignored ->  patch.version() == 0|| patch.version() > minimumVersionNumber);
         }
 
         private byte[] generatePatchMac(String name, LTHashState newState, PatchSync patch) {
@@ -1680,7 +1706,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     .map(Bytes::of)
                     .map(binary -> binary.slice(-KEY_LENGTH))
                     .reduce(Bytes.newBuffer(), Bytes::append);
-            return generatePatchMac(sync.snapshotMac(), mutationMacs, sync.version().version(), name, mutationKeys.patchMacKey());
+            return generatePatchMac(sync.snapshotMac(), mutationMacs, sync.version(), name, mutationKeys.patchMacKey());
         }
 
         private MutationsRecord decodeSnapshot(String name, SnapshotSync snapshot) {
@@ -1692,7 +1718,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             newState.hash(mutations.hash());
             newState.indexValueMap(mutations.indexValueMap());
             if(!Arrays.equals(snapshot.mac(), computeSnapshotMac(name, snapshot, newState))){
-                errorHandler.handleFailure(400, "decode_snapshot", PULL);
+                errorHandler.handleFailure(400, "decode_snapshot", APP_STATE_SYNC);
                 return mutations;
             }
 
@@ -1733,14 +1759,14 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             var encryptedBlob = blob.cut(-KEY_LENGTH).toByteArray();
             var encryptedMac = blob.slice(-KEY_LENGTH).toByteArray();
             if(!Arrays.equals(generateMac(operation, encryptedBlob, sync.keyId().id(), mutationKeys.macKey()), encryptedMac)){
-                errorHandler.handleFailure(400, "decode_mutation", PULL);
+                errorHandler.handleFailure(400, "decode_mutation", APP_STATE_SYNC);
                 throw new RuntimeException("Cannot decode mutation: hmc validation failed");
             }
 
             var result = AesCbc.decrypt(encryptedBlob, mutationKeys.encKey());
             var actionSync = PROTOBUF.readMessage(result, ActionDataSync.class);
             if(!Arrays.equals(sync.index().blob(), Hmac.calculateSha256(actionSync.index(), mutationKeys.indexKey()))){
-                errorHandler.handleFailure(400, "decode_mutation", PULL);
+                errorHandler.handleFailure(400, "decode_mutation", APP_STATE_SYNC);
                 throw new RuntimeException("Cannot decode mutation: hmc validation failed");
             }
 
@@ -1789,7 +1815,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         private <T> T handleFailure(long statusCode, String reason, ErrorLocation location, Throwable throwable) {
             log.warning("Received status code %s at %s(%s): handling failure"
                     .formatted(statusCode, location, reason));
-            Objects.requireNonNullElseGet(throwable, RuntimeException::new).printStackTrace();
+            (throwable != null ? throwable : new RuntimeException()).printStackTrace();
             if(location != ERRONEOUS_NODE
                     && !(location == MESSAGE && Objects.equals(reason, "hmac_validation"))
                     && !shouldHandleFailure(statusCode, reason)){
@@ -1817,8 +1843,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         MEDIA_CONNECTION,
         STREAM,
         LOGIN,
-        PULL,
-        PUSH,
+        APP_STATE_SYNC,
         MESSAGE
     }
 }

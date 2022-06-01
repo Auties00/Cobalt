@@ -140,29 +140,17 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
   @ProtobufProperty(index = 31, type = UINT32)
   private Integer entryPointConversionDelaySeconds;
 
-  /**
-   * Disappearing mode
-   */
+  /*
+  FIXME: 02/06/2022 Bugged?
   @ProtobufProperty(index = 32, type = MESSAGE, concreteType = ChatDisappear.Linker.class)
   private ChatDisappear disappearingMode;
-
-  /**
-   * Action link
-   */
   @ProtobufProperty(index = 33, type = STRING)
   private ActionLink actionLink;
-
-  /**
-   * Group subject
-   */
   @ProtobufProperty(index = 34, type = STRING)
   private String groupSubject;
-
-  /**
-   * Parent group jid
-   */
   @ProtobufProperty(index = 35, type = STRING)
   private String parentGroupJid;
+   */
 
   /**
    * Constructs a ContextInfo from a quoted message

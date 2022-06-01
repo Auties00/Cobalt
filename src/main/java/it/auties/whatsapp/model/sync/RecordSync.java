@@ -32,7 +32,8 @@ public class RecordSync implements ProtobufMessage {
     @AllArgsConstructor
     @Accessors(fluent = true)
     public enum Operation implements ProtobufMessage {
-        SET(0, (byte) 0x01), REMOVE(1, (byte) 0x02);
+        SET(0, (byte) 0x01),
+        REMOVE(1, (byte) 0x02);
 
         @Getter
         private final int index;

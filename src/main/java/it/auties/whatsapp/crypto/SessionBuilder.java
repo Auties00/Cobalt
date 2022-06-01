@@ -63,10 +63,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
             return;
         }
 
-        var preKeyPair = Optional.ofNullable(message.preKeyId())
-                .flatMap(keys::findPreKeyById)
-                .orElseThrow(() -> new NoSuchElementException("Invalid pre key id: %s".formatted(message.preKeyId())));
-
+        var preKeyPair = keys.findPreKeyById(message.preKeyId());
         var signedPreKeyPair = keys.findSignedKeyPairById(message.signedPreKeyId());
         session.closeCurrentState();
         var nextState = createState(

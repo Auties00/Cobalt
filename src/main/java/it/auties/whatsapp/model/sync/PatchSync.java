@@ -46,8 +46,13 @@ public class PatchSync implements ProtobufMessage {
     @ProtobufProperty(index = 8, type = UINT32)
     private Integer deviceIndex;
 
+    public long version(){
+        return hasVersion() ? version.version() : 0L;
+    }
+
     public boolean hasVersion() {
-        return version != null && version.version() != 0;
+        return version != null
+                && version.version() != null;
     }
 
     public boolean hasExternalMutations() {

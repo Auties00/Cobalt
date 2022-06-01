@@ -470,16 +470,6 @@ public class Whatsapp {
     }
 
     /**
-     * Queries the groups in common with a contact
-     *
-     * @param contact the target contact
-     * @return a CompletableFuture 
-     */
-    public CompletableFuture<?> queryGroupsInCommon(@NonNull ContactJidProvider contact) {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    /**
      * Changes your presence for everyone on Whatsapp
      *
      * @param available whether you are online or not
@@ -578,22 +568,25 @@ public class Whatsapp {
      * Changes the description of a group
      *
      * @param group          the target group
-     * @param newDescription the new name for the group, can be null if you want to remove it
+     * @param description the new name for the group, can be null if you want to remove it
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> changeDescription(@NonNull ContactJidProvider group, String newDescription) {
+    public CompletableFuture<?> changeDescription(@NonNull ContactJidProvider group, String description) {
         return socket.queryGroupMetadata(group.toJid())
                 .thenApplyAsync(GroupMetadata::descriptionId)
-                .thenComposeAsync(descriptionId -> changeDescription(group, newDescription, descriptionId));
+                .thenComposeAsync(descriptionId -> changeDescription(group, description, descriptionId));
     }
 
-    private CompletableFuture<Node> changeDescription(ContactJidProvider group, String newDescription, String descriptionId) {
-        var description = Optional.ofNullable(newDescription)
+    private CompletableFuture<Node> changeDescription(ContactJidProvider group, String description, String descriptionId) {
+        var descriptionNode = Optional.ofNullable(description)
                 .map(content -> with("body", content.getBytes(StandardCharsets.UTF_8)))
                 .orElse(null);
-        var key = newDescription != null ? "description" : "delete";
-        var value = descriptionId != null ? MessageKey.randomId() : "true";
-        var body = withChildren("description", of(key, value), description);
+        var attributes = Attributes.empty()
+                .put("id", MessageKey.randomId(), () -> description != null)
+                .put("delete", true, () -> description == null)
+                .put("prev", descriptionId, () -> descriptionId != null)
+                .map();
+        var body = withChildren("description", attributes, descriptionNode);
         return socket.sendQuery(group.toJid(), "set", "w:g2", body);
     }
 
@@ -761,7 +754,7 @@ public class Whatsapp {
 
             case GROUP -> {
                 var body = timer == ChatEphemeralTimer.OFF ? with("not_ephemeral")
-                        : with("ephemeral", of("expiration", timer.timeInSeconds()));
+                        : withAttributes("ephemeral", of("expiration", timer.timeInSeconds()));
                 yield socket.sendQuery(chat.toJid(), "set", "w:g2", body);
             }
 
@@ -779,7 +772,6 @@ public class Whatsapp {
     public CompletableFuture<?> markAsRead(@NonNull ContactJidProvider chat) {
         return markAs(chat, true);
     }
-
 
     /**
      * Marks a chat as unread
@@ -890,6 +882,6 @@ public class Whatsapp {
         return store().findChatByJid(chat.toJid())
                 .flatMap(Chat::lastMessage)
                 .map(ActionMessageRangeSync::new)
-                .orElseThrow(() -> new NoSuchElementException("Missing chat or last message"));
+                .orElseGet(() -> new ActionMessageRangeSync(null, null, null));
     }
 }

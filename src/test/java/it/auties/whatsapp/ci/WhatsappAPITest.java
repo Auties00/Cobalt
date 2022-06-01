@@ -8,11 +8,13 @@ import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.controller.WhatsappKeys;
 import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.github.GithubActions;
+import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.chat.GroupPolicy;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.message.standard.*;
+import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.utils.ConfigUtils;
 import it.auties.whatsapp.utils.MediaUtils;
@@ -68,19 +70,19 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
     private void loadConfig() throws IOException {
         if(GithubActions.isActionsEnvironment()) {
             log("Loading environment variables...");
-            this.contact = ContactJid.of(System.getenv(GithubActions.CONTACT_NAME));
+            contact = ContactJid.of(System.getenv(GithubActions.CONTACT_NAME));
             log("Loaded environment variables...");
             return;
         }
 
         log("Loading configuration file...");
         var props = ConfigUtils.loadConfiguration();
-        this.contact = ContactJid.of(Objects.requireNonNull(props.getProperty("contact"), "Missing contact property in config"));
+        contact = ContactJid.of(Objects.requireNonNull(props.getProperty("contact"), "Missing contact property in config"));
         log("Loaded configuration file");
     }
 
     private void createLatch() {
-        latch = new CountDownLatch(3);
+        latch = new CountDownLatch(4);
     }
 
     @Test
@@ -90,6 +92,16 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
         api.connect();
         latch.await();
         log("Connected!");
+    }
+
+    @Override
+    public void onNodeSent(Node outgoing) {
+        System.out.printf("Sending node: %s%n", outgoing);
+    }
+
+    @Override
+    public void onNodeReceived(Node incoming) {
+        System.out.printf("Received node: %s%n", incoming);
     }
 
     @Override
@@ -108,6 +120,12 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
     public void onContacts() {
         latch.countDown();
         log("Got contacts: -%s", latch.getCount());
+    }
+
+    @Override
+    public void onChatRecentMessages(Chat chat) {
+        latch.countDown();
+        log("Got recent messages: -%s", latch.getCount());
     }
 
     @Test
@@ -141,21 +159,6 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
         api.queryStatus(contact)
                 .get()
                 .ifPresentOrElse(status -> log("Queried %s", status), () -> log("%s doesn't have a status", contact));
-    }
-
-    @Test
-    @Order(6)
-    public void testFavouriteMessagesQuery() throws Exception {
-        log("Loading 20 favourite messages...");
-        log("Loaded favourite messages");
-    }
-
-    @Test
-    @Order(7)
-    public void testGroupsInCommonQuery() throws Exception {
-        log("Loading groups in common...");
-        var groupsInCommonResponse = api.queryGroupsInCommon(contact).get();
-        log("Loaded groups in common: %s", groupsInCommonResponse);
     }
 
     @Test
