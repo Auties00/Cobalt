@@ -1,8 +1,10 @@
 package it.auties.whatsapp.github;
 
-import it.auties.whatsapp.utils.ConfigUtils;
+import com.goterl.lazysodium.LazySodiumJava;
+import com.goterl.lazysodium.SodiumJava;
+import com.goterl.lazysodium.utils.LibraryLoader;
 import it.auties.whatsapp.util.JacksonProvider;
-import it.auties.whatsapp.utils.SodiumUtils;
+import it.auties.whatsapp.utils.ConfigUtils;
 import lombok.experimental.UtilityClass;
 import lombok.extern.java.Log;
 
@@ -21,6 +23,7 @@ import static java.net.http.HttpRequest.BodyPublishers.ofString;
 @Log
 @UtilityClass
 public class GithubSecrets implements JacksonProvider {
+    private final LazySodiumJava SODIUM = new LazySodiumJava(new SodiumJava(LibraryLoader.Mode.BUNDLED_ONLY));
     private final String REQUEST_PATH = "https://api.github.com/repos/Auties00/WhatsappWeb4j";
     private final String PUBLIC_KEY_PATH = "actions/secrets/public-key";
     private final String UPDATE_SECRET_PATH = "actions/secrets/%s".formatted(GithubActions.CREDENTIALS_NAME);
@@ -44,9 +47,9 @@ public class GithubSecrets implements JacksonProvider {
         var messageBytes = Base64.getEncoder().encode(credentials.getBytes());
         var cypher = new byte[messageBytes.length + 48];
 
-        var result = SodiumUtils.loadLibrary().crypto_box_seal(cypher, messageBytes, messageBytes.length, publicKeyBytes);
-        if(result != 0){
-            throw new IllegalStateException("crypto_box_seal failed with exit code %s".formatted(result));
+        var result = SODIUM.cryptoBoxSeal(cypher, messageBytes, messageBytes.length, publicKeyBytes);
+        if(!result){
+            throw new IllegalStateException("crypto_box_seal failed");
         }
 
         return cypher;

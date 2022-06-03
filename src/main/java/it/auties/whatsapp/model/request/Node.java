@@ -157,11 +157,10 @@ public record Node(@NonNull String description,
      *
      * @return a nullable node
      */
-    public Node findNode(String description) {
+    public Optional<Node> findNode(String description) {
         return children().stream()
                 .filter(node -> Objects.equals(node.description(), description))
-                .findFirst()
-                .orElse(null);
+                .findFirst();
     }
 
     /**

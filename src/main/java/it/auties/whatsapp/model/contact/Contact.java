@@ -112,7 +112,7 @@ public final class Contact implements ProtobufMessage, ContactJidProvider {
      * @return a non-null jid
      */
     @Override
-    public ContactJid toJid() {
+    public @NonNull ContactJid toJid() {
         return jid();
     }
 }

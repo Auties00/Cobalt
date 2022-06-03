@@ -5,6 +5,7 @@ import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.BytesHelper;
 import lombok.NonNull;
 
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 public record SignalSignedKeyPair(int id, @NonNull SignalKeyPair keyPair, byte[] signature) implements ISignalKeyPair{
@@ -19,10 +20,15 @@ public record SignalSignedKeyPair(int id, @NonNull SignalKeyPair keyPair, byte[]
             return Optional.empty();
         }
 
-        var id = BytesHelper.bytesToInt(node.findNode("id").bytes(), 3);
-        var publicKey = node.findNode("value").bytes();
+        var id = node.findNode("id")
+                .map(Node::bytes)
+                .map(bytes -> BytesHelper.bytesToInt(bytes, 3))
+                .orElseThrow(() -> new NoSuchElementException("Missing id in SignalSignedKeyPair"));
+        var publicKey = node.findNode("value")
+                .map(Node::bytes)
+                .orElseThrow(() -> new NoSuchElementException("Missing publicKey in SignalSignedKeyPair"));
         var keyPair = new SignalKeyPair(publicKey, null);
-        var signature = Optional.ofNullable(node.findNode("signature"))
+        var signature = node.findNode("signature")
                 .map(Node::bytes)
                 .orElse(null);
         return Optional.of(new SignalSignedKeyPair(id, keyPair, signature));

@@ -108,7 +108,8 @@ public record Attributes(Map<String, Object> map) {
     }
 
     public String getRequiredString(@NonNull String key){
-        return requireNonNull(getString(key, null));
+        return requireNonNull(getString(key, null), "Missing required attribute %s"
+                .formatted(key));
     }
 
     public Optional<String> getOptionalString(@NonNull String key){

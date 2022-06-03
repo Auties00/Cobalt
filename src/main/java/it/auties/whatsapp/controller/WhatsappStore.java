@@ -21,17 +21,16 @@ import lombok.extern.java.Log;
 
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNullElseGet;
-import static java.util.concurrent.Executors.newScheduledThreadPool;
-import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
+import static java.util.concurrent.CompletableFuture.runAsync;
+import static java.util.concurrent.Executors.*;
+import static java.util.stream.Collectors.collectingAndThen;
 
 /**
  * This controller holds the user-related data regarding a WhatsappWeb session
@@ -378,6 +377,25 @@ public final class WhatsappStore implements WhatsappController {
      */
     public void dispose(){
         requestsService.shutdownNow();
+    }
+
+    /**
+     * Executes an operation on every registered listener on the listener thread
+     * This should be used to be sure that when a listener should be called it's called on a thread that is not the WebSocket's.
+     * If this condition isn't met, if the thread is put on hold to wait for a response for a pending request, the WebSocket will freeze.
+     *
+     * @param consumer the operation to execute
+     */
+    @SneakyThrows
+    public void invokeListeners(Consumer<WhatsappListener> consumer) {
+        if(requestsService.isShutdown()){
+            this.requestsService = newSingleThreadScheduledExecutor();
+        }
+
+        var futures = listeners.stream()
+                .map(listener -> runAsync(() -> consumer.accept(listener), requestsService))
+                .toArray(CompletableFuture[]::new);
+        CompletableFuture.allOf(futures).get();
     }
 
     /**

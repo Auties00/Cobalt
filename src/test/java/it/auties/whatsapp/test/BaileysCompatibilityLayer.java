@@ -1,4 +1,4 @@
-package it.auties.whatsapp.dev;
+package it.auties.whatsapp.test;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 
 import static it.auties.whatsapp.util.SignalSpecification.CURRENT_VERSION;
 
-public class BaileysTest {
+public class BaileysCompatibilityLayer {
     public static void main(String[] args) throws Throwable {
         var flag = Boolean.parseBoolean(args[0]);
         var knownIds = WhatsappController.knownIds();

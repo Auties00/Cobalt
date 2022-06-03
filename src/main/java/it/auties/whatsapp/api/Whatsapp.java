@@ -49,7 +49,7 @@ import static java.util.Objects.requireNonNullElseGet;
  * Multiple instances of this class can be initialized, though it is not advisable as; is a singleton and cannot distinguish between the data associated with each session.
  */
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "UnusedReturnValue"})
 public class Whatsapp {
     /**
      * The socket associated with this session
@@ -192,6 +192,16 @@ public class Whatsapp {
     }
 
     /**
+     * Waits for the socket to be closed on the current thread
+     *
+     * @return the same instance
+     */
+    public Whatsapp await(){
+        socket.await();
+        return this;
+    }
+
+    /**
      * Opens a connection with Whatsapp Web's WebSocket if a previous connection doesn't exist
      *
      * @return the same instance wrapped in a completable future
@@ -199,13 +209,6 @@ public class Whatsapp {
     public CompletableFuture<Whatsapp> connect() {
         return socket.connect()
                 .thenApplyAsync(ignored -> this);
-    }
-
-    /**
-     * Waits for the socket to be closed on the current thread
-     */
-    public void await(){
-        socket.await();
     }
 
     /**
@@ -351,6 +354,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull MessageInfo message) {
+        message.chatJid(message.chatJid().toUserJid());
         if(message.message().content() instanceof MediaMessage mediaMessage){
             mediaMessage.storeId(store().id());
         }
@@ -365,7 +369,7 @@ public class Whatsapp {
      * @param chats the users to check
      * @return a CompletableFuture that wraps a non-null list of HasWhatsappResponse
      */
-    public CompletableFuture<List<HasWhatsappResponse>> hasWhatsapp(@NonNull ContactJidProvider... chats) {
+    public CompletableFuture<List<HasWhatsappResponse>> hasWhatsapp(@NonNull ContactJidProvider @NonNull ... chats) {
         var contactNodes = Arrays.stream(chats)
                 .map(jid -> with("contact", "+%s".formatted(jid.toJid().user())))
                 .toArray(Node[]::new);
@@ -385,9 +389,11 @@ public class Whatsapp {
 
     private List<ContactJid> parseBlockList(Node result) {
         return result.findNode("list")
+                .orElseThrow(() -> new NoSuchElementException("Missing block list in response"))
                 .findNodes("item")
                 .stream()
-                .map(item -> item.attributes().getJid("jid").orElseThrow())
+                .map(item -> item.attributes().getJid("jid"))
+                .flatMap(Optional::stream)
                 .toList();
     }
 
@@ -401,8 +407,12 @@ public class Whatsapp {
         var query = with("status");
         var body = withAttributes("user", of("jid", chat.toJid()));
         return socket.sendInteractiveQuery(query, body)
-                .thenApplyAsync(response -> Nodes.findFirst(response, "status"))
-                .thenApplyAsync(node -> node.map(ContactStatusResponse::new));
+                .thenApplyAsync(Whatsapp::parseStatus);
+    }
+
+    private static Optional<ContactStatusResponse> parseStatus(List<Node> response) {
+        return Nodes.findFirst(response, "status")
+                .map(ContactStatusResponse::new);
     }
 
     /**
@@ -411,17 +421,16 @@ public class Whatsapp {
      * @param chat the chat of the chat to query
      * @return a CompletableFuture that wraps nullable jpg url hosted on Whatsapp's servers
      */
-    public CompletableFuture<URI> queryChatPicture(@NonNull ContactJidProvider chat) {
+    public CompletableFuture<Optional<URI>> queryChatPicture(@NonNull ContactJidProvider chat) {
         var body = withAttributes("picture", of("query", "url"));
         return socket.sendQuery("get", "w:profile:picture", of("target", chat.toJid()), body)
                 .thenApplyAsync(this::parseChatPicture);
     }
 
-    private URI parseChatPicture(Node result) {
-        return Optional.ofNullable(result.findNode("picture"))
-                .map(picture -> picture.attributes().getString("url", null))
-                .map(URI::create)
-                .orElse(null);
+    private Optional<URI> parseChatPicture(Node result) {
+        return result.findNode("picture")
+                .flatMap(picture -> picture.attributes().getOptionalString("url"))
+                .map(URI::create);
     }
 
     /**
@@ -442,7 +451,14 @@ public class Whatsapp {
      */
     public CompletableFuture<String> queryInviteCode(@NonNull ContactJidProvider chat) {
         return socket.sendQuery(chat.toJid(), "get", "w:g2", with("invite"))
-                .thenApplyAsync(result -> result.findNode("invite").attributes().getString("code"));
+                .thenApplyAsync(Whatsapp::parseInviteCode);
+    }
+
+    private static String parseInviteCode(Node result) {
+        return result.findNode("invite")
+                .orElseThrow(() -> new NoSuchElementException("Missing invite code in invite response"))
+                .attributes()
+                .getRequiredString("code");
     }
 
     /**
@@ -463,10 +479,14 @@ public class Whatsapp {
      */
     public CompletableFuture<Optional<Chat>> acceptInvite(@NonNull String inviteCode) {
         return socket.sendQuery(ContactJid.GROUP, "set", "w:g2", withAttributes("invite", of("invite", inviteCode)))
-                .thenApplyAsync(result -> result.findNode("group"))
-                .thenApplyAsync(group -> group.attributes()
-                        .getJid("jid")
-                        .map(Chat::ofJid));
+                .thenApplyAsync(this::parseAcceptInvite);
+    }
+
+    private Optional<Chat> parseAcceptInvite(Node result) {
+        return result.findNode("group")
+                .flatMap(group -> group.attributes().getJid("jid"))
+                .map(jid -> store().findChatByJid(jid)
+                        .orElseGet(() -> socket.createChat(jid)));
     }
 
     /**
@@ -500,7 +520,7 @@ public class Whatsapp {
      * @param contacts the target contacts
      * @return a CompletableFuture
      */
-    public CompletableFuture<List<ContactJid>> promote(@NonNull ContactJidProvider group, @NonNull ContactJidProvider... contacts) {
+    public CompletableFuture<List<ContactJid>> promote(@NonNull ContactJidProvider group, @NonNull ContactJidProvider @NonNull ... contacts) {
         return executeActionOnGroupParticipant(group, GroupAction.PROMOTE, contacts);
     }
 
@@ -511,7 +531,7 @@ public class Whatsapp {
      * @param contacts the target contacts
      * @return a CompletableFuture
      */
-    public CompletableFuture<List<ContactJid>> demote(@NonNull ContactJidProvider group, @NonNull ContactJidProvider... contacts) {
+    public CompletableFuture<List<ContactJid>> demote(@NonNull ContactJidProvider group, @NonNull ContactJidProvider @NonNull ... contacts) {
         return executeActionOnGroupParticipant(group, GroupAction.DEMOTE, contacts);
     }
 
@@ -522,7 +542,7 @@ public class Whatsapp {
      * @param contacts the target contact/s
      * @return a CompletableFuture
      */
-    public CompletableFuture<List<ContactJid>> add(@NonNull ContactJidProvider group, @NonNull ContactJidProvider... contacts) {
+    public CompletableFuture<List<ContactJid>> add(@NonNull ContactJidProvider group, @NonNull ContactJidProvider @NonNull ... contacts) {
         return executeActionOnGroupParticipant(group, GroupAction.ADD, contacts);
     }
 
@@ -533,22 +553,35 @@ public class Whatsapp {
      * @param contacts the target contact/s
      * @return a CompletableFuture
      */
-    public CompletableFuture<List<ContactJid>> remove(@NonNull ContactJidProvider group, @NonNull ContactJidProvider... contacts) {
+    public CompletableFuture<List<ContactJid>> remove(@NonNull ContactJidProvider group, @NonNull ContactJidProvider @NonNull ... contacts) {
         return executeActionOnGroupParticipant(group, GroupAction.REMOVE, contacts);
     }
 
     private CompletableFuture<List<ContactJid>> executeActionOnGroupParticipant(ContactJidProvider group, GroupAction action, ContactJidProvider... jids) {
         var body = Arrays.stream(jids)
                 .map(ContactJidProvider::toJid)
-                .map(jid -> withChildren(action.data(), withAttributes("participant", of("jid", jid))))
+                .map(jid -> withAttributes("participant", of("jid", checkGroupParticipantJid(jid))))
+                .map(innerBody -> withChildren(action.data(), innerBody))
                 .toArray(Node[]::new);
         return socket.sendQuery(group.toJid(), "set", "w:g2", body)
-                .thenApplyAsync(result -> result.findNode(action.data()))
-                .thenApplyAsync(result -> result.findNodes("participant"))
-                .thenApplyAsync(participants -> participants.stream()
-                        .filter(participant -> !participant.attributes().hasKey("error"))
-                        .map(participant -> participant.attributes().getJid("jid").orElseThrow())
-                        .toList());
+                .thenApplyAsync(result -> parseGroupActionResponse(result, action));
+    }
+
+    private List<ContactJid> parseGroupActionResponse(Node result, GroupAction action) {
+        return result.findNode(action.data())
+                .orElseThrow(() -> new NoSuchElementException("An erroneous group operation was executed"))
+                .findNodes("participant")
+                .stream()
+                .filter(participant -> !participant.attributes().hasKey("error"))
+                .map(participant -> participant.attributes().getJid("jid"))
+                .flatMap(Optional::stream)
+                .toList();
+    }
+
+    private ContactJid checkGroupParticipantJid(ContactJid jid){
+        Validate.isTrue(!Objects.equals(jid.toUserJid(), keys().companion().toUserJid()),
+                "Cannot execute action on yourself");
+        return jid;
     }
 
     /**
@@ -648,9 +681,11 @@ public class Whatsapp {
         var participants = Arrays.stream(contacts)
                 .map(contact -> withAttributes("participant", of("jid", contact.toJid())))
                 .toArray(Node[]::new);
-        var body = withChildren("create", of("subject", subject, "key", ofRandom(12).toHex()), participants);
+        var key = ofRandom(12).toHex();
+        var body = withChildren("create", of("subject", subject, "key", key), participants);
         return socket.sendQuery(ContactJid.GROUP, "set", "w:g2", body)
-                .thenApplyAsync(response -> response.findNode("group"))
+                .thenApplyAsync(response -> response.findNode("group")
+                        .orElseThrow(() -> new NoSuchElementException("Missing group response, something went wrong")))
                 .thenApplyAsync(GroupMetadata::of);
     }
 

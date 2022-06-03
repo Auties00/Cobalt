@@ -27,12 +27,12 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@Log
 @TestMethodOrder(OrderAnnotation.class)
-@RegisterListener
 public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
     private static Whatsapp api;
     private static CountDownLatch latch;
@@ -51,6 +51,7 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
         if (!GithubActions.isActionsEnvironment()) {
             log("Detected local environment");
             api = Whatsapp.newConnection();
+            api.registerListener(this);
             return;
         }
 
@@ -59,6 +60,7 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
                 loadGithubParameter(GithubActions.STORE_NAME, WhatsappStore.class),
                 loadGithubParameter(GithubActions.CREDENTIALS_NAME, WhatsappKeys.class)
         );
+        api.registerListener(this);
     }
 
     private <T> T loadGithubParameter(String parameter, Class<T> type) throws IOException {
@@ -96,12 +98,12 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
 
     @Override
     public void onNodeSent(Node outgoing) {
-        System.out.printf("Sending node: %s%n", outgoing);
+        log("Sending node: %s%n", outgoing);
     }
 
     @Override
     public void onNodeReceived(Node incoming) {
-        System.out.printf("Received node: %s%n", incoming);
+        log("Received node: %s%n", incoming);
     }
 
     @Override
@@ -256,12 +258,6 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
             api.changeWhoCanEditInfo(group, policy).get();
             log("Changed settings to %s", policy.name());
         }
-    }
-
-    @Test
-    @Order(18)
-    public void testChangeAndRemoveGroupPicture() {
-        log.warning("Not implemented");
     }
 
     @Test
@@ -486,8 +482,18 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
         log("Left group: %s", ephemeralResponse);
     }
 
+    @Test
+    @Order(38)
+    public void testDisconnect(){
+        log("Logging off...");
+        CompletableFuture.delayedExecutor(60, TimeUnit.SECONDS)
+                .execute(api::disconnect);
+        api.await();
+        log("Logged off");
+    }
+
     private void log(String message, Object... params){
-        log.info(message.formatted(redactParameters(params)));
+        System.out.printf(message + "%n", redactParameters(params));
     }
 
     private Object[] redactParameters(Object... params){

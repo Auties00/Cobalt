@@ -63,17 +63,15 @@ public class GroupMetadata implements ProtobufMessage {
                 .orElseThrow(() -> new NoSuchElementException("Missing founder"));
         var policies = new HashMap<GroupSetting, GroupPolicy>();
         policies.put(SEND_MESSAGES, forData(node.hasNode("announce")));
-        policies.put(EDIT_GROUP_INFO, forData(node.hasNode("locked")));
-        var descWrapper = node.findNode("description");
-        var description = Optional.ofNullable(descWrapper)
-                .map(parent -> parent.findNode("body"))
+        var description = node.findNode("description")
+                .flatMap(parent -> parent.findNode("body"))
                 .map(GroupMetadata::parseDescription)
                 .orElse(null);
-        var descriptionId = Optional.ofNullable(descWrapper)
+        var descriptionId = node.findNode("description")
                 .map(Node::attributes)
                 .flatMap(attributes -> attributes.getOptionalString("id"))
                 .orElse(null);
-        var ephemeral = Optional.ofNullable(node.findNode("ephemeral"))
+        var ephemeral = node.findNode("ephemeral")
                 .map(Node::attributes)
                 .map(attributes -> attributes.getLong("expiration"))
                 .flatMap(Clock::parse)
@@ -82,7 +80,8 @@ public class GroupMetadata implements ProtobufMessage {
                 .stream()
                 .map(GroupParticipant::of)
                 .toList();
-        return new GroupMetadata(groupId, subject, subjectTimestamp, foundationTimestamp, founder, description, descriptionId, policies, participants, ephemeral);
+        return new GroupMetadata(groupId, subject, subjectTimestamp, foundationTimestamp,
+                founder, description, descriptionId, policies, participants, ephemeral);
     }
 
     private static String parseDescription(Node wrapper) {

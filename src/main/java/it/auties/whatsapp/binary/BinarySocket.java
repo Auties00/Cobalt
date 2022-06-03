@@ -56,7 +56,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -84,10 +84,14 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     @Setter(onParam = @__(@NonNull))
     private Session session;
 
-    private boolean loggedIn;
-
     @NonNull
     private ScheduledExecutorService pingService;
+
+    @NonNull
+    private final AtomicBoolean loggedIn;
+
+    @NonNull
+    private final AtomicBoolean reconnecting;
 
     @NonNull
     private final WhatsappOptions options;
@@ -133,6 +137,8 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         this.appStateHandler = new AppStateHandler();
         this.errorHandler = new ErrorHandler();
         this.pingService = newSingleThreadScheduledExecutor();
+        this.loggedIn = new AtomicBoolean();
+        this.reconnecting = new AtomicBoolean();
         getRuntime().addShutdownHook(new Thread(() -> serialize(ON_CLOSE)));
         serialize(PERIODICALLY, this::schedulePeriodicSerialization);
         serialize(CUSTOM);
@@ -163,7 +169,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     @SneakyThrows
     public void onOpen(@NonNull Session session) {
         session(session);
-        if(loggedIn){
+        if(loggedIn.get()){
             return;
         }
 
@@ -183,7 +189,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         }
 
         var header = message.decoded().getFirst();
-        if(!loggedIn){
+        if(!loggedIn.get()){
             authHandler.sendUserPayload(header.toByteArray());
             return;
         }
@@ -215,6 +221,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     }
 
     public CompletableFuture<Void> reconnect(){
+        reconnecting.set(true);
         return disconnect()
                 .thenComposeAsync(ignored -> connect());
     }
@@ -238,26 +245,27 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     }
 
     private void changeState(boolean loggedIn){
-        this.loggedIn = loggedIn;
+        this.loggedIn.set(loggedIn);
         keys.clear();
     }
 
     @OnClose
     public void onClose(){
-        if(loginFuture != null && !loginFuture.isDone()){
+        if(loginFuture != null && !loginFuture.isDone() && !reconnecting.get()){
             loginFuture.complete(null);
         }
 
-        if(loggedIn) {
-            store.callListeners(listener -> listener.onDisconnected(true));
+        if(loggedIn.get()) {
+            store.invokeListeners(listener -> listener.onDisconnected(true));
             reconnect();
             return;
         }
 
-        store.callListeners(listener -> listener.onDisconnected(false));
+        store.invokeListeners(listener -> listener.onDisconnected(false));
         store.dispose();
         serialize(ON_CLOSE);
         pingService.shutdownNow();
+        reconnecting.set(false);
     }
 
     @OnError
@@ -328,6 +336,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         return result.findNodes("usync")
                 .stream()
                 .map(node -> node.findNode("list"))
+                .flatMap(Optional::stream)
                 .map(node -> node.findNodes("user"))
                 .flatMap(Collection::stream)
                 .toList();
@@ -337,7 +346,9 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     public CompletableFuture<GroupMetadata> queryGroupMetadata(ContactJid group){
         var body = withAttributes("query", of("request", "interactive"));
         return sendQuery(group, "get", "w:g2", body)
-                .thenApplyAsync(node -> GroupMetadata.of(node.findNode("group")));
+                .thenApplyAsync(node -> node.findNode("group")
+                        .orElseThrow(() -> new NoSuchElementException("Missing group node")))
+                .thenApplyAsync(GroupMetadata::of);
     }
 
     private void sendSyncReceipt(MessageInfo info, String type){
@@ -361,6 +372,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                 attributes.map(), toMessagesNode(messages));
         sendWithNoResponse(receipt);
     }
+
     private List<Node> toMessagesNode(List<String> messages) {
         if (messages.size() <= 1) {
             return null;
@@ -394,13 +406,13 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         this.store = newStore;
     }
 
-    private Contact createContact(ContactJid jid) {
+    public Contact createContact(ContactJid jid) {
         var newContact = Contact.ofJid(jid);
         store.addContact(newContact);
         return newContact;
     }
 
-    private Chat createChat(ContactJid jid){
+    public Chat createChat(ContactJid jid){
         var newChat = Chat.ofJid(jid);
         store.addChat(newChat);
         return newChat;
@@ -583,6 +595,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     .flatMap(store::findContactByJid)
                     .orElse(null);
             var messageIds = Stream.ofNullable(node.findNode("list"))
+                    .flatMap(Optional::stream)
                     .map(list -> list.findNodes("item"))
                     .flatMap(Collection::stream)
                     .map(item -> item.attributes().getOptionalString("id"))
@@ -642,28 +655,28 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             }
 
             var update = node.findNode("collection");
-            if (update == null) {
+            if (update.isEmpty()) {
                 return;
             }
 
-            var patchName = BinarySync.forName(update.attributes().getRequiredString("name"));
+            var patchName = BinarySync.forName(update.get().attributes().getRequiredString("name"));
             appStateHandler.pull(patchName);
         }
 
         private void digestIb(Node node) {
             var dirty = node.findNode("dirty");
-            if(dirty == null){
+            if(dirty.isEmpty()){
                 Validate.isTrue(!node.hasNode("downgrade_webclient"),
                         "Multi device beta is not enabled. Please enable it from Whatsapp");
                 return;
             }
 
-            var type = dirty.attributes().getString("type");
+            var type = dirty.get().attributes().getString("type");
             if(!Objects.equals(type, "account_sync")){
                 return;
             }
 
-            var timestamp = dirty.attributes().getString("timestamp");
+            var timestamp = dirty.get().attributes().getString("timestamp");
             sendQuery("set", "urn:xmpp:whatsapp:dirty",
                     withAttributes("clean", of("type", type, "timestamp", timestamp)));
         }
@@ -689,14 +702,14 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             sendPreKeys();
             createPingTask();
             sendStatusUpdate();
+            store.invokeListeners(WhatsappListener::onLoggedIn);
             loginFuture.complete(null);
-            store.callListeners(WhatsappListener::onLoggedIn);
             if (!store.hasSnapshot()) {
                 return;
             }
 
-            store.callListeners(WhatsappListener::onChats);
-            store.callListeners(WhatsappListener::onContacts);
+            store.invokeListeners(WhatsappListener::onChats);
+            store.invokeListeners(WhatsappListener::onContacts);
         }
 
         private void createPingTask() {
@@ -719,6 +732,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
         private void parseProps(Node result) {
             var properties = result.findNode("props")
+                    .orElseThrow(() -> new NoSuchElementException("Missing props"))
                     .findNodes("prop")
                     .stream()
                     .map(node -> Map.entry(node.attributes().getString("name"), node.attributes().getString("value")))
@@ -727,7 +741,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         }
 
         private void sendPing() {
-            if(!loggedIn){
+            if(!loggedIn.get()){
                 pingService.shutdownNow();
                 return;
             }
@@ -737,12 +751,12 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
         @SneakyThrows
         private void createMediaConnection(){
-            if(!loggedIn){
+            if(!loggedIn.get()){
                 return;
             }
 
             sendQuery("set", "w:m", with("media_conn"))
-                    .thenApplyAsync(MediaConnection::ofNode)
+                    .thenApplyAsync(MediaConnection::of)
                     .thenApplyAsync(this::scheduleMediaConnection)
                     .thenApplyAsync(store::mediaConnection)
                     .exceptionallyAsync(throwable -> errorHandler.handleFailure(503, throwable.getMessage(), MEDIA_CONNECTION));
@@ -804,7 +818,8 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         }
 
         private void printQrCode(Node container) {
-            var ref = container.findNode("ref");
+            var ref = container.findNode("ref")
+                    .orElseThrow(() -> new NoSuchElementException("Missing ref"));
             var qr = "%s,%s,%s,%s".formatted(
                     new String(ref.bytes(), StandardCharsets.UTF_8),
                     Bytes.of(keys.noiseKeyPair().publicKey()).toBase64(),
@@ -824,7 +839,8 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         private void confirmQrCode(Node node, Node container) {
             saveCompanion(container);
 
-            var deviceIdentity = requireNonNull(container.findNode("device-identity"), "Missing device identity");
+            var deviceIdentity = container.findNode("device-identity")
+                    .orElseThrow(() -> new NoSuchElementException("Missing device identity"));
             var advIdentity = PROTOBUF.readMessage(deviceIdentity.bytes(), SignedDeviceIdentityHMAC.class);
             var advSign = Hmac.calculateSha256(advIdentity.details(), keys.companionKey());
             if(!Arrays.equals(advIdentity.hmac(), advSign)) {
@@ -871,7 +887,8 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         }
 
         private void saveCompanion(Node container) {
-            var node = requireNonNull(container.findNode("device"), "Missing device");
+            var node = container.findNode("device")
+                    .orElseThrow(() -> new NoSuchElementException("Missing device"));
             var companion = node.attributes().getJid("jid")
                     .orElseThrow(() -> new NoSuchElementException("Missing companion"));
             keys.companion(companion);
@@ -930,7 +947,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
         private Node handleMessageFailure(Throwable throwable) {
             LOCK.release();
-            return errorHandler.handleFailure(503, throwable.getMessage(), LOGIN);
+            return errorHandler.handleFailure(503, throwable.getMessage(), LOGIN, throwable);
         }
 
         private Node releaseMessageLock(Node node) {
@@ -1078,7 +1095,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             var results = node.children()
                     .stream()
                     .map(child -> child.findNode("list"))
-                    .filter(Objects::nonNull)
+                    .flatMap(Optional::stream)
                     .map(Node::children)
                     .flatMap(Collection::stream)
                     .map(entry -> parseDevice(entry, excludeSelf))
@@ -1092,7 +1109,9 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             var jid = wrapper.attributes().getJid("jid")
                     .orElseThrow(() -> new NoSuchElementException("Missing jid for sync device"));
             return wrapper.findNode("devices")
+                    .orElseThrow(() -> new NoSuchElementException("Missing devices"))
                     .findNode("device-list")
+                    .orElseThrow(() -> new NoSuchElementException("Missing device list"))
                     .children()
                     .stream()
                     .map(child -> parseDeviceId(child, jid, excludeSelf))
@@ -1111,6 +1130,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
         private void parseSessions(Node node) {
             node.findNode("list")
+                    .orElseThrow(() -> new NoSuchElementException("Missing list: %s".formatted(node)))
                     .findNodes("user")
                     .forEach(this::parseSession);
         }
@@ -1121,17 +1141,25 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     SecurityException.class);
             var jid = node.attributes().getJid("jid")
                     .orElseThrow(() -> new NoSuchElementException("Missing jid for session"));
-            var signedKey = node.findNode("skey");
-            var key = node.findNode("key");
-            var identity = node.findNode("identity");
-            var registrationId = node.findNode("registration");
-
+            var registrationId = node.findNode("registration")
+                    .map(id -> BytesHelper.bytesToInt(id.bytes(), 4))
+                    .orElseThrow(() -> new NoSuchElementException("Missing id"));
+            var identity = node.findNode("identity")
+                    .map(Node::bytes)
+                    .map(Keys::withHeader)
+                    .orElseThrow(() -> new NoSuchElementException("Missing identity"));
+            var signedKey = node.findNode("skey")
+                    .flatMap(SignalSignedKeyPair::of)
+                    .orElseThrow(() -> new NoSuchElementException("Missing signed key"));
+            var key = node.findNode("key")
+                    .flatMap(SignalSignedKeyPair::of)
+                    .orElse(null);
             var builder = new SessionBuilder(jid.toSignalAddress(), keys);
             builder.createOutgoing(
-                    BytesHelper.bytesToInt(registrationId.bytes(), 4),
-                    Keys.withHeader(identity.bytes()),
-                    SignalSignedKeyPair.of(signedKey).orElseThrow(),
-                    SignalSignedKeyPair.of(key).orElse(null)
+                    registrationId,
+                    identity,
+                    signedKey,
+                    key
             );
         }
 
@@ -1276,72 +1304,72 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
         @SneakyThrows
         private void handleProtocolMessage(MessageInfo info, ProtocolMessage protocolMessage, boolean peer){
-                switch(protocolMessage.type()) {
-                    case HISTORY_SYNC_NOTIFICATION -> {
-                        var compressed = Medias.download(protocolMessage.historySyncNotification(), store);
-                        var decompressed = BytesHelper.deflate(compressed);
-                        var history = PROTOBUF.readMessage(decompressed, HistorySync.class);
+            switch(protocolMessage.type()) {
+                case HISTORY_SYNC_NOTIFICATION -> {
+                    var compressed = Medias.download(protocolMessage.historySyncNotification(), store);
+                    var decompressed = BytesHelper.deflate(compressed);
+                    var history = PROTOBUF.readMessage(decompressed, HistorySync.class);
 
-                        switch(history.syncType()) {
-                            case INITIAL_BOOTSTRAP -> {
-                                history.conversations().forEach(store::addChat);
-                                store.hasSnapshot(true);
-                                store.callListeners(WhatsappListener::onChats);
-                            }
-
-                            case FULL -> history.conversations().forEach(store::addChat);
-
-                            case INITIAL_STATUS_V3 -> {
-                                history.statusV3Messages()
-                                        .stream()
-                                        .peek(message -> message.storeId(store.id()))
-                                        .forEach(store.status()::add);
-                                store.callListeners(WhatsappListener::onStatus);
-                            }
-
-                            case RECENT -> history.conversations()
-                                    .forEach(this::handleRecentMessage);
-
-                            case PUSH_NAME -> {
-                                history.pushNames()
-                                        .forEach(this::handNewPushName);
-                                store.callListeners(WhatsappListener::onContacts);
-                            }
+                    switch(history.syncType()) {
+                        case INITIAL_BOOTSTRAP -> {
+                            history.conversations().forEach(store::addChat);
+                            store.hasSnapshot(true);
+                            store.invokeListeners(WhatsappListener::onChats);
                         }
 
-                        sendSyncReceipt(info, "hist_sync");
+                        case FULL -> history.conversations().forEach(store::addChat);
+
+                        case INITIAL_STATUS_V3 -> {
+                            history.statusV3Messages()
+                                    .stream()
+                                    .peek(message -> message.storeId(store.id()))
+                                    .forEach(store.status()::add);
+                            store.invokeListeners(WhatsappListener::onStatus);
+                        }
+
+                        case RECENT -> history.conversations()
+                                .forEach(this::handleRecentMessage);
+
+                        case PUSH_NAME -> {
+                            history.pushNames()
+                                    .forEach(this::handNewPushName);
+                            store.invokeListeners(WhatsappListener::onContacts);
+                        }
                     }
 
-                    case APP_STATE_SYNC_KEY_SHARE -> {
-                        keys.addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
-                        appStateHandler.pull(BinarySync.values());
-                    }
-
-                    case REVOKE -> {
-                        var chat = info.chat()
-                                .orElseGet(() -> createChat(info.chatJid()));
-                        store.findMessageById(chat, protocolMessage.key().id())
-                                .ifPresent(message -> {
-                                    chat.messages().remove(message);
-                                    store.callListeners(listener -> listener.onMessageDeleted(message, true));
-                                });
-                    }
-
-                    case EPHEMERAL_SETTING -> {
-                        var chat = info.chat()
-                                .orElseGet(() -> createChat(info.chatJid()));
-                        chat.ephemeralMessagesToggleTime(info.timestamp())
-                                .ephemeralMessageDuration(ChatEphemeralTimer.forSeconds(protocolMessage.ephemeralExpiration()));
-                        var setting = new EphemeralSetting(info.ephemeralDuration(), info.timestamp());
-                        store.callListeners(listener -> listener.onSetting(setting));
-                    }
+                    sendSyncReceipt(info, "hist_sync");
                 }
 
-                if (!peer) {
-                    return;
+                case APP_STATE_SYNC_KEY_SHARE -> {
+                    keys.addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
+                    appStateHandler.pull(BinarySync.values());
                 }
 
-                sendSyncReceipt(info, "peer_msg");
+                case REVOKE -> {
+                    var chat = info.chat()
+                            .orElseGet(() -> createChat(info.chatJid()));
+                    store.findMessageById(chat, protocolMessage.key().id())
+                            .ifPresent(message -> {
+                                chat.messages().remove(message);
+                                store.callListeners(listener -> listener.onMessageDeleted(message, true));
+                            });
+                }
+
+                case EPHEMERAL_SETTING -> {
+                    var chat = info.chat()
+                            .orElseGet(() -> createChat(info.chatJid()));
+                    chat.ephemeralMessagesToggleTime(info.timestamp())
+                            .ephemeralMessageDuration(ChatEphemeralTimer.forSeconds(protocolMessage.ephemeralExpiration()));
+                    var setting = new EphemeralSetting(info.ephemeralDuration(), info.timestamp());
+                    store.callListeners(listener -> listener.onSetting(setting));
+                }
+            }
+
+            if (!peer) {
+                return;
+            }
+
+            sendSyncReceipt(info, "peer_msg");
         }
 
         private void handNewPushName(PushName pushName) {
@@ -1540,15 +1568,17 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         }
 
         private List<SnapshotSyncRecord> parseSyncRequest(Node node) {
-            var syncNode = node.findNode("sync");
-            return syncNode == null ? List.of() : syncNode.findNodes("collection")
+            return node.findNode("sync")
+                    .map(sync -> sync.findNodes("collection"))
                     .stream()
+                    .flatMap(Collection::stream)
                     .map(this::parseSync)
                     .toList();
         }
 
         private SnapshotSyncRecord parseSync(Node sync) {
-            var snapshot = sync.findNode("snapshot");
+            var snapshot = sync.findNode("snapshot")
+                    .orElseThrow(() -> new NoSuchElementException("Missing snapshot"));
             var name = sync.attributes().getString("name");
             var more = sync.attributes().getBool("has_more_patches");
             var snapshotSync = decodeSnapshot(snapshot);
@@ -1569,7 +1599,8 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
         private List<PatchSync> decodePatches(Node sync) {
             var versionCode = sync.attributes().getInt("version");
-            return requireNonNullElse(sync.findNode("patches"), sync)
+            return sync.findNode("patches")
+                    .orElse(sync)
                     .findNodes("patch")
                     .stream()
                     .map(patch -> decodePatch(patch, versionCode))

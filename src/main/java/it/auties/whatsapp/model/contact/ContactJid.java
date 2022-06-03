@@ -245,7 +245,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @return a non-null jid
      */
     @Override
-    public ContactJid toJid() {
+    public @NonNull ContactJid toJid() {
         return this;
     }
 
