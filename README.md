@@ -3,8 +3,7 @@
 ### What is WhatsappWeb4j
 
 WhatsappWeb4j is a standalone library built to interact with [WhatsappWeb](https://web.whatsapp.com/). This means that no browser, application or
-any additional software is necessary to use this library. This library was built for [Java 16](https://openjdk.java.net/projects/jdk/16/). 
-Support for Java 11, the latest LTS as of this date, will come soon. Any help to this library is welcomed as long as the coding style of the project is respected. 
+any additional software is necessary to use this library. This library was built for [Java 17](https://openjdk.java.net/projects/jdk/17/). 
 
 ### How to install 
 
@@ -14,14 +13,14 @@ Add this dependency to your dependencies in the pom:
 <dependency>
     <groupId>com.github.auties00</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>2.2.1</version>
+    <version>2.2.6</version>
 </dependency>
 ```
 
 #### Gradle
 Add this dependency to your build.gradle:
 ```groovy
-implementation 'com.github.auties00:whatsappweb4j:2.2.1'
+implementation 'com.github.auties00:whatsappweb4j:2.2.6'
 ```
 
 ### Examples

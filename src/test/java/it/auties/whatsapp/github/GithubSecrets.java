@@ -100,6 +100,6 @@ public class GithubSecrets implements JacksonProvider {
 
     private String loadGithubToken() throws IOException {
         var config = ConfigUtils.loadConfiguration();
-        return Objects.requireNonNull(config.getProperty("github_token"), "Missing github token in configuration");
+        return Objects.requireNonNull(config.getProperty("github_token"), "Missing github_token in configuration");
     }
 }
