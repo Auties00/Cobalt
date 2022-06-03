@@ -1,24 +1,21 @@
 package org.example.whatsapp.bot;
 
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
+import it.auties.whatsapp.api.Whatsapp;
 import org.example.whatsapp.command.CommandManager;
 import org.example.whatsapp.command.HelloCommand;
 
+import java.util.concurrent.ExecutionException;
+
 // This is the main class of our bot
 public class WhatsappBot {
-    public static void main(String... args) {
+    public static void main(String... args) throws ExecutionException, InterruptedException {
         // Initialize the command manager
-        var manager = new CommandManager();
-        // Add all of our commands
-        manager.addCommand(new HelloCommand());
+        CommandManager.instance()
+                .addCommand(new HelloCommand());
 
         // Create a new instance of WhatsappAPI
-        var api = new WhatsappAPI();
-
-        // Register the ban listener and pass the command manager with a dependency injection
-        api.registerListener(new WhatsappBotListener(api, manager));
-
-        // Connect to WhatsappWeb's Servers
-        api.connect();
+        Whatsapp.lastConnection()
+                .connect()
+                .get();
     }
 }

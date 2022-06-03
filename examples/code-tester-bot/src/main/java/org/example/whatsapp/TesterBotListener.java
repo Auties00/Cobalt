@@ -1,12 +1,10 @@
 package org.example.whatsapp;
 
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
-import it.auties.whatsapp4j.listener.RegisterListener;
-import it.auties.whatsapp4j.listener.WhatsappListener;
-import it.auties.whatsapp4j.protobuf.chat.Chat;
-import it.auties.whatsapp4j.protobuf.info.MessageInfo;
-import it.auties.whatsapp4j.protobuf.message.standard.TextMessage;
-import lombok.NonNull;
+import it.auties.whatsapp.api.RegisterListener;
+import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.api.WhatsappListener;
+import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.message.standard.TextMessage;
 
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
@@ -19,7 +17,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RegisterListener
-public record TesterBotListener(WhatsappAPI api) implements WhatsappListener {
+public record TesterBotListener(Whatsapp api) implements WhatsappListener {
     private static final String JAVA_CODE_TEMPLATE =
             """
                             import java.util.*;
@@ -39,9 +37,8 @@ public record TesterBotListener(WhatsappAPI api) implements WhatsappListener {
     private static final JavaCompiler COMPILER = ToolProvider.getSystemJavaCompiler();
 
     @Override
-    public void onNewMessage(@NonNull Chat chat, @NonNull MessageInfo info) {
-        var textMessage = info.container().textMessage();
-        if(textMessage == null || !textMessage.text().contains("/java")){
+    public void onNewMessage(MessageInfo info) {
+        if(!(info.message().content() instanceof TextMessage textMessage)){
             return;
         }
 
@@ -56,15 +53,17 @@ public record TesterBotListener(WhatsappAPI api) implements WhatsappListener {
             var errorStream = new ByteArrayOutputStream(4096);
             var compilationResult = COMPILER.run(null, null, errorStream, "-d", directory.toString(), file.toString());
             if (compilationResult != 0) {
-                api.sendMessage(chat, new TextMessage("The provided code contains errors: %s".formatted(errorStream.toString())), info);
+                api.sendMessage(info.chatJid(), "The provided code contains errors: %s".formatted(errorStream.toString()), info);
                 return;
             }
 
             var process = Runtime.getRuntime().exec(new String[]{"java", "-cp", directory.toString(), "Test"});
-            var result = new BufferedReader(new InputStreamReader(process.getInputStream())).lines().collect(Collectors.joining("\n"));
-            api.sendMessage(chat, new TextMessage("Code compiled successfully: %n%s".formatted(result)), info);
+            var result = new BufferedReader(new InputStreamReader(process.getInputStream()))
+                    .lines()
+                    .collect(Collectors.joining("\n"));
+            api.sendMessage(info.chatJid(), "Code compiled successfully: %n%s".formatted(result), info);
         }catch (IOException ex){
-            api.sendMessage(chat, new TextMessage("An IOException occurred while running the provided code: %n%s".formatted(ex.getMessage())), info);
+            api.sendMessage(info.chatJid(), "An IOException occurred while running the provided code: %n%s".formatted(ex.getMessage()), info);
         }
     }
 }

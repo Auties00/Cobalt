@@ -1,0 +1,29 @@
+package it.auties.whatsapp.model.setting;
+
+import it.auties.protobuf.api.model.ProtobufProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
+
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.SFIXED32;
+import static it.auties.protobuf.api.model.ProtobufProperty.Type.SFIXED64;
+
+@AllArgsConstructor
+@Data
+@Builder
+@Jacksonized
+@Accessors(fluent = true)
+public final class EphemeralSetting implements Setting {
+  @ProtobufProperty(index = 1, type = SFIXED32)
+  private Integer duration;
+
+  @ProtobufProperty(index = 2, type = SFIXED64)
+  private Long timestamp;
+
+  @Override
+  public String indexName() {
+    throw new UnsupportedOperationException("Cannot send setting: no index name");
+  }
+}

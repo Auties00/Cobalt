@@ -1,22 +1,22 @@
 package org.example.whatsapp.bot;
 
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
-import it.auties.whatsapp4j.listener.RegisterListener;
-import it.auties.whatsapp4j.listener.WhatsappListener;
-import it.auties.whatsapp4j.protobuf.chat.Chat;
-import it.auties.whatsapp4j.protobuf.info.MessageInfo;
-import lombok.NonNull;
+import it.auties.whatsapp.api.RegisterListener;
+import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.api.WhatsappListener;
+import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.message.standard.TextMessage;
 import org.example.whatsapp.command.CommandManager;
 
 @RegisterListener
-public record WhatsappBotListener(WhatsappAPI api, CommandManager manager) implements WhatsappListener {
+public record WhatsappBotListener(Whatsapp whatsapp) implements WhatsappListener {
     @Override
-    public void onNewMessage(@NonNull Chat chat, @NonNull MessageInfo info) {
-        var textMessage = info.container().textMessage();
-        if(textMessage == null){
+    public void onNewMessage(MessageInfo info) {
+        if(!(info.message().content() instanceof TextMessage textMessage)){
             return;
         }
 
-        manager.findCommand(textMessage.text()).ifPresent(command -> command.onCommand(api, chat, info));
+        CommandManager.instance()
+                .findCommand(textMessage.text())
+                .ifPresent(command -> command.onCommand(whatsapp, info));
     }
 }

@@ -1,20 +1,17 @@
 package org.example.whatsapp;
 
-import it.auties.whatsapp4j.whatsapp.WhatsappAPI;
-import it.auties.whatsapp4j.listener.RegisterListener;
-import it.auties.whatsapp4j.listener.WhatsappListener;
-import it.auties.whatsapp4j.protobuf.chat.Chat;
-import it.auties.whatsapp4j.protobuf.info.MessageInfo;
-import it.auties.whatsapp4j.protobuf.message.standard.TextMessage;
-import it.auties.whatsapp4j.response.impl.json.ModificationForParticipant;
-import lombok.NonNull;
+import it.auties.whatsapp.api.RegisterListener;
+import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.api.WhatsappListener;
+import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.message.standard.TextMessage;
 
 @RegisterListener
-public record BanBotListener(WhatsappAPI api) implements WhatsappListener {
+public record BanBotListener(Whatsapp api) implements WhatsappListener {
     @Override
-    public void onNewMessage(@NonNull Chat chat, @NonNull MessageInfo info) {
-        var textMessage = info.container().textMessage();
-        if(textMessage == null){
+    public void onNewMessage(MessageInfo info) {
+        if(!(info.message().content() instanceof TextMessage textMessage)){
             return;
         }
 
@@ -22,37 +19,25 @@ public record BanBotListener(WhatsappAPI api) implements WhatsappListener {
             return;
         }
 
-        if(chat.isGroup()){
-            api.sendMessage(chat, new TextMessage("[WhatsappBot] This command is only supported in groups"), info);
+        if(info.chatJid().type() == ContactJid.Type.GROUP){
+            api.sendMessage(info.chatJid(), "[WhatsappBot] This command is only supported in groups", info);
             return;
         }
 
         var quoted = info.quotedMessage();
         if(quoted.isEmpty()){
-            api.sendMessage(chat, new TextMessage("[WhatsappBot] Please quote a message sent by the person that you want to ban"), info);
+            api.sendMessage(info.chatJid(), "[WhatsappBot] Please quote a message sent by the person that you want to ban", info);
             return;
         }
 
         var victim = quoted.get().sender().orElse(null);
         if(victim == null){
-            api.sendMessage(chat, new TextMessage("[WhatsappBot] Missing contact, cannot ban target"), info);
+            api.sendMessage(info.chatJid(), "[WhatsappBot] Missing contact, cannot ban target", info);
             return;
         }
 
-        api.remove(chat, victim).thenAcceptAsync(result -> {
-            var victimName = victim.bestName().orElse(victim.jid());
-            if(result.status() != 200 && result.status() != 207){
-                api.sendMessage(chat, new TextMessage("[WhatsappBot] Could not ban %s, status code: %s".formatted(victimName, result.status())), info);
-                return;
-            }
-
-            var success = result.modifications().stream().map(ModificationForParticipant::status).allMatch(e -> e.code() == 200);
-            if(!success) {
-                api.sendMessage(chat, new TextMessage("[WhatsappBot] Could not ban %s, status code: %s".formatted(victimName, result.status())), info);
-                return;
-            }
-
-            api.sendMessage(chat, new TextMessage("[WhatsappBot] Banned %s".formatted(victimName)), info);
+        api.remove(info.chat().orElseThrow(), victim).thenAcceptAsync(result -> {
+            // Not implemented yet
         });
     }
 }

@@ -5,8 +5,10 @@ import java.util.Optional;
 import java.util.Set;
 
 public class CommandManager {
+    private static final CommandManager instance = new CommandManager();
+
     private final Set<Command> commands;
-    public CommandManager(){
+    private CommandManager(){
         this.commands = new HashSet<>();
     }
 
@@ -16,7 +18,11 @@ public class CommandManager {
 
     public Optional<Command> findCommand(String filter){
         return commands.stream()
-                .filter(command -> command.command().equalsIgnoreCase(filter) || command.aliases().contains(filter))
+                .filter(command -> command.command().equalsIgnoreCase(filter) || command.alias().contains(filter))
                 .findAny();
+    }
+
+    public static CommandManager instance() {
+        return instance;
     }
 }
