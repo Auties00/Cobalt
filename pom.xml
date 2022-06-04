@@ -146,6 +146,29 @@
                 </configuration>
             </plugin>
 
+            <!-- Generate and attach javadocs from source -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${maven.javadoc.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <sourcepath>${delombok.output}</sourcepath>
+                    <release>${java.version}</release>
+                    <failOnError>true</failOnError>
+                    <additionalOptions>--enable-preview</additionalOptions>
+                    <debug>true</debug>
+                    <verbose>true</verbose>
+                </configuration>
+            </plugin>
+
             <!-- Test the library to be sure that everything works-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
