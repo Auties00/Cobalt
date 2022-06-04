@@ -5,3 +5,5 @@ target/
 *.versionsBackup
 /dependency-reduced-pom.xml
 /.test/
+/pom.xml.releaseBackup
+/release.properties
