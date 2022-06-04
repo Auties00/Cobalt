@@ -14,7 +14,6 @@ import java.time.ZonedDateTime;
 import java.util.*;
 
 import static it.auties.whatsapp.model.chat.GroupPolicy.forData;
-import static it.auties.whatsapp.model.chat.GroupSetting.EDIT_GROUP_INFO;
 import static it.auties.whatsapp.model.chat.GroupSetting.SEND_MESSAGES;
 
 @AllArgsConstructor

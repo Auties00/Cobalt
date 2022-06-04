@@ -21,7 +21,10 @@ import lombok.extern.java.Log;
 
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -29,8 +32,8 @@ import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNullElseGet;
 import static java.util.concurrent.CompletableFuture.runAsync;
-import static java.util.concurrent.Executors.*;
-import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.concurrent.Executors.newScheduledThreadPool;
+import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 /**
  * This controller holds the user-related data regarding a WhatsappWeb session
@@ -41,7 +44,7 @@ import static java.util.stream.Collectors.collectingAndThen;
 @Data
 @Accessors(fluent = true, chain = true)
 @Log
-@SuppressWarnings({"unused", "UnusedReturnValue"}) // Chaining
+@SuppressWarnings({"unused", "UnusedReturnValue"})
 public final class WhatsappStore implements WhatsappController {
     /**
      * All the known stores

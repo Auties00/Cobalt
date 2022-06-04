@@ -7,7 +7,7 @@ import java.util.concurrent.Semaphore;
 import java.util.function.Supplier;
 
 @UtilityClass
-public class Jobs {
+public class CipherScheduler {
     private final Semaphore LOCK = new Semaphore(1);
     public void run(Runnable runnable){
         run(() -> {
@@ -21,8 +21,6 @@ public class Jobs {
         try {
             LOCK.acquire();
             return runnable.get();
-        }catch (InterruptedException exception){
-            throw new RuntimeException("Cannot lock on job");
         } finally {
             LOCK.release();
         }

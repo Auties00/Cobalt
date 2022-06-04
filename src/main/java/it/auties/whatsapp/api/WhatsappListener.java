@@ -1,6 +1,5 @@
 package it.auties.whatsapp.api;
 
-import com.google.zxing.common.BitMatrix;
 import it.auties.whatsapp.binary.BinarySocket;
 import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.model.action.Action;

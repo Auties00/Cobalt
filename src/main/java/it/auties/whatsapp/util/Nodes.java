@@ -29,13 +29,6 @@ public class Nodes {
                 .collect(Collectors.toCollection(LinkedList::new));
     }
 
-    public static List<Node> findAll(@NonNull List<Node> nodes, @NonNull String description) {
-        return nodes.stream()
-                .map(node -> node.findNodes(description))
-                .flatMap(Collection::stream)
-                .toList();
-    }
-
     public static Optional<Node> findFirst(@NonNull List<Node> nodes, @NonNull String description) {
         return nodes.stream()
                 .map(node -> node.findNodes(description))

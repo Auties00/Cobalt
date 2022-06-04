@@ -9,7 +9,6 @@ import lombok.SneakyThrows;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 public record PatchRequest(BinarySync type, ActionValueSync sync, String index, int version, Operation operation)
         implements JacksonProvider, SignalSpecification {

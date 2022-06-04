@@ -11,8 +11,6 @@ import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.io.IOException;
-
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.BYTES;
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT32;
 
@@ -39,21 +37,18 @@ public class SenderKeyMessage implements ProtobufMessage, JacksonProvider, Signa
 
   private byte[] serialized;
 
+  @SneakyThrows
   public SenderKeyMessage(int id, int iteration, byte @NonNull [] cipherText, byte @NonNull [] signingKey) {
-    try {
-      this.version = CURRENT_VERSION;
-      this.id = id;
-      this.iteration = iteration;
-      this.cipherText = cipherText;
-      this.signingKey = signingKey;
-      var serialized = Bytes.of(BytesHelper.versionToBytes(version))
-              .append(PROTOBUF.writeValueAsBytes(this));
-      this.signature = Curve25519.sign(signingKey, serialized.toByteArray(), true);
-      this.serialized = serialized.append(signature)
-              .toByteArray();
-    }catch (IOException exception){
-      throw new RuntimeException("Cannot encode SenderKeyMessage", exception);
-    }
+    this.version = CURRENT_VERSION;
+    this.id = id;
+    this.iteration = iteration;
+    this.cipherText = cipherText;
+    this.signingKey = signingKey;
+    var serialized = Bytes.of(BytesHelper.versionToBytes(version))
+            .append(PROTOBUF.writeValueAsBytes(this));
+    this.signature = Curve25519.sign(signingKey, serialized.toByteArray(), true);
+    this.serialized = serialized.append(signature)
+            .toByteArray();
   }
 
   @SneakyThrows

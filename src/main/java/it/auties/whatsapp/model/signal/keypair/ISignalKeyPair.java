@@ -2,7 +2,7 @@ package it.auties.whatsapp.model.signal.keypair;
 
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.BytesHelper;
-import it.auties.whatsapp.util.Keys;
+import it.auties.whatsapp.util.KeyHelper;
 
 public sealed interface ISignalKeyPair permits SignalKeyPair, SignalPreKeyPair, SignalSignedKeyPair {
     default int id(){
@@ -15,7 +15,7 @@ public sealed interface ISignalKeyPair permits SignalKeyPair, SignalPreKeyPair, 
     SignalKeyPair toGenericKeyPair();
 
     default byte[] encodedPublicKey(){
-        return Keys.withHeader(publicKey());
+        return KeyHelper.withHeader(publicKey());
     }
 
     default byte[] encodedId(){

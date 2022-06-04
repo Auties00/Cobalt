@@ -1,4 +1,4 @@
-open module it.auties.whatsapp4j {
+open module it.auties.whatsappweb4j {
     requires static lombok;
     requires transitive java.logging;
     requires transitive java.desktop;
@@ -39,6 +39,7 @@ open module it.auties.whatsapp4j {
     exports it.auties.whatsapp.model.message.model;
     exports it.auties.whatsapp.model.message.payment;
     exports it.auties.whatsapp.model.message.standard;
+    exports it.auties.whatsapp.model.signal.auth;
     exports it.auties.whatsapp.model.product;
     exports it.auties.whatsapp.model.setting;
     exports it.auties.whatsapp.model.sync;

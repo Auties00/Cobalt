@@ -12,8 +12,7 @@ import java.util.function.BiConsumer;
 /**
  * This interface provides a medium to serialize a pair of {@link WhatsappStore} and {@link WhatsappKeys} using custom logic.
  * This logic is fired when a particular event, described by {@link Event}, is fired.
- *
- * @apiNote Calling async operations in a onClose block may result in undefined behaviour
+ * Calling async operations in a onClose block may result in undefined behaviour.
  */
 public interface SerializationStrategy {
     /**
@@ -225,9 +224,8 @@ public interface SerializationStrategy {
      */
     enum Event {
         /**
-         * Called when the socket is closed
-         *
-         * @apiNote async operations may not be completed
+         * Called when the socket is closed.
+         * Async operations may not be completed.
          */
         ON_CLOSE,
 

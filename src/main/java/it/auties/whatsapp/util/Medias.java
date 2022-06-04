@@ -10,7 +10,6 @@ import it.auties.whatsapp.model.message.model.MediaMessageType;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
-import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
@@ -255,7 +254,7 @@ public class Medias implements JacksonProvider {
                 }
             }
 
-            case FILE -> null;
+            case FILE -> null; // TODO: 04/06/2022 Implement a file thumbnail
         };
     }
 

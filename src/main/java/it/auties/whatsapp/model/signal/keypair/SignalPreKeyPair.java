@@ -1,13 +1,13 @@
 package it.auties.whatsapp.model.signal.keypair;
 
 import it.auties.whatsapp.model.request.Node;
-import it.auties.whatsapp.util.Keys;
+import it.auties.whatsapp.util.KeyHelper;
 import lombok.NonNull;
 
 public record SignalPreKeyPair(int id, byte @NonNull [] publicKey, byte[] privateKey) implements ISignalKeyPair{
     public SignalPreKeyPair(int id, byte[] publicKey, byte[] privateKey){
         this.id = id;
-        this.publicKey = Keys.withoutHeader(publicKey);
+        this.publicKey = KeyHelper.withoutHeader(publicKey);
         this.privateKey = privateKey;
     }
 

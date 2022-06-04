@@ -1,9 +1,16 @@
-# WhatsappWeb4j
+# WhatsappWeb4j 
 
 ### What is WhatsappWeb4j
 
-WhatsappWeb4j is a standalone library built to interact with [WhatsappWeb](https://web.whatsapp.com/). This means that no browser, application or
-any additional software is necessary to use this library. This library was built for [Java 17](https://openjdk.java.net/projects/jdk/17/). 
+WhatsappWeb4j is a standalone library built to interact with [WhatsappWeb](https://web.whatsapp.com/). 
+This means that no browser, application or any additional software is necessary to use this library. 
+This library was built for [Java 17](https://openjdk.java.net/projects/jdk/17/) with preview features enabled. 
+
+### Does this library support multi device?
+
+Yes, the master branch now fully supports the multi device feature. 
+Considering that support for legacy WhatsappWeb has been dropped by Whatsapp, this library has also dropped support for the latter. 
+If, you'd like to use a version that supports the legacy version, use any release before 3.0.
 
 ### How to install 
 
@@ -13,117 +20,200 @@ Add this dependency to your dependencies in the pom:
 <dependency>
     <groupId>com.github.auties00</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>2.2.6</version>
+    <version>3.0-RC1</version>
 </dependency>
 ```
 
 #### Gradle
-Add this dependency to your build.gradle:
-```groovy
-implementation 'com.github.auties00:whatsappweb4j:2.2.6'
-```
+
+1. Groovy DSL
+   ```groovy
+   implementation 'com.github.auties00:whatsappweb4j:3.0-RC1'
+   ```
+   
+2. Kotlin DSL
+   ```kotlin
+   implementation("com.github.auties00:whatsappweb4j:3.0-RC1")
+   ```
 
 ### Examples
 
-If you need some examples to get started, check the [examples' directory](https://github.com/Auties00/WhatsappWeb4j/tree/master/examples) in this project. There are several easy
-and documented projects and more will come.
+If you need some examples to get started, check the [examples' directory](https://github.com/Auties00/WhatsappWeb4j/tree/master/examples) in this project. 
+There are several easy and documented projects and more will come.
+Any contribution is welcomed!
 
 ### Javadocs
-Javadocs for WhatsappWeb4j are available [here](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/index.html), all contributions are welcomed!
+Javadocs for WhatsappWeb4j are available [here](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/index.html).
+Any contribution is welcomed!
 
 ### How to contribute
 
-As of today, no additional configuration is needed to edit this project. I recommend using the latest version of IntelliJ.
+As of today, no additional configuration or artifact building is needed to edit this project. 
+I recommend using the latest version of IntelliJ, though any other IDE should work.
+If you are not familiar with git, follow these short tutorials in order:
 
 1. [Fork this project](https://docs.github.com/en/github/getting-started-with-github/fork-a-repo)
 2. [Clone the new repo](https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/cloning-a-repository)
 3. [Create a new branch](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/managing-branches#creating-a-branch)
-3. Once you have implemented the new feature, [create a new merge request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request)
+4. Once you have implemented the new feature, [create a new merge request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request)
 
-If you are trying to implement a feature that is present on WhatsappWeb's WebClient, for example audio or video calls, consider using [WhatsappWeb4jRequestAnalyzer](https://github.com/Auties00/whatsappweb4j-request-analyzer),
-a tool I built for this exact purpose.
+If you are trying to implement a feature that is present on WhatsappWeb's WebClient, for example audio or video calls, 
+consider using [WhatsappWeb4jRequestAnalyzer](https://github.com/Auties00/whatsappweb4j-request-analyzer), a tool I built for this exact purpose.
 
-### How to configure WhatsappWeb4j
-To use this library, start by initializing an instance of WhatsappAPI:
-```java
-var api = new WhatsappAPI();
-```
-Alternatively, you can provide a custom [WhatsappConfiguration](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/api/WhatsappConfiguration.html):
-```java
-var configuration = WhatsappConfiguration.builder()
-        .whatsappUrl("wss://web.whatsapp.com/ws") // WhatsappWeb's WebSocket URL
-        .requestTag("requestTag") // The tag used for requests made to WhatsappWeb's WebSocket
-        .description("Whatsapp4j") // The description provided to Whatsapp during the authentication process
-        .shortDescription("W4J") // An acronym for the description
-        .reconnectWhenDisconnected((reason) -> true) // Determines whether the connection should be reclaimed
-        .async(true) // Determines whether requests sent to whatsapp should be asyncronous or not
-        .build(); // Builds an instance of WhatsappConfiguration
+### What is a listener and how to register it
 
-var api = new WhatsappAPI(configuration);
-```
+Listeners are crucial to handle events related to Whatsapp. 
 
-Now create a [WhatsappListener](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/listener/WhatsappListener.html), remember to implement only the methods that you need:
+To create a new listener, declare a class or record that implements the WhatsappListener interface:
 
 ```java
-public class YourAwesomeListener implements WhatsappListener {
-   public void onLoggedIn(@NonNull UserInformationResponse info) {
-      System.out.println("Connected :)");
-   }
+import it.auties.whatsapp.api.WhatsappListener;
 
-   public void onDisconnected() {
-      System.out.println("Disconnected :(");
-   }
+public class MyListener implements WhatsappListener {
+
 }
 ```
 
-There are two ways to register listeners:
-1.  Manually
-
-    ```java
-    api.registerListener(new YourAwesomeListener());
-    ```
-
-2. Automatically
-    > **_IMPORTANT:_**  Only listeners that provide a no arguments' constructor can be discovered automatically
-
-    Annotate your listener using [@RegisterListener](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/listener/RegisterListener.html):
-    ```java
-    import it.auties.whatsapp4j.listener.RegisterListener;
-    import it.auties.whatsapp4j.listener.WhatsappListener;
-
-    @RegisterListener
-    public class YourAwesomeListener implements WhatsappListener { }
-    ```
-
-    then enable auto-detection:
-    ```java
-    api.autodetectListeners();
-    ```
-
-Now open a connection with WhatsappWeb:
+Remember to manually register this listener:
 ```java
-api.connect();
+api.registerListener(new MyListener());
+```
+Or to register it automatically:
+
+```java
+import it.auties.whatsapp.api.RegisterListener;
+import it.auties.whatsapp.api.WhatsappListener;
+
+@RegisterListener // Automatically registers this listener
+public class MyListener implements WhatsappListener {
+
+}
+```
+If you need the instance of Whatsapp that registered this listener inside it's declaration, it can be injected automically:
+
+```java
+import it.auties.whatsapp.api.RegisterListener;
+import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.api.WhatsappListener;
+
+@RegisterListener // Automatically registers this listener
+public record MyListener(Whatsapp api) implements WhatsappListener {
+
+}
+```
+> **_IMPORTANT:_** Only concrete classes that provide a no arguments constructor a single parameter constructor that takes a Whatsapp instance can be registered automatically
+
+For a complete list of all events that can be implemented, check the documentation.
+
+
+### How to create a connection
+
+The most important class of this API is Whatsapp, an interface between your application and WhatsappWeb's socket.
+
+To create a new Whatsapp instance associated with a new connection, start with:
+```java
+var api = Whatsapp.newConnection();
 ```
 
-When your program is done, disconnect from WhatsappWeb:
+If the connection needs to be configured further, a configuration can be passed to the newConnection constructor like so:
 ```java
-api.disconnect();
+// Implement only the options that you need!
+var configuration = WhatsappOptions.newOptions()
+        .id(1838138) // A random unique ID associated with the session
+        .version(new Version(2, 2212, 7)) // The version of this client, make sure it's not too outdated 
+        .url("wss://web.whatsapp.com/ws") // The URL of WhatsappWeb's Socket
+        .serialization(true) // Whether this session should be serialized
+        .historyLength(HistoryLength.THREE_MONTHS) // The amount of chat history that Whatsapp sends to the client on the first scan
+        .serializationStrategy() // An implementation, built in or custom(for example in a database), of the serialization mechanism
+        .create(); // Creates an instance of WhatsappOptions
+var api = Whatsapp.newConnection(options);
 ```
 
-Or logout:
+If you have already created a connection, you might want to use that one, instead of creating a new one.
+Here is an example:
 ```java
-api.logout();
+var api = Whatsapp.lastConnection();
 ```
-### In memory data
+> **_IMPORTANT:_**  If no previous session exists, a new one will be created silently
 
-All the messages, chats and contacts stored in memory can be accessed using the singleton [WhatsappDataManager](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/manager/WhatsappDataManager.html):
+You can also connect to the first session that you have ever created like so:
 ```java
-var manager = api.manager(); // Get an instance of WhatsappDataManager
-var chats = manager.chats(); // Get all the chats in memory
-var contacts = manager.contacts(); // Get all the contacts in memory
-var number = manager.phoneNumberJid(); // Get your phone number as a jid
+var api = Whatsapp.firstConnection();
 ```
-> **_IMPORTANT:_** When your program first starts up, these fields will be empty. To be notified when they are populated, implement the corresponding method in a WhatsappListener
+> **_IMPORTANT:_**  If no previous session exists, a new one will be created silently
+
+A list of all serialized connections can be listed:
+```java
+var connections = Whatsapp.listConnections();
+```
+Or streamed:
+```java
+var connections = Whatsapp.streamConnection();
+```
+
+Once you have created a new connection, you probably want to open it and wait until the operation succeeds:
+```java
+api.connect().get();
+```
+> **_IMPORTANT:_** The connect method returns a CompletableFuture: remember to handle this async construct
+
+Once you are connected, your application will stop if no work is going on the main thread as this library is completely asynchronous.
+You can block the main thread until the connection is closed like this:
+```java
+api.await();
+```
+> **_IMPORTANT:_** Never call await inside a Whatsapp listener: the thread that calls this function is blocked until the connection ends
+
+### How to query chats, contacts, messages and status
+
+All the chats, contacts and messages are sent progressively when the qr code is first scanned unlike in the legacy version.
+
+Start by accessing the in memory store:
+```java
+var store = api.store();
+```
+> **_IMPORTANT:_** When your program first starts up, these fields will be empty. For each type of data, an event is fired and listenable using a WhatsappListener
+
+You can access all the chats that are in memory:
+```java
+var chats = store.chats();
+```
+Or the contacts:
+```java
+var contacts = store.contacts();
+```
+Or even the status broadcasts:
+```java
+var status = store.status();
+```
+Data can also be easily queried by using these methods:
+```java
+// Query a chat by its jid
+var chat = store.findChatByJid(jid);
+
+// Query a chat by its name
+ar chat = store.findChatByName(name); // If multiple chats match this name, the first one will be selected with no guarantees.
+
+// Query all chats that match a name
+var chats = store.findChatsByName(name);
+
+// Query a chat by a message inside it
+var chat = store.findChatByMessage(message);
+
+// Query a contact by its jid
+var contact = store.store.findContactByJid(jid);
+
+// Query a contact by its name
+var contact = store.findContactByName(name);  // If multiple contacts match this name, the first one will be selected with no guarantees.
+
+// Query all contacts that match a name
+var contacts = store.findContactsByName(name);
+
+// Query a message by its id and chat
+var message = store.findMessageById(Chat chat, String id);
+``` 
+Further details are available in the documentation.
+
 
 This class also exposes various methods to query data as explained in the [javadocs](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/manager/WhatsappDataManager.html):
 ```java
@@ -139,248 +229,216 @@ Optional<Chat> findChatByMessage(MessageInfo message);
 Optional<MessageInfo> findMessageById(Chat chat, String id);
 ``` 
 
-The keys linked to an active session can be accessed using [WhatsappKeysManager](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/manager/WhatsappKeysManager.html).
+### How to send messages
 
-### Send a message
-
-##### Simple text message
+To send a message, start by finding the chat where the message should be sent. Here is an example:
 ```java
-var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
-api.sendMessage(chat, "Hello my friend :)"); // Send the text message
+var chat = api.store()
+        .findChatByName("My Awesome Friend")
+        .orElseThrow(() -> new NoSuchElementException("Hey, you don't exist"));
+``` 
+
+If you want to send a simple text message, just use:
+```java
+api.sendMessage(chat, "This is a text message!");
 ```
 
-##### Rich text message
+If you'd like to quote a previous message:
 ```java
-var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
-var message = TextMessage.newTextMessage() // Create a new text message builder
-        .text("Check this video out: https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the text to "A nice and complex message"
-        .canonicalUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the url
+api.sendMessage(chat, "This is a text message!", anotherMessage);
+```
+
+Add a bit of spice to your simple text message by using a TextMessage. 
+They are particularly useful when the message contains a hyperlink or styling.
+Here is an example for the first case:
+```java
+var message = TextMessage.newTextMessage() // Create a new text message
+        .text("Check this video out: https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the text of the message
+        .canonicalUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the url of the message
         .matchedText("https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the matched text for the url in the message
         .title("A nice suprise") // Set the title of the url
         .description("Check me out") // Set the description of the url
         .create(); // Create the message
-api.sendMessage(chat, message); // Send the rich text message
+api.sendMessage(chat, message); 
+```
+For a list of all fields check the documentation.
+
+Media messages are also supported!
+> **_IMPORTANT:_** All media messages need to link back to the id of their message store. If you miss this field in the builder, an exception will be thrown
+
+To send a media, start by reading the content inside a byte array.
+You might want to read it from a file:
+```java
+var media = Files.readAllBytes(Path.of("somewhere"));
 ```
 
-##### Image message
+Or from a URL:
 ```java
-var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
+var media = new URL(url).openStream().readAllBytes();
+```
 
-// Read the file you want to send as an array of bytes, here are two common examples
-var fileMedia = Files.readAllBytes(file.toPath()); // Read a media from a file 
-var urlMedia = new URL(url).openStream().readAllBytes(); // Read a media from an url 
-
+For a list of all fields for each media class, check the documentation.
+If your media is an image, you can use:
+ ```java
 var image = ImageMessage.newImageMessage() // Create a new image message builder
-        .media(urlMedia) // Set the image of this message
+        .storeId(api.store().id()) // All media messages need a reference to their store
+        .media(media) // Set the image of this message
         .caption("A nice image") // Set the caption of this message
         .create(); // Create the message
-api.sendMessage(chat, image); // Send the image message
+api.sendMessage(chat, image);
 ```
 
-##### Audio message
-```java
-var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
-
-// Read the file you want to send as an array of bytes, here are two common examples
-var fileMedia = Files.readAllBytes(file.toPath()); // Read a media from a file 
-var urlMedia = new URL(url).openStream().readAllBytes(); // Read a media from an url 
-
+If it's an audio message or a voice message, use instead:
+   ```java
 var audio = AudioMessage.newAudioMessage() // Create a new audio message builder
+        .storeId(api.store().id()) // All media messages need a reference to their store
         .media(urlMedia) // Set the audio of this message
         .voiceMessage(false) // Set whether this message is a voice message or a standard audio message
         .create(); // Create the message
-api.sendMessage(chat, audio); // Send the audio message
+api.sendMessage(chat, audio); 
 ```
 
-##### Video message
+It's a video? No problem:
 ```java
-var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
-
-// Read the file you want to send as an array of bytes, here are two common examples
-var fileMedia = Files.readAllBytes(file.toPath()); // Read a media from a file 
-var urlMedia = new URL(url).openStream().readAllBytes(); // Read a media from an url 
-
 var video = VideoMessage.newVideoMessage() // Create a new video message builder
+        .storeId(api.store().id()) // All media messages need a reference to their store
         .media(urlMedia) // Set the video of this message
         .caption("A nice video") // Set the caption of this message
         .width(100) // Set the width of the video
         .height(100) // Set the height of the video
         .create(); // Create the message
-api.sendMessage(chat, video); // Send the video message
+api.sendMessage(chat, video); 
 ```
 
-##### Gif message
+Videos can be sent also as GIFs:
 ```java
-var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
-
-// Read the file you want to send as an array of bytes, here are two common examples
-var fileMedia = Files.readAllBytes(file.toPath()); // Read a media from a file 
-var urlMedia = new URL(url).openStream().readAllBytes(); // Read a media from an url 
-
 var gif = VideoMessage.newGifMessage() // Create a new gif message builder
+        .storeId(api.store().id()) // All media messages need a reference to their store
         .media(urlMedia) // Set the gif of this message
         .caption("A nice video") // Set the caption of this message
         .gifAttribution(VideoMessageAttribution.TENOR) // Set the source of the gif
         .create(); // Create the message
-api.sendMessage(chat, gif); // Send the gif message
+api.sendMessage(chat, gif); 
 ```
 
-> **_IMPORTANT:_** Whatsapp doesn't support conventional gifs. Instead, videos can be played as gifs if particular attributes are set. This is the reason why the gif builder is under the VideoMessage class. Sending a conventional gif will result in an exception if detected or in undefined behaviour.
+> **_IMPORTANT:_** Whatsapp doesn't support conventional gifs. 
+> Instead, videos can be played as gifs if particular attributes are set. 
+> This is the reason why the gif builder is under the VideoMessage class. 
+> Sending a conventional gif will result in an exception if detected or in undefined behaviour.
 
-##### Document message
+
+Documents can be sent as easily:
 ```java
-var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
-
-// Read the file you want to send as an array of bytes, here are two common examples
-var fileMedia = Files.readAllBytes(file.toPath()); // Read a media from a file 
-var urlMedia = new URL(url).openStream().readAllBytes(); // Read a media from an url 
-
 var document = DocumentMessage.newDocumentMessage() // Create a new document message builder
+        .storeId(api.store().id()) // All media messages need a reference to their store
         .media(urlMedia) // Set the document of this message
         .title("A nice pdf") // Set the title of the document
         .fileName("pdf-test.pdf") // Set the name of the document
         .pageCount(1) // Set the number of pages of the document
         .create(); // Create the message
-api.sendMessage(chat, document); // Send the docuemnt message
+api.sendMessage(chat, document);
 ```
 
-##### Location message
+Location messages are also supported:
 ```java
-var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
 var location = LocationMessage.newLocationMessage() // Create a new location message
-        .caption("Look at this!") // Set the caption of the message, that is the text below the file. Not available if this message is live
-        .degreesLatitude(38.9193) // Set the longitude of the location to share
-        .degreesLongitude(1183.1389) // Set the latitude of the location to share
-        .live(false) // Set whether this location is live or not
+        .caption("Look at this!") // Set the caption of the message, that is the text below the file
+        .latitude(38.9193) // Set the longitude of the location to share
+        .longitude(1183.1389) // Set the latitude of the location to share
         .create(); // Create the message
-api.sendMessage(chat, location); // Send the location message
+api.sendMessage(chat, location);
 ```
 
-##### Live location message
+Or even live location messages:
 ```java
-var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
 var location = LiveLocationMessage.newLiveLocationMessage() // Create a new live location message
         .caption("Look at this!") // Set the caption of the message, that is the text below the file. Not available if this message is live
-        .degreesLatitude(38.9193) // Set the longitude of the location to share
-        .degreesLongitude(1183.1389) // Set the latitude of the location to share
-        .accuracyInMeters(10) // Set the accuracy of the location in meters
-        .speedInMps(12) // Set the speed of the device sharing the location in meter per seconds
+        .latitude(38.9193) // Set the longitude of the location to share
+        .longitude(1183.1389) // Set the latitude of the location to share
+        .accuracy(10) // Set the accuracy of the location in meters
+        .speed(12) // Set the speed of the device sharing the location in meter per seconds
         .create(); // Create the message
-api.sendMessage(chat, location); // Send the location message
+api.sendMessage(chat, location);
 ```
-> **_IMPORTANT:_** Updating the position of a live location message is not supported as of now out of the box. The tools to do so are in the API though so, if you'd like to write a developer friendly method to do so, know that all contributions are welcomed!
+> **_IMPORTANT:_** Updating the position of a live location message is not supported as of now out of the box.
+> The tools to do so, though, are in the API.
 
-##### Group invite message
+Need to invite a friend inside a group?
+Start by finding the group:
 ```java
-var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
-var group = api.findChatByName("Fellow Programmers 1.0").orElseThrow(); // Query a group
+var group = api.store()
+        .findChatByName("Programmers")
+        .filter(Chat::isGroup)
+        .orElseThrow(() -> new NoSuchElementException("Hey, you don't exist"));
+``` 
 
-var groupCode = api.queryGroupInviteCode(group).get().code(); // Query the invitation code of the group
+Then query the invite code:
+```java
+var inviteCode = api.queryInviteCode(group).get();
+```
+
+Finally send your message:
+```java
 var groupInvite = GroupInviteMessage.newGroupInviteMessage() // Create a new group invite message
         .caption("Come join my group of fellow programmers") // Set the caption of this message
-        .groupName(group.displayName()) // Set the name of the group
+        .groupName(group.name()) // Set the name of the group
         .groupJid(group.jid())) // Set the jid of the group
         .inviteExpiration(ZonedDateTime.now().plusDays(3).toInstant().toEpochMilli()) // Set the expiration of this invite
-        .inviteCode(code) // Set the code of the group, this can be obtained also when a contact cannot be added as a member to a group
+        .inviteCode(inviteCode) // Set the code of the group
         .create(); // Create the message
-api.sendMessage(chat, groupInvite); // Send the invite message
+api.sendMessage(chat, groupInvite); 
 ```
 
-##### Contact message
+Contacts can also be sent individually through messages:
 ```java
-var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
 var contactMessage = ContactMessage.newContactMessage()  // Create a new contact message
-        .displayName("A nice friend") // Set the display name of the contact
+        .name("A nice friend") // Set the display name of the contact
         .vcard(vcard) // Set the vcard(https://en.wikipedia.org/wiki/VCard) of the contact
         .create(); // Create the message
-api.sendMessage(chat, groupInvite); // Send the contact message
+api.sendMessage(chat, contactMessage);
 ```
 
-##### Contacts array message
+Or in groups:
 ```java
-var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
 var contactsMessage = ContactsArrayMessage.newContactsArrayMessage()  // Create a new contacts array message
-        .displayName("A nice friend") // Set the display name of the first contact that this message contains
-        .contacts(contactMessages) // Set a list of contact messages that this message wraps
+        .name("A nice friend") // Set the display name of the first contact that this message contains
+        .contacts(List.of(jack, lucy, jeff)) // Set a list of contact messages that this message wraps
         .create(); // Create the message
-api.sendMessage(chat, contactsMessage); // Send the contacts array message
+api.sendMessage(chat, contactsMessage);
 ```
 
-### Advanced message structure
+### How to change your status
 
-Whatsapp Web defines several types of messages:
-1. Standard messages(most common)
-    - TextMessage
-    - ContactMessage
-    - ContactsArrayMessage
-    - GroupInviteMessage
-    - LocationMessage
-    - LiveLocationMessage
-    - Media messages
-        - ImageMessage
-        - AudioMessage
-        - DocumentMessage
-        - StickerMessage
-2. Whatsapp Business messages
-    - Payment messages
-        - RequestPaymentMessage
-        - CancelPaymentRequestMessage
-        - DeclinePaymentRequestMessage
-        - SendPaymentMessage
-    - ProductMessage
-    - TemplateButtonReplyMessage
-    - TemplateMessage
-    - HighlyStructuredMessage
-3. Server messages
-    - ProtocolMessage
-4. Security messages(Signal's Protocol)
-    - SenderKeyDistributionMessage
-5. Device sent messages:
-    - DeviceSentMessage
-    - DeviceSyncMessage
-
-All messages implement the [Message](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/message/Message.html) interface.
-All standard messages and some Whatsapp business messages extend the [ContextualMessage](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/message/ContextualMessage.html) class which provides a [ContextInfo](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/info/ContextInfo.html) property.
-Only ContextualMessages can quote another message or be marked as forwarded. This property also exposes other useful properties for Whatsapp Business, though they are irrelevant for most use cases.
-All messages provide an all arguments' constructor, and a builder class.
-Messages are wrapped in a [MessageContainer](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/message/MessageContainer.html), a container class which can be initialized through a one argument constructor that takes any type of message, or a builder class.
-Finally, a MessageContainer is wrapped by a [MessageInfo](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/info/MessageInfo.html).
-This class provides several properties, though, for most use cases, the container, key and timestamp are enough.
-The container property has already been mentioned and explained.
-The key property is of type [MessageKey](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/message/MessageKey.html) and defines the id of the message, and the chat where it is located. It can be initialized using a single argument constructor which takes said chat as an argument or using a builder class.
-The timestamp property indicates the time when the message was sent in seconds since the epoch.
-If any of the properties above are not initialized, Whatsapp will refuse to send the message.
-At this point the message can be sent using the method sendMessage in [WhatsappAPI](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/api/WhatsappAPI.html).
-Here is a handy example:
-```java
-var chat = api.findChatByName("My Awesome Friend").orElseThrow(); // Query a chat by name
-var key = new MessageKey(chat); // Create a message key
-var textMessage = new TextMessage("Hello :)"); // Create a text message        
-var message = new MessageContainer(textMessage); // Create a message container that wraps the textMessage
-var info = new MessageInfo(key, message); // Create a message info that wraps the key and info property
-var textResponse = whatsappAPI.sendMessage(info).get(); // Send the message
-```
-As shown in the [previous section](#send-a-message), crafting a message in this verbose way is not necessary for most use cases.
-
-### Online status
-
-To change your global [ContactStatus](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/contact/ContactStatus.html):
+To change the status of the client:
 ``` java
-api.changePresence(status);
+api.changePresence(true); // online
+api.changePresence(false); // offline
 ```
 
-To change your [ContactStatus](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/contact/ContactStatus.html) for a specific [Chat](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/chat/Chat.html):
+If you want to change the status of your companion, start by choosing the right presence:
+These are the allowed values:
+- AVAILABLE
+- UNAVAILABLE
+- COMPOSING
+- RECORDING
+- PAUSED
+
+Then, execute this method:
 ``` java
-api.changePresence(status, chat);
+api.changePresence(chat, presence);
 ```
 
-To query the last known status of a [Contact](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/it/auties/whatsapp4j/protobuf/contact/Contact.html):
+> **_IMPORTANT:_** The changePresence method returns a CompletableFuture: remember to handle this async construct if needed
+
+
+### How to query the last known presence for a contact
+To query the last known status of a Contact, use the following snippet:
 ``` java
 var lastKnownPresenceOptional = contact.lastKnownPresence();
 ```
 If the returned value is an empty Optional, the last status of the contact is unknown.
-As a matter of fact, Whatsapp sends updates regarding the presence of a contact only when:
 
+Whatsapp starts sending updates regarding the presence of a contact only when:
 - A message was recently exchanged between you and said contact
 - A new message arrives from said contact
 - You send a message to said contact
@@ -390,7 +448,7 @@ To force Whatsapp to send these updates use:
 api.subscribeToUserPresence(contact);
 ```
 
-Then, after the subscribeToUserPresence's future is completed, query again the presence of said contact. 
+Then, after the subscribeToUserPresence's future is completed, query again the presence of that contact. 
 
 ### Query data about a group, or a contact
 
@@ -483,7 +541,7 @@ var future = api.archive(chat);  // A future for the request
 var response = future.get(); // Wait for the future to complete
 ```
 
-##### Unrchive a chat
+##### Unarchive a chat
 ``` java
 var future = api.unarchive(chat);  // A future for the request
 var response = future.get(); // Wait for the future to complete

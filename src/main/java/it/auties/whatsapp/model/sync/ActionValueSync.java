@@ -10,7 +10,6 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 

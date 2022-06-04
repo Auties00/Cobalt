@@ -15,8 +15,6 @@ import java.util.concurrent.ConcurrentHashMap;
 @Data
 @Accessors(fluent = true)
 public class SessionChain {
-    private SessionChainType type;
-
     private int counter;
 
     private byte[] key;
@@ -25,7 +23,7 @@ public class SessionChain {
     private ConcurrentHashMap<Integer, byte[]> messageKeys;
 
     public SessionChain(int counter, byte @NonNull [] key) {
-        this(null, counter, key, new ConcurrentHashMap<>());
+        this(counter, key, new ConcurrentHashMap<>());
     }
 
     public boolean hasMessageKey(int counter){

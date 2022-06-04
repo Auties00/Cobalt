@@ -5,9 +5,6 @@ import it.auties.whatsapp.model.request.Node;
 import lombok.NonNull;
 
 import java.util.NoSuchElementException;
-import java.util.Objects;
-
-import static java.util.Objects.requireNonNull;
 
 public record HasWhatsappResponse(@NonNull ContactJid contact, boolean hasWhatsapp) implements ResponseWrapper {
     public HasWhatsappResponse(@NonNull Node source) {

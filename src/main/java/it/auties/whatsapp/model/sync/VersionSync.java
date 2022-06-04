@@ -8,8 +8,6 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.Objects;
-
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT64;
 
 @AllArgsConstructor

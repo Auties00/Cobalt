@@ -38,7 +38,7 @@ public final class SortedMessageList implements List<MessageInfo> {
     }
 
     @Override
-    public boolean containsAll(Collection<?> c) {
+    public boolean containsAll(@NonNull Collection<?> c) {
         return new HashSet<>(internal).containsAll(c);
     }
 
@@ -48,17 +48,17 @@ public final class SortedMessageList implements List<MessageInfo> {
     }
 
     @Override
-    public boolean addAll(int index, Collection<? extends MessageInfo> c) {
+    public boolean addAll(int index, @NonNull Collection<? extends MessageInfo> c) {
         throw new UnsupportedOperationException("Put operations based on index are not supported");
     }
 
     @Override
-    public boolean removeAll(Collection<?> c) {
+    public boolean removeAll(@NonNull Collection<?> c) {
         return internal.removeAll(c);
     }
 
     @Override
-    public boolean retainAll(Collection<?> c) {
+    public boolean retainAll(@NonNull Collection<?> c) {
         return internal.retainAll(c);
     }
 
@@ -72,20 +72,20 @@ public final class SortedMessageList implements List<MessageInfo> {
     }
 
     @Override
-    public Iterator<MessageInfo> iterator() {
+    public @NonNull Iterator<MessageInfo> iterator() {
         return internal.stream()
                 .map(HistorySyncMessage::message)
                 .iterator();
     }
 
     @Override
-    public Object[] toArray() {
+    public Object @NonNull [] toArray() {
         return internal.toArray();
     }
 
     @SuppressWarnings("SuspiciousToArrayCall")
     @Override
-    public <T> T[] toArray(T[] a) {
+    public <T> T @NonNull [] toArray(T @NonNull [] a) {
         return internal.stream()
                 .map(HistorySyncMessage::message)
                 .toList()
@@ -124,7 +124,7 @@ public final class SortedMessageList implements List<MessageInfo> {
     }
 
     @Override
-    public ListIterator<MessageInfo> listIterator() {
+    public @NonNull ListIterator<MessageInfo> listIterator() {
         return internal.stream()
                 .map(HistorySyncMessage::message)
                 .toList()
@@ -132,7 +132,7 @@ public final class SortedMessageList implements List<MessageInfo> {
     }
 
     @Override
-    public ListIterator<MessageInfo> listIterator(int index) {
+    public @NonNull ListIterator<MessageInfo> listIterator(int index) {
         return internal.stream()
                 .map(HistorySyncMessage::message)
                 .toList()

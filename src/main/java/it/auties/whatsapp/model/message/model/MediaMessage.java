@@ -19,10 +19,9 @@ import java.util.Objects;
  * A model class that represents a WhatsappMessage sent by a contact and that holds media inside.
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
  * Instead, methods inside {@link Whatsapp} should be used.
- *
- * @apiNote even though the same instance is in the wrapping message info(MessageInfo -> MessageContainer -> MediaMessage),
- *          there is currently no way to navigate the tree upwards or any reason to do so considering that this is a special use case.
- *          Considering that passing the same instance to {@link MediaMessage#decodedMedia()} is verbose and unnecessary, there is a copy here.
+ * Even though the same instance is in the wrapping message info(MessageInfo -> MessageContainer -> MediaMessage),
+ * there is currently no way to navigate the tree upwards or any reason to do so considering that this is a special use case.
+ * Considering that passing the same instance to {@link MediaMessage#decodedMedia()} is verbose and unnecessary, there is a copy here.
  */
 @AllArgsConstructor
 @SuperBuilder(buildMethodName = "create")

@@ -80,8 +80,6 @@ import static java.util.stream.Collectors.*;
 @ClientEndpoint(configurator = BinarySocket.OriginPatcher.class)
 @Log
 public class BinarySocket implements JacksonProvider, SignalSpecification{
-    @Getter(onMethod = @__(@NonNull))
-    @Setter(onParam = @__(@NonNull))
     private Session session;
 
     @NonNull
@@ -165,10 +163,15 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                 .forEach(strategyConsumer);
     }
 
+    @NonNull
+    public Session session(){
+        return session;
+    }
+
     @OnOpen
     @SneakyThrows
     public void onOpen(@NonNull Session session) {
-        session(session);
+        this.session = session;
         if(loggedIn.get()){
             return;
         }
@@ -178,7 +181,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         var clientHello = new ClientHello(keys.ephemeralKeyPair().publicKey());
         var handshakeMessage = new HandshakeMessage(clientHello);
         Request.with(handshakeMessage)
-                .sendWithPrologue(session(), keys, store);
+                .sendWithPrologue(session, keys, store);
     }
 
     @OnMessage
@@ -210,7 +213,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             this.loginFuture = new CompletableFuture<>();
         }
 
-        getWebSocketContainer().connectToServer(this, URI.create(options.whatsappUrl()));
+        getWebSocketContainer().connectToServer(this, URI.create(options.url()));
         return loginFuture;
     }
 
@@ -277,14 +280,14 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     public CompletableFuture<Node> send(Node node) {
         store.callListeners(listener -> listener.onNodeSent(node));
         return node.toRequest(node.id() == null ? store.nextTag() : null)
-                .send(session(), keys, store)
+                .send(session, keys, store)
                 .exceptionallyAsync(throwable -> errorHandler.handleFailure(503, throwable.getMessage(), ERRONEOUS_NODE, throwable));
     }
 
     public CompletableFuture<Void> sendWithNoResponse(Node node) {
         store.callListeners(listener -> listener.onNodeSent(node));
         return node.toRequest(node.id() == null ? store.nextTag() : null)
-                .sendWithNoResponse(session(), keys, store)
+                .sendWithNoResponse(session, keys, store)
                 .exceptionallyAsync(throwable -> errorHandler.handleFailure(503, throwable.getMessage(), UNKNOWN, throwable));
     }
 
@@ -399,7 +402,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
     private void changeKeys() {
         keys.delete();
-        var newId = Keys.registrationId();
+        var newId = KeyHelper.registrationId();
         this.keys = WhatsappKeys.random(newId);
         var newStore = WhatsappStore.random(newId);
         newStore.listeners().addAll(store.listeners());
@@ -448,7 +451,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             var clientFinish = new ClientFinish(encodedKey, encodedPayload);
             var handshakeMessage = new HandshakeMessage(clientFinish);
             Request.with(handshakeMessage)
-                    .sendWithNoResponse(session(), keys, store)
+                    .sendWithNoResponse(session, keys, store)
                     .thenRunAsync(() -> changeState(true))
                     .thenRunAsync(handshake::finish);
         }
@@ -477,7 +480,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
         private UserAgent createUserAgent() {
             return UserAgent.builder()
-                    .appVersion(options.whatsappVersion())
+                    .appVersion(options.version())
                     .platform(UserAgent.UserAgentPlatform.WEB)
                     .releaseChannel(UserAgent.UserAgentReleaseChannel.RELEASE)
                     .build();
@@ -486,7 +489,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         @SneakyThrows
         private CompanionData createRegisterData() {
             return CompanionData.builder()
-                    .buildHash(options.whatsappVersion().toHash())
+                    .buildHash(options.version().toHash())
                     .companion(PROTOBUF.writeValueAsBytes(createCompanionProps()))
                     .id(BytesHelper.intToBytes(keys.id(), 4))
                     .keyType(BytesHelper.intToBytes(KEY_TYPE, 1))
@@ -1146,7 +1149,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     .orElseThrow(() -> new NoSuchElementException("Missing id"));
             var identity = node.findNode("identity")
                     .map(Node::bytes)
-                    .map(Keys::withHeader)
+                    .map(KeyHelper::withHeader)
                     .orElseThrow(() -> new NoSuchElementException("Missing identity"));
             var signedKey = node.findNode("skey")
                     .flatMap(SignalSignedKeyPair::of)
@@ -1577,11 +1580,11 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         }
 
         private SnapshotSyncRecord parseSync(Node sync) {
-            var snapshot = sync.findNode("snapshot")
-                    .orElseThrow(() -> new NoSuchElementException("Missing snapshot"));
             var name = sync.attributes().getString("name");
             var more = sync.attributes().getBool("has_more_patches");
-            var snapshotSync = decodeSnapshot(snapshot);
+            var snapshotSync = sync.findNode("snapshot")
+                    .map(this::decodeSnapshot)
+                    .orElse(null);
             var patches = decodePatches(sync);
             return new SnapshotSyncRecord(name, snapshotSync, patches, more);
         }
