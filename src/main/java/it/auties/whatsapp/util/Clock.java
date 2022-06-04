@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 
+import static java.time.Instant.ofEpochSecond;
 import static java.time.ZoneId.systemDefault;
 import static java.time.ZonedDateTime.ofInstant;
 
@@ -18,6 +19,6 @@ public class Clock {
     public Optional<ZonedDateTime> parse(Long input) {
         return Optional.ofNullable(input)
                 .filter(time -> time != 0)
-                .map(time -> ofInstant(Instant.ofEpochSecond(time), systemDefault()));
+                .map(time -> ofInstant(ofEpochSecond(time), systemDefault()));
     }
 }

@@ -6,19 +6,14 @@ import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
-import lombok.NonNull;
-import lombok.SneakyThrows;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.lang.constant.Constable;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 
 import static com.google.zxing.client.j2se.MatrixToImageWriter.writeToPath;
-import static it.auties.bytes.Bytes.of;
 import static java.awt.Desktop.getDesktop;
 import static java.awt.Desktop.isDesktopSupported;
 import static java.nio.file.Files.createTempFile;
@@ -31,6 +26,8 @@ import static java.nio.file.Files.createTempFile;
 public interface QrHandler extends Consumer<String> {
     /**
      * Prints the QR code to the terminal
+     *
+     * @apiNote if your terminal doesn't support utf, you may see random characters
      */
     static QrHandler toTerminal() {
         return qr -> {

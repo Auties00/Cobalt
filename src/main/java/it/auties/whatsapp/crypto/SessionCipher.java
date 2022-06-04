@@ -10,8 +10,8 @@ import it.auties.whatsapp.model.signal.session.Session;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 import it.auties.whatsapp.model.signal.session.SessionChain;
 import it.auties.whatsapp.model.signal.session.SessionState;
-import it.auties.whatsapp.util.Jobs;
-import it.auties.whatsapp.util.Keys;
+import it.auties.whatsapp.util.CipherScheduler;
+import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.SignalSpecification;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
@@ -31,7 +31,7 @@ import static java.util.Objects.requireNonNull;
 public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) implements SignalSpecification {
    @SneakyThrows
     public Node encrypt(byte @NonNull [] data){
-        return Jobs.run(() -> {
+        return CipherScheduler.run(() -> {
             var currentState = loadSession().currentState();
             Validate.isTrue(keys.hasTrust(address, currentState.remoteIdentityKey()),
                     "Untrusted key", SecurityException.class);
@@ -121,7 +121,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
 
     @SneakyThrows
     public byte[] decrypt(SignalPreKeyMessage message) {
-       return Jobs.run(() -> {
+       return CipherScheduler.run(() -> {
            var session = loadSession(() -> createSession(message));
            var builder = new SessionBuilder(address, keys);
            builder.createIncoming(session, message);
@@ -140,7 +140,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
 
     @SneakyThrows
     public byte[] decrypt(SignalMessage message) {
-       return Jobs.run(() -> {
+       return CipherScheduler.run(() -> {
            var session = loadSession();
            return session.states()
                    .stream()
@@ -221,7 +221,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
     }
 
     private void calculateRatchet(SignalMessage message, SessionState state, boolean sending) {
-        var sharedSecret = sharedKey(Keys.withoutHeader(message.ephemeralPublicKey()),
+        var sharedSecret = sharedKey(KeyHelper.withoutHeader(message.ephemeralPublicKey()),
                 state.ephemeralKeyPair().privateKey());
         var masterKey = Hkdf.deriveSecrets(sharedSecret, state.rootKey(),
                 "WhisperRatchet".getBytes(StandardCharsets.UTF_8), 2);

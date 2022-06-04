@@ -4,7 +4,7 @@ import it.auties.whatsapp.controller.WhatsappKeys;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalDistributionMessage;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
-import it.auties.whatsapp.util.Keys;
+import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.SignalSpecification;
 import lombok.NonNull;
 
@@ -13,9 +13,9 @@ public record GroupBuilder(@NonNull WhatsappKeys keys) implements SignalSpecific
         var record = keys.findSenderKeyByName(name);
         if (record.isEmpty()) {
             record.addState(
-                    Keys.senderKeyId(),
+                    KeyHelper.senderKeyId(),
                     0,
-                    Keys.senderKey(),
+                    KeyHelper.senderKey(),
                     SignalKeyPair.random()
             );
         }

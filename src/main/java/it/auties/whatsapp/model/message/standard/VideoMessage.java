@@ -6,7 +6,6 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.media.MediaDimensions;
 import it.auties.whatsapp.model.message.model.InteractiveAnnotation;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
@@ -22,9 +21,7 @@ import java.util.*;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 import static it.auties.whatsapp.model.message.model.MediaMessageType.VIDEO;
-import static it.auties.whatsapp.util.Medias.Format.JPG;
 import static java.util.Objects.requireNonNullElse;
-import static java.util.Objects.requireNonNullElseGet;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds a video inside.

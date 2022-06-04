@@ -18,10 +18,8 @@ import java.util.NoSuchElementException;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 import static it.auties.whatsapp.model.message.model.MediaMessageType.STICKER;
-import static it.auties.whatsapp.util.Medias.Format.JPG;
 import static it.auties.whatsapp.util.Medias.Format.PNG;
 import static java.util.Objects.requireNonNullElse;
-import static java.util.Objects.requireNonNullElseGet;
 
 /**
  * A model class that represents a WhatsappMessage sent by a contact and that holds a sticker inside.

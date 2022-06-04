@@ -3,7 +3,7 @@ package it.auties.whatsapp.model.signal.keypair;
 import it.auties.curve25519.Curve25519;
 import it.auties.curve25519.XecUtils;
 import it.auties.whatsapp.model.request.Node;
-import it.auties.whatsapp.util.Keys;
+import it.auties.whatsapp.util.KeyHelper;
 import lombok.NonNull;
 
 import java.security.interfaces.XECPrivateKey;
@@ -12,7 +12,7 @@ import java.util.Arrays;
 
 public record SignalKeyPair(byte @NonNull [] publicKey, byte[] privateKey) implements ISignalKeyPair{
     public SignalKeyPair(byte[] publicKey, byte[] privateKey) {
-        this.publicKey = Keys.withoutHeader(publicKey);
+        this.publicKey = KeyHelper.withoutHeader(publicKey);
         this.privateKey = privateKey;
     }
 

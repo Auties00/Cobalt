@@ -37,12 +37,12 @@ import static java.util.Objects.requireNonNullElseGet;
  * This controller holds the cryptographic-related data regarding a WhatsappWeb session
  */
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
-@Builder // FIXME: 22/03/2022 (access = AccessLevel.PROTECTED) TESTING ONLY!!!
+@Builder(access = AccessLevel.PROTECTED)
 @Jacksonized
 @Data
 @Accessors(fluent = true, chain = true)
 @Log
-@SuppressWarnings({"unused", "UnusedReturnValue"}) // Chaining
+@SuppressWarnings({"unused", "UnusedReturnValue"})
 public final class WhatsappKeys implements WhatsappController {
     /**
      * The client id

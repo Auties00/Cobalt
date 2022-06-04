@@ -7,7 +7,6 @@ import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
 import java.io.ByteArrayOutputStream;
-import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
 @UtilityClass
@@ -20,21 +19,18 @@ public class BytesHelper implements JacksonProvider {
         return Byte.toUnsignedInt(version) >> 4;
     }
 
+    @SneakyThrows
     public byte[] deflate(byte[] compressed) {
-       try {
-           var decompressor = new Inflater();
-           decompressor.setInput(compressed);
-           var result = new ByteArrayOutputStream();
-           var buffer = new byte[1024];
-           while (!decompressor.finished()) {
-               var count = decompressor.inflate(buffer);
-               result.write(buffer, 0, count);
-           }
+        var decompressor = new Inflater();
+        decompressor.setInput(compressed);
+        var result = new ByteArrayOutputStream();
+        var buffer = new byte[1024];
+        while (!decompressor.finished()) {
+            var count = decompressor.inflate(buffer);
+            result.write(buffer, 0, count);
+        }
 
-           return result.toByteArray();
-       }catch (DataFormatException exception){
-           throw new IllegalArgumentException("Cannot deflate", exception);
-       }
+        return result.toByteArray();
     }
 
     public byte[] messageToBytes(Message message){
@@ -43,7 +39,7 @@ public class BytesHelper implements JacksonProvider {
 
     @SneakyThrows
     public byte[] messageToBytes(MessageContainer container){
-        var padRandomByte = Keys.header();
+        var padRandomByte = KeyHelper.header();
         var padding = Bytes.newBuffer(padRandomByte)
                 .fill((byte) padRandomByte)
                 .toByteArray();

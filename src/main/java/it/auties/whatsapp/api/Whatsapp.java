@@ -3,7 +3,10 @@ package it.auties.whatsapp.api;
 import it.auties.whatsapp.binary.BinarySocket;
 import it.auties.whatsapp.controller.WhatsappKeys;
 import it.auties.whatsapp.controller.WhatsappStore;
-import it.auties.whatsapp.model.action.*;
+import it.auties.whatsapp.model.action.MarkChatAsReadAction;
+import it.auties.whatsapp.model.action.MuteAction;
+import it.auties.whatsapp.model.action.PinAction;
+import it.auties.whatsapp.model.action.StarAction;
 import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJidProvider;
@@ -73,7 +76,7 @@ public class Whatsapp {
      * @return a non-null Whatsapp instance
      */
     public static Whatsapp newConnection(){
-        return newConnection(defaultOptions().withId(Keys.registrationId()));
+        return newConnection(defaultOptions().withId(KeyHelper.registrationId()));
     }
 
     /**
@@ -106,7 +109,7 @@ public class Whatsapp {
      * @return a non-null Whatsapp instance
      */
     public static Whatsapp firstConnection(){
-        return newConnection(requireNonNullElseGet(knownIds().peekFirst(), Keys::registrationId));
+        return newConnection(requireNonNullElseGet(knownIds().peekFirst(), KeyHelper::registrationId));
     }
 
     /**
@@ -116,7 +119,7 @@ public class Whatsapp {
      * @return a non-null Whatsapp instance
      */
     public static Whatsapp lastConnection(){
-        return newConnection(requireNonNullElseGet(knownIds().peekLast(), Keys::registrationId));
+        return newConnection(requireNonNullElseGet(knownIds().peekLast(), KeyHelper::registrationId));
     }
 
     /**

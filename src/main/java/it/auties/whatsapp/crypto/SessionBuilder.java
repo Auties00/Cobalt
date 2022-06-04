@@ -7,25 +7,26 @@ import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.model.signal.session.*;
-import it.auties.whatsapp.util.Jobs;
-import it.auties.whatsapp.util.Keys;
+import it.auties.whatsapp.util.CipherScheduler;
+import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.SignalSpecification;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import lombok.extern.java.Log;
 
 import java.nio.charset.StandardCharsets;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 
+@Log // FIXME: 04/06/2022 Remove once bug is fixed
 public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) implements SignalSpecification {
     @SneakyThrows
     public void createOutgoing(int id, byte[] identityKey, SignalSignedKeyPair signedPreKey, SignalSignedKeyPair preKey){
-        Jobs.run(() -> {
+        CipherScheduler.run(() -> {
             Validate.isTrue(keys.hasTrust(address, identityKey),
                     "Untrusted key", SecurityException.class);
-            Validate.isTrue(Curve25519.verifySignature(Keys.withoutHeader(identityKey), signedPreKey.keyPair().encodedPublicKey(), signedPreKey.signature()),
+            Validate.isTrue(Curve25519.verifySignature(KeyHelper.withoutHeader(identityKey), signedPreKey.keyPair().encodedPublicKey(), signedPreKey.signature()),
                     "Signature mismatch", SecurityException.class);
 
             var baseKey = SignalKeyPair.random();
@@ -63,7 +64,13 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
             return;
         }
 
-        var preKeyPair = keys.findPreKeyById(message.preKeyId());
+        // FIXME: 04/06/2022 message#preKeyId is sometimes null
+        var preKeyPair = Optional.ofNullable(message.preKeyId())
+                .map(keys::findPreKeyById)
+                .orElseGet(() -> {
+                    log.warning("Message pre key was null(%s), defaulting to first pre key".formatted(message));
+                    return keys.preKeys().getFirst();
+                });
         var signedPreKeyPair = keys.findSignedKeyPairById(message.signedPreKeyId());
         session.closeCurrentState();
         var nextState = createState(
@@ -91,14 +98,14 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
             theirSignedPubKey = theirEphemeralPubKey;
         }
 
-        var signedSecret = Curve25519.sharedKey(Keys.withoutHeader(theirSignedPubKey),
+        var signedSecret = Curve25519.sharedKey(KeyHelper.withoutHeader(theirSignedPubKey),
                 keys.identityKeyPair().privateKey());
-        var identitySecret = Curve25519.sharedKey(Keys.withoutHeader(theirIdentityPubKey),
+        var identitySecret = Curve25519.sharedKey(KeyHelper.withoutHeader(theirIdentityPubKey),
                 ourSignedKey.privateKey());
-        var signedIdentitySecret = Curve25519.sharedKey(Keys.withoutHeader(theirSignedPubKey),
+        var signedIdentitySecret = Curve25519.sharedKey(KeyHelper.withoutHeader(theirSignedPubKey),
                 ourSignedKey.privateKey());
         var ephemeralSecret =  theirEphemeralPubKey == null || ourEphemeralKey == null ? null :
-                Curve25519.sharedKey(Keys.withoutHeader(theirEphemeralPubKey), ourEphemeralKey.privateKey());
+                Curve25519.sharedKey(KeyHelper.withoutHeader(theirEphemeralPubKey), ourEphemeralKey.privateKey());
         var sharedSecret = createStateSecret(isInitiator, signedSecret, identitySecret,
                 signedIdentitySecret, ephemeralSecret);
         var masterKey = Hkdf.deriveSecrets(sharedSecret.toByteArray(),
@@ -109,7 +116,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
     }
 
     private SessionState calculateSendingRatchet(SessionState state, byte[] theirSignedPubKey) {
-        var initSecret = Curve25519.sharedKey(Keys.withoutHeader(theirSignedPubKey),
+        var initSecret = Curve25519.sharedKey(KeyHelper.withoutHeader(theirSignedPubKey),
                 state.ephemeralKeyPair().privateKey());
         var initKey = Hkdf.deriveSecrets(initSecret, state.rootKey(),
                 "WhisperRatchet".getBytes(StandardCharsets.UTF_8));

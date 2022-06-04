@@ -12,11 +12,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * A configuration class used to specify the behaviour of {@link Whatsapp}.
- * Each field is immutable, this means that once this class has been initialized, cannot be changed.
- * If reflection is used, it is not guaranteed that the settings will effectively change.
- * This class should be configured using its builder, accessible using {@link WhatsappOptions#newOptions()}.
- * An all arguments' constructor is also available if considered more suitable for the coding style of the project.
+ * A configuration class used to specify the behaviour of {@link Whatsapp}
  */
 @Builder(builderMethodName = "newOptions", buildMethodName = "create")
 @With
@@ -25,40 +21,46 @@ import java.util.Set;
 public class WhatsappOptions {
     /**
      * The id of the session
+     *
+     * @apiNote this id needs to be unique
      */
     private final int id;
 
     /**
      * The version of WhatsappWeb to use
-     * If the version is too outdated, the server will refuse to connect
+     *
+     * @apiNote if the version is too outdated, the server will refuse to connect
      */
     @Default
-    private final Version whatsappVersion = new Version(2, 2212, 7);
+    private final Version version = new Version(2, 2212, 7);
 
     /**
-     * The url of the multi device beta socket
+     * The url of the socket
      */
     @Default
     @NonNull
-    private final String whatsappUrl = "wss://web.whatsapp.com/ws/chat";
+    private final String url = "wss://web.whatsapp.com/ws/chat";
 
     /**
-     * The description provided to Whatsapp during the authentication process
-     * This should be, for example, the name of your service
+     * The description provided to Whatsapp during the authentication process.
+     * This should be, for example, the name of your service.
+     * By default, it's WhatsappWeb4j.
      */
     @Default
     @NonNull
-    private final String description = "Whatsapp4j";
+    private final String description = "WhatsappWeb4j";
 
     /**
      * A flag to specify whether sensible data associated with a session should be serialized.
-     * If this flag is set to false, {@link WhatsappOptions#serializationStrategies()} are ignored
+     * If this flag is set to false, {@link WhatsappOptions#serializationStrategies()} are ignored.
+     * By default, serialization is enabled.
      */
     @Default
     private boolean serialization = true;
 
     /**
-     * Describes how much chat history Whatsapp should send when the QR is first scanned
+     * Describes how much chat history Whatsapp should send when the QR is first scanned.
+     * By default, three months are chosen.
      */
     @Default
     private HistoryLength historyLength = HistoryLength.THREE_MONTHS;
@@ -75,7 +77,7 @@ public class WhatsappOptions {
     /**
      * Constructs a new instance of WhatsappConfiguration with default options
      *
-     * @return a new instance of WhatsappConfiguration with the above characteristics
+     * @return a non-null options configuration
      */
     public static WhatsappOptions defaultOptions() {
         return newOptions().create();
