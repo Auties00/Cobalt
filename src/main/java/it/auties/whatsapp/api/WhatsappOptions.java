@@ -20,16 +20,14 @@ import java.util.Set;
 @Accessors(fluent = true)
 public class WhatsappOptions {
     /**
-     * The id of the session
-     *
-     * @apiNote this id needs to be unique
+     * The id of the session.
+     * This id needs to be unique.
      */
     private final int id;
 
     /**
-     * The version of WhatsappWeb to use
-     *
-     * @apiNote if the version is too outdated, the server will refuse to connect
+     * The version of WhatsappWeb to use.
+     * If the version is too outdated, the server will refuse to connect.
      */
     @Default
     private final Version version = new Version(2, 2212, 7);

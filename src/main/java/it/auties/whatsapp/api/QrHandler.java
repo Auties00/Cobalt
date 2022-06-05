@@ -25,9 +25,8 @@ import static java.nio.file.Files.createTempFile;
 @FunctionalInterface
 public interface QrHandler extends Consumer<String> {
     /**
-     * Prints the QR code to the terminal
-     *
-     * @apiNote if your terminal doesn't support utf, you may see random characters
+     * Prints the QR code to the terminal.
+     * If your terminal doesn't support utf, you may see random characters.
      */
     static QrHandler toTerminal() {
         return qr -> {

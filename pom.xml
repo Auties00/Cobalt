@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.auties00</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>3.0-RC2-SNAPSHOT</version>
+    <version>3.0-RC1-SNAPSHOT</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Standalone fully-featured Whatsapp Web API for Java and Kotlin</description>
     <url>https://github.com/Auties00/WhatsappWeb4j</url>
@@ -82,7 +82,6 @@
         <maven.source.plugin.version>3.0.1</maven.source.plugin.version>
         <maven.javadoc.plugin.version>3.2.0</maven.javadoc.plugin.version>
         <maven.deploy.plugin.version>2.8.2</maven.deploy.plugin.version>
-        <delombok.plugin.version>1.18.20.0</delombok.plugin.version>
         <nexus.staging.maven.plugin.version>1.6.7</nexus.staging.maven.plugin.version>
         <bouncy.castle.version>1.70</bouncy.castle.version>
         <zxing.version>3.5.0</zxing.version>
@@ -101,36 +100,21 @@
         <reflection.version>1.2</reflection.version>
         <caffeine.version>3.1.0</caffeine.version>
         <lazysodium.version>5.1.1</lazysodium.version>
-        <delombok.input>${project.basedir}/src/main/java</delombok.input>
-        <delombok.output>${project.build.directory}/delombok</delombok.output>
+        <delombok.plugin.version>1.18.24</delombok.plugin.version>
+        <delombok.input>${project.basedir}\src\main\java</delombok.input>
+        <delombok.output>${project.build.directory}\delombok</delombok.output>
     </properties>
 
     <build>
         <plugins>
-            <!-- Attach source code -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>${maven.source.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
             <!-- Compile the project-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven.compiler.plugin.version}</version>
                 <configuration>
-                    <compileSourceRoots>${delombok.input}</compileSourceRoots>
-                    <source>17</source>
-                    <target>17</target>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
                     <release>${java.version}</release>
                     <annotationProcessorPaths>
                         <path>
@@ -146,7 +130,64 @@
                 </configuration>
             </plugin>
 
-            <!-- Generate and attach javadocs from source -->
+            <!-- Test the library to be sure that everything works-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven.surefire.plugin.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.junit.jupiter</groupId>
+                        <artifactId>junit-jupiter-engine</artifactId>
+                        <version>${junit.version}</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <argLine>--enable-preview</argLine>
+                </configuration>
+            </plugin>
+
+            <!-- Attach the sourcecode -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>${maven.source.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Delombok the project to prepare for javadoc generation -->
+            <plugin>
+                <groupId>com.github.auties00</groupId>
+                <artifactId>delombok-plugin</artifactId>
+                <version>${delombok.plugin.version}</version>
+                <configuration>
+                    <rootDirectory>${project.build.sourceDirectory}</rootDirectory>
+                    <outputDirectory>${delombok.output}</outputDirectory>
+                    <excludedFiles>
+                        <excludedFile>module-info.java</excludedFile>
+                    </excludedFiles>
+                    <parameters>
+                        <encoding>UTF-8</encoding>
+                    </parameters>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>process-sources</phase>
+                        <goals>
+                            <goal>delombok</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Generate and attach javadocs from delomboked source -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
@@ -166,23 +207,6 @@
                     <additionalOptions>--enable-preview</additionalOptions>
                     <debug>true</debug>
                     <verbose>true</verbose>
-                </configuration>
-            </plugin>
-
-            <!-- Test the library to be sure that everything works-->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>${maven.surefire.plugin.version}</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.junit.jupiter</groupId>
-                        <artifactId>junit-jupiter-engine</artifactId>
-                        <version>${junit.version}</version>
-                    </dependency>
-                </dependencies>
-                <configuration>
-                    <argLine>--enable-preview</argLine>
                 </configuration>
             </plugin>
 

@@ -80,8 +80,6 @@ import static java.util.stream.Collectors.*;
 @ClientEndpoint(configurator = BinarySocket.OriginPatcher.class)
 @Log
 public class BinarySocket implements JacksonProvider, SignalSpecification{
-    @Getter(onMethod = @__(@NonNull))
-    @Setter(onParam = @__(@NonNull))
     private Session session;
 
     @NonNull
@@ -165,10 +163,15 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                 .forEach(strategyConsumer);
     }
 
+    @NonNull
+    public Session session(){
+        return session;
+    }
+
     @OnOpen
     @SneakyThrows
     public void onOpen(@NonNull Session session) {
-        session(session);
+        this.session = session;
         if(loggedIn.get()){
             return;
         }
@@ -178,7 +181,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         var clientHello = new ClientHello(keys.ephemeralKeyPair().publicKey());
         var handshakeMessage = new HandshakeMessage(clientHello);
         Request.with(handshakeMessage)
-                .sendWithPrologue(session(), keys, store);
+                .sendWithPrologue(session, keys, store);
     }
 
     @OnMessage
@@ -277,14 +280,14 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
     public CompletableFuture<Node> send(Node node) {
         store.callListeners(listener -> listener.onNodeSent(node));
         return node.toRequest(node.id() == null ? store.nextTag() : null)
-                .send(session(), keys, store)
+                .send(session, keys, store)
                 .exceptionallyAsync(throwable -> errorHandler.handleFailure(503, throwable.getMessage(), ERRONEOUS_NODE, throwable));
     }
 
     public CompletableFuture<Void> sendWithNoResponse(Node node) {
         store.callListeners(listener -> listener.onNodeSent(node));
         return node.toRequest(node.id() == null ? store.nextTag() : null)
-                .sendWithNoResponse(session(), keys, store)
+                .sendWithNoResponse(session, keys, store)
                 .exceptionallyAsync(throwable -> errorHandler.handleFailure(503, throwable.getMessage(), UNKNOWN, throwable));
     }
 
@@ -448,7 +451,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
             var clientFinish = new ClientFinish(encodedKey, encodedPayload);
             var handshakeMessage = new HandshakeMessage(clientFinish);
             Request.with(handshakeMessage)
-                    .sendWithNoResponse(session(), keys, store)
+                    .sendWithNoResponse(session, keys, store)
                     .thenRunAsync(() -> changeState(true))
                     .thenRunAsync(handshake::finish);
         }
