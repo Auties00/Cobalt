@@ -7,6 +7,7 @@ import it.auties.whatsapp.controller.WhatsappKeys;
 import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.github.GithubActions;
 import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.utils.ConfigUtils;
@@ -95,15 +96,18 @@ public class WhatsappSpamTest implements WhatsappListener, JacksonProvider {
     @Override
     public void onLoggedIn() {
         System.out.println("On logged in");
-        executor.scheduleAtFixedRate(WhatsappSpamTest::sendMessage,
-                0L, 500, TimeUnit.MILLISECONDS);
         delayedExecutor(1, TimeUnit.MINUTES)
                 .execute(WhatsappSpamTest::logOut);
     }
 
-    private static void sendMessage() {
-        System.out.println("Sending message");
-        api.sendMessage(contact, "Hello :)");
+    @Override
+    public void onNewMessage(MessageInfo info) {
+        try {
+            System.out.println("Sending message :)");
+            api.sendMessage(info.chatJid(), "AAAAA", info);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
     private static void logOut() {

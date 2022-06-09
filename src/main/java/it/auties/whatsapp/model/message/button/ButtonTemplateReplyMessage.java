@@ -49,5 +49,5 @@ public final class ButtonTemplateReplyMessage extends ContextualMessage implemen
    * The index of the button that was selected from the previous template message
    */
   @ProtobufProperty(index = 4, type = UINT32)
-  private Integer index;
+  private int index;
 }

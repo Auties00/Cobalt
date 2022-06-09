@@ -43,5 +43,5 @@ public final class CallInfo implements Info {
    * The delay of this call in seconds
    */
   @ProtobufProperty(index = 4, type = UINT32)
-  private Integer delay;
+  private int delay;
 }

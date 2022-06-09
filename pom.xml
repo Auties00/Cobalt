@@ -85,7 +85,7 @@
         <nexus.staging.maven.plugin.version>1.6.7</nexus.staging.maven.plugin.version>
         <bouncy.castle.version>1.70</bouncy.castle.version>
         <zxing.version>3.5.0</zxing.version>
-        <protoc.version>1.13</protoc.version>
+        <protoc.version>1.14-SNAPSHOT</protoc.version>
         <tyrus.version>2.0.2</tyrus.version>
         <lombok.version>1.18.24</lombok.version>
         <junit.version>5.8.2</junit.version>
@@ -127,29 +127,6 @@
                         <compilerArg>--enable-preview</compilerArg>
                     </compilerArgs>
                     <failOnError>true</failOnError>
-                </configuration>
-            </plugin>
-
-            <!-- Generate and attach javadocs from source -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>${maven.javadoc.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <sourcepath>${delombok.output}</sourcepath>
-                    <release>${java.version}</release>
-                    <failOnError>true</failOnError>
-                    <additionalOptions>--enable-preview</additionalOptions>
-                    <debug>true</debug>
-                    <verbose>true</verbose>
                 </configuration>
             </plugin>
 

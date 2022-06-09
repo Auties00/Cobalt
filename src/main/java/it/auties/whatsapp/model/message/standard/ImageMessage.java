@@ -66,7 +66,7 @@ public final class ImageMessage extends MediaMessage {
    * The unsigned size of the decoded image that this object wraps
    */
   @ProtobufProperty(index = 5, type = UINT64)
-  private Long fileLength;
+  private long fileLength;
 
   /**
    * The unsigned height of the decoded image that this object wraps
@@ -109,7 +109,7 @@ public final class ImageMessage extends MediaMessage {
    * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link ImageMessage#key()}
    */
   @ProtobufProperty(index = 12, type = UINT64)
-  private Long mediaKeyTimestamp;
+  private long mediaKeyTimestamp;
   
   /**
    * The thumbnail for this image message encoded as jpeg in an array of bytes

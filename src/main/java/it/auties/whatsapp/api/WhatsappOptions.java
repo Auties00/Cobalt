@@ -20,6 +20,11 @@ import java.util.Set;
 @Accessors(fluent = true)
 public class WhatsappOptions {
     /**
+     * Last known version of Whatsapp
+     */
+    private static final Version WHATSAPP_VERSION = new Version(2, 2212, 7);
+
+    /**
      * The id of the session.
      * This id needs to be unique.
      */
@@ -30,7 +35,7 @@ public class WhatsappOptions {
      * If the version is too outdated, the server will refuse to connect.
      */
     @Default
-    private final Version version = new Version(2, 2212, 7);
+    private final Version version = Version.latest(WHATSAPP_VERSION);
 
     /**
      * The url of the socket

@@ -19,7 +19,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.Optional;
 
-@Log // FIXME: 04/06/2022 Remove once bug is fixed
 public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappKeys keys) implements SignalSpecification {
     @SneakyThrows
     public void createOutgoing(int id, byte[] identityKey, SignalSignedKeyPair signedPreKey, SignalSignedKeyPair preKey){
@@ -64,13 +63,9 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
             return;
         }
 
-        // FIXME: 04/06/2022 message#preKeyId is sometimes null
         var preKeyPair = Optional.ofNullable(message.preKeyId())
                 .map(keys::findPreKeyById)
-                .orElseGet(() -> {
-                    log.warning("Message pre key was null(%s), defaulting to first pre key".formatted(message));
-                    return keys.preKeys().getFirst();
-                });
+                .orElse(null);
         var signedPreKeyPair = keys.findSignedKeyPairById(message.signedPreKeyId());
         session.closeCurrentState();
         var nextState = createState(

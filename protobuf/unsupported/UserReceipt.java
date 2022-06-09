@@ -20,13 +20,13 @@ public class UserReceipt {
   private String userJid;
 
   @ProtobufProperty(index = 2, type = INT64)
-  private Long receiptTimestamp;
+  private long receiptTimestamp;
 
   @ProtobufProperty(index = 3, type = INT64)
-  private Long readTimestamp;
+  private long readTimestamp;
 
   @ProtobufProperty(index = 4, type = INT64)
-  private Long playedTimestamp;
+  private long playedTimestamp;
 
   @ProtobufProperty(index = 5, type = STRING, repeated = true)
   private List<String> pendingDeviceJid;

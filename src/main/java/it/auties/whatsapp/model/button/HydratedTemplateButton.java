@@ -31,7 +31,7 @@ public class HydratedTemplateButton implements ProtobufMessage {
   private HydratedCallButton callButton;
 
   @ProtobufProperty(index = 4, type = UINT32)
-  private Integer index;
+  private int index;
 
   public HydratedButtonType hydratedButtonType() {
     if (quickReplyButton != null) return HydratedButtonType.QUICK_REPLY_BUTTON;

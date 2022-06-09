@@ -22,6 +22,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static java.util.Objects.requireNonNullElse;
+import static java.util.Objects.requireNonNullElseGet;
 
 /**
  * A model class that holds the information related to a {@link Message}.
@@ -53,7 +55,6 @@ public final class MessageInfo implements Info {
   @ProtobufProperty(index = 1, type = MESSAGE,
           concreteType = MessageKey.class, required = true)
   @NonNull
-  @Delegate
   private MessageKey key;
 
   /**
@@ -80,7 +81,7 @@ public final class MessageInfo implements Info {
    * The timestamp, that is the seconds since {@link java.time.Instant#EPOCH}, when this message was sent
    */
   @ProtobufProperty(index = 3, type = UINT64)
-  private Long timestamp;
+  private long timestamp;
 
   /**
    * The global status of this message.
@@ -103,7 +104,7 @@ public final class MessageInfo implements Info {
    * Duration
    */
   @ProtobufProperty(index = 27, type = UINT32)
-  private Integer duration;
+  private int duration;
 
   /**
    * Whether this message should be ignored or counted as an unread message
@@ -157,13 +158,13 @@ public final class MessageInfo implements Info {
    * Ephemeral start timestamp
    */
   @ProtobufProperty(index = 32, type = UINT64)
-  private Long ephemeralStartTimestamp;
+  private long ephemeralStartTimestamp;
 
   /**
    * Ephemeral duration
    */
   @ProtobufProperty(index = 33, type = UINT32)
-  private Integer ephemeralDuration;
+  private int ephemeralDuration;
 
   /**
    * The stub type of this message.
@@ -230,6 +231,43 @@ public final class MessageInfo implements Info {
     this.status = MessageStatus.PENDING;
     this.message = container;
     this.individualStatus = new ConcurrentHashMap<>();
+  }
+
+  /**
+   * Returns the jid of the contact or group that sent the message.
+   *
+   * @return a non-null ContactJid
+   */
+  public ContactJid chatJid(){
+    return key.chatJid();
+  }
+
+  /**
+   * Determines whether the message was sent by you or by someone else
+   *
+   * @return a boolean
+   */
+  public boolean fromMe(){
+    return key.fromMe();
+  }
+
+  /**
+   * Returns the id of the message
+   *
+   * @return a non-null String
+   */
+  public String id(){
+    return key.id();
+  }
+
+  /**
+   * Returns the jid of the sender
+   *
+   * @return a non-null ContactJid
+   */
+  public ContactJid senderJid(){
+    return requireNonNullElseGet(senderJid,
+            () -> requireNonNullElseGet(key.senderJid(), key::chatJid));
   }
 
   /**

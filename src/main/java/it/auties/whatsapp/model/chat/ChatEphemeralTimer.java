@@ -6,32 +6,34 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
+import java.time.Duration;
+import java.time.Period;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
-
-import static java.util.concurrent.TimeUnit.DAYS;
 
 @AllArgsConstructor
 @Accessors(fluent = true)
 public enum ChatEphemeralTimer implements ProtobufMessage {
-    OFF(0),
-    ONE_DAY(DAYS.toSeconds(1)),
-    ONE_WEEK(DAYS.toSeconds(7)),
-    THREE_MONTHS(DAYS.toSeconds(90));
+    OFF(Duration.ofDays(0)),
+    ONE_DAY(Duration.ofDays(1)),
+    ONE_WEEK(Duration.ofDays(7)),
+    THREE_MONTHS(Duration.ofDays(90));
 
     @Getter
-    private final long timeInSeconds;
+    private final Duration period;
 
     @JsonCreator
-    public static ChatEphemeralTimer forSeconds(long seconds) {
+    public static ChatEphemeralTimer forValue(long value) {
         return Arrays.stream(values())
-                .filter(entry -> entry.timeInSeconds() == seconds)
+                .filter(entry -> entry.period().toSeconds() == value || entry.period().toDays() == value)
                 .findFirst()
-                .orElseThrow(() -> new NoSuchElementException("%s is not a valid ephemeral time".formatted(seconds)));
+                .orElse(OFF);
     }
 
     @Override
     public Object value() {
-        return timeInSeconds;
+        return period.toSeconds();
     }
 }

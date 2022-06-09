@@ -19,7 +19,7 @@ public record BanBotListener(Whatsapp api) implements WhatsappListener {
             return;
         }
 
-        if(info.chatJid().type() == ContactJid.Type.GROUP){
+        if(info.chatJid().isGroup()){
             api.sendMessage(info.chatJid(), "[WhatsappBot] This command is only supported in groups", info);
             return;
         }

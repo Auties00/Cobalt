@@ -26,6 +26,7 @@ import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.model.setting.EphemeralSetting;
+import it.auties.whatsapp.model.setting.UnarchiveChatsSetting;
 import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.signal.auth.ClientPayload.ClientPayloadBuilder;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
@@ -41,7 +42,6 @@ import jakarta.websocket.*;
 import jakarta.websocket.ClientEndpointConfig.Configurator;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.java.Log;
@@ -236,17 +236,6 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         return completedFuture(null); // session#close is a synchronous operation
     }
 
-    public CompletableFuture<Void> logout(){
-        if (keys.hasCompanion()) {
-            var metadata = of("jid", keys.companion(), "reason", "user_initiated");
-            var device = withAttributes("remove-companion-device", metadata);
-            sendQuery("set", "md", device);
-        }
-
-        return disconnect()
-                .thenRunAsync(this::changeKeys);
-    }
-
     private void changeState(boolean loggedIn){
         this.loggedIn.set(loggedIn);
         keys.clear();
@@ -360,7 +349,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         sendWithNoResponse(receipt);
     }
 
-    private void sendReceipt(ContactJid jid, ContactJid participant, List<String> messages, String type) {
+    private void sendReceipt(ContactJid jid, ContactJid participant, List<String> messages) {
         if(messages.isEmpty()){
             return;
         }
@@ -369,7 +358,6 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                 .put("id", messages.get(0))
                 .put("t", Clock.now() / 1000)
                 .put("to", jid)
-                .put("type", type, Objects::nonNull)
                 .put("participant", participant, Objects::nonNull, value -> !Objects.equals(jid, value));
         var receipt = withChildren("receipt",
                 attributes.map(), toMessagesNode(messages));
@@ -400,7 +388,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
         sendWithNoResponse(receipt);
     }
 
-    private void changeKeys() {
+    public void changeKeys() {
         keys.delete();
         var newId = KeyHelper.registrationId();
         this.keys = WhatsappKeys.random(newId);
@@ -950,7 +938,8 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
         private Node handleMessageFailure(Throwable throwable) {
             LOCK.release();
-            return errorHandler.handleFailure(503, throwable.getMessage(), LOGIN, throwable);
+            return errorHandler.handleFailure(503, throwable.getMessage(),
+                    MESSAGE, throwable);
         }
 
         private Node releaseMessageLock(Node node) {
@@ -1228,7 +1217,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                 }
 
                 saveMessage(info);
-                sendReceipt(info.chatJid(), info.senderJid(), List.of(info.key().id()), null);
+                sendReceipt(info.chatJid(), info.senderJid(), List.of(info.key().id()));
             }catch (Throwable throwable){
                 errorHandler.handleFailure(503, throwable.getMessage(), MESSAGE, throwable);
             }
@@ -1291,10 +1280,19 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                 return;
             }
 
-            if(!info.ignore()) {
-                chat.unreadMessages(requireNonNullElse(chat.unreadMessages(), 0) + 1);
+            if(info.message().isServer()){
+                info.ignore(true);
             }
 
+            if(chat.archived() && store.unarchiveChats()){
+                chat.archived(false);
+            }
+
+            if (info.ignore()) {
+                return;
+            }
+
+            chat.unreadMessages(chat.unreadMessages() + 1);
             store.callListeners(listener -> listener.onNewMessage(info));
         }
 
@@ -1362,7 +1360,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     var chat = info.chat()
                             .orElseGet(() -> createChat(info.chatJid()));
                     chat.ephemeralMessagesToggleTime(info.timestamp())
-                            .ephemeralMessageDuration(ChatEphemeralTimer.forSeconds(protocolMessage.ephemeralExpiration()));
+                            .ephemeralMessageDuration(ChatEphemeralTimer.forValue(protocolMessage.ephemeralExpiration()));
                     var setting = new EphemeralSetting(info.ephemeralDuration(), info.timestamp());
                     store.callListeners(listener -> listener.onSetting(setting));
                 }
@@ -1639,7 +1637,6 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                 var targetChat = store.findChatByJid(jid);
                 var targetMessage = targetChat.flatMap(chat -> store.findMessageById(chat, mutation.messageIndex().messageId()));
                 switch (action) {
-                    case AndroidUnsupportedActions ignored -> {}
                     case ClearChatAction ignored -> targetChat.map(Chat::messages).ifPresent(SortedMessageList::clear);
                     case ContactAction contactAction -> updateName(targetContact.orElseGet(() -> createContact(jid)), targetChat.orElseGet(() -> createChat(jid)), contactAction);
                     case DeleteChatAction ignored -> targetChat.ifPresent(store.chats()::remove);
@@ -1649,7 +1646,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
                     case PinAction pinAction -> targetChat.ifPresent(chat -> chat.pinned(pinAction.pinned() ? mutation.value().timestamp() : 0));
                     case StarAction starAction -> targetMessage.ifPresent(message -> message.starred(starAction.starred()));
                     case ArchiveChatAction archiveChatAction -> targetChat.ifPresent(chat -> chat.archived(archiveChatAction.archived()));
-                    default -> log.info("Unsupported sync: " + mutation.value().action());
+                    default -> {}
                 }
 
                 store.callListeners(listener -> listener.onAction(action));
@@ -1657,6 +1654,10 @@ public class BinarySocket implements JacksonProvider, SignalSpecification{
 
             var setting = value.setting();
             if(setting != null){
+                if(setting instanceof UnarchiveChatsSetting unarchiveChatsSetting){
+                    store.unarchiveChats(unarchiveChatsSetting.unarchiveChats());
+                }
+
                 store.callListeners(listener -> listener.onSetting(setting));
             }
 

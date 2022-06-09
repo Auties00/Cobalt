@@ -25,5 +25,5 @@ public class ReactionMessage {
   private String groupingKey;
 
   @ProtobufProperty(index = 4, type = INT64)
-  private Long senderTimestampMs;
+  private long senderTimestampMs;
 }

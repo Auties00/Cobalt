@@ -25,7 +25,7 @@ public final class HistorySyncNotification implements ProtobufMessage, Attachmen
     private byte[] fileSha256;
 
     @ProtobufProperty(index = 2, type = UINT64)
-    private Long fileLength;
+    private long fileLength;
 
     @ProtobufProperty(index = 3, type = BYTES)
     private byte[] key;

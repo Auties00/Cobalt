@@ -62,7 +62,7 @@ public final class PaymentInvoiceMessage extends MediaMessage implements Payment
    * The media key timestamp of the attachment that this invoice provides
    */
   @ProtobufProperty(index = 6, type = UINT64)
-  private Long mediaKeyTimestamp;
+  private long mediaKeyTimestamp;
 
   /**
    * The sha256 of the attachment that this invoice provides
@@ -106,7 +106,7 @@ public final class PaymentInvoiceMessage extends MediaMessage implements Payment
    * @throws UnsupportedOperationException always
    */
   @Override
-  public Long fileLength() {
+  public long fileLength() {
     throw new UnsupportedOperationException("Invoices don't provide a file size");
   }
 

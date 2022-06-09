@@ -24,7 +24,7 @@ public final class NotificationMessageInfo implements Info {
   private Message message;
 
   @ProtobufProperty(index = 3, type = UINT64)
-  private Long messageTimestamp;
+  private long messageTimestamp;
 
   @ProtobufProperty(index = 4, type = STRING)
   private String participant;

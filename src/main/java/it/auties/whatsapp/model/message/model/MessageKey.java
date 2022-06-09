@@ -44,12 +44,19 @@ public class MessageKey implements ProtobufMessage {
   private boolean fromMe;
 
   /**
-   * The jid of the message
+   * The id of the message
    */
   @ProtobufProperty(index = 3, type = STRING)
   @NonNull
   @Default
   private String id = randomId();
+
+  /**
+   * The jid of the sender
+   */
+  @ProtobufProperty(index = 4, type = STRING,
+          concreteType = ContactJid.class, requiresConversion = true)
+  private ContactJid senderJid;
 
   /**
    * Generates a random message id

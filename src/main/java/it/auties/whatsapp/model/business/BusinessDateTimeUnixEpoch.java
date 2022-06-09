@@ -17,5 +17,5 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.INT64;
 @Accessors(fluent = true)
 public class BusinessDateTimeUnixEpoch implements ProtobufMessage {
   @ProtobufProperty(index = 1, type = INT64)
-  private Long timestamp;
+  private long timestamp;
 }

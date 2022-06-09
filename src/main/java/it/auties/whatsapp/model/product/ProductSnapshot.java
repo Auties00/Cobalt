@@ -33,7 +33,7 @@ public class ProductSnapshot implements ProtobufMessage {
   private String currencyCode;
 
   @ProtobufProperty(index = 6, type = INT64)
-  private Long priceAmount1000;
+  private long priceAmount1000;
 
   @ProtobufProperty(index = 7, type = STRING)
   private String retailerId;
@@ -48,5 +48,5 @@ public class ProductSnapshot implements ProtobufMessage {
   private String firstImageId;
 
   @ProtobufProperty(index = 12, type = INT64)
-  private Long salePriceAmount1000;
+  private long salePriceAmount1000;
 }

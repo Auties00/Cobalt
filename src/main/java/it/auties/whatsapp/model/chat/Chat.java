@@ -26,6 +26,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static java.util.Objects.requireNonNullElse;
 
 /**
  * A model class that represents a Chat.
@@ -77,15 +78,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * If this field is negative, this chat is marked as unread.
      */
     @ProtobufProperty(index = 6, type = UINT32)
-    private Integer unreadMessages;
-
-    /**
-     * This field is used to determine whether a chat is read only or not.
-     * If true, it means that it's not possible to send messages here.
-     * This is the case, for example, for groups where only admins can send messages.
-     */
-    @ProtobufProperty(index = 7, type = BOOLEAN)
-    private boolean readOnly;
+    private int unreadMessages;
 
     /**
      * The endTimeStamp in seconds before a message is automatically deleted from this chat both locally and from WhatsappWeb's servers.
@@ -99,25 +92,19 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * If ephemeral messages aren't enabled, this field has a value of 0.
      */
     @ProtobufProperty(index = 10, type = INT64)
-    private Long ephemeralMessagesToggleTime;
+    private long ephemeralMessagesToggleTime;
 
     /**
      * The timestamp for the creation of this chat in seconds since {@link java.time.Instant#EPOCH}
      */
     @ProtobufProperty(index = 12, type = UINT64)
-    private Long timestamp;
+    private long timestamp;
 
     /**
      * The non-null display name of this chat
      */
     @ProtobufProperty(index = 13, type = STRING)
     private String name;
-
-    /**
-     * The hash of this chat
-     */
-    @ProtobufProperty(index = 14, type = STRING)
-    private String hash;
 
     /**
      * This field is used to determine whether a chat was marked as being spam or not.
@@ -138,19 +125,6 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     private ChatDisappear disappearInitiator;
 
     /**
-     * The number of unread messages in this chat that have a mention to the user linked to this session.
-     * If this field is negative, this chat is marked as unread.
-     */
-    @ProtobufProperty(index = 18, type = UINT32)
-    private Integer unreadMentions;
-
-    /**
-     * Indicates whether this chat was manually marked as unread
-     */
-    @ProtobufProperty(index = 19, type = BOOLEAN)
-    private boolean markedAsUnread;
-
-    /**
      * The token of this chat
      */
     @ProtobufProperty(index = 21, type = BYTES)
@@ -160,7 +134,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * The timestamp of the token of this chat
      */
     @ProtobufProperty(index = 22, type = UINT64)
-    private Long tokenTimestamp;
+    private long tokenTimestamp;
 
     /**
      * The public identity key of this chat
@@ -201,7 +175,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * The timestamp of the sender of the token of this chat
      */
     @ProtobufProperty(index = 28, type = UINT64)
-    private Long tokenSenderTimestamp;
+    private long tokenSenderTimestamp;
 
     /**
      * Whether this chat was suspended and therefore cannot be accessed anymore
@@ -278,7 +252,6 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      */
     public boolean isEphemeral() {
         return ephemeralMessageDuration != ChatEphemeralTimer.OFF
-                && ephemeralMessagesToggleTime != null
                 && ephemeralMessagesToggleTime != 0;
     }
 
@@ -297,7 +270,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return true if this chat has unread messages
      */
     public boolean hasUnreadMessages() {
-        return unreadMessages == 0 && unreadMentions == 0;
+        return unreadMessages > 0;
     }
 
     /**
@@ -346,12 +319,21 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     }
 
     /**
+     * Returns the timestamp for the creation of this chat in seconds since {@link java.time.Instant#EPOCH}
+     *
+     * @return a non-empty optional if this field is populated
+     */
+    public Optional<ZonedDateTime> timestamp() {
+        return Clock.parse(timestamp);
+    }
+
+    /**
      * Returns the type of ephemeral timer used in this chat
      *
      * @return a non-null ephemeral timer
      */
     public ChatEphemeralTimer ephemeralMessageType() {
-        return Objects.requireNonNullElse(ephemeralMessageDuration, ChatEphemeralTimer.OFF);
+        return requireNonNullElse(ephemeralMessageDuration, ChatEphemeralTimer.OFF);
     }
 
     /**
@@ -360,7 +342,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return a non-empty optional if ephemeral messages are enabled for this chat
      */
     public Optional<ZonedDateTime> ephemeralMessageDuration() {
-        return Clock.parse(ephemeralMessageDuration.timeInSeconds());
+        return Clock.parse(ephemeralMessageDuration.period().toSeconds());
     }
 
     /**

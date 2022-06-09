@@ -12,5 +12,5 @@ public sealed interface AttachmentProvider permits MediaMessage, ExternalBlobRef
     String keyName();
     byte[] fileSha256();
     byte[] fileEncSha256();
-    Long fileLength();
+    long fileLength();
 }

@@ -43,7 +43,7 @@ public final class PaymentOrderMessage extends ContextInfo implements PaymentMes
    * The total number of items that was ordered
    */
   @ProtobufProperty(index = 3, type = UINT32)
-  private Integer itemCount;
+  private int itemCount;
 
   /**
    * The status of this order
@@ -86,7 +86,7 @@ public final class PaymentOrderMessage extends ContextInfo implements PaymentMes
    * The amount of money being paid for this order
    */
   @ProtobufProperty(index = 10, type = UINT64)
-  private Long amount;
+  private long amount;
 
   /**
    * The currency code for {@link PaymentOrderMessage#amount}.

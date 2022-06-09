@@ -22,5 +22,5 @@ public class SyncActionMessage implements ProtobufMessage {
   private MessageKey key;
 
   @ProtobufProperty(index = 2, type = INT64)
-  private Long timestamp;
+  private long timestamp;
 }

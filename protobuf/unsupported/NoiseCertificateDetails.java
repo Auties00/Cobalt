@@ -16,13 +16,13 @@ import lombok.extern.jackson.*;
 public class NoiseCertificateDetails {
 
   @ProtobufProperty(index = 1, type = UINT32)
-  private Integer serial;
+  private int serial;
 
   @ProtobufProperty(index = 2, type = STRING)
   private String issuer;
 
   @ProtobufProperty(index = 3, type = UINT64)
-  private Long expires;
+  private long expires;
 
   @ProtobufProperty(index = 4, type = STRING)
   private String subject;

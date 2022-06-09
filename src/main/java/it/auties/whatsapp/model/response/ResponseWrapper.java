@@ -1,5 +1,5 @@
 package it.auties.whatsapp.model.response;
 
-public sealed interface ResponseWrapper
-        permits HasWhatsappResponse, ContactStatusResponse {
+public sealed interface ResponseWrapper permits AppVersionResponse, ContactStatusResponse, HasWhatsappResponse {
+
 }

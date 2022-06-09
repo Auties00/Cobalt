@@ -35,25 +35,25 @@ public class PaymentBackground {
   private String id;
 
   @ProtobufProperty(index = 2, type = UINT64)
-  private Long fileLength;
+  private long fileLength;
 
   @ProtobufProperty(index = 3, type = UINT32)
-  private Integer width;
+  private int width;
 
   @ProtobufProperty(index = 4, type = UINT32)
-  private Integer height;
+  private int height;
 
   @ProtobufProperty(index = 5, type = STRING)
   private String mimetype;
 
   @ProtobufProperty(index = 6, type = FIXED32)
-  private Integer placeholderArgb;
+  private int placeholderArgb;
 
   @ProtobufProperty(index = 7, type = FIXED32)
-  private Integer textArgb;
+  private int textArgb;
 
   @ProtobufProperty(index = 8, type = FIXED32)
-  private Integer subtextArgb;
+  private int subtextArgb;
 
   @ProtobufProperty(index = 9, type = MESSAGE, concreteType = PBMediaData.class)
   private PBMediaData mediaData;

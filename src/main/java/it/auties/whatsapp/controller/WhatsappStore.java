@@ -85,6 +85,11 @@ public final class WhatsappStore implements WhatsappController {
     private boolean hasSnapshot;
 
     /**
+     * Whether chats should be unarchived if a new message arrives
+     */
+    private boolean unarchiveChats;
+
+    /**
      * The non-null list of requests that are waiting for a response from Whatsapp
      */
     @NonNull

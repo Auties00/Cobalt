@@ -37,7 +37,7 @@ public final class RequestPaymentMessage implements PaymentMessage {
    * The amount of money being paid
    */
   @ProtobufProperty(index = 2, type = UINT64)
-  private Long amount;
+  private long amount;
 
   /**
    * The name of the Whatsapp business account that will receive the money
@@ -55,5 +55,5 @@ public final class RequestPaymentMessage implements PaymentMessage {
    * The timestamp, that is the endTimeStamp in seconds since {@link java.time.Instant#EPOCH}, for the expiration of this payment request
    */
   @ProtobufProperty(index = 5, type = UINT64)
-  private Long expiryTimestamp;
+  private long expiryTimestamp;
 }

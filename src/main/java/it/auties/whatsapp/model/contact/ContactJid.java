@@ -179,12 +179,21 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
     }
 
     /**
+     * Returns whether this jid is a group
+     *
+     * @return a boolean
+     */
+    public boolean isGroup(){
+        return type() == Type.GROUP;
+    }
+
+    /**
      * Converts this jid to a user jid
      *
      * @return a non-null jid
      */
     public ContactJid toUserJid(){
-        return of(user(), Server.WHATSAPP);
+        return of(user(), server());
     }
 
     /**

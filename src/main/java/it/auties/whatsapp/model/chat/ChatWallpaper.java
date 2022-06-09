@@ -33,5 +33,5 @@ public class ChatWallpaper implements ProtobufMessage {
      * The opacity of the wallpaper
      */
     @ProtobufProperty(index = 2, type = UINT32)
-    private Integer opacity;
+    private int opacity;
 }

@@ -59,7 +59,7 @@ public final class VideoMessage extends MediaMessage {
    * The unsigned size of the decoded video that this object wraps
    */
   @ProtobufProperty(index = 4, type = UINT64)
-  private Long fileLength;
+  private long fileLength;
 
   /**
    * The length in seconds of the video that this message wraps
@@ -120,7 +120,7 @@ public final class VideoMessage extends MediaMessage {
    * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link VideoMessage#key()}
    */
   @ProtobufProperty(index = 14, type = INT64)
-  private Long mediaKeyTimestamp;
+  private long mediaKeyTimestamp;
 
   /**
    * The thumbnail for this video message encoded as jpeg in an array of bytes

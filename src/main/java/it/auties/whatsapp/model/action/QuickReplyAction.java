@@ -28,7 +28,7 @@ public final class QuickReplyAction implements Action {
   private List<String> keywords;
 
   @ProtobufProperty(index = 4, type = INT32)
-  private Integer count;
+  private int count;
 
   @ProtobufProperty(index = 5, type = BOOLEAN)
   private boolean deleted;

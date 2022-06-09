@@ -27,7 +27,7 @@ public final class ExternalBlobReference implements ProtobufMessage, AttachmentP
   private String handle;
 
   @ProtobufProperty(index = 4, type = UINT64)
-  private Long fileLength;
+  private long fileLength;
 
   @ProtobufProperty(index = 5, type = BYTES)
   private byte[] fileSha256;

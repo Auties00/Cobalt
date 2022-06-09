@@ -91,7 +91,7 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
      *
      * @return an unsigned long
      */
-    public abstract Long mediaKeyTimestamp();
+    public abstract long mediaKeyTimestamp();
 
     @Override
     public String name() {

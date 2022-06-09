@@ -39,7 +39,6 @@ import static it.auties.whatsapp.api.WhatsappOptions.defaultOptions;
 import static it.auties.whatsapp.binary.BinarySync.REGULAR_HIGH;
 import static it.auties.whatsapp.binary.BinarySync.REGULAR_LOW;
 import static it.auties.whatsapp.controller.WhatsappController.knownIds;
-import static it.auties.whatsapp.model.contact.ContactJid.Server.GROUP;
 import static it.auties.whatsapp.model.request.Node.*;
 import static it.auties.whatsapp.model.sync.RecordSync.Operation.SET;
 import static java.util.Map.of;
@@ -241,7 +240,16 @@ public class Whatsapp {
      * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Whatsapp> logout() {
-        return socket.logout()
+        if (keys().hasCompanion()) {
+            var metadata = of("jid", keys().companion(), "reason", "user_initiated");
+            var device = withAttributes("remove-companion-device", metadata);
+            return socket.sendQuery("set", "md", device)
+                    .thenRunAsync(socket::changeKeys)
+                    .thenApplyAsync(ignored -> this);
+        }
+
+        return disconnect()
+                .thenRunAsync(socket::changeKeys)
                 .thenApplyAsync(ignored -> this);
     }
     
@@ -290,12 +298,17 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJidProvider chat, @NonNull ContextualMessage message, @NonNull MessageInfo quotedMessage) {
+        Validate.isTrue(!quotedMessage.message().isEmpty(), "Cannot quote an empty message");
+        Validate.isTrue(!quotedMessage.message().isServer(), "Cannot quote a server message");
         var context = ContextInfo.newContextInfo()
+                .quotedMessageSender(quotedMessage.fromMe() ? keys().companion() : quotedMessage.senderJid())
                 .quotedMessageId(quotedMessage.id())
-                .quotedMessageContainer(quotedMessage.message())
-                .quotedMessageSenderId(quotedMessage.senderJid())
-                .create();
-        return sendMessage(chat, message, context);
+                .quotedMessage(quotedMessage.message());
+        if(!Objects.equals(quotedMessage.senderJid(), quotedMessage.chatJid())){
+            context.quotedMessageChat(quotedMessage.chatJid());
+        }
+
+        return sendMessage(chat, message, context.create());
     }
     
     /**
@@ -320,9 +333,11 @@ public class Whatsapp {
         var key = MessageKey.newMessageKey()
                 .chatJid(chat.toJid())
                 .fromMe(true)
+                .senderJid(chat.toJid().isGroup() ? keys().companion() : null)
                 .create();
         var info = MessageInfo.newMessageInfo()
                 .storeId(store().id())
+                .senderJid(chat.toJid().isGroup() ? keys().companion() : null)
                 .key(key)
                 .message(message)
                 .create();
@@ -341,11 +356,14 @@ public class Whatsapp {
         var key = MessageKey.newMessageKey()
                 .chatJid(chat.toJid())
                 .fromMe(true)
+                .senderJid(chat.toJid().isGroup() ? keys().companion() : null)
                 .create();
         var info = MessageInfo.newMessageInfo()
                 .storeId(store().id())
+                .senderJid(chat.toJid().isGroup() ? keys().companion() : null)
                 .key(key)
                 .message(MessageContainer.of(message.contextInfo(contextInfo)))
+                .timestamp(Clock.now())
                 .create();
         return sendMessage(info);
     }
@@ -357,7 +375,7 @@ public class Whatsapp {
      * @return a CompletableFuture 
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull MessageInfo message) {
-        message.chatJid(message.chatJid().toUserJid());
+        message.key().chatJid(message.chatJid().toUserJid());
         if(message.message().content() instanceof MediaMessage mediaMessage){
             mediaMessage.storeId(store().id());
         }
@@ -785,14 +803,14 @@ public class Whatsapp {
             case USER, WHATSAPP -> {
                 var message = ProtocolMessage.newProtocolMessage()
                         .type(ProtocolMessage.ProtocolMessageType.EPHEMERAL_SETTING)
-                        .ephemeralExpiration(timer.timeInSeconds())
+                        .ephemeralExpiration(timer.period().toSeconds())
                         .create();
                 yield sendMessage(chat, message);
             }
 
             case GROUP -> {
                 var body = timer == ChatEphemeralTimer.OFF ? with("not_ephemeral")
-                        : withAttributes("ephemeral", of("expiration", timer.timeInSeconds()));
+                        : withAttributes("ephemeral", of("expiration", timer.period().toSeconds()));
                 yield socket.sendQuery(chat.toJid(), "set", "w:g2", body);
             }
 
@@ -883,7 +901,7 @@ public class Whatsapp {
         var syncAction = new ActionValueSync(starAction);
         var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 3,
                 info.chatJid().toString(), info.id(), String.valueOf(info.fromMe() ? 1 : 0),
-                info.chatJid().server() == GROUP && !info.fromMe() ? info.senderJid().toString() : "0");
+                info.chatJid().server() == ContactJid.Server.GROUP && !info.fromMe() ? info.senderJid().toString() : "0");
         return socket.push(request);
     }
 

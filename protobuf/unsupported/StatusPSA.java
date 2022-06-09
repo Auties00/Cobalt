@@ -20,5 +20,5 @@ public class StatusPSA {
   private String campaignId;
 
   @ProtobufProperty(index = 45, type = UINT64)
-  private Long campaignExpirationTimestamp;
+  private long campaignExpirationTimestamp;
 }

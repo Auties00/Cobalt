@@ -17,10 +17,10 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.SFIXED64;
 @Accessors(fluent = true)
 public final class EphemeralSetting implements Setting {
   @ProtobufProperty(index = 1, type = SFIXED32)
-  private Integer duration;
+  private int duration;
 
   @ProtobufProperty(index = 2, type = SFIXED64)
-  private Long timestamp;
+  private long timestamp;
 
   @Override
   public String indexName() {

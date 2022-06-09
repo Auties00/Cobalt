@@ -38,13 +38,20 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
    */
   @ProtobufProperty(index = 2, type = STRING,
           concreteType = ContactJid.class, requiresConversion = true)
-  private ContactJid quotedMessageSenderId;
+  private ContactJid quotedMessageSender;
 
   /**
    * The message that this ContextualMessage quotes
    */
   @ProtobufProperty(index = 3, type = MESSAGE, concreteType = MessageContainer.class)
-  private MessageContainer quotedMessageContainer;
+  private MessageContainer quotedMessage;
+
+  /**
+   * The jid of the contact that sent the message that this ContextualMessage quotes
+   */
+  @ProtobufProperty(index = 4, type = STRING,
+          concreteType = ContactJid.class, requiresConversion = true)
+  private ContactJid quotedMessageChat;
 
   /**
    * A list of the contacts' jids mentioned in this ContextualMessage
@@ -68,13 +75,13 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
    * Conversation delay in seconds
    */
   @ProtobufProperty(index = 20, type = UINT32)
-  private Integer conversionDelaySeconds;
+  private int conversionDelaySeconds;
 
   /**
    * Forwarding score
    */
   @ProtobufProperty(index = 21, type = UINT32)
-  private Integer forwardingScore;
+  private int forwardingScore;
 
   /**
    * Whether this ContextualMessage is forwarded
@@ -99,14 +106,14 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
    * Only valid if the chat where this message was sent is ephemeral.
    */
   @ProtobufProperty(index = 25, type = UINT32)
-  private Integer expiration;
+  private int expiration;
 
   /**
    * The timestamp, that is the endTimeStamp in seconds since {@link java.time.Instant#EPOCH}, of the last modification to the ephemeral settings
    * for the chat where this ContextualMessage was sent.
    */
   @ProtobufProperty(index = 26, type = INT64)
-  private Long ephemeralSettingTimestamp;
+  private long ephemeralSettingTimestamp;
 
   /**
    * Ephemeral shared secret
@@ -136,19 +143,7 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
    * Entry point conversion delay in seconds
    */
   @ProtobufProperty(index = 31, type = UINT32)
-  private Integer entryPointConversionDelaySeconds;
-
-  /*
-  FIXME: 02/06/2022 Bugged?
-  @ProtobufProperty(index = 32, type = MESSAGE, concreteType = ChatDisappear.Linker.class)
-  private ChatDisappear disappearingMode;
-  @ProtobufProperty(index = 33, type = STRING)
-  private ActionLink actionLink;
-  @ProtobufProperty(index = 34, type = STRING)
-  private String groupSubject;
-  @ProtobufProperty(index = 35, type = STRING)
-  private String parentGroupJid;
-   */
+  private int entryPointConversionDelaySeconds;
 
   /**
    * Constructs a ContextInfo from a quoted message
@@ -156,8 +151,8 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
    * @param quotedMessage the message to quote
    */
   public ContextInfo(@NonNull MessageInfo quotedMessage){
-    this.quotedMessageContainer = quotedMessage.message();
+    this.quotedMessage = quotedMessage.message();
     this.quotedMessageId = quotedMessage.key().id();
-    this.quotedMessageSenderId = quotedMessage.senderJid();
+    this.quotedMessageSender = quotedMessage.senderJid();
   }
 }

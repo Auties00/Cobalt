@@ -21,5 +21,5 @@ public class BusinessCurrency implements ProtobufMessage {
   private String currencyCode;
 
   @ProtobufProperty(index = 2, type = INT64)
-  private Long amount1000;
+  private long amount1000;
 }

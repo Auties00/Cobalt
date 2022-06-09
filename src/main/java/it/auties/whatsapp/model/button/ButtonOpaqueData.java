@@ -32,7 +32,7 @@ public class ButtonOpaqueData implements ProtobufMessage {
   private Double lat;
 
   @ProtobufProperty(index = 8, type = INT32)
-  private Integer paymentAmount1000;
+  private int paymentAmount1000;
 
   @ProtobufProperty(index = 9, type = STRING)
   private String paymentNoteMsgBody;

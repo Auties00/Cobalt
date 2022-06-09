@@ -34,7 +34,7 @@ public final class FavoriteStickerAction implements Action {
   private String mediaKey;
 
   @ProtobufProperty(index = 7, type = INT64)
-  private Long mediaKeyTimestamp;
+  private long mediaKeyTimestamp;
 
   @ProtobufProperty(index = 8, type = BOOLEAN)
   private boolean isFavourite;

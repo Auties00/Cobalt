@@ -16,10 +16,10 @@ import lombok.extern.jackson.*;
 public class Money {
 
   @ProtobufProperty(index = 1, type = INT64)
-  private Long value;
+  private long value;
 
   @ProtobufProperty(index = 2, type = UINT32)
-  private Integer offset;
+  private int offset;
 
   @ProtobufProperty(index = 3, type = STRING)
   private String currencyCode;

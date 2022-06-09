@@ -19,10 +19,10 @@ public final class LabelEditAction implements Action {
   private String name;
 
   @ProtobufProperty(index = 2, type = INT32)
-  private Integer color;
+  private int color;
 
   @ProtobufProperty(index = 3, type = INT32)
-  private Integer predefinedId;
+  private int predefinedId;
 
   @ProtobufProperty(index = 4, type = BOOLEAN)
   private boolean deleted;
