@@ -276,7 +276,7 @@ public class Whatsapp {
      * @param jid the contact whose status the api should receive updates on
      * @return a CompletableFuture
      */
-    public CompletableFuture<Void> subscribeToContactPresence(@NonNull ContactJidProvider jid) {
+    public CompletableFuture<Void> subscribeToPresence(@NonNull ContactJidProvider jid) {
         var node = withAttributes("presence", of("to", jid.toJid(), "type", "subscribe"));
         return socket.sendWithNoResponse(node);
     }
@@ -481,7 +481,7 @@ public class Whatsapp {
      * @param chat the chat of the chat to query
      * @return a CompletableFuture that wraps nullable jpg url hosted on Whatsapp's servers
      */
-    public CompletableFuture<Optional<URI>> queryChatPicture(@NonNull ContactJidProvider chat) {
+    public CompletableFuture<Optional<URI>> queryPic(@NonNull ContactJidProvider chat) {
         var body = withAttributes("picture", of("query", "url"));
         return socket.sendQuery("get", "w:profile:picture", of("target", chat.toJid()), body)
                 .thenApplyAsync(this::parseChatPicture);
@@ -500,7 +500,7 @@ public class Whatsapp {
      * @param chat the target group
      * @return a CompletableFuture
      */
-    public CompletableFuture<GroupMetadata> queryMetadata(@NonNull ContactJidProvider chat) {
+    public CompletableFuture<GroupMetadata> queryGroupMetadata(@NonNull ContactJidProvider chat) {
         return socket.queryGroupMetadata(chat.toJid());
     }
 
@@ -751,8 +751,8 @@ public class Whatsapp {
      * @param contacts at least one contact to add to the group
      * @return a CompletableFuture
      */
-    public CompletableFuture<GroupMetadata> createGroup(@NonNull String subject,
-                                                        @NonNull ContactJidProvider... contacts) {
+    public CompletableFuture<GroupMetadata> create(@NonNull String subject,
+                                                   @NonNull ContactJidProvider... contacts) {
         var participants = Arrays.stream(contacts)
                 .map(contact -> withAttributes("participant", of("jid", contact.toJid())))
                 .toArray(Node[]::new);

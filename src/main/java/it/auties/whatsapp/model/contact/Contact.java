@@ -51,7 +51,7 @@ public final class Contact implements ProtobufMessage, ContactJidProvider {
      * If, for example, this contact is composing, recording or paused in a group this field will not be affected.
      * Instead, {@link Chat#presences()} should be used.
      * By default, Whatsapp will not send updates about a contact's status unless they send a message or are in the recent contacts.
-     * To force Whatsapp to send updates, use {@link Whatsapp#subscribeToContactPresence(ContactJidProvider)}.
+     * To force Whatsapp to send updates, use {@link Whatsapp#subscribeToPresence(ContactJidProvider)}.
      */
     private ContactStatus lastKnownPresence;
 

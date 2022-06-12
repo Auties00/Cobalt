@@ -141,7 +141,7 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
     @Order(3)
     public void testUserPresenceSubscription() throws Exception {
         log("Subscribing to user presence...");
-        var userPresenceResponse = api.subscribeToContactPresence(contact)
+        var userPresenceResponse = api.subscribeToPresence(contact)
                 .get();
         log("Subscribed to user presence: %s", userPresenceResponse);
     }
@@ -150,7 +150,7 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
     @Order(4)
     public void testPictureQuery() throws Exception {
         log("Loading picture...");
-        var picResponse = api.queryChatPicture(contact)
+        var picResponse = api.queryPic(contact)
                 .get();
         log("Loaded picture at: %s", picResponse);
     }
@@ -189,7 +189,7 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
     @Order(9)
     public void testGroupCreation() throws Exception {
         log("Creating group...");
-        var response = api.createGroup(Bytes.ofRandom(5)
+        var response = api.create(Bytes.ofRandom(5)
                         .toHex(), contact)
                 .get();
         group = response.jid();
@@ -279,7 +279,7 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
     @Order(19)
     public void testGroupQuery() throws Exception {
         log("Querying group %s...", group);
-        api.queryMetadata(group)
+        api.queryGroupMetadata(group)
                 .get();
         log("Queried group");
     }
