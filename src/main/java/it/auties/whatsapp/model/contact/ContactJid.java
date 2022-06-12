@@ -6,7 +6,6 @@ import it.auties.protobuf.api.exception.ProtobufSerializationException;
 import it.auties.protobuf.api.model.ProtobufConverter;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufValue;
-import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,13 +20,13 @@ import java.util.Objects;
 /**
  * A model class that represents a jid.
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
- * Instead, methods inside {@link Whatsapp} should be used.
  * This class also offers a builder, accessible using {@link ContactJid#builder()}.
  */
 @Builder
 @ProtobufValue
 @Log
-public record ContactJid(String user, @NonNull Server server, int device, int agent) implements ProtobufMessage, ContactJidProvider {
+public record ContactJid(String user, @NonNull Server server, int device, int agent)
+        implements ProtobufMessage, ContactJidProvider {
     /**
      * The official business account address
      */
@@ -48,7 +47,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      */
     public static final ContactJid GROUP = ofServer(Server.GROUP);
 
-    public ContactJid(String user, Server server, int device, int agent){
+    public ContactJid(String user, Server server, int device, int agent) {
         this.user = user;
         this.server = server;
         this.device = device;
@@ -79,11 +78,11 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
             return new ContactJid(null, server, 0, 0);
         }
 
-        if(complexUser.contains(":")){
+        if (complexUser.contains(":")) {
             var simpleUser = complexUser.split(":", 2);
             var user = simpleUser[0];
             var device = Integer.parseUnsignedInt(simpleUser[1]);
-            if(user.contains("_")){
+            if (user.contains("_")) {
                 var simpleUserAgent = user.split("_", 2);
                 var agent = Integer.parseUnsignedInt(simpleUserAgent[1]);
                 return new ContactJid(simpleUserAgent[0], server, device, agent);
@@ -140,15 +139,29 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @return null if {@code jid == null}, otherwise a non null string
      */
     public static String withoutServer(String jid) {
-        if(jid == null) {
+        if (jid == null) {
             return null;
         }
 
-        for(var server : Server.values()) {
+        for (var server : Server.values()) {
             jid = jid.replaceAll("@%s".formatted(server), "");
         }
 
         return jid;
+    }
+
+    @ProtobufConverter
+    @SuppressWarnings("unused")
+    public static Object convert(Object input) {
+        if (input == null) {
+            return null;
+        }
+
+        if (input instanceof String string) {
+            return ContactJid.of(string);
+        }
+
+        throw new ProtobufSerializationException(input.toString());
     }
 
     /**
@@ -165,12 +178,14 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
             return Type.OFFICIAL_BUSINESS_ACCOUNT;
         }
 
-        return switch (server()){
+        return switch (server()) {
             case WHATSAPP -> Type.USER;
-            case BROADCAST -> Objects.equals(user(), "status") ? Type.STATUS : Type.BROADCAST;
+            case BROADCAST -> Objects.equals(user(), "status") ?
+                    Type.STATUS :
+                    Type.BROADCAST;
             case GROUP -> Type.GROUP;
             case GROUP_CALL -> Type.GROUP_CALL;
-            case USER -> switch (user()){
+            case USER -> switch (user()) {
                 case "server" -> Type.SERVER;
                 case "0" -> Type.ANNOUNCEMENT;
                 default -> Type.UNKNOWN;
@@ -183,7 +198,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      *
      * @return a boolean
      */
-    public boolean isGroup(){
+    public boolean isGroup() {
         return type() == Type.GROUP;
     }
 
@@ -192,7 +207,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      *
      * @return a non-null jid
      */
-    public ContactJid toUserJid(){
+    public ContactJid toUserJid() {
         return of(user(), server());
     }
 
@@ -201,7 +216,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      *
      * @return true if this jid is a companion
      */
-    public boolean isCompanion(){
+    public boolean isCompanion() {
         return device() != 0;
     }
 
@@ -214,10 +229,16 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
     @Override
     public String toString() {
         var user = Objects.requireNonNullElse(user(), "");
-        var agent = agent() != 0 ? "_%s".formatted(agent()) : "";
-        var device = device() != 0 ? ":%s".formatted(device()) : "";
+        var agent = agent() != 0 ?
+                "_%s".formatted(agent()) :
+                "";
+        var device = device() != 0 ?
+                ":%s".formatted(device()) :
+                "";
         var leading = "%s%s%s".formatted(user, agent, device);
-        return leading.isEmpty() ? server().toString() : "%s@%s".formatted(leading, server());
+        return leading.isEmpty() ?
+                server().toString() :
+                "%s@%s".formatted(leading, server());
     }
 
     @Override
@@ -225,29 +246,16 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
         return toString();
     }
 
-    @ProtobufConverter
-    @SuppressWarnings("unused")
-    public static Object convert(Object input){
-        if(input == null){
-            return null;
-        }
-
-        if(input instanceof String string) {
-            return ContactJid.of(string);
-        }
-
-        throw new ProtobufSerializationException(input.toString());
-    }
-
     /**
      * Converts this jid to a signal address
      *
      * @return a non-null {@link SessionAddress}
      */
-    public SessionAddress toSignalAddress(){
+    public SessionAddress toSignalAddress() {
         var name = toString().split("@", 2)[0];
         return new SessionAddress(name, 0);
     }
+
     /**
      * Returns this object as a jid
      *

@@ -20,38 +20,40 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class BusinessLocalizableParameter  implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = STRING)
-  private String defaultValue;
+public class BusinessLocalizableParameter implements ProtobufMessage {
+    @ProtobufProperty(index = 1, type = STRING)
+    private String defaultValue;
 
-  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = BusinessCurrency.class)
-  private BusinessCurrency currency;
+    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = BusinessCurrency.class)
+    private BusinessCurrency currency;
 
-  @ProtobufProperty(index = 3, type = MESSAGE, concreteType = BusinessDateTime.class)
-  private BusinessDateTime dateTime;
+    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = BusinessDateTime.class)
+    private BusinessDateTime dateTime;
 
-  public ParamType paramType() {
-    if (currency != null) return ParamType.CURRENCY;
-    if (dateTime != null) return ParamType.DATE_TIME;
-    return ParamType.UNKNOWN;
-  }
-
-  @AllArgsConstructor
-  @Accessors(fluent = true)
-  public enum ParamType implements ProtobufMessage {
-    UNKNOWN(0),
-    CURRENCY(2),
-    DATE_TIME(3);
-
-    @Getter
-    private final int index;
-
-    @JsonCreator
-    public static ParamType forIndex(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
-          .orElse(ParamType.UNKNOWN);
+    public ParamType paramType() {
+        if (currency != null)
+            return ParamType.CURRENCY;
+        if (dateTime != null)
+            return ParamType.DATE_TIME;
+        return ParamType.UNKNOWN;
     }
-  }
+
+    @AllArgsConstructor
+    @Accessors(fluent = true)
+    public enum ParamType implements ProtobufMessage {
+        UNKNOWN(0),
+        CURRENCY(2),
+        DATE_TIME(3);
+
+        @Getter
+        private final int index;
+
+        @JsonCreator
+        public static ParamType forIndex(int index) {
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(ParamType.UNKNOWN);
+        }
+    }
 }

@@ -16,12 +16,12 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Jacksonized
 @Accessors(fluent = true)
 public class BusinessLocalizedName implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = STRING)
-  private String lg;
+    @ProtobufProperty(index = 1, type = STRING)
+    private String lg;
 
-  @ProtobufProperty(index = 2, type = STRING)
-  private String lc;
+    @ProtobufProperty(index = 2, type = STRING)
+    private String lc;
 
-  @ProtobufProperty(index = 3, type = STRING)
-  private String name;
+    @ProtobufProperty(index = 3, type = STRING)
+    private String name;
 }

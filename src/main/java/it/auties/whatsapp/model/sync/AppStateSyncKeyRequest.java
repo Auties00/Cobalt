@@ -19,13 +19,13 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @Jacksonized
 @Accessors(fluent = true)
 public class AppStateSyncKeyRequest implements ProtobufMessage {
-    @ProtobufProperty(index = 1, type = MESSAGE,
-            concreteType = AppStateSyncKeyId.class, repeated = true)
+    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = AppStateSyncKeyId.class, repeated = true)
     private List<AppStateSyncKeyId> keyIds;
 
     public static class AppStateSyncKeyRequestBuilder {
         public AppStateSyncKeyRequestBuilder keyIds(List<AppStateSyncKeyId> keyIds) {
-            if (this.keyIds == null) this.keyIds = new ArrayList<>();
+            if (this.keyIds == null)
+                this.keyIds = new ArrayList<>();
             this.keyIds.addAll(keyIds);
             return this;
         }

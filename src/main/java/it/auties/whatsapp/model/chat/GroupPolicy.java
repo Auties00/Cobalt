@@ -26,6 +26,8 @@ public enum GroupPolicy implements ProtobufMessage {
      * @return a non-null GroupPolicy
      */
     public static GroupPolicy forData(boolean input) {
-        return input ? ADMINS : ANYONE;
+        return input ?
+                ADMINS :
+                ANYONE;
     }
 }

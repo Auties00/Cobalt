@@ -52,7 +52,13 @@ public class WhatsappOptions {
     @Default
     @NonNull
     private final String description = "WhatsappWeb4j";
-
+    /**
+     * A list of strategies to serialize sensible data associated with a session.
+     * By default, all data is serialized synchronously when the socket is closed in a json locally.
+     */
+    @Default
+    @NonNull
+    private final Set<SerializationStrategy> serializationStrategies = Set.of(SerializationStrategy.onClose());
     /**
      * A flag to specify whether sensible data associated with a session should be serialized.
      * If this flag is set to false, {@link WhatsappOptions#serializationStrategies()} are ignored.
@@ -60,22 +66,12 @@ public class WhatsappOptions {
      */
     @Default
     private boolean serialization = true;
-
     /**
      * Describes how much chat history Whatsapp should send when the QR is first scanned.
      * By default, three months are chosen.
      */
     @Default
     private HistoryLength historyLength = HistoryLength.THREE_MONTHS;
-
-    /**
-     * A list of strategies to serialize sensible data associated with a session.
-     * By default, all data is serialized synchronously when the socket is closed in a json locally.
-     */
-    @Default
-    @NonNull
-    private final Set<SerializationStrategy> serializationStrategies
-            = Set.of(SerializationStrategy.onClose());
 
     /**
      * Constructs a new instance of WhatsappConfiguration with default options
@@ -87,8 +83,8 @@ public class WhatsappOptions {
     }
 
     public static class WhatsappOptionsBuilder {
-        public WhatsappOptionsBuilder serializationStrategy(SerializationStrategy strategy){
-            if(!serializationStrategies$set){
+        public WhatsappOptionsBuilder serializationStrategy(SerializationStrategy strategy) {
+            if (!serializationStrategies$set) {
                 this.serializationStrategies$set = true;
                 this.serializationStrategies$value = new HashSet<>();
             }

@@ -15,11 +15,11 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Jacksonized
 @Accessors(fluent = true)
 public final class PushNameSetting implements Setting {
-  @ProtobufProperty(index = 1, type = STRING)
-  private String name;
+    @ProtobufProperty(index = 1, type = STRING)
+    private String name;
 
-  @Override
-  public String indexName() {
-    return "setting_pushName";
-  }
+    @Override
+    public String indexName() {
+        return "setting_pushName";
+    }
 }

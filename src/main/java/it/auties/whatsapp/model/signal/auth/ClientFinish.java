@@ -16,9 +16,9 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.BYTES;
 @Jacksonized
 @Accessors(fluent = true)
 public class ClientFinish implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = BYTES)
-  private byte[] staticText;
+    @ProtobufProperty(index = 1, type = BYTES)
+    private byte[] staticText;
 
-  @ProtobufProperty(index = 2, type = BYTES)
-  private byte[] payload;
+    @ProtobufProperty(index = 2, type = BYTES)
+    private byte[] payload;
 }

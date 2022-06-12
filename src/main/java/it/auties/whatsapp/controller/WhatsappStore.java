@@ -152,7 +152,7 @@ public final class WhatsappStore implements WhatsappController {
      * @param id the unsigned jid of this store
      * @return a non-null instance of WhatsappStore
      */
-    public static WhatsappStore random(int id){
+    public static WhatsappStore random(int id) {
         var result = WhatsappStore.builder()
                 .id(id)
                 .build();
@@ -166,9 +166,10 @@ public final class WhatsappStore implements WhatsappController {
      * @param id the jid of this session
      * @return a non-null instance of WhatsappStore
      */
-    public static WhatsappStore of(int id){
+    public static WhatsappStore of(int id) {
         var preferences = Preferences.of("%s/store.json", id);
-        var result = requireNonNullElseGet(preferences.readJson(new TypeReference<>(){}), () -> random(id));
+        var result = requireNonNullElseGet(preferences.readJson(new TypeReference<>() {
+        }), () -> random(id));
         stores.add(result);
         return result;
     }
@@ -188,7 +189,7 @@ public final class WhatsappStore implements WhatsappController {
      * @param id the id to search
      * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional
      */
-    public static Optional<WhatsappStore> findStoreById(int id){
+    public static Optional<WhatsappStore> findStoreById(int id) {
         return Collections.synchronizedSet(stores)
                 .parallelStream()
                 .filter(entry -> entry.id() == id)
@@ -202,10 +203,13 @@ public final class WhatsappStore implements WhatsappController {
      * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional
      */
     public Optional<Contact> findContactByJid(ContactJid jid) {
-        return jid == null ? Optional.empty() : contacts()
-                .parallelStream()
-                .filter(contact -> contact.jid().user().equals(jid.user()))
-                .findAny();
+        return jid == null ?
+                Optional.empty() :
+                contacts().parallelStream()
+                        .filter(contact -> contact.jid()
+                                .user()
+                                .equals(jid.user()))
+                        .findAny();
     }
 
     /**
@@ -215,8 +219,7 @@ public final class WhatsappStore implements WhatsappController {
      * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional
      */
     public Optional<Contact> findContactByName(String name) {
-        return findContactsStream(name)
-                .findAny();
+        return findContactsStream(name).findAny();
     }
 
     /**
@@ -226,16 +229,15 @@ public final class WhatsappStore implements WhatsappController {
      * @return a Set containing every result
      */
     public Set<Contact> findContactsByName(String name) {
-        return findContactsStream(name)
-                .collect(Collectors.toUnmodifiableSet());
+        return findContactsStream(name).collect(Collectors.toUnmodifiableSet());
     }
 
     private Stream<Contact> findContactsStream(String name) {
-        return name == null ? Stream.empty() : contacts()
-                .parallelStream()
-                .filter(contact -> Objects.equals(contact.fullName(), name)
-                        || Objects.equals(contact.shortName(), name)
-                        || Objects.equals(contact.chosenName(), name));
+        return name == null ?
+                Stream.empty() :
+                contacts().parallelStream()
+                        .filter(contact -> Objects.equals(contact.fullName(), name) || Objects.equals(
+                                contact.shortName(), name) || Objects.equals(contact.chosenName(), name));
     }
 
     /**
@@ -245,10 +247,13 @@ public final class WhatsappStore implements WhatsappController {
      * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional
      */
     public Optional<Chat> findChatByJid(ContactJid jid) {
-        return jid == null ? Optional.empty() : chats()
-                .parallelStream()
-                .filter(chat -> chat.jid().user().equals(jid.user()))
-                .findAny();
+        return jid == null ?
+                Optional.empty() :
+                chats().parallelStream()
+                        .filter(chat -> chat.jid()
+                                .user()
+                                .equals(jid.user()))
+                        .findAny();
     }
 
     /**
@@ -259,10 +264,13 @@ public final class WhatsappStore implements WhatsappController {
      * @return a non-empty Optional containing the result if it is found otherwise an empty Optional
      */
     public Optional<MessageInfo> findMessageById(Chat chat, String id) {
-        return chat == null || id == null ? Optional.empty() : chat.messages()
-                .parallelStream()
-                .filter(message -> Objects.equals(message.key().id(), id))
-                .findAny();
+        return chat == null || id == null ?
+                Optional.empty() :
+                chat.messages()
+                        .parallelStream()
+                        .filter(message -> Objects.equals(message.key()
+                                .id(), id))
+                        .findAny();
     }
 
     /**
@@ -272,8 +280,7 @@ public final class WhatsappStore implements WhatsappController {
      * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional
      */
     public Optional<Chat> findChatByName(String name) {
-        return findChatsStream(name)
-                .findAny();
+        return findChatsStream(name).findAny();
     }
 
     /**
@@ -283,14 +290,15 @@ public final class WhatsappStore implements WhatsappController {
      * @return a Set containing every result
      */
     public Set<Chat> findChatsByName(String name) {
-        return findChatsStream(name)
-                .collect(Collectors.toUnmodifiableSet());
+        return findChatsStream(name).collect(Collectors.toUnmodifiableSet());
     }
 
     private Stream<Chat> findChatsStream(String name) {
-        return name == null ? Stream.empty() : chats()
-                .parallelStream()
-                .filter(chat -> chat.name().equalsIgnoreCase(name));
+        return name == null ?
+                Stream.empty() :
+                chats().parallelStream()
+                        .filter(chat -> chat.name()
+                                .equalsIgnoreCase(name));
     }
 
     /**
@@ -300,10 +308,11 @@ public final class WhatsappStore implements WhatsappController {
      * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional
      */
     public Optional<Request> findPendingRequest(String id) {
-        return id == null ? Optional.empty() : pendingRequests()
-                .parallelStream()
-                .filter(request -> Objects.equals(request.id(), id))
-                .findAny();
+        return id == null ?
+                Optional.empty() :
+                pendingRequests().parallelStream()
+                        .filter(request -> Objects.equals(request.id(), id))
+                        .findAny();
     }
 
     /**
@@ -313,8 +322,7 @@ public final class WhatsappStore implements WhatsappController {
      * @return true if any request matching {@code response} is found
      */
     public boolean resolvePendingRequest(Node response, boolean exceptionally) {
-        return findPendingRequest(response.id())
-                .map(request -> deleteAndComplete(response, request, exceptionally))
+        return findPendingRequest(response.id()).map(request -> deleteAndComplete(response, request, exceptionally))
                 .isPresent();
     }
 
@@ -325,8 +333,9 @@ public final class WhatsappStore implements WhatsappController {
      * @return the input chat
      */
     public Chat addChat(Chat chat) {
-        chat.messages().forEach(message -> message.storeId(id()));
-        if(!chats.add(chat)){
+        chat.messages()
+                .forEach(message -> message.storeId(id()));
+        if (!chats.add(chat)) {
             log.warning("Chat already exists: %s".formatted(chat.jid()));
         }
 
@@ -340,7 +349,7 @@ public final class WhatsappStore implements WhatsappController {
      * @return the input contact
      */
     public Contact addContact(Contact contact) {
-        if(!contacts.add(contact)){
+        if (!contacts.add(contact)) {
             log.warning("Contact already exists: %s".formatted(contact.jid()));
         }
 
@@ -352,7 +361,7 @@ public final class WhatsappStore implements WhatsappController {
      *
      * @return a non-null list of chats
      */
-    public List<Chat> pinnedChats(){
+    public List<Chat> pinnedChats() {
         return chats().parallelStream()
                 .filter(Chat::isPinned)
                 .toList();
@@ -363,7 +372,7 @@ public final class WhatsappStore implements WhatsappController {
      *
      * @return a non-null list of messages
      */
-    public List<MessageInfo> starredMessages(){
+    public List<MessageInfo> starredMessages() {
         return chats().parallelStream()
                 .map(Chat::starredMessages)
                 .flatMap(Collection::stream)
@@ -383,7 +392,7 @@ public final class WhatsappStore implements WhatsappController {
     /**
      * Terminate the service associated with this store
      */
-    public void dispose(){
+    public void dispose() {
         requestsService.shutdownNow();
     }
 
@@ -396,14 +405,15 @@ public final class WhatsappStore implements WhatsappController {
      */
     @SneakyThrows
     public void invokeListeners(Consumer<WhatsappListener> consumer) {
-        if(requestsService.isShutdown()){
+        if (requestsService.isShutdown()) {
             this.requestsService = newSingleThreadScheduledExecutor();
         }
 
         var futures = listeners.stream()
                 .map(listener -> runAsync(() -> consumer.accept(listener), requestsService))
                 .toArray(CompletableFuture[]::new);
-        CompletableFuture.allOf(futures).get();
+        CompletableFuture.allOf(futures)
+                .get();
     }
 
     /**
@@ -413,12 +423,12 @@ public final class WhatsappStore implements WhatsappController {
      *
      * @param consumer the operation to execute
      */
-    public void callListeners(Consumer<WhatsappListener> consumer){
+    public void callListeners(Consumer<WhatsappListener> consumer) {
         listeners.forEach(listener -> callListener(consumer, listener));
     }
 
     private void callListener(Consumer<WhatsappListener> consumer, WhatsappListener listener) {
-        if(requestsService.isShutdown()){
+        if (requestsService.isShutdown()) {
             this.requestsService = newSingleThreadScheduledExecutor();
         }
 
@@ -444,7 +454,7 @@ public final class WhatsappStore implements WhatsappController {
      * Serializes this object to a json and saves it in memory
      */
     @Override
-    public void save(boolean async){
+    public void save(boolean async) {
         var preferences = Preferences.of("%s/store.json", id);
         save(preferences, async);
     }
@@ -457,7 +467,7 @@ public final class WhatsappStore implements WhatsappController {
 
     @Override
     public void save(@NonNull Preferences preferences, boolean async) {
-        if(async) {
+        if (async) {
             preferences.writeJsonAsync(this);
             return;
         }
@@ -470,7 +480,7 @@ public final class WhatsappStore implements WhatsappController {
      *
      * @return this
      */
-    public WhatsappStore delete(){
+    public WhatsappStore delete() {
         var preferences = Preferences.of("%s/store.json", id);
         preferences.delete();
         return this;

@@ -37,8 +37,8 @@ public final class SignalMessage implements SignalProtocolMessage {
     private byte[] serialized;
 
     @SneakyThrows
-    public SignalMessage(byte @NonNull [] ephemeralPublicKey, int counter, int previousCounter, byte @NonNull [] ciphertext,
-                         Function<byte[], byte[]> signer) {
+    public SignalMessage(byte @NonNull [] ephemeralPublicKey, int counter, int previousCounter,
+                         byte @NonNull [] ciphertext, Function<byte[], byte[]> signer) {
         this.version = CURRENT_VERSION;
         this.ephemeralPublicKey = ephemeralPublicKey;
         this.counter = counter;
@@ -54,9 +54,11 @@ public final class SignalMessage implements SignalProtocolMessage {
     @SneakyThrows
     public static SignalMessage ofSerialized(byte[] serialized) {
         var buffer = Bytes.of(serialized);
-        return PROTOBUF.readMessage(buffer.slice(1, -MAC_LENGTH).toByteArray(), SignalMessage.class)
+        return PROTOBUF.readMessage(buffer.slice(1, -MAC_LENGTH)
+                        .toByteArray(), SignalMessage.class)
                 .version(BytesHelper.bytesToVersion(serialized[0]))
-                .signature(buffer.slice(-MAC_LENGTH).toByteArray())
+                .signature(buffer.slice(-MAC_LENGTH)
+                        .toByteArray())
                 .serialized(serialized);
     }
 }

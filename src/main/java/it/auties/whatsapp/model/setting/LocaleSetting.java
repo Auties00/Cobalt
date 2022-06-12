@@ -15,11 +15,11 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Jacksonized
 @Accessors(fluent = true)
 public final class LocaleSetting implements Setting {
-  @ProtobufProperty(index = 1, type = STRING)
-  private String locale;
+    @ProtobufProperty(index = 1, type = STRING)
+    private String locale;
 
-  @Override
-  public String indexName() {
-    return "setting_locale";
-  }
+    @Override
+    public String indexName() {
+        return "setting_locale";
+    }
 }

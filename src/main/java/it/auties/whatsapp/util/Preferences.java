@@ -21,19 +21,18 @@ public final class Preferences implements JacksonProvider {
         try {
             DEFAULT_DIRECTORY = Path.of(System.getProperty("user.home") + "/.whatsappweb4j/");
             Files.createDirectories(DEFAULT_DIRECTORY);
-        }catch (IOException exception){
+        } catch (IOException exception) {
             throw new RuntimeException("Cannot create home path", exception);
         }
     }
 
-    public static Path home(){
-        return DEFAULT_DIRECTORY;
-    }
-
     @NonNull
     private final Path file;
-
     private String cache;
+
+    public static Path home() {
+        return DEFAULT_DIRECTORY;
+    }
 
     @SneakyThrows
     public static Preferences of(String path, Object... args) {
@@ -43,18 +42,18 @@ public final class Preferences implements JacksonProvider {
 
     @SneakyThrows
     public Optional<String> read() {
-        if(Files.notExists(file)){
+        if (Files.notExists(file)) {
             return Optional.empty();
         }
 
-        return Optional.of(Objects.requireNonNullElseGet(cache,
-                this::readInternal));
+        return Optional.of(Objects.requireNonNullElseGet(cache, this::readInternal));
     }
 
     @SneakyThrows
     public <T> T readJson(TypeReference<T> reference) {
         var json = read();
-        return json.isEmpty() ? null :
+        return json.isEmpty() ?
+                null :
                 readAsInternal(json.get(), reference);
     }
 
@@ -69,15 +68,15 @@ public final class Preferences implements JacksonProvider {
     }
 
     @SneakyThrows
-    public void writeJsonAsync(@NonNull Object input){
+    public void writeJsonAsync(@NonNull Object input) {
         CompletableFuture.runAsync(() -> writeJson(input));
     }
 
     @SneakyThrows
     public void writeJson(@NonNull Object input) {
         Files.createDirectories(file.getParent());
-        Files.writeString(file, JSON.writeValueAsString(input),
-                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        Files.writeString(file, JSON.writeValueAsString(input), StandardOpenOption.CREATE,
+                StandardOpenOption.TRUNCATE_EXISTING);
     }
 
     @SneakyThrows

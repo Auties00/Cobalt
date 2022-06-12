@@ -49,35 +49,37 @@ public class SessionState {
     private boolean closed;
 
     public boolean hasChain(byte[] senderEphemeral) {
-        return chains.containsKey(Bytes.of(senderEphemeral).toHex());
+        return chains.containsKey(Bytes.of(senderEphemeral)
+                .toHex());
     }
 
     public Optional<SessionChain> findChain(byte[] senderEphemeral) {
-        return Optional.ofNullable(chains.get(Bytes.of(senderEphemeral).toHex()));
+        return Optional.ofNullable(chains.get(Bytes.of(senderEphemeral)
+                .toHex()));
     }
 
     public SessionState addChain(byte[] senderEphemeral, SessionChain chain) {
-        chains.put(Bytes.of(senderEphemeral).toHex(), chain);
+        chains.put(Bytes.of(senderEphemeral)
+                .toHex(), chain);
         return this;
     }
 
     public void removeChain(byte[] senderEphemeral) {
-        var hex = Bytes.of(senderEphemeral).toHex();
+        var hex = Bytes.of(senderEphemeral)
+                .toHex();
         Objects.requireNonNull(chains.remove(hex), "Cannot remove chain");
     }
 
-    public boolean hasPreKey(){
+    public boolean hasPreKey() {
         return pendingPreKey != null;
     }
 
-    public boolean contentEquals(int version, byte[] baseKey){
-        return version() == version
-                && Arrays.equals(baseKey(), baseKey);
+    public boolean contentEquals(int version, byte[] baseKey) {
+        return version() == version && Arrays.equals(baseKey(), baseKey);
     }
 
-    public boolean equals(Object other){
-        return other instanceof SessionState that
-                && contentEquals(that.version(), that.baseKey());
+    public boolean equals(Object other) {
+        return other instanceof SessionState that && contentEquals(that.version(), that.baseKey());
     }
 
     @Override

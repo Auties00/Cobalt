@@ -9,7 +9,8 @@ public class Validate {
         isTrue(value, message, IllegalArgumentException.class, args);
     }
 
-    public void isTrue(boolean value, @NonNull String message, @NonNull Class<? extends Throwable> throwable, Object... args) {
+    public void isTrue(boolean value, @NonNull String message, @NonNull Class<? extends Throwable> throwable,
+                       Object... args) {
         isTrue(value, createThrowable(throwable, message.formatted(args)));
     }
 
@@ -26,7 +27,7 @@ public class Validate {
         try {
             return throwable.getConstructor(String.class)
                     .newInstance(formattedMessage);
-        }catch (Throwable ignored){
+        } catch (Throwable ignored) {
             return new RuntimeException(formattedMessage);
         }
     }

@@ -30,18 +30,18 @@ public class LTHashState {
 
     private Map<String, byte[]> indexValueMap;
 
-    public LTHashState(BinarySync name){
+    public LTHashState(BinarySync name) {
         this(name, 0);
     }
 
-    public LTHashState(BinarySync name, long version){
+    public LTHashState(BinarySync name, long version) {
         this.name = Objects.toString(name);
         this.version = version;
         this.hash = new byte[128];
         this.indexValueMap = new HashMap<>();
     }
 
-    public Node toNode(){
+    public Node toNode() {
         var attributes = Attributes.empty()
                 .put("name", name)
                 .put("version", version)
@@ -50,7 +50,7 @@ public class LTHashState {
         return withAttributes("collection", attributes);
     }
 
-    public LTHashState copy(){
+    public LTHashState copy() {
         var newHash = Arrays.copyOf(hash, hash.length);
         var newData = new HashMap<>(indexValueMap);
         return new LTHashState(name, version, newHash, newData);

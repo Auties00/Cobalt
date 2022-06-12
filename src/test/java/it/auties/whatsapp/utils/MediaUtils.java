@@ -8,6 +8,7 @@ import java.net.URL;
 @UtilityClass
 public class MediaUtils {
     public byte[] readBytes(String url) throws IOException {
-        return new URL(url).openStream().readAllBytes();
+        return new URL(url).openStream()
+                .readAllBytes();
     }
 }

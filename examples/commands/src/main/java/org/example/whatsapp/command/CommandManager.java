@@ -8,21 +8,24 @@ public class CommandManager {
     private static final CommandManager instance = new CommandManager();
 
     private final Set<Command> commands;
-    private CommandManager(){
+
+    private CommandManager() {
         this.commands = new HashSet<>();
-    }
-
-    public void addCommand(Command command){
-        commands.add(command);
-    }
-
-    public Optional<Command> findCommand(String filter){
-        return commands.stream()
-                .filter(command -> command.command().equalsIgnoreCase(filter) || command.alias().contains(filter))
-                .findAny();
     }
 
     public static CommandManager instance() {
         return instance;
+    }
+
+    public void addCommand(Command command) {
+        commands.add(command);
+    }
+
+    public Optional<Command> findCommand(String filter) {
+        return commands.stream()
+                .filter(command -> command.command()
+                        .equalsIgnoreCase(filter) || command.alias()
+                        .contains(filter))
+                .findAny();
     }
 }

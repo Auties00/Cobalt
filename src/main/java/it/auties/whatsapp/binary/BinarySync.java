@@ -11,9 +11,10 @@ public enum BinarySync {
     REGULAR_LOW,
     REGULAR;
 
-    public static BinarySync forName(String name){
+    public static BinarySync forName(String name) {
         return Arrays.stream(values())
-                .filter(entry -> entry.toString().equals(name))
+                .filter(entry -> entry.toString()
+                        .equals(name))
                 .findAny()
                 .orElseThrow(() -> new NoSuchElementException("No sync matches %s".formatted(name)));
     }

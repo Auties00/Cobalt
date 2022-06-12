@@ -7,11 +7,7 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 
 import java.time.Duration;
-import java.time.Period;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.Arrays;
-import java.util.NoSuchElementException;
 
 @AllArgsConstructor
 @Accessors(fluent = true)
@@ -27,7 +23,9 @@ public enum ChatEphemeralTimer implements ProtobufMessage {
     @JsonCreator
     public static ChatEphemeralTimer forValue(long value) {
         return Arrays.stream(values())
-                .filter(entry -> entry.period().toSeconds() == value || entry.period().toDays() == value)
+                .filter(entry -> entry.period()
+                        .toSeconds() == value || entry.period()
+                        .toDays() == value)
                 .findFirst()
                 .orElse(OFF);
     }

@@ -45,4 +45,6 @@ open module it.auties.whatsappweb4j {
     exports it.auties.whatsapp.model.sync;
     exports it.auties.whatsapp.model.request;
     exports it.auties.whatsapp.model.response;
+    exports it.auties.whatsapp.model.payment;
+    exports it.auties.whatsapp.model.message.business;
 }

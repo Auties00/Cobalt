@@ -20,18 +20,18 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Jacksonized
 @Accessors(fluent = true)
 public class ProductSection implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = STRING)
-  private String title;
+    @ProtobufProperty(index = 1, type = STRING)
+    private String title;
 
-  @ProtobufProperty(index = 2, type = MESSAGE,
-          concreteType = Product.class, repeated = true)
-  private List<Product> products;
+    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = Product.class, repeated = true)
+    private List<Product> products;
 
-  public static class ProductSectionBuilder {
-    public ProductSectionBuilder products(List<Product> products) {
-      if (this.products == null) this.products = new ArrayList<>();
-      this.products.addAll(products);
-      return this;
+    public static class ProductSectionBuilder {
+        public ProductSectionBuilder products(List<Product> products) {
+            if (this.products == null)
+                this.products = new ArrayList<>();
+            this.products.addAll(products);
+            return this;
+        }
     }
-  }
 }

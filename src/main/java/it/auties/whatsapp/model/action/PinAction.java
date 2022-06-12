@@ -15,11 +15,11 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.BOOLEAN;
 @Jacksonized
 @Accessors(fluent = true)
 public final class PinAction implements Action {
-  @ProtobufProperty(index = 1, type = BOOLEAN)
-  private boolean pinned;
+    @ProtobufProperty(index = 1, type = BOOLEAN)
+    private boolean pinned;
 
-  @Override
-  public String indexName() {
-    return "pin_v1";
-  }
+    @Override
+    public String indexName() {
+        return "pin_v1";
+    }
 }

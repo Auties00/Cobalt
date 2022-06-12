@@ -23,8 +23,7 @@ public class PatchSync implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, concreteType = VersionSync.class)
     private VersionSync version;
 
-    @ProtobufProperty(index = 2, type = MESSAGE,
-            concreteType = MutationSync.class, repeated = true)
+    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = MutationSync.class, repeated = true)
     @Default
     private List<MutationSync> mutations = new ArrayList<>();
 
@@ -46,13 +45,14 @@ public class PatchSync implements ProtobufMessage {
     @ProtobufProperty(index = 8, type = UINT32)
     private Integer deviceIndex;
 
-    public long version(){
-        return hasVersion() ? version.version() : 0L;
+    public long version() {
+        return hasVersion() ?
+                version.version() :
+                0L;
     }
 
     public boolean hasVersion() {
-        return version != null
-                && version.version() != null;
+        return version != null && version.version() != null;
     }
 
     public boolean hasExternalMutations() {
@@ -61,7 +61,7 @@ public class PatchSync implements ProtobufMessage {
 
     public static class PatchSyncBuilder {
         public PatchSyncBuilder mutations(List<MutationSync> mutations) {
-            if (!mutations$set){
+            if (!mutations$set) {
                 this.mutations$value = mutations;
                 this.mutations$set = true;
                 return this;

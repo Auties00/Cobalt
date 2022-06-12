@@ -33,14 +33,20 @@ public class MediaRetryNotification implements ProtobufMessage {
     @AllArgsConstructor
     @Accessors(fluent = true)
     public enum Result implements ProtobufMessage {
-        GENERAL_ERROR(0), SUCCESS(1), NOT_FOUND(2), DECRYPTION_ERROR(3);
+        GENERAL_ERROR(0),
+        SUCCESS(1),
+        NOT_FOUND(2),
+        DECRYPTION_ERROR(3);
 
         @Getter
         private final int index;
 
         @JsonCreator
         public static Result forIndex(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(null);
         }
     }
 }

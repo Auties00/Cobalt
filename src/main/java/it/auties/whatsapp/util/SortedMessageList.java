@@ -10,8 +10,9 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public final class SortedMessageList implements List<MessageInfo> {
-    private static final Comparator<HistorySyncMessage> ENTRY_COMPARATOR
-            = Comparator.comparingLong(entry -> entry.message().timestamp());
+    private static final Comparator<HistorySyncMessage> ENTRY_COMPARATOR = Comparator.comparingLong(
+            entry -> entry.message()
+                    .timestamp());
 
     private final List<HistorySyncMessage> internal;
 
@@ -24,11 +25,14 @@ public final class SortedMessageList implements List<MessageInfo> {
     }
 
     public boolean add(@NonNull MessageInfo message) {
-        internal.removeIf(entry -> Objects.equals(message.id(), entry.message().id()));
+        internal.removeIf(entry -> Objects.equals(message.id(), entry.message()
+                .id()));
         var initialSize = internal.size();
         var newEntry = new HistorySyncMessage(message, -1L);
         var insertionPoint = Collections.binarySearch(internal, newEntry, ENTRY_COMPARATOR);
-        internal.add(insertionPoint > -1 ? insertionPoint : -insertionPoint - 1, newEntry);
+        internal.add(insertionPoint > -1 ?
+                insertionPoint :
+                -insertionPoint - 1, newEntry);
         return internal.size() != initialSize;
     }
 
@@ -93,7 +97,8 @@ public final class SortedMessageList implements List<MessageInfo> {
     }
 
     public MessageInfo get(int index) {
-        return internal.get(index).message();
+        return internal.get(index)
+                .message();
     }
 
     @Override
@@ -109,8 +114,9 @@ public final class SortedMessageList implements List<MessageInfo> {
     @Override
     public MessageInfo remove(int index) {
         var result = internal.remove(index);
-        return result != null ? result.message()
-                : null;
+        return result != null ?
+                result.message() :
+                null;
     }
 
     @Override
@@ -179,7 +185,7 @@ public final class SortedMessageList implements List<MessageInfo> {
     }
 
     @JsonValue
-    public List<HistorySyncMessage> toSync(){
+    public List<HistorySyncMessage> toSync() {
         return internal;
     }
 }

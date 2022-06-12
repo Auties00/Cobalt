@@ -25,53 +25,51 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @Jacksonized
 @Accessors(fluent = true)
 public class SenderKeyRecord implements ProtobufMessage {
-  private static final int MAX_STATES = 5;
+    private static final int MAX_STATES = 5;
 
-  @ProtobufProperty(index = 1, type = MESSAGE,
-          concreteType = SenderKeyState.class, repeated = true)
-  @Default
-  private ConcurrentLinkedDeque<SenderKeyState> states = new ConcurrentLinkedDeque<>();
+    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = SenderKeyState.class, repeated = true)
+    @Default
+    private ConcurrentLinkedDeque<SenderKeyState> states = new ConcurrentLinkedDeque<>();
 
-  public SenderKeyState headState() {
-    Validate.isTrue(!isEmpty(), "Cannot get head state for empty record", NoSuchElementException.class);
-    return states.getFirst();
-  }
-
-  public SenderKeyState findStateById(int keyId) {
-    return states().stream()
-            .filter(key -> key.id() == keyId)
-            .findFirst()
-            .orElseThrow(() -> new NoSuchElementException("Cannot find state with id %s".formatted(keyId)));
-  }
-
-  public void addState(int id, int iteration, byte[] seed, byte[] signatureKey){
-    addState(id, iteration, seed, SignalKeyPair.of(signatureKey));
-  }
-
-  public void addState(int id, int iteration, byte[] seed, SignalKeyPair signingKey){
-    var state = new SenderKeyState(id, iteration, seed, signingKey);
-    states.add(state);
-  }
-
-  public boolean isEmpty() {
-    return states.isEmpty();
-  }
-
-  public boolean equals(Object object){
-    return object instanceof SenderKeyRecord that
-            && Objects.equals(this.states(), that.states());
-  }
-
-  public static class SenderKeyRecordBuilder {
-    public SenderKeyRecordBuilder states(ConcurrentLinkedDeque<SenderKeyState> states) {
-      if(!this.states$set){
-        this.states$value = states;
-        this.states$set = true;
-        return this;
-      }
-
-      this.states$value.addAll(states);
-      return this;
+    public SenderKeyState headState() {
+        Validate.isTrue(!isEmpty(), "Cannot get head state for empty record", NoSuchElementException.class);
+        return states.getFirst();
     }
-  }
+
+    public SenderKeyState findStateById(int keyId) {
+        return states().stream()
+                .filter(key -> key.id() == keyId)
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException("Cannot find state with id %s".formatted(keyId)));
+    }
+
+    public void addState(int id, int iteration, byte[] seed, byte[] signatureKey) {
+        addState(id, iteration, seed, SignalKeyPair.of(signatureKey));
+    }
+
+    public void addState(int id, int iteration, byte[] seed, SignalKeyPair signingKey) {
+        var state = new SenderKeyState(id, iteration, seed, signingKey);
+        states.add(state);
+    }
+
+    public boolean isEmpty() {
+        return states.isEmpty();
+    }
+
+    public boolean equals(Object object) {
+        return object instanceof SenderKeyRecord that && Objects.equals(this.states(), that.states());
+    }
+
+    public static class SenderKeyRecordBuilder {
+        public SenderKeyRecordBuilder states(ConcurrentLinkedDeque<SenderKeyState> states) {
+            if (!this.states$set) {
+                this.states$value = states;
+                this.states$set = true;
+                return this;
+            }
+
+            this.states$value.addAll(states);
+            return this;
+        }
+    }
 }

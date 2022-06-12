@@ -12,6 +12,5 @@ public sealed interface ContactJidProvider permits Chat, Contact, ContactJid {
      *
      * @return a non-null jid
      */
-    @NonNull
-    ContactJid toJid();
+    @NonNull ContactJid toJid();
 }

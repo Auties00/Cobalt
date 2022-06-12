@@ -24,8 +24,11 @@ public class BinaryDecoder {
     public synchronized Node decode(byte @NonNull [] input) {
         var buffer = Bytes.of(input);
         var token = buffer.readByte() & 2;
-        var data = buffer.remaining().toByteArray();
-        this.buffer = Bytes.of(token == 0 ? data : BytesHelper.deflate(data));
+        var data = buffer.remaining()
+                .toByteArray();
+        this.buffer = Bytes.of(token == 0 ?
+                data :
+                BytesHelper.deflate(data));
         return readNode();
     }
 
@@ -35,7 +38,9 @@ public class BinaryDecoder {
         Validate.isTrue(size != 0, "Cannot decode node with empty body");
         var description = readString();
         var attrs = readAttributes(size);
-        return size % 2 != 0 ? withAttributes(description, attrs) : with(description, attrs, read(false));
+        return size % 2 != 0 ?
+                withAttributes(description, attrs) :
+                with(description, attrs, read(false));
     }
 
     public String readString() {
@@ -44,16 +49,23 @@ public class BinaryDecoder {
             return string;
         }
 
-        throw new IllegalArgumentException("Strict decoding failed: expected string, got %s with type %s".formatted(read, read == null ? null : read.getClass().getName()));
+        throw new IllegalArgumentException(
+                "Strict decoding failed: expected string, got %s with type %s".formatted(read, read == null ?
+                        null :
+                        read.getClass()
+                                .getName()));
     }
 
     private List<Node> readList(int size) {
-        return IntStream.range(0, size).mapToObj(index -> readNode()).toList();
+        return IntStream.range(0, size)
+                .mapToObj(index -> readNode())
+                .toList();
     }
 
     private String readString(List<Character> permitted, int start, int end) {
         var string = new char[2 * end - start];
-        IntStream.iterate(0, index -> index < string.length - 1, n -> n + 2).forEach(index -> readChar(permitted, string, index));
+        IntStream.iterate(0, index -> index < string.length - 1, n -> n + 2)
+                .forEach(index -> readChar(permitted, string, index));
         if (start != 0) {
             string[string.length - 1] = permitted.get(buffer.readUnsignedByte() >>> 4);
         }
@@ -104,7 +116,9 @@ public class BinaryDecoder {
 
     private Object readString(int size, boolean parseBytes) {
         var data = buffer.readBytes(size);
-        return parseBytes ? new String(data, StandardCharsets.UTF_8) : data;
+        return parseBytes ?
+                new String(data, StandardCharsets.UTF_8) :
+                data;
     }
 
     private String readHexString() {
@@ -128,7 +142,9 @@ public class BinaryDecoder {
     }
 
     private int readSize(int token) {
-        return LIST_8.contentEquals(token) ? buffer.readUnsignedByte() : buffer.readUnsignedShort();
+        return LIST_8.contentEquals(token) ?
+                buffer.readUnsignedByte() :
+                buffer.readUnsignedShort();
     }
 
     private Map<String, Object> readAttributes(int size) {

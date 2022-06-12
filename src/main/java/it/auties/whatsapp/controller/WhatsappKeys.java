@@ -91,7 +91,8 @@ public final class WhatsappKeys implements WhatsappController {
      * The companion secret key
      */
     @Default
-    private byte[] companionKey = SignalKeyPair.random().publicKey();
+    private byte[] companionKey = SignalKeyPair.random()
+            .publicKey();
 
     /**
      * The bytes of the encoded {@link SignedDeviceIdentityHMAC} received during the auth process
@@ -179,7 +180,7 @@ public final class WhatsappKeys implements WhatsappController {
      * @param id the unsigned id of these keys
      * @return a non-null instance of WhatsappKeys
      */
-    public static WhatsappKeys random(int id){
+    public static WhatsappKeys random(int id) {
         var result = WhatsappKeys.builder()
                 .id(id)
                 .build();
@@ -192,9 +193,10 @@ public final class WhatsappKeys implements WhatsappController {
      * @param id the id of this session
      * @return a non-null instance of WhatsappKeys
      */
-    public static WhatsappKeys of(int id){
+    public static WhatsappKeys of(int id) {
         var preferences = Preferences.of("%s/keys.json", id);
-        return requireNonNullElseGet(preferences.readJson(new TypeReference<>() {}), () -> random(id));
+        return requireNonNullElseGet(preferences.readJson(new TypeReference<>() {
+        }), () -> random(id));
     }
 
     /**
@@ -259,7 +261,7 @@ public final class WhatsappKeys implements WhatsappController {
      * @param address the non-null address to search
      * @return a non-null Optional SessionRecord
      */
-    public Optional<Session> findSessionByAddress(@NonNull SessionAddress address){
+    public Optional<Session> findSessionByAddress(@NonNull SessionAddress address) {
         return Optional.ofNullable(sessions.get(address));
     }
 
@@ -271,10 +273,8 @@ public final class WhatsappKeys implements WhatsappController {
      * @throws IllegalArgumentException if no element can be found
      */
     public SignalSignedKeyPair findSignedKeyPairById(int id) {
-        Validate.isTrue(id == signedKeyPair.id(),
-                "Id mismatch: %s != %s",
-                SecurityException.class,
-                id, signedKeyPair.id());
+        Validate.isTrue(id == signedKeyPair.id(), "Id mismatch: %s != %s", SecurityException.class, id,
+                signedKeyPair.id());
         return signedKeyPair;
     }
 
@@ -288,8 +288,7 @@ public final class WhatsappKeys implements WhatsappController {
         return preKeys.stream()
                 .filter(preKey -> preKey.id() == id)
                 .findFirst()
-                .orElseThrow(() -> new NoSuchElementException("Cannot find a pre key with id %s"
-                        .formatted(id)));
+                .orElseThrow(() -> new NoSuchElementException("Cannot find a pre key with id %s".formatted(id)));
     }
 
     /**
@@ -300,7 +299,8 @@ public final class WhatsappKeys implements WhatsappController {
      */
     public Optional<AppStateSyncKey> findAppKeyById(byte[] id) {
         return appStateKeys.stream()
-                .filter(preKey -> preKey.keyId() != null && Arrays.equals(preKey.keyId().keyId(), id))
+                .filter(preKey -> preKey.keyId() != null && Arrays.equals(preKey.keyId()
+                        .keyId(), id))
                 .findFirst();
     }
 
@@ -318,7 +318,7 @@ public final class WhatsappKeys implements WhatsappController {
     /**
      * Checks whether {@code identityKey} is trusted for {@code address}
      *
-     * @param address the non-null address
+     * @param address     the non-null address
      * @param identityKey the nullable identity key
      * @return true if any match is found
      */
@@ -329,11 +329,11 @@ public final class WhatsappKeys implements WhatsappController {
     /**
      * Checks whether the receiver key has been sent already
      *
-     * @param group the group to check
+     * @param group       the group to check
      * @param participant the participant to check
      * @return true if the key was already sent
      */
-    public boolean hasReceiverKey(@NonNull ContactJid group, @NonNull ContactJid participant){
+    public boolean hasReceiverKey(@NonNull ContactJid group, @NonNull ContactJid participant) {
         var senderKey = new SenderKeyName(group.toString(), participant.toSignalAddress());
         return receiverKeys.containsKey(senderKey);
     }
@@ -344,7 +344,7 @@ public final class WhatsappKeys implements WhatsappController {
      * @param address the address to check
      * @return true if a session for that address already exists
      */
-    public boolean hasSession(@NonNull SessionAddress address){
+    public boolean hasSession(@NonNull SessionAddress address) {
         return sessions.containsKey(address);
     }
 
@@ -352,10 +352,10 @@ public final class WhatsappKeys implements WhatsappController {
      * Adds the provided address and record to the known sessions
      *
      * @param address the non-null address
-     * @param record the non-null record
+     * @param record  the non-null record
      * @return this
      */
-    public WhatsappKeys addSession(@NonNull SessionAddress address, @NonNull Session record){
+    public WhatsappKeys addSession(@NonNull SessionAddress address, @NonNull Session record) {
         sessions.put(address, record);
         return this;
     }
@@ -366,7 +366,7 @@ public final class WhatsappKeys implements WhatsappController {
      * @param keys the keys to add
      * @return this
      */
-    public WhatsappKeys addAppKeys(@NonNull Collection<AppStateSyncKey> keys){
+    public WhatsappKeys addAppKeys(@NonNull Collection<AppStateSyncKey> keys) {
         appStateKeys.addAll(keys);
         return this;
     }
@@ -377,9 +377,10 @@ public final class WhatsappKeys implements WhatsappController {
      * @param increment whether the counter should be incremented after the call
      * @return an unsigned long
      */
-    public long writeCounter(boolean increment){
-        return increment ? writeCounter.getAndIncrement()
-                : writeCounter.get();
+    public long writeCounter(boolean increment) {
+        return increment ?
+                writeCounter.getAndIncrement() :
+                writeCounter.get();
     }
 
     /**
@@ -388,16 +389,17 @@ public final class WhatsappKeys implements WhatsappController {
      * @param increment whether the counter should be incremented after the call
      * @return an unsigned long
      */
-    public long readCounter(boolean increment){
-        return increment ? readCounter.getAndIncrement()
-                : readCounter.get();
+    public long readCounter(boolean increment) {
+        return increment ?
+                readCounter.getAndIncrement() :
+                readCounter.get();
     }
 
     /**
      * Serializes this object to a json and saves it in memory
      */
     @Override
-    public void save(boolean async){
+    public void save(boolean async) {
         var preferences = Preferences.of("%s/keys.json", id);
         save(preferences, async);
     }
@@ -409,7 +411,7 @@ public final class WhatsappKeys implements WhatsappController {
 
     @Override
     public void save(@NonNull Preferences preferences, boolean async) {
-        if(async) {
+        if (async) {
             preferences.writeJsonAsync(this);
             return;
         }
@@ -418,7 +420,7 @@ public final class WhatsappKeys implements WhatsappController {
     }
 
     @JsonSetter
-    private void defaultSignedKey(){
+    private void defaultSignedKey() {
         this.signedKeyPair = SignalSignedKeyPair.of(id, identityKeyPair);
     }
 }

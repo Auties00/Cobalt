@@ -15,14 +15,14 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Jacksonized
 @Accessors(fluent = true)
 public final class ContactAction implements Action {
-  @ProtobufProperty(index = 1, type = STRING)
-  private String fullName;
+    @ProtobufProperty(index = 1, type = STRING)
+    private String fullName;
 
-  @ProtobufProperty(index = 2, type = STRING)
-  private String firstName;
+    @ProtobufProperty(index = 2, type = STRING)
+    private String firstName;
 
-  @Override
-  public String indexName() {
-    return "contact";
-  }
+    @Override
+    public String indexName() {
+        return "contact";
+    }
 }

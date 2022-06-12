@@ -19,18 +19,15 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @Jacksonized
 @Accessors(fluent = true)
 public class AppStateSyncKeyShare implements ProtobufMessage {
-  @ProtobufProperty(
-          index = 1,
-          type = MESSAGE,
-          concreteType = AppStateSyncKey.class,
-          repeated = true)
-  private List<AppStateSyncKey> keys;
+    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = AppStateSyncKey.class, repeated = true)
+    private List<AppStateSyncKey> keys;
 
-  public static class AppStateSyncKeyShareBuilder {
-    public AppStateSyncKeyShareBuilder keys(List<AppStateSyncKey> keys) {
-      if (this.keys == null) this.keys = new ArrayList<>();
-      this.keys.addAll(keys);
-      return this;
+    public static class AppStateSyncKeyShareBuilder {
+        public AppStateSyncKeyShareBuilder keys(List<AppStateSyncKey> keys) {
+            if (this.keys == null)
+                this.keys = new ArrayList<>();
+            this.keys.addAll(keys);
+            return this;
+        }
     }
-  }
 }

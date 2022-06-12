@@ -12,8 +12,9 @@ import static java.time.ZonedDateTime.ofInstant;
 
 @UtilityClass
 public class Clock {
-    public long now(){
-        return Instant.now().getEpochSecond();
+    public long now() {
+        return Instant.now()
+                .getEpochSecond();
     }
 
     public Optional<ZonedDateTime> parse(Long input) {

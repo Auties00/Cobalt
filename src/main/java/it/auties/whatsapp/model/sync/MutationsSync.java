@@ -19,15 +19,15 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @Jacksonized
 @Accessors(fluent = true)
 public class MutationsSync implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = MESSAGE,
-          concreteType = MutationSync.class, repeated = true)
-  private List<MutationSync> mutations;
+    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = MutationSync.class, repeated = true)
+    private List<MutationSync> mutations;
 
-  public static class MutationsSyncBuilder {
-    public MutationsSyncBuilder mutations(List<MutationSync> mutations){
-      if(this.mutations == null) this.mutations = new ArrayList<>();
-      this.mutations.addAll(mutations);
-      return this;
+    public static class MutationsSyncBuilder {
+        public MutationsSyncBuilder mutations(List<MutationSync> mutations) {
+            if (this.mutations == null)
+                this.mutations = new ArrayList<>();
+            this.mutations.addAll(mutations);
+            return this;
+        }
     }
-  }
 }

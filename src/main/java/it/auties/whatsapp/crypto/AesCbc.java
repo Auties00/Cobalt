@@ -25,7 +25,7 @@ public class AesCbc {
     }
 
     @SneakyThrows
-    public byte[] encrypt(byte[] iv, byte [] plaintext, byte[] key) {
+    public byte[] encrypt(byte[] iv, byte[] plaintext, byte[] key) {
         var cipher = Cipher.getInstance(AES_CBC);
         var keySpec = new SecretKeySpec(key, AES);
         cipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(iv));
@@ -43,12 +43,8 @@ public class AesCbc {
 
     @SneakyThrows
     public byte[] decrypt(byte[] iv, byte[] encrypted, byte[] key) {
-        Validate.isTrue(iv.length == AES_BLOCK_SIZE,
-                "Invalid iv size: expected %s, got %s",
-                AES_BLOCK_SIZE,
-                iv.length);
-        Validate.isTrue(encrypted.length % AES_BLOCK_SIZE == 0,
-                "Invalid encrypted size");
+        Validate.isTrue(iv.length == AES_BLOCK_SIZE, "Invalid iv size: expected %s, got %s", AES_BLOCK_SIZE, iv.length);
+        Validate.isTrue(encrypted.length % AES_BLOCK_SIZE == 0, "Invalid encrypted size");
         var cipher = Cipher.getInstance(AES_CBC);
         var keySpec = new SecretKeySpec(key, AES);
         cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(iv));

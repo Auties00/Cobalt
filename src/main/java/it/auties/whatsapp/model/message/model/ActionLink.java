@@ -18,15 +18,15 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Jacksonized
 @Accessors(fluent = true)
 public class ActionLink {
-  /**
-   * The url of the action
-   */
-  @ProtobufProperty(index = 1, type = STRING)
-  private String url;
+    /**
+     * The url of the action
+     */
+    @ProtobufProperty(index = 1, type = STRING)
+    private String url;
 
-  /**
-   * The title of the action
-   */
-  @ProtobufProperty(index = 2, type = STRING)
-  private String buttonTitle;
+    /**
+     * The title of the action
+     */
+    @ProtobufProperty(index = 2, type = STRING)
+    private String buttonTitle;
 }

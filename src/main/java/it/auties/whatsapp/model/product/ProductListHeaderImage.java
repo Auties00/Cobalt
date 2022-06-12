@@ -17,9 +17,9 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Jacksonized
 @Accessors(fluent = true)
 public class ProductListHeaderImage implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = STRING)
-  private String productId;
+    @ProtobufProperty(index = 1, type = STRING)
+    private String productId;
 
-  @ProtobufProperty(index = 2, type = BYTES)
-  private byte[] thumbnail;
+    @ProtobufProperty(index = 2, type = BYTES)
+    private byte[] thumbnail;
 }

@@ -16,14 +16,14 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.INT64;
 @Jacksonized
 @Accessors(fluent = true)
 public final class DeleteMessageForMeAction implements Action {
-  @ProtobufProperty(index = 1, type = BOOLEAN)
-  private boolean deleteMedia;
+    @ProtobufProperty(index = 1, type = BOOLEAN)
+    private boolean deleteMedia;
 
-  @ProtobufProperty(index = 2, type = INT64)
-  private Long messageTimestamp;
+    @ProtobufProperty(index = 2, type = INT64)
+    private Long messageTimestamp;
 
-  @Override
-  public String indexName() {
-    return "deleteMessageForMe";
-  }
+    @Override
+    public String indexName() {
+        return "deleteMessageForMe";
+    }
 }

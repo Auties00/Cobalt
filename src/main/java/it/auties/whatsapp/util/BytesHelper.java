@@ -11,11 +11,11 @@ import java.util.zip.Inflater;
 
 @UtilityClass
 public class BytesHelper implements JacksonProvider {
-    public byte versionToBytes(int version){
+    public byte versionToBytes(int version) {
         return (byte) (version << 4 | SignalSpecification.CURRENT_VERSION);
     }
 
-    public int bytesToVersion(byte version){
+    public int bytesToVersion(byte version) {
         return Byte.toUnsignedInt(version) >> 4;
     }
 
@@ -33,12 +33,12 @@ public class BytesHelper implements JacksonProvider {
         return result.toByteArray();
     }
 
-    public byte[] messageToBytes(Message message){
+    public byte[] messageToBytes(Message message) {
         return messageToBytes(MessageContainer.of(message));
     }
 
     @SneakyThrows
-    public byte[] messageToBytes(MessageContainer container){
+    public byte[] messageToBytes(MessageContainer container) {
         var padRandomByte = KeyHelper.header();
         var padding = Bytes.newBuffer(padRandomByte)
                 .fill((byte) padRandomByte)
@@ -49,14 +49,14 @@ public class BytesHelper implements JacksonProvider {
     }
 
     @SneakyThrows
-    public MessageContainer bytesToMessage(byte[] bytes){
+    public MessageContainer bytesToMessage(byte[] bytes) {
         var message = Bytes.of(bytes)
                 .cut(-bytes[bytes.length - 1])
                 .toByteArray();
         return PROTOBUF.readMessage(message, MessageContainer.class);
     }
 
-    public byte[] longToBytes(long number){
+    public byte[] longToBytes(long number) {
         return Bytes.newBuffer()
                 .appendLong(number)
                 .assertSize(Long.BYTES)
@@ -65,7 +65,7 @@ public class BytesHelper implements JacksonProvider {
 
     public byte[] intToBytes(int input, int length) {
         var result = new byte[length];
-        for(var i = length - 1; i >= 0; i--){
+        for (var i = length - 1; i >= 0; i--) {
             result[i] = (byte) (255 & input);
             input >>>= 8;
         }
@@ -73,7 +73,7 @@ public class BytesHelper implements JacksonProvider {
         return result;
     }
 
-    public int bytesToInt(byte[] bytes, int length){
+    public int bytesToInt(byte[] bytes, int length) {
         var result = 0;
         for (var i = 0; i < length; i++) {
             result = 256 * result + Byte.toUnsignedInt(bytes[i]);

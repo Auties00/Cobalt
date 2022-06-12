@@ -16,6 +16,6 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Jacksonized
 @Accessors(fluent = true)
 public class Product implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = STRING)
-  private String productId;
+    @ProtobufProperty(index = 1, type = STRING)
+    private String productId;
 }

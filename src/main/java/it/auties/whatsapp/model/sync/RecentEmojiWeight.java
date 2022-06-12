@@ -17,9 +17,9 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Jacksonized
 @Accessors(fluent = true)
 public class RecentEmojiWeight implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = STRING)
-  private String emoji;
+    @ProtobufProperty(index = 1, type = STRING)
+    private String emoji;
 
-  @ProtobufProperty(index = 2, type = FLOAT)
-  private Float weight;
+    @ProtobufProperty(index = 2, type = FLOAT)
+    private Float weight;
 }

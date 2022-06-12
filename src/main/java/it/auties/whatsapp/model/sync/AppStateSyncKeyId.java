@@ -16,6 +16,6 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.BYTES;
 @Jacksonized
 @Accessors(fluent = true)
 public class AppStateSyncKeyId implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = BYTES)
-  private byte[] keyId;
+    @ProtobufProperty(index = 1, type = BYTES)
+    private byte[] keyId;
 }

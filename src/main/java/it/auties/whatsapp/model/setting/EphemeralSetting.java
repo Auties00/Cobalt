@@ -16,14 +16,14 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.SFIXED64;
 @Jacksonized
 @Accessors(fluent = true)
 public final class EphemeralSetting implements Setting {
-  @ProtobufProperty(index = 1, type = SFIXED32)
-  private int duration;
+    @ProtobufProperty(index = 1, type = SFIXED32)
+    private int duration;
 
-  @ProtobufProperty(index = 2, type = SFIXED64)
-  private long timestamp;
+    @ProtobufProperty(index = 2, type = SFIXED64)
+    private long timestamp;
 
-  @Override
-  public String indexName() {
-    throw new UnsupportedOperationException("Cannot send setting: no index name");
-  }
+    @Override
+    public String indexName() {
+        throw new UnsupportedOperationException("Cannot send setting: no index name");
+    }
 }

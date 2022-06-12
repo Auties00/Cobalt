@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.chat;
 
-import com.fasterxml.jackson.annotation.JsonSetter;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
@@ -32,7 +31,6 @@ import static java.util.Objects.requireNonNullElse;
  * A model class that represents a Chat.
  * A chat can be of two types: a conversation with a contact or a group.
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
- * Instead, methods inside {@link Whatsapp} should be used.
  * This class also offers a builder, accessible using {@link Chat#builder()}.
  */
 @AllArgsConstructor
@@ -44,8 +42,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     /**
      * The non-null unique jid used to identify this chat
      */
-    @ProtobufProperty(index = 1, type = STRING,
-            concreteType = ContactJid.class, required = true, requiresConversion = true)
+    @ProtobufProperty(index = 1, type = STRING, concreteType = ContactJid.class, required = true, requiresConversion = true)
     @NonNull
     private ContactJid jid;
 
@@ -61,16 +58,14 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * The nullable new unique jid for this Chat.
      * This field is not null when a contact changes phone number and connects their new phone number with Whatsapp.
      */
-    @ProtobufProperty(index = 3, type = STRING,
-            concreteType = ContactJid.class, requiresConversion = true)
+    @ProtobufProperty(index = 3, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
     private ContactJid newJid;
 
     /**
      * The nullable old jid for this Chat.
      * This field is not null when a contact changes phone number and connects their new phone number with Whatsapp.
      */
-    @ProtobufProperty(index = 4, type = STRING,
-            concreteType = ContactJid.class, requiresConversion = true)
+    @ProtobufProperty(index = 4, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
     private ContactJid oldJid;
 
     /**
@@ -121,7 +116,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     /**
      * The initiator of disappearing chats
      */
-    @ProtobufProperty(index = 17, type = MESSAGE, concreteType = ChatDisappear.Linker.class)
+    @ProtobufProperty(index = 17, type = MESSAGE, concreteType = ChatDisappear.class)
     private ChatDisappear disappearInitiator;
 
     /**
@@ -211,7 +206,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @param jid the non-null jid
      * @return a non-null chat
      */
-    public static Chat ofJid(@NonNull ContactJid jid){
+    public static Chat ofJid(@NonNull ContactJid jid) {
         return Chat.builder()
                 .jid(jid)
                 .build();
@@ -222,9 +217,8 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      *
      * @return a non-null string
      */
-    public String name(){
-        return Objects.requireNonNullElseGet(name,
-                () -> this.name = jid.user());
+    public String name() {
+        return Objects.requireNonNullElseGet(name, () -> this.name = jid.user());
     }
 
     /**
@@ -251,8 +245,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return true if ephemeral messages are enabled for this chat
      */
     public boolean isEphemeral() {
-        return ephemeralMessageDuration != ChatEphemeralTimer.OFF
-                && ephemeralMessagesToggleTime != 0;
+        return ephemeralMessageDuration != ChatEphemeralTimer.OFF && ephemeralMessagesToggleTime != 0;
     }
 
     /**
@@ -342,7 +335,8 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return a non-empty optional if ephemeral messages are enabled for this chat
      */
     public Optional<ZonedDateTime> ephemeralMessageDuration() {
-        return Clock.parse(ephemeralMessageDuration.period().toSeconds());
+        return Clock.parse(ephemeralMessageDuration.period()
+                .toSeconds());
     }
 
     /**
@@ -360,7 +354,9 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return a non-empty optional if {@link Chat#messages} isn't empty
      */
     public Optional<MessageInfo> lastMessage() {
-        return messages.isEmpty() ? Optional.empty() : Optional.of(messages.get(messages.size() - 1));
+        return messages.isEmpty() ?
+                Optional.empty() :
+                Optional.of(messages.get(messages.size() - 1));
     }
 
     /**
@@ -369,7 +365,9 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return a non-empty optional if {@link Chat#messages} isn't empty
      */
     public Optional<MessageInfo> firstMessage() {
-        return messages.isEmpty() ? Optional.empty() : Optional.of(messages.get(0));
+        return messages.isEmpty() ?
+                Optional.empty() :
+                Optional.of(messages.get(0));
     }
 
     /**
@@ -377,7 +375,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      *
      * @return a non-null list of messages
      */
-    public List<MessageInfo> starredMessages(){
+    public List<MessageInfo> starredMessages() {
         return messages.stream()
                 .filter(MessageInfo::starred)
                 .toList();
@@ -389,26 +387,15 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return a non-null jid
      */
     @Override
-    public @NonNull ContactJid toJid() {
+    @NonNull
+    public ContactJid toJid() {
         return jid();
     }
 
     public static class ChatBuilder {
-        @JsonSetter
-        public ChatBuilder disappearInitiator(Object object){
-            this.disappearInitiator = switch (object){
-                case ChatDisappear.Linker linker -> linker.disappear();
-                case ChatDisappear disappear -> disappear;
-                case Number number -> ChatDisappear.forIndex(number.intValue());
-                default -> throw new IllegalStateException("Unexpected value: " + object);
-            };
-
-            return this;
-        }
-
         public ChatBuilder messages(List<HistorySyncMessage> messages) {
             var value = new SortedMessageList(messages);
-            if(!messages$set){
+            if (!messages$set) {
                 this.messages$value = value;
                 this.messages$set = true;
                 return this;

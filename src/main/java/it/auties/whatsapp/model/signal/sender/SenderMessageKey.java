@@ -33,8 +33,7 @@ public class SenderMessageKey implements ProtobufMessage, SignalSpecification {
     private byte[] cipherKey;
 
     public SenderMessageKey(int iteration, byte[] seed) {
-        var derivative = Hkdf.deriveSecrets(seed,
-                "WhisperGroup".getBytes(StandardCharsets.UTF_8));
+        var derivative = Hkdf.deriveSecrets(seed, "WhisperGroup".getBytes(StandardCharsets.UTF_8));
         this.iteration = iteration;
         this.seed = seed;
         this.iv = Bytes.of(derivative[0])

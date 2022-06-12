@@ -17,16 +17,15 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @Jacksonized
 @Accessors(fluent = true)
 public final class WebNotificationsInfo implements Info {
-  @ProtobufProperty(index = 2, type = UINT64)
-  private long timestamp;
+    @ProtobufProperty(index = 2, type = UINT64)
+    private long timestamp;
 
-  @ProtobufProperty(index = 3, type = UINT32)
-  private int unreadChats;
+    @ProtobufProperty(index = 3, type = UINT32)
+    private int unreadChats;
 
-  @ProtobufProperty(index = 4, type = UINT32)
-  private int notifyMessageCount;
+    @ProtobufProperty(index = 4, type = UINT32)
+    private int notifyMessageCount;
 
-  @ProtobufProperty(index = 5, type = MESSAGE,
-          concreteType = MessageInfo.class, repeated = true)
-  private List<MessageInfo> notifyMessages;
+    @ProtobufProperty(index = 5, type = MESSAGE, concreteType = MessageInfo.class, repeated = true)
+    private List<MessageInfo> notifyMessages;
 }

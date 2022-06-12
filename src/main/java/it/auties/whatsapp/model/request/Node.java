@@ -15,15 +15,14 @@ import static java.util.Objects.requireNonNull;
  * @param attributes  a non-null Map that describes the metadata of this object
  * @param content     a nullable object, usually a List of {@link Node}, a {@link String} or a {@link Number}
  */
-public record Node(@NonNull String description,
-                   @NonNull Attributes attributes, Object content) {
+public record Node(@NonNull String description, @NonNull Attributes attributes, Object content) {
     /**
      * Constructs a Node that only provides a non-null tag
      *
      * @param description a non-null String that describes the data that this object holds
      * @return a new node with the above characteristics
      */
-    public static Node with(@NonNull String description){
+    public static Node with(@NonNull String description) {
         return new Node(description, Attributes.empty(), null);
     }
 
@@ -47,7 +46,7 @@ public record Node(@NonNull String description,
      * @return a new node with the above characteristics
      */
     public static Node with(@NonNull String description, @NonNull Map<String, Object> attributes, Object content) {
-        return new Node(description,  Attributes.of(attributes), content);
+        return new Node(description, Attributes.of(attributes), content);
     }
 
     /**
@@ -93,7 +92,8 @@ public record Node(@NonNull String description,
      * @param children    the nullable children of this node
      * @return a new node with the above characteristics
      */
-    public static Node withChildren(@NonNull String description, @NonNull Map<String, Object> attributes, Collection<Node> children) {
+    public static Node withChildren(@NonNull String description, @NonNull Map<String, Object> attributes,
+                                    Collection<Node> children) {
         return new Node(description, Attributes.of(attributes), Nodes.orNull(children));
     }
 
@@ -105,7 +105,8 @@ public record Node(@NonNull String description,
      * @param children    the nullable children of this node
      * @return a new node with the above characteristics
      */
-    public static Node withChildren(@NonNull String description, @NonNull Map<String, Object> attributes, Node... children) {
+    public static Node withChildren(@NonNull String description, @NonNull Map<String, Object> attributes,
+                                    Node... children) {
         return withChildren(description, attributes, Arrays.asList(children));
     }
 
@@ -114,23 +115,25 @@ public record Node(@NonNull String description,
      *
      * @return a nullable String
      */
-    public String id(){
+    public String id() {
         return attributes.getString("id", null);
     }
 
     /**
      * Returns the content of this object as bytes
      *
-     * @throws UnsupportedOperationException if this node doesn't wrap an array of bytes
      * @return a non-null array of bytes
+     * @throws UnsupportedOperationException if this node doesn't wrap an array of bytes
      */
-    public byte[] bytes(){
-        if(content instanceof byte[] bytes){
+    public byte[] bytes() {
+        if (content instanceof byte[] bytes) {
             return bytes;
         }
 
-        throw new UnsupportedOperationException("Unsupported content type: %s"
-                .formatted(content == null ? null : content.getClass().getName()));
+        throw new UnsupportedOperationException("Unsupported content type: %s".formatted(content == null ?
+                null :
+                content.getClass()
+                        .getName()));
     }
 
     /**
@@ -179,7 +182,7 @@ public record Node(@NonNull String description,
      *
      * @return true if this object has a content
      */
-    public boolean hasContent(){
+    public boolean hasContent() {
         return Objects.nonNull(content);
     }
 
@@ -188,10 +191,13 @@ public record Node(@NonNull String description,
      *
      * @return true if this object has a content
      */
-    public int size(){
+    public int size() {
         var descriptionSize = 1;
-        var attributesSize = 2 * attributes.map().size();
-        var contentSize = hasContent() ? 1 : 0;
+        var attributesSize = 2 * attributes.map()
+                .size();
+        var contentSize = hasContent() ?
+                1 :
+                0;
         return descriptionSize + attributesSize + contentSize;
     }
 
@@ -200,12 +206,13 @@ public record Node(@NonNull String description,
      * If this node doesn't provide an jid, the one provided as a parameter will be used.
      *
      * @param id the nullable jid of this request
-     * @throws NullPointerException if no valid jid can be found
      * @return a non null request
+     * @throws NullPointerException if no valid jid can be found
      */
-    public Request toRequest(String id){
+    public Request toRequest(String id) {
         if (id() == null) {
-            attributes.map().put("id", requireNonNull(id, "No valid jid can be used to create a request"));
+            attributes.map()
+                    .put("id", requireNonNull(id, "No valid jid can be used to create a request"));
         }
 
         return Request.with(this);
@@ -213,19 +220,16 @@ public record Node(@NonNull String description,
 
     /**
      * Checks if this object is equal to another
-     * @param other the reference object with which to compare
      *
+     * @param other the reference object with which to compare
      * @return whether {@code other} is equal to this object
      */
     @Override
     public boolean equals(Object other) {
-        return other instanceof Node that
-                && Objects.equals(this.description(), that.description())
-                && Objects.equals(this.attributes(), that.attributes())
-                && (Objects.equals(this.content(), that.content())
-                    || this.content() instanceof byte[] theseBytes
-                        && that.content() instanceof byte[] thoseBytes
-                        && Arrays.equals(theseBytes, thoseBytes));
+        return other instanceof Node that && Objects.equals(this.description(), that.description()) && Objects.equals(
+                this.attributes(), that.attributes()) && (Objects.equals(this.content(),
+                that.content()) || this.content() instanceof byte[] theseBytes && that.content() instanceof byte[] thoseBytes && Arrays.equals(
+                theseBytes, thoseBytes));
     }
 
     /**
@@ -235,12 +239,18 @@ public record Node(@NonNull String description,
      */
     @Override
     public String toString() {
-        var description = this.description.isBlank() || this.description.isEmpty() ? ""
-                : "description=%s".formatted(this.description);
-        var attributes = this.attributes.map().isEmpty() ? ""
-                : ", attributes=%s".formatted(this.attributes.map());
-        var content = this.content == null ? ""
-                : ", content=%s".formatted(this.content instanceof byte[] bytes ? Arrays.toString(bytes) : this.content);
+        var description = this.description.isBlank() || this.description.isEmpty() ?
+                "" :
+                "description=%s".formatted(this.description);
+        var attributes = this.attributes.map()
+                .isEmpty() ?
+                "" :
+                ", attributes=%s".formatted(this.attributes.map());
+        var content = this.content == null ?
+                "" :
+                ", content=%s".formatted(this.content instanceof byte[] bytes ?
+                        Arrays.toString(bytes) :
+                        this.content);
         return "Node[%s%s%s]".formatted(description, attributes, content);
     }
 }

@@ -17,15 +17,15 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @Jacksonized
 @Accessors(fluent = true)
 public final class NotificationMessageInfo implements Info {
-  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = MessageKey.class)
-  private MessageKey key;
+    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = MessageKey.class)
+    private MessageKey key;
 
-  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = Message.class)
-  private Message message;
+    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = Message.class)
+    private Message message;
 
-  @ProtobufProperty(index = 3, type = UINT64)
-  private long messageTimestamp;
+    @ProtobufProperty(index = 3, type = UINT64)
+    private long messageTimestamp;
 
-  @ProtobufProperty(index = 4, type = STRING)
-  private String participant;
+    @ProtobufProperty(index = 4, type = STRING)
+    private String participant;
 }

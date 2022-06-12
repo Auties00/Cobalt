@@ -58,12 +58,14 @@ public final class SignalPreKeyMessage implements SignalProtocolMessage {
 
     @SneakyThrows
     public static SignalPreKeyMessage ofSerialized(byte[] serialized) {
-        return PROTOBUF.readMessage(Bytes.of(serialized).slice(1).toByteArray(), SignalPreKeyMessage.class)
+        return PROTOBUF.readMessage(Bytes.of(serialized)
+                        .slice(1)
+                        .toByteArray(), SignalPreKeyMessage.class)
                 .version(BytesHelper.bytesToVersion(serialized[0]))
                 .serialized(serialized);
     }
 
-    public SignalMessage signalMessage(){
+    public SignalMessage signalMessage() {
         return SignalMessage.ofSerialized(serializedSignalMessage);
     }
 }

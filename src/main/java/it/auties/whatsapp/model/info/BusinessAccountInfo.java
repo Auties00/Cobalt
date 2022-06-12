@@ -1,7 +1,6 @@
 package it.auties.whatsapp.model.info;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
-import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.business.BusinessAccountType;
 import it.auties.whatsapp.model.business.BusinessStorageType;
 import lombok.AllArgsConstructor;
@@ -14,8 +13,6 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
 /**
  * A model class that holds the information related to a business account.
- * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
- * Instead, methods inside {@link Whatsapp} should be used.
  */
 @AllArgsConstructor
 @Data
@@ -23,33 +20,33 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @Jacksonized
 @Accessors(fluent = true)
 public final class BusinessAccountInfo implements Info {
-  /**
-   * The facebook jid
-   */
-  @ProtobufProperty(index = 1, type = UINT64)
-  private long facebookId;
+    /**
+     * The facebook jid
+     */
+    @ProtobufProperty(index = 1, type = UINT64)
+    private long facebookId;
 
-  /**
-   * The account phone number
-   */
-  @ProtobufProperty(index = 2, type = STRING)
-  private String accountNumber;
+    /**
+     * The account phone number
+     */
+    @ProtobufProperty(index = 2, type = STRING)
+    private String accountNumber;
 
-  /**
-   * The timestamp of the account
-   */
-  @ProtobufProperty(index = 3, type = UINT64)
-  private long timestamp;
+    /**
+     * The timestamp of the account
+     */
+    @ProtobufProperty(index = 3, type = UINT64)
+    private long timestamp;
 
-  /**
-   * Indicates here this account is hosted
-   */
-  @ProtobufProperty(index = 4, type = MESSAGE, concreteType = BusinessStorageType.class)
-  private BusinessStorageType hostStorage;
+    /**
+     * Indicates here this account is hosted
+     */
+    @ProtobufProperty(index = 4, type = MESSAGE, concreteType = BusinessStorageType.class)
+    private BusinessStorageType hostStorage;
 
-  /**
-   * The type of this account
-   */
-  @ProtobufProperty(index = 5, type = MESSAGE, concreteType = BusinessAccountType.class)
-  private BusinessAccountType accountType;
+    /**
+     * The type of this account
+     */
+    @ProtobufProperty(index = 5, type = MESSAGE, concreteType = BusinessAccountType.class)
+    private BusinessAccountType accountType;
 }

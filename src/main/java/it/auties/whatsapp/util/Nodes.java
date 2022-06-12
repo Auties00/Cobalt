@@ -10,16 +10,18 @@ import java.util.stream.Collectors;
 @UtilityClass
 public class Nodes {
     public static List<Node> orNull(Collection<Node> nodes) {
-        return nodes == null || nodes.stream().allMatch(Objects::isNull) ? null
-                : new ArrayList<>(nodes);
+        return nodes == null || nodes.stream()
+                .allMatch(Objects::isNull) ?
+                null :
+                new ArrayList<>(nodes);
     }
 
     public static LinkedList<Node> findAll(Object list) {
-        if(list == null){
+        if (list == null) {
             return new LinkedList<>();
         }
 
-        if(!(list instanceof Collection<?> collection)){
+        if (!(list instanceof Collection<?> collection)) {
             return new LinkedList<>();
         }
 

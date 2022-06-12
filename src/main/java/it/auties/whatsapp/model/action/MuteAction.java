@@ -16,14 +16,14 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.INT64;
 @Jacksonized
 @Accessors(fluent = true)
 public final class MuteAction implements Action {
-  @ProtobufProperty(index = 1, type = BOOLEAN)
-  private boolean muted;
+    @ProtobufProperty(index = 1, type = BOOLEAN)
+    private boolean muted;
 
-  @ProtobufProperty(index = 2, type = INT64)
-  private Long muteEndTimestamp;
+    @ProtobufProperty(index = 2, type = INT64)
+    private Long muteEndTimestamp;
 
-  @Override
-  public String indexName() {
-    return "mute";
-  }
+    @Override
+    public String indexName() {
+        return "mute";
+    }
 }

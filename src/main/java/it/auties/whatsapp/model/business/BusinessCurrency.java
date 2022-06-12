@@ -17,9 +17,9 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Jacksonized
 @Accessors(fluent = true)
 public class BusinessCurrency implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = STRING)
-  private String currencyCode;
+    @ProtobufProperty(index = 1, type = STRING)
+    private String currencyCode;
 
-  @ProtobufProperty(index = 2, type = INT64)
-  private long amount1000;
+    @ProtobufProperty(index = 2, type = INT64)
+    private long amount1000;
 }

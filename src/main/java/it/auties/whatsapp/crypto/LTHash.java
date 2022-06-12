@@ -26,7 +26,7 @@ public class LTHash {
     @NonNull
     private final List<byte[]> add, subtract;
 
-    public LTHash(LTHashState hash){
+    public LTHash(LTHashState hash) {
         this.salt = "WhatsApp Patch Integrity".getBytes(StandardCharsets.UTF_8);
         this.hash = hash.hash();
         this.indexValueMap = hash.indexValueMap();
@@ -35,7 +35,8 @@ public class LTHash {
     }
 
     public void mix(byte[] indexMac, byte[] valueMac, RecordSync.Operation operation) {
-        var indexMacBase64 = Bytes.of(indexMac).toBase64();
+        var indexMacBase64 = Bytes.of(indexMac)
+                .toBase64();
         var prevOp = indexValueMap.get(indexMacBase64);
         if (operation == RecordSync.Operation.REMOVE) {
             Validate.isTrue(prevOp != null, "No previous operation");
@@ -60,7 +61,9 @@ public class LTHash {
     }
 
     private byte[] perform(byte[] input, boolean sum) {
-        for(var item : sum ? add : subtract) {
+        for (var item : sum ?
+                add :
+                subtract) {
             input = perform(input, item, sum);
         }
 
@@ -75,10 +78,12 @@ public class LTHash {
                 .order(ByteOrder.LITTLE_ENDIAN);
         var write = ByteBuffer.allocate(input.length)
                 .order(ByteOrder.LITTLE_ENDIAN);
-        for(var index = 0; index < input.length; index += 2){
+        for (var index = 0; index < input.length; index += 2) {
             var first = Short.toUnsignedInt(eRead.getShort(index));
             var second = Short.toUnsignedInt(tRead.getShort(index));
-            write.putShort(index, (short) (sum ? first + second : first - second));
+            write.putShort(index, (short) (sum ?
+                    first + second :
+                    first - second));
         }
 
         var result = new byte[input.length];
@@ -86,7 +91,7 @@ public class LTHash {
         return result;
     }
 
-    public record Result(byte[] hash, Map<String, byte[]> indexValueMap){
+    public record Result(byte[] hash, Map<String, byte[]> indexValueMap) {
 
     }
 }

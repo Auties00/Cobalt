@@ -16,9 +16,9 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.BYTES;
 @Jacksonized
 @Accessors(fluent = true)
 public class SignedDeviceIdentityHMAC implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = BYTES)
-  private byte[] details;
+    @ProtobufProperty(index = 1, type = BYTES)
+    private byte[] details;
 
-  @ProtobufProperty(index = 2, type = BYTES)
-  private byte[] hmac;
+    @ProtobufProperty(index = 2, type = BYTES)
+    private byte[] hmac;
 }

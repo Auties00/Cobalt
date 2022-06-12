@@ -15,6 +15,6 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Jacksonized
 @Accessors(fluent = true)
 public class ProductFooter {
-  @ProtobufProperty(index = 1, type = STRING)
-  private String text;
+    @ProtobufProperty(index = 1, type = STRING)
+    private String text;
 }

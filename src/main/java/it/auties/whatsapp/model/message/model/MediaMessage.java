@@ -1,7 +1,6 @@
 package it.auties.whatsapp.model.message.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.model.media.AttachmentProvider;
 import it.auties.whatsapp.model.message.payment.PaymentInvoiceMessage;
@@ -16,9 +15,8 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 
 /**
- * A model class that represents a WhatsappMessage sent by a contact and that holds media inside.
+ * A model class that represents a message holding media inside
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
- * Instead, methods inside {@link Whatsapp} should be used.
  * Even though the same instance is in the wrapping message info(MessageInfo -> MessageContainer -> MediaMessage),
  * there is currently no way to navigate the tree upwards or any reason to do so considering that this is a special use case.
  * Considering that passing the same instance to {@link MediaMessage#decodedMedia()} is verbose and unnecessary, there is a copy here.
@@ -48,9 +46,8 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
     @JsonIgnore
     private WhatsappStore cachedStore;
 
-    protected WhatsappStore store(){
-        return Objects.requireNonNullElseGet(cachedStore,
-                () -> this.cachedStore = cacheStore());
+    protected WhatsappStore store() {
+        return Objects.requireNonNullElseGet(cachedStore, () -> this.cachedStore = cacheStore());
     }
 
     private WhatsappStore cacheStore() {
@@ -64,9 +61,8 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
      *
      * @return a non-null array of bytes
      */
-    public byte[] decodedMedia(){
-        return Objects.requireNonNullElseGet(decodedMedia,
-                () -> (this.decodedMedia = Medias.download(this, store())));
+    public byte[] decodedMedia() {
+        return Objects.requireNonNullElseGet(decodedMedia, () -> (this.decodedMedia = Medias.download(this, store())));
     }
 
     /**
@@ -74,9 +70,9 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
      *
      * @return a non-null array of bytes
      */
-    public byte[] refreshMedia(){
-       this.decodedMedia = null;
-       return decodedMedia();
+    public byte[] refreshMedia() {
+        this.decodedMedia = null;
+        return decodedMedia();
     }
 
     /**
@@ -95,7 +91,8 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
 
     @Override
     public String name() {
-        return type().name().toLowerCase(Locale.ROOT);
+        return type().name()
+                .toLowerCase(Locale.ROOT);
     }
 
     @Override

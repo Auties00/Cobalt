@@ -6,38 +6,38 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 public record Session(ConcurrentLinkedDeque<@NonNull SessionState> states) {
-  public Session(){
-    this(new ConcurrentLinkedDeque<>());
-  }
-
-  public SessionState currentState(){
-    return states.stream()
-            .filter(state -> !state.closed())
-            .findFirst()
-            .orElse(null);
-  }
-
-  public Session closeCurrentState(){
-    var currentState = currentState();
-    if(currentState != null){
-      currentState.closed(true);
+    public Session() {
+        this(new ConcurrentLinkedDeque<>());
     }
 
-    return this;
-  }
+    public SessionState currentState() {
+        return states.stream()
+                .filter(state -> !state.closed())
+                .findFirst()
+                .orElse(null);
+    }
 
-  public boolean hasState(int version, byte[] baseKey) {
-    return states.stream()
-            .anyMatch(state -> state.contentEquals(version, baseKey));
-  }
+    public Session closeCurrentState() {
+        var currentState = currentState();
+        if (currentState != null) {
+            currentState.closed(true);
+        }
 
-  public Optional<SessionState> findState(int version, byte[] baseKey) {
-    return states.stream()
-            .filter(state -> state.contentEquals(version, baseKey))
-            .findFirst();
-  }
+        return this;
+    }
 
-  public void addState(SessionState state) {
-    states.add(state);
-  }
+    public boolean hasState(int version, byte[] baseKey) {
+        return states.stream()
+                .anyMatch(state -> state.contentEquals(version, baseKey));
+    }
+
+    public Optional<SessionState> findState(int version, byte[] baseKey) {
+        return states.stream()
+                .filter(state -> state.contentEquals(version, baseKey))
+                .findFirst();
+    }
+
+    public void addState(SessionState state) {
+        states.add(state);
+    }
 }

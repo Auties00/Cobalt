@@ -1,30 +1,35 @@
 package it.auties.whatsapp.util;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import it.auties.map.SimpleMapModule;
 import it.auties.protobuf.api.jackson.ProtobufMapper;
 
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_DEFAULT;
+import static com.fasterxml.jackson.annotation.PropertyAccessor.*;
+import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY;
+import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
+import static com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_EMPTY_BEANS;
+import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_ENUMS_USING_INDEX;
+
 public interface JacksonProvider {
-    ProtobufMapper PROTOBUF = (ProtobufMapper) new ProtobufMapper()
-            .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, true)
+    ProtobufMapper PROTOBUF = (ProtobufMapper) new ProtobufMapper().enable(FAIL_ON_EMPTY_BEANS)
+            .disable(FAIL_ON_UNKNOWN_PROPERTIES)
             .registerModule(new Jdk8Module())
             .registerModule(new SimpleMapModule());
 
-    ObjectMapper JSON = new ObjectMapper()
-            .registerModule(new Jdk8Module())
+    ObjectMapper JSON = new ObjectMapper().registerModule(new Jdk8Module())
             .registerModule(new SimpleMapModule())
             .registerModule(new JavaTimeModule())
-            .setSerializationInclusion(Include.NON_DEFAULT)
-            .enable(SerializationFeature.WRITE_ENUMS_USING_INDEX)
-            .enable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-            .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+            .setSerializationInclusion(NON_DEFAULT)
+            .enable(WRITE_ENUMS_USING_INDEX)
+            .enable(FAIL_ON_EMPTY_BEANS)
+            .enable(ACCEPT_SINGLE_VALUE_AS_ARRAY)
+            .disable(FAIL_ON_UNKNOWN_PROPERTIES)
+            .setVisibility(ALL, ANY)
+            .setVisibility(GETTER, NONE)
+            .setVisibility(IS_GETTER, NONE);
 }

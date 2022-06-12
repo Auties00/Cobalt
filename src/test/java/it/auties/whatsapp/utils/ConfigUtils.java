@@ -11,6 +11,7 @@ import java.util.Properties;
 @UtilityClass
 public class ConfigUtils {
     private final String CONFIG_PATH = "/.test/config.properties";
+
     public Properties loadConfiguration() throws IOException {
         var config = loadConfigFile();
         return createProperties(config);
@@ -23,9 +24,11 @@ public class ConfigUtils {
     }
 
     private Path loadConfigFile() throws IOException {
-        var config = Path.of("./%s".formatted(CONFIG_PATH)).toRealPath();
-        if(Files.notExists(config)){
-            throw new FileNotFoundException("Before running any unit test please create a config file at %s".formatted(config));
+        var config = Path.of("./%s".formatted(CONFIG_PATH))
+                .toRealPath();
+        if (Files.notExists(config)) {
+            throw new FileNotFoundException(
+                    "Before running any unit test please create a config file at %s".formatted(config));
         }
 
         return config;

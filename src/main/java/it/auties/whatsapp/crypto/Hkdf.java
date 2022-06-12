@@ -30,23 +30,21 @@ public class Hkdf implements SignalSpecification {
 
     @SneakyThrows
     public byte[][] deriveSecrets(byte[] input, byte[] salt, byte[] info, int chunks) {
-        Validate.isTrue(salt.length == KEY_LENGTH,
-                "Incorrect salt length: %s", salt.length);
-        Validate.isTrue(chunks >= 1 && chunks <= 3,
-                "Incorrect number of chunks: %s", chunks);
+        Validate.isTrue(salt.length == KEY_LENGTH, "Incorrect salt length: %s", salt.length);
+        Validate.isTrue(chunks >= 1 && chunks <= 3, "Incorrect number of chunks: %s", chunks);
 
-       var prk = Hmac.calculateSha256(input, salt);
-       var result = Bytes.newBuffer(KEY_LENGTH)
-               .append(info)
-               .append(1)
-               .toByteArray();
+        var prk = Hmac.calculateSha256(input, salt);
+        var result = Bytes.newBuffer(KEY_LENGTH)
+                .append(info)
+                .append(1)
+                .toByteArray();
 
-       var signed = new byte[chunks][];
-       var key = Bytes.of(result)
-               .slice(KEY_LENGTH)
-               .toByteArray();
-       var first = Hmac.calculateSha256(key, prk);
-       signed[0] = first;
+        var signed = new byte[chunks][];
+        var key = Bytes.of(result)
+                .slice(KEY_LENGTH)
+                .toByteArray();
+        var first = Hmac.calculateSha256(key, prk);
+        signed[0] = first;
 
         if (chunks > 1) {
             System.arraycopy(first, 0, result, 0, first.length);
@@ -88,7 +86,8 @@ public class Hkdf implements SignalSpecification {
             var mac = Mac.getInstance(HMAC_SHA_256);
             mac.init(new SecretKeySpec(prk, HMAC_SHA_256));
             mac.update(mixin);
-            if (info != null) mac.update(info);
+            if (info != null)
+                mac.update(info);
             mac.update((byte) index);
 
             var stepResult = mac.doFinal();

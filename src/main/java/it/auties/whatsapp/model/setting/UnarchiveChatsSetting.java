@@ -15,11 +15,11 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.BOOLEAN;
 @Jacksonized
 @Accessors(fluent = true)
 public final class UnarchiveChatsSetting implements Setting {
-  @ProtobufProperty(index = 1, type = BOOLEAN)
-  private boolean unarchiveChats;
+    @ProtobufProperty(index = 1, type = BOOLEAN)
+    private boolean unarchiveChats;
 
-  @Override
-  public String indexName() {
-    return "setting_unarchiveChats";
-  }
+    @Override
+    public String indexName() {
+        return "setting_unarchiveChats";
+    }
 }

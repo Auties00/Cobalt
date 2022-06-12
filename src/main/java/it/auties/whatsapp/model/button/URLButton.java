@@ -17,9 +17,9 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @Jacksonized
 @Accessors(fluent = true)
 public class URLButton implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = ButtonStructureMessage.class)
-  private ButtonStructureMessage displayText;
+    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = ButtonStructureMessage.class)
+    private ButtonStructureMessage displayText;
 
-  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ButtonStructureMessage.class)
-  private ButtonStructureMessage url;
+    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ButtonStructureMessage.class)
+    private ButtonStructureMessage url;
 }

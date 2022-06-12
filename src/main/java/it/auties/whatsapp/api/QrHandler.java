@@ -41,16 +41,16 @@ public interface QrHandler extends Consumer<String> {
 
             var header = ww.repeat(matrix.getWidth() + qz * 2);
             writer.append((header + "\n").repeat(qz / 2));
-            for(var i = 0; i <= matrix.getWidth(); i += 2) {
+            for (var i = 0; i <= matrix.getWidth(); i += 2) {
                 writer.append(ww.repeat(qz));
-                for(var j = 0; j <= matrix.getWidth(); j++) {
+                for (var j = 0; j <= matrix.getWidth(); j++) {
                     var nextBlack = i + 1 < matrix.getWidth() && matrix.get(j, i + 1);
                     var currentBlack = matrix.get(j, i);
-                    if(currentBlack && nextBlack) {
+                    if (currentBlack && nextBlack) {
                         writer.append(bb);
-                    } else if(currentBlack) {
+                    } else if (currentBlack) {
                         writer.append(bw);
-                    } else if(!nextBlack){
+                    } else if (!nextBlack) {
                         writer.append(ww);
                     } else {
                         writer.append(wb);
@@ -70,18 +70,19 @@ public interface QrHandler extends Consumer<String> {
     /**
      * Saves the QR code to a file and opens it if a Desktop environment is available
      */
-    static QrHandler toFile(){
+    static QrHandler toFile() {
         return qr -> {
             try {
                 var matrix = createMatrix(qr, 500, 5);
-                var path = createTempFile(UUID.randomUUID().toString(), ".jpg");
+                var path = createTempFile(UUID.randomUUID()
+                        .toString(), ".jpg");
                 writeToPath(matrix, "jpg", path);
-                if(!isDesktopSupported()){
+                if (!isDesktopSupported()) {
                     return;
                 }
 
                 getDesktop().open(path.toFile());
-            }catch (IOException exception){
+            } catch (IOException exception) {
                 throw new UncheckedIOException("Cannot save qr to file", exception);
             }
         };
@@ -90,16 +91,9 @@ public interface QrHandler extends Consumer<String> {
     private static BitMatrix createMatrix(String qr, int size, int margin) {
         try {
             var writer = new MultiFormatWriter();
-            return writer.encode(qr,
-                    BarcodeFormat.QR_CODE,
-                    size,
-                    size,
-                    Map.of(
-                            EncodeHintType.MARGIN, margin,
-                            EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.L
-                    )
-            );
-        }catch (WriterException exception){
+            return writer.encode(qr, BarcodeFormat.QR_CODE, size, size,
+                    Map.of(EncodeHintType.MARGIN, margin, EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.L));
+        } catch (WriterException exception) {
             throw new UnsupportedOperationException("Cannot create qr code", exception);
         }
     }

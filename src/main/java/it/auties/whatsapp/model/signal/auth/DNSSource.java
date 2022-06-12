@@ -21,30 +21,30 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @Jacksonized
 @Accessors(fluent = true)
 public class DNSSource implements ProtobufMessage {
-  @ProtobufProperty(index = 15, type = MESSAGE, concreteType = DNSSourceDNSResolutionMethod.class)
-  private DNSSourceDNSResolutionMethod dnsMethod;
+    @ProtobufProperty(index = 15, type = MESSAGE, concreteType = DNSSourceDNSResolutionMethod.class)
+    private DNSSourceDNSResolutionMethod dnsMethod;
 
-  @ProtobufProperty(index = 16, type = BOOLEAN)
-  private boolean appCached;
+    @ProtobufProperty(index = 16, type = BOOLEAN)
+    private boolean appCached;
 
-  @AllArgsConstructor
-  @Accessors(fluent = true)
-  public enum DNSSourceDNSResolutionMethod {
-    SYSTEM(0),
-    GOOGLE(1),
-    HARDCODED(2),
-    OVERRIDE(3),
-    FALLBACK(4);
+    @AllArgsConstructor
+    @Accessors(fluent = true)
+    public enum DNSSourceDNSResolutionMethod {
+        SYSTEM(0),
+        GOOGLE(1),
+        HARDCODED(2),
+        OVERRIDE(3),
+        FALLBACK(4);
 
-    @Getter
-    private final int index;
+        @Getter
+        private final int index;
 
-    @JsonCreator
-    public static DNSSourceDNSResolutionMethod forIndex(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
-          .orElse(null);
+        @JsonCreator
+        public static DNSSourceDNSResolutionMethod forIndex(int index) {
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(null);
+        }
     }
-  }
 }

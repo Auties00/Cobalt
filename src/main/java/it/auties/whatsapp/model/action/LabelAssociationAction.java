@@ -15,11 +15,11 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.BOOLEAN;
 @Jacksonized
 @Accessors(fluent = true)
 public final class LabelAssociationAction implements Action {
-  @ProtobufProperty(index = 1, type = BOOLEAN)
-  private boolean labeled;
+    @ProtobufProperty(index = 1, type = BOOLEAN)
+    private boolean labeled;
 
-  @Override
-  public String indexName() {
-    return "label_message";
-  }
+    @Override
+    public String indexName() {
+        return "label_message";
+    }
 }

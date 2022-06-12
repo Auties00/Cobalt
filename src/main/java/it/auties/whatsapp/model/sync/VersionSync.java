@@ -16,6 +16,6 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT64;
 @Jacksonized
 @Accessors(fluent = true)
 public class VersionSync implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = UINT64)
-  private Long version;
+    @ProtobufProperty(index = 1, type = UINT64)
+    private Long version;
 }

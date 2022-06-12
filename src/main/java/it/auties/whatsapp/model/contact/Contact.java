@@ -13,7 +13,6 @@ import java.util.Optional;
 /**
  * A model class that represents a Contact.
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
- * Instead, methods inside {@link Whatsapp} should be used.
  * This class also offers a builder, accessible using {@link Contact#builder()}.
  */
 @AllArgsConstructor
@@ -68,7 +67,7 @@ public final class Contact implements ProtobufMessage, ContactJidProvider {
      * @param jid the non-null jid
      * @return a non-null Contact
      */
-    public static Contact ofJid(@NonNull ContactJid jid){
+    public static Contact ofJid(@NonNull ContactJid jid) {
         return Contact.builder()
                 .jid(jid)
                 .build();
@@ -80,10 +79,13 @@ public final class Contact implements ProtobufMessage, ContactJidProvider {
      * @return a non-null String
      */
     public String name() {
-        return shortName != null ? shortName 
-                : fullName != null ? fullName
-                : chosenName != null ? chosenName
-                : jid().user();
+        return shortName != null ?
+                shortName :
+                fullName != null ?
+                        fullName :
+                        chosenName != null ?
+                                chosenName :
+                                jid().user();
     }
 
     /**

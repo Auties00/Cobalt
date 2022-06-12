@@ -16,6 +16,6 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Jacksonized
 @Accessors(fluent = true)
 public class ServerErrorReceipt implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = STRING)
-  private String jid;
+    @ProtobufProperty(index = 1, type = STRING)
+    private String jid;
 }

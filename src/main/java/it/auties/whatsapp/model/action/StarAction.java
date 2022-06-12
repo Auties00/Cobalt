@@ -15,11 +15,11 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.BOOLEAN;
 @Jacksonized
 @Accessors(fluent = true)
 public final class StarAction implements Action {
-  @ProtobufProperty(index = 1, type = BOOLEAN)
-  private boolean starred;
+    @ProtobufProperty(index = 1, type = BOOLEAN)
+    private boolean starred;
 
-  @Override
-  public String indexName() {
-    return "star";
-  }
+    @Override
+    public String indexName() {
+        return "star";
+    }
 }

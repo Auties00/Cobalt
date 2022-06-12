@@ -18,52 +18,56 @@ import java.util.stream.Collectors;
 
 @RegisterListener
 public record TesterBotListener(Whatsapp api) implements WhatsappListener {
-    private static final String JAVA_CODE_TEMPLATE =
-            """
-                            import java.util.*;
-                            import java.util.stream.*;
-                            import java.util.function.*;
-                            import java.lang.*;
-                            import java.nio.*;
-                            import java.io.*;
-                            import java.net.http.*;
-                            
-                            public class Test {
-                                public static void main(String[] args){
-                                    %s
-                                }
-                            }
-                    """;
+    private static final String JAVA_CODE_TEMPLATE = """
+                    import java.util.*;
+                    import java.util.stream.*;
+                    import java.util.function.*;
+                    import java.lang.*;
+                    import java.nio.*;
+                    import java.io.*;
+                    import java.net.http.*;
+                    
+                    public class Test {
+                        public static void main(String[] args){
+                            %s
+                        }
+                    }
+            """;
     private static final JavaCompiler COMPILER = ToolProvider.getSystemJavaCompiler();
 
     @Override
     public void onNewMessage(MessageInfo info) {
-        if(!(info.message().content() instanceof TextMessage textMessage)){
+        if (!(info.message()
+                .content() instanceof TextMessage textMessage)) {
             return;
         }
 
         try {
-            var text = textMessage.text().replace("/java", "");
+            var text = textMessage.text()
+                    .replace("/java", "");
             var javaCode = JAVA_CODE_TEMPLATE.formatted(text);
 
-            var directory = Files.createTempDirectory(UUID.randomUUID().toString());
+            var directory = Files.createTempDirectory(UUID.randomUUID()
+                    .toString());
             var file = Files.createTempFile(directory, "Test", ".java");
             Files.write(file, javaCode.getBytes());
 
             var errorStream = new ByteArrayOutputStream(4096);
             var compilationResult = COMPILER.run(null, null, errorStream, "-d", directory.toString(), file.toString());
             if (compilationResult != 0) {
-                api.sendMessage(info.chatJid(), "The provided code contains errors: %s".formatted(errorStream.toString()), info);
+                api.sendMessage(info.chatJid(),
+                        "The provided code contains errors: %s".formatted(errorStream.toString()), info);
                 return;
             }
 
-            var process = Runtime.getRuntime().exec(new String[]{"java", "-cp", directory.toString(), "Test"});
-            var result = new BufferedReader(new InputStreamReader(process.getInputStream()))
-                    .lines()
+            var process = Runtime.getRuntime()
+                    .exec(new String[]{"java", "-cp", directory.toString(), "Test"});
+            var result = new BufferedReader(new InputStreamReader(process.getInputStream())).lines()
                     .collect(Collectors.joining("\n"));
             api.sendMessage(info.chatJid(), "Code compiled successfully: %n%s".formatted(result), info);
-        }catch (IOException ex){
-            api.sendMessage(info.chatJid(), "An IOException occurred while running the provided code: %n%s".formatted(ex.getMessage()), info);
+        } catch (IOException ex) {
+            api.sendMessage(info.chatJid(),
+                    "An IOException occurred while running the provided code: %n%s".formatted(ex.getMessage()), info);
         }
     }
 }

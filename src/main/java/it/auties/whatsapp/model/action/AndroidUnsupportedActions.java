@@ -15,11 +15,11 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.BOOLEAN;
 @Jacksonized
 @Accessors(fluent = true)
 public final class AndroidUnsupportedActions implements Action {
-  @ProtobufProperty(index = 1, type = BOOLEAN)
-  private boolean allowed;
+    @ProtobufProperty(index = 1, type = BOOLEAN)
+    private boolean allowed;
 
-  @Override
-  public String indexName() {
-    return "android_unsupported_actions";
-  }
+    @Override
+    public String indexName() {
+        return "android_unsupported_actions";
+    }
 }

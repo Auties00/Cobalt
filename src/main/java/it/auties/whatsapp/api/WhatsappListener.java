@@ -35,7 +35,7 @@ public interface WhatsappListener {
      *
      * @param incoming the non-null node that was just received
      */
-    default void onNodeReceived(Node incoming){
+    default void onNodeReceived(Node incoming) {
 
     }
 
@@ -45,7 +45,7 @@ public interface WhatsappListener {
      *
      * @return a non-null handler to process the qr code
      */
-    default QrHandler onQRCode(){
+    default QrHandler onQRCode() {
         return QrHandler.toTerminal();
     }
 
@@ -53,7 +53,6 @@ public interface WhatsappListener {
      * Called when {@link BinarySocket} successfully establishes a connection and logs in into an account.
      * When this event is called, any data, including chats and contact, is not guaranteed to be already in memory.
      * Instead, {@link WhatsappListener#onChats()} and {@link WhatsappListener#onContacts()} should be used.
-     *
      */
     default void onLoggedIn() {
 
@@ -83,7 +82,7 @@ public interface WhatsappListener {
      * Called when {@link BinarySocket} fails unexpectedly
      *
      * @param statusCode the status code for the failure
-     * @param reason the reason for the failure, might be null
+     * @param reason     the reason for the failure, might be null
      * @return whether the keys should be deleted and a new session should be opened
      */
     default boolean onFailure(long statusCode, String reason) {
@@ -219,7 +218,7 @@ public interface WhatsappListener {
 
     /**
      * Called when {@link BinarySocket} receives a new status from WhatsappWeb's Socket
-     * 
+     *
      * @param status the new status message
      */
     default void onNewStatus(MessageInfo status) {

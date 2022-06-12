@@ -11,7 +11,7 @@ public class GithubActions {
     public final String CONTACT_NAME = "WHATSAPP_CONTACT";
     private final String GITHUB_ACTIONS = "GITHUB_ACTIONS";
 
-    public boolean isActionsEnvironment(){ 
+    public boolean isActionsEnvironment() {
         return Boolean.parseBoolean(System.getenv(GITHUB_ACTIONS));
     }
 }

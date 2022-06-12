@@ -31,7 +31,7 @@ public class ActionMessageRangeSync implements ProtobufMessage {
     @ProtobufProperty(index = 3, type = MESSAGE, concreteType = SyncActionMessage.class, repeated = true)
     private List<SyncActionMessage> messages;
 
-    public ActionMessageRangeSync(@NonNull MessageInfo info){
+    public ActionMessageRangeSync(@NonNull MessageInfo info) {
         this.lastMessageTimestamp = info.timestamp();
         var syncMessage = new SyncActionMessage(info.key(), lastMessageTimestamp);
         this.messages = List.of(syncMessage);
@@ -39,7 +39,8 @@ public class ActionMessageRangeSync implements ProtobufMessage {
 
     public static class ActionMessageRangeSyncBuilder {
         public ActionMessageRangeSyncBuilder messages(List<SyncActionMessage> messages) {
-            if (this.messages == null) this.messages = new ArrayList<>();
+            if (this.messages == null)
+                this.messages = new ArrayList<>();
             this.messages.addAll(messages);
             return this;
         }

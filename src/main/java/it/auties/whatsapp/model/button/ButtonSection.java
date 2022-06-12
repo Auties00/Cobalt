@@ -20,18 +20,18 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Jacksonized
 @Accessors(fluent = true)
 public class ButtonSection implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = STRING)
-  private String title;
+    @ProtobufProperty(index = 1, type = STRING)
+    private String title;
 
-  @ProtobufProperty(index = 2, type = MESSAGE,
-          concreteType = ButtonRow.class, repeated = true)
-  private List<ButtonRow> rows;
+    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ButtonRow.class, repeated = true)
+    private List<ButtonRow> rows;
 
-  public static class ButtonSectionBuilder {
-    public ButtonSectionBuilder hydratedButtons(List<ButtonRow> rows) {
-      if (this.rows == null) this.rows = new ArrayList<>();
-      this.rows.addAll(rows);
-      return this;
+    public static class ButtonSectionBuilder {
+        public ButtonSectionBuilder hydratedButtons(List<ButtonRow> rows) {
+            if (this.rows == null)
+                this.rows = new ArrayList<>();
+            this.rows.addAll(rows);
+            return this;
+        }
     }
-  }
 }

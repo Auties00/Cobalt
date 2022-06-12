@@ -18,12 +18,12 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Jacksonized
 @Accessors(fluent = true)
 public class ProductCatalog implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = ImageMessage.class)
-  private ImageMessage catalogImage;
+    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = ImageMessage.class)
+    private ImageMessage catalogImage;
 
-  @ProtobufProperty(index = 2, type = STRING)
-  private String title;
+    @ProtobufProperty(index = 2, type = STRING)
+    private String title;
 
-  @ProtobufProperty(index = 3, type = STRING)
-  private String description;
+    @ProtobufProperty(index = 3, type = STRING)
+    private String description;
 }

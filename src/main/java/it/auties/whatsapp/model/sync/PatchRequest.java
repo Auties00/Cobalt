@@ -14,18 +14,19 @@ public record PatchRequest(BinarySync type, ActionValueSync sync, String index, 
         implements JacksonProvider, SignalSpecification {
 
     @SneakyThrows
-    public static PatchRequest of(BinarySync type, ActionValueSync sync, Operation operation, int version, String... args){
+    public static PatchRequest of(BinarySync type, ActionValueSync sync, Operation operation, int version,
+                                  String... args) {
         var index = JSON.writeValueAsString(createArguments(sync, args));
         return new PatchRequest(type, sync, index, version, operation);
     }
 
-    public static PatchRequest of(BinarySync type, ActionValueSync sync, Operation operation){
+    public static PatchRequest of(BinarySync type, ActionValueSync sync, Operation operation) {
         return of(type, sync, operation, CURRENT_VERSION);
     }
 
     private static List<String> createArguments(ActionValueSync sync, String... args) {
         var action = sync.action();
-        if(action != null) {
+        if (action != null) {
             var index = new ArrayList<String>();
             index.add(action.indexName());
             index.addAll(Arrays.asList(args));
@@ -33,7 +34,7 @@ public record PatchRequest(BinarySync type, ActionValueSync sync, String index, 
         }
 
         var setting = sync.setting();
-        if(setting != null){
+        if (setting != null) {
             return List.of(setting.indexName());
         }
 

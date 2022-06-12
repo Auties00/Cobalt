@@ -16,6 +16,6 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.BOOLEAN;
 @Jacksonized
 @Accessors(fluent = true)
 public class InitialSecurityNotificationSettingSync implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = BOOLEAN)
-  private boolean securityNotificationEnabled;
+    @ProtobufProperty(index = 1, type = BOOLEAN)
+    private boolean securityNotificationEnabled;
 }

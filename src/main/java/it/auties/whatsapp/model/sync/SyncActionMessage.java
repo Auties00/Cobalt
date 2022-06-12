@@ -18,9 +18,9 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @Jacksonized
 @Accessors(fluent = true)
 public class SyncActionMessage implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = MessageKey.class)
-  private MessageKey key;
+    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = MessageKey.class)
+    private MessageKey key;
 
-  @ProtobufProperty(index = 2, type = INT64)
-  private long timestamp;
+    @ProtobufProperty(index = 2, type = INT64)
+    private long timestamp;
 }

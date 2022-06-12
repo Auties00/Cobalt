@@ -20,8 +20,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @Jacksonized
 @Accessors(fluent = true)
 public final class RecentEmojiWeightsAction implements Action {
-    @ProtobufProperty(index = 1, type = MESSAGE,
-            concreteType = RecentEmojiWeight.class, repeated = true)
+    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = RecentEmojiWeight.class, repeated = true)
     private List<RecentEmojiWeight> weights;
 
     @Override
@@ -30,8 +29,9 @@ public final class RecentEmojiWeightsAction implements Action {
     }
 
     public static class RecentEmojiWeightsActionBuilder {
-        public RecentEmojiWeightsActionBuilder weights(List<RecentEmojiWeight> weights){
-            if(this.weights == null) this.weights = new ArrayList<>();
+        public RecentEmojiWeightsActionBuilder weights(List<RecentEmojiWeight> weights) {
+            if (this.weights == null)
+                this.weights = new ArrayList<>();
             this.weights.addAll(weights);
             return this;
         }

@@ -21,64 +21,64 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT32;
 @Jacksonized
 @Accessors(fluent = true)
 public class BusinessDateTimeComponent implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = HSMDateTimeComponentDayOfWeekType.class)
-  private HSMDateTimeComponentDayOfWeekType dayOfWeek;
+    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = HSMDateTimeComponentDayOfWeekType.class)
+    private HSMDateTimeComponentDayOfWeekType dayOfWeek;
 
-  @ProtobufProperty(index = 2, type = UINT32)
-  private int year;
+    @ProtobufProperty(index = 2, type = UINT32)
+    private int year;
 
-  @ProtobufProperty(index = 3, type = UINT32)
-  private int month;
+    @ProtobufProperty(index = 3, type = UINT32)
+    private int month;
 
-  @ProtobufProperty(index = 4, type = UINT32)
-  private int dayOfMonth;
+    @ProtobufProperty(index = 4, type = UINT32)
+    private int dayOfMonth;
 
-  @ProtobufProperty(index = 5, type = UINT32)
-  private int hour;
+    @ProtobufProperty(index = 5, type = UINT32)
+    private int hour;
 
-  @ProtobufProperty(index = 6, type = UINT32)
-  private int minute;
+    @ProtobufProperty(index = 6, type = UINT32)
+    private int minute;
 
-  @ProtobufProperty(index = 7, type = MESSAGE, concreteType = HSMDateTimeComponentCalendarType.class)
-  private HSMDateTimeComponentCalendarType calendar;
+    @ProtobufProperty(index = 7, type = MESSAGE, concreteType = HSMDateTimeComponentCalendarType.class)
+    private HSMDateTimeComponentCalendarType calendar;
 
-  @AllArgsConstructor
-  @Accessors(fluent = true)
-  public enum HSMDateTimeComponentDayOfWeekType implements ProtobufMessage {
-    MONDAY(1),
-    TUESDAY(2),
-    WEDNESDAY(3),
-    THURSDAY(4),
-    FRIDAY(5),
-    SATURDAY(6),
-    SUNDAY(7);
+    @AllArgsConstructor
+    @Accessors(fluent = true)
+    public enum HSMDateTimeComponentDayOfWeekType implements ProtobufMessage {
+        MONDAY(1),
+        TUESDAY(2),
+        WEDNESDAY(3),
+        THURSDAY(4),
+        FRIDAY(5),
+        SATURDAY(6),
+        SUNDAY(7);
 
-    @Getter
-    private final int index;
+        @Getter
+        private final int index;
 
-    @JsonCreator
-    public static HSMDateTimeComponentDayOfWeekType forIndex(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
-          .orElse(null);
+        @JsonCreator
+        public static HSMDateTimeComponentDayOfWeekType forIndex(int index) {
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(null);
+        }
     }
-  }
 
-  @AllArgsConstructor
-  @Accessors(fluent = true)
-  public enum HSMDateTimeComponentCalendarType implements ProtobufMessage {
-    GREGORIAN(1),
-    SOLAR_HIJRI(2);
+    @AllArgsConstructor
+    @Accessors(fluent = true)
+    public enum HSMDateTimeComponentCalendarType implements ProtobufMessage {
+        GREGORIAN(1),
+        SOLAR_HIJRI(2);
 
-    @Getter
-    private final int index;
+        @Getter
+        private final int index;
 
-    public static HSMDateTimeComponentCalendarType forIndex(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
-          .orElse(null);
+        public static HSMDateTimeComponentCalendarType forIndex(int index) {
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(null);
+        }
     }
-  }
 }

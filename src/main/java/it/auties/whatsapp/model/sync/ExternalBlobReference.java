@@ -17,36 +17,36 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @Jacksonized
 @Accessors(fluent = true)
 public final class ExternalBlobReference implements ProtobufMessage, AttachmentProvider {
-  @ProtobufProperty(index = 1, type = BYTES)
-  private byte[] key;
+    @ProtobufProperty(index = 1, type = BYTES)
+    private byte[] key;
 
-  @ProtobufProperty(index = 2, type = STRING)
-  private String directPath;
+    @ProtobufProperty(index = 2, type = STRING)
+    private String directPath;
 
-  @ProtobufProperty(index = 3, type = STRING)
-  private String handle;
+    @ProtobufProperty(index = 3, type = STRING)
+    private String handle;
 
-  @ProtobufProperty(index = 4, type = UINT64)
-  private long fileLength;
+    @ProtobufProperty(index = 4, type = UINT64)
+    private long fileLength;
 
-  @ProtobufProperty(index = 5, type = BYTES)
-  private byte[] fileSha256;
+    @ProtobufProperty(index = 5, type = BYTES)
+    private byte[] fileSha256;
 
-  @ProtobufProperty(index = 6, type = BYTES)
-  private byte[] fileEncSha256;
+    @ProtobufProperty(index = 6, type = BYTES)
+    private byte[] fileEncSha256;
 
-  @Override
-  public String url() {
-    return null;
-  }
+    @Override
+    public String url() {
+        return null;
+    }
 
-  @Override
-  public String name() {
-    return "md-app-state";
-  }
+    @Override
+    public String name() {
+        return "md-app-state";
+    }
 
-  @Override
-  public String keyName() {
-    return "WhatsApp App State Keys";
-  }
+    @Override
+    public String keyName() {
+        return "WhatsApp App State Keys";
+    }
 }

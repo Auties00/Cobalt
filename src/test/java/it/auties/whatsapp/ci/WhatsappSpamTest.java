@@ -30,7 +30,12 @@ public class WhatsappSpamTest implements WhatsappListener, JacksonProvider {
     private static Whatsapp api;
     private static ContactJid contact;
     private static ScheduledExecutorService executor;
-    
+
+    private static void logOut() {
+        executor.shutdownNow();
+        api.disconnect();
+    }
+
     @BeforeAll
     public void init() throws IOException {
         System.out.println("Initializing api to start testing...");
@@ -43,25 +48,24 @@ public class WhatsappSpamTest implements WhatsappListener, JacksonProvider {
     private void createApi() throws IOException {
         if (!GithubActions.isActionsEnvironment()) {
             System.out.println("Detected local environment");
-            api = Whatsapp.newConnection();
+            api = Whatsapp.lastConnection();
             return;
         }
 
-        api = Whatsapp.newConnection(
-                WhatsappOptions.defaultOptions(),
+        api = Whatsapp.newConnection(WhatsappOptions.defaultOptions(),
                 loadGithubParameter(GithubActions.STORE_NAME, WhatsappStore.class),
-                loadGithubParameter(GithubActions.CREDENTIALS_NAME, WhatsappKeys.class)
-        );
+                loadGithubParameter(GithubActions.CREDENTIALS_NAME, WhatsappKeys.class));
     }
 
     private <T> T loadGithubParameter(String parameter, Class<T> type) throws IOException {
         System.out.println("Detected github actions environment");
-        var keysJson = Base64.getDecoder().decode(System.getenv(parameter));
+        var keysJson = Base64.getDecoder()
+                .decode(System.getenv(parameter));
         return JSON.readValue(keysJson, type);
     }
 
     private void loadConfig() throws IOException {
-        if(GithubActions.isActionsEnvironment()) {
+        if (GithubActions.isActionsEnvironment()) {
             System.out.println("Loading environment variables...");
             contact = ContactJid.of(System.getenv(GithubActions.CONTACT_NAME));
             System.out.println("Loaded environment variables...");
@@ -70,7 +74,8 @@ public class WhatsappSpamTest implements WhatsappListener, JacksonProvider {
 
         System.out.println("Loading configuration file...");
         var props = ConfigUtils.loadConfiguration();
-        contact = ContactJid.of(Objects.requireNonNull(props.getProperty("contact"), "Missing contact property in config"));
+        contact = ContactJid.of(
+                Objects.requireNonNull(props.getProperty("contact"), "Missing contact property in config"));
         System.out.println("Loaded configuration file");
     }
 
@@ -78,7 +83,8 @@ public class WhatsappSpamTest implements WhatsappListener, JacksonProvider {
     @Order(1)
     public synchronized void testConnection() throws ExecutionException, InterruptedException {
         System.out.println("Connecting...");
-        api.connect().get();
+        api.connect()
+                .get();
         api.await();
         System.out.println("Connected!");
     }
@@ -95,9 +101,7 @@ public class WhatsappSpamTest implements WhatsappListener, JacksonProvider {
 
     @Override
     public void onLoggedIn() {
-        System.out.println("On logged in");
-        delayedExecutor(1, TimeUnit.MINUTES)
-                .execute(WhatsappSpamTest::logOut);
+        delayedExecutor(5, TimeUnit.MINUTES).execute(WhatsappSpamTest::logOut);
     }
 
     @Override
@@ -105,13 +109,8 @@ public class WhatsappSpamTest implements WhatsappListener, JacksonProvider {
         try {
             System.out.println("Sending message :)");
             api.sendMessage(info.chatJid(), "AAAAA", info);
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    private static void logOut() {
-        executor.shutdownNow();
-        api.disconnect();
     }
 }

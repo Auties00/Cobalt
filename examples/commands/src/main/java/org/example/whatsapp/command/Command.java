@@ -8,6 +8,8 @@ import java.util.Set;
 
 public interface Command {
     void onCommand(@NonNull Whatsapp api, @NonNull MessageInfo message);
+
     String command();
+
     Set<String> alias();
 }

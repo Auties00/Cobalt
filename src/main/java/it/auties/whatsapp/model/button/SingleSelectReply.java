@@ -16,6 +16,6 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Jacksonized
 @Accessors(fluent = true)
 public class SingleSelectReply implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = STRING)
-  private String selectedRowId;
+    @ProtobufProperty(index = 1, type = STRING)
+    private String selectedRowId;
 }

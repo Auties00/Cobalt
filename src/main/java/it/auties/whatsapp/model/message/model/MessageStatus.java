@@ -48,10 +48,14 @@ public enum MessageStatus implements ProtobufMessage {
     private final int index;
 
     public static MessageStatus forValue(String name) {
-        return name == null ? null : Arrays.stream(values())
-                .filter(entry -> name.toLowerCase().contains(entry.name().toLowerCase()))
-                .findFirst()
-                .orElse(null);
+        return name == null ?
+                null :
+                Arrays.stream(values())
+                        .filter(entry -> name.toLowerCase()
+                                .contains(entry.name()
+                                        .toLowerCase()))
+                        .findFirst()
+                        .orElse(null);
     }
 
     @JsonCreator

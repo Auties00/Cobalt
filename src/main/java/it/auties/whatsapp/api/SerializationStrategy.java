@@ -16,42 +16,6 @@ import java.util.function.BiConsumer;
  */
 public interface SerializationStrategy {
     /**
-     * Serialize the credentials
-     *
-     * @param store the non-null store
-     * @param keys  the non-null keys
-     */
-    void serialize(WhatsappStore store, WhatsappKeys keys);
-
-    /**
-     * The event used as a trigger for this strategy's logic
-     *
-     * @return a non-null event
-     */
-    Event trigger();
-
-    /**
-     * The time that should elapse between each call to this strategy's logic.
-     * Only relevant if linked to a {@link Event#PERIODICALLY} trigger.
-     *
-     * @return a long
-     */
-    default long period() {
-        return 0;
-    }
-
-    /**
-     * The time unit used for the time that should elapse between each call to this strategy's logic.
-     * Only relevant if linked to a {@link Event#PERIODICALLY} trigger.
-     * By default, seconds are used.
-     *
-     * @return a non-null time unit
-     */
-    default TimeUnit unit() {
-        return TimeUnit.SECONDS;
-    }
-
-    /**
      * Constructs the default serialization strategy and links it to a close trigger
      *
      * @return a non-null strategy
@@ -205,7 +169,8 @@ public interface SerializationStrategy {
      * @param event    the non-null event to use as a trigger
      * @return a non-null strategy
      */
-    static SerializationStrategy custom(@NonNull BiConsumer<WhatsappStore, WhatsappKeys> consumer, @NonNull Event event) {
+    static SerializationStrategy custom(@NonNull BiConsumer<WhatsappStore, WhatsappKeys> consumer,
+                                        @NonNull Event event) {
         return new SerializationStrategy() {
             @Override
             public void serialize(WhatsappStore store, WhatsappKeys keys) {
@@ -217,6 +182,56 @@ public interface SerializationStrategy {
                 return event;
             }
         };
+    }
+
+    private static void save(WhatsappStore store, WhatsappKeys keys, Path path, boolean async) {
+        System.out.printf("Saving: %s%n", keys);
+        Objects.requireNonNull(store, "Cannot serialize: null store");
+        Objects.requireNonNull(keys, "Cannot serialize: null keys");
+        if (path == null) {
+            store.save(async);
+            keys.save(async);
+            return;
+        }
+
+        store.save(path, async);
+        keys.save(path, async);
+    }
+
+    /**
+     * Serialize the credentials
+     *
+     * @param store the non-null store
+     * @param keys  the non-null keys
+     */
+    void serialize(WhatsappStore store, WhatsappKeys keys);
+
+    /**
+     * The event used as a trigger for this strategy's logic
+     *
+     * @return a non-null event
+     */
+    Event trigger();
+
+    /**
+     * The time that should elapse between each call to this strategy's logic.
+     * Only relevant if linked to a {@link Event#PERIODICALLY} trigger.
+     *
+     * @return a long
+     */
+    default long period() {
+        return 0;
+    }
+
+    /**
+     * The time unit used for the time that should elapse between each call to this strategy's logic.
+     * Only relevant if linked to a {@link Event#PERIODICALLY} trigger.
+     * By default, seconds are used.
+     *
+     * @return a non-null time unit
+     */
+    default TimeUnit unit() {
+        return TimeUnit.SECONDS;
     }
 
     /**
@@ -248,18 +263,5 @@ public interface SerializationStrategy {
          * Other events
          */
         CUSTOM
-    }
-
-    private static void save(WhatsappStore store, WhatsappKeys keys, Path path, boolean async) {
-        Objects.requireNonNull(store, "Cannot serialize: null store");
-        Objects.requireNonNull(keys, "Cannot serialize: null keys");
-        if (path == null) {
-            store.save(async);
-            keys.save(async);
-            return;
-        }
-
-        store.save(path, async);
-        keys.save(path, async);
     }
 }

@@ -15,7 +15,7 @@ public class BinaryEncoder {
     private static final int UNSIGNED_BYTE_MAX_VALUE = 256;
     private static final int UNSIGNED_SHORT_MAX_VALUE = 65536;
     private static final int INT_20_MAX_VALUE = 1048576;
-    
+
     private Bytes buffer;
 
     public synchronized byte[] encode(Node node) {
@@ -152,7 +152,8 @@ public class BinaryEncoder {
     }
 
     private byte[] writeNode(Node input) {
-        if (input.description().equals("0")) {
+        if (input.description()
+                .equals("0")) {
             this.buffer = buffer.append(LIST_8.data());
             this.buffer = buffer.append(LIST_EMPTY.data());
             return buffer.toByteArray();
@@ -169,10 +170,12 @@ public class BinaryEncoder {
     }
 
     private void writeAttributes(Node input) {
-        input.attributes().map().forEach((key, value) -> {
-            writeString(key);
-            write(value);
-        });
+        input.attributes()
+                .map()
+                .forEach((key, value) -> {
+                    writeString(key);
+                    write(value);
+                });
     }
 
     private void writeInt(int size) {
@@ -200,14 +203,17 @@ public class BinaryEncoder {
             case ContactJid jid -> writeJid(jid);
             case Collection<?> collection -> writeList(collection);
             case Enum<?> serializable -> writeString(Objects.toString(serializable));
-            case Node ignored -> throw new IllegalArgumentException("Invalid payload type(nodes should be wrapped by a collection): %s".formatted(input));
-            default -> throw new IllegalArgumentException("Invalid payload type(%s): %s".formatted(input.getClass().getName(), input));
+            case Node ignored -> throw new IllegalArgumentException(
+                    "Invalid payload type(nodes should be wrapped by a collection): %s".formatted(input));
+            default -> throw new IllegalArgumentException("Invalid payload type(%s): %s".formatted(input.getClass()
+                    .getName(), input));
         }
     }
 
     private void writeList(Collection<?> collection) {
         writeInt(collection.size());
-        Nodes.findAll(collection).forEach(this::writeNode);
+        Nodes.findAll(collection)
+                .forEach(this::writeNode);
     }
 
     private void writeBytes(byte[] bytes) {
@@ -227,12 +233,14 @@ public class BinaryEncoder {
         this.buffer = buffer.append(JID_PAIR.data());
         if (jid.user() != null) {
             writeString(jid.user());
-            writeString(jid.server().address());
+            writeString(jid.server()
+                    .address());
             return;
         }
 
         this.buffer = buffer.append(LIST_EMPTY.data());
-        writeString(jid.server().address());
+        writeString(jid.server()
+                .address());
     }
 
     private int length(String input) {

@@ -106,67 +106,92 @@ public class ActionValueSync implements ProtobufMessage {
 
     //<editor-fold desc="Constructors">
     @SuppressWarnings("PatternVariableHidesField")
-    public ActionValueSync(@NonNull Action action){
-        switch (action){
+    public ActionValueSync(@NonNull Action action) {
+        switch (action) {
             case StarAction starAction -> this.starAction = starAction;
             case ContactAction contactAction -> this.contactAction = contactAction;
             case MuteAction muteAction -> this.muteAction = muteAction;
             case PinAction pinAction -> this.pinAction = pinAction;
             case QuickReplyAction quickReplyAction -> this.quickReplyAction = quickReplyAction;
-            case RecentStickerWeightsAction recentStickerWeightsAction -> this.recentStickerWeightsAction = recentStickerWeightsAction;
-            case RecentEmojiWeightsAction recentEmojiWeightsAction -> this.recentEmojiWeightsAction = recentEmojiWeightsAction;
+            case RecentStickerWeightsAction recentStickerWeightsAction ->
+                    this.recentStickerWeightsAction = recentStickerWeightsAction;
+            case RecentEmojiWeightsAction recentEmojiWeightsAction ->
+                    this.recentEmojiWeightsAction = recentEmojiWeightsAction;
             case LabelEditAction labelEditAction -> this.labelEditAction = labelEditAction;
             case LabelAssociationAction labelAssociationAction -> this.labelAssociationAction = labelAssociationAction;
             case ArchiveChatAction archiveChatAction -> this.archiveChatAction = archiveChatAction;
-            case DeleteMessageForMeAction deleteMessageForMeAction -> this.deleteMessageForMeAction = deleteMessageForMeAction;
+            case DeleteMessageForMeAction deleteMessageForMeAction ->
+                    this.deleteMessageForMeAction = deleteMessageForMeAction;
             case MarkChatAsReadAction markChatAsReadAction -> this.markChatAsReadAction = markChatAsReadAction;
             case ClearChatAction clearChatAction -> this.clearChatAction = clearChatAction;
             case DeleteChatAction deleteChatAction -> this.deleteChatAction = deleteChatAction;
             case FavoriteStickerAction favoriteStickerAction -> this.favoriteStickerAction = favoriteStickerAction;
-            case AndroidUnsupportedActions androidUnsupportedActions -> this.androidUnsupportedActions = androidUnsupportedActions;
+            case AndroidUnsupportedActions androidUnsupportedActions ->
+                    this.androidUnsupportedActions = androidUnsupportedActions;
         }
     }
 
     @SuppressWarnings("PatternVariableHidesField")
-    public ActionValueSync(@NonNull Setting setting){
-        switch (setting){
-            case SecurityNotificationSetting securityNotificationSetting -> this.securityNotificationSetting = securityNotificationSetting;
+    public ActionValueSync(@NonNull Setting setting) {
+        switch (setting) {
+            case SecurityNotificationSetting securityNotificationSetting ->
+                    this.securityNotificationSetting = securityNotificationSetting;
             case PushNameSetting pushNameSetting -> this.pushNameSetting = pushNameSetting;
             case LocaleSetting localeSetting -> this.localeSetting = localeSetting;
             case UnarchiveChatsSetting unarchiveChatsSetting -> this.unarchiveChatsSetting = unarchiveChatsSetting;
-            case EphemeralSetting ephemeralSetting -> throw new UnsupportedOperationException("Cannot wrap %s in action value sync"
-                    .formatted(ephemeralSetting));
+            case EphemeralSetting ephemeralSetting -> throw new UnsupportedOperationException(
+                    "Cannot wrap %s in action value sync".formatted(ephemeralSetting));
         }
     }
 
     //</editor-fold>
 
     //<editor-fold desc="Accessors">
-    public Action action(){
-        if(starAction != null) return starAction;
-        if(contactAction != null) return contactAction;
-        if(muteAction != null) return muteAction;
-        if(pinAction != null) return pinAction;
-        if(quickReplyAction != null) return quickReplyAction;
-        if(recentStickerWeightsAction != null) return recentStickerWeightsAction;
-        if(recentEmojiWeightsAction != null) return recentEmojiWeightsAction;
-        if(labelEditAction != null) return labelEditAction;
-        if(labelAssociationAction != null) return labelAssociationAction;
-        if(archiveChatAction != null) return archiveChatAction;
-        if(deleteMessageForMeAction != null) return deleteMessageForMeAction;
-        if(markChatAsReadAction != null) return markChatAsReadAction;
-        if(clearChatAction != null) return clearChatAction;
-        if(deleteChatAction != null) return deleteChatAction;
-        if(favoriteStickerAction != null) return favoriteStickerAction;
-        if(androidUnsupportedActions != null) return androidUnsupportedActions;
+    public Action action() {
+        if (starAction != null)
+            return starAction;
+        if (contactAction != null)
+            return contactAction;
+        if (muteAction != null)
+            return muteAction;
+        if (pinAction != null)
+            return pinAction;
+        if (quickReplyAction != null)
+            return quickReplyAction;
+        if (recentStickerWeightsAction != null)
+            return recentStickerWeightsAction;
+        if (recentEmojiWeightsAction != null)
+            return recentEmojiWeightsAction;
+        if (labelEditAction != null)
+            return labelEditAction;
+        if (labelAssociationAction != null)
+            return labelAssociationAction;
+        if (archiveChatAction != null)
+            return archiveChatAction;
+        if (deleteMessageForMeAction != null)
+            return deleteMessageForMeAction;
+        if (markChatAsReadAction != null)
+            return markChatAsReadAction;
+        if (clearChatAction != null)
+            return clearChatAction;
+        if (deleteChatAction != null)
+            return deleteChatAction;
+        if (favoriteStickerAction != null)
+            return favoriteStickerAction;
+        if (androidUnsupportedActions != null)
+            return androidUnsupportedActions;
         return null;
     }
 
-    public Setting setting(){
-        if(securityNotificationSetting != null) return securityNotificationSetting;
-        if(pushNameSetting != null) return pushNameSetting;
-        if(localeSetting != null) return localeSetting;
-        if(unarchiveChatsSetting != null) return unarchiveChatsSetting;
+    public Setting setting() {
+        if (securityNotificationSetting != null)
+            return securityNotificationSetting;
+        if (pushNameSetting != null)
+            return pushNameSetting;
+        if (localeSetting != null)
+            return localeSetting;
+        if (unarchiveChatsSetting != null)
+            return unarchiveChatsSetting;
         return null;
     }
 
@@ -179,13 +204,14 @@ public class ActionValueSync implements ProtobufMessage {
     @Jacksonized
     @Builder
     @Accessors(fluent = true)
-    public static class PrimaryFeature implements ProtobufMessage{
+    public static class PrimaryFeature implements ProtobufMessage {
         @ProtobufProperty(index = 1, type = STRING, repeated = true)
         private List<String> flags;
 
         public static class PrimaryFeatureBuilder {
-            public PrimaryFeatureBuilder flags(List<String> flags){
-                if(this.flags == null) this.flags = new ArrayList<>();
+            public PrimaryFeatureBuilder flags(List<String> flags) {
+                if (this.flags == null)
+                    this.flags = new ArrayList<>();
                 this.flags.addAll(flags);
                 return this;
             }

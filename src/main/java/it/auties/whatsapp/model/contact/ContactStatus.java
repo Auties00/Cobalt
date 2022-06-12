@@ -43,15 +43,6 @@ public enum ContactStatus implements ProtobufMessage {
     @Getter
     private final BinaryFlag flag;
 
-    /**
-     * Returns the name of this enumerated constant
-     *
-     * @return a lowercase non-null String
-     */
-    public String data() {
-        return name().toLowerCase();
-    }
-
     private static ContactStatus forIndex(int index) {
         return Arrays.stream(values())
                 .filter(entry -> entry.ordinal() == index)
@@ -61,8 +52,18 @@ public enum ContactStatus implements ProtobufMessage {
 
     public static ContactStatus forValue(@NonNull String jsonValue) {
         return Arrays.stream(values())
-                .filter(entry -> entry.name().equalsIgnoreCase(jsonValue))
+                .filter(entry -> entry.name()
+                        .equalsIgnoreCase(jsonValue))
                 .findFirst()
                 .orElseThrow();
+    }
+
+    /**
+     * Returns the name of this enumerated constant
+     *
+     * @return a lowercase non-null String
+     */
+    public String data() {
+        return name().toLowerCase();
     }
 }

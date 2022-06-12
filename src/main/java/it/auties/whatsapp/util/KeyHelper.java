@@ -10,12 +10,12 @@ import java.security.SecureRandom;
 public class KeyHelper implements SignalSpecification {
     private final String SHA_PRNG = "SHA1PRNG";
 
-    public byte[] withHeader(byte[] key){
-        if(key == null){
+    public byte[] withHeader(byte[] key) {
+        if (key == null) {
             return null;
         }
 
-        return switch (key.length){
+        return switch (key.length) {
             case 33 -> key;
             case 32 -> writeKeyHeader(key);
             default -> throw new IllegalArgumentException("Invalid key size: %s".formatted(key.length));
@@ -23,8 +23,7 @@ public class KeyHelper implements SignalSpecification {
     }
 
     private byte[] writeKeyHeader(byte[] key) {
-        Validate.isTrue(key.length == 32,
-                "Invalid key size: %s", key.length);
+        Validate.isTrue(key.length == 32, "Invalid key size: %s", key.length);
         var result = new byte[33];
         System.arraycopy(key, 0, result, 1, key.length);
         result[0] = 5;
@@ -32,13 +31,15 @@ public class KeyHelper implements SignalSpecification {
     }
 
     public byte[] withoutHeader(byte[] key) {
-        if(key == null){
+        if (key == null) {
             return null;
         }
 
-        return switch (key.length){
+        return switch (key.length) {
             case 32 -> key;
-            case 33 -> Bytes.of(key).slice(1).toByteArray();
+            case 33 -> Bytes.of(key)
+                    .slice(1)
+                    .toByteArray();
             default -> throw new IllegalArgumentException("Invalid key size: %s".formatted(key.length));
         };
     }

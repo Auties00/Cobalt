@@ -63,14 +63,21 @@ public final class HistorySyncNotification implements ProtobufMessage, Attachmen
     @AllArgsConstructor
     @Accessors(fluent = true)
     public enum HistorySyncNotificationHistorySyncType {
-        INITIAL_BOOTSTRAP(0), INITIAL_STATUS_V3(1), FULL(2), RECENT(3), PUSH_NAME(4);
+        INITIAL_BOOTSTRAP(0),
+        INITIAL_STATUS_V3(1),
+        FULL(2),
+        RECENT(3),
+        PUSH_NAME(4);
 
         @Getter
         private final int index;
 
         @JsonCreator
         public static HistorySyncNotificationHistorySyncType forIndex(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(null);
         }
     }
 }

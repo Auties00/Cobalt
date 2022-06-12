@@ -22,19 +22,20 @@ public sealed interface WhatsappController permits WhatsappStore, WhatsappKeys {
      * @return a non-null list
      */
     static LinkedList<Integer> knownIds() {
-        try(var walker = Files.walk(Preferences.home(), 1)) {
+        try (var walker = Files.walk(Preferences.home(), 1)) {
             return walker.map(WhatsappController::parsePathAsId)
                     .flatMap(Optional::stream)
                     .collect(Collectors.toCollection(LinkedList::new));
-        }catch (IOException exception){
+        } catch (IOException exception) {
             throw new UncheckedIOException("Cannot list known ids", exception);
         }
     }
 
     private static Optional<Integer> parsePathAsId(Path file) {
         try {
-            return Optional.of(Integer.parseInt(file.getFileName().toString()));
-        }catch (NumberFormatException ignored){
+            return Optional.of(Integer.parseInt(file.getFileName()
+                    .toString()));
+        } catch (NumberFormatException ignored) {
             return Optional.empty();
         }
     }
@@ -43,14 +44,14 @@ public sealed interface WhatsappController permits WhatsappStore, WhatsappKeys {
      * Saves this object as a JSON
      *
      * @param preferences the non-null preferences
-     * @param async whether to perform the write operation asynchronously or not
+     * @param async       whether to perform the write operation asynchronously or not
      */
     void save(@NonNull Preferences preferences, boolean async);
 
     /**
      * Saves this object as a JSON
      *
-     * @param path the non-null path
+     * @param path  the non-null path
      * @param async whether to perform the write operation asynchronously or not
      */
     void save(@NonNull Path path, boolean async);

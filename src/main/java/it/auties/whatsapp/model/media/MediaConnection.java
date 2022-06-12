@@ -5,8 +5,9 @@ import lombok.NonNull;
 
 import java.util.List;
 
-public record MediaConnection(@NonNull String auth, int ttl, int maxBuckets, long timestamp, @NonNull List<@NonNull String> hosts) {
-    public static MediaConnection of(Node node){
+public record MediaConnection(@NonNull String auth, int ttl, int maxBuckets, long timestamp,
+                              @NonNull List<@NonNull String> hosts) {
+    public static MediaConnection of(Node node) {
         var mediaConnection = node.findNode("media_conn")
                 .orElse(node);
         var auth = mediaConnection.attributes()

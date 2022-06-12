@@ -25,20 +25,20 @@ public enum BinaryTag {
     BINARY_20(253),
     BINARY_32(254),
     NIBBLE_8(255),
-    SINGLE_BYTE_MAX (256),
+    SINGLE_BYTE_MAX(256),
     PACKED_MAX(254);
 
     @Getter
     private final int data;
 
-    public static BinaryTag forData(int data){
+    public static BinaryTag forData(int data) {
         return Arrays.stream(values())
                 .filter(entry -> entry.data() == data)
                 .findAny()
                 .orElse(UNKNOWN);
     }
 
-    public boolean contentEquals(int number){
+    public boolean contentEquals(int number) {
         return number == this.data();
     }
 }

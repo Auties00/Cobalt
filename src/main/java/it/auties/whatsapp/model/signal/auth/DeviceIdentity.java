@@ -17,12 +17,12 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT64;
 @Jacksonized
 @Accessors(fluent = true)
 public class DeviceIdentity implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = UINT32)
-  private Integer rawId;
+    @ProtobufProperty(index = 1, type = UINT32)
+    private Integer rawId;
 
-  @ProtobufProperty(index = 2, type = UINT64)
-  private Long timestamp;
+    @ProtobufProperty(index = 2, type = UINT64)
+    private Long timestamp;
 
-  @ProtobufProperty(index = 3, type = UINT32)
-  private Integer keyIndex;
+    @ProtobufProperty(index = 3, type = UINT32)
+    private Integer keyIndex;
 }

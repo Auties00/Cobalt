@@ -26,11 +26,11 @@ public class SessionChain {
         this(counter, key, new ConcurrentHashMap<>());
     }
 
-    public boolean hasMessageKey(int counter){
+    public boolean hasMessageKey(int counter) {
         return messageKeys.containsKey(counter);
     }
 
-    public void incrementCounter(){
+    public void incrementCounter() {
         this.counter++;
     }
 }

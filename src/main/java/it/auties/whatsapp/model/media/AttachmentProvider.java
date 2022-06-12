@@ -6,11 +6,18 @@ import it.auties.whatsapp.model.sync.HistorySyncNotification;
 
 public sealed interface AttachmentProvider permits MediaMessage, ExternalBlobReference, HistorySyncNotification {
     String name();
+
     String url();
+
     String directPath();
+
     byte[] key();
+
     String keyName();
+
     byte[] fileSha256();
+
     byte[] fileEncSha256();
+
     long fileLength();
 }

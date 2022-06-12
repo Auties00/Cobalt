@@ -11,7 +11,8 @@ import org.example.whatsapp.command.CommandManager;
 public record WhatsappBotListener(Whatsapp whatsapp) implements WhatsappListener {
     @Override
     public void onNewMessage(MessageInfo info) {
-        if(!(info.message().content() instanceof TextMessage textMessage)){
+        if (!(info.message()
+                .content() instanceof TextMessage textMessage)) {
             return;
         }
 

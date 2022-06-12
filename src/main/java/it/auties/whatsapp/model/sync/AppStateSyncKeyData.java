@@ -16,12 +16,12 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @Jacksonized
 @Accessors(fluent = true)
 public class AppStateSyncKeyData implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = BYTES)
-  private byte[] keyData;
+    @ProtobufProperty(index = 1, type = BYTES)
+    private byte[] keyData;
 
-  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = AppStateSyncKeyFingerprint.class)
-  private AppStateSyncKeyFingerprint fingerprint;
+    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = AppStateSyncKeyFingerprint.class)
+    private AppStateSyncKeyFingerprint fingerprint;
 
-  @ProtobufProperty(index = 3, type = INT64)
-  private Long timestamp;
+    @ProtobufProperty(index = 3, type = INT64)
+    private Long timestamp;
 }

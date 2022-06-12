@@ -49,8 +49,10 @@ public enum MediaMessageType implements ProtobufMessage {
      * @return a non-null string
      */
     public String path() {
-        return this == STICKER ? IMAGE.path()
-                : "mms/%s".formatted(this.name().toLowerCase());
+        return this == STICKER ?
+                IMAGE.path() :
+                "mms/%s".formatted(this.name()
+                        .toLowerCase());
     }
 
     /**
@@ -59,7 +61,10 @@ public enum MediaMessageType implements ProtobufMessage {
      * @return a non-null string
      */
     public String keyName() {
-        var name = (this == STICKER ? IMAGE : this).name().toLowerCase();
+        var name = (this == STICKER ?
+                IMAGE :
+                this).name()
+                .toLowerCase();
         return "WhatsApp %s Keys".formatted(Character.toUpperCase(name.charAt(0)) + name.substring(1));
     }
 }

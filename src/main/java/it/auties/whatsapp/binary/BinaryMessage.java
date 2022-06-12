@@ -16,18 +16,16 @@ import java.util.List;
 public class BinaryMessage {
     private static final BinaryDecoder DECODER = new BinaryDecoder();
 
-    @NonNull
-    Bytes raw;
+    @NonNull Bytes raw;
 
-    @NonNull
-    LinkedList<Bytes> decoded;
+    @NonNull LinkedList<Bytes> decoded;
 
     public BinaryMessage(@NonNull Bytes raw) {
         this.raw = raw;
         var decoded = new LinkedList<Bytes>();
         while (raw.readableBytes() >= 3) {
             var length = decodeLength(raw);
-            if(length < 0){
+            if (length < 0) {
                 continue;
             }
 
@@ -37,12 +35,12 @@ public class BinaryMessage {
         this.decoded = decoded;
     }
 
-    private int decodeLength(Bytes buffer) {
-        return (buffer.readByte() << 16) | buffer.readUnsignedShort();
-    }
-
     public BinaryMessage(byte @NonNull [] array) {
         this(Bytes.of(array));
+    }
+
+    private int decodeLength(Bytes buffer) {
+        return (buffer.readByte() << 16) | buffer.readUnsignedShort();
     }
 
     public List<Node> toNodes(@NonNull WhatsappKeys keys) {

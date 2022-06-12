@@ -16,36 +16,36 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @Jacksonized
 @Accessors(fluent = true)
 public class WebPayload implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = BOOLEAN)
-  private boolean usesParticipantInKey;
+    @ProtobufProperty(index = 1, type = BOOLEAN)
+    private boolean usesParticipantInKey;
 
-  @ProtobufProperty(index = 2, type = BOOLEAN)
-  private boolean supportsStarredMessages;
+    @ProtobufProperty(index = 2, type = BOOLEAN)
+    private boolean supportsStarredMessages;
 
-  @ProtobufProperty(index = 3, type = BOOLEAN)
-  private boolean supportsDocumentMessages;
+    @ProtobufProperty(index = 3, type = BOOLEAN)
+    private boolean supportsDocumentMessages;
 
-  @ProtobufProperty(index = 4, type = BOOLEAN)
-  private boolean supportsUrlMessages;
+    @ProtobufProperty(index = 4, type = BOOLEAN)
+    private boolean supportsUrlMessages;
 
-  @ProtobufProperty(index = 5, type = BOOLEAN)
-  private boolean supportsMediaRetry;
+    @ProtobufProperty(index = 5, type = BOOLEAN)
+    private boolean supportsMediaRetry;
 
-  @ProtobufProperty(index = 6, type = BOOLEAN)
-  private boolean supportsE2EImage;
+    @ProtobufProperty(index = 6, type = BOOLEAN)
+    private boolean supportsE2EImage;
 
-  @ProtobufProperty(index = 7, type = BOOLEAN)
-  private boolean supportsE2EVideo;
+    @ProtobufProperty(index = 7, type = BOOLEAN)
+    private boolean supportsE2EVideo;
 
-  @ProtobufProperty(index = 8, type = BOOLEAN)
-  private boolean supportsE2EAudio;
+    @ProtobufProperty(index = 8, type = BOOLEAN)
+    private boolean supportsE2EAudio;
 
-  @ProtobufProperty(index = 9, type = BOOLEAN)
-  private boolean supportsE2EDocument;
+    @ProtobufProperty(index = 9, type = BOOLEAN)
+    private boolean supportsE2EDocument;
 
-  @ProtobufProperty(index = 10, type = STRING)
-  private String documentTypes;
+    @ProtobufProperty(index = 10, type = STRING)
+    private String documentTypes;
 
-  @ProtobufProperty(index = 11, type = BYTES)
-  private byte[] features;
+    @ProtobufProperty(index = 11, type = BYTES)
+    private byte[] features;
 }

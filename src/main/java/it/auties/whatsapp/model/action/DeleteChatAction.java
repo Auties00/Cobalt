@@ -16,11 +16,11 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @Jacksonized
 @Accessors(fluent = true)
 public final class DeleteChatAction implements Action {
-  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = ActionMessageRangeSync.class)
-  private ActionMessageRangeSync messageRange;
+    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = ActionMessageRangeSync.class)
+    private ActionMessageRangeSync messageRange;
 
-  @Override
-  public String indexName() {
-    return "deleteChat";
-  }
+    @Override
+    public String indexName() {
+        return "deleteChat";
+    }
 }

@@ -24,7 +24,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 @Log
 @SuppressWarnings("UnusedReturnValue")
-public record Request(String id, @NonNull Object body, @NonNull CompletableFuture<Node> future) implements JacksonProvider {
+public record Request(String id, @NonNull Object body, @NonNull CompletableFuture<Node> future)
+        implements JacksonProvider {
     /**
      * The binary encoder, used to encode requests that take as a parameter a node
      */
@@ -40,13 +41,12 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      */
     public static Request with(@NonNull Node body) {
         var future = new CompletableFuture<Node>();
-        delayedExecutor(TIMEOUT, SECONDS)
-                .execute(() -> cancelTimedFuture(future, body));
+        delayedExecutor(TIMEOUT, SECONDS).execute(() -> cancelTimedFuture(future, body));
         return new Request(body.id(), body, future);
     }
 
     private static void cancelTimedFuture(CompletableFuture<Node> future, Node node) {
-        if(future.isDone()){
+        if (future.isDone()) {
             return;
         }
 
@@ -68,7 +68,8 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @param session the WhatsappWeb's WebSocket session
      * @param store   the store
      */
-    public CompletableFuture<Node> sendWithPrologue(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store) {
+    public CompletableFuture<Node> sendWithPrologue(@NonNull Session session, @NonNull WhatsappKeys keys,
+                                                    @NonNull WhatsappStore store) {
         return send(session, keys, store, true, false);
     }
 
@@ -79,7 +80,8 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @param session the WhatsappWeb's WebSocket session
      * @return this request
      */
-    public CompletableFuture<Node> send(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store) {
+    public CompletableFuture<Node> send(@NonNull Session session, @NonNull WhatsappKeys keys,
+                                        @NonNull WhatsappStore store) {
         return send(session, keys, store, false, true);
     }
 
@@ -90,9 +92,10 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @param session the WhatsappWeb's WebSocket session
      * @return this request
      */
-    public CompletableFuture<Void> sendWithNoResponse(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store) {
-        return send(session, keys, store, false, false)
-                .thenRunAsync(() -> {});
+    public CompletableFuture<Void> sendWithNoResponse(@NonNull Session session, @NonNull WhatsappKeys keys,
+                                                      @NonNull WhatsappStore store) {
+        return send(session, keys, store, false, false).thenRunAsync(() -> {
+        });
     }
 
     /**
@@ -104,17 +107,20 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @param response whether the request expects a response
      * @return this request
      */
-    public CompletableFuture<Node> send(@NonNull Session session, @NonNull WhatsappKeys keys, @NonNull WhatsappStore store, boolean prologue, boolean response) {
+    public CompletableFuture<Node> send(@NonNull Session session, @NonNull WhatsappKeys keys,
+                                        @NonNull WhatsappStore store, boolean prologue, boolean response) {
         try {
             var ciphered = encryptMessage(keys);
-            var buffer = Bytes.of(prologue ? PROLOGUE : new byte[0])
+            var buffer = Bytes.of(prologue ?
+                            PROLOGUE :
+                            new byte[0])
                     .appendInt(ciphered.length >> 16)
                     .appendShort(65535 & ciphered.length)
                     .append(ciphered)
                     .toNioBuffer();
             session.getAsyncRemote()
                     .sendBinary(buffer, result -> handleSendResult(store, result, response));
-        }catch (Exception exception){
+        } catch (Exception exception) {
             future.completeExceptionally(new RuntimeException("Cannot send %s".formatted(this), exception));
         }
 
@@ -127,14 +133,15 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @param response the response used to complete {@link Request#future}
      */
     public void complete(Node response, boolean exceptionally) {
-        if(response == null){
+        if (response == null) {
             future.complete(Node.with("xmlstreamend"));
             return;
         }
 
         if (exceptionally) {
             log.warning("Cannot process request %s, erroneous response: %s".formatted(this, response));
-            future.completeExceptionally(new RuntimeException("Cannot process request %s, erroneous response: %s".formatted(this, response)));
+            future.completeExceptionally(new RuntimeException(
+                    "Cannot process request %s, erroneous response: %s".formatted(this, response)));
             return;
         }
 
@@ -144,16 +151,19 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     private void handleSendResult(WhatsappStore store, SendResult result, boolean response) {
         if (!result.isOK()) {
             log.warning("Cannot send request %s, erroneous send result".formatted(this));
-            future.completeExceptionally(new IllegalArgumentException(("Cannot send request %s, erroneous send result: %s".formatted(this, result)), result.getException()));
+            future.completeExceptionally(new IllegalArgumentException(
+                    ("Cannot send request %s, erroneous send result: %s".formatted(this, result)),
+                    result.getException()));
             return;
         }
 
-        if(!response){
+        if (!response) {
             future.complete(null);
             return;
         }
 
-        store.pendingRequests().add(this);
+        store.pendingRequests()
+                .add(this);
     }
 
     private byte[] encryptMessage(WhatsappKeys keys) {
@@ -161,7 +171,8 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
         var body = switch (encodedBody) {
             case byte[] bytes -> bytes;
             case Node node -> ENCODER.encode(node);
-            default -> throw new IllegalStateException("Cannot create request, illegal body: %s".formatted(encodedBody));
+            default ->
+                    throw new IllegalStateException("Cannot create request, illegal body: %s".formatted(encodedBody));
         };
 
         if (keys.writeKey() == null) {

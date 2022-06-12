@@ -20,42 +20,38 @@ import static it.auties.whatsapp.model.chat.GroupSetting.SEND_MESSAGES;
 @Value
 @Accessors(fluent = true)
 public class GroupMetadata implements ProtobufMessage {
-    @NonNull
-    ContactJid jid;
+    @NonNull ContactJid jid;
 
-    @NonNull
-    String subject;
+    @NonNull String subject;
 
-    @NonNull
-    ZonedDateTime subjectTimestamp;
+    @NonNull ZonedDateTime subjectTimestamp;
 
-    @NonNull
-    ZonedDateTime foundationTimestamp;
+    @NonNull ZonedDateTime foundationTimestamp;
 
-    @NonNull
-    ContactJid founder;
+    @NonNull ContactJid founder;
 
     String description;
 
     String descriptionId;
 
-    @NonNull
-    Map<GroupSetting, GroupPolicy> policies;
+    @NonNull Map<GroupSetting, GroupPolicy> policies;
 
-    @NonNull
-    List<GroupParticipant> participants;
+    @NonNull List<GroupParticipant> participants;
 
     ZonedDateTime ephemeralExpiration;
 
-    public static GroupMetadata of(@NonNull Node node){
+    public static GroupMetadata of(@NonNull Node node) {
         var groupId = node.attributes()
                 .getOptionalString("id")
                 .map(id -> ContactJid.of(id, ContactJid.Server.GROUP))
                 .orElseThrow(() -> new NoSuchElementException("Missing group jid"));
-        var subject = node.attributes().getString("subject");
-        var subjectTimestamp = Clock.parse(node.attributes().getLong("s_t"))
+        var subject = node.attributes()
+                .getString("subject");
+        var subjectTimestamp = Clock.parse(node.attributes()
+                        .getLong("s_t"))
                 .orElse(ZonedDateTime.now());
-        var foundationTimestamp = Clock.parse(node.attributes().getLong("creation"))
+        var foundationTimestamp = Clock.parse(node.attributes()
+                        .getLong("creation"))
                 .orElse(ZonedDateTime.now());
         var founder = node.attributes()
                 .getJid("creator")
@@ -79,16 +75,18 @@ public class GroupMetadata implements ProtobufMessage {
                 .stream()
                 .map(GroupParticipant::of)
                 .toList();
-        return new GroupMetadata(groupId, subject, subjectTimestamp, foundationTimestamp,
-                founder, description, descriptionId, policies, participants, ephemeral);
+        return new GroupMetadata(groupId, subject, subjectTimestamp, foundationTimestamp, founder, description,
+                descriptionId, policies, participants, ephemeral);
     }
 
     private static String parseDescription(Node wrapper) {
-        return switch (wrapper.content()){
+        return switch (wrapper.content()) {
             case null -> null;
             case String string -> string;
             case byte[] bytes -> new String(bytes, StandardCharsets.UTF_8);
-            default -> throw new IllegalArgumentException("Illegal body type: %s".formatted(wrapper.content().getClass().getName()));
+            default -> throw new IllegalArgumentException("Illegal body type: %s".formatted(wrapper.content()
+                    .getClass()
+                    .getName()));
         };
     }
 
@@ -100,7 +98,7 @@ public class GroupMetadata implements ProtobufMessage {
         return Optional.ofNullable(ephemeralExpiration);
     }
 
-    public List<ContactJid> participantsJids(){
+    public List<ContactJid> participantsJids() {
         return participants.stream()
                 .map(GroupParticipant::jid)
                 .toList();

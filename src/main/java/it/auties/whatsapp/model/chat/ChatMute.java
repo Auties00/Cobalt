@@ -31,7 +31,7 @@ public record ChatMute(long endTimeStamp) implements ProtobufMessage {
      *
      * @return a non-null mute
      */
-    public static ChatMute notMuted(){
+    public static ChatMute notMuted() {
         return NOT_MUTED;
     }
 
@@ -40,7 +40,7 @@ public record ChatMute(long endTimeStamp) implements ProtobufMessage {
      *
      * @return a non-null mute
      */
-    public static ChatMute muted(){
+    public static ChatMute muted() {
         return MUTED;
     }
 
@@ -50,8 +50,10 @@ public record ChatMute(long endTimeStamp) implements ProtobufMessage {
      * @param endTimeStamp an end timestamp
      * @return a non-null mute
      */
-    public static ChatMute muted(Long endTimeStamp){
-        return endTimeStamp == null ? NOT_MUTED : new ChatMute(endTimeStamp);
+    public static ChatMute muted(Long endTimeStamp) {
+        return endTimeStamp == null ?
+                NOT_MUTED :
+                new ChatMute(endTimeStamp);
     }
 
     /**

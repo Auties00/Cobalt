@@ -16,6 +16,6 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.INT32;
 @Jacksonized
 @Accessors(fluent = true)
 public class KeyExpiration implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = INT32)
-  private int expiredKeyEpoch;
+    @ProtobufProperty(index = 1, type = INT32)
+    private int expiredKeyEpoch;
 }

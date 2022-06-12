@@ -10,17 +10,17 @@ import java.security.interfaces.XECPrivateKey;
 import java.security.interfaces.XECPublicKey;
 import java.util.Arrays;
 
-public record SignalKeyPair(byte @NonNull [] publicKey, byte[] privateKey) implements ISignalKeyPair{
+public record SignalKeyPair(byte @NonNull [] publicKey, byte[] privateKey) implements ISignalKeyPair {
     public SignalKeyPair(byte[] publicKey, byte[] privateKey) {
         this.publicKey = KeyHelper.withoutHeader(publicKey);
         this.privateKey = privateKey;
     }
 
-    public static SignalKeyPair of(byte[] publicKey){
+    public static SignalKeyPair of(byte[] publicKey) {
         return new SignalKeyPair(publicKey, null);
     }
 
-    public static SignalKeyPair random(){
+    public static SignalKeyPair random() {
         var keyPair = Curve25519.randomKeyPair();
         var publicKey = XecUtils.toBytes((XECPublicKey) keyPair.getPublic());
         var privateKey = XecUtils.toBytes((XECPrivateKey) keyPair.getPrivate());
@@ -29,8 +29,8 @@ public record SignalKeyPair(byte @NonNull [] publicKey, byte[] privateKey) imple
 
     @Override
     public boolean equals(Object other) {
-        return other instanceof SignalKeyPair that
-                && Arrays.equals(publicKey(), that.publicKey()) && Arrays.equals(privateKey(), that.privateKey());
+        return other instanceof SignalKeyPair that && Arrays.equals(publicKey(), that.publicKey()) && Arrays.equals(
+                privateKey(), that.privateKey());
     }
 
     @Override

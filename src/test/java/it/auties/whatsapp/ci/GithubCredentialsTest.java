@@ -11,7 +11,7 @@ import java.io.IOException;
 public class GithubCredentialsTest {
     @Test
     public void updateCredentials() throws IOException, InterruptedException {
-        if(GithubActions.isActionsEnvironment()){
+        if (GithubActions.isActionsEnvironment()) {
             log.info("Skipping credentials update: detected non local environment");
             return;
         }

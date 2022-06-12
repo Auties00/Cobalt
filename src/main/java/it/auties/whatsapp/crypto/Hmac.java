@@ -21,7 +21,7 @@ public class Hmac {
     }
 
     @SneakyThrows
-    private byte[] calculate(String algorithm, byte[] plain, byte[] key)  {
+    private byte[] calculate(String algorithm, byte[] plain, byte[] key) {
         var localMac = Mac.getInstance(algorithm);
         localMac.init(new SecretKeySpec(key, algorithm));
         return localMac.doFinal(plain);

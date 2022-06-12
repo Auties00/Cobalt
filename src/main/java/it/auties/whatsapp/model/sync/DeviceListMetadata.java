@@ -39,13 +39,15 @@ public class DeviceListMetadata implements ProtobufMessage {
 
     public static class DeviceListMetadataBuilder {
         public DeviceListMetadataBuilder senderKeyIndexes(List<Integer> senderKeyIndexes) {
-            if (this.senderKeyIndexes == null) this.senderKeyIndexes = new ArrayList<>();
+            if (this.senderKeyIndexes == null)
+                this.senderKeyIndexes = new ArrayList<>();
             this.senderKeyIndexes.addAll(senderKeyIndexes);
             return this;
         }
 
         public DeviceListMetadataBuilder recipientKeyIndexes(List<Integer> recipientKeyIndexes) {
-            if (this.recipientKeyIndexes == null) this.recipientKeyIndexes = new ArrayList<>();
+            if (this.recipientKeyIndexes == null)
+                this.recipientKeyIndexes = new ArrayList<>();
             this.recipientKeyIndexes.addAll(recipientKeyIndexes);
             return this;
         }

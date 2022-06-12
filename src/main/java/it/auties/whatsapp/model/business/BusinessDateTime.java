@@ -20,34 +20,36 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @Jacksonized
 @Accessors(fluent = true)
 public class BusinessDateTime implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = BusinessDateTimeComponent.class)
-  private BusinessDateTimeComponent component;
+    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = BusinessDateTimeComponent.class)
+    private BusinessDateTimeComponent component;
 
-  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = BusinessDateTimeUnixEpoch.class)
-  private BusinessDateTimeUnixEpoch unixEpoch;
+    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = BusinessDateTimeUnixEpoch.class)
+    private BusinessDateTimeUnixEpoch unixEpoch;
 
-  public DateType dateType() {
-    if (component != null) return DateType.COMPONENT;
-    if (unixEpoch != null) return DateType.UNIX_EPOCH;
-    return DateType.UNKNOWN;
-  }
-
-  @AllArgsConstructor
-  @Accessors(fluent = true)
-  public enum DateType implements ProtobufMessage {
-    UNKNOWN(0),
-    COMPONENT(1),
-    UNIX_EPOCH(2);
-
-    @Getter
-    private final int index;
-
-    @JsonCreator
-    public static DateType forIndex(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
-          .orElse(DateType.UNKNOWN);
+    public DateType dateType() {
+        if (component != null)
+            return DateType.COMPONENT;
+        if (unixEpoch != null)
+            return DateType.UNIX_EPOCH;
+        return DateType.UNKNOWN;
     }
-  }
+
+    @AllArgsConstructor
+    @Accessors(fluent = true)
+    public enum DateType implements ProtobufMessage {
+        UNKNOWN(0),
+        COMPONENT(1),
+        UNIX_EPOCH(2);
+
+        @Getter
+        private final int index;
+
+        @JsonCreator
+        public static DateType forIndex(int index) {
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(DateType.UNKNOWN);
+        }
+    }
 }

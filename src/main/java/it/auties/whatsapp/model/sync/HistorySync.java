@@ -44,6 +44,9 @@ public class HistorySync implements ProtobufMessage {
     @Default
     private List<PushName> pushNames = new ArrayList<>();
 
+    @ProtobufProperty(index = 8, type = MESSAGE, concreteType = GlobalSettings.class)
+    private GlobalSettings globalSettings;
+
     @ProtobufProperty(index = 9, type = BYTES)
     private byte[] threadIdUserSecret;
 
@@ -53,7 +56,11 @@ public class HistorySync implements ProtobufMessage {
     @AllArgsConstructor
     @Accessors(fluent = true)
     public enum HistorySyncHistorySyncType {
-        INITIAL_BOOTSTRAP(0), INITIAL_STATUS_V3(1), FULL(2), RECENT(3), PUSH_NAME(4);
+        INITIAL_BOOTSTRAP(0),
+        INITIAL_STATUS_V3(1),
+        FULL(2),
+        RECENT(3),
+        PUSH_NAME(4);
 
         @Getter
         private final int index;
@@ -69,7 +76,7 @@ public class HistorySync implements ProtobufMessage {
 
     public static class HistorySyncBuilder {
         public HistorySyncBuilder conversations(List<Chat> conversations) {
-            if(!conversations$set){
+            if (!conversations$set) {
                 this.conversations$value = conversations;
                 this.conversations$set = true;
                 return this;
@@ -80,7 +87,7 @@ public class HistorySync implements ProtobufMessage {
         }
 
         public HistorySyncBuilder statusV3Messages(List<MessageInfo> statusV3Messages) {
-            if(!statusV3Messages$set){
+            if (!statusV3Messages$set) {
                 this.statusV3Messages$value = statusV3Messages;
                 this.statusV3Messages$set = true;
                 return this;
@@ -91,7 +98,7 @@ public class HistorySync implements ProtobufMessage {
         }
 
         public HistorySyncBuilder pushNames(List<PushName> pushNames) {
-            if(!pushNames$set){
+            if (!pushNames$set) {
                 this.pushNames$value = pushNames;
                 this.pushNames$set = true;
                 return this;

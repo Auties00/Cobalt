@@ -16,9 +16,9 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @Jacksonized
 @Accessors(fluent = true)
 public class AppStateSyncKey implements ProtobufMessage {
-  @ProtobufProperty(index = 1, type = MESSAGE, concreteType = AppStateSyncKeyId.class)
-  private AppStateSyncKeyId keyId;
+    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = AppStateSyncKeyId.class)
+    private AppStateSyncKeyId keyId;
 
-  @ProtobufProperty(index = 2, type = MESSAGE, concreteType = AppStateSyncKeyData.class)
-  private AppStateSyncKeyData keyData;
+    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = AppStateSyncKeyData.class)
+    private AppStateSyncKeyData keyData;
 }

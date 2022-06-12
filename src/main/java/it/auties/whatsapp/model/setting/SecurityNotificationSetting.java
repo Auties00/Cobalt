@@ -15,11 +15,11 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.BOOLEAN;
 @Jacksonized
 @Accessors(fluent = true)
 public final class SecurityNotificationSetting implements Setting {
-  @ProtobufProperty(index = 1, type = BOOLEAN)
-  private boolean showNotification;
+    @ProtobufProperty(index = 1, type = BOOLEAN)
+    private boolean showNotification;
 
-  @Override
-  public String indexName() {
-    throw new UnsupportedOperationException("Cannot send setting: no index name");
-  }
+    @Override
+    public String indexName() {
+        throw new UnsupportedOperationException("Cannot send setting: no index name");
+    }
 }

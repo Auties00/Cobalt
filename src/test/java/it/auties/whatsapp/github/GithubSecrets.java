@@ -38,17 +38,20 @@ public class GithubSecrets implements JacksonProvider {
         updateSecret(publicKey.keyId(), cypheredCredentials);
     }
 
-    private String getCredentialsAsJson(){
-        return Objects.requireNonNull(PREFERENCES.get("it.auties.whatsapp.manager.WhatsappKeysManager", null), "Missing credentials");
+    private String getCredentialsAsJson() {
+        return Objects.requireNonNull(PREFERENCES.get("it.auties.whatsapp.manager.WhatsappKeysManager", null),
+                "Missing credentials");
     }
 
     private byte[] encryptCredentials(GithubKey publicKey, String credentials) {
-        var publicKeyBytes = Base64.getDecoder().decode(publicKey.key());
-        var messageBytes = Base64.getEncoder().encode(credentials.getBytes());
+        var publicKeyBytes = Base64.getDecoder()
+                .decode(publicKey.key());
+        var messageBytes = Base64.getEncoder()
+                .encode(credentials.getBytes());
         var cypher = new byte[messageBytes.length + 48];
 
         var result = SODIUM.cryptoBoxSeal(cypher, messageBytes, messageBytes.length, publicKeyBytes);
-        if(!result){
+        if (!result) {
             throw new IllegalStateException("crypto_box_seal failed");
         }
 
@@ -73,8 +76,9 @@ public class GithubSecrets implements JacksonProvider {
     private void updateSecret(String keyId, byte[] cypheredCredentials) throws IOException, InterruptedException {
         var request = createUpdateSecretRequest(keyId, cypheredCredentials);
         var response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-        if(response.statusCode() != 201 && response.statusCode() != 204){
-            throw new IllegalStateException("Cannot update credentials with status code %s".formatted(response.statusCode()));
+        if (response.statusCode() != 201 && response.statusCode() != 204) {
+            throw new IllegalStateException(
+                    "Cannot update credentials with status code %s".formatted(response.statusCode()));
         }
 
         log.info("Sent credentials");
@@ -92,10 +96,7 @@ public class GithubSecrets implements JacksonProvider {
     }
 
     private Map<String, ?> createUpdateSecretParams(String keyId, byte[] cypheredCredentials) {
-        return Map.of(
-                "encrypted_value", cypheredCredentials,
-                "key_id", keyId
-        );
+        return Map.of("encrypted_value", cypheredCredentials, "key_id", keyId);
     }
 
     private String loadGithubToken() throws IOException {
