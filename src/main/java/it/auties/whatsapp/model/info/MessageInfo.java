@@ -51,7 +51,7 @@ public final class MessageInfo implements Info {
     /**
      * The MessageKey of this message
      */
-    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = MessageKey.class, required = true)
+    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = MessageKey.class)
     @NonNull
     private MessageKey key;
 

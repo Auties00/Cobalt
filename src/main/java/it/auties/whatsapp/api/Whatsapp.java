@@ -751,8 +751,7 @@ public class Whatsapp {
      * @param contacts at least one contact to add to the group
      * @return a CompletableFuture
      */
-    public CompletableFuture<GroupMetadata> create(@NonNull String subject,
-                                                   @NonNull ContactJidProvider... contacts) {
+    public CompletableFuture<GroupMetadata> create(@NonNull String subject, @NonNull ContactJidProvider... contacts) {
         var participants = Arrays.stream(contacts)
                 .map(contact -> withAttributes("participant", of("jid", contact.toJid())))
                 .toArray(Node[]::new);

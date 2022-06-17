@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.media;
 
+import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,7 +15,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class MediaData {
+public class MediaData implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = STRING)
     private String localPath;
 }

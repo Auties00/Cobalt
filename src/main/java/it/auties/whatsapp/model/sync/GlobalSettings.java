@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.sync;
 
+import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.chat.ChatMediaVisibility;
 import it.auties.whatsapp.model.chat.ChatWallpaper;
@@ -16,7 +17,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class GlobalSettings {
+public class GlobalSettings implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, concreteType = ChatWallpaper.class)
     private ChatWallpaper lightThemeWallpaper;
 

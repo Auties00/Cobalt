@@ -18,7 +18,6 @@ import it.auties.whatsapp.model.signal.session.SessionAddress;
 import it.auties.whatsapp.model.sync.AppStateSyncKey;
 import it.auties.whatsapp.model.sync.LTHashState;
 import it.auties.whatsapp.util.Preferences;
-import it.auties.whatsapp.util.Validate;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
@@ -272,10 +271,10 @@ public final class WhatsappKeys implements WhatsappController {
      * @return a non-null signed key pair
      * @throws IllegalArgumentException if no element can be found
      */
-    public SignalSignedKeyPair findSignedKeyPairById(int id) {
-        Validate.isTrue(id == signedKeyPair.id(), "Id mismatch: %s != %s", SecurityException.class, id,
-                signedKeyPair.id());
-        return signedKeyPair;
+    public Optional<SignalSignedKeyPair> findSignedKeyPairById(int id) {
+        return id == signedKeyPair.id() ?
+                Optional.of(signedKeyPair) :
+                Optional.empty();
     }
 
     /**
@@ -284,11 +283,12 @@ public final class WhatsappKeys implements WhatsappController {
      * @param id the non-null id to search
      * @return a non-null pre key
      */
-    public SignalPreKeyPair findPreKeyById(@NonNull Integer id) {
-        return preKeys.stream()
-                .filter(preKey -> preKey.id() == id)
-                .findFirst()
-                .orElseThrow(() -> new NoSuchElementException("Cannot find a pre key with id %s".formatted(id)));
+    public Optional<SignalPreKeyPair> findPreKeyById(Integer id) {
+        return id == null ?
+                Optional.empty() :
+                preKeys.stream()
+                        .filter(preKey -> preKey.id() == id)
+                        .findFirst();
     }
 
     /**

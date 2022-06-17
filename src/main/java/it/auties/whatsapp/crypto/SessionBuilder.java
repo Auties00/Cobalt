@@ -15,8 +15,8 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 
 import java.nio.charset.StandardCharsets;
+import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Optional;
 
 public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappKeys keys)
         implements SignalSpecification {
@@ -59,10 +59,14 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappK
             return;
         }
 
-        var preKeyPair = Optional.ofNullable(message.preKeyId())
-                .map(keys::findPreKeyById)
+        var preKeyPair = keys.findPreKeyById(message.preKeyId())
                 .orElse(null);
-        var signedPreKeyPair = keys.findSignedKeyPairById(message.signedPreKeyId());
+        Validate.isTrue(message.preKeyId() == null || preKeyPair != null, "Invalid pre key id: %s",
+                SecurityException.class, message.preKeyId());
+
+        var signedPreKeyPair = keys.findSignedKeyPairById(message.signedPreKeyId())
+                .orElseThrow(() -> new NoSuchElementException(
+                        "Cannot find signed pre key with id %s".formatted(message.signedPreKeyId())));
         session.closeCurrentState();
         var nextState = createState(false, preKeyPair != null ?
                         preKeyPair.toGenericKeyPair() :

@@ -58,8 +58,7 @@ public class BytesHelper implements JacksonProvider {
 
     public byte[] longToBytes(long number) {
         return Bytes.newBuffer()
-                .appendLong(number)
-                .assertSize(Long.BYTES)
+                .appendUnsignedInt((int) number)
                 .toByteArray();
     }
 

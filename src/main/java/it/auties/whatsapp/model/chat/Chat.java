@@ -42,7 +42,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     /**
      * The non-null unique jid used to identify this chat
      */
-    @ProtobufProperty(index = 1, type = STRING, concreteType = ContactJid.class, required = true, requiresConversion = true)
+    @ProtobufProperty(index = 1, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
     @NonNull
     private ContactJid jid;
 

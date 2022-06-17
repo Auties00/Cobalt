@@ -19,9 +19,7 @@ import java.util.Base64;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
-import static java.util.concurrent.CompletableFuture.delayedExecutor;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -100,17 +98,7 @@ public class WhatsappSpamTest implements WhatsappListener, JacksonProvider {
     }
 
     @Override
-    public void onLoggedIn() {
-        delayedExecutor(5, TimeUnit.MINUTES).execute(WhatsappSpamTest::logOut);
-    }
-
-    @Override
     public void onNewMessage(MessageInfo info) {
-        try {
-            System.out.println("Sending message :)");
-            api.sendMessage(info.chatJid(), "AAAAA", info);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        System.out.println("New message at: " + info.chatName());
     }
 }

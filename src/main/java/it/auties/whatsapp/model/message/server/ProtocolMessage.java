@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.message.server;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.ServerMessage;
@@ -86,7 +87,7 @@ public final class ProtocolMessage implements ServerMessage {
      */
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum ProtocolMessageType {
+    public enum ProtocolMessageType implements ProtobufMessage {
         /**
          * A {@link ProtocolMessage} that notifies that a message was deleted for everyone in a chat
          */

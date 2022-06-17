@@ -185,7 +185,6 @@ public interface SerializationStrategy {
     }
 
     private static void save(WhatsappStore store, WhatsappKeys keys, Path path, boolean async) {
-        System.out.printf("Saving: %s%n", keys);
         Objects.requireNonNull(store, "Cannot serialize: null store");
         Objects.requireNonNull(keys, "Cannot serialize: null keys");
         if (path == null) {

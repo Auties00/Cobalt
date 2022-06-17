@@ -39,19 +39,17 @@ public class LTHash {
                 .toBase64();
         var prevOp = indexValueMap.get(indexMacBase64);
         if (operation == RecordSync.Operation.REMOVE) {
-            Validate.isTrue(prevOp != null, "No previous operation");
+            Validate.isTrue(prevOp != null, "No previous operation for %s".formatted(indexMacBase64));
             indexValueMap.remove(indexMacBase64);
             subtract.add(prevOp);
-            return;
+        } else {
+            add.add(valueMac);
+            indexValueMap.put(indexMacBase64, valueMac);
         }
 
-        add.add(valueMac);
-        indexValueMap.put(indexMacBase64, valueMac);
-        if (prevOp == null) {
-            return;
+        if (prevOp != null) {
+            subtract.add(prevOp);
         }
-
-        subtract.add(prevOp);
     }
 
     public Result finish() {

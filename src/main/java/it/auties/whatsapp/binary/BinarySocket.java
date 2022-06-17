@@ -1370,15 +1370,11 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
 
             if (info.message()
                     .isServer()) {
-                info.ignore(true);
+                return;
             }
 
             if (chat.archived() && store.unarchiveChats()) {
                 chat.archived(false);
-            }
-
-            if (info.ignore()) {
-                return;
             }
 
             chat.unreadMessages(chat.unreadMessages() + 1);
@@ -1502,7 +1498,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
 
     private class AppStateHandler {
         private static final Semaphore SEMAPHORE = new Semaphore(1);
-        private static final int PULL_ATTEMPTS = 5;
+        private static final int PULL_ATTEMPTS = 1;
 
         public CompletableFuture<Void> pullAndPush(@NonNull PatchRequest patch) {
             return pull(patch.type()).thenComposeAsync(ignored -> push(patch));
@@ -1600,6 +1596,9 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                                 .put(state.name(), state))
                         .toList();
 
+                var versions = states.stream()
+                        .collect(toUnmodifiableMap(LTHashState::name, LTHashState::version));
+
                 var nodes = states.stream()
                         .map(LTHashState::toNode)
                         .toList();
@@ -1608,7 +1607,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                         of("id", store.nextTag(), "to", ContactJid.WHATSAPP, "xmlns", "w:sync:app:state", "type",
                                 "set"), withChildren("sync", nodes));
                 return send(request).thenApplyAsync(this::parseSyncRequest)
-                        .thenApplyAsync(this::parsePatches)
+                        .thenApplyAsync(patches -> parsePatches(patches, versions))
                         .thenAcceptAsync(actions -> actions.forEach(this::processSyncActions))
                         .thenRunAsync(SEMAPHORE::release)
                         .exceptionallyAsync(this::handleSyncError);
@@ -1623,18 +1622,19 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
             return errorHandler.handleFailure(503, exception.getMessage(), APP_STATE_SYNC, exception);
         }
 
-        private List<ActionDataSync> parsePatches(List<SnapshotSyncRecord> patches) {
+        private List<ActionDataSync> parsePatches(List<SnapshotSyncRecord> patches, Map<String, Long> versions) {
             return patches.stream()
-                    .map(patch -> parsePatch(patch, 0, new ArrayList<>()))
+                    .map(patch -> parsePatch(patch, versions.get(patch.name()), 0, new ArrayList<>()))
                     .flatMap(Collection::stream)
                     .toList();
         }
 
-        private List<ActionDataSync> parsePatch(SnapshotSyncRecord patch, int tries, List<Throwable> exceptions) {
+        private List<ActionDataSync> parsePatch(SnapshotSyncRecord patch, long minimumVersion, int tries,
+                                                List<Throwable> exceptions) {
             try {
                 var results = new ArrayList<ActionDataSync>();
                 if (patch.hasSnapshot()) {
-                    var decodedSnapshot = decodeSnapshot(patch.name(), patch.snapshot());
+                    var decodedSnapshot = decodeSnapshot(patch.name(), minimumVersion, patch.snapshot());
                     results.addAll(decodedSnapshot.records());
                 }
 
@@ -1646,7 +1646,12 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
 
                 return results;
             } catch (Throwable throwable) {
-                exceptions.add(throwable);
+                if (exceptions.stream()
+                        .map(Throwable::getMessage)
+                        .noneMatch(throwable.getMessage()::equals)) {
+                    exceptions.add(throwable);
+                }
+
                 var newState = new LTHashState(BinarySync.forName(patch.name()));
                 keys.hashStates()
                         .put(patch.name(), newState);
@@ -1654,8 +1659,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                     throw Exceptions.make(new RuntimeException("Cannot parse patch"), exceptions);
                 }
 
-                exceptions.add(throwable);
-                return parsePatch(patch, tries + 1, exceptions);
+                return parsePatch(patch, minimumVersion, tries + 1, exceptions);
             }
         }
 
@@ -1797,15 +1801,12 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
         }
 
         private List<MutationsRecord> decodePatches(String name, List<PatchSync> patches) {
-            var oldState = keys.findHashStateByName(name);
-            var newState = oldState.copy();
-            var result = patches.stream()
-                    .map(patch -> decodePatch(name, oldState.version(), newState, patch))
+            var newState = keys.findHashStateByName(name)
+                    .copy();
+            return patches.stream()
+                    .map(patch -> decodePatch(name, newState.version(), newState, patch))
                     .flatMap(Optional::stream)
                     .toList();
-            keys.hashStates()
-                    .put(name, newState);
-            return result;
         }
 
         @SneakyThrows
@@ -1830,6 +1831,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
             var mutations = decodeMutations(records, newState);
             newState.hash(mutations.hash());
             newState.indexValueMap(mutations.indexValueMap());
+            // FIXME: 17/06/2022 it's bugged :/
             if (!Arrays.equals(generatePatchMac(name, newState, patch), patch.snapshotMac())) {
                 errorHandler.handleFailure(400, "patch_mac", APP_STATE_SYNC);
                 return Optional.empty();
@@ -1840,20 +1842,12 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
         }
 
         private byte[] generatePatchMac(String name, LTHashState newState, PatchSync patch) {
-            var appStateSyncKey = keys.findAppKeyById(patch.keyId()
-                            .id())
-                    .orElseThrow(() -> new NoSuchElementException("No keys available for mutation"));
-            var mutationKeys = MutationKeys.of(appStateSyncKey.keyData()
-                    .keyData());
+            var mutationKeys = getMutationKeys(patch.keyId());
             return generateSnapshotMac(newState.hash(), newState.version(), name, mutationKeys.snapshotMacKey());
         }
 
         private byte[] calculateSyncMac(PatchSync sync, String name) {
-            var appStateSyncKey = keys.findAppKeyById(sync.keyId()
-                            .id())
-                    .orElseThrow(() -> new NoSuchElementException("No keys available for mutation"));
-            var mutationKeys = MutationKeys.of(appStateSyncKey.keyData()
-                    .keyData());
+            var mutationKeys = getMutationKeys(sync.keyId());
             var mutationMacs = sync.mutations()
                     .stream()
                     .map(mutation -> mutation.record()
@@ -1865,7 +1859,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
             return generatePatchMac(sync.snapshotMac(), mutationMacs, sync.version(), name, mutationKeys.patchMacKey());
         }
 
-        private MutationsRecord decodeSnapshot(String name, SnapshotSync snapshot) {
+        private MutationsRecord decodeSnapshot(String name, long minimumVersion, SnapshotSync snapshot) {
             var newState = new LTHashState(BinarySync.forName(name), snapshot.version()
                     .version());
             var records = snapshot.records()
@@ -1874,14 +1868,14 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
             var mutations = decodeMutations(records, newState);
             newState.hash(mutations.hash());
             newState.indexValueMap(mutations.indexValueMap());
-            if (!Arrays.equals(snapshot.mac(), computeSnapshotMac(name, snapshot, newState))) {
+            var mutationKeys = getMutationKeys(snapshot.keyId());
+            if (!Arrays.equals(snapshot.mac(),
+                    generateSnapshotMac(newState.hash(), newState.version(), name, mutationKeys.snapshotMacKey()))) {
                 errorHandler.handleFailure(400, "decode_snapshot", APP_STATE_SYNC);
                 return mutations;
             }
 
-            var oldState = keys.findHashStateByName(name);
-            var required = oldState.version() == 0 || newState.version() > oldState.version();
-            if (!required) {
+            if (minimumVersion != 0 && newState.version() <= minimumVersion) {
                 mutations.records()
                         .clear();
             }
@@ -1891,20 +1885,18 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
             return mutations;
         }
 
-        private byte[] computeSnapshotMac(String name, SnapshotSync snapshot, LTHashState newState) {
-            var encryptedKey = keys.findAppKeyById(snapshot.keyId()
-                            .id())
+        private MutationKeys getMutationKeys(KeyId snapshot) {
+            var encryptedKey = keys.findAppKeyById(snapshot.id())
                     .orElseThrow(() -> new NoSuchElementException("No keys available for mutation"));
-            var mutationKeys = MutationKeys.of(encryptedKey.keyData()
+            return MutationKeys.of(encryptedKey.keyData()
                     .keyData());
-            return generateSnapshotMac(newState.hash(), newState.version(), name, mutationKeys.snapshotMacKey());
         }
 
         private MutationsRecord decodeMutations(Map<RecordSync, Operation> syncs, LTHashState initialState) {
             var generator = new LTHash(initialState);
-            var mutations = syncs.keySet()
+            var mutations = syncs.entrySet()
                     .stream()
-                    .map(mutation -> decodeMutation(syncs.get(mutation), mutation, generator))
+                    .map(mutation -> decodeMutation(mutation.getValue(), mutation.getKey(), generator))
                     .toList();
             var result = generator.finish();
             return new MutationsRecord(result.hash(), result.indexValueMap(), mutations);
@@ -1912,11 +1904,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
 
         @SneakyThrows
         private ActionDataSync decodeMutation(Operation operation, RecordSync sync, LTHash generator) {
-            var appStateSyncKey = keys.findAppKeyById(sync.keyId()
-                            .id())
-                    .orElseThrow(() -> new NoSuchElementException("No keys available for mutation"));
-            var mutationKeys = MutationKeys.of(appStateSyncKey.keyData()
-                    .keyData());
+            var mutationKeys = getMutationKeys(sync.keyId());
 
             var blob = Bytes.of(sync.value()
                     .blob());
@@ -1924,8 +1912,8 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                     .toByteArray();
             var encryptedMac = blob.slice(-KEY_LENGTH)
                     .toByteArray();
-            if (!Arrays.equals(generateMac(operation, encryptedBlob, sync.keyId()
-                    .id(), mutationKeys.macKey()), encryptedMac)) {
+            if (!Arrays.equals(encryptedMac, generateMac(operation, encryptedBlob, sync.keyId()
+                    .id(), mutationKeys.macKey()))) {
                 errorHandler.handleFailure(400, "decode_mutation", APP_STATE_SYNC);
                 throw new RuntimeException("Cannot decode mutation: hmc validation failed");
             }

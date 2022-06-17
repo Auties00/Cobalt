@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.model;
 
+import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.contact.ContactJid;
 import lombok.AllArgsConstructor;
@@ -20,7 +21,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class MessageReceipt {
+public class MessageReceipt implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
     @NonNull
     private String userJid;

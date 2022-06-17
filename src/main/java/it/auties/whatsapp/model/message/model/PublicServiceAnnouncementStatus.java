@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.model;
 
+import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,7 +17,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT64;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class PublicServiceAnnouncementStatus {
+public class PublicServiceAnnouncementStatus implements ProtobufMessage {
     @ProtobufProperty(index = 44, type = STRING)
     @NonNull
     private String campaignId;
