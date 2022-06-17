@@ -100,7 +100,7 @@
         <reflection.version>1.2</reflection.version>
         <caffeine.version>3.1.0</caffeine.version>
         <lazysodium.version>5.1.1</lazysodium.version>
-        <delombok.plugin.version>1.18.24</delombok.plugin.version>
+        <delombok.plugin.version>1.18.24.1</delombok.plugin.version>
         <delombok.input>${project.basedir}\src\main\java</delombok.input>
         <delombok.output>${project.build.directory}\delombok</delombok.output>
     </properties>
