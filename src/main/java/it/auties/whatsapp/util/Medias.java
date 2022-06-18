@@ -114,8 +114,8 @@ public class Medias implements JacksonProvider {
 
             var keys = MediaKeys.of(provider.key(), provider.keyName());
             var hmac = calculateMac(encryptedMedia, keys);
-            Validate.isTrue(Arrays.equals(hmac, mediaMac), "Cannot decode media: Hmac validation failed",
-                    SecurityException.class);
+            Validate.isTrue(Arrays.equals(hmac, mediaMac), "media_decryption",
+                    HmacValidationException.class);
 
             var decrypted = AesCbc.decrypt(keys.iv(), encryptedMedia, keys.cipherKey());
             Validate.isTrue(provider.fileLength() <= 0 || provider.fileLength() == decrypted.length,

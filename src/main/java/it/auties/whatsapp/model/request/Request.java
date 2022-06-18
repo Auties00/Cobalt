@@ -22,7 +22,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 /**
  * An abstract model class that represents a request made from the client to the server.
  */
-@Log
 @SuppressWarnings("UnusedReturnValue")
 public record Request(String id, @NonNull Object body, @NonNull CompletableFuture<Node> future)
         implements JacksonProvider {
@@ -50,7 +49,6 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
             return;
         }
 
-        log.warning("%s timed out: no response from WhatsApp".formatted(node));
         future.completeExceptionally(new TimeoutException("%s timed out: no response from WhatsApp".formatted(node)));
     }
 
@@ -139,7 +137,6 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
         }
 
         if (exceptionally) {
-            log.warning("Cannot process request %s, erroneous response: %s".formatted(this, response));
             future.completeExceptionally(new RuntimeException(
                     "Cannot process request %s, erroneous response: %s".formatted(this, response)));
             return;
@@ -150,7 +147,6 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
 
     private void handleSendResult(WhatsappStore store, SendResult result, boolean response) {
         if (!result.isOK()) {
-            log.warning("Cannot send request %s, erroneous send result".formatted(this));
             future.completeExceptionally(new IllegalArgumentException(
                     ("Cannot send request %s, erroneous send result: %s".formatted(this, result)),
                     result.getException()));

@@ -79,17 +79,6 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when {@link BinarySocket} fails unexpectedly
-     *
-     * @param statusCode the status code for the failure
-     * @param reason     the reason for the failure, might be null
-     * @return whether the keys should be deleted and a new session should be opened
-     */
-    default boolean onFailure(long statusCode, String reason) {
-        return false;
-    }
-
-    /**
      * Called when {@link BinarySocket} receives an sync from Whatsapp.
      *
      * @param action the sync that was executed

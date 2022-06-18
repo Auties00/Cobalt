@@ -7,7 +7,6 @@ import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.model.signal.session.*;
-import it.auties.whatsapp.util.CipherScheduler;
 import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.SignalSpecification;
 import it.auties.whatsapp.util.Validate;
@@ -19,11 +18,11 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 
 public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappKeys keys)
-        implements SignalSpecification {
+        implements BlockingCipher {
     @SneakyThrows
     public void createOutgoing(int id, byte[] identityKey, SignalSignedKeyPair signedPreKey,
                                SignalSignedKeyPair preKey) {
-        CipherScheduler.run(() -> {
+        run(() -> {
             Validate.isTrue(keys.hasTrust(address, identityKey), "Untrusted key", SecurityException.class);
             Validate.isTrue(Curve25519.verifySignature(KeyHelper.withoutHeader(identityKey), signedPreKey.keyPair()
                     .encodedPublicKey(), signedPreKey.signature()), "Signature mismatch", SecurityException.class);

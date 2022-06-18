@@ -25,9 +25,9 @@ import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 
 public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKeys keys)
-        implements SignalSpecification {
+        implements BlockingCipher {
     public Node encrypt(byte @NonNull [] data) {
-        return CipherScheduler.run(() -> {
+        return run(() -> {
             var currentState = loadSession().currentState();
             Validate.isTrue(keys.hasTrust(address, currentState.remoteIdentityKey()), "Untrusted key",
                     SecurityException.class);
@@ -112,7 +112,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
     }
 
     public byte[] decrypt(SignalPreKeyMessage message) {
-        return CipherScheduler.run(() -> {
+        return run(() -> {
             var session = loadSession(() -> createSession(message));
             var builder = new SessionBuilder(address, keys);
             builder.createIncoming(session, message);
@@ -130,13 +130,20 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
     }
 
     public byte[] decrypt(SignalMessage message) {
-        return CipherScheduler.run(() -> {
+        return run(() -> {
             var session = loadSession();
             var errors = new ArrayList<Throwable>();
             for (var state : session.states()) {
                 var result = tryDecrypt(message, state);
                 if (result.data() != null) {
                     return result.data();
+                }
+
+                if (errors.stream()
+                        .map(Throwable::getMessage)
+                        .anyMatch(result.throwable()
+                                .getMessage()::equals)) {
+                    continue;
                 }
 
                 errors.add(result.throwable());
@@ -181,8 +188,8 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         var hmac = Bytes.of(Hmac.calculateSha256(hmacInput, secrets[1]))
                 .cut(MAC_LENGTH)
                 .toByteArray();
-        Validate.isTrue(Arrays.equals(message.signature(), hmac), "Cannot decode message: Hmac validation failed",
-                SecurityException.class);
+        Validate.isTrue(Arrays.equals(message.signature(), hmac), "message_decryption",
+                HmacValidationException.class);
 
         var iv = Bytes.of(secrets[2])
                 .cut(IV_LENGTH)

@@ -10,6 +10,7 @@ import lombok.experimental.Accessors;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * A configuration class used to specify the behaviour of {@link Whatsapp}
@@ -72,6 +73,15 @@ public class WhatsappOptions {
      */
     @Default
     private HistoryLength historyLength = HistoryLength.THREE_MONTHS;
+
+    /**
+     * Handles failures in the WebSocket.
+     * Returns true if the current connection should be killed and a new one created.
+     * Otherwise, the connection will not be killed, but more failures may be caused by the latter.
+     * By default, the reason is always disregarded and a new connection is created.
+     */
+    @Default
+    private Function<String, Boolean> failureHandler = (reason) -> true;
 
     /**
      * Constructs a new instance of WhatsappConfiguration with default options
