@@ -1,14 +1,10 @@
 package it.auties.whatsapp.github;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.goterl.lazysodium.LazySodiumJava;
 import com.goterl.lazysodium.SodiumJava;
 import com.goterl.lazysodium.utils.LibraryLoader;
-import it.auties.map.SimpleMapModule;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.utils.ConfigUtils;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
@@ -21,7 +17,6 @@ import java.net.http.HttpResponse;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Objects;
-import java.util.prefs.Preferences;
 
 import static java.net.URI.create;
 import static java.net.http.HttpRequest.BodyPublishers.ofString;
@@ -33,7 +28,7 @@ public class GithubSecrets {
     private final LazySodiumJava SODIUM = new LazySodiumJava(new SodiumJava(LibraryLoader.Mode.BUNDLED_ONLY));
     private final String REQUEST_PATH = "https://api.github.com/repos/Auties00/WhatsappWeb4j";
     private final String PUBLIC_KEY_PATH = "actions/secrets/public-key";
-    private final String UPDATE_SECRET_PATH = "actions/secrets/%s".formatted(GithubActions.CREDENTIALS_NAME);
+    private final String UPDATE_SECRET_PATH = "actions/secrets/%s";
 
     private final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
@@ -42,11 +37,11 @@ public class GithubSecrets {
 
         var credentials = getCredentialsAsJson();
         var cypheredCredentials = encryptCredentials(publicKey, credentials);
-        updateSecret(publicKey.keyId(), cypheredCredentials);
+        updateSecret(publicKey.keyId(), cypheredCredentials, GithubActions.CREDENTIALS_NAME);
 
         var store = getStoreAsJson();
         var cypheredStore = encryptCredentials(publicKey, store);
-        updateSecret(publicKey.keyId(), cypheredStore);
+        updateSecret(publicKey.keyId(), cypheredStore, GithubActions.STORE_NAME);
     }
 
     @SneakyThrows
@@ -89,8 +84,8 @@ public class GithubSecrets {
                 .build();
     }
 
-    private void updateSecret(String keyId, byte[] cypheredCredentials) throws IOException, InterruptedException {
-        var request = createUpdateSecretRequest(keyId, cypheredCredentials);
+    private void updateSecret(String keyId, byte[] cypheredCredentials, String name) throws IOException, InterruptedException {
+        var request = createUpdateSecretRequest(keyId, cypheredCredentials, name);
         var response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() != 201 && response.statusCode() != 204) {
             throw new IllegalStateException(
@@ -102,10 +97,10 @@ public class GithubSecrets {
         log.info("Response: %s".formatted(response.body()));
     }
 
-    private HttpRequest createUpdateSecretRequest(String keyId, byte[] cypheredCredentials) throws IOException {
+    private HttpRequest createUpdateSecretRequest(String keyId, byte[] cypheredCredentials, String name) throws IOException {
         return HttpRequest.newBuilder()
                 .PUT(ofString(JSON.writeValueAsString(createUpdateSecretParams(keyId, cypheredCredentials))))
-                .uri(create("%s/%s".formatted(REQUEST_PATH, UPDATE_SECRET_PATH)))
+                .uri(create("%s/%s".formatted(REQUEST_PATH, UPDATE_SECRET_PATH.formatted(name))))
                 .header("Accept", "application/vnd.github.v3+json")
                 .header("Authorization", "Bearer %s".formatted(loadGithubToken()))
                 .build();
