@@ -758,7 +758,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
         }
 
         private void createPingTask() {
-            if(pingService != null && !pingService.isShutdown()){
+            if (pingService != null && !pingService.isShutdown()) {
                 return;
             }
 
@@ -1587,7 +1587,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
         }
 
         private void parseSyncRequest(String type, LTHashState state, PatchSync sync) {
-            decodePatch(type, state.version(), state, sync).stream()
+            decodePatch(type, state.version(), state, sync, true).stream()
                     .map(MutationsRecord::records)
                     .flatMap(Collection::stream)
                     .forEach(this::processSyncActions);
@@ -1641,12 +1641,13 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
             try {
                 var results = new ArrayList<ActionDataSync>();
                 if (patch.hasSnapshot()) {
-                    var decodedSnapshot = decodeSnapshot(patch.name(), minimumVersion, patch.snapshot());
+                    var decodedSnapshot = decodeSnapshot(patch.name(), minimumVersion, patch.snapshot(), true);
                     results.addAll(decodedSnapshot.records());
                 }
 
                 if (patch.hasPatches()) {
-                    decodePatches(patch.name(), patch.patches()).stream()
+                    // FIXME: 21/06/2022 false for now
+                    decodePatches(patch.name(), patch.patches(), false).stream()
                             .map(MutationsRecord::records)
                             .forEach(results::addAll);
                 }
@@ -1803,18 +1804,19 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
             store.callListeners(listener -> listener.onMessageDeleted(message, false));
         }
 
-        private List<MutationsRecord> decodePatches(String name, List<PatchSync> patches) {
+        @SuppressWarnings("SameParameterValue")
+        private List<MutationsRecord> decodePatches(String name, List<PatchSync> patches, boolean checkMacs) {
             var newState = keys.findHashStateByName(name)
                     .copy();
             return patches.stream()
-                    .map(patch -> decodePatch(name, newState.version(), newState, patch))
+                    .map(patch -> decodePatch(name, newState.version(), newState, patch, checkMacs))
                     .flatMap(Optional::stream)
                     .toList();
         }
 
         @SneakyThrows
         private Optional<MutationsRecord> decodePatch(String name, long minimumVersionNumber, LTHashState newState,
-                                                      PatchSync patch) {
+                                                      PatchSync patch, boolean checkMacs) {
             if (patch.hasExternalMutations()) {
                 var blob = Medias.download(patch.externalMutations(), store);
                 var mutationsSync = PROTOBUF.readMessage(blob, MutationsSync.class);
@@ -1823,20 +1825,17 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
             }
 
             newState.version(patch.version());
-            if (!Arrays.equals(calculateSyncMac(patch, name), patch.patchMac())) {
-                throw new HmacValidationException("sync_mac");
-            }
+            Validate.isTrue(!checkMacs || Arrays.equals(calculateSyncMac(patch, name), patch.patchMac()), "sync_mac",
+                    HmacValidationException.class);
 
             var records = patch.mutations()
                     .stream()
                     .collect(Collectors.toMap(MutationSync::record, MutationSync::operation));
-            var mutations = decodeMutations(records, newState);
+            var mutations = decodeMutations(records, newState, checkMacs);
             newState.hash(mutations.hash());
             newState.indexValueMap(mutations.indexValueMap());
-            if (!Arrays.equals(generatePatchMac(name, newState, patch),
-                    patch.snapshotMac())) { // FIXME: 17/06/2022 it's bugged :/
-                throw new HmacValidationException("patch_mac");
-            }
+            Validate.isTrue(!checkMacs || Arrays.equals(generatePatchMac(name, newState, patch), patch.snapshotMac()),
+                    "patch_mac", HmacValidationException.class);
 
             return Optional.of(mutations)
                     .filter(ignored -> patch.version() == 0 || patch.version() > minimumVersionNumber);
@@ -1860,13 +1859,15 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
             return generatePatchMac(sync.snapshotMac(), mutationMacs, sync.version(), name, mutationKeys.patchMacKey());
         }
 
-        private MutationsRecord decodeSnapshot(String name, long minimumVersion, SnapshotSync snapshot) {
+        @SuppressWarnings("SameParameterValue")
+        private MutationsRecord decodeSnapshot(String name, long minimumVersion, SnapshotSync snapshot,
+                                               boolean checkMacs) {
             var newState = new LTHashState(BinarySync.forName(name), snapshot.version()
                     .version());
             var records = snapshot.records()
                     .stream()
                     .collect(Collectors.toMap(Function.identity(), ignored -> Operation.SET));
-            var mutations = decodeMutations(records, newState);
+            var mutations = decodeMutations(records, newState, checkMacs);
             newState.hash(mutations.hash());
             newState.indexValueMap(mutations.indexValueMap());
             var mutationKeys = getMutationKeys(snapshot.keyId());
@@ -1892,18 +1893,20 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                     .keyData());
         }
 
-        private MutationsRecord decodeMutations(Map<RecordSync, Operation> syncs, LTHashState initialState) {
+        private MutationsRecord decodeMutations(Map<RecordSync, Operation> syncs, LTHashState initialState,
+                                                boolean checkMacs) {
             var generator = new LTHash(initialState);
             var mutations = syncs.entrySet()
                     .stream()
-                    .map(mutation -> decodeMutation(mutation.getValue(), mutation.getKey(), generator))
+                    .map(mutation -> decodeMutation(mutation.getValue(), mutation.getKey(), generator, checkMacs))
                     .toList();
             var result = generator.finish();
             return new MutationsRecord(result.hash(), result.indexValueMap(), mutations);
         }
 
         @SneakyThrows
-        private ActionDataSync decodeMutation(Operation operation, RecordSync sync, LTHash generator) {
+        private ActionDataSync decodeMutation(Operation operation, RecordSync sync, LTHash generator,
+                                              boolean checkMacs) {
             var mutationKeys = getMutationKeys(sync.keyId());
 
             var blob = Bytes.of(sync.value()
@@ -1912,17 +1915,14 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                     .toByteArray();
             var encryptedMac = blob.slice(-KEY_LENGTH)
                     .toByteArray();
-            if (!Arrays.equals(encryptedMac, generateMac(operation, encryptedBlob, sync.keyId()
-                    .id(), mutationKeys.macKey()))) {
-                throw new HmacValidationException("decode_mutation");
-            }
+            Validate.isTrue(!checkMacs || Arrays.equals(encryptedMac, generateMac(operation, encryptedBlob, sync.keyId()
+                    .id(), mutationKeys.macKey())), "decode_mutation", HmacValidationException.class);
 
             var result = AesCbc.decrypt(encryptedBlob, mutationKeys.encKey());
             var actionSync = PROTOBUF.readMessage(result, ActionDataSync.class);
-            if (!Arrays.equals(sync.index()
-                    .blob(), Hmac.calculateSha256(actionSync.index(), mutationKeys.indexKey()))) {
-                throw new HmacValidationException("decode_mutation");
-            }
+            Validate.isTrue(!checkMacs || Arrays.equals(sync.index()
+                            .blob(), Hmac.calculateSha256(actionSync.index(), mutationKeys.indexKey())), "decode_mutation",
+                    HmacValidationException.class);
 
             generator.mix(sync.index()
                     .blob(), encryptedMac, operation);
@@ -1971,7 +1971,8 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
         private <T> T handleFailure(String reason, ErrorLocation location, Throwable throwable) {
             log.warning("Socket failure at %s(%s)".formatted(location, reason));
             log.warning("Saved stacktrace at: %s".formatted(Exceptions.save(throwable)));
-            if (location != ERRONEOUS_NODE && !isHmacError(location, throwable) && !options.failureHandler().apply(reason)) {
+            if (!options.failureHandler()
+                    .apply(reason) && location != ERRONEOUS_NODE && !isHmacError(location, throwable)) {
                 log.warning("Ignoring failure");
                 return null;
             }

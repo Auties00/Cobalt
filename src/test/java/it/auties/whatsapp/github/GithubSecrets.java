@@ -1,10 +1,16 @@
 package it.auties.whatsapp.github;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.goterl.lazysodium.LazySodiumJava;
 import com.goterl.lazysodium.SodiumJava;
 import com.goterl.lazysodium.utils.LibraryLoader;
+import it.auties.map.SimpleMapModule;
+import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.utils.ConfigUtils;
+import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import lombok.extern.java.Log;
 
@@ -22,25 +28,35 @@ import static java.net.http.HttpRequest.BodyPublishers.ofString;
 
 @Log
 @UtilityClass
-public class GithubSecrets implements JacksonProvider {
+public class GithubSecrets {
+    private final ObjectMapper JSON = new ObjectMapper();
     private final LazySodiumJava SODIUM = new LazySodiumJava(new SodiumJava(LibraryLoader.Mode.BUNDLED_ONLY));
     private final String REQUEST_PATH = "https://api.github.com/repos/Auties00/WhatsappWeb4j";
     private final String PUBLIC_KEY_PATH = "actions/secrets/public-key";
     private final String UPDATE_SECRET_PATH = "actions/secrets/%s".formatted(GithubActions.CREDENTIALS_NAME);
 
     private final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
-    private final Preferences PREFERENCES = Preferences.userRoot();
 
     public void updateCredentials() throws IOException, InterruptedException {
-        var credentials = getCredentialsAsJson();
         var publicKey = getPublicKey();
+
+        var credentials = getCredentialsAsJson();
         var cypheredCredentials = encryptCredentials(publicKey, credentials);
         updateSecret(publicKey.keyId(), cypheredCredentials);
+
+        var store = getStoreAsJson();
+        var cypheredStore = encryptCredentials(publicKey, store);
+        updateSecret(publicKey.keyId(), cypheredStore);
     }
 
+    @SneakyThrows
+    private String getStoreAsJson() {
+        return JSON.writeValueAsString(Whatsapp.lastConnection().keys());
+    }
+
+    @SneakyThrows
     private String getCredentialsAsJson() {
-        return Objects.requireNonNull(PREFERENCES.get("it.auties.whatsapp.manager.WhatsappKeysManager", null),
-                "Missing credentials");
+        return JSON.writeValueAsString(Whatsapp.lastConnection().store());
     }
 
     private byte[] encryptCredentials(GithubKey publicKey, String credentials) {
