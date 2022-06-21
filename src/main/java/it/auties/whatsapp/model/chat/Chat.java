@@ -80,7 +80,8 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * If ephemeral messages aren't enabled, this field has a value of 0
      */
     @ProtobufProperty(index = 9, type = UINT32, requiresConversion = true)
-    private ChatEphemeralTimer ephemeralMessageDuration;
+    @Default
+    private ChatEphemeralTimer ephemeralMessageDuration = ChatEphemeralTimer.OFF;
 
     /**
      * The endTimeStamp in seconds since {@link java.time.Instant#EPOCH} when ephemeral messages were turned on.
@@ -327,16 +328,6 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      */
     public ChatEphemeralTimer ephemeralMessageType() {
         return requireNonNullElse(ephemeralMessageDuration, ChatEphemeralTimer.OFF);
-    }
-
-    /**
-     * Returns an optional value containing the endTimeStamp in seconds before a message is automatically deleted from this chat both locally and from WhatsappWeb's servers
-     *
-     * @return a non-empty optional if ephemeral messages are enabled for this chat
-     */
-    public Optional<ZonedDateTime> ephemeralMessageDuration() {
-        return Clock.parse(ephemeralMessageDuration.period()
-                .toSeconds());
     }
 
     /**

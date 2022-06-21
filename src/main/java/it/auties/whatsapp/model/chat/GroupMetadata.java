@@ -28,7 +28,7 @@ public class GroupMetadata implements ProtobufMessage {
 
     @NonNull ZonedDateTime foundationTimestamp;
 
-    @NonNull ContactJid founder;
+    ContactJid founder;
 
     String description;
 
@@ -55,7 +55,7 @@ public class GroupMetadata implements ProtobufMessage {
                 .orElse(ZonedDateTime.now());
         var founder = node.attributes()
                 .getJid("creator")
-                .orElseThrow(() -> new NoSuchElementException("Missing founder"));
+                .orElse(null);
         var policies = new HashMap<GroupSetting, GroupPolicy>();
         policies.put(SEND_MESSAGES, forData(node.hasNode("announce")));
         var description = node.findNode("description")
@@ -96,6 +96,11 @@ public class GroupMetadata implements ProtobufMessage {
 
     public Optional<ZonedDateTime> ephemeralExpiration() {
         return Optional.ofNullable(ephemeralExpiration);
+    }
+
+
+    public Optional<ContactJid> founder() {
+        return Optional.ofNullable(founder);
     }
 
     public List<ContactJid> participantsJids() {
