@@ -21,6 +21,7 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Base64;
@@ -53,6 +54,7 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
             return;
         }
 
+        log("Detected github actions environment");
         api = Whatsapp.newConnection(WhatsappOptions.defaultOptions(),
                 loadGithubParameter(GithubActions.STORE_NAME, WhatsappStore.class),
                 loadGithubParameter(GithubActions.CREDENTIALS_NAME, WhatsappKeys.class));
@@ -60,21 +62,17 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
     }
 
     private <T> T loadGithubParameter(String parameter, Class<T> type) throws IOException {
-        log("Detected github actions environment");
-        var keysJson = decodeGithubParameter(parameter);
+        var keysJson = Base64.getDecoder()
+                .decode(System.getenv(parameter));
         return JSON.readValue(keysJson, type);
-    }
-
-    private byte[] decodeGithubParameter(String parameter) {
-        var env = Objects.requireNonNullElseGet(System.getenv(parameter), () -> System.getProperty(parameter));
-        return Base64.getDecoder()
-                .decode(env);
     }
 
     private void loadConfig() throws IOException {
         if (GithubActions.isActionsEnvironment()) {
             log("Loading environment variables...");
-            contact = ContactJid.of(System.getenv(GithubActions.CONTACT_NAME));
+            var jid = new String(Base64.getDecoder()
+                    .decode(System.getenv(GithubActions.CONTACT_NAME)), StandardCharsets.UTF_8);
+            contact = ContactJid.of(jid);
             log("Loaded environment variables...");
             return;
         }

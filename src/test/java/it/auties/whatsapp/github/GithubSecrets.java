@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Objects;
@@ -36,29 +37,35 @@ public class GithubSecrets {
         var publicKey = getPublicKey();
 
         var credentials = getCredentialsAsJson();
-        var cypheredCredentials = encryptCredentials(publicKey, credentials);
+        var cypheredCredentials = encrypt(publicKey, credentials);
         updateSecret(publicKey.keyId(), cypheredCredentials, GithubActions.CREDENTIALS_NAME);
 
         var store = getStoreAsJson();
-        var cypheredStore = encryptCredentials(publicKey, store);
+        var cypheredStore = encrypt(publicKey, store);
+        updateSecret(publicKey.keyId(), cypheredStore, GithubActions.STORE_NAME);
+
+        var contactName = loadContactName();
+        var encryptedContactName = encrypt(publicKey, store);
         updateSecret(publicKey.keyId(), cypheredStore, GithubActions.STORE_NAME);
     }
 
     @SneakyThrows
     private String getStoreAsJson() {
-        return JSON.writeValueAsString(Whatsapp.lastConnection().keys());
+        return JSON.writeValueAsString(Whatsapp.lastConnection()
+                .keys());
     }
 
     @SneakyThrows
     private String getCredentialsAsJson() {
-        return JSON.writeValueAsString(Whatsapp.lastConnection().store());
+        return JSON.writeValueAsString(Whatsapp.lastConnection()
+                .store());
     }
 
-    private byte[] encryptCredentials(GithubKey publicKey, String credentials) {
+    private byte[] encrypt(GithubKey publicKey, String data) {
         var publicKeyBytes = Base64.getDecoder()
                 .decode(publicKey.key());
         var messageBytes = Base64.getEncoder()
-                .encode(credentials.getBytes());
+                .encode(data.getBytes());
         var cypher = new byte[messageBytes.length + 48];
 
         var result = SODIUM.cryptoBoxSeal(cypher, messageBytes, messageBytes.length, publicKeyBytes);
@@ -84,7 +91,8 @@ public class GithubSecrets {
                 .build();
     }
 
-    private void updateSecret(String keyId, byte[] cypheredCredentials, String name) throws IOException, InterruptedException {
+    private void updateSecret(String keyId, byte[] cypheredCredentials, String name)
+            throws IOException, InterruptedException {
         var request = createUpdateSecretRequest(keyId, cypheredCredentials, name);
         var response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() != 201 && response.statusCode() != 204) {
@@ -97,7 +105,8 @@ public class GithubSecrets {
         log.info("Response: %s".formatted(response.body()));
     }
 
-    private HttpRequest createUpdateSecretRequest(String keyId, byte[] cypheredCredentials, String name) throws IOException {
+    private HttpRequest createUpdateSecretRequest(String keyId, byte[] cypheredCredentials, String name)
+            throws IOException {
         return HttpRequest.newBuilder()
                 .PUT(ofString(JSON.writeValueAsString(createUpdateSecretParams(keyId, cypheredCredentials))))
                 .uri(create("%s/%s".formatted(REQUEST_PATH, UPDATE_SECRET_PATH.formatted(name))))
@@ -111,6 +120,11 @@ public class GithubSecrets {
     }
 
     private String loadGithubToken() throws IOException {
+        var config = ConfigUtils.loadConfiguration();
+        return Objects.requireNonNull(config.getProperty("github_token"), "Missing github_token in configuration");
+    }
+
+    private String loadContactName() throws IOException {
         var config = ConfigUtils.loadConfiguration();
         return Objects.requireNonNull(config.getProperty("github_token"), "Missing github_token in configuration");
     }
