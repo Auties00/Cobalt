@@ -45,8 +45,8 @@ public class GithubSecrets {
         updateSecret(publicKey.keyId(), cypheredStore, GithubActions.STORE_NAME);
 
         var contactName = loadContactName();
-        var encryptedContactName = encrypt(publicKey, store);
-        updateSecret(publicKey.keyId(), cypheredStore, GithubActions.STORE_NAME);
+        var cypheredContactName = encrypt(publicKey, contactName);
+        updateSecret(publicKey.keyId(), cypheredContactName, GithubActions.STORE_NAME);
     }
 
     @SneakyThrows
