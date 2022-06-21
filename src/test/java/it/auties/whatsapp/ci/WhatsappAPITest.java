@@ -61,9 +61,14 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
 
     private <T> T loadGithubParameter(String parameter, Class<T> type) throws IOException {
         log("Detected github actions environment");
-        var keysJson = Base64.getDecoder()
-                .decode(System.getenv(parameter));
+        var keysJson = decodeGithubParameter(parameter);
         return JSON.readValue(keysJson, type);
+    }
+
+    private byte[] decodeGithubParameter(String parameter) {
+        var env = Objects.requireNonNullElseGet(System.getenv(parameter), () -> System.getProperty(parameter));
+        return Base64.getDecoder()
+                .decode(env);
     }
 
     private void loadConfig() throws IOException {

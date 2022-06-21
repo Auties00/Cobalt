@@ -1924,6 +1924,10 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                             .blob(), Hmac.calculateSha256(actionSync.index(), mutationKeys.indexKey())), "decode_mutation",
                     HmacValidationException.class);
 
+            if(!checkMacs){
+                return actionSync;
+            }
+
             generator.mix(sync.index()
                     .blob(), encryptedMac, operation);
             return actionSync;
