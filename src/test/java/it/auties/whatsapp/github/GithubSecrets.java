@@ -46,19 +46,19 @@ public class GithubSecrets {
 
         var contactName = loadContactName();
         var cypheredContactName = encrypt(publicKey, contactName);
-        updateSecret(publicKey.keyId(), cypheredContactName, GithubActions.STORE_NAME);
+        updateSecret(publicKey.keyId(), cypheredContactName, GithubActions.CONTACT_NAME);
     }
 
     @SneakyThrows
     private String getStoreAsJson() {
         return JSON.writeValueAsString(Whatsapp.lastConnection()
-                .keys());
+                .store());
     }
 
     @SneakyThrows
     private String getCredentialsAsJson() {
         return JSON.writeValueAsString(Whatsapp.lastConnection()
-                .store());
+                .keys());
     }
 
     private byte[] encrypt(GithubKey publicKey, String data) {
@@ -126,6 +126,6 @@ public class GithubSecrets {
 
     private String loadContactName() throws IOException {
         var config = ConfigUtils.loadConfiguration();
-        return Objects.requireNonNull(config.getProperty("github_token"), "Missing github_token in configuration");
+        return Objects.requireNonNull(config.getProperty("contact"), "Missing github_token in configuration");
     }
 }
