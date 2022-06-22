@@ -25,7 +25,7 @@ Add this dependency to your dependencies in the pom:
 <dependency>
     <groupId>com.github.auties00</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>3.0-RC6</version>
+    <version>3.0-RC10</version>
 </dependency>
 ```
 
@@ -33,12 +33,12 @@ Add this dependency to your dependencies in the pom:
 
 1. Groovy DSL
    ```groovy
-   implementation 'com.github.auties00:whatsappweb4j:3.0-RC6'
+   implementation 'com.github.auties00:whatsappweb4j:3.0-RC10'
    ```
 
 2. Kotlin DSL
    ```kotlin
-   implementation("com.github.auties00:whatsappweb4j:3.0-RC6")
+   implementation("com.github.auties00:whatsappweb4j:3.0-RC10")
    ```
 
 ### Examples
