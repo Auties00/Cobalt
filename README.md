@@ -25,7 +25,7 @@ Add this dependency to your dependencies in the pom:
 <dependency>
     <groupId>com.github.auties00</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>3.0-RC10</version>
+    <version>3.0-RC11</version>
 </dependency>
 ```
 
@@ -33,12 +33,12 @@ Add this dependency to your dependencies in the pom:
 
 1. Groovy DSL
    ```groovy
-   implementation 'com.github.auties00:whatsappweb4j:3.0-RC10'
+   implementation 'com.github.auties00:whatsappweb4j:3.0-RC11'
    ```
 
 2. Kotlin DSL
    ```kotlin
-   implementation("com.github.auties00:whatsappweb4j:3.0-RC10")
+   implementation("com.github.auties00:whatsappweb4j:3.0-RC11")
    ```
 
 ### Examples
@@ -128,7 +128,7 @@ The most important class of this API is Whatsapp, an interface between your appl
 To create a new Whatsapp instance associated with a new connection, start with:
 
 ```java
-var api=Whatsapp.newConnection();
+var api = Whatsapp.newConnection();
 ```
 
 If the connection needs to be configured further, a configuration can be passed to the newConnection constructor like
@@ -136,7 +136,7 @@ so:
 
 ```java
 // Implement only the options that you need!
-var configuration=WhatsappOptions.newOptions()
+var configuration = WhatsappOptions.newOptions()
         .id(ThreadLocalRandom.current().nextInt()) // A random unique ID associated with the session
         .version(new Version(2,2212,7)) // The version of this client, make sure it's not too outdated 
         .url("wss://web.whatsapp.com/ws") // The URL of WhatsappWeb's Socket
@@ -144,14 +144,14 @@ var configuration=WhatsappOptions.newOptions()
         .historyLength(HistoryLength.THREE_MONTHS) // The amount of chat history that Whatsapp sends to the client on the first scan
         .serializationStrategy() // An implementation, built in or custom(for example in a database), of the serialization mechanism
         .create(); // Creates an instance of WhatsappOptions
-        var api=Whatsapp.newConnection(options);
+        var api = Whatsapp.newConnection(options);
 ```
 
 If you have already created a connection, you might want to use that one, instead of creating a new one.
 Here is an example:
 
 ```java
-var api=Whatsapp.lastConnection();
+var api = Whatsapp.lastConnection();
 ```
 
 > **_IMPORTANT:_**  If no previous session exists, a new one will be created silently
@@ -159,7 +159,7 @@ var api=Whatsapp.lastConnection();
 You can also connect to the first session that you have ever created like so:
 
 ```java
-var api=Whatsapp.firstConnection();
+var api = Whatsapp.firstConnection();
 ```
 
 > **_IMPORTANT:_**  If no previous session exists, a new one will be created silently
@@ -167,13 +167,13 @@ var api=Whatsapp.firstConnection();
 A list of all serialized connections can be listed:
 
 ```java
-var connections=Whatsapp.listConnections();
+var connections = Whatsapp.listConnections();
 ```
 
 Or streamed:
 
 ```java
-var connections=Whatsapp.streamConnection();
+var connections = Whatsapp.streamConnection();
 ```
 
 Once you have created a new connection, you probably want to open it and wait until the operation succeeds:
@@ -203,7 +203,7 @@ version.
 Start by accessing the in memory store:
 
 ```java
-var store=api.store();
+var store = api.store();
 ```
 
 > **_IMPORTANT:_** When your program first starts up, these fields will be empty. For each type of data, an event is
@@ -212,47 +212,47 @@ var store=api.store();
 You can access all the chats that are in memory:
 
 ```java
-var chats=store.chats();
+var chats = store.chats();
 ```
 
 Or the contacts:
 
 ```java
-var contacts=store.contacts();
+var contacts = store.contacts();
 ```
 
 Or even the status broadcasts:
 
 ```java
-var status=store.status();
+var status = store.status();
 ```
 
 Data can also be easily queried by using these methods:
 
 ```java
 // Query a chat by its jid
-var chat=store.findChatByJid(jid);
+var chat = store.findChatByJid(jid);
 
         // Query a chat by its name
-        ar chat=store.findChatByName(name); // If multiple chats match this name, the first one will be selected with no guarantees.
+        ar chat = store.findChatByName(name); // If multiple chats match this name, the first one will be selected with no guarantees.
 
         // Query all chats that match a name
-        var chats=store.findChatsByName(name);
+        var chats = store.findChatsByName(name);
 
         // Query a chat by a message inside it
-        var chat=store.findChatByMessage(message);
+        var chat = store.findChatByMessage(message);
 
         // Query a contact by its jid
-        var contact=store.store.findContactByJid(jid);
+        var contact = store.store.findContactByJid(jid);
 
         // Query a contact by its name
-        var contact=store.findContactByName(name);  // If multiple contacts match this name, the first one will be selected with no guarantees.
+        var contact = store.findContactByName(name);  // If multiple contacts match this name, the first one will be selected with no guarantees.
 
         // Query all contacts that match a name
-        var contacts=store.findContactsByName(name);
+        var contacts = store.findContactsByName(name);
 
         // Query a message by its id and chat
-        var message=store.findMessageById(Chat chat,String id);
+        var message = store.findMessageById(Chat chat,String id);
 ```
 
 ### How to send messages
@@ -260,7 +260,7 @@ var chat=store.findChatByJid(jid);
 To send a message, start by finding the chat where the message should be sent. Here is an example:
 
 ```java
-var chat=api.store()
+var chat = api.store()
         .findChatByName("My Awesome Friend")
         .orElseThrow(()->new NoSuchElementException("Hey, you don't exist"));
 ``` 
@@ -282,10 +282,10 @@ They are particularly useful when the message contains a hyperlink or styling.
 Here is an example for the first case:
 
 ```java
-var message=TextMessage.newTextMessage() // Create a new text message
-        .text("Check this video out: https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the text of the message
-        .canonicalUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the url of the message
-        .matchedText("https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the matched text for the url in the message
+var message = TextMessage.newTextMessage() // Create a new text message
+        .text("Check this video out: https://www.youtube.com/watch?v = dQw4w9WgXcQ") // Set the text of the message
+        .canonicalUrl("https://www.youtube.com/watch?v = dQw4w9WgXcQ") // Set the url of the message
+        .matchedText("https://www.youtube.com/watch?v = dQw4w9WgXcQ") // Set the matched text for the url in the message
         .title("A nice suprise") // Set the title of the url
         .description("Check me out") // Set the description of the url
         .create(); // Create the message
@@ -302,20 +302,20 @@ To send a media, start by reading the content inside a byte array.
 You might want to read it from a file:
 
 ```java
-var media=Files.readAllBytes(Path.of("somewhere"));
+var media = Files.readAllBytes(Path.of("somewhere"));
 ```
 
 Or from a URL:
 
 ```java
-var media=new URL(url).openStream().readAllBytes();
+var media = new URL(url).openStream().readAllBytes();
 ```
 
 For a list of all fields for each media class, check the documentation.
 If your media is an image, you can use:
 
  ```java
-var image=ImageMessage.newImageMessage() // Create a new image message builder
+var image = ImageMessage.newImageMessage() // Create a new image message builder
         .storeId(api.store().id()) // All media messages need a reference to their store
         .media(media) // Set the image of this message
         .caption("A nice image") // Set the caption of this message
@@ -326,7 +326,7 @@ var image=ImageMessage.newImageMessage() // Create a new image message builder
 If it's an audio message or a voice message, use instead:
 
    ```java
-var audio=AudioMessage.newAudioMessage() // Create a new audio message builder
+var audio = AudioMessage.newAudioMessage() // Create a new audio message builder
         .storeId(api.store().id()) // All media messages need a reference to their store
         .media(urlMedia) // Set the audio of this message
         .voiceMessage(false) // Set whether this message is a voice message or a standard audio message
@@ -337,7 +337,7 @@ var audio=AudioMessage.newAudioMessage() // Create a new audio message builder
 It's a video? No problem:
 
 ```java
-var video=VideoMessage.newVideoMessage() // Create a new video message builder
+var video = VideoMessage.newVideoMessage() // Create a new video message builder
         .storeId(api.store().id()) // All media messages need a reference to their store
         .media(urlMedia) // Set the video of this message
         .caption("A nice video") // Set the caption of this message
@@ -350,7 +350,7 @@ var video=VideoMessage.newVideoMessage() // Create a new video message builder
 Videos can be sent also as GIFs:
 
 ```java
-var gif=VideoMessage.newGifMessage() // Create a new gif message builder
+var gif = VideoMessage.newGifMessage() // Create a new gif message builder
         .storeId(api.store().id()) // All media messages need a reference to their store
         .media(urlMedia) // Set the gif of this message
         .caption("A nice video") // Set the caption of this message
@@ -368,7 +368,7 @@ var gif=VideoMessage.newGifMessage() // Create a new gif message builder
 Documents can be sent as easily:
 
 ```java
-var document=DocumentMessage.newDocumentMessage() // Create a new document message builder
+var document = DocumentMessage.newDocumentMessage() // Create a new document message builder
         .storeId(api.store().id()) // All media messages need a reference to their store
         .media(urlMedia) // Set the document of this message
         .title("A nice pdf") // Set the title of the document
@@ -381,7 +381,7 @@ var document=DocumentMessage.newDocumentMessage() // Create a new document messa
 Location messages are also supported:
 
 ```java
-var location=LocationMessage.newLocationMessage() // Create a new location message
+var location = LocationMessage.newLocationMessage() // Create a new location message
         .caption("Look at this!") // Set the caption of the message, that is the text below the file
         .latitude(38.9193) // Set the longitude of the location to share
         .longitude(1183.1389) // Set the latitude of the location to share
@@ -392,7 +392,7 @@ var location=LocationMessage.newLocationMessage() // Create a new location messa
 Or even live location messages:
 
 ```java
-var location=LiveLocationMessage.newLiveLocationMessage() // Create a new live location message
+var location = LiveLocationMessage.newLiveLocationMessage() // Create a new live location message
         .caption("Look at this!") // Set the caption of the message, that is the text below the file. Not available if this message is live
         .latitude(38.9193) // Set the longitude of the location to share
         .longitude(1183.1389) // Set the latitude of the location to share
@@ -409,7 +409,7 @@ Need to invite a friend inside a group?
 Start by finding the group:
 
 ```java
-var group=api.store()
+var group = api.store()
         .findChatByName("Programmers")
         .filter(Chat::isGroup)
         .orElseThrow(()->new NoSuchElementException("Hey, you don't exist"));
@@ -418,13 +418,13 @@ var group=api.store()
 Then query the invite code:
 
 ```java
-var inviteCode=api.queryInviteCode(group).get();
+var inviteCode = api.queryInviteCode(group).get();
 ```
 
 Finally send your message:
 
 ```java
-var groupInvite=GroupInviteMessage.newGroupInviteMessage() // Create a new group invite message
+var groupInvite = GroupInviteMessage.newGroupInviteMessage() // Create a new group invite message
         .caption("Come join my group of fellow programmers") // Set the caption of this message
         .groupName(group.name()) // Set the name of the group
         .groupJid(group.jid())) // Set the jid of the group
@@ -437,7 +437,7 @@ var groupInvite=GroupInviteMessage.newGroupInviteMessage() // Create a new group
 Contacts can also be sent individually through messages:
 
 ```java
-var contactMessage=ContactMessage.newContactMessage()  // Create a new contact message
+var contactMessage = ContactMessage.newContactMessage()  // Create a new contact message
         .name("A nice friend") // Set the display name of the contact
         .vcard(vcard) // Set the vcard(https://en.wikipedia.org/wiki/VCard) of the contact
         .create(); // Create the message
@@ -447,7 +447,7 @@ var contactMessage=ContactMessage.newContactMessage()  // Create a new contact m
 Or in groups:
 
 ```java
-var contactsMessage=ContactsArrayMessage.newContactsArrayMessage()  // Create a new contacts array message
+var contactsMessage = ContactsArrayMessage.newContactsArrayMessage()  // Create a new contacts array message
         .name("A nice friend") // Set the display name of the first contact that this message contains
         .contacts(List.of(jack,lucy,jeff)) // Set a list of contact messages that this message wraps
         .create(); // Create the message
