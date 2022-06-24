@@ -47,4 +47,5 @@ open module it.auties.whatsappweb4j {
     exports it.auties.whatsapp.model.response;
     exports it.auties.whatsapp.model.payment;
     exports it.auties.whatsapp.model.message.business;
+    exports it.auties.whatsapp.listener;
 }

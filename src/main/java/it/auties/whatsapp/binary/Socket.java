@@ -4,11 +4,14 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
-import it.auties.whatsapp.api.*;
-import it.auties.whatsapp.api.SerializationStrategy.Event;
-import it.auties.whatsapp.controller.WhatsappKeys;
-import it.auties.whatsapp.controller.WhatsappStore;
+import it.auties.whatsapp.api.HistoryLength;
+import it.auties.whatsapp.api.QrHandler;
+import it.auties.whatsapp.api.SocketEvent;
+import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.controller.Keys;
+import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.*;
+import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
@@ -20,12 +23,16 @@ import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.device.DeviceSentMessage;
-import it.auties.whatsapp.model.message.model.*;
+import it.auties.whatsapp.model.message.model.MediaMessage;
+import it.auties.whatsapp.model.message.model.MessageContainer;
+import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.model.setting.EphemeralSetting;
+import it.auties.whatsapp.model.setting.Setting;
 import it.auties.whatsapp.model.setting.UnarchiveChatsSetting;
 import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.signal.auth.ClientPayload.ClientPayloadBuilder;
@@ -42,6 +49,7 @@ import jakarta.websocket.*;
 import jakarta.websocket.ClientEndpointConfig.Configurator;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.java.Log;
@@ -52,16 +60,17 @@ import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static it.auties.whatsapp.api.SerializationStrategy.Event.*;
-import static it.auties.whatsapp.binary.BinarySocket.ErrorLocation.*;
+import static it.auties.whatsapp.binary.Socket.ErrorLocation.*;
 import static it.auties.whatsapp.model.request.Node.*;
 import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
 import static java.lang.Long.parseLong;
@@ -74,21 +83,18 @@ import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.stream.Collectors.*;
 
 @Accessors(fluent = true)
-@ClientEndpoint(configurator = BinarySocket.OriginPatcher.class)
+@ClientEndpoint(configurator = Socket.OriginPatcher.class)
 @Log
-public class BinarySocket implements JacksonProvider, SignalSpecification {
+public class Socket implements JacksonProvider, SignalSpecification {
     static {
         getWebSocketContainer().setDefaultMaxSessionIdleTimeout(0);
     }
 
     @NonNull
-    private final AtomicBoolean loggedIn;
+    private final Whatsapp whatsapp;
 
     @NonNull
-    private final AtomicBoolean reconnecting;
-
-    @NonNull
-    private final WhatsappOptions options;
+    private final Whatsapp.Options options;
 
     @NonNull
     private final AuthHandler authHandler;
@@ -107,13 +113,17 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
 
     private Session session;
 
-    @Getter
     @NonNull
-    private WhatsappKeys keys;
+    @Setter
+    private State state;
 
     @Getter
     @NonNull
-    private WhatsappStore store;
+    private Keys keys;
+
+    @Getter
+    @NonNull
+    private Store store;
 
     private Handshake handshake;
 
@@ -123,40 +133,26 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
 
     private CompletableFuture<Void> mediaConnectionFuture;
 
-    public BinarySocket(@NonNull WhatsappOptions options, @NonNull WhatsappStore store, @NonNull WhatsappKeys keys) {
+    public Socket(@NonNull Whatsapp whatsapp, @NonNull Whatsapp.Options options, @NonNull Store store,
+                  @NonNull Keys keys) {
+        this.whatsapp = whatsapp;
         this.options = options;
         this.store = store;
         this.keys = keys;
         this.authHandler = new AuthHandler();
+        this.state = State.WAITING;
         this.streamHandler = new StreamHandler();
         this.messageHandler = new MessageHandler();
         this.appStateHandler = new AppStateHandler();
         this.errorHandler = new ErrorHandler();
-        this.loggedIn = new AtomicBoolean();
-        this.reconnecting = new AtomicBoolean();
-        getRuntime().addShutdownHook(new Thread(() -> serialize(ON_CLOSE)));
-        serialize(PERIODICALLY, this::schedulePeriodicSerialization);
-        serialize(CUSTOM);
+        getRuntime().addShutdownHook(new Thread(() -> onSocketEvent(SocketEvent.CLOSE)));
     }
 
-    private void schedulePeriodicSerialization(SerializationStrategy strategy) {
-        store.requestsService()
-                .scheduleAtFixedRate(() -> strategy.serialize(store, keys), 0, strategy.period(), strategy.unit());
-    }
-
-    private void serialize(Event event) {
-        serialize(event, strategy -> strategy.serialize(store, keys));
-    }
-
-    private void serialize(Event event, Consumer<SerializationStrategy> strategyConsumer) {
-        if (!options.serialization()) {
-            return;
-        }
-
-        options.serializationStrategies()
-                .stream()
-                .filter(strategy -> strategy.trigger() == event)
-                .forEach(strategyConsumer);
+    private void onSocketEvent(SocketEvent event) {
+        store.callListeners(listener -> {
+            listener.onSocketEvent(whatsapp, event);
+            listener.onSocketEvent(event);
+        });
     }
 
     @NonNull
@@ -168,10 +164,11 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
     @SneakyThrows
     public void onOpen(@NonNull Session session) {
         this.session = session;
-        if (loggedIn.get()) {
+        if (state.isConnected()) {
             return;
         }
 
+        onSocketEvent(SocketEvent.OPEN);
         this.handshake = new Handshake(keys);
         handshake.updateHash(keys.ephemeralKeyPair()
                 .publicKey());
@@ -184,7 +181,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
 
     @OnMessage
     public void onBinary(byte @NonNull [] raw) {
-        var message = new BinaryMessage(raw);
+        var message = new Message(raw);
         if (message.decoded()
                 .isEmpty()) {
             return;
@@ -192,7 +189,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
 
         var header = message.decoded()
                 .getFirst();
-        if (!loggedIn.get()) {
+        if (!state.isConnected()) {
             authHandler.sendUserPayload(header.toByteArray());
             return;
         }
@@ -204,7 +201,14 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
     private void handleNode(Node deciphered) {
         store.resolvePendingRequest(deciphered, false);
         streamHandler.digest(deciphered);
-        store.callListeners(listener -> listener.onNodeReceived(deciphered));
+        onNodeReceived(deciphered);
+    }
+
+    private void onNodeReceived(Node deciphered) {
+        store.callListeners(listener -> {
+            listener.onNodeReceived(whatsapp, deciphered);
+            listener.onNodeReceived(deciphered);
+        });
     }
 
     @SneakyThrows
@@ -220,33 +224,36 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
     @SneakyThrows
     @SuppressWarnings("ResultOfMethodCallIgnored")
     public void await() {
+        if (pingService == null) {
+            return;
+        }
+
         pingService.awaitTermination(Integer.MAX_VALUE, TimeUnit.DAYS);
     }
 
     public CompletableFuture<Void> reconnect() {
-        reconnecting.set(true);
+        state(State.RECONNECTING);
         return disconnect().thenComposeAsync(ignored -> connect());
     }
 
     @SneakyThrows
     public CompletableFuture<Void> disconnect() {
-        changeState(false);
+        if(state.isConnected()) {
+            state(State.DISCONNECTED);
+        }
+
+        keys.clear();
         session.close();
         return completedFuture(null); // session#close is a synchronous operation
     }
 
-    private void changeState(boolean loggedIn) {
-        this.loggedIn.set(loggedIn);
-        keys.clear();
-    }
-
     @OnClose
     public void onClose() {
-        if (loginFuture != null && !loginFuture.isDone() && !reconnecting.get()) {
+        if (loginFuture != null && !loginFuture.isDone() && state == State.DISCONNECTED) {
             loginFuture.complete(null);
         }
 
-        if (loggedIn.get()) {
+        if (state.isConnected()) {
             store.invokeListeners(listener -> listener.onDisconnected(true));
             reconnect();
             return;
@@ -254,23 +261,24 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
 
         store.invokeListeners(listener -> listener.onDisconnected(false));
         store.dispose();
-        serialize(ON_CLOSE);
-        if (!reconnecting.get()) {
+        onSocketEvent(SocketEvent.CLOSE);
+        if(pingService != null) {
             pingService.shutdownNow();
-            mediaConnectionFuture.cancel(true);
         }
 
-        reconnecting.set(false);
+        if(mediaConnectionFuture != null) {
+            mediaConnectionFuture.cancel(true);
+        }
     }
 
     @OnError
     public void onError(Throwable throwable) {
-        serialize(ON_ERROR);
+        onSocketEvent(SocketEvent.ERROR);
         errorHandler.handleFailure(throwable.getMessage(), UNKNOWN, throwable);
     }
 
     public CompletableFuture<Node> send(Node node) {
-        store.callListeners(listener -> listener.onNodeSent(node));
+        onNodeSent(node);
         return node.toRequest(node.id() == null ?
                         store.nextTag() :
                         null)
@@ -279,8 +287,15 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                         throwable -> errorHandler.handleFailure(throwable.getMessage(), ERRONEOUS_NODE, throwable));
     }
 
+    private void onNodeSent(Node node) {
+        store.callListeners(listener -> {
+            listener.onNodeSent(whatsapp, node);
+            listener.onNodeSent(node);
+        });
+    }
+
     public CompletableFuture<Void> sendWithNoResponse(Node node) {
-        store.callListeners(listener -> listener.onNodeSent(node));
+        onNodeSent(node);
         return node.toRequest(node.id() == null ?
                         store.nextTag() :
                         null)
@@ -399,8 +414,8 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
     public void changeKeys() {
         keys.delete();
         var newId = KeyHelper.registrationId();
-        this.keys = WhatsappKeys.random(newId);
-        var newStore = WhatsappStore.random(newId);
+        this.keys = Keys.random(newId);
+        var newStore = Store.random(newId);
         newStore.listeners()
                 .addAll(store.listeners());
         this.store = newStore;
@@ -463,8 +478,13 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
             var handshakeMessage = new HandshakeMessage(clientFinish);
             Request.with(handshakeMessage)
                     .sendWithNoResponse(session, keys, store)
-                    .thenRunAsync(() -> changeState(true))
+                    .thenRunAsync(this::changeToConnected)
                     .thenRunAsync(handshake::finish);
+        }
+
+        private void changeToConnected() {
+            keys.clear();
+            state(State.CONNECTED);
         }
 
         @SneakyThrows
@@ -542,7 +562,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                 case "receipt" -> digestReceipt(node);
                 case "stream:error" -> digestError(node);
                 case "success" -> digestSuccess();
-                case "message" -> digestMessage(node);
+                case "message" -> messageHandler.decode(node);
                 case "notification" -> digestNotification(node);
                 case "presence", "chatstate" -> digestChatState(node);
             }
@@ -552,11 +572,6 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
             var reason = node.attributes()
                     .getString("location");
             errorHandler.handleFailure(reason, ERRONEOUS_NODE);
-        }
-
-        private void digestMessage(Node node) {
-            messageHandler.decode(node);
-            serialize(ON_MESSAGE);
         }
 
         private void digestChatState(Node node) {
@@ -586,12 +601,18 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
         private void updateChatPresence(ContactStatus status, Contact contact, Chat chat) {
             chat.presences()
                     .put(contact, status);
+            onUpdateChatPresence(status, contact, chat);
+        }
+
+        private void onUpdateChatPresence(ContactStatus status, Contact contact, Chat chat) {
             store.callListeners(listener -> {
+                listener.onContactPresence(whatsapp, chat, contact, status);
                 listener.onContactPresence(chat, contact, status);
                 if (status != ContactStatus.PAUSED) {
                     return;
                 }
 
+                listener.onContactPresence(whatsapp, chat, contact, ContactStatus.AVAILABLE);
                 listener.onContactPresence(chat, contact, ContactStatus.AVAILABLE);
             });
         }
@@ -647,11 +668,17 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                         .put(participant, status);
             }
 
+            onMessageStatus(status, participant, message, chat);
+        }
+
+        private void onMessageStatus(MessageStatus status, Contact participant, MessageInfo message, Chat chat) {
             store.callListeners(listener -> {
                 if (participant == null) {
+                    listener.onMessageStatus(whatsapp, message, status);
                     listener.onMessageStatus(message, status);
                 }
 
+                listener.onMessageStatus(whatsapp, chat, participant, message, status);
                 listener.onMessageStatus(chat, participant, message, status);
             });
         }
@@ -693,7 +720,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                 return;
             }
 
-            var patchName = BinarySync.forName(update.get()
+            var patchName = Sync.forName(update.get()
                     .attributes()
                     .getRequiredString("name"));
             appStateHandler.pull(patchName);
@@ -747,14 +774,14 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
             sendPreKeys();
             createPingTask();
             sendStatusUpdate();
-            store.invokeListeners(WhatsappListener::onLoggedIn);
+            store.invokeListeners(Listener::onLoggedIn);
             loginFuture.complete(null);
             if (!store.hasSnapshot()) {
                 return;
             }
 
-            store.invokeListeners(WhatsappListener::onChats);
-            store.invokeListeners(WhatsappListener::onContacts);
+            store.invokeListeners(Listener::onChats);
+            store.invokeListeners(Listener::onContacts);
         }
 
         private void createPingTask() {
@@ -784,20 +811,28 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                             .getString("name"), node.attributes()
                             .getString("value")))
                     .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-            store.callListeners(listener -> listener.onMetadata(properties));
+            onMetadata(properties);
+        }
+
+        private void onMetadata(Map<String, String> properties) {
+            store.callListeners(listener -> {
+                listener.onMetadata(whatsapp, properties);
+                listener.onMetadata(properties);
+            });
         }
 
         private void sendPing() {
-            if (!loggedIn.get()) {
+            if (!state.isConnected()) {
                 pingService.shutdownNow();
                 return;
             }
 
             sendQuery("get", "w:p", with("ping"));
+            onSocketEvent(SocketEvent.PING);
         }
 
         private void createMediaConnection() {
-            if (!loggedIn.get()) {
+            if (!state.isConnected()) {
                 return;
             }
 
@@ -871,14 +906,15 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                     .toBase64(), Bytes.of(keys.companionKey())
                     .toBase64());
 
-            if (!store.listeners()
-                    .isEmpty()) {
-                store.callListeners(listener -> requireNonNull(listener.onQRCode(), "Invalid QR handler").accept(qr));
-                return;
-            }
-
-            QrHandler.toTerminal()
-                    .accept(qr);
+            store.listeners()
+                    .stream()
+                    .map(Listener::onQRCode)
+                    .filter(Objects::nonNull)
+                    .peek(handler -> handler.accept(qr))
+                    .findAny()
+                    .ifPresentOrElse(found -> {
+                    }, () -> QrHandler.toTerminal()
+                            .accept(qr));
         }
 
         @SneakyThrows
@@ -944,6 +980,9 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
     }
 
     private class MessageHandler {
+        private static final String SKMSG = "skmsg";
+        private static final String PKMSG = "pkmsg";
+        private static final String MSG = "msg";
         private static final int CACHE_EXPIRATION = 5;
         private static final Semaphore LOCK = new Semaphore(1);
 
@@ -975,7 +1014,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                 return getDevices(knownDevices, true).thenComposeAsync(
                                 allDevices -> createConversationNodes(allDevices, encodedMessage, encodedDeviceMessage))
                         .thenApplyAsync(sessions -> createEncodedMessageNode(info, sessions, null, attributes))
-                        .thenComposeAsync(BinarySocket.this::send)
+                        .thenComposeAsync(Socket.this::send)
                         .thenApplyAsync(this::releaseMessageLock)
                         .exceptionallyAsync(this::handleMessageFailure);
             }
@@ -993,7 +1032,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                     .thenComposeAsync(this::getDevices)
                     .thenComposeAsync(allDevices -> createGroupNodes(info, signalMessage, allDevices))
                     .thenApplyAsync(preKeys -> createEncodedMessageNode(info, preKeys, groupMessage, attributes))
-                    .thenComposeAsync(BinarySocket.this::send)
+                    .thenComposeAsync(Socket.this::send)
                     .thenApplyAsync(this::releaseMessageLock)
                     .exceptionallyAsync(this::handleMessageFailure);
         }
@@ -1230,58 +1269,59 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
         }
 
         public void decode(Node node) {
-            var pushName = node.attributes()
-                    .getString("notify");
-            var timestamp = node.attributes()
-                    .getLong("t");
-            var id = node.attributes()
-                    .getRequiredString("id");
-            var from = node.attributes()
-                    .getJid("from")
-                    .orElseThrow(() -> new NoSuchElementException("Missing from"));
-            var recipient = node.attributes()
-                    .getJid("recipient")
-                    .orElse(from);
-            var participant = node.attributes()
-                    .getJid("participant")
-                    .orElse(null);
-            var messageBuilder = MessageInfo.newMessageInfo();
-            var keyBuilder = MessageKey.newMessageKey();
-            switch (from.type()) {
-                case USER, OFFICIAL_BUSINESS_ACCOUNT, STATUS, ANNOUNCEMENT, COMPANION -> {
-                    keyBuilder.chatJid(recipient);
-                    messageBuilder.senderJid(from);
-                }
-
-                case GROUP, GROUP_CALL, BROADCAST -> {
-                    keyBuilder.chatJid(from);
-                    messageBuilder.senderJid(requireNonNull(participant, "Missing participant in group message"));
-                }
-
-                default -> throw new IllegalArgumentException("Cannot decode message, unsupported type: %s".formatted(
-                        from.type()
-                                .name()));
-            }
-
-            var key = keyBuilder.id(id)
-                    .create();
-            var info = messageBuilder.storeId(store.id())
-                    .key(key)
-                    .pushName(pushName)
-                    .timestamp(timestamp)
-                    .create();
-
-            node.findNodes("enc")
-                    .forEach(messageNode -> decodeMessage(info, node, messageNode));
+            var encrypted = node.findNodes("enc");
+            encrypted.forEach(message -> decode(node, message));
         }
 
-        private void decodeMessage(MessageInfo info, Node container, Node messageNode) {
+        private void decode(Node infoNode, Node messageNode) {
             try {
-                sendMessageAck(container, of("class", "receipt"));
+                LOCK.acquire();
+                var pushName = infoNode.attributes()
+                        .getString("notify");
+                var timestamp = infoNode.attributes()
+                        .getLong("t");
+                var id = infoNode.attributes()
+                        .getRequiredString("id");
+                var from = infoNode.attributes()
+                        .getJid("from")
+                        .orElseThrow(() -> new NoSuchElementException("Missing from"));
+                var recipient = infoNode.attributes()
+                        .getJid("recipient")
+                        .orElse(from);
+                var participant = infoNode.attributes()
+                        .getJid("participant")
+                        .orElse(null);
+                var messageBuilder = MessageInfo.newMessageInfo();
+                var keyBuilder = MessageKey.newMessageKey();
+                switch (from.type()) {
+                    case USER, OFFICIAL_BUSINESS_ACCOUNT, STATUS, ANNOUNCEMENT, COMPANION -> {
+                        keyBuilder.chatJid(recipient);
+                        messageBuilder.senderJid(from);
+                    }
+
+                    case GROUP, GROUP_CALL, BROADCAST -> {
+                        keyBuilder.chatJid(from);
+                        messageBuilder.senderJid(requireNonNull(participant, "Missing participant in group message"));
+                    }
+
+                    default -> throw new IllegalArgumentException(
+                            "Cannot decode message, unsupported type: %s".formatted(from.type()
+                                    .name()));
+                }
+
+                var key = keyBuilder.id(id)
+                        .create();
+                var info = messageBuilder.storeId(store.id())
+                        .key(key)
+                        .pushName(pushName)
+                        .timestamp(timestamp)
+                        .create();
+
+                sendMessageAck(infoNode, of("class", "receipt"));
                 var encodedMessage = messageNode.bytes();
-                var messageType = messageNode.attributes()
+                var type = messageNode.attributes()
                         .getString("type");
-                var buffer = decodeCipheredMessage(info, encodedMessage, messageType);
+                var buffer = decode(info, encodedMessage, type);
                 if (buffer.isEmpty()) {
                     return;
                 }
@@ -1293,14 +1333,14 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                         messageContainer;
                 info.message(message);
                 handleStubMessage(info);
-                Message content = info.message()
+                var content = info.message()
                         .content();
                 if (content instanceof SenderKeyDistributionMessage distributionMessage) {
                     handleDistributionMessage(distributionMessage, info.senderJid());
                 }
 
                 if (content instanceof ProtocolMessage protocolMessage) {
-                    handleProtocolMessage(info, protocolMessage, Objects.equals(container.attributes()
+                    handleProtocolMessage(info, protocolMessage, Objects.equals(infoNode.attributes()
                             .getString("category"), "peer"));
                 }
 
@@ -1309,6 +1349,8 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                         .id()));
             } catch (Throwable throwable) {
                 errorHandler.handleFailure(throwable.getMessage(), MESSAGE, throwable);
+            } finally {
+                LOCK.release();
             }
         }
 
@@ -1320,10 +1362,10 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
             log.warning("Received stub %s with %s: unsupported!".formatted(info.stubType(), info.stubParameters()));
         }
 
-        private Optional<byte[]> decodeCipheredMessage(MessageInfo info, byte[] message, String type) {
+        private Optional<byte[]> decode(MessageInfo info, byte[] message, String type) {
             try {
                 return Optional.of(switch (type) {
-                    case "skmsg" -> {
+                    case SKMSG -> {
                         var senderName = new SenderKeyName(info.chatJid()
                                 .toString(), info.senderJid()
                                 .toSignalAddress());
@@ -1331,15 +1373,15 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                         yield signalGroup.decrypt(message);
                     }
 
-                    case "pkmsg" -> {
-                        var session = new SessionCipher(info.chatJid()
+                    case PKMSG -> {
+                        var session = new SessionCipher(info.senderJid()
                                 .toSignalAddress(), keys);
                         var preKey = SignalPreKeyMessage.ofSerialized(message);
                         yield session.decrypt(preKey);
                     }
 
-                    case "msg" -> {
-                        var session = new SessionCipher(info.chatJid()
+                    case MSG -> {
+                        var session = new SessionCipher(info.senderJid()
                                 .toSignalAddress(), keys);
                         var signalMessage = SignalMessage.ofSerialized(message);
                         yield session.decrypt(signalMessage);
@@ -1364,7 +1406,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                     .equals(ContactJid.STATUS_ACCOUNT)) {
                 store.status()
                         .add(info);
-                store.callListeners(listener -> listener.onNewStatus(info));
+                onNewStatus(info);
                 return;
             }
 
@@ -1386,7 +1428,21 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
             }
 
             chat.unreadMessages(chat.unreadMessages() + 1);
-            store.callListeners(listener -> listener.onNewMessage(info));
+            onNewMessage(info);
+        }
+
+        private void onNewMessage(MessageInfo info) {
+            store.callListeners(listener -> {
+                listener.onNewMessage(whatsapp, info);
+                listener.onNewMessage(info);
+            });
+        }
+
+        private void onNewStatus(MessageInfo info) {
+            store.callListeners(listener -> {
+                listener.onNewStatus(whatsapp, info);
+                listener.onNewStatus(info);
+            });
         }
 
         private void handleDistributionMessage(SenderKeyDistributionMessage distributionMessage, ContactJid from) {
@@ -1409,7 +1465,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                             history.conversations()
                                     .forEach(store::addChat);
                             store.hasSnapshot(true);
-                            store.invokeListeners(WhatsappListener::onChats);
+                            store.invokeListeners(Listener::onChats);
                         }
 
                         case FULL -> history.conversations()
@@ -1420,7 +1476,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                                     .stream()
                                     .peek(message -> message.storeId(store.id()))
                                     .forEach(store.status()::add);
-                            store.invokeListeners(WhatsappListener::onStatus);
+                            store.invokeListeners(Listener::onStatus);
                         }
 
                         case RECENT -> history.conversations()
@@ -1429,7 +1485,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                         case PUSH_NAME -> {
                             history.pushNames()
                                     .forEach(this::handNewPushName);
-                            store.invokeListeners(WhatsappListener::onContacts);
+                            store.invokeListeners(Listener::onContacts);
                         }
                     }
 
@@ -1439,7 +1495,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                 case APP_STATE_SYNC_KEY_SHARE -> {
                     keys.addAppKeys(protocolMessage.appStateSyncKeyShare()
                             .keys());
-                    appStateHandler.pull(BinarySync.values());
+                    appStateHandler.pull(Sync.values());
                 }
 
                 case REVOKE -> {
@@ -1450,7 +1506,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                             .ifPresent(message -> {
                                 chat.messages()
                                         .remove(message);
-                                store.callListeners(listener -> listener.onMessageDeleted(message, true));
+                                appStateHandler.onMessageDeleted(message, true);
                             });
                 }
 
@@ -1461,7 +1517,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                             .ephemeralMessageDuration(
                                     ChatEphemeralTimer.forValue(protocolMessage.ephemeralExpiration()));
                     var setting = new EphemeralSetting(info.ephemeralDuration(), info.timestamp());
-                    store.callListeners(listener -> listener.onSetting(setting));
+                    appStateHandler.onSetting(setting);
                 }
             }
 
@@ -1478,7 +1534,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                     .orElseGet(() -> createContact(jid))
                     .chosenName(pushName.name());
             var action = new ContactAction(pushName.name(), null);
-            store.callListeners(listener -> listener.onAction(action));
+            appStateHandler.onAction(action);
         }
 
         private void handleRecentMessage(Chat recent) {
@@ -1493,7 +1549,14 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                     .peek(message -> message.storeId(store.id()))
                     .forEach(oldChat.get()
                             .messages()::add);
-            store.callListeners(listener -> listener.onChatRecentMessages(oldChat.get()));
+            onChatRecentMessages(oldChat.get());
+        }
+
+        private void onChatRecentMessages(Chat oldChat) {
+            store.callListeners(listener -> {
+                listener.onChatRecentMessages(whatsapp, oldChat);
+                listener.onChatRecentMessages(oldChat);
+            });
         }
 
         @SafeVarargs
@@ -1594,7 +1657,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
         }
 
         @SneakyThrows
-        private CompletableFuture<Void> pull(BinarySync... syncs) {
+        private CompletableFuture<Void> pull(Sync... syncs) {
             try {
                 SEMAPHORE.acquire();
                 var states = Arrays.stream(syncs)
@@ -1655,7 +1718,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                 return results;
             } catch (Throwable throwable) {
                 exceptions.add(throwable);
-                var newState = new LTHashState(BinarySync.forName(patch.name()));
+                var newState = new LTHashState(Sync.forName(patch.name()));
                 keys.hashStates()
                         .put(patch.name(), newState);
                 if (exceptions.size() > PULL_ATTEMPTS) {
@@ -1766,7 +1829,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                     }
                 }
 
-                store.callListeners(listener -> listener.onAction(action));
+                onAction(action);
             }
 
             var setting = value.setting();
@@ -1775,15 +1838,43 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                     store.unarchiveChats(unarchiveChatsSetting.unarchiveChats());
                 }
 
-                store.callListeners(listener -> listener.onSetting(setting));
+                onSetting(setting);
             }
 
             var features = mutation.value()
                     .primaryFeature();
             if (features != null && !features.flags()
                     .isEmpty()) {
-                store.callListeners(listener -> listener.onFeatures(features.flags()));
+                onFeatures(features);
             }
+        }
+
+        private void onFeatures(ActionValueSync.PrimaryFeature features) {
+            store.callListeners(listener -> {
+                listener.onFeatures(whatsapp, features.flags());
+                listener.onFeatures(features.flags());
+            });
+        }
+
+        private void onSetting(Setting setting) {
+            store.callListeners(listener -> {
+                listener.onSetting(whatsapp, setting);
+                listener.onSetting(setting);
+            });
+        }
+
+        private void onMessageDeleted(MessageInfo message, boolean everyone) {
+            store.callListeners(listener -> {
+                listener.onMessageDeleted(whatsapp, message, everyone);
+                listener.onMessageDeleted(message, everyone);
+            });
+        }
+
+        private void onAction(Action action) {
+            store.callListeners(listener -> {
+                listener.onAction(whatsapp, action);
+                listener.onAction(action);
+            });
         }
 
         private void updateName(Contact contact, Chat chat, ContactAction contactAction) {
@@ -1801,7 +1892,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
         private void deleteMessage(MessageInfo message, Chat chat) {
             chat.messages()
                     .remove(message);
-            store.callListeners(listener -> listener.onMessageDeleted(message, false));
+            onMessageDeleted(message, false);
         }
 
         @SuppressWarnings("SameParameterValue")
@@ -1862,7 +1953,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
         @SuppressWarnings("SameParameterValue")
         private MutationsRecord decodeSnapshot(String name, long minimumVersion, SnapshotSync snapshot,
                                                boolean checkMacs) {
-            var newState = new LTHashState(BinarySync.forName(name), snapshot.version()
+            var newState = new LTHashState(Sync.forName(name), snapshot.version()
                     .version());
             var records = snapshot.records()
                     .stream()
@@ -1924,7 +2015,7 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
                             .blob(), Hmac.calculateSha256(actionSync.index(), mutationKeys.indexKey())), "decode_mutation",
                     HmacValidationException.class);
 
-            if(!checkMacs){
+            if (!checkMacs) {
                 return actionSync;
             }
 
@@ -1973,15 +2064,20 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
         }
 
         private <T> T handleFailure(String reason, ErrorLocation location, Throwable throwable) {
+            if (state == State.FAILED) {
+                return null;
+            }
+
             log.warning("Socket failure at %s(%s)".formatted(location, reason));
             log.warning("Saved stacktrace at: %s".formatted(Exceptions.save(throwable)));
             if (!options.failureHandler()
-                    .apply(reason) && location != ERRONEOUS_NODE && !isHmacError(location, throwable)) {
+                    .apply(reason) && !isHmacError(location, throwable)) {
                 log.warning("Ignoring failure");
                 return null;
             }
 
             log.warning("Restoring session");
+            state(State.FAILED);
             store.clear();
             changeKeys();
             reconnect();
@@ -1989,7 +2085,19 @@ public class BinarySocket implements JacksonProvider, SignalSpecification {
         }
 
         private boolean isHmacError(ErrorLocation location, Throwable throwable) {
-            return location == MESSAGE && throwable instanceof SecurityException;
+            return location == MESSAGE && throwable instanceof HmacValidationException;
+        }
+    }
+
+    private enum State {
+        WAITING,
+        CONNECTED,
+        DISCONNECTED,
+        RECONNECTING,
+        FAILED;
+
+        public boolean isConnected(){
+            return this == CONNECTED || this == FAILED;
         }
     }
 }

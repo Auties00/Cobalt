@@ -2,7 +2,7 @@ package it.auties.whatsapp.model.message.standard;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.controller.WhatsappStore;
+import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MediaMessage;
@@ -132,7 +132,7 @@ public final class StickerMessage extends MediaMessage {
     @Builder(builderClassName = "SimpleStickerMessageBuilder", builderMethodName = "newStickerMessage", buildMethodName = "create")
     private static StickerMessage builder(int storeId, byte @NonNull [] media, String mimeType, byte[] thumbnail,
                                           boolean animated, ContextInfo contextInfo) {
-        var store = WhatsappStore.findStoreById(storeId)
+        var store = Store.findStoreById(storeId)
                 .orElseThrow(() -> new NoSuchElementException(
                         "Cannot create sticker message, invalid store id: %s".formatted(storeId)));
         var upload = Medias.upload(media, STICKER, store);

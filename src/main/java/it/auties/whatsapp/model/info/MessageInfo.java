@@ -3,7 +3,7 @@ package it.auties.whatsapp.model.info;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.auties.protobuf.api.model.ProtobufProperty;
-import it.auties.whatsapp.controller.WhatsappStore;
+import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.business.BusinessPrivacyStatus;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
@@ -46,7 +46,7 @@ public final class MessageInfo implements Info {
      * The cached store
      */
     @JsonIgnore
-    private WhatsappStore cachedStore;
+    private Store cachedStore;
 
     /**
      * The MessageKey of this message
@@ -397,12 +397,12 @@ public final class MessageInfo implements Info {
         return store().findMessageById(chat, contextualMessage.quotedMessageId());
     }
 
-    public WhatsappStore store() {
+    public Store store() {
         return Objects.requireNonNullElseGet(cachedStore, () -> this.cachedStore = cacheStore());
     }
 
-    private WhatsappStore cacheStore() {
-        return WhatsappStore.findStoreById(storeId)
+    private Store cacheStore() {
+        return Store.findStoreById(storeId)
                 .orElseThrow(() -> new NoSuchElementException("Missing store for id %s".formatted(storeId)));
     }
 

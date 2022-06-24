@@ -1,7 +1,7 @@
 package it.auties.whatsapp.crypto;
 
 import it.auties.bytes.Bytes;
-import it.auties.whatsapp.controller.WhatsappKeys;
+import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalMessage;
@@ -24,34 +24,31 @@ import static it.auties.whatsapp.model.request.Node.with;
 import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 
-public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKeys keys)
-        implements BlockingCipher {
+public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys) implements SignalSpecification {
     public Node encrypt(byte @NonNull [] data) {
-        return run(() -> {
-            var currentState = loadSession().currentState();
-            Validate.isTrue(keys.hasTrust(address, currentState.remoteIdentityKey()), "Untrusted key",
-                    SecurityException.class);
+        var currentState = loadSession().currentState();
+        Validate.isTrue(keys.hasTrust(address, currentState.remoteIdentityKey()), "Untrusted key",
+                SecurityException.class);
 
-            var chain = currentState.findChain(currentState.ephemeralKeyPair()
-                            .encodedPublicKey())
-                    .orElseThrow(() -> new NoSuchElementException("Missing chain for %s".formatted(address)));
-            fillMessageKeys(chain, chain.counter() + 1);
+        var chain = currentState.findChain(currentState.ephemeralKeyPair()
+                        .encodedPublicKey())
+                .orElseThrow(() -> new NoSuchElementException("Missing chain for %s".formatted(address)));
+        fillMessageKeys(chain, chain.counter() + 1);
 
-            var currentKey = chain.messageKeys()
-                    .get(chain.counter());
-            var secrets = Hkdf.deriveSecrets(currentKey, "WhisperMessageKeys".getBytes(StandardCharsets.UTF_8));
-            chain.messageKeys()
-                    .remove(chain.counter());
+        var currentKey = chain.messageKeys()
+                .get(chain.counter());
+        var secrets = Hkdf.deriveSecrets(currentKey, "WhisperMessageKeys".getBytes(StandardCharsets.UTF_8));
+        chain.messageKeys()
+                .remove(chain.counter());
 
-            var iv = Bytes.of(secrets[2])
-                    .cut(IV_LENGTH)
-                    .toByteArray();
-            var encrypted = AesCbc.encrypt(iv, data, secrets[0]);
+        var iv = Bytes.of(secrets[2])
+                .cut(IV_LENGTH)
+                .toByteArray();
+        var encrypted = AesCbc.encrypt(iv, data, secrets[0]);
 
-            var encryptedMessageType = getMessageType(currentState);
-            var encryptedMessage = encrypt(currentState, chain, secrets[1], encrypted);
-            return with("enc", of("v", "2", "type", encryptedMessageType), encryptedMessage);
-        });
+        var encryptedMessageType = getMessageType(currentState);
+        var encryptedMessage = encrypt(currentState, chain, secrets[1], encrypted);
+        return with("enc", of("v", "2", "type", encryptedMessageType), encryptedMessage);
     }
 
     private String getMessageType(SessionState currentState) {
@@ -112,14 +109,12 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
     }
 
     public byte[] decrypt(SignalPreKeyMessage message) {
-        return run(() -> {
-            var session = loadSession(() -> createSession(message));
-            var builder = new SessionBuilder(address, keys);
-            builder.createIncoming(session, message);
-            var state = session.findState(message.version(), message.baseKey())
-                    .orElseThrow(() -> new NoSuchElementException("Missing state"));
-            return decrypt(message.signalMessage(), state);
-        });
+        var session = loadSession(() -> createSession(message));
+        var builder = new SessionBuilder(address, keys);
+        builder.createIncoming(session, message);
+        var state = session.findState(message.version(), message.baseKey())
+                .orElseThrow(() -> new NoSuchElementException("Missing state"));
+        return decrypt(message.signalMessage(), state);
     }
 
     private Session createSession(SignalPreKeyMessage message) {
@@ -130,28 +125,25 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
     }
 
     public byte[] decrypt(SignalMessage message) {
-        return run(() -> {
-            var session = loadSession();
-            var errors = new ArrayList<Throwable>();
-            for (var state : session.states()) {
-                var result = tryDecrypt(message, state);
-                if (result.data() != null) {
-                    return result.data();
-                }
-
-                if (errors.stream()
-                        .map(Throwable::getMessage)
-                        .anyMatch(result.throwable()
-                                .getMessage()::equals)) {
-                    continue;
-                }
-
-                errors.add(result.throwable());
+        var session = loadSession();
+        var errors = new ArrayList<Throwable>();
+        for (var state : session.states()) {
+            var result = tryDecrypt(message, state);
+            if (result.data() != null) {
+                return result.data();
             }
 
-            throw Exceptions.make(new NoSuchElementException("Cannot decrypt message: no suitable session found"),
-                    errors);
-        });
+            if (errors.stream()
+                    .map(Throwable::getMessage)
+                    .anyMatch(result.throwable()
+                            .getMessage()::equals)) {
+                continue;
+            }
+
+            errors.add(result.throwable());
+        }
+
+        throw Exceptions.make(new NoSuchElementException("Cannot decrypt message: no suitable session found"), errors);
     }
 
     private DecryptionResult tryDecrypt(SignalMessage message, SessionState state) {
@@ -188,8 +180,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull WhatsappKe
         var hmac = Bytes.of(Hmac.calculateSha256(hmacInput, secrets[1]))
                 .cut(MAC_LENGTH)
                 .toByteArray();
-        Validate.isTrue(Arrays.equals(message.signature(), hmac), "message_decryption",
-                HmacValidationException.class);
+        Validate.isTrue(Arrays.equals(message.signature(), hmac), "message_decryption", HmacValidationException.class);
 
         var iv = Bytes.of(secrets[2])
                 .cut(IV_LENGTH)

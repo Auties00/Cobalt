@@ -13,10 +13,11 @@ import java.util.Objects;
 
 @UtilityClass
 public class Exceptions {
-    public Path save(Throwable throwable){
+    public Path save(Throwable throwable) {
         var actual = Objects.requireNonNullElseGet(throwable, RuntimeException::new);
         try {
-            var path = Preferences.home().resolve("exceptions");
+            var path = Preferences.home()
+                    .resolve("exceptions");
             Files.createDirectories(path);
             var file = path.resolve("%s.txt".formatted(System.currentTimeMillis()));
             var stackTraceWriter = new StringWriter();
@@ -24,7 +25,7 @@ public class Exceptions {
             actual.printStackTrace(stackTracePrinter);
             Files.writeString(file, stackTraceWriter.toString());
             return file;
-        }catch (Throwable ignored){
+        } catch (Throwable ignored) {
             throw new RuntimeException("Cannot serialize exception. Here is the non-serialized stack trace", actual);
         }
     }

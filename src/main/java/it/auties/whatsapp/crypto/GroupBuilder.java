@@ -1,6 +1,6 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.whatsapp.controller.WhatsappKeys;
+import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalDistributionMessage;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
@@ -8,7 +8,7 @@ import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.SignalSpecification;
 import lombok.NonNull;
 
-public record GroupBuilder(@NonNull WhatsappKeys keys) implements SignalSpecification {
+public record GroupBuilder(@NonNull Keys keys) implements SignalSpecification {
     public byte[] createOutgoing(SenderKeyName name) {
         var record = keys.findSenderKeyByName(name);
         if (record.isEmpty()) {

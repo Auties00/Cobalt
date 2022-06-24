@@ -13,12 +13,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
-import static it.auties.whatsapp.binary.BinaryTag.*;
+import static it.auties.whatsapp.binary.Tag.*;
 import static it.auties.whatsapp.model.contact.ContactJid.Server.forAddress;
 import static it.auties.whatsapp.model.request.Node.with;
 import static it.auties.whatsapp.model.request.Node.withAttributes;
 
-public class BinaryDecoder {
+public class Decoder {
     private Bytes buffer;
 
     public synchronized Node decode(byte @NonNull [] input) {
@@ -102,16 +102,16 @@ public class BinaryDecoder {
 
     private String readStringFromToken(int token) {
         if (token < DICTIONARY_0.data() || token > DICTIONARY_3.data()) {
-            return BinaryTokens.SINGLE_BYTE.get(token - 1);
+            return Tokens.SINGLE_BYTE.get(token - 1);
         }
 
-        var delta = (BinaryTokens.DOUBLE_BYTE.size() / 4) * (token - DICTIONARY_0.data());
-        return BinaryTokens.DOUBLE_BYTE.get(buffer.readUnsignedByte() + delta);
+        var delta = (Tokens.DOUBLE_BYTE.size() / 4) * (token - DICTIONARY_0.data());
+        return Tokens.DOUBLE_BYTE.get(buffer.readUnsignedByte() + delta);
     }
 
     private String readNibble() {
         var number = buffer.readUnsignedByte();
-        return readString(BinaryTokens.NUMBERS, number >>> 7, 127 & number);
+        return readString(Tokens.NUMBERS, number >>> 7, 127 & number);
     }
 
     private Object readString(int size, boolean parseBytes) {
@@ -123,7 +123,7 @@ public class BinaryDecoder {
 
     private String readHexString() {
         var number = buffer.readUnsignedByte();
-        return readString(BinaryTokens.HEX, number >>> 7, 127 & number);
+        return readString(Tokens.HEX, number >>> 7, 127 & number);
     }
 
     private ContactJid readJidPair() {

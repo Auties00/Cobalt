@@ -3,7 +3,7 @@ package it.auties.whatsapp.controller;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.bytes.Bytes;
-import it.auties.whatsapp.api.WhatsappListener;
+import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
@@ -45,12 +45,12 @@ import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 @Accessors(fluent = true, chain = true)
 @Log
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public final class WhatsappStore implements WhatsappController {
+public final class Store implements Controller {
     /**
      * All the known stores
      */
     @JsonIgnore
-    private static Set<WhatsappStore> stores = ConcurrentHashMap.newKeySet();
+    private static Set<Store> stores = ConcurrentHashMap.newKeySet();
 
     /**
      * The session id of this store
@@ -103,7 +103,7 @@ public final class WhatsappStore implements WhatsappController {
     @NonNull
     @JsonIgnore
     @Default
-    private ConcurrentLinkedDeque<WhatsappListener> listeners = new ConcurrentLinkedDeque<>();
+    private ConcurrentLinkedDeque<Listener> listeners = new ConcurrentLinkedDeque<>();
 
     /**
      * Request counter
@@ -152,8 +152,8 @@ public final class WhatsappStore implements WhatsappController {
      * @param id the unsigned jid of this store
      * @return a non-null instance of WhatsappStore
      */
-    public static WhatsappStore random(int id) {
-        var result = WhatsappStore.builder()
+    public static Store random(int id) {
+        var result = Store.builder()
                 .id(id)
                 .build();
         stores.add(result);
@@ -166,7 +166,7 @@ public final class WhatsappStore implements WhatsappController {
      * @param id the jid of this session
      * @return a non-null instance of WhatsappStore
      */
-    public static WhatsappStore of(int id) {
+    public static Store of(int id) {
         var preferences = Preferences.of("%s/store.json", id);
         var result = requireNonNullElseGet(preferences.readJson(new TypeReference<>() {
         }), () -> random(id));
@@ -189,7 +189,7 @@ public final class WhatsappStore implements WhatsappController {
      * @param id the id to search
      * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional
      */
-    public static Optional<WhatsappStore> findStoreById(int id) {
+    public static Optional<Store> findStoreById(int id) {
         return Collections.synchronizedSet(stores)
                 .parallelStream()
                 .filter(entry -> entry.id() == id)
@@ -404,7 +404,7 @@ public final class WhatsappStore implements WhatsappController {
      * @param consumer the operation to execute
      */
     @SneakyThrows
-    public void invokeListeners(Consumer<WhatsappListener> consumer) {
+    public void invokeListeners(Consumer<Listener> consumer) {
         if (requestsService.isShutdown()) {
             this.requestsService = newSingleThreadScheduledExecutor();
         }
@@ -423,11 +423,11 @@ public final class WhatsappStore implements WhatsappController {
      *
      * @param consumer the operation to execute
      */
-    public void callListeners(Consumer<WhatsappListener> consumer) {
+    public void callListeners(Consumer<Listener> consumer) {
         listeners.forEach(listener -> callListener(consumer, listener));
     }
 
-    private void callListener(Consumer<WhatsappListener> consumer, WhatsappListener listener) {
+    private void callListener(Consumer<Listener> consumer, Listener listener) {
         if (requestsService.isShutdown()) {
             this.requestsService = newSingleThreadScheduledExecutor();
         }
@@ -480,7 +480,7 @@ public final class WhatsappStore implements WhatsappController {
      *
      * @return this
      */
-    public WhatsappStore delete() {
+    public Store delete() {
         var preferences = Preferences.of("%s/store.json", id);
         preferences.delete();
         return this;

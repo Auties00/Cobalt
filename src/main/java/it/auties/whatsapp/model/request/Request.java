@@ -1,16 +1,15 @@
 package it.auties.whatsapp.model.request;
 
 import it.auties.bytes.Bytes;
-import it.auties.whatsapp.binary.BinaryEncoder;
-import it.auties.whatsapp.controller.WhatsappKeys;
-import it.auties.whatsapp.controller.WhatsappStore;
+import it.auties.whatsapp.binary.Encoder;
+import it.auties.whatsapp.controller.Keys;
+import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.util.JacksonProvider;
 import jakarta.websocket.SendResult;
 import jakarta.websocket.Session;
 import lombok.NonNull;
 import lombok.SneakyThrows;
-import lombok.extern.java.Log;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
@@ -28,7 +27,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     /**
      * The binary encoder, used to encode requests that take as a parameter a node
      */
-    private static final BinaryEncoder ENCODER = new BinaryEncoder();
+    private static final Encoder ENCODER = new Encoder();
 
     /**
      * The timeout in seconds before a Request wrapping a Node fails
@@ -66,8 +65,8 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @param session the WhatsappWeb's WebSocket session
      * @param store   the store
      */
-    public CompletableFuture<Node> sendWithPrologue(@NonNull Session session, @NonNull WhatsappKeys keys,
-                                                    @NonNull WhatsappStore store) {
+    public CompletableFuture<Node> sendWithPrologue(@NonNull Session session, @NonNull Keys keys,
+                                                    @NonNull Store store) {
         return send(session, keys, store, true, false);
     }
 
@@ -78,8 +77,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @param session the WhatsappWeb's WebSocket session
      * @return this request
      */
-    public CompletableFuture<Node> send(@NonNull Session session, @NonNull WhatsappKeys keys,
-                                        @NonNull WhatsappStore store) {
+    public CompletableFuture<Node> send(@NonNull Session session, @NonNull Keys keys, @NonNull Store store) {
         return send(session, keys, store, false, true);
     }
 
@@ -90,8 +88,8 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @param session the WhatsappWeb's WebSocket session
      * @return this request
      */
-    public CompletableFuture<Void> sendWithNoResponse(@NonNull Session session, @NonNull WhatsappKeys keys,
-                                                      @NonNull WhatsappStore store) {
+    public CompletableFuture<Void> sendWithNoResponse(@NonNull Session session, @NonNull Keys keys,
+                                                      @NonNull Store store) {
         return send(session, keys, store, false, false).thenRunAsync(() -> {
         });
     }
@@ -105,8 +103,8 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @param response whether the request expects a response
      * @return this request
      */
-    public CompletableFuture<Node> send(@NonNull Session session, @NonNull WhatsappKeys keys,
-                                        @NonNull WhatsappStore store, boolean prologue, boolean response) {
+    public CompletableFuture<Node> send(@NonNull Session session, @NonNull Keys keys, @NonNull Store store,
+                                        boolean prologue, boolean response) {
         try {
             var ciphered = encryptMessage(keys);
             var buffer = Bytes.of(prologue ?
@@ -145,7 +143,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
         future.complete(response);
     }
 
-    private void handleSendResult(WhatsappStore store, SendResult result, boolean response) {
+    private void handleSendResult(Store store, SendResult result, boolean response) {
         if (!result.isOK()) {
             future.completeExceptionally(new IllegalArgumentException(
                     ("Cannot send request %s, erroneous send result: %s".formatted(this, result)),
@@ -162,7 +160,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
                 .add(this);
     }
 
-    private byte[] encryptMessage(WhatsappKeys keys) {
+    private byte[] encryptMessage(Keys keys) {
         var encodedBody = body();
         var body = switch (encodedBody) {
             case byte[] bytes -> bytes;

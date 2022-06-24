@@ -1,6 +1,6 @@
 package it.auties.whatsapp.crypto;
 
-import it.auties.whatsapp.controller.WhatsappKeys;
+import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.signal.sender.SenderKeyMessage;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
@@ -13,7 +13,7 @@ import lombok.NonNull;
 import static it.auties.whatsapp.model.request.Node.with;
 import static java.util.Map.of;
 
-public record GroupCipher(@NonNull SenderKeyName name, @NonNull WhatsappKeys keys) implements SignalSpecification {
+public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) implements SignalSpecification {
     public Node encrypt(byte[] data) {
         var currentState = keys.findSenderKeyByName(name)
                 .headState();

@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  * This interface represents is implemented by all WhatsappWeb4J's controllers.
  * It provides an easy way to store IDs and serialize said class.
  */
-public sealed interface WhatsappController permits WhatsappStore, WhatsappKeys {
+public sealed interface Controller permits Store, Keys {
     /**
      * Returns all the known IDs
      *
@@ -23,7 +23,7 @@ public sealed interface WhatsappController permits WhatsappStore, WhatsappKeys {
      */
     static LinkedList<Integer> knownIds() {
         try (var walker = Files.walk(Preferences.home(), 1)) {
-            return walker.map(WhatsappController::parsePathAsId)
+            return walker.map(Controller::parsePathAsId)
                     .flatMap(Optional::stream)
                     .collect(Collectors.toCollection(LinkedList::new));
         } catch (IOException exception) {

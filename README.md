@@ -77,9 +77,9 @@ Listeners are crucial to handle events related to Whatsapp.
 To create a new listener, declare a class or record that implements the WhatsappListener interface:
 
 ```java
-import it.auties.whatsapp.api.WhatsappListener;
+import it.auties.whatsapp.listener.Listener;
 
-public class MyListener implements WhatsappListener {
+public class MyListener implements Listener {
 
 }
 ```
@@ -93,11 +93,11 @@ api.registerListener(new MyListener());
 Or to register it automatically:
 
 ```java
-import it.auties.whatsapp.api.RegisterListener;
-import it.auties.whatsapp.api.WhatsappListener;
+import it.auties.whatsapp.listener.RegisterListener;
+import it.auties.whatsapp.listener.Listener;
 
 @RegisterListener // Automatically registers this listener
-public class MyListener implements WhatsappListener {
+public class MyListener implements Listener {
 
 }
 ```
@@ -106,12 +106,12 @@ If you need the instance of Whatsapp that registered this listener inside it's d
 automically:
 
 ```java
-import it.auties.whatsapp.api.RegisterListener;
+import it.auties.whatsapp.listener.RegisterListener;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.api.WhatsappListener;
+import it.auties.whatsapp.listener.Listener;
 
 @RegisterListener // Automatically registers this listener
-public record MyListener(Whatsapp api) implements WhatsappListener {
+public record MyListener(Whatsapp api) implements Listener {
 
 }
 ```

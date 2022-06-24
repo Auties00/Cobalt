@@ -2,7 +2,7 @@ package it.auties.whatsapp.model.message.standard;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.controller.WhatsappStore;
+import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.InteractiveAnnotation;
@@ -171,7 +171,7 @@ public final class ImageMessage extends MediaMessage {
     @Builder(builderClassName = "SimpleImageBuilder", builderMethodName = "newImageMessage", buildMethodName = "create")
     private static ImageMessage simpleBuilder(int storeId, byte @NonNull [] media, String mimeType, String caption,
                                               byte[] thumbnail, ContextInfo contextInfo) {
-        var store = WhatsappStore.findStoreById(storeId)
+        var store = Store.findStoreById(storeId)
                 .orElseThrow(() -> new NoSuchElementException(
                         "Cannot create image message, invalid store id: %s".formatted(storeId)));
         var dimensions = Medias.getDimensions(media, false);

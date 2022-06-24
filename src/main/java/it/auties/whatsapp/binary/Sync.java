@@ -4,14 +4,14 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.NoSuchElementException;
 
-public enum BinarySync {
+public enum Sync {
     CRITICAL_BLOCK,
     CRITICAL_UNBLOCK_LOW,
     REGULAR_HIGH,
     REGULAR_LOW,
     REGULAR;
 
-    public static BinarySync forName(String name) {
+    public static Sync forName(String name) {
         return Arrays.stream(values())
                 .filter(entry -> entry.toString()
                         .equals(name))

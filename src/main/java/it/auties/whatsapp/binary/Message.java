@@ -1,7 +1,7 @@
 package it.auties.whatsapp.binary;
 
 import it.auties.bytes.Bytes;
-import it.auties.whatsapp.controller.WhatsappKeys;
+import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.model.request.Node;
 import lombok.NonNull;
@@ -13,14 +13,14 @@ import java.util.List;
 
 @Value
 @Accessors(fluent = true)
-public class BinaryMessage {
-    private static final BinaryDecoder DECODER = new BinaryDecoder();
+public class Message {
+    private static final Decoder DECODER = new Decoder();
 
     @NonNull Bytes raw;
 
     @NonNull LinkedList<Bytes> decoded;
 
-    public BinaryMessage(@NonNull Bytes raw) {
+    public Message(@NonNull Bytes raw) {
         this.raw = raw;
         var decoded = new LinkedList<Bytes>();
         while (raw.readableBytes() >= 3) {
@@ -35,7 +35,7 @@ public class BinaryMessage {
         this.decoded = decoded;
     }
 
-    public BinaryMessage(byte @NonNull [] array) {
+    public Message(byte @NonNull [] array) {
         this(Bytes.of(array));
     }
 
@@ -43,13 +43,13 @@ public class BinaryMessage {
         return (buffer.readByte() << 16) | buffer.readUnsignedShort();
     }
 
-    public List<Node> toNodes(@NonNull WhatsappKeys keys) {
+    public List<Node> toNodes(@NonNull Keys keys) {
         return decoded.stream()
                 .map(encoded -> toNode(encoded, keys))
                 .toList();
     }
 
-    private Node toNode(Bytes encoded, WhatsappKeys keys) {
+    private Node toNode(Bytes encoded, Keys keys) {
         var plainText = AesGmc.of(keys.readKey(), keys.readCounter(true), false)
                 .encrypt(encoded.toByteArray());
         return DECODER.decode(plainText);

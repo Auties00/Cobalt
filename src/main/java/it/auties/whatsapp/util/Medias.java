@@ -1,7 +1,7 @@
 package it.auties.whatsapp.util;
 
 import it.auties.bytes.Bytes;
-import it.auties.whatsapp.controller.WhatsappStore;
+import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesCbc;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.Sha256;
@@ -45,7 +45,7 @@ public class Medias implements JacksonProvider {
     private static final int RANDOM_FILE_NAME_LENGTH = 8;
     private static final Map<String, Path> CACHE = new ConcurrentHashMap<>();
 
-    public MediaFile upload(byte[] file, MediaMessageType type, WhatsappStore store) {
+    public MediaFile upload(byte[] file, MediaMessageType type, Store store) {
         var client = HttpClient.newHttpClient();
         var auth = URLEncoder.encode(store.mediaConnection()
                 .auth(), StandardCharsets.UTF_8);
@@ -90,7 +90,7 @@ public class Medias implements JacksonProvider {
         }
     }
 
-    public byte[] download(AttachmentProvider provider, WhatsappStore store) {
+    public byte[] download(AttachmentProvider provider, Store store) {
         return getDownloadUrls(provider, store).stream()
                 .map(url -> download(provider, url))
                 .flatMap(Optional::stream)
@@ -114,8 +114,7 @@ public class Medias implements JacksonProvider {
 
             var keys = MediaKeys.of(provider.key(), provider.keyName());
             var hmac = calculateMac(encryptedMedia, keys);
-            Validate.isTrue(Arrays.equals(hmac, mediaMac), "media_decryption",
-                    HmacValidationException.class);
+            Validate.isTrue(Arrays.equals(hmac, mediaMac), "media_decryption", HmacValidationException.class);
 
             var decrypted = AesCbc.decrypt(keys.iv(), encryptedMedia, keys.cipherKey());
             Validate.isTrue(provider.fileLength() <= 0 || provider.fileLength() == decrypted.length,
@@ -136,7 +135,7 @@ public class Medias implements JacksonProvider {
                 .toByteArray();
     }
 
-    private List<String> getDownloadUrls(AttachmentProvider provider, WhatsappStore store) {
+    private List<String> getDownloadUrls(AttachmentProvider provider, Store store) {
         if (provider.url() != null) {
             return List.of(provider.url());
         }
@@ -149,7 +148,7 @@ public class Medias implements JacksonProvider {
                 .toList();
     }
 
-    private List<String> getHosts(WhatsappStore store) {
+    private List<String> getHosts(Store store) {
         return Optional.ofNullable(store.mediaConnection())
                 .map(MediaConnection::hosts)
                 .orElse(List.of("mmg.whatsapp.net"));

@@ -1,8 +1,10 @@
 package it.auties.whatsapp.api;
 
-import it.auties.whatsapp.binary.BinarySocket;
-import it.auties.whatsapp.controller.WhatsappKeys;
-import it.auties.whatsapp.controller.WhatsappStore;
+import com.google.zxing.qrcode.encoder.QRCode;
+import it.auties.whatsapp.binary.Socket;
+import it.auties.whatsapp.controller.Keys;
+import it.auties.whatsapp.controller.Store;
+import it.auties.whatsapp.listener.*;
 import it.auties.whatsapp.model.action.MarkChatAsReadAction;
 import it.auties.whatsapp.model.action.MuteAction;
 import it.auties.whatsapp.model.action.PinAction;
@@ -19,26 +21,31 @@ import it.auties.whatsapp.model.message.standard.TextMessage;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.response.ContactStatusResponse;
 import it.auties.whatsapp.model.response.HasWhatsappResponse;
+import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.model.sync.ActionMessageRangeSync;
 import it.auties.whatsapp.model.sync.ActionValueSync;
 import it.auties.whatsapp.model.sync.PatchRequest;
 import it.auties.whatsapp.util.*;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.Data;
 import lombok.NonNull;
+import lombok.With;
+import lombok.experimental.Accessors;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static it.auties.bytes.Bytes.ofRandom;
-import static it.auties.whatsapp.api.WhatsappOptions.defaultOptions;
-import static it.auties.whatsapp.binary.BinarySync.REGULAR_HIGH;
-import static it.auties.whatsapp.binary.BinarySync.REGULAR_LOW;
-import static it.auties.whatsapp.controller.WhatsappController.knownIds;
+import static it.auties.whatsapp.api.Whatsapp.Options.defaultOptions;
+import static it.auties.whatsapp.binary.Sync.REGULAR_HIGH;
+import static it.auties.whatsapp.binary.Sync.REGULAR_LOW;
+import static it.auties.whatsapp.controller.Controller.knownIds;
 import static it.auties.whatsapp.model.request.Node.*;
 import static it.auties.whatsapp.model.sync.RecordSync.Operation.SET;
 import static java.util.Map.of;
@@ -50,22 +57,43 @@ import static java.util.Objects.requireNonNullElseGet;
  * It can be configured using a default configuration or a custom one.
  * Multiple instances of this class can be initialized, though it is not advisable as; is a singleton and cannot distinguish between the data associated with each session.
  */
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public class Whatsapp {
     /**
+     * Constant for unlimited listeners size
+     */
+    private static final int UNLIMITED_LISTENERS = -1;
+
+    /**
      * The socket associated with this session
      */
-    private final BinarySocket socket;
+    private final Socket socket;
 
-    private Whatsapp(WhatsappOptions options) {
-        this(options, WhatsappStore.of(options.id()), WhatsappKeys.of(options.id()));
+    /**
+     * Listeners limit
+     */
+    private int listenersLimit;
+
+    /**
+     * Default serialization listener
+     */
+    private Listener defaultSerializer;
+
+    private Whatsapp(Options options) {
+        this(options, Store.of(options.id()), Keys.of(options.id()));
     }
 
-    private Whatsapp(WhatsappOptions options, WhatsappStore store, WhatsappKeys keys) {
-        this(new BinarySocket(options, store, keys));
+    private Whatsapp(Options options, Store store, Keys keys) {
+        this.socket = new Socket(this, options, store, keys);
+        this.listenersLimit = UNLIMITED_LISTENERS;
+        this.defaultSerializer = new BlockingDefaultSerializer();
+        addListener(defaultSerializer);
+        if (!options.autodetectListeners()) {
+            return;
+        }
+
         ListenerScanner.scan(this)
-                .forEach(this::registerListener);
+                .forEach(this::addListener);
     }
 
     /**
@@ -76,7 +104,7 @@ public class Whatsapp {
      * @return a non-null Whatsapp instance
      */
     public static Whatsapp newConnection(int id) {
-        return newConnection(WhatsappOptions.defaultOptions()
+        return newConnection(Options.defaultOptions()
                 .withId(id));
     }
 
@@ -86,7 +114,7 @@ public class Whatsapp {
      * @return a non-null Whatsapp instance
      */
     public static Whatsapp newConnection() {
-        return newConnection(defaultOptions().withId(KeyHelper.registrationId()));
+        return newConnection(defaultOptions());
     }
 
     /**
@@ -96,7 +124,7 @@ public class Whatsapp {
      * @param options the non-null options used to create this session
      * @return a non-null Whatsapp instance
      */
-    public static Whatsapp newConnection(@NonNull WhatsappOptions options) {
+    public static Whatsapp newConnection(@NonNull Options options) {
         return new Whatsapp(options);
     }
 
@@ -108,8 +136,7 @@ public class Whatsapp {
      * @param keys    the non-null keys used to create this session
      * @return a non-null Whatsapp instance
      */
-    public static Whatsapp newConnection(@NonNull WhatsappOptions options, @NonNull WhatsappStore store,
-                                         @NonNull WhatsappKeys keys) {
+    public static Whatsapp newConnection(@NonNull Options options, @NonNull Store store, @NonNull Keys keys) {
         return new Whatsapp(options, store, keys);
     }
 
@@ -169,7 +196,7 @@ public class Whatsapp {
      *
      * @return a non-null WhatsappStore
      */
-    public WhatsappStore store() {
+    public Store store() {
         return socket.store();
     }
 
@@ -178,7 +205,7 @@ public class Whatsapp {
      *
      * @return a non-null WhatsappKeys
      */
-    public WhatsappKeys keys() {
+    public Keys keys() {
         return socket.keys();
     }
 
@@ -188,11 +215,484 @@ public class Whatsapp {
      * @param listener the listener to register
      * @return the same instance
      */
-    public Whatsapp registerListener(@NonNull WhatsappListener listener) {
+    public Whatsapp addListener(@NonNull Listener listener) {
+        Validate.isTrue(listenersLimit < 0 || store().listeners()
+                        .size() + 1 <= listenersLimit, "The number of listeners is too high: expected %s, got %s",
+                listenersLimit, socket.store()
+                        .listeners()
+                        .size());
         Validate.isTrue(socket.store()
                 .listeners()
                 .add(listener), "WhatsappAPI: Cannot add listener %s", listener.getClass()
                 .getName());
+        return this;
+    }
+
+    /**
+     * Limits the number of listeners that this connection can have.
+     * This limit is enforced as soon as the method is called and for future modifications to the listeners.
+     *
+     * @param size the maximum number of listeners
+     * @return the same instance
+     * @throws IllegalStateException if the number of listeners is already too high
+     */
+    public Whatsapp limitListeners(int size) {
+        this.listenersLimit = size;
+        Validate.isTrue(store().listeners()
+                        .size() <= size, "The number of listeners is too high: expected %s, got %s", listenersLimit,
+                store().listeners()
+                        .size(), IllegalStateException.class);
+        return this;
+    }
+
+    /**
+     * Registers an action listener
+     *
+     * @param onAction the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addActionListener(OnAction onAction) {
+        return addListener(onAction);
+    }
+
+    /**
+     * Registers a chat recent messages listener
+     *
+     * @param onChatRecentMessages the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addChatRecentMessagesListener(OnChatRecentMessages onChatRecentMessages) {
+        return addListener(onChatRecentMessages);
+    }
+
+    /**
+     * Registers a chats listener
+     *
+     * @param onChats the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addChatsListener(OnChats onChats) {
+        return addListener(onChats);
+    }
+
+    /**
+     * Registers a contact presence listener
+     *
+     * @param onContactPresence the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addContactPresenceListener(OnContactPresence onContactPresence) {
+        return addListener(onContactPresence);
+    }
+
+    /**
+     * Registers a contacts listener
+     *
+     * @param onContacts the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addContactsListener(OnContacts onContacts) {
+        return addListener(onContacts);
+    }
+
+    /**
+     * Registers a message status listener
+     *
+     * @param onConversationMessageStatus the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addMessageStatusListener(OnConversationMessageStatus onConversationMessageStatus) {
+        return addListener(onConversationMessageStatus);
+    }
+
+    /**
+     * Registers a message status listener
+     *
+     * @param onMessageStatus the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addMessageStatusListener(OnMessageStatus onMessageStatus) {
+        return addListener(onMessageStatus);
+    }
+
+    /**
+     * Registers a disconnected listener
+     *
+     * @param onDisconnected the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addDisconnectedListener(OnDisconnected onDisconnected) {
+        return addListener(onDisconnected);
+    }
+
+    /**
+     * Registers a features listener
+     *
+     * @param onFeatures the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addFeaturesListener(OnFeatures onFeatures) {
+        return addListener(onFeatures);
+    }
+
+    /**
+     * Registers a logged in listener
+     *
+     * @param onLoggedIn the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addLoggedInListener(OnLoggedIn onLoggedIn) {
+        return addListener(onLoggedIn);
+    }
+
+    /**
+     * Registers a message deleted listener
+     *
+     * @param onMessageDeleted the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addMessageDeletedListener(OnMessageDeleted onMessageDeleted) {
+        return addListener(onMessageDeleted);
+    }
+
+    /**
+     * Registers a metadata listener
+     *
+     * @param onMetadata the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addMetadataListener(OnMetadata onMetadata) {
+        return addListener(onMetadata);
+    }
+
+    /**
+     * Registers a new contact listener
+     *
+     * @param onNewContact the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addNewContactListener(OnNewContact onNewContact) {
+        return addListener(onNewContact);
+    }
+
+    /**
+     * Registers a new message listener
+     *
+     * @param onNewMessage the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addNewMessageListener(OnNewMessage onNewMessage) {
+        return addListener(onNewMessage);
+    }
+
+    /**
+     * Registers a new status listener
+     *
+     * @param onNewStatus the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addNewStatusListener(OnNewStatus onNewStatus) {
+        return addListener(onNewStatus);
+    }
+
+    /**
+     * Registers a received node listener
+     *
+     * @param onNodeReceived the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addNodeReceivedListener(OnNodeReceived onNodeReceived) {
+        return addListener(onNodeReceived);
+    }
+
+    /**
+     * Registers a sent node listener
+     *
+     * @param onNodeSent the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addNodeSentListener(OnNodeSent onNodeSent) {
+        return addListener(onNodeSent);
+    }
+
+    /**
+     * Registers a qr code listener
+     *
+     * @param onQrCode the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addQrCodeListener(OnQrCode onQrCode) {
+        return addListener(onQrCode);
+    }
+
+    /**
+     * Registers a setting listener
+     *
+     * @param onSetting the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addSettingListener(OnSetting onSetting) {
+        return addListener(onSetting);
+    }
+
+    /**
+     * Registers a status listener
+     *
+     * @param onStatus the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addStatusListener(OnStatus onStatus) {
+        return addListener(onStatus);
+    }
+
+    /**
+     * Registers an event listener
+     *
+     * @param onSocketEvent the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addSocketEventListener(OnSocketEvent onSocketEvent) {
+        return addListener(onSocketEvent);
+    }
+
+    /**
+     * Registers an action listener
+     *
+     * @param onAction the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addActionListener(OnWhatsappAction onAction) {
+        return addListener(onAction);
+    }
+
+    /**
+     * Registers a chat recent messages listener
+     *
+     * @param onChatRecentMessages the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addChatRecentMessagesListener(OnWhatsappChatRecentMessages onChatRecentMessages) {
+        return addListener(onChatRecentMessages);
+    }
+
+    /**
+     * Registers a chats listener
+     *
+     * @param onChats the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addChatsListener(OnWhatsappChats onChats) {
+        return addListener(onChats);
+    }
+
+    /**
+     * Registers a contact presence listener
+     *
+     * @param onContactPresence the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addContactPresenceListener(OnWhatsappContactPresence onContactPresence) {
+        return addListener(onContactPresence);
+    }
+
+    /**
+     * Registers a contacts listener
+     *
+     * @param onContacts the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addContactsListener(OnWhatsappContacts onContacts) {
+        return addListener(onContacts);
+    }
+
+    /**
+     * Registers a message status listener
+     *
+     * @param onConversationMessageStatus the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addMessageStatusListener(OnWhatsappConversationMessageStatus onConversationMessageStatus) {
+        return addListener(onConversationMessageStatus);
+    }
+
+    /**
+     * Registers a message status listener
+     *
+     * @param onMessageStatus the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addMessageStatusListener(OnWhatsappMessageStatus onMessageStatus) {
+        return addListener(onMessageStatus);
+    }
+
+    /**
+     * Registers a disconnected listener
+     *
+     * @param onDisconnected the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addDisconnectedListener(OnWhatsappDisconnected onDisconnected) {
+        return addListener(onDisconnected);
+    }
+
+    /**
+     * Registers a features listener
+     *
+     * @param onFeatures the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addFeaturesListener(OnWhatsappFeatures onFeatures) {
+        return addListener(onFeatures);
+    }
+
+    /**
+     * Registers a logged in listener
+     *
+     * @param onLoggedIn the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addLoggedInListener(OnWhatsappLoggedIn onLoggedIn) {
+        return addListener(onLoggedIn);
+    }
+
+    /**
+     * Registers a message deleted listener
+     *
+     * @param onMessageDeleted the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addMessageDeletedListener(OnWhatsappMessageDeleted onMessageDeleted) {
+        return addListener(onMessageDeleted);
+    }
+
+    /**
+     * Registers a metadata listener
+     *
+     * @param onMetadata the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addMetadataListener(OnWhatsappMetadata onMetadata) {
+        return addListener(onMetadata);
+    }
+
+    /**
+     * Registers a new contact listener
+     *
+     * @param onNewContact the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addNewContactListener(OnWhatsappNewContact onNewContact) {
+        return addListener(onNewContact);
+    }
+
+    /**
+     * Registers a new message listener
+     *
+     * @param onNewMessage the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addNewMessageListener(OnWhatsappNewMessage onNewMessage) {
+        return addListener(onNewMessage);
+    }
+
+    /**
+     * Registers a new status listener
+     *
+     * @param onNewStatus the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addNewStatusListener(OnWhatsappNewStatus onNewStatus) {
+        return addListener(onNewStatus);
+    }
+
+    /**
+     * Registers a received node listener
+     *
+     * @param onNodeReceived the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addNodeReceivedListener(OnWhatsappNodeReceived onNodeReceived) {
+        return addListener(onNodeReceived);
+    }
+
+    /**
+     * Registers a sent node listener
+     *
+     * @param onNodeSent the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addNodeSentListener(OnWhatsappNodeSent onNodeSent) {
+        return addListener(onNodeSent);
+    }
+
+    /**
+     * Registers a setting listener
+     *
+     * @param onSetting the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addSettingListener(OnWhatsappSetting onSetting) {
+        return addListener(onSetting);
+    }
+
+    /**
+     * Registers a status listener
+     *
+     * @param onStatus the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addStatusListener(OnWhatsappStatus onStatus) {
+        return addListener(onStatus);
+    }
+
+    /**
+     * Registers an event listener
+     *
+     * @param onSocketEvent the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addSocketEventListener(OnWhatsappSocketEvent onSocketEvent) {
+        return addListener(onSocketEvent);
+    }
+
+    /**
+     * Registers an event listener
+     *
+     * @param onSocketEvent the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addSerialization(OnWhatsappSocketEvent onSocketEvent) {
+        return addListener(onSocketEvent);
+    }
+
+    /**
+     * Uses the default serialization mechanism.
+     * Calling this method is not necessary unless {@link Whatsapp#withoutDefaultSerialization()} has been called previously.
+     *
+     * @return the same instance
+     */
+    public Whatsapp withDefaultSerialization(){
+        if(defaultSerializer != null){
+            return this;
+        }
+
+        this.defaultSerializer = new BlockingDefaultSerializer();
+        addListener(defaultSerializer);
+        return this;
+    }
+
+    /**
+     * Disables the default serialization mechanism.
+     *
+     * @return the same instance
+     */
+    public Whatsapp withoutDefaultSerialization(){
+        if(defaultSerializer == null){
+            return this;
+        }
+
+        removeListener(defaultSerializer);
+        this.defaultSerializer = null;
         return this;
     }
 
@@ -202,7 +702,7 @@ public class Whatsapp {
      * @param listener the listener to remove
      * @return the same instance
      */
-    public Whatsapp removeListener(@NonNull WhatsappListener listener) {
+    public Whatsapp removeListener(@NonNull Listener listener) {
         Validate.isTrue(socket.store()
                 .listeners()
                 .remove(listener), "WhatsappAPI: Cannot remove listener %s", listener.getClass()
@@ -521,8 +1021,10 @@ public class Whatsapp {
      * @param chat the target group
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> revokeInviteCode(@NonNull ContactJidProvider chat) {
-        return socket.sendQuery(chat.toJid(), "set", "w:g2", with("invite"));
+    public CompletableFuture<Void> revokeInviteCode(@NonNull ContactJidProvider chat) {
+        return socket.sendQuery(chat.toJid(), "set", "w:g2", with("invite"))
+                .thenAcceptAsync(ignored -> {
+                });
     }
 
     /**
@@ -565,7 +1067,7 @@ public class Whatsapp {
      * @param presence the new status
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> changePresence(@NonNull ContactJidProvider chat, @NonNull ContactStatus presence) {
+    public CompletableFuture<Void> changePresence(@NonNull ContactJidProvider chat, @NonNull ContactStatus presence) {
         var node = withAttributes("presence", of("to", chat.toJid(), "type", presence.data()));
         return socket.sendWithNoResponse(node);
     }
@@ -657,9 +1159,11 @@ public class Whatsapp {
      * @return a CompletableFuture
      * @throws IllegalArgumentException if the provided new name is empty or blank
      */
-    public CompletableFuture<?> changeSubject(@NonNull ContactJidProvider group, @NonNull String newName) {
+    public CompletableFuture<Void> changeSubject(@NonNull ContactJidProvider group, @NonNull String newName) {
         var body = with("subject", newName.getBytes(StandardCharsets.UTF_8));
-        return socket.sendQuery(group.toJid(), "set", "w:g2", body);
+        return socket.sendQuery(group.toJid(), "set", "w:g2", body)
+                .thenAcceptAsync(ignored -> {
+                });
     }
 
     /**
@@ -669,10 +1173,12 @@ public class Whatsapp {
      * @param description the new name for the group, can be null if you want to remove it
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> changeDescription(@NonNull ContactJidProvider group, String description) {
+    public CompletableFuture<Void> changeDescription(@NonNull ContactJidProvider group, String description) {
         return socket.queryGroupMetadata(group.toJid())
                 .thenApplyAsync(GroupMetadata::descriptionId)
-                .thenComposeAsync(descriptionId -> changeDescription(group, description, descriptionId));
+                .thenComposeAsync(descriptionId -> changeDescription(group, description, descriptionId))
+                .thenAcceptAsync(ignored -> {
+                });
     }
 
     private CompletableFuture<Node> changeDescription(ContactJidProvider group, String description,
@@ -696,12 +1202,14 @@ public class Whatsapp {
      * @param policy the new policy to enforce
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> changeWhoCanSendMessages(@NonNull ContactJidProvider group,
-                                                         @NonNull GroupPolicy policy) {
+    public CompletableFuture<Void> changeWhoCanSendMessages(@NonNull ContactJidProvider group,
+                                                            @NonNull GroupPolicy policy) {
         var body = with(policy != GroupPolicy.ANYONE ?
                 "not_announcement" :
                 "announcement");
-        return socket.sendQuery(group.toJid(), "set", "w:g2", body);
+        return socket.sendQuery(group.toJid(), "set", "w:g2", body)
+                .thenAcceptAsync(ignored -> {
+                });
     }
 
     /**
@@ -711,11 +1219,14 @@ public class Whatsapp {
      * @param policy the new policy to enforce
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> changeWhoCanEditInfo(@NonNull ContactJidProvider group, @NonNull GroupPolicy policy) {
+    public CompletableFuture<Void> changeWhoCanEditInfo(@NonNull ContactJidProvider group,
+                                                        @NonNull GroupPolicy policy) {
         var body = with(policy != GroupPolicy.ANYONE ?
                 "locked" :
                 "unlocked");
-        return socket.sendQuery(group.toJid(), "set", "w:g2", body);
+        return socket.sendQuery(group.toJid(), "set", "w:g2", body)
+                .thenAcceptAsync(ignored -> {
+                });
     }
 
     /**
@@ -724,7 +1235,7 @@ public class Whatsapp {
      * @param image the new image, can be null if you want to remove it
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> changePicture(byte[] image) {
+    public CompletableFuture<Void> changePicture(byte[] image) {
         return changePicture(keys().companion()
                 .toUserJid(), image);
     }
@@ -736,12 +1247,14 @@ public class Whatsapp {
      * @param image the new image, can be null if you want to remove it
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> changePicture(@NonNull ContactJidProvider group, byte[] image) {
+    public CompletableFuture<Void> changePicture(@NonNull ContactJidProvider group, byte[] image) {
         var profilePic = image != null ?
                 Medias.getProfilePic(image) :
                 null;
         var body = with("picture", of("type", "image"), profilePic);
-        return socket.sendQuery(group.toJid(), "set", "w:profile:picture", body);
+        return socket.sendQuery(group.toJid(), "set", "w:profile:picture", body)
+                .thenAcceptAsync(ignored -> {
+                });
     }
 
     /**
@@ -769,9 +1282,11 @@ public class Whatsapp {
      * @param group the target group
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    public CompletableFuture<?> leave(@NonNull ContactJidProvider group) {
+    public CompletableFuture<Void> leave(@NonNull ContactJidProvider group) {
         var body = withChildren("leave", withAttributes("group", of("id", group.toJid())));
-        return socket.sendQuery(ContactJid.GROUP, "set", "w:g2", body);
+        return socket.sendQuery(ContactJid.GROUP, "set", "w:g2", body)
+                .thenAcceptAsync(ignored -> {
+                });
     }
 
     /**
@@ -780,7 +1295,7 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> mute(@NonNull ContactJidProvider chat) {
+    public CompletableFuture<Void> mute(@NonNull ContactJidProvider chat) {
         return mute(chat, (Long) null);
     }
 
@@ -791,7 +1306,7 @@ public class Whatsapp {
      * @param until the date the mute ends, can be null
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> mute(@NonNull ContactJidProvider chat, ZonedDateTime until) {
+    public CompletableFuture<Void> mute(@NonNull ContactJidProvider chat, ZonedDateTime until) {
         return mute(chat, until != null ?
                 until.toEpochSecond() :
                 null);
@@ -818,7 +1333,7 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> unmute(@NonNull ContactJidProvider chat) {
+    public CompletableFuture<Void> unmute(@NonNull ContactJidProvider chat) {
         var muteAction = new MuteAction(false, null);
         var syncAction = new ActionValueSync(muteAction);
         var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 2, chat.toJid()
@@ -832,9 +1347,11 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> block(@NonNull ContactJidProvider chat) {
+    public CompletableFuture<Void> block(@NonNull ContactJidProvider chat) {
         var body = withAttributes("item", of("action", "block", "jid", chat.toJid()));
-        return socket.sendQuery("set", "blocklist", body);
+        return socket.sendQuery("set", "blocklist", body)
+                .thenAcceptAsync(ignored -> {
+                });
     }
 
     /**
@@ -843,9 +1360,11 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> unblock(@NonNull ContactJidProvider chat) {
+    public CompletableFuture<Void> unblock(@NonNull ContactJidProvider chat) {
         var body = withAttributes("item", of("action", "unblock", "jid", chat.toJid()));
-        return socket.sendQuery("set", "blocklist", body);
+        return socket.sendQuery("set", "blocklist", body)
+                .thenAcceptAsync(ignored -> {
+                });
     }
 
 
@@ -855,8 +1374,8 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> changeEphemeralTimer(@NonNull ContactJidProvider chat,
-                                                     @NonNull ChatEphemeralTimer timer) {
+    public CompletableFuture<Void> changeEphemeralTimer(@NonNull ContactJidProvider chat,
+                                                        @NonNull ChatEphemeralTimer timer) {
         return switch (chat.toJid()
                 .server()) {
             case USER, WHATSAPP -> {
@@ -865,7 +1384,8 @@ public class Whatsapp {
                         .ephemeralExpiration(timer.period()
                                 .toSeconds())
                         .create();
-                yield sendMessage(chat, message);
+                yield sendMessage(chat, message).thenAcceptAsync(ignored -> {
+                });
             }
 
             case GROUP -> {
@@ -873,7 +1393,9 @@ public class Whatsapp {
                         with("not_ephemeral") :
                         withAttributes("ephemeral", of("expiration", timer.period()
                                 .toSeconds()));
-                yield socket.sendQuery(chat.toJid(), "set", "w:g2", body);
+                yield socket.sendQuery(chat.toJid(), "set", "w:g2", body)
+                        .thenAcceptAsync(ignored -> {
+                        });
             }
 
             default -> throw new IllegalArgumentException(
@@ -888,7 +1410,7 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> markAsRead(@NonNull ContactJidProvider chat) {
+    public CompletableFuture<Void> markAsRead(@NonNull ContactJidProvider chat) {
         return markAs(chat, true);
     }
 
@@ -898,11 +1420,11 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> markAsUnread(@NonNull ContactJidProvider chat) {
+    public CompletableFuture<Void> markAsUnread(@NonNull ContactJidProvider chat) {
         return markAs(chat, false);
     }
 
-    private CompletableFuture<?> markAs(@NonNull ContactJidProvider chat, boolean read) {
+    private CompletableFuture<Void> markAs(@NonNull ContactJidProvider chat, boolean read) {
         var range = createLastMessageRange(chat);
         var muteAction = new MarkChatAsReadAction(read, range);
         var syncAction = new ActionValueSync(muteAction);
@@ -919,7 +1441,7 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> pin(@NonNull ContactJidProvider chat) {
+    public CompletableFuture<Void> pin(@NonNull ContactJidProvider chat) {
         return pin(chat, true);
     }
 
@@ -929,7 +1451,7 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> unpin(@NonNull ContactJidProvider chat) {
+    public CompletableFuture<Void> unpin(@NonNull ContactJidProvider chat) {
         return pin(chat, false);
     }
 
@@ -947,7 +1469,7 @@ public class Whatsapp {
      * @param info the target message
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> star(@NonNull MessageInfo info) {
+    public CompletableFuture<Void> star(@NonNull MessageInfo info) {
         return star(info, true);
     }
 
@@ -957,7 +1479,7 @@ public class Whatsapp {
      * @param info the target message
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> unstar(@NonNull MessageInfo info) {
+    public CompletableFuture<Void> unstar(@NonNull MessageInfo info) {
         return star(info, false);
     }
 
@@ -982,7 +1504,7 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> archive(@NonNull ContactJidProvider chat) {
+    public CompletableFuture<Void> archive(@NonNull ContactJidProvider chat) {
         return archive(chat, true);
     }
 
@@ -992,7 +1514,7 @@ public class Whatsapp {
      * @param chat the target chat
      * @return a CompletableFuture
      */
-    public CompletableFuture<?> unarchive(@NonNull ContactJidProvider chat) {
+    public CompletableFuture<Void> unarchive(@NonNull ContactJidProvider chat) {
         return archive(chat, false);
     }
 
@@ -1010,5 +1532,94 @@ public class Whatsapp {
                 .flatMap(Chat::lastMessage)
                 .map(ActionMessageRangeSync::new)
                 .orElseGet(() -> new ActionMessageRangeSync(null, null, null));
+    }
+
+    /**
+     * A configuration class used to specify the behaviour of {@link Whatsapp}
+     */
+    @Builder(builderMethodName = "newOptions", buildMethodName = "create")
+    @With
+    @Data
+    @Accessors(fluent = true)
+    public static class Options {
+        /**
+         * Last known version of Whatsapp
+         */
+        private static final Version WHATSAPP_VERSION = new Version(2, 2212, 7);
+
+        /**
+         * The id of the session.
+         * This id needs to be unique.
+         * By default, a random integer.
+         */
+        @Default
+        private final int id = KeyHelper.registrationId();
+
+        /**
+         * Whether listeners marked with @RegisteredListener should be registered automatically.
+         * By default, this option is enabled.
+         */
+        @Default
+        private final boolean autodetectListeners = true;
+
+        /**
+         * The version of WhatsappWeb to use.
+         * If the version is too outdated, the server will refuse to connect.
+         */
+        @Default
+        private final Version version = Version.latest(WHATSAPP_VERSION);
+
+        /**
+         * The url of the socket
+         */
+        @Default
+        @NonNull
+        private final String url = "wss://web.whatsapp.com/ws/chat";
+
+        /**
+         * The description provided to Whatsapp during the authentication process.
+         * This should be, for example, the name of your service.
+         * By default, it's WhatsappWeb4j.
+         */
+        @Default
+        @NonNull
+        private final String description = "WhatsappWeb4j";
+
+        /**
+         * Describes how much chat history Whatsapp should send when the QR is first scanned.
+         * By default, three months are chosen.
+         */
+        @Default
+        private HistoryLength historyLength = HistoryLength.THREE_MONTHS;
+
+        /**
+         * Handles failures in the WebSocket.
+         * Returns true if the current connection should be killed and a new one created.
+         * Otherwise, the connection will not be killed, but more failures may be caused by the latter.
+         * By default, false.
+         */
+        @Default
+        private Function<String, Boolean> failureHandler = (reason) -> false;
+
+        /**
+         * Constructs a new instance of WhatsappConfiguration with default options
+         *
+         * @return a non-null options configuration
+         */
+        public static Options defaultOptions() {
+            return newOptions().create();
+        }
+    }
+
+    private class BlockingDefaultSerializer implements OnSocketEvent {
+        @Override
+        public void onSocketEvent(SocketEvent event) {
+            if (event != SocketEvent.CLOSE) {
+                return;
+            }
+
+            keys().save(false);
+            store().save(false);
+        }
     }
 }

@@ -2,7 +2,7 @@ package it.auties.whatsapp.crypto;
 
 import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
-import it.auties.whatsapp.controller.WhatsappKeys;
+import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
@@ -17,32 +17,29 @@ import java.nio.charset.StandardCharsets;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
-public record SessionBuilder(@NonNull SessionAddress address, @NonNull WhatsappKeys keys)
-        implements BlockingCipher {
+public record SessionBuilder(@NonNull SessionAddress address, @NonNull Keys keys) implements SignalSpecification {
     @SneakyThrows
     public void createOutgoing(int id, byte[] identityKey, SignalSignedKeyPair signedPreKey,
                                SignalSignedKeyPair preKey) {
-        run(() -> {
-            Validate.isTrue(keys.hasTrust(address, identityKey), "Untrusted key", SecurityException.class);
-            Validate.isTrue(Curve25519.verifySignature(KeyHelper.withoutHeader(identityKey), signedPreKey.keyPair()
-                    .encodedPublicKey(), signedPreKey.signature()), "Signature mismatch", SecurityException.class);
+        Validate.isTrue(keys.hasTrust(address, identityKey), "Untrusted key", SecurityException.class);
+        Validate.isTrue(Curve25519.verifySignature(KeyHelper.withoutHeader(identityKey), signedPreKey.keyPair()
+                .encodedPublicKey(), signedPreKey.signature()), "Signature mismatch", SecurityException.class);
 
-            var baseKey = SignalKeyPair.random();
-            var state = createState(true, baseKey, null, identityKey, preKey == null ?
-                    null :
-                    preKey.keyPair()
-                            .encodedPublicKey(), signedPreKey.keyPair()
-                    .encodedPublicKey(), id, CURRENT_VERSION);
+        var baseKey = SignalKeyPair.random();
+        var state = createState(true, baseKey, null, identityKey, preKey == null ?
+                null :
+                preKey.keyPair()
+                        .encodedPublicKey(), signedPreKey.keyPair()
+                .encodedPublicKey(), id, CURRENT_VERSION);
 
-            var pendingPreKey = new SessionPreKey(preKey == null ?
-                    0 :
-                    preKey.id(), baseKey.encodedPublicKey(), signedPreKey.id());
-            state.pendingPreKey(pendingPreKey);
-            keys.findSessionByAddress(address)
-                    .map(Session::closeCurrentState)
-                    .orElseGet(this::createSession)
-                    .addState(state);
-        });
+        var pendingPreKey = new SessionPreKey(preKey == null ?
+                0 :
+                preKey.id(), baseKey.encodedPublicKey(), signedPreKey.id());
+        state.pendingPreKey(pendingPreKey);
+        keys.findSessionByAddress(address)
+                .map(Session::closeCurrentState)
+                .orElseGet(this::createSession)
+                .addState(state);
     }
 
     private Session createSession() {

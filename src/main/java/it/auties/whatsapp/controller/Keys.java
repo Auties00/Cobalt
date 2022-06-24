@@ -42,7 +42,7 @@ import static java.util.Objects.requireNonNullElseGet;
 @Accessors(fluent = true, chain = true)
 @Log
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public final class WhatsappKeys implements WhatsappController {
+public final class Keys implements Controller {
     /**
      * The client id
      */
@@ -179,8 +179,8 @@ public final class WhatsappKeys implements WhatsappController {
      * @param id the unsigned id of these keys
      * @return a non-null instance of WhatsappKeys
      */
-    public static WhatsappKeys random(int id) {
-        var result = WhatsappKeys.builder()
+    public static Keys random(int id) {
+        var result = Keys.builder()
                 .id(id)
                 .build();
         return result.signedKeyPair(SignalSignedKeyPair.of(result.id(), result.identityKeyPair()));
@@ -192,7 +192,7 @@ public final class WhatsappKeys implements WhatsappController {
      * @param id the id of this session
      * @return a non-null instance of WhatsappKeys
      */
-    public static WhatsappKeys of(int id) {
+    public static Keys of(int id) {
         var preferences = Preferences.of("%s/keys.json", id);
         return requireNonNullElseGet(preferences.readJson(new TypeReference<>() {
         }), () -> random(id));
@@ -203,7 +203,7 @@ public final class WhatsappKeys implements WhatsappController {
      *
      * @return this
      */
-    public WhatsappKeys clear() {
+    public Keys clear() {
         this.readKey = null;
         this.writeKey = null;
         this.writeCounter.set(0);
@@ -217,7 +217,7 @@ public final class WhatsappKeys implements WhatsappController {
      *
      * @return this
      */
-    public WhatsappKeys delete() {
+    public Keys delete() {
         deleteKeys(id);
         return this;
     }
@@ -355,7 +355,7 @@ public final class WhatsappKeys implements WhatsappController {
      * @param record  the non-null record
      * @return this
      */
-    public WhatsappKeys addSession(@NonNull SessionAddress address, @NonNull Session record) {
+    public Keys addSession(@NonNull SessionAddress address, @NonNull Session record) {
         sessions.put(address, record);
         return this;
     }
@@ -366,7 +366,7 @@ public final class WhatsappKeys implements WhatsappController {
      * @param keys the keys to add
      * @return this
      */
-    public WhatsappKeys addAppKeys(@NonNull Collection<AppStateSyncKey> keys) {
+    public Keys addAppKeys(@NonNull Collection<AppStateSyncKey> keys) {
         appStateKeys.addAll(keys);
         return this;
     }

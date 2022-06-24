@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.auties00</groupId>
     <artifactId>whatsappweb4j</artifactId>
@@ -85,7 +86,7 @@
         <nexus.staging.maven.plugin.version>1.6.7</nexus.staging.maven.plugin.version>
         <bouncy.castle.version>1.70</bouncy.castle.version>
         <zxing.version>3.5.0</zxing.version>
-        <protoc.version>1.15</protoc.version>
+        <protoc.version>1.16</protoc.version>
         <tyrus.version>2.0.2</tyrus.version>
         <lombok.version>1.18.24</lombok.version>
         <junit.version>5.8.2</junit.version>
@@ -96,9 +97,9 @@
         <curve25519.version>1.1</curve25519.version>
         <bytes.version>1.2</bytes.version>
         <ffmpeg.version>0.7.0</ffmpeg.version>
-        <classgraph.version>4.8.146</classgraph.version>
+        <classgraph.version>4.8.147</classgraph.version>
         <reflection.version>1.2</reflection.version>
-        <caffeine.version>3.1.0</caffeine.version>
+        <caffeine.version>3.1.1</caffeine.version>
         <lazysodium.version>5.1.1</lazysodium.version>
         <delombok.plugin.version>1.18.24.1</delombok.plugin.version>
         <delombok.input>${project.basedir}\src\main\java</delombok.input>

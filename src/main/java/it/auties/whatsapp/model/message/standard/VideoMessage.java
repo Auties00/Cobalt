@@ -3,7 +3,7 @@ package it.auties.whatsapp.model.message.standard;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.controller.WhatsappStore;
+import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.InteractiveAnnotation;
@@ -153,7 +153,7 @@ public final class VideoMessage extends MediaMessage {
     @Builder(builderClassName = "SimpleVideoMessageBuilder", builderMethodName = "newVideoMessage", buildMethodName = "create")
     private static VideoMessage videoBuilder(int storeId, byte @NonNull [] media, String mimeType, String caption,
                                              byte[] thumbnail, ContextInfo contextInfo) {
-        var store = WhatsappStore.findStoreById(storeId)
+        var store = Store.findStoreById(storeId)
                 .orElseThrow(() -> new NoSuchElementException(
                         "Cannot create video message, invalid store id: %s".formatted(storeId)));
         var dimensions = Medias.getDimensions(media, true);
@@ -201,7 +201,7 @@ public final class VideoMessage extends MediaMessage {
                                            ContextInfo contextInfo) {
         Validate.isTrue(isGif(media, mimeType),
                 "Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
-        var store = WhatsappStore.findStoreById(storeId)
+        var store = Store.findStoreById(storeId)
                 .orElseThrow(() -> new NoSuchElementException(
                         "Cannot create video message, invalid store id: %s".formatted(storeId)));
         var dimensions = Medias.getDimensions(media, true);

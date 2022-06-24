@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.message.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import it.auties.whatsapp.controller.WhatsappStore;
+import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.media.AttachmentProvider;
 import it.auties.whatsapp.model.message.payment.PaymentInvoiceMessage;
 import it.auties.whatsapp.model.message.standard.*;
@@ -44,14 +44,14 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
      * The cached store
      */
     @JsonIgnore
-    private WhatsappStore cachedStore;
+    private Store cachedStore;
 
-    protected WhatsappStore store() {
+    protected Store store() {
         return Objects.requireNonNullElseGet(cachedStore, () -> this.cachedStore = cacheStore());
     }
 
-    private WhatsappStore cacheStore() {
-        return WhatsappStore.findStoreById(storeId)
+    private Store cacheStore() {
+        return Store.findStoreById(storeId)
                 .orElseThrow(() -> new NoSuchElementException("Missing store for id %s".formatted(storeId)));
     }
 

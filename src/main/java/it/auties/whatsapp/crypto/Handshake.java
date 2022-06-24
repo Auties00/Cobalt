@@ -1,7 +1,7 @@
 package it.auties.whatsapp.crypto;
 
 import it.auties.bytes.Bytes;
-import it.auties.whatsapp.controller.WhatsappKeys;
+import it.auties.whatsapp.controller.Keys;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 
@@ -11,13 +11,13 @@ public class Handshake {
     public static final byte[] PROLOGUE = new byte[]{87, 65, 5, 2};
     private static final Bytes PROTOCOL = Bytes.of("Noise_XX_25519_AESGCM_SHA256\0\0\0\0");
 
-    private final WhatsappKeys keys;
+    private final Keys keys;
     private Bytes hash;
     private Bytes salt;
     private Bytes cryptoKey;
     private long counter;
 
-    public Handshake(WhatsappKeys keys) {
+    public Handshake(Keys keys) {
         this.keys = keys;
         this.hash = PROTOCOL;
         this.salt = PROTOCOL;

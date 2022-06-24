@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 @UtilityClass
-public class BinaryTokens {
+public class Tokens {
     public final List<String> SINGLE_BYTE = List.of("xmlstreamstart", "xmlstreamend", "s.whatsapp.net", "type",
             "participant", "from", "receipt", "id", "broadcast", "status", "message", "notification", "notify", "to",
             "jid", "user", "class", "offline", "g.us", "result", "mediatype", "enc", "skmsg", "off_cnt", "xmlns",

@@ -2,9 +2,9 @@ package it.auties.whatsapp.util;
 
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ScanResult;
-import it.auties.whatsapp.api.RegisterListener;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.api.WhatsappListener;
+import it.auties.whatsapp.listener.Listener;
+import it.auties.whatsapp.listener.RegisterListener;
 import lombok.experimental.UtilityClass;
 
 import java.util.List;
@@ -12,7 +12,7 @@ import java.util.NoSuchElementException;
 
 @UtilityClass
 public class ListenerScanner {
-    public List<WhatsappListener> scan(Whatsapp whatsapp) {
+    public List<Listener> scan(Whatsapp whatsapp) {
         try (var scanner = createScanner()) {
             return scanner.getClassesWithAnnotation(RegisterListener.class)
                     .loadClasses()
@@ -28,12 +28,12 @@ public class ListenerScanner {
                 .scan();
     }
 
-    private WhatsappListener initialize(Class<?> listener, Whatsapp whatsapp) {
-        Validate.isTrue(WhatsappListener.class.isAssignableFrom(listener),
+    private Listener initialize(Class<?> listener, Whatsapp whatsapp) {
+        Validate.isTrue(Listener.class.isAssignableFrom(listener),
                 "Cannot initialize listener at %s: cannot register classes that don't implement WhatsappListener",
                 listener.getName(), IllegalArgumentException.class);
         try {
-            return (WhatsappListener) listener.getConstructor(createParameters(whatsapp))
+            return (Listener) listener.getConstructor(createParameters(whatsapp))
                     .newInstance(createArguments(whatsapp));
         } catch (NoSuchMethodException noArgsConstructorException) {
             if (whatsapp != null) {

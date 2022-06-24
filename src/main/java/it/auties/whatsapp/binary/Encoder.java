@@ -9,9 +9,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Objects;
 
-import static it.auties.whatsapp.binary.BinaryTag.*;
+import static it.auties.whatsapp.binary.Tag.*;
 
-public class BinaryEncoder {
+public class Encoder {
     private static final int UNSIGNED_BYTE_MAX_VALUE = 256;
     private static final int UNSIGNED_SHORT_MAX_VALUE = 65536;
     private static final int INT_20_MAX_VALUE = 1048576;
@@ -27,7 +27,7 @@ public class BinaryEncoder {
         return result;
     }
 
-    private void writeString(String input, BinaryTag token) {
+    private void writeString(String input, Tag token) {
         this.buffer = buffer.append(token.data());
         writeStringLength(input);
 
@@ -49,7 +49,7 @@ public class BinaryEncoder {
         }
     }
 
-    private int getStringCodePoint(BinaryTag token, int codePoint) {
+    private int getStringCodePoint(Tag token, int codePoint) {
         if (codePoint >= 48 && codePoint <= 57) {
             return codePoint - 48;
         }
@@ -105,7 +105,7 @@ public class BinaryEncoder {
             return;
         }
 
-        var tokenIndex = BinaryTokens.SINGLE_BYTE.indexOf(input);
+        var tokenIndex = Tokens.SINGLE_BYTE.indexOf(input);
         if (tokenIndex != -1) {
             this.buffer = buffer.append(tokenIndex + 1);
             return;
@@ -116,12 +116,12 @@ public class BinaryEncoder {
         }
 
         var length = length(input);
-        if (length < 128 && BinaryTokens.noMatch(input, BinaryTokens.NUMBERS_REGEX)) {
+        if (length < 128 && Tokens.noMatch(input, Tokens.NUMBERS_REGEX)) {
             writeString(input, NIBBLE_8);
             return;
         }
 
-        if (length < 128 && BinaryTokens.noMatch(input, BinaryTokens.HEX_REGEX)) {
+        if (length < 128 && Tokens.noMatch(input, Tokens.HEX_REGEX)) {
             writeString(input, HEX_8);
             return;
         }
@@ -131,18 +131,18 @@ public class BinaryEncoder {
     }
 
     private boolean writeDoubleByteString(String input) {
-        if (!BinaryTokens.DOUBLE_BYTE.contains(input)) {
+        if (!Tokens.DOUBLE_BYTE.contains(input)) {
             return false;
         }
 
-        var index = BinaryTokens.DOUBLE_BYTE.indexOf(input);
+        var index = Tokens.DOUBLE_BYTE.indexOf(input);
         this.buffer = buffer.append(doubleByteStringTag(index).data());
-        this.buffer = buffer.append(index % (BinaryTokens.DOUBLE_BYTE.size() / 4));
+        this.buffer = buffer.append(index % (Tokens.DOUBLE_BYTE.size() / 4));
         return true;
     }
 
-    private BinaryTag doubleByteStringTag(int index) {
-        return switch (index / (BinaryTokens.DOUBLE_BYTE.size() / 4)) {
+    private Tag doubleByteStringTag(int index) {
+        return switch (index / (Tokens.DOUBLE_BYTE.size() / 4)) {
             case 0 -> DICTIONARY_0;
             case 1 -> DICTIONARY_1;
             case 2 -> DICTIONARY_2;

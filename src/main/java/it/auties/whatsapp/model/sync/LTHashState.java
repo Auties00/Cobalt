@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.sync;
 
-import it.auties.whatsapp.binary.BinarySync;
+import it.auties.whatsapp.binary.Sync;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.Attributes;
 import lombok.AllArgsConstructor;
@@ -30,11 +30,11 @@ public class LTHashState {
 
     private Map<String, byte[]> indexValueMap;
 
-    public LTHashState(BinarySync name) {
+    public LTHashState(Sync name) {
         this(name, 0);
     }
 
-    public LTHashState(BinarySync name, long version) {
+    public LTHashState(Sync name, long version) {
         this.name = Objects.toString(name);
         this.version = version;
         this.hash = new byte[128];

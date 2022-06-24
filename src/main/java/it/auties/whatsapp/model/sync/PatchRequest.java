@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.sync;
 
-import it.auties.whatsapp.binary.BinarySync;
+import it.auties.whatsapp.binary.Sync;
 import it.auties.whatsapp.model.sync.RecordSync.Operation;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.SignalSpecification;
@@ -10,17 +10,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public record PatchRequest(BinarySync type, ActionValueSync sync, String index, int version, Operation operation)
+public record PatchRequest(Sync type, ActionValueSync sync, String index, int version, Operation operation)
         implements JacksonProvider, SignalSpecification {
 
     @SneakyThrows
-    public static PatchRequest of(BinarySync type, ActionValueSync sync, Operation operation, int version,
-                                  String... args) {
+    public static PatchRequest of(Sync type, ActionValueSync sync, Operation operation, int version, String... args) {
         var index = JSON.writeValueAsString(createArguments(sync, args));
         return new PatchRequest(type, sync, index, version, operation);
     }
 
-    public static PatchRequest of(BinarySync type, ActionValueSync sync, Operation operation) {
+    public static PatchRequest of(Sync type, ActionValueSync sync, Operation operation) {
         return of(type, sync, operation, CURRENT_VERSION);
     }
 

@@ -2,7 +2,7 @@ package it.auties.whatsapp.model.message.standard;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.controller.WhatsappStore;
+import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MediaMessage;
@@ -122,7 +122,7 @@ public final class DocumentMessage extends MediaMessage {
     @Builder(builderClassName = "SimpleDocumentMessageBuilder", builderMethodName = "newDocumentMessage", buildMethodName = "create")
     private static DocumentMessage builder(int storeId, byte @NonNull [] media, String mimeType, String title,
                                            int pageCount, String fileName, byte[] thumbnail, ContextInfo contextInfo) {
-        var store = WhatsappStore.findStoreById(storeId)
+        var store = Store.findStoreById(storeId)
                 .orElseThrow(() -> new NoSuchElementException(
                         "Cannot create document message, invalid store id: %s".formatted(storeId)));
         var upload = Medias.upload(media, DOCUMENT, store);

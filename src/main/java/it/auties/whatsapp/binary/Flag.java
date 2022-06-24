@@ -6,7 +6,7 @@ import lombok.experimental.Accessors;
 
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum BinaryFlag {
+public enum Flag {
     AVAILABLE((byte) 160),
     IGNORE((byte) (1 << 7)),
     ACKNOWLEDGE((byte) (1 << 6)),

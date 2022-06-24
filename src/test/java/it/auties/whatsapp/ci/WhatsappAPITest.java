@@ -2,12 +2,10 @@ package it.auties.whatsapp.ci;
 
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.api.WhatsappListener;
-import it.auties.whatsapp.api.WhatsappOptions;
-import it.auties.whatsapp.controller.WhatsappKeys;
-import it.auties.whatsapp.controller.WhatsappStore;
+import it.auties.whatsapp.controller.Keys;
+import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.github.GithubActions;
-import it.auties.whatsapp.model.chat.Chat;
+import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.chat.GroupPolicy;
 import it.auties.whatsapp.model.contact.ContactJid;
@@ -32,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation.class)
-public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
+public class WhatsappAPITest implements Listener, JacksonProvider {
     private static Whatsapp api;
     private static CountDownLatch latch;
     private static ContactJid contact;
@@ -50,15 +48,15 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
         if (!GithubActions.isActionsEnvironment()) {
             log("Detected local environment");
             api = Whatsapp.newConnection();
-            api.registerListener(this);
+            api.addListener(this);
             return;
         }
 
         log("Detected github actions environment");
-        api = Whatsapp.newConnection(WhatsappOptions.defaultOptions(),
-                loadGithubParameter(GithubActions.STORE_NAME, WhatsappStore.class),
-                loadGithubParameter(GithubActions.CREDENTIALS_NAME, WhatsappKeys.class));
-        api.registerListener(this);
+        api = Whatsapp.newConnection(Whatsapp.Options.defaultOptions(),
+                loadGithubParameter(GithubActions.STORE_NAME, Store.class),
+                loadGithubParameter(GithubActions.CREDENTIALS_NAME, Keys.class));
+        api.addListener(this);
     }
 
     private <T> T loadGithubParameter(String parameter, Class<T> type) throws IOException {
@@ -85,7 +83,7 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
     }
 
     private void createLatch() {
-        latch = new CountDownLatch(4);
+        latch = new CountDownLatch(3);
     }
 
     @Test
@@ -123,12 +121,6 @@ public class WhatsappAPITest implements WhatsappListener, JacksonProvider {
     public void onContacts() {
         latch.countDown();
         log("Got contacts: -%s", latch.getCount());
-    }
-
-    @Override
-    public void onChatRecentMessages(Chat chat) {
-        latch.countDown();
-        log("Got recent messages: -%s", latch.getCount());
     }
 
     @Test

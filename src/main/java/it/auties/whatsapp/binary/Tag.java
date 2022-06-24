@@ -8,7 +8,7 @@ import java.util.Arrays;
 
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum BinaryTag {
+public enum Tag {
     UNKNOWN(-1),
     LIST_EMPTY(0),
     STREAM_END(2),
@@ -31,7 +31,7 @@ public enum BinaryTag {
     @Getter
     private final int data;
 
-    public static BinaryTag forData(int data) {
+    public static Tag forData(int data) {
         return Arrays.stream(values())
                 .filter(entry -> entry.data() == data)
                 .findAny()

@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.contact;
 
 import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.whatsapp.binary.BinaryFlag;
+import it.auties.whatsapp.binary.Flag;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
@@ -18,30 +18,30 @@ public enum ContactStatus implements ProtobufMessage {
     /**
      * When the contact is online
      */
-    AVAILABLE(BinaryFlag.AVAILABLE),
+    AVAILABLE(Flag.AVAILABLE),
 
     /**
      * When the contact is offline
      */
-    UNAVAILABLE(BinaryFlag.UNAVAILABLE),
+    UNAVAILABLE(Flag.UNAVAILABLE),
 
     /**
      * When the contact is writing a text message
      */
-    COMPOSING(BinaryFlag.COMPOSING),
+    COMPOSING(Flag.COMPOSING),
 
     /**
      * When the contact is recording an audio message
      */
-    RECORDING(BinaryFlag.RECORDING),
+    RECORDING(Flag.RECORDING),
 
     /**
      * When the contact stops writing or recording
      */
-    PAUSED(BinaryFlag.PAUSED);
+    PAUSED(Flag.PAUSED);
 
     @Getter
-    private final BinaryFlag flag;
+    private final Flag flag;
 
     private static ContactStatus forIndex(int index) {
         return Arrays.stream(values())
