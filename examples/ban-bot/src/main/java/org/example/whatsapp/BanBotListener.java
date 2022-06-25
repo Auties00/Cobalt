@@ -1,13 +1,13 @@
 package org.example.whatsapp;
 
-import it.auties.whatsapp.api.RegisterListener;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.api.WhatsappListener;
+import it.auties.whatsapp.listener.Listener;
+import it.auties.whatsapp.listener.RegisterListener;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.standard.TextMessage;
 
 @RegisterListener
-public record BanBotListener(Whatsapp api) implements WhatsappListener {
+public record BanBotListener(Whatsapp api) implements Listener {
     @Override
     public void onNewMessage(MessageInfo info) {
         if (!(info.message()

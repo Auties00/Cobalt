@@ -1,12 +1,12 @@
 package org.example.whatsapp;
 
-import it.auties.whatsapp.api.RegisterListener;
-import it.auties.whatsapp.api.WhatsappListener;
+import it.auties.whatsapp.listener.Listener;
+import it.auties.whatsapp.listener.RegisterListener;
 import it.auties.whatsapp.model.info.MessageInfo;
 
 // A listener that will be automatically detected, used to listen to the deletion of messages
 @RegisterListener
-public class BotListener implements WhatsappListener {
+public class BotListener implements Listener {
     // Called when we successfully log into org.example.whatsapp
     @Override
     public void onLoggedIn() {

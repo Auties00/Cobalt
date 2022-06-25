@@ -1,8 +1,8 @@
 package org.example.whatsapp;
 
-import it.auties.whatsapp.api.RegisterListener;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.api.WhatsappListener;
+import it.auties.whatsapp.listener.Listener;
+import it.auties.whatsapp.listener.RegisterListener;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.standard.TextMessage;
 
@@ -17,7 +17,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RegisterListener
-public record TesterBotListener(Whatsapp api) implements WhatsappListener {
+public record TesterBotListener(Whatsapp api) implements Listener {
     private static final String JAVA_CODE_TEMPLATE = """
                     import java.util.*;
                     import java.util.stream.*;

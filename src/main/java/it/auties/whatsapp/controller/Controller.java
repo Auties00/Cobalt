@@ -1,5 +1,6 @@
 package it.auties.whatsapp.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import it.auties.whatsapp.util.Preferences;
 import lombok.NonNull;
 
@@ -10,6 +11,8 @@ import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static it.auties.whatsapp.util.JacksonProvider.JSON;
 
 /**
  * This interface represents is implemented by all WhatsappWeb4J's controllers.
@@ -41,20 +44,13 @@ public sealed interface Controller permits Store, Keys {
     }
 
     /**
-     * Saves this object as a JSON
+     * Converts this object to JSON
      *
-     * @param preferences the non-null preferences
-     * @param async       whether to perform the write operation asynchronously or not
+     * @return a non-null string
      */
-    void save(@NonNull Preferences preferences, boolean async);
-
-    /**
-     * Saves this object as a JSON
-     *
-     * @param path  the non-null path
-     * @param async whether to perform the write operation asynchronously or not
-     */
-    void save(@NonNull Path path, boolean async);
+    default String toJSON() throws JsonProcessingException {
+        return JSON.writeValueAsString(this);
+    }
 
     /**
      * Saves this object as a JSON
@@ -62,4 +58,14 @@ public sealed interface Controller permits Store, Keys {
      * @param async whether to perform the write operation asynchronously or not
      */
     void save(boolean async);
+
+    /**
+     * Clears some or all fields of this object
+     */
+    void clear();
+
+    /**
+     * Deletes this object from memory
+     */
+    void delete();
 }

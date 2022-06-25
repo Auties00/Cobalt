@@ -8,7 +8,7 @@ import java.util.concurrent.ExecutionException;
 public class WhatsappBot {
     public static void main(String... args) throws ExecutionException, InterruptedException {
         // Create a new instance of WhatsappAPI
-        var api = Whatsapp.lastConnection()
+        Whatsapp.lastConnection()
                 .connect()
                 .get();
     }

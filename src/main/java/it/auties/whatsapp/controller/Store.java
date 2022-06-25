@@ -7,6 +7,7 @@ import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.request.Node;
@@ -202,13 +203,14 @@ public final class Store implements Controller {
      * @param jid the jid to search
      * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional
      */
-    public Optional<Contact> findContactByJid(ContactJid jid) {
+    public Optional<Contact> findContactByJid(ContactJidProvider jid) {
         return jid == null ?
                 Optional.empty() :
                 contacts().parallelStream()
                         .filter(contact -> contact.jid()
                                 .user()
-                                .equals(jid.user()))
+                                .equals(jid.toJid()
+                                        .user()))
                         .findAny();
     }
 
@@ -246,13 +248,14 @@ public final class Store implements Controller {
      * @param jid the jid to search
      * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional
      */
-    public Optional<Chat> findChatByJid(ContactJid jid) {
+    public Optional<Chat> findChatByJid(ContactJidProvider jid) {
         return jid == null ?
                 Optional.empty() :
                 chats().parallelStream()
                         .filter(chat -> chat.jid()
                                 .user()
-                                .equals(jid.user()))
+                                .equals(jid.toJid()
+                                        .user()))
                         .findAny();
     }
 
@@ -299,6 +302,20 @@ public final class Store implements Controller {
                 chats().parallelStream()
                         .filter(chat -> chat.name()
                                 .equalsIgnoreCase(name));
+    }
+
+    /**
+     * Queries all the status of a contact
+     *
+     * @param jid the sender of the status
+     * @return a List containing every result
+     */
+    public List<MessageInfo> findStatusBySender(ContactJidProvider jid) {
+        return jid == null ?
+                List.of() :
+                status().stream()
+                        .filter(status -> Objects.equals(status.senderJid(), jid.toJid()))
+                        .toList();
     }
 
     /**
@@ -382,6 +399,7 @@ public final class Store implements Controller {
     /**
      * Clears all the data that this object holds and closes the pending requests
      */
+    @Override
     public void clear() {
         chats.clear();
         contacts.clear();
@@ -456,17 +474,6 @@ public final class Store implements Controller {
     @Override
     public void save(boolean async) {
         var preferences = Preferences.of("%s/store.json", id);
-        save(preferences, async);
-    }
-
-    @Override
-    public void save(@NonNull Path path, boolean async) {
-        var preferences = Preferences.of("%s/store.json", id);
-        save(preferences, async);
-    }
-
-    @Override
-    public void save(@NonNull Preferences preferences, boolean async) {
         if (async) {
             preferences.writeJsonAsync(this);
             return;
@@ -477,12 +484,19 @@ public final class Store implements Controller {
 
     /**
      * Deletes this store from memory
-     *
-     * @return this
      */
-    public Store delete() {
+    @Override
+    public void delete() {
+        delete(id);
+    }
+
+    /**
+     * Clears the store associated with the provided id
+     *
+     * @param id the id of the store
+     */
+    public static void delete(int id) {
         var preferences = Preferences.of("%s/store.json", id);
         preferences.delete();
-        return this;
     }
 }

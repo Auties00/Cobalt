@@ -24,7 +24,6 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 import lombok.extern.java.Log;
 
-import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -168,7 +167,7 @@ public final class Keys implements Controller {
      *
      * @param id the id of the keys
      */
-    public static void deleteKeys(int id) {
+    public static void delete(int id) {
         var preferences = Preferences.of("%s/keys.json", id);
         preferences.delete();
     }
@@ -201,25 +200,21 @@ public final class Keys implements Controller {
     /**
      * Clears the signal keys associated with this object
      *
-     * @return this
      */
-    public Keys clear() {
+    @Override
+    public void clear() {
         this.readKey = null;
         this.writeKey = null;
         this.writeCounter.set(0);
         this.readCounter.set(0);
-        return this;
     }
 
     /**
-     * Clears all the keys from this machine's memory.
-     * This method doesn't clear this object's values.
-     *
-     * @return this
+     * Deletes these keys from memory
      */
-    public Keys delete() {
-        deleteKeys(id);
-        return this;
+    @Override
+    public void delete() {
+        delete(id);
     }
 
     /**
@@ -401,16 +396,6 @@ public final class Keys implements Controller {
     @Override
     public void save(boolean async) {
         var preferences = Preferences.of("%s/keys.json", id);
-        save(preferences, async);
-    }
-
-    @Override
-    public void save(@NonNull Path path, boolean async) {
-        save(Preferences.of(path), async);
-    }
-
-    @Override
-    public void save(@NonNull Preferences preferences, boolean async) {
         if (async) {
             preferences.writeJsonAsync(this);
             return;
