@@ -1,6 +1,5 @@
 package it.auties.whatsapp.api;
 
-import com.google.zxing.qrcode.encoder.QRCode;
 import it.auties.whatsapp.binary.Socket;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
@@ -38,7 +37,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static it.auties.bytes.Bytes.ofRandom;
@@ -671,8 +669,8 @@ public class Whatsapp {
      *
      * @return the same instance
      */
-    public Whatsapp withDefaultSerialization(){
-        if(defaultSerializer != null){
+    public Whatsapp withDefaultSerialization() {
+        if (defaultSerializer != null) {
             return this;
         }
 
@@ -686,8 +684,8 @@ public class Whatsapp {
      *
      * @return the same instance
      */
-    public Whatsapp withoutDefaultSerialization(){
-        if(defaultSerializer == null){
+    public Whatsapp withoutDefaultSerialization() {
+        if (defaultSerializer == null) {
             return this;
         }
 
@@ -908,20 +906,39 @@ public class Whatsapp {
     /**
      * Sends a message info to a chat
      *
-     * @param message the message to send
+     * @param info the info to send
      * @return a CompletableFuture
      */
-    public CompletableFuture<MessageInfo> sendMessage(@NonNull MessageInfo message) {
-        message.key()
-                .chatJid(message.chatJid()
-                        .toUserJid());
-        if (message.message()
-                .content() instanceof MediaMessage mediaMessage) {
+    public CompletableFuture<MessageInfo> sendMessage(@NonNull MessageInfo info) {
+        info.key().chatJid(info.chatJid().toUserJid());
+        if (info.message().content() instanceof MediaMessage mediaMessage) {
             mediaMessage.storeId(store().id());
         }
 
-        return socket.sendMessage(message)
-                .thenApplyAsync(ignored -> message);
+        parseEphemeralMessage(info);
+        return socket.sendMessage(info)
+                .thenApplyAsync(ignored -> info);
+    }
+
+    private void parseEphemeralMessage(MessageInfo info) {
+        info.chat()
+                .filter(Chat::isEphemeral)
+                .ifPresent(chat -> createEphemeralMessage(info, chat));
+    }
+
+    private void createEphemeralMessage(MessageInfo info, Chat chat) {
+        info.message()
+                .contentWithContext()
+                .map(ContextualMessage::contextInfo)
+                .ifPresent(contextInfo -> createEphemeralContext(chat, contextInfo));
+        info.message(info.message().toEphemeral());
+    }
+
+    private void createEphemeralContext(Chat chat, ContextInfo contextInfo) {
+        var period = chat.ephemeralMessageDuration()
+                .period()
+                .toSeconds();
+        contextInfo.ephemeralExpiration((int) period);
     }
 
     /**
@@ -1034,7 +1051,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<Optional<Chat>> acceptInvite(@NonNull String inviteCode) {
-        return socket.sendQuery(ContactJid.GROUP, "set", "w:g2", withAttributes("invite", of("invite", inviteCode)))
+        return socket.sendQuery(ContactJid.GROUP, "set", "w:g2", withAttributes("invite", of("code", inviteCode)))
                 .thenApplyAsync(this::parseAcceptInvite);
     }
 
@@ -1599,7 +1616,7 @@ public class Whatsapp {
          * By default, false.
          */
         @Default
-        private Function<String, Boolean> failureHandler = (reason) -> false;
+        private ErrorHandler errorHandler = ErrorHandler.defaultErrorHandler();
 
         /**
          * Constructs a new instance of WhatsappConfiguration with default options

@@ -99,11 +99,11 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
     private MessageKey placeholderKey;
 
     /**
-     * The expiration in seconds since {@link java.time.Instant#EPOCH} for this ContextualMessage.
+     * The expiration in seconds for this ContextualMessage.
      * Only valid if the chat where this message was sent is ephemeral.
      */
     @ProtobufProperty(index = 25, type = UINT32)
-    private int expiration;
+    private int ephemeralExpiration;
 
     /**
      * The timestamp, that is the endTimeStamp in seconds since {@link java.time.Instant#EPOCH}, of the last modification to the ephemeral settings

@@ -24,7 +24,6 @@ import java.util.Objects;
  */
 @Builder
 @ProtobufValue
-@Log
 public record ContactJid(String user, @NonNull Server server, int device, int agent)
         implements ProtobufMessage, ContactJidProvider {
     /**

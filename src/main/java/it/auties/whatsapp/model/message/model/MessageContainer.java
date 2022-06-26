@@ -270,7 +270,7 @@ public class MessageContainer implements ProtobufMessage {
      */
     @ProtobufProperty(index = 35, type = MESSAGE, concreteType = MessageContextInfo.class)
     @Getter
-    private MessageContextInfo messageContextInfo;
+    private MessageContextInfo deviceInfo;
 
     /**
      * Constructs a new MessageContainer from a message of any type
@@ -542,6 +542,24 @@ public class MessageContainer implements ProtobufMessage {
      */
     public Optional<CallInfo> call() {
         return Optional.ofNullable(call);
+    }
+
+    /**
+     * Converts this message to an ephemeral message
+     *
+     * @return a non-null message container
+     */
+    public MessageContainer toEphemeral(){
+        return MessageContainer.ofEphemeral(content());
+    }
+
+    /**
+     * Converts this message to a view once message
+     *
+     * @return a non-null message container
+     */
+    public MessageContainer toViewOnce(){
+        return MessageContainer.ofViewOnce(content());
     }
 
     /**

@@ -44,7 +44,6 @@ import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 @Builder(access = AccessLevel.PROTECTED)
 @Data
 @Accessors(fluent = true, chain = true)
-@Log
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public final class Store implements Controller {
     /**
@@ -352,10 +351,7 @@ public final class Store implements Controller {
     public Chat addChat(Chat chat) {
         chat.messages()
                 .forEach(message -> message.storeId(id()));
-        if (!chats.add(chat)) {
-            log.warning("Chat already exists: %s".formatted(chat.jid()));
-        }
-
+        chats.add(chat);
         return chat;
     }
 
@@ -366,10 +362,7 @@ public final class Store implements Controller {
      * @return the input contact
      */
     public Contact addContact(Contact contact) {
-        if (!contacts.add(contact)) {
-            log.warning("Contact already exists: %s".formatted(contact.jid()));
-        }
-
+        contacts.add(contact);
         return contact;
     }
 

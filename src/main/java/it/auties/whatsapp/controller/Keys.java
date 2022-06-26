@@ -39,7 +39,6 @@ import static java.util.Objects.requireNonNullElseGet;
 @Jacksonized
 @Data
 @Accessors(fluent = true, chain = true)
-@Log
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public final class Keys implements Controller {
     /**

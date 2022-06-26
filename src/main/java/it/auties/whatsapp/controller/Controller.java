@@ -18,6 +18,7 @@ import static it.auties.whatsapp.util.JacksonProvider.JSON;
  * This interface represents is implemented by all WhatsappWeb4J's controllers.
  * It provides an easy way to store IDs and serialize said class.
  */
+@SuppressWarnings("unused")
 public sealed interface Controller permits Store, Keys {
     /**
      * Returns all the known IDs

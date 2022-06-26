@@ -322,15 +322,6 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     }
 
     /**
-     * Returns the type of ephemeral timer used in this chat
-     *
-     * @return a non-null ephemeral timer
-     */
-    public ChatEphemeralTimer ephemeralMessageType() {
-        return requireNonNullElse(ephemeralMessageDuration, ChatEphemeralTimer.OFF);
-    }
-
-    /**
      * Returns an optional value containing the endTimeStamp in seconds since {@link java.time.Instant#EPOCH} when ephemeral messages were turned on
      *
      * @return a non-empty optional if ephemeral messages are enabled for this chat

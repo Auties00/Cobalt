@@ -6,11 +6,12 @@ import it.auties.whatsapp.model.message.business.InteractiveMessage;
 import it.auties.whatsapp.model.message.business.ProductMessage;
 import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.standard.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
+
+import java.util.Optional;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 
@@ -31,5 +32,7 @@ public sealed abstract class ContextualMessage implements Message
      * The context info of this message
      */
     @ProtobufProperty(index = 17, type = MESSAGE, concreteType = ContextInfo.class)
-    private ContextInfo contextInfo;
+    @NonNull
+    @Default
+    private ContextInfo contextInfo = new ContextInfo();
 }

@@ -19,8 +19,7 @@ import static java.awt.Desktop.isDesktopSupported;
 import static java.nio.file.Files.createTempFile;
 
 /**
- * The constants of this enumerated type describe a set of consumers to handle a QR code.
- * If you want to implement a custom functionality, return CUSTOM and implement your own logic
+ * This interface allows to consume a qr code and provides default common implementations to do so
  */
 @FunctionalInterface
 public interface QrHandler extends Consumer<String> {

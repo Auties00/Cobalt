@@ -4,10 +4,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
-import it.auties.whatsapp.api.HistoryLength;
-import it.auties.whatsapp.api.QrHandler;
-import it.auties.whatsapp.api.SocketEvent;
-import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.*;
@@ -52,7 +49,6 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
-import lombok.extern.java.Log;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -64,13 +60,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static it.auties.whatsapp.binary.Socket.ErrorLocation.*;
+import static it.auties.whatsapp.api.ErrorHandler.Location.*;
 import static it.auties.whatsapp.model.request.Node.*;
 import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
 import static java.lang.Long.parseLong;
@@ -84,7 +79,6 @@ import static java.util.stream.Collectors.*;
 
 @Accessors(fluent = true)
 @ClientEndpoint(configurator = Socket.OriginPatcher.class)
-@Log
 public class Socket implements JacksonProvider, SignalSpecification {
     static {
         getWebSocketContainer().setDefaultMaxSessionIdleTimeout(0);
@@ -238,7 +232,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
 
     @SneakyThrows
     public CompletableFuture<Void> disconnect() {
-        if(state.isConnected()) {
+        if (state.isConnected()) {
             state(State.DISCONNECTED);
         }
 
@@ -262,11 +256,11 @@ public class Socket implements JacksonProvider, SignalSpecification {
         store.invokeListeners(listener -> listener.onDisconnected(false));
         store.dispose();
         onSocketEvent(SocketEvent.CLOSE);
-        if(pingService != null) {
+        if (pingService != null) {
             pingService.shutdownNow();
         }
 
-        if(mediaConnectionFuture != null) {
+        if (mediaConnectionFuture != null) {
             mediaConnectionFuture.cancel(true);
         }
     }
@@ -274,7 +268,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
     @OnError
     public void onError(Throwable throwable) {
         onSocketEvent(SocketEvent.ERROR);
-        errorHandler.handleFailure(throwable.getMessage(), UNKNOWN, throwable);
+        errorHandler.handleFailure(UNKNOWN, throwable);
     }
 
     public CompletableFuture<Node> send(Node node) {
@@ -283,8 +277,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
                         store.nextTag() :
                         null)
                 .send(session, keys, store)
-                .exceptionallyAsync(
-                        throwable -> errorHandler.handleFailure(throwable.getMessage(), ERRONEOUS_NODE, throwable));
+                .exceptionallyAsync(throwable -> errorHandler.handleFailure(ERRONEOUS_NODE, throwable));
     }
 
     private void onNodeSent(Node node) {
@@ -300,8 +293,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
                         store.nextTag() :
                         null)
                 .sendWithNoResponse(session, keys, store)
-                .exceptionallyAsync(
-                        throwable -> errorHandler.handleFailure(throwable.getMessage(), UNKNOWN, throwable));
+                .exceptionallyAsync(throwable -> errorHandler.handleFailure(UNKNOWN, throwable));
     }
 
     public CompletableFuture<Void> push(PatchRequest request) {
@@ -433,16 +425,6 @@ public class Socket implements JacksonProvider, SignalSpecification {
         return newChat;
     }
 
-    enum ErrorLocation {
-        UNKNOWN,
-        ERRONEOUS_NODE,
-        MEDIA_CONNECTION,
-        STREAM,
-        LOGIN,
-        APP_STATE_SYNC,
-        MESSAGE
-    }
-
     public static class OriginPatcher extends Configurator {
         @Override
         public void beforeRequest(@NonNull Map<String, List<String>> headers) {
@@ -571,7 +553,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
         private void digestFailure(Node node) {
             var reason = node.attributes()
                     .getString("location");
-            errorHandler.handleFailure(reason, ERRONEOUS_NODE);
+            errorHandler.handleFailure(ERRONEOUS_NODE, new RuntimeException(reason));
         }
 
         private void digestChatState(Node node) {
@@ -766,7 +748,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
                     .getString("type");
             var reason = child.attributes()
                     .getString("reason", null);
-            errorHandler.handleFailure(requireNonNullElse(reason, type), STREAM);
+            errorHandler.handleFailure(STREAM, new RuntimeException(requireNonNullElse(reason, type)));
         }
 
         private void digestSuccess() {
@@ -838,8 +820,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
 
             sendQuery("set", "w:m", with("media_conn")).thenApplyAsync(MediaConnection::of)
                     .thenApplyAsync(store::mediaConnection)
-                    .exceptionallyAsync(
-                            throwable -> errorHandler.handleFailure(throwable.getMessage(), MEDIA_CONNECTION))
+                    .exceptionallyAsync(throwable -> errorHandler.handleFailure(MEDIA_CONNECTION, throwable))
                     .thenRunAsync(this::scheduleMediaConnection);
         }
 
@@ -926,7 +907,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
             var advIdentity = PROTOBUF.readMessage(deviceIdentity.bytes(), SignedDeviceIdentityHMAC.class);
             var advSign = Hmac.calculateSha256(advIdentity.details(), keys.companionKey());
             if (!Arrays.equals(advIdentity.hmac(), advSign)) {
-                errorHandler.handleFailure("hmac_validation", LOGIN);
+                errorHandler.handleFailure(LOGIN, new HmacValidationException("adv_sign"));
                 return;
             }
 
@@ -937,7 +918,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
                             .publicKey())
                     .toByteArray();
             if (!Curve25519.verifySignature(account.accountSignatureKey(), message, account.accountSignature())) {
-                errorHandler.handleFailure("hmac_validation", LOGIN);
+                errorHandler.handleFailure(LOGIN, new HmacValidationException("message_header"));
                 return;
             }
 
@@ -1039,7 +1020,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
 
         private Node handleMessageFailure(Throwable throwable) {
             LOCK.release();
-            return errorHandler.handleFailure(throwable.getMessage(), MESSAGE, throwable);
+            return errorHandler.handleFailure(MESSAGE, throwable);
         }
 
         private Node releaseMessageLock(Node node) {
@@ -1332,7 +1313,6 @@ public class Socket implements JacksonProvider, SignalSpecification {
                                 .content()) :
                         messageContainer;
                 info.message(message);
-                handleStubMessage(info);
                 var content = info.message()
                         .content();
                 if (content instanceof SenderKeyDistributionMessage distributionMessage) {
@@ -1348,18 +1328,10 @@ public class Socket implements JacksonProvider, SignalSpecification {
                 sendReceipt(info.chatJid(), info.senderJid(), List.of(info.key()
                         .id()));
             } catch (Throwable throwable) {
-                errorHandler.handleFailure(throwable.getMessage(), MESSAGE, throwable);
+                errorHandler.handleFailure(MESSAGE, throwable);
             } finally {
                 LOCK.release();
             }
-        }
-
-        private void handleStubMessage(MessageInfo info) {
-            if (!info.hasStub()) {
-                return;
-            }
-
-            log.warning("Received stub %s with %s: unsupported!".formatted(info.stubType(), info.stubParameters()));
         }
 
         private Optional<byte[]> decode(MessageInfo info, byte[] message, String type) {
@@ -1391,7 +1363,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
                             throw new IllegalArgumentException("Unsupported encoded message type: %s".formatted(type));
                 });
             } catch (Throwable throwable) {
-                errorHandler.handleFailure(throwable.getMessage(), MESSAGE, throwable);
+                errorHandler.handleFailure(MESSAGE, throwable);
                 return Optional.empty();
             }
         }
@@ -1689,7 +1661,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
 
         private Void handleSyncError(Throwable exception) {
             SEMAPHORE.release();
-            return errorHandler.handleFailure(exception.getMessage(), APP_STATE_SYNC, exception);
+            return errorHandler.handleFailure(APP_STATE_SYNC, exception);
         }
 
         private List<ActionDataSync> parsePatches(List<SnapshotSyncRecord> patches, Map<String, Long> versions) {
@@ -2059,33 +2031,21 @@ public class Socket implements JacksonProvider, SignalSpecification {
     }
 
     private class ErrorHandler {
-        private <T> T handleFailure(String reason, ErrorLocation location) {
-            return handleFailure(reason, location, null);
-        }
-
-        private <T> T handleFailure(String reason, ErrorLocation location, Throwable throwable) {
-            if (state == State.FAILED) {
+        private <T> T handleFailure(it.auties.whatsapp.api.ErrorHandler.Location location, Throwable throwable) {
+            if (state == State.RESTORING_FAILURE) {
                 return null;
             }
 
-            log.warning("Socket failure at %s(%s)".formatted(location, reason));
-            log.warning("Saved stacktrace at: %s".formatted(Exceptions.save(throwable)));
-            if (!options.failureHandler()
-                    .apply(reason) && !isHmacError(location, throwable)) {
-                log.warning("Ignoring failure");
+            if (!options.errorHandler()
+                    .apply(location, throwable)) {
                 return null;
             }
 
-            log.warning("Restoring session");
-            state(State.FAILED);
+            state(State.RESTORING_FAILURE);
             store.clear();
             changeKeys();
             reconnect();
             return null;
-        }
-
-        private boolean isHmacError(ErrorLocation location, Throwable throwable) {
-            return location == MESSAGE && throwable instanceof HmacValidationException;
         }
     }
 
@@ -2094,10 +2054,10 @@ public class Socket implements JacksonProvider, SignalSpecification {
         CONNECTED,
         DISCONNECTED,
         RECONNECTING,
-        FAILED;
+        RESTORING_FAILURE;
 
-        public boolean isConnected(){
-            return this == CONNECTED || this == FAILED;
+        public boolean isConnected() {
+            return this == CONNECTED || this == RESTORING_FAILURE;
         }
     }
 }

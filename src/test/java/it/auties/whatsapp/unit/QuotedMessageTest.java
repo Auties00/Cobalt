@@ -13,7 +13,7 @@ public class QuotedMessageTest {
         var options = defaultOptions().withAutodetectListeners(false);
         Whatsapp.newConnection(options)
                 .addLoggedInListener(() -> System.out.println("Connected"))
-                .addNewMessageListener((whatsapp, info) -> whatsapp.sendMessage(info.chatJid(), "è bello!", info))
+                .addNewMessageListener((whatsapp, info) -> System.out.println(info))
                 .connect()
                 .get()
                 .await();
