@@ -23,7 +23,7 @@ If, for whatever reason, you'd like to use a version that supports the legacy ve
 <dependency>
     <groupId>com.github.auties00</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>3.0-RC11</version>
+    <version>3.0-RC12</version>
 </dependency>
 ```
 
@@ -31,12 +31,12 @@ If, for whatever reason, you'd like to use a version that supports the legacy ve
 
 1. Groovy DSL
    ```groovy
-   implementation 'com.github.auties00:whatsappweb4j:3.0-RC11'
+   implementation 'com.github.auties00:whatsappweb4j:3.0-RC12'
    ```
 
 2. Kotlin DSL
    ```kotlin
-   implementation("com.github.auties00:whatsappweb4j:3.0-RC11")
+   implementation("com.github.auties00:whatsappweb4j:3.0-RC12")
    ```
 
 ### Examples
