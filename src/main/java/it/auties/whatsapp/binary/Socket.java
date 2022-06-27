@@ -143,7 +143,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
     }
 
     private void onSocketEvent(SocketEvent event) {
-        store.callListeners(listener -> {
+        store.invokeListeners(listener -> {
             listener.onSocketEvent(whatsapp, event);
             listener.onSocketEvent(event);
         });

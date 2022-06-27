@@ -328,13 +328,13 @@ public class MessageContainer implements ProtobufMessage {
     }
 
     /**
-     * Constructs a new MessageContainer from a text message with no context
+     * Constructs a new MessageContainer from a text message
      *
      * @param message the text message with no context
      */
     public static MessageContainer of(@NonNull String message) {
         return MessageContainer.newMessageContainer()
-                .textWithNoContext(message)
+                .text(TextMessage.of(message))
                 .create();
     }
 

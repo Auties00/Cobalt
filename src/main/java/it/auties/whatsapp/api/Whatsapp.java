@@ -149,6 +149,17 @@ public class Whatsapp {
     }
 
     /**
+     * Constructs a new instance of the API from the first session opened.
+     * If no sessions are available, a new one will be created.
+     *
+     * @param options the non-null options
+     * @return a non-null Whatsapp instance
+     */
+    public static Whatsapp firstConnection(@NonNull Options options) {
+        return newConnection(options.withId(requireNonNullElseGet(knownIds().peekFirst(), KeyHelper::registrationId)));
+    }
+
+    /**
      * Constructs a new instance of the API from the last session opened.
      * If no sessions are available, a new one will be created.
      *
@@ -156,6 +167,17 @@ public class Whatsapp {
      */
     public static Whatsapp lastConnection() {
         return newConnection(requireNonNullElseGet(knownIds().peekLast(), KeyHelper::registrationId));
+    }
+
+    /**
+     * Constructs a new instance of the API from the last session opened.
+     * If no sessions are available, a new one will be created.
+     *
+     * @param options the non-null options
+     * @return a non-null Whatsapp instance
+     */
+    public static Whatsapp lastConnection(@NonNull Options options) {
+        return newConnection(options.withId(requireNonNullElseGet(knownIds().peekLast(), KeyHelper::registrationId)));
     }
 
     /**
@@ -1635,8 +1657,8 @@ public class Whatsapp {
                 return;
             }
 
-            keys().save(false);
             store().save(false);
+            keys().save(false);
         }
     }
 }

@@ -11,9 +11,12 @@ public class QuotedMessageTest {
     @Test
     public void quoteMessage() throws InterruptedException, ExecutionException {
         var options = defaultOptions().withAutodetectListeners(false);
-        Whatsapp.newConnection(options)
+        Whatsapp.lastConnection(options)
                 .addLoggedInListener(() -> System.out.println("Connected"))
-                .addNewMessageListener((whatsapp, info) -> System.out.println(info))
+                .addNodeReceivedListener(System.out::println)
+                .addDisconnectedListener((reconnected) -> System.out.println("Disconnected: " + reconnected))
+                .addNewMessageListener(System.out::println)
+                .addNewMessageListener((whatsapp, info) -> whatsapp.sendMessage(info.chatJid(), "è bello!"))
                 .connect()
                 .get()
                 .await();
