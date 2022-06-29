@@ -38,5 +38,6 @@ public final class ButtonsResponseMessage extends ContextualMessage implements B
      * The context info of this message
      */
     @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ContextInfo.class)
-    private ContextInfo contextInfo; // Overrides ContextualMessage's context info
+    @Builder.Default
+    private ContextInfo contextInfo = new ContextInfo();  // Overrides ContextualMessage's context info
 }

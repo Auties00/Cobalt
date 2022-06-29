@@ -6,6 +6,7 @@ import it.auties.whatsapp.util.HmacValidationException;
 import java.util.function.BiFunction;
 import java.util.logging.Logger;
 
+import static it.auties.whatsapp.api.ErrorHandler.Location.DISCONNECTED;
 import static it.auties.whatsapp.api.ErrorHandler.Location.MESSAGE;
 
 /**
@@ -18,15 +19,16 @@ public interface ErrorHandler extends BiFunction<ErrorHandler.Location, Throwabl
     Logger LOGGER = Logger.getLogger("ErrorHandler");
 
     /**
-     * Default error handler implementation
+     * Default error handler.
+     * Prints the exception on the terminal.
      *
      * @return a non-null error handler
      */
-    static ErrorHandler defaultErrorHandler() {
+    static ErrorHandler toTerminal() {
         return (location, throwable) -> {
             LOGGER.warning("Socket failure at %s".formatted(location));
-            LOGGER.warning("Saved stacktrace at: %s".formatted(Exceptions.save(throwable)));
-            if (location != MESSAGE || !(throwable instanceof HmacValidationException)) {
+            throwable.printStackTrace();
+            if (isIgnorable(location, throwable)) {
                 LOGGER.warning("Ignoring failure");
                 return false;
             }
@@ -34,6 +36,31 @@ public interface ErrorHandler extends BiFunction<ErrorHandler.Location, Throwabl
             LOGGER.warning("Restoring session");
             return true;
         };
+    }
+
+    /**
+     * Default error handler.
+     * Saves the exception locally.
+     *
+     * @return a non-null error handler
+     */
+    static ErrorHandler toFile() {
+        return (location, throwable) -> {
+            LOGGER.warning("Socket failure at %s".formatted(location));
+            LOGGER.warning("Saved stacktrace at: %s".formatted(Exceptions.save(throwable)));
+            if (isIgnorable(location, throwable)) {
+                LOGGER.warning("Ignoring failure");
+                return false;
+            }
+
+            LOGGER.warning("Restoring session");
+            return true;
+        };
+    }
+
+    private static boolean isIgnorable(Location location, Throwable throwable) {
+        return location != DISCONNECTED &&
+                (location != MESSAGE || !(throwable instanceof HmacValidationException));
     }
 
     /**
@@ -49,6 +76,11 @@ public interface ErrorHandler extends BiFunction<ErrorHandler.Location, Throwabl
          * Called when a malformed node is sent
          */
         ERRONEOUS_NODE,
+
+        /**
+         * The client was manually disconnected from whatsapp
+         */
+        DISCONNECTED,
 
         /**
          * Called when the media connection cannot be renewed

@@ -4,10 +4,7 @@ import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 
@@ -39,7 +36,8 @@ public final class ButtonTemplateReplyMessage extends ContextualMessage implemen
      * The context info of this message
      */
     @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ContextInfo.class)
-    private ContextInfo contextInfo; // Overrides ContextualMessage's context info
+    @Builder.Default
+    private ContextInfo contextInfo = new ContextInfo();  // Overrides ContextualMessage's context info
 
     /**
      * The index of the button that was selected from the previous template message

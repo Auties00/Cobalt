@@ -18,6 +18,7 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 import static it.auties.whatsapp.model.message.model.MediaMessageType.IMAGE;
@@ -192,7 +193,7 @@ public final class ImageMessage extends MediaMessage {
                 .thumbnail(thumbnail != null ?
                         thumbnail :
                         Medias.getThumbnail(media, JPG))
-                .contextInfo(contextInfo)
+                .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .create();
     }
 

@@ -3,7 +3,7 @@ package it.auties.whatsapp.listener;
 import it.auties.whatsapp.binary.Socket;
 import it.auties.whatsapp.model.contact.Contact;
 
-public interface OnNewContact extends QrDiscardingListener {
+public interface OnNewContact extends Listener {
     /**
      * Called when {@link Socket} receives a new contact
      *

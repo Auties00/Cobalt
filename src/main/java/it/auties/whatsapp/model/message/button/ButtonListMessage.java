@@ -75,7 +75,8 @@ public final class ButtonListMessage extends ContextualMessage implements Button
      * The context info of this message
      */
     @ProtobufProperty(index = 8, type = MESSAGE, concreteType = ContextInfo.class)
-    private ContextInfo contextInfo; // Overrides ContextualMessage's context info
+    @Builder.Default
+    private ContextInfo contextInfo = new ContextInfo();  // Overrides ContextualMessage's context info
 
     /**
      * The constants of this enumerated type describe the various types of {@link ButtonListMessage}

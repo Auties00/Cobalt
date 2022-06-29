@@ -227,7 +227,7 @@ Listeners can be used either as:
    
    Functional listeners can also access the instance of Whatsapp that registered them:
    ```java
-   api.addNewMessageListener((whatsapp, message) -> System.out.println("Someone sent a new message!"));
+   api.addLoggedInListener(whatsapp -> System.out.println("Someone sent a new message!"));
    ```
    
    This is extremely useful if you want to implement a functionality for your application in a compact manner:
@@ -257,7 +257,7 @@ private class BlockingDefaultSerializer implements Listener {
             return;
         }
 
-       // Syncronously as having async operations while the operation is shutting down is not a good idea
+        // Syncronously as having async operations while the operation is shutting down is not a good idea
         keys().save(false); 
         store().save(false);
     }
@@ -375,9 +375,9 @@ All types of messages supported by Whatsapp are supported by this library:
 
     ```java
     var message = TextMessage.newTextMessage() // Create a new text message
-            .text("Check this video out: https://www.youtube.com/watch?v = dQw4w9WgXcQ") // Set the text of the message
-            .canonicalUrl("https://www.youtube.com/watch?v = dQw4w9WgXcQ") // Set the url of the message
-            .matchedText("https://www.youtube.com/watch?v = dQw4w9WgXcQ") // Set the matched text for the url in the message
+            .text("Check this video out: https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the text of the message
+            .canonicalUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the url of the message
+            .matchedText("https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the matched text for the url in the message
             .title("A nice suprise") // Set the title of the url
             .description("Check me out") // Set the description of the url
             .create(); // Create the message
@@ -419,9 +419,9 @@ All types of messages supported by Whatsapp are supported by this library:
     var inviteCode = api.queryInviteCode(group).get();
     var groupInvite = GroupInviteMessage.newGroupInviteMessage() // Create a new group invite message
             .caption("Come join my group of fellow programmers") // Set the caption of this message
-            .groupName(group.name()) // Set the name of the group
+            .name(group.name()) // Set the name of the group
             .groupJid(group.jid())) // Set the jid of the group
-            .inviteExpiration(ZonedDateTime.now().plusDays(3).toInstant().toEpochMilli()) // Set the expiration of this invite
+            .inviteExpiration(ZonedDateTime.now().plusDays(3).toEpochSecond()) // Set the expiration of this invite
             .inviteCode(inviteCode) // Set the code of the group
             .create(); // Create the message
     api.sendMessage(chat,groupInvite); 
@@ -483,7 +483,7 @@ All types of messages supported by Whatsapp are supported by this library:
      var audio = AudioMessage.newAudioMessage() // Create a new audio message builder
            .storeId(api.store().id()) // All media messages need a reference to their store
            .media(urlMedia) // Set the audio of this message
-           .voiceMessage(false) // Set whether this message is a voice message or a standard audio message
+           .voiceMessage(false) // Set whether this message is a voice message
            .create(); // Create the message
      api.sendMessage(chat, audio);
      ```

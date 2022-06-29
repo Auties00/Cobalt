@@ -43,7 +43,8 @@ public final class ButtonTemplateMessage extends ContextualMessage implements Bu
      * The context info of this message
      */
     @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ContextInfo.class)
-    private ContextInfo contextInfo; // Overrides ContextualMessage's context info
+    @Builder.Default
+    private ContextInfo contextInfo = new ContextInfo();  // Overrides ContextualMessage's context info
 
     /**
      * Hydrated template.

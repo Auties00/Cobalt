@@ -6,7 +6,7 @@ import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactStatus;
 
-public interface OnWhatsappContactPresence extends QrDiscardingListener {
+public interface OnWhatsappContactPresence extends Listener {
     /**
      * Called when {@link Socket} receives an update regarding the presence of a contact
      *

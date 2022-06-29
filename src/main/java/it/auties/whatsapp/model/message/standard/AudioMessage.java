@@ -15,6 +15,7 @@ import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 import static it.auties.whatsapp.model.message.model.MediaMessageType.AUDIO;
@@ -127,7 +128,7 @@ public final class AudioMessage extends MediaMessage {
                 .url(upload.url())
                 .directPath(upload.directPath())
                 .fileLength(upload.fileLength())
-                .contextInfo(contextInfo)
+                .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .duration(duration)
                 .mimetype(mimeType)
                 .voiceMessage(voiceMessage)

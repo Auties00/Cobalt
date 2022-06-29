@@ -6,7 +6,7 @@ import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 
-public interface OnWhatsappMessageStatus extends QrDiscardingListener {
+public interface OnWhatsappMessageStatus extends Listener {
     /**
      * Called when the status of a message changes inside any type of chat.
      * If {@code chat} is a conversation with {@code contact}, the new read status can be considered valid for the message itself(global status).

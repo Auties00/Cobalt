@@ -15,6 +15,7 @@ import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 import static it.auties.whatsapp.model.message.model.MediaMessageType.STICKER;
@@ -150,7 +151,7 @@ public final class StickerMessage extends MediaMessage {
                         thumbnail :
                         Medias.getThumbnail(media, PNG))
                 .animated(animated)
-                .contextInfo(contextInfo)
+                .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .create();
     }
 

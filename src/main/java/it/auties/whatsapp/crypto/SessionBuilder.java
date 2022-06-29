@@ -44,7 +44,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull Keys keys
 
     private Session createSession() {
         var session = new Session();
-        keys.addSession(address, session);
+        keys.putKey(address, session);
         return session;
     }
 

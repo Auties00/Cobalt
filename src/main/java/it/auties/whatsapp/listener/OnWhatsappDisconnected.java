@@ -3,7 +3,7 @@ package it.auties.whatsapp.listener;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.binary.Socket;
 
-public interface OnWhatsappDisconnected extends QrDiscardingListener {
+public interface OnWhatsappDisconnected extends Listener {
     /**
      * Called when {@link Socket} successfully disconnects from WhatsappWeb's WebSocket
      *

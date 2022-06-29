@@ -4,7 +4,7 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.binary.Socket;
 import it.auties.whatsapp.model.action.Action;
 
-public interface OnWhatsappAction extends QrDiscardingListener {
+public interface OnWhatsappAction extends Listener {
     /**
      * Called when {@link Socket} receives an sync from Whatsapp.
      *

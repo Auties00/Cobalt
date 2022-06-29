@@ -134,13 +134,20 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
             return;
         }
 
-        if (exceptionally) {
+        if (exceptionally || isErroneousNode(response)) {
             future.completeExceptionally(new RuntimeException(
                     "Cannot process request %s, erroneous response: %s".formatted(this, response)));
             return;
         }
 
         future.complete(response);
+    }
+
+    private boolean isErroneousNode(Node response) {
+        return response.attributes()
+                .getOptionalString("type")
+                .filter("error"::equals)
+                .isPresent();
     }
 
     private void handleSendResult(Store store, SendResult result, boolean response) {

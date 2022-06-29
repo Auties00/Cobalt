@@ -5,7 +5,7 @@ import it.auties.whatsapp.binary.Socket;
 
 import java.util.List;
 
-public interface OnWhatsappFeatures extends QrDiscardingListener {
+public interface OnWhatsappFeatures extends Listener {
     /**
      * Called when {@link Socket} receives new features from Whatsapp.
      *

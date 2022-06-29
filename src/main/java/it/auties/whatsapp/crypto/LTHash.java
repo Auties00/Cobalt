@@ -10,6 +10,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -29,7 +30,7 @@ public class LTHash {
     public LTHash(LTHashState hash) {
         this.salt = "WhatsApp Patch Integrity".getBytes(StandardCharsets.UTF_8);
         this.hash = hash.hash();
-        this.indexValueMap = hash.indexValueMap();
+        this.indexValueMap = new HashMap<>(hash.indexValueMap());
         this.add = new ArrayList<>();
         this.subtract = new ArrayList<>();
     }
@@ -37,19 +38,21 @@ public class LTHash {
     public void mix(byte[] indexMac, byte[] valueMac, RecordSync.Operation operation) {
         var indexMacBase64 = Bytes.of(indexMac)
                 .toBase64();
+        // System.out.printf("Mixing %s(%s)%n", indexMacBase64, operation == RecordSync.Operation.SET ? operation : "%s -> %s".formatted(operation, indexValueMap.get(indexMacBase64) != null));
         var prevOp = indexValueMap.get(indexMacBase64);
         if (operation == RecordSync.Operation.REMOVE) {
             Validate.isTrue(prevOp != null, "No previous operation for %s".formatted(indexMacBase64));
             indexValueMap.remove(indexMacBase64);
-            subtract.add(prevOp);
         } else {
             add.add(valueMac);
             indexValueMap.put(indexMacBase64, valueMac);
         }
 
-        if (prevOp != null) {
-            subtract.add(prevOp);
+        if (prevOp == null) {
+            return;
         }
+
+        subtract.add(prevOp);
     }
 
     public Result finish() {

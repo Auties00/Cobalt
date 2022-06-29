@@ -2,7 +2,7 @@ package it.auties.whatsapp.listener;
 
 import it.auties.whatsapp.model.info.MessageInfo;
 
-public interface OnMessageDeleted extends QrDiscardingListener {
+public interface OnMessageDeleted extends Listener {
     /**
      * Called when a message is deleted
      *

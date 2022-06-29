@@ -24,16 +24,6 @@ import java.util.Map;
 @SuppressWarnings("unused")
 public interface Listener {
     /**
-     * Called when the socket successfully establishes a connection with new secrets.
-     * By default, the QR code is printed to the console.
-     *
-     * @return a non-null handler to process the qr code
-     */
-    default QrHandler onQRCode() {
-        return QrHandler.toTerminal();
-    }
-
-    /**
      * Called when the socket sends a node to Whatsapp
      *
      * @param whatsapp an instance to the calling api

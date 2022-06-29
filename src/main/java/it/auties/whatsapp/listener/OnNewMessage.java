@@ -2,7 +2,7 @@ package it.auties.whatsapp.listener;
 
 import it.auties.whatsapp.model.info.MessageInfo;
 
-public interface OnNewMessage extends QrDiscardingListener {
+public interface OnNewMessage extends Listener {
     /**
      * Called when a new message is received in a chat
      *

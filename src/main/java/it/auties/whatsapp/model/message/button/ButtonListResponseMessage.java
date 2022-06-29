@@ -38,7 +38,8 @@ public final class ButtonListResponseMessage implements ButtonMessage {
      * The context info of this message
      */
     @ProtobufProperty(index = 4, type = MESSAGE, concreteType = ContextInfo.class)
-    private ContextInfo contextInfo; // Overrides ContextualMessage's context info
+    @Builder.Default
+    private ContextInfo contextInfo = new ContextInfo();  // Overrides ContextualMessage's context info
 
     /**
      * The description of this message

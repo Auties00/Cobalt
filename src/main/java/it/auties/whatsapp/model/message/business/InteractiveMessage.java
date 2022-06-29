@@ -67,7 +67,8 @@ public final class InteractiveMessage extends ContextualMessage implements Busin
      * The context info of this message
      */
     @ProtobufProperty(index = 15, type = MESSAGE, concreteType = ContextInfo.class)
-    private ContextInfo contextInfo; // Overrides ContextualMessage's context info
+    @Builder.Default
+    private ContextInfo contextInfo = new ContextInfo();  // Overrides ContextualMessage's context info
 
     public InteractiveMessageType type() {
         if (shopStoreFrontMessage != null)

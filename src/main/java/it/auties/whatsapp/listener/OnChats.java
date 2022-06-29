@@ -4,7 +4,7 @@ import it.auties.whatsapp.binary.Socket;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.chat.Chat;
 
-public interface OnChats extends QrDiscardingListener {
+public interface OnChats extends Listener {
     /**
      * Called when {@link Socket} receives all the chats from WhatsappWeb's WebSocket.
      * When this event is fired, it is guaranteed that all metadata excluding messages will be present.

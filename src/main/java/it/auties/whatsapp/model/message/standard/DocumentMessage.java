@@ -15,6 +15,7 @@ import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 import static it.auties.whatsapp.model.message.model.MediaMessageType.DOCUMENT;
@@ -142,7 +143,7 @@ public final class DocumentMessage extends MediaMessage {
                 .thumbnail(thumbnail != null ?
                         thumbnail :
                         Medias.getThumbnail(media, FILE))
-                .contextInfo(contextInfo)
+                .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .create();
     }
 

@@ -120,7 +120,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
     private Session createSession(SignalPreKeyMessage message) {
         Validate.isTrue(message.registrationId() != 0, "Missing registration jid");
         var newSession = new Session();
-        keys.addSession(address, newSession);
+        keys.putKey(address, newSession);
         return newSession;
     }
 
@@ -235,7 +235,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
     private Session loadSession(Supplier<Session> defaultSupplier) {
         return keys.findSessionByAddress(address)
                 .orElseGet(() -> requireNonNull(defaultSupplier.get(),
-                        "Missing session for %s. Known sessions: %s".formatted(address, keys.sessions())));
+                        "Missing session for %s"));
     }
 
     private record DecryptionResult(byte[] data, Throwable throwable) {

@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.bytes.Bytes;
+import it.auties.whatsapp.binary.Sync;
 import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
@@ -22,9 +22,11 @@ import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
-import lombok.extern.java.Log;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
@@ -104,13 +106,6 @@ public final class Keys implements Controller {
     private Map<SenderKeyName, SenderKeyRecord> senderKeys = new ConcurrentHashMap<>();
 
     /**
-     * Receiver keys for signal implementation
-     */
-    @NonNull
-    @Default
-    private Map<SenderKeyName, SenderKeyDistributionMessage> receiverKeys = new ConcurrentHashMap<>();
-
-    /**
      * App state keys
      */
     @NonNull
@@ -129,7 +124,7 @@ public final class Keys implements Controller {
      */
     @NonNull
     @Default
-    private Map<String, LTHashState> hashStates = new ConcurrentHashMap<>();
+    private Map<Sync, LTHashState> hashStates = new ConcurrentHashMap<>();
 
     /**
      * Write counter for IV
@@ -198,7 +193,6 @@ public final class Keys implements Controller {
 
     /**
      * Clears the signal keys associated with this object
-     *
      */
     @Override
     public void clear() {
@@ -302,11 +296,11 @@ public final class Keys implements Controller {
      * Queries the hash state that matches {@code name}.
      * Otherwise, creates a new one.
      *
-     * @param name the non-null name to search
+     * @param sync the non-null name to search
      * @return a non-null hash state
      */
-    public LTHashState findHashStateByName(@NonNull String name) {
-        return Objects.requireNonNull(hashStates.get(name), "Missing hash state: %s".formatted(name));
+    public Optional<LTHashState> findHashStateByName(@NonNull Sync sync) {
+        return Optional.ofNullable(hashStates.get(sync));
     }
 
     /**
@@ -318,18 +312,6 @@ public final class Keys implements Controller {
      */
     public boolean hasTrust(@NonNull SessionAddress address, byte[] identityKey) {
         return true; // At least for now
-    }
-
-    /**
-     * Checks whether the receiver key has been sent already
-     *
-     * @param group       the group to check
-     * @param participant the participant to check
-     * @return true if the key was already sent
-     */
-    public boolean hasReceiverKey(@NonNull ContactJid group, @NonNull ContactJid participant) {
-        var senderKey = new SenderKeyName(group.toString(), participant.toSignalAddress());
-        return receiverKeys.containsKey(senderKey);
     }
 
     /**
@@ -349,8 +331,20 @@ public final class Keys implements Controller {
      * @param record  the non-null record
      * @return this
      */
-    public Keys addSession(@NonNull SessionAddress address, @NonNull Session record) {
+    public Keys putKey(@NonNull SessionAddress address, @NonNull Session record) {
         sessions.put(address, record);
+        return this;
+    }
+
+    /**
+     * Adds the provided hash state to the known ones
+     *
+     * @param sync  the non-null sync name
+     * @param state the non-null hash state
+     * @return this
+     */
+    public Keys putState(@NonNull Sync sync, @NonNull LTHashState state) {
+        hashStates.put(sync, state);
         return this;
     }
 
@@ -362,6 +356,17 @@ public final class Keys implements Controller {
      */
     public Keys addAppKeys(@NonNull Collection<AppStateSyncKey> keys) {
         appStateKeys.addAll(keys);
+        return this;
+    }
+
+    /**
+     * Adds the provided pre key to the pre keys
+     *
+     * @param preKey the key to add
+     * @return this
+     */
+    public Keys addPreKey(SignalPreKeyPair preKey) {
+        preKeys.add(preKey);
         return this;
     }
 

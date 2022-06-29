@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static it.auties.whatsapp.model.request.Node.withAttributes;
 
@@ -22,7 +23,7 @@ import static it.auties.whatsapp.model.request.Node.withAttributes;
 @Data
 @Accessors(fluent = true)
 public class LTHashState {
-    private String name;
+    private Sync name;
 
     private long version;
 
@@ -35,7 +36,7 @@ public class LTHashState {
     }
 
     public LTHashState(Sync name, long version) {
-        this.name = Objects.toString(name);
+        this.name = name;
         this.version = version;
         this.hash = new byte[128];
         this.indexValueMap = new HashMap<>();
@@ -52,7 +53,43 @@ public class LTHashState {
 
     public LTHashState copy() {
         var newHash = Arrays.copyOf(hash, hash.length);
-        var newData = new HashMap<>(indexValueMap);
+        var newData = indexValueMap.entrySet()
+                .stream()
+                .map(entry -> Map.entry(entry.getKey(), Arrays.copyOf(entry.getValue(), entry.getValue().length)))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         return new LTHashState(name, version, newHash, newData);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof LTHashState that
+                && this.version == that.version()
+                && this.name == that.name()
+                && Arrays.equals(this.hash, that.hash())
+                && checkIndexEquality(that);
+    }
+
+    private boolean checkIndexEquality(LTHashState that) {
+        if (indexValueMap.size() != that.indexValueMap()
+                .size()) {
+            return false;
+        }
+
+        return indexValueMap().entrySet()
+                .stream()
+                .allMatch(entry -> checkIndexEntryEquality(that, entry.getKey(), entry.getValue()));
+    }
+
+    private static boolean checkIndexEntryEquality(LTHashState that, String thisKey, byte[] thisValue) {
+        var thatValue = that.indexValueMap()
+                .get(thisKey);
+        return thatValue != null && Arrays.equals(thatValue, thisValue);
+    }
+
+    @Override
+    public int hashCode() {
+        var result = Objects.hash(name, version, indexValueMap);
+        result = 31 * result + Arrays.hashCode(hash);
+        return result;
     }
 }

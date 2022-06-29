@@ -34,7 +34,6 @@ public class Exceptions {
         var all = new ArrayList<Throwable>(exceptions);
         all.add(0, baseException);
         var iterator = all.iterator();
-        var registeredMessages = new HashSet<String>();
         while (iterator.hasNext()) {
             var current = findInnerException(iterator.next());
             if (!iterator.hasNext()) {
@@ -42,11 +41,10 @@ public class Exceptions {
             }
 
             var cause = iterator.next();
-            if (current == cause || registeredMessages.contains(cause.getMessage())) {
+            if (current == cause) {
                 continue;
             }
 
-            registeredMessages.add(cause.getMessage());
             current.initCause(cause);
         }
 

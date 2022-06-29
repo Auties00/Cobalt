@@ -176,7 +176,7 @@ public final class VideoMessage extends MediaMessage {
                 .width(dimensions.width())
                 .height(dimensions.height())
                 .duration(duration)
-                .contextInfo(contextInfo)
+                .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .create();
     }
 
@@ -226,7 +226,7 @@ public final class VideoMessage extends MediaMessage {
                 .duration(duration)
                 .gifPlayback(true)
                 .gifAttribution(requireNonNullElse(gifAttribution, VideoMessageAttribution.NONE))
-                .contextInfo(contextInfo)
+                .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .create();
     }
 

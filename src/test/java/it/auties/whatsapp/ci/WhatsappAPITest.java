@@ -6,6 +6,7 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.github.GithubActions;
 import it.auties.whatsapp.listener.Listener;
+import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.chat.GroupPolicy;
 import it.auties.whatsapp.model.contact.ContactJid;
@@ -37,10 +38,12 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     private static ContactJid group;
 
     @BeforeAll
-    public void init() throws IOException {
+    public void init() throws IOException, InterruptedException {
         createApi();
         loadConfig();
         createLatch();
+        api.connect();
+        latch.await();
     }
 
     private void createApi() throws IOException {
@@ -83,16 +86,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     }
 
     private void createLatch() {
-        latch = new CountDownLatch(3);
-    }
-
-    @Test
-    @Order(1)
-    public synchronized void testConnection() throws InterruptedException {
-        log("Connecting...");
-        api.connect();
-        latch.await();
-        log("Connected!");
+        latch = new CountDownLatch(5);
     }
 
     @Override
@@ -102,7 +96,8 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
 
     @Override
     public void onNodeReceived(Node incoming) {
-        log("Received node: %s%n", incoming);
+        var str = incoming.toString();
+        log("Received node: %s%n", (str.length() > 300 ? str.substring(0, 300) : str));
     }
 
     @Override
@@ -121,6 +116,12 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     public void onContacts() {
         latch.countDown();
         log("Got contacts: -%s", latch.getCount());
+    }
+
+    @Override
+    public void onChatRecentMessages(Chat chat) {
+        latch.countDown();
+        log("Got recent messages: -%s", latch.getCount());
     }
 
     @Test
@@ -194,6 +195,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(10)
     public void testChangeIndividualPresence() throws Exception {
+        if(group == null){
+            testGroupCreation();
+        }
+
         for (var presence : ContactStatus.values()) {
             log("Changing individual presence to %s...", presence.name());
             var response = api.changePresence(group, presence)
@@ -205,6 +210,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(11)
     public void testChangeGroupName() throws Exception {
+        if(group == null){
+            testGroupCreation();
+        }
+
         log("Changing group name...");
         var changeGroupResponse = api.changeSubject(group, "omega")
                 .get();
@@ -214,6 +223,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @RepeatedTest(2)
     @Order(12)
     public void testChangeGroupDescription() throws Exception {
+        if(group == null){
+            testGroupCreation();
+        }
+
         log("Changing group description...");
         var changeGroupResponse = api.changeDescription(group, Bytes.ofRandom(12)
                         .toHex())
@@ -224,6 +237,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(13)
     public void testRemoveGroupParticipant() throws Exception {
+        if(group == null){
+            testGroupCreation();
+        }
+
         log("Removing %s...", contact);
         var changeGroupResponse = api.remove(group, contact)
                 .get();
@@ -233,6 +250,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(14)
     public void testAddGroupParticipant() throws Exception {
+        if(group == null){
+            testGroupCreation();
+        }
+
         log("Adding %s...", contact);
         var changeGroupResponse = api.add(group, contact)
                 .get();
@@ -242,6 +263,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(15)
     public void testPromotion() throws Exception {
+        if(group == null){
+            testGroupCreation();
+        }
+
         log("Promoting %s...", contact);
         var changeGroupResponse = api.promote(group, contact)
                 .get();
@@ -251,6 +276,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(16)
     public void testDemotion() throws Exception {
+        if(group == null){
+            testGroupCreation();
+        }
+
         log("Demoting %s...", contact);
         var changeGroupResponse = api.demote(group, contact)
                 .get();
@@ -260,6 +289,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(17)
     public void testChangeAllGroupSettings() throws Exception {
+        if(group == null){
+            testGroupCreation();
+        }
+
         for (var policy : GroupPolicy.values()) {
             log("Changing settings to %s...", policy.name());
             api.changeWhoCanEditInfo(group, policy)
@@ -273,6 +306,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(19)
     public void testGroupQuery() throws Exception {
+        if(group == null){
+            testGroupCreation();
+        }
+
         log("Querying group %s...", group);
         api.queryGroupMetadata(group)
                 .get();
@@ -282,6 +319,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(20)
     public void testMute() throws Exception {
+        if(group == null){
+            testGroupCreation();
+        }
+
         log("Muting chat...");
         var muteResponse = api.mute(group, ZonedDateTime.now()
                         .plusDays(14))
@@ -292,6 +333,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(21)
     public void testUnmute() throws Exception {
+        if(group == null){
+            testGroupCreation();
+        }
+
         log("Unmuting chat...");
         var unmuteResponse = api.unmute(group)
                 .get();
@@ -301,6 +346,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(22)
     public void testArchive() throws Exception {
+        if(group == null){
+            testGroupCreation();
+        }
+
         log("Archiving chat...");
         var archiveResponse = api.archive(group)
                 .get();
@@ -310,6 +359,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(23)
     public void testUnarchive() throws Exception {
+        if(group == null){
+            testGroupCreation();
+        }
+
         log("Unarchiving chat...");
         var unarchiveResponse = api.unarchive(group)
                 .get();
@@ -319,6 +372,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(24)
     public void testPin() throws Exception {
+        if(group == null){
+            testGroupCreation();
+        }
+
         if (api.store()
                 .pinnedChats()
                 .size() >= 3) {
@@ -335,6 +392,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(25)
     public void testUnpin() throws Exception {
+        if(group == null){
+            testGroupCreation();
+        }
+
         if (api.store()
                 .pinnedChats()
                 .size() >= 3) {
@@ -479,6 +540,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(34)
     public void testGroupInviteMessage() throws Exception {
+        if(group == null){
+            testGroupCreation();
+        }
+
         log("Querying group invite code");
         var code = api.queryInviteCode(group)
                 .get();
@@ -487,12 +552,11 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
         log("Sending group invite message...");
         var invite = GroupInviteMessage.newGroupInviteMessage()
                 .groupId(group)
-                .groupName(group.user())
+                .code(code)
                 .expiration(ZonedDateTime.now()
                         .plusDays(3)
-                        .toInstant()
-                        .toEpochMilli())
-                .code(code)
+                        .toEpochSecond())
+                .name(group.user())
                 .create();
         var textResponse = api.sendMessage(contact, invite)
                 .get();
@@ -502,6 +566,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(35)
     public void testEnableEphemeralMessages() throws Exception {
+        if(group == null){
+            testGroupCreation();
+        }
+
         log("Enabling ephemeral messages...");
         var ephemeralResponse = api.changeEphemeralTimer(group, ChatEphemeralTimer.ONE_WEEK)
                 .get();
@@ -511,6 +579,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(36)
     public void testDisableEphemeralMessages() throws Exception {
+        if(group == null){
+            testGroupCreation();
+        }
+
         log("Disabling ephemeral messages...");
         var ephemeralResponse = api.changeEphemeralTimer(group, ChatEphemeralTimer.OFF)
                 .get();
@@ -520,14 +592,17 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(37)
     public void testLeave() throws Exception {
+        if(group == null){
+            testGroupCreation();
+        }
+
         log("Leaving group...");
         var ephemeralResponse = api.leave(group)
                 .get();
         log("Left group: %s", ephemeralResponse);
     }
 
-    @Test
-    @Order(38)
+    @AfterAll
     public void testDisconnect() {
         log("Logging off...");
         CompletableFuture.delayedExecutor(60, TimeUnit.SECONDS)

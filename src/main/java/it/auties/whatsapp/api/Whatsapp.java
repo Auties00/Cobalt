@@ -436,16 +436,6 @@ public class Whatsapp {
     }
 
     /**
-     * Registers a qr code listener
-     *
-     * @param onQrCode the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addQrCodeListener(OnQrCode onQrCode) {
-        return addListener(onQrCode);
-    }
-
-    /**
      * Registers a setting listener
      *
      * @param onSetting the listener to register
@@ -1632,13 +1622,20 @@ public class Whatsapp {
         private HistoryLength historyLength = HistoryLength.THREE_MONTHS;
 
         /**
+         * Handles the qr code when a connection is first established with Whatsapp.
+         * By default, the qr code is printed on the terminal.
+         */
+        @Default
+        private QrHandler qrHandler = QrHandler.toTerminal();
+
+        /**
          * Handles failures in the WebSocket.
          * Returns true if the current connection should be killed and a new one created.
          * Otherwise, the connection will not be killed, but more failures may be caused by the latter.
          * By default, false.
          */
         @Default
-        private ErrorHandler errorHandler = ErrorHandler.defaultErrorHandler();
+        private ErrorHandler errorHandler = ErrorHandler.toFile();
 
         /**
          * Constructs a new instance of WhatsappConfiguration with default options

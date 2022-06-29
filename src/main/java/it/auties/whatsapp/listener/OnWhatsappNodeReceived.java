@@ -4,7 +4,7 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.binary.Socket;
 import it.auties.whatsapp.model.request.Node;
 
-public interface OnWhatsappNodeReceived extends QrDiscardingListener {
+public interface OnWhatsappNodeReceived extends Listener {
     /**
      * Called when {@link Socket} receives a node from Whatsapp
      *

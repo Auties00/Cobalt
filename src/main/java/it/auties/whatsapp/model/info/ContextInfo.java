@@ -53,8 +53,9 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
     /**
      * A list of the contacts' jids mentioned in this ContextualMessage
      */
-    @ProtobufProperty(index = 15, type = STRING, repeated = true)
-    private List<String> mentionedJids;
+    @ProtobufProperty(index = 15, type = STRING, repeated = true,
+            concreteType = ContactJid.class, requiresConversion = true)
+    private List<ContactJid> mentions;
 
     /**
      * Conversation source

@@ -2,7 +2,7 @@ package it.auties.whatsapp.listener;
 
 import java.util.Map;
 
-public interface OnMetadata extends QrDiscardingListener {
+public interface OnMetadata extends Listener {
     /**
      * Called when an updated list of properties is received.
      * This method is called both when a connection is established with WhatsappWeb and when new props are available.
