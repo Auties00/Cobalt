@@ -2,6 +2,8 @@ package it.auties.whatsapp.binary;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
+import com.github.benmanes.caffeine.cache.RemovalListener;
 import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.api.*;
@@ -56,10 +58,7 @@ import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -425,6 +424,11 @@ public class Socket implements JacksonProvider, SignalSpecification {
         return newChat;
     }
 
+    private CompletableFuture<Void> runAsyncDelayed(Runnable runnable, int seconds){
+        var mediaService = CompletableFuture.delayedExecutor(seconds, TimeUnit.SECONDS);
+        return CompletableFuture.runAsync(runnable, mediaService);
+    }
+
     public static class OriginPatcher extends Configurator {
         @Override
         public void beforeRequest(@NonNull Map<String, List<String>> headers) {
@@ -556,7 +560,9 @@ public class Socket implements JacksonProvider, SignalSpecification {
                     .orElse("unknown");
             var reason = node.attributes()
                     .getInt("reason");
-            errorHandler.handleFailure(reason == 401 ? DISCONNECTED : ERRONEOUS_NODE, new RuntimeException(location));
+            errorHandler.handleFailure(reason == 401 ?
+                    DISCONNECTED :
+                    ERRONEOUS_NODE, new RuntimeException(location));
         }
 
         private void digestChatState(Node node) {
@@ -758,6 +764,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
             confirmConnection();
             sendPreKeys();
             createPingTask();
+            createMediaConnection();
             sendStatusUpdate();
             store.invokeListeners(Listener::onLoggedIn);
             loginFuture.complete(null);
@@ -816,21 +823,25 @@ public class Socket implements JacksonProvider, SignalSpecification {
             onSocketEvent(SocketEvent.PING);
         }
 
+        @SneakyThrows
         private void createMediaConnection() {
             if (!state.isConnected()) {
                 return;
             }
 
+            store.mediaConnectionLock()
+                    .acquire();
             sendQuery("set", "w:m", with("media_conn")).thenApplyAsync(MediaConnection::of)
                     .thenApplyAsync(store::mediaConnection)
-                    .exceptionallyAsync(throwable -> errorHandler.handleFailure(MEDIA_CONNECTION, throwable))
-                    .thenRunAsync(this::scheduleMediaConnection);
+                    .thenRunAsync(store.mediaConnectionLock()::release)
+                    .exceptionallyAsync(this::handleMediaConnectionError)
+                    .thenRunAsync(() -> runAsyncDelayed(this::createMediaConnection, store.mediaConnection().ttl()));
         }
 
-        private void scheduleMediaConnection() {
-            var mediaService = CompletableFuture.delayedExecutor(store.mediaConnection()
-                    .ttl(), TimeUnit.SECONDS);
-            mediaConnectionFuture = CompletableFuture.runAsync(this::createMediaConnection, mediaService);
+        private <T> T handleMediaConnectionError(Throwable throwable) {
+            store.mediaConnectionLock()
+                    .release();
+            return errorHandler.handleFailure(MEDIA_CONNECTION, throwable);
         }
 
         private void digestIq(Node node) {
@@ -855,7 +866,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
         }
 
         private void confirmConnection() {
-            sendQuery("set", "passive", with("active")).thenRunAsync(this::createMediaConnection);
+            sendQuery("set", "passive", with("active"));
         }
 
         private void sendPreKeys() {
@@ -959,67 +970,86 @@ public class Socket implements JacksonProvider, SignalSpecification {
         private static final String SKMSG = "skmsg";
         private static final String PKMSG = "pkmsg";
         private static final String MSG = "msg";
-        private static final int CACHE_EXPIRATION = 1;
-        private static final Semaphore LOCK = new Semaphore(1);
+        private static final Semaphore SEND_LOCK = new Semaphore(1);
 
         private final Cache<ContactJid, GroupMetadata> groupsCache;
         private final Cache<String, List<ContactJid>> devicesCache;
+        private final Cache<Chat, Chat> historyCache;
+        private CompletableFuture<?> appSyncFuture;
 
         public MessageHandler() {
-            this.groupsCache = createCache();
-            this.devicesCache = createCache();
+            this.groupsCache = createCache(Duration.ofMinutes(5), null);
+            this.devicesCache = createCache(Duration.ofMinutes(5), null);
+            this.historyCache = createCache(Duration.ofSeconds(30), this::onChatReady);
+
         }
 
-        private <K, V> Cache<K, V> createCache() {
-            return Caffeine.newBuilder()
-                    .expireAfterWrite(Duration.ofMinutes(CACHE_EXPIRATION))
-                    .build();
+        private void onChatReady(Chat key, Chat value, RemovalCause cause) {
+            if (cause != RemovalCause.EXPIRED) {
+                return;
+            }
+
+            onChatRecentMessages(key, true);
+        }
+
+        private <K, V> Cache<K, V> createCache(Duration duration, RemovalListener<K, V> removalListener) {
+            var builder = Caffeine.newBuilder()
+                    .expireAfterWrite(duration);
+            if (removalListener != null) {
+                builder.removalListener(removalListener);
+            }
+
+            return builder.build();
         }
 
         @SafeVarargs
-        @SneakyThrows
         public final CompletableFuture<Node> encode(MessageInfo info, Entry<String, Object>... attributes) {
-            LOCK.acquire();
-            var encodedMessage = BytesHelper.messageToBytes(info.message());
-            if (isConversation(info)) {
-                var deviceMessage = DeviceSentMessage.newDeviceSentMessage(info.chatJid()
-                        .toString(), info.message(), null);
-                var encodedDeviceMessage = BytesHelper.messageToBytes(deviceMessage);
-                var knownDevices = List.of(keys.companion()
-                        .toUserJid(), info.chatJid());
-                return getDevices(knownDevices, true).thenComposeAsync(
-                                allDevices -> createConversationNodes(allDevices, encodedMessage, encodedDeviceMessage))
-                        .thenApplyAsync(sessions -> createEncodedMessageNode(info, sessions, null, attributes))
+            try {
+                SEND_LOCK.acquire();
+                var encodedMessage = BytesHelper.messageToBytes(info.message());
+                if (isConversation(info)) {
+                    var deviceMessage = DeviceSentMessage.newDeviceSentMessage(info.chatJid()
+                            .toString(), info.message(), null);
+                    var encodedDeviceMessage = BytesHelper.messageToBytes(deviceMessage);
+                    var knownDevices = List.of(keys.companion()
+                            .toUserJid(), info.chatJid());
+                    return getDevices(knownDevices, true).thenComposeAsync(
+                                    allDevices -> createConversationNodes(allDevices, encodedMessage, encodedDeviceMessage))
+                            .thenApplyAsync(sessions -> createEncodedMessageNode(info, sessions, null, attributes))
+                            .thenComposeAsync(Socket.this::send)
+                            .thenApplyAsync(this::releaseMessageLock)
+                            .exceptionallyAsync(this::handleMessageFailure);
+                }
+
+                var senderName = new SenderKeyName(info.chatJid()
+                        .toString(), keys.companion()
+                        .toSignalAddress());
+                var groupBuilder = new GroupBuilder(keys);
+                var signalMessage = groupBuilder.createOutgoing(senderName);
+                var groupCipher = new GroupCipher(senderName, keys);
+                var groupMessage = groupCipher.encrypt(encodedMessage);
+                return Optional.ofNullable(groupsCache.getIfPresent(info.chatJid()))
+                        .map(CompletableFuture::completedFuture)
+                        .orElseGet(() -> queryGroupMetadata(info.chatJid()))
+                        .thenComposeAsync(this::getDevices)
+                        .thenComposeAsync(allDevices -> createGroupNodes(info, signalMessage, allDevices))
+                        .thenApplyAsync(preKeys -> createEncodedMessageNode(info, preKeys, groupMessage, attributes))
                         .thenComposeAsync(Socket.this::send)
                         .thenApplyAsync(this::releaseMessageLock)
                         .exceptionallyAsync(this::handleMessageFailure);
+            }catch (Throwable throwable){
+                releaseMessageLock(null);
+                throw new RuntimeException("Cannot send message", throwable);
             }
-
-            var senderName = new SenderKeyName(info.chatJid()
-                    .toString(), keys.companion()
-                    .toSignalAddress());
-            var groupBuilder = new GroupBuilder(keys);
-            var signalMessage = groupBuilder.createOutgoing(senderName);
-            var groupCipher = new GroupCipher(senderName, keys);
-            var groupMessage = groupCipher.encrypt(encodedMessage);
-            return Optional.ofNullable(groupsCache.getIfPresent(info.chatJid()))
-                    .map(CompletableFuture::completedFuture)
-                    .orElseGet(() -> queryGroupMetadata(info.chatJid()))
-                    .thenComposeAsync(this::getDevices)
-                    .thenComposeAsync(allDevices -> createGroupNodes(info, signalMessage, allDevices))
-                    .thenApplyAsync(preKeys -> createEncodedMessageNode(info, preKeys, groupMessage, attributes))
-                    .thenComposeAsync(Socket.this::send)
-                    .thenApplyAsync(this::releaseMessageLock)
-                    .exceptionallyAsync(this::handleMessageFailure);
         }
 
         private Node handleMessageFailure(Throwable throwable) {
-            LOCK.release();
+            SEND_LOCK.release();
             return errorHandler.handleFailure(MESSAGE, throwable);
         }
 
         private Node releaseMessageLock(Node node) {
-            LOCK.release();
+            SEND_LOCK.release();
             return node;
         }
 
@@ -1251,7 +1281,6 @@ public class Socket implements JacksonProvider, SignalSpecification {
 
         private void decode(Node infoNode, Node messageNode) {
             try {
-                LOCK.acquire();
                 var pushName = infoNode.attributes()
                         .getString("notify");
                 var timestamp = infoNode.attributes()
@@ -1324,8 +1353,6 @@ public class Socket implements JacksonProvider, SignalSpecification {
                         .id()));
             } catch (Throwable throwable) {
                 errorHandler.handleFailure(MESSAGE, throwable);
-            } finally {
-                LOCK.release();
             }
         }
 
@@ -1430,13 +1457,13 @@ public class Socket implements JacksonProvider, SignalSpecification {
                     switch (history.syncType()) {
                         case INITIAL_BOOTSTRAP -> {
                             history.conversations()
-                                    .forEach(store::addChat);
+                                    .forEach(this::addChatToHistory);
                             store.hasSnapshot(true);
                             store.invokeListeners(Listener::onChats);
                         }
 
                         case FULL -> history.conversations()
-                                .forEach(store::addChat);
+                                .forEach(this::addChatToHistory);
 
                         case INITIAL_STATUS_V3 -> {
                             history.statusV3Messages()
@@ -1456,6 +1483,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
                         }
                     }
 
+                    scheduleAppSync();
                     sendSyncReceipt(info, "hist_sync");
                 }
 
@@ -1495,6 +1523,19 @@ public class Socket implements JacksonProvider, SignalSpecification {
             sendSyncReceipt(info, "peer_msg");
         }
 
+        private void scheduleAppSync() {
+            if(appSyncFuture != null && appSyncFuture.cancel(false)){
+                return;
+            }
+
+            this.appSyncFuture = runAsyncDelayed(() -> appStateHandler.pull(Sync.values()), 10);
+        }
+
+        private void addChatToHistory(Chat chat) {
+            store.addChat(chat);
+            historyCache.put(chat, chat);
+        }
+
         private void handNewPushName(PushName pushName) {
             var jid = ContactJid.of(pushName.id());
             store.findContactByJid(jid)
@@ -1505,24 +1546,21 @@ public class Socket implements JacksonProvider, SignalSpecification {
         }
 
         private void handleRecentMessage(Chat recent) {
-            var oldChat = store.findChatByJid(recent.jid());
-            if (oldChat.isEmpty()) {
-                store.addChat(recent);
-                return;
-            }
-
+            // TODO: 30/06/2022 merge chats
+            var oldChat = store.findChatByJid(recent.jid())
+                    .orElseGet(() -> createChat(recent.jid()));
             recent.messages()
                     .stream()
                     .peek(message -> message.storeId(store.id()))
-                    .forEach(oldChat.get()
-                            .messages()::add);
-            onChatRecentMessages(oldChat.get());
+                    .forEach(oldChat.messages()::add);
+            onChatRecentMessages(oldChat, false);
+            historyCache.put(oldChat, oldChat);
         }
 
-        private void onChatRecentMessages(Chat oldChat) {
+        private void onChatRecentMessages(Chat chat, boolean last) {
             store.callListeners(listener -> {
-                listener.onChatRecentMessages(whatsapp, oldChat);
-                listener.onChatRecentMessages(oldChat);
+                listener.onChatMessages(whatsapp, chat, last);
+                listener.onChatMessages(chat, last);
             });
         }
 
@@ -1535,7 +1573,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
     }
 
     private class AppStateHandler {
-        private static final Semaphore SEMAPHORE = new Semaphore(1);
+        private static final Semaphore LOCK = new Semaphore(1);
         private static final int PULL_ATTEMPTS = 5;
 
         public CompletableFuture<Void> pullAndPush(@NonNull PatchRequest patch) {
@@ -1544,10 +1582,10 @@ public class Socket implements JacksonProvider, SignalSpecification {
 
         public CompletableFuture<Void> push(PatchRequest patch) {
             try {
-                SEMAPHORE.acquire();
+                LOCK.acquire();
 
                 var oldState = keys.findHashStateByName(patch.type())
-                        .orElseGet(() -> createHashState(patch.type()));
+                        .orElseThrow(() -> new NoSuchElementException("Missing patch for %s".formatted(patch.type())));
                 var newState = oldState.copy();
 
                 var key = requireNonNull(keys.appStateKeys()
@@ -1608,35 +1646,27 @@ public class Socket implements JacksonProvider, SignalSpecification {
                         of("name", patch.type(), "version", newState.version() - 1, "return_snapshot", false),
                         with("patch", PROTOBUF.writeValueAsBytes(sync)));
                 return sendQuery("set", "w:sync:app:state", withChildren("sync", body))
+                        .thenAcceptAsync(this::parseSyncRequest)
                         .thenRunAsync(() -> keys.putState(patch.type(), newState))
-                        .thenRunAsync(() -> sync.version(new VersionSync(newState.version())))
-                        .thenRunAsync(() -> parseSyncRequest(patch.type(), oldState.copy(), sync))
-                        .thenRunAsync(SEMAPHORE::release)
+                        .thenRunAsync(() -> handleSyncRequest(patch.type(), oldState.version(), newState, sync))
+                        .thenRunAsync(LOCK::release)
                         .exceptionallyAsync(this::handleSyncError);
             } catch (Throwable throwable) {
-                SEMAPHORE.release();
+                LOCK.release();
                 throw new RuntimeException("Cannot push patch", throwable);
             }
         }
 
-        private void parseSyncRequest(Sync sync, LTHashState state, PatchSync patch) {
-            decodePatch(sync, state.version(), state, patch).stream()
+        private void handleSyncRequest(Sync sync, long minimumVersion, LTHashState state, PatchSync patch) {
+            decodePatches(sync, minimumVersion, List.of(patch.withVersion(new VersionSync(state.version()))))
+                    .stream()
                     .map(MutationsRecord::records)
                     .flatMap(Collection::stream)
                     .forEach(this::processActions);
         }
 
-        private CompletableFuture<Void> pull(Sync... syncs) {
-            try {
-                return pull(Arrays.asList(syncs), getInitialStateVersions(syncs));
-            } catch (Throwable throwable) {
-                SEMAPHORE.release();
-                throw new RuntimeException("Cannot pull patches", throwable);
-            }
-        }
-
-        private Map<Sync, Long> getInitialStateVersions(Sync[] syncs) {
-            return Arrays.stream(syncs)
+        private Map<Sync, Long> getInitialStateVersions(List<Sync> syncs) {
+            return syncs.stream()
                     .collect(toMap(Function.identity(), this::getInitialStateVersion));
         }
 
@@ -1646,45 +1676,33 @@ public class Socket implements JacksonProvider, SignalSpecification {
                     .orElse(0L);
         }
 
-        @SneakyThrows
-        private CompletableFuture<Void> pull(List<Sync> syncs, Map<Sync, Long> versions) {
-            SEMAPHORE.acquire();
+        private CompletableFuture<Void> pull(Sync... syncs) {
+            try {
+                LOCK.acquire();
+                return pullWithoutSync(Arrays.asList(syncs))
+                        .thenRunAsync(LOCK::release);
+            } catch (Throwable throwable) {
+                LOCK.release();
+                throw new RuntimeException("Cannot pull patches", throwable);
+            }
+        }
 
-            var states = syncs.stream()
-                    .map(sync -> keys.findHashStateByName(sync)
-                            .orElseGet(() -> createHashState(sync)))
-                    .toList();
-
-            var nodes = states.stream()
+        private CompletableFuture<Void> pullWithoutSync(List<Sync> syncs) {
+            var versions = getInitialStateVersions(syncs);
+            var nodes = syncs.stream()
+                    .map(this::getOrCreateState)
                     .map(LTHashState::toNode)
                     .toList();
-
-            var request = withChildren("iq",
-                   of("id", store.nextTag(), "to", ContactJid.WHATSAPP, "xmlns", "w:sync:app:state", "type",
-                            "set"), withChildren("sync", nodes));
-            return send(request).thenApplyAsync(this::parseSyncRequest)
+            return sendQuery("set", "w:sync:app:state", withChildren("sync", nodes)).thenApplyAsync(
+                            this::parseSyncRequest)
                     .thenApplyAsync(records -> handleSyncRequest(records, versions))
-                    .thenComposeAsync(records -> checkIncompleteRecords(records, versions))
+                    .thenComposeAsync(this::checkIncompleteRecords)
                     .exceptionallyAsync(this::handleSyncError);
         }
 
-        private List<SnapshotSyncRecord> handleSyncRequest(List<SnapshotSyncRecord> records, Map<Sync, Long> versions){
-            parsePatches(records, versions)
-                    .forEach(this::processActions);
-            return records;
-        }
-
-        private CompletableFuture<Void> checkIncompleteRecords(List<SnapshotSyncRecord> records, Map<Sync, Long> versions) {
-            SEMAPHORE.release();
-            var remaining = records.stream()
-                    .filter(SnapshotSyncRecord::hasMore)
-                    .map(SnapshotSyncRecord::name)
-                    .toList();
-            if (remaining.isEmpty()) {
-                return completedFuture(null);
-            }
-
-            return pull(remaining, versions);
+        private LTHashState getOrCreateState(Sync sync) {
+            return keys.findHashStateByName(sync)
+                    .orElseGet(() -> createHashState(sync));
         }
 
         private LTHashState createHashState(Sync sync) {
@@ -1693,8 +1711,25 @@ public class Socket implements JacksonProvider, SignalSpecification {
             return hashState;
         }
 
+        private List<SnapshotSyncRecord> handleSyncRequest(List<SnapshotSyncRecord> records, Map<Sync, Long> versions) {
+            parsePatches(records, versions).forEach(this::processActions);
+            return records;
+        }
+
+        private CompletableFuture<Void> checkIncompleteRecords(List<SnapshotSyncRecord> records) {
+            // TODO: Always produces an infinite loop when hasMore is true somehow
+            // var remaining = records.stream()
+            //                    .filter(SnapshotSyncRecord::hasMore)
+            //                    .map(SnapshotSyncRecord::name)
+            //                    .toList();
+            //   return remaining.isEmpty() ?
+            //                    completedFuture(null) :
+            //                    pullWithoutSync(remaining);
+            return completedFuture(null);
+        }
+
         private Void handleSyncError(Throwable exception) {
-            SEMAPHORE.release();
+            LOCK.release();
             return errorHandler.handleFailure(APP_STATE_SYNC, exception);
         }
 
@@ -1745,6 +1780,11 @@ public class Socket implements JacksonProvider, SignalSpecification {
         private SnapshotSyncRecord parseSync(Node sync) {
             var name = Sync.forName(sync.attributes()
                     .getString("name"));
+            var type = sync.attributes()
+                    .getString("type");
+            Validate.isTrue(!Objects.equals(type, "error"), "Received erroneous sync: %s", IllegalStateException.class,
+                    sync.findNode("error")
+                            .orElse(null));
             var more = sync.attributes()
                     .getBool("has_more_patches");
             var snapshotSync = sync.findNode("snapshot")
@@ -1927,8 +1967,8 @@ public class Socket implements JacksonProvider, SignalSpecification {
             var mutations = decodeMutations(records, newState);
             newState.hash(mutations.hash());
             newState.indexValueMap(mutations.indexValueMap());
-            Validate.isTrue(Arrays.equals(generatePatchMac(sync, newState, patch), patch.snapshotMac()),
-                    "patch_mac", HmacValidationException.class);
+            Validate.isTrue(Arrays.equals(generatePatchMac(sync, newState, patch), patch.snapshotMac()), "patch_mac",
+                    HmacValidationException.class);
 
             return Optional.of(mutations)
                     .filter(ignored -> minimumVersion == 0 || newState.version() > minimumVersion);

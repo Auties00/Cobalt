@@ -1,6 +1,5 @@
 package it.auties.whatsapp.listener;
 
-import it.auties.whatsapp.api.QrHandler;
 import it.auties.whatsapp.api.SocketEvent;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.controller.Store;
@@ -244,7 +243,7 @@ public interface Listener {
      * Called when the socket receives all the chats from WhatsappWeb's WebSocket.
      * When this event is fired, it is guaranteed that all metadata excluding messages will be present.
      * To access this data use {@link Store#chats()}.
-     * If you also need the messages to be loaded, please refer to {@link Listener#onChatRecentMessages(Chat)}.
+     * If you also need the messages to be loaded, please refer to {@link Listener#onChatMessages(Chat, boolean)}.
      *
      * @param whatsapp an instance to the calling api
      */
@@ -256,27 +255,30 @@ public interface Listener {
      * Called when the socket receives all the chats from WhatsappWeb's WebSocket.
      * When this event is fired, it is guaranteed that all metadata excluding messages will be present.
      * To access this data use {@link Store#chats()}.
-     * If you also need the messages to be loaded, please refer to {@link Listener#onChatRecentMessages(Chat)}.
+     * If you also need the messages to be loaded, please refer to {@link Listener#onChatMessages(Chat, boolean)}.
      */
     default void onChats() {
 
     }
 
     /**
-     * Called when the socket receives the recent message for a chat.
-     * This method may be called multiple times depending on the chat's size.
+     * Called when the socket receives the recent message for a chat
      *
      * @param whatsapp an instance to the calling api
+     * @param chat the chat
+     * @param last whether the messages in this chat are complete or there are more coming
      */
-    default void onChatRecentMessages(Whatsapp whatsapp, Chat chat) {
+    default void onChatMessages(Whatsapp whatsapp, Chat chat, boolean last) {
 
     }
 
     /**
-     * Called when the socket receives the recent message for a chat.
-     * This method may be called multiple times depending on the chat's size.
+     * Called when the socket receives the recent message for a chat
+     *
+     * @param chat the chat
+     * @param last whether the messages in this chat are complete or there are more coming
      */
-    default void onChatRecentMessages(Chat chat) {
+    default void onChatMessages(Chat chat, boolean last) {
 
     }
 

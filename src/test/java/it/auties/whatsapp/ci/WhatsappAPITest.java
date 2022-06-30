@@ -27,6 +27,7 @@ import java.util.Base64;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -86,18 +87,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     }
 
     private void createLatch() {
-        latch = new CountDownLatch(5);
-    }
-
-    @Override
-    public void onNodeSent(Node outgoing) {
-        log("Sending node: %s%n", outgoing);
-    }
-
-    @Override
-    public void onNodeReceived(Node incoming) {
-        var str = incoming.toString();
-        log("Received node: %s%n", (str.length() > 300 ? str.substring(0, 300) : str));
+        latch = new CountDownLatch(3);
     }
 
     @Override
@@ -116,12 +106,6 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     public void onContacts() {
         latch.countDown();
         log("Got contacts: -%s", latch.getCount());
-    }
-
-    @Override
-    public void onChatRecentMessages(Chat chat) {
-        latch.countDown();
-        log("Got recent messages: -%s", latch.getCount());
     }
 
     @Test
@@ -602,13 +586,23 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
         log("Left group: %s", ephemeralResponse);
     }
 
+    @SuppressWarnings("JUnit3StyleTestMethodInJUnit4Class")
     @AfterAll
     public void testDisconnect() {
         log("Logging off...");
-        CompletableFuture.delayedExecutor(60, TimeUnit.SECONDS)
+        CompletableFuture.delayedExecutor(5, TimeUnit.MINUTES)
                 .execute(api::disconnect);
         api.await();
         log("Logged off");
+    }
+
+    @Override
+    public void onChatMessages(Chat chat, boolean last) {
+        if(!last){
+            return;
+        }
+
+        System.out.printf("%s is ready with %s messages%n", chat.name(), chat.messages().size());
     }
 
     private void log(String message, Object... params) {

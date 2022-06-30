@@ -281,7 +281,7 @@ public class Whatsapp {
      * @param onChatRecentMessages the listener to register
      * @return the same instance
      */
-    public Whatsapp addChatRecentMessagesListener(OnChatRecentMessages onChatRecentMessages) {
+    public Whatsapp addChatMessagesListener(OnChatMessages onChatRecentMessages) {
         return addListener(onChatRecentMessages);
     }
 
@@ -481,7 +481,7 @@ public class Whatsapp {
      * @param onChatRecentMessages the listener to register
      * @return the same instance
      */
-    public Whatsapp addChatRecentMessagesListener(OnWhatsappChatRecentMessages onChatRecentMessages) {
+    public Whatsapp addChatMessagesListener(OnWhatsappChatMessages onChatRecentMessages) {
         return addListener(onChatRecentMessages);
     }
 

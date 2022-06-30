@@ -14,6 +14,7 @@ import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Preferences;
+import it.auties.whatsapp.util.Validate;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
@@ -22,10 +23,7 @@ import lombok.extern.java.Log;
 
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -145,6 +143,13 @@ public final class Store implements Controller {
     @Setter
     @JsonIgnore
     private MediaConnection mediaConnection;
+
+    /**
+     * The media connection lock
+     */
+    @Default
+    @JsonIgnore
+    private Semaphore mediaConnectionLock = new Semaphore(1);
 
     /**
      * Constructs a new default instance of WhatsappStore
@@ -459,6 +464,29 @@ public final class Store implements Controller {
      */
     public String nextTag() {
         return "%s-%s".formatted(tag, counter.getAndIncrement());
+    }
+
+    /**
+     * The media connection associated with this store
+     *
+     * @return the media connection
+     */
+    public MediaConnection mediaConnection() {
+        if(mediaConnectionLock.availablePermits() == 0){
+            waitForConnection();
+        }
+
+        return mediaConnection;
+    }
+
+    private void waitForConnection() {
+        try {
+            Validate.isTrue(mediaConnectionLock.tryAcquire(1, TimeUnit.MINUTES),
+                    "Cannot acquire media sessions lock", IllegalStateException.class);
+            mediaConnectionLock.release();
+        }catch (InterruptedException exception){
+            throw new IllegalArgumentException("Cannot acquire media session lock", exception);
+        }
     }
 
     /**

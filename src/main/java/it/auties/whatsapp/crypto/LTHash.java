@@ -38,11 +38,10 @@ public class LTHash {
     public void mix(byte[] indexMac, byte[] valueMac, RecordSync.Operation operation) {
         var indexMacBase64 = Bytes.of(indexMac)
                 .toBase64();
-        // System.out.printf("Mixing %s(%s)%n", indexMacBase64, operation == RecordSync.Operation.SET ? operation : "%s -> %s".formatted(operation, indexValueMap.get(indexMacBase64) != null));
         var prevOp = indexValueMap.get(indexMacBase64);
         if (operation == RecordSync.Operation.REMOVE) {
-            Validate.isTrue(prevOp != null, "No previous operation for %s".formatted(indexMacBase64));
-            indexValueMap.remove(indexMacBase64);
+            Validate.isTrue(prevOp != null, "No previous operation for %s", indexMacBase64);
+            Validate.isTrue(indexValueMap.remove(indexMacBase64, prevOp), "Cannot remove %s", indexMacBase64);
         } else {
             add.add(valueMac);
             indexValueMap.put(indexMacBase64, valueMac);

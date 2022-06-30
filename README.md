@@ -90,7 +90,8 @@ There are numerous named constructors that can be used to initiate a connection:
            .url("wss://web.whatsapp.com/ws") // The URL of WhatsappWeb's Socket
            .description("WhatsappWeb4j") // The name of the service that is displayed in Whatsapp's devices tab
            .historyLength(HistoryLength.THREE_MONTHS) // The amount of chat history that Whatsapp sends to the client on the first scan
-           .failureHandler((reason) -> false) // Function to handle socket failures based on the reason, advances usage
+           .errorHandler(ErrorHandler.toFile()) // Socket errrors handler
+           .qrHandler(QrHandler.toTerminal()) // Qr code handler
            .create(); // Creates an instance of WhatsappOptions
    var api = Whatsapp.newConnection(options);
    ```

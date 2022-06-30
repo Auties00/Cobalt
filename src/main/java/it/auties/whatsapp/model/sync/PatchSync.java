@@ -6,10 +6,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Data;
+import lombok.With;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
@@ -18,6 +20,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @Data
 @Builder
 @Jacksonized
+@With
 @Accessors(fluent = true)
 public class PatchSync implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, concreteType = VersionSync.class)

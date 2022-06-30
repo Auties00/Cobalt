@@ -6,6 +6,7 @@ import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+import lombok.NonNull;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -28,6 +29,15 @@ public interface QrHandler extends Consumer<String> {
      * If your terminal doesn't support utf, you may see random characters.
      */
     static QrHandler toTerminal() {
+        return toString(System.out::println);
+    }
+
+    /**
+     * Transforms the qr code in a UTF-8 string and accepts a consumer for the latter
+     *
+     * @param smallQrConsumer the non-null consumer
+     */
+    static QrHandler toString(@NonNull Consumer<String> smallQrConsumer) {
         return qr -> {
             var matrix = createMatrix(qr, 10, 0);
             var writer = new StringBuilder();
@@ -62,7 +72,7 @@ public interface QrHandler extends Consumer<String> {
 
             writer.append(wb.repeat(matrix.getWidth() + qz * 2));
             writer.append("\n");
-            System.out.println(writer);
+            smallQrConsumer.accept(writer.toString());
         };
     }
 
