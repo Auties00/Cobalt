@@ -1,5 +1,6 @@
 package it.auties.whatsapp.unit;
 
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -20,7 +21,6 @@ public class TokensCollectorTest {
             .version(HttpClient.Version.HTTP_1_1)
             .build();
     private static final String SOURCE_NAME = "Tokens.java";
-    private static final String SOURCE_FILE = "C:\\Users\\alaut\\NativeWhatsapp4j\\src\\main\\java\\it\\auties\\whatsapp\\binary\\Tokens.java";
     private static final String TOKEN_REGEX = "<script defer=\"defer\" src=\"/bootstrap_qr.([^\"]*).js\">";
     private static final String SINGLE_BYTE_REGEX = "t.SINGLE_BYTE_TOKEN=\\[\"(.*?)\"]";
     private static final String DICTIONARY_0_REGEX = "const n=\\[\"(.*?)\"]";
@@ -34,8 +34,14 @@ public class TokensCollectorTest {
         var singleByteToken = getSingleByteTokens(javascriptSource);
         var doubleByteTokens = getDoubleByteTokens(javascriptSource);
         var sourceFile = getSourceFile().formatted(singleByteToken, doubleByteTokens);
-        Files.writeString(Path.of(SOURCE_FILE), sourceFile, StandardOpenOption.CREATE,
+        Files.writeString(findTokensFile(), sourceFile, StandardOpenOption.CREATE,
                 StandardOpenOption.TRUNCATE_EXISTING);
+    }
+
+    @SneakyThrows
+    private Path findTokensFile() {
+        return Path.of("src/main/java/it/auties/whatsapp/binary/Tokens.java")
+                .toAbsolutePath();
     }
 
     private String getSingleByteTokens(String javascriptSource) {
