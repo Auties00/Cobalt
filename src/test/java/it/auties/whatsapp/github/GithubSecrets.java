@@ -8,7 +8,6 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.utils.ConfigUtils;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
-import lombok.extern.java.Log;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
@@ -21,7 +20,6 @@ import java.util.Objects;
 import static java.net.URI.create;
 import static java.net.http.HttpRequest.BodyPublishers.ofString;
 
-@Log
 @UtilityClass
 public class GithubSecrets {
     private final ObjectMapper JSON = new ObjectMapper();
@@ -99,9 +97,9 @@ public class GithubSecrets {
                     "Cannot update credentials with status code %s".formatted(response.statusCode()));
         }
 
-        log.info("Sent credentials");
-        log.info("Status code: %s".formatted(response.statusCode()));
-        log.info("Response: %s".formatted(response.body()));
+        System.out.println("Sent credentials");
+        System.out.printf("Status code: %s%n", response.statusCode());
+        System.out.printf("Response: %s%n", response.body());
     }
 
     private HttpRequest createUpdateSecretRequest(String keyId, byte[] cypheredCredentials, String name)

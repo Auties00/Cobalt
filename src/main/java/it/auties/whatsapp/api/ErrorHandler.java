@@ -1,22 +1,29 @@
 package it.auties.whatsapp.api;
 
+import it.auties.whatsapp.api.ErrorHandler.Location;
 import it.auties.whatsapp.util.Exceptions;
 import it.auties.whatsapp.util.HmacValidationException;
 
+import java.lang.System.Logger.Level;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-import java.util.logging.Logger;
+import java.util.function.Consumer;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.DISCONNECTED;
 import static it.auties.whatsapp.api.ErrorHandler.Location.MESSAGE;
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.INFO;
 
 /**
  * This interface allows to handle a socket error and provides a default way to do so
  */
-public interface ErrorHandler extends BiFunction<ErrorHandler.Location, Throwable, Boolean> {
+@SuppressWarnings("unused")
+public interface ErrorHandler extends BiFunction<Location, Throwable, Boolean> {
     /**
-     * A logger instance
+     * System logger.
+     * A nice feature from Java 9.
      */
-    Logger LOGGER = Logger.getLogger("ErrorHandler");
+    System.Logger LOGGER = System.getLogger(ErrorHandler.class.getName());
 
     /**
      * Default error handler.
@@ -25,17 +32,20 @@ public interface ErrorHandler extends BiFunction<ErrorHandler.Location, Throwabl
      * @return a non-null error handler
      */
     static ErrorHandler toTerminal() {
-        return (location, throwable) -> {
-            LOGGER.warning("Socket failure at %s".formatted(location));
-            throwable.printStackTrace();
-            if (isIgnorable(location, throwable)) {
-                LOGGER.warning("Ignoring failure");
-                return false;
-            }
+        return toTerminal(null, null);
+    }
 
-            LOGGER.warning("Restoring session");
-            return true;
-        };
+    /**
+     * Default error handler.
+     * Prints the exception on the terminal.
+     *
+     * @param onRestore action to execute if the session is restored, can be null
+     * @param onIgnored action to execute if the session is not restored, can be null
+     * @return a non-null error handler
+     */
+    static ErrorHandler toTerminal(BiConsumer<Location, Throwable> onRestore,
+                                   BiConsumer<Location, Throwable> onIgnored) {
+        return defaultErrorHandler(Throwable::printStackTrace, onRestore, onIgnored, ERROR);
     }
 
     /**
@@ -45,22 +55,95 @@ public interface ErrorHandler extends BiFunction<ErrorHandler.Location, Throwabl
      * @return a non-null error handler
      */
     static ErrorHandler toFile() {
+        return toFile(null, null);
+    }
+
+
+    /**
+     * Default error handler.
+     * Saves the exception locally.
+     *
+     * @param onRestore action to execute if the session is restored, can be null
+     * @param onIgnored action to execute if the session is not restored, can be null
+     * @return a non-null error handler
+     */
+    static ErrorHandler toFile(BiConsumer<Location, Throwable> onRestore, BiConsumer<Location, Throwable> onIgnored) {
+        return defaultErrorHandler(
+                throwable -> LOGGER.log(INFO, "Saved stacktrace at: %s".formatted(Exceptions.save(throwable))),
+                onRestore, onIgnored, ERROR);
+    }
+
+    /**
+     * Default error handler
+     *
+     * @param exceptionPrinter a consumer that handles the printing of the throwable, can be null
+     * @return a non-null error handler
+     */
+    static ErrorHandler defaultErrorHandler(Consumer<Throwable> exceptionPrinter) {
+        return defaultErrorHandler(exceptionPrinter, null, null, ERROR);
+    }
+
+    /**
+     * Default error handler
+     *
+     * @param onRestore action to execute if the session is restored, can be null
+     * @param onIgnored action to execute if the session is not restored, can be null
+     * @return a non-null error handler
+     */
+    static ErrorHandler defaultErrorHandler(BiConsumer<Location, Throwable> onRestore,
+                                            BiConsumer<Location, Throwable> onIgnored) {
+        return defaultErrorHandler(null, onRestore, onIgnored, ERROR);
+    }
+
+    /**
+     * Default error handler
+     *
+     * @param exceptionPrinter a consumer that handles the printing of the throwable, can be null
+     * @param onRestore        action to execute if the session is restored, can be null
+     * @param onIgnored        action to execute if the session is not restored, can be null
+     * @param loggingLevel     the level used to log messages about the error, can be null if no logging should be done
+     * @return a non-null error handler
+     */
+    static ErrorHandler defaultErrorHandler(Consumer<Throwable> exceptionPrinter,
+                                            BiConsumer<Location, Throwable> onRestore,
+                                            BiConsumer<Location, Throwable> onIgnored, Level loggingLevel) {
         return (location, throwable) -> {
-            LOGGER.warning("Socket failure at %s".formatted(location));
-            LOGGER.warning("Saved stacktrace at: %s".formatted(Exceptions.save(throwable)));
+            if (loggingLevel != null) {
+                LOGGER.log(loggingLevel, "Socket failure at %s".formatted(location));
+            }
+
+            if (exceptionPrinter != null) {
+                exceptionPrinter.accept(throwable);
+            }
+
             if (isIgnorable(location, throwable)) {
-                LOGGER.warning("Ignoring failure");
+                if (loggingLevel != null) {
+                    LOGGER.log(loggingLevel, "Ignored failure");
+                }
+
+                if (onIgnored == null) {
+                    return false;
+                }
+
+                onIgnored.accept(location, throwable);
                 return false;
             }
 
-            LOGGER.warning("Restoring session");
+            if (loggingLevel != null) {
+                LOGGER.log(loggingLevel, "Restoring session");
+            }
+
+            if (onRestore == null) {
+                return true;
+            }
+
+            onRestore.accept(location, throwable);
             return true;
         };
     }
 
     private static boolean isIgnorable(Location location, Throwable throwable) {
-        return location != DISCONNECTED &&
-                (location != MESSAGE || !(throwable instanceof HmacValidationException));
+        return location != DISCONNECTED && (location != MESSAGE || !(throwable instanceof HmacValidationException));
     }
 
     /**

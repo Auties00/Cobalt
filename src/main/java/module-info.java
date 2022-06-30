@@ -1,6 +1,5 @@
 open module it.auties.whatsappweb4j {
     requires static lombok;
-    requires transitive java.logging;
     requires transitive java.desktop;
 
     requires jakarta.websocket;
