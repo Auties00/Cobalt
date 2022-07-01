@@ -180,15 +180,6 @@ public final class Store implements Controller {
     }
 
     /**
-     * Deletes all the known keys from memory
-     */
-    public static void deleteAll() {
-        var preferences = Preferences.of("store");
-        preferences.delete();
-    }
-
-
-    /**
      * Queries the first store whose id is equal to {@code id}
      *
      * @param id the id to search
@@ -401,8 +392,10 @@ public final class Store implements Controller {
     public void clear() {
         chats.clear();
         contacts.clear();
+        status.clear();
         pendingRequests.forEach(request -> request.complete(null, false));
         pendingRequests.clear();
+        listeners.clear();
     }
 
     /**
@@ -489,35 +482,8 @@ public final class Store implements Controller {
         }
     }
 
-    /**
-     * Serializes this object to a json and saves it in memory
-     */
     @Override
-    public void save(boolean async) {
-        var preferences = Preferences.of("%s/store.json", id);
-        if (async) {
-            preferences.writeJsonAsync(this);
-            return;
-        }
-
-        preferences.writeJson(this);
-    }
-
-    /**
-     * Deletes this store from memory
-     */
-    @Override
-    public void delete() {
-        delete(id);
-    }
-
-    /**
-     * Clears the store associated with the provided id
-     *
-     * @param id the id of the store
-     */
-    public static void delete(int id) {
-        var preferences = Preferences.of("%s/store.json", id);
-        preferences.delete();
+    public Preferences preferences() {
+        return Preferences.of("%s/store.json", id);
     }
 }

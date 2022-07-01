@@ -58,7 +58,35 @@ public sealed interface Controller permits Store, Keys {
      *
      * @param async whether to perform the write operation asynchronously or not
      */
-    void save(boolean async);
+    default void save(boolean async) {
+        if (async) {
+            preferences().writeJsonAsync(this);
+            return;
+        }
+
+        preferences().writeJson(this);
+    }
+
+    /**
+     * Deletes this object from memory
+     */
+    default void delete() {
+        preferences().delete();
+    }
+
+    /**
+     * Returns the id of this controller
+     *
+     * @return an id
+     */
+    int id();
+
+    /**
+     * Returns the preferences for this object
+     *
+     * @return a non-null preferences object
+     */
+    Preferences preferences();
 
     /**
      * Clears some or all fields of this object
@@ -66,7 +94,7 @@ public sealed interface Controller permits Store, Keys {
     void clear();
 
     /**
-     * Deletes this object from memory
+     * Disposes this object
      */
-    void delete();
+    void dispose();
 }

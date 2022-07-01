@@ -1,6 +1,7 @@
 package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.binary.Socket;
+import it.auties.whatsapp.controller.Controller;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.listener.*;
@@ -197,6 +198,13 @@ public class Whatsapp {
     public static Stream<Whatsapp> streamConnections() {
         return knownIds().stream()
                 .map(Whatsapp::newConnection);
+    }
+
+    /**
+     * Deletes all the known connections from memory
+     */
+    public static void deleteConnections() {
+        streamConnections().forEach(Whatsapp::delete);
     }
 
     private static Optional<ContactStatusResponse> parseStatus(List<Node> response) {
@@ -751,6 +759,17 @@ public class Whatsapp {
     }
 
     /**
+     * Deletes the data associated with this session and disconnects from it
+     *
+     * @return the same instance wrapped in a completable future
+     */
+    public CompletableFuture<Whatsapp> delete() {
+        keys().delete();
+        store().delete();
+        return disconnect();
+    }
+
+    /**
      * Disconnects and reconnects to Whatsapp Web's WebSocket if a previous connection exists
      *
      * @return the same instance wrapped in a completable future
@@ -922,8 +941,11 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull MessageInfo info) {
-        info.key().chatJid(info.chatJid().toUserJid());
-        if (info.message().content() instanceof MediaMessage mediaMessage) {
+        info.key()
+                .chatJid(info.chatJid()
+                        .toUserJid());
+        if (info.message()
+                .content() instanceof MediaMessage mediaMessage) {
             mediaMessage.storeId(store().id());
         }
 
@@ -943,7 +965,8 @@ public class Whatsapp {
                 .contentWithContext()
                 .map(ContextualMessage::contextInfo)
                 .ifPresent(contextInfo -> createEphemeralContext(chat, contextInfo));
-        info.message(info.message().toEphemeral());
+        info.message(info.message()
+                .toEphemeral());
     }
 
     private void createEphemeralContext(Chat chat, ContextInfo contextInfo) {

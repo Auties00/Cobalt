@@ -7,6 +7,7 @@ import com.github.benmanes.caffeine.cache.RemovalListener;
 import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.api.*;
+import it.auties.whatsapp.controller.Controller;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.*;
@@ -254,6 +255,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
 
         store.invokeListeners(listener -> listener.onDisconnected(false));
         store.dispose();
+        keys.dispose();
         onSocketEvent(SocketEvent.CLOSE);
         if (pingService != null) {
             pingService.shutdownNow();
@@ -403,13 +405,21 @@ public class Socket implements JacksonProvider, SignalSpecification {
     }
 
     public void changeKeys() {
-        keys.delete();
+        var oldListeners = new ArrayList<>(store.listeners());
+        deleteAndClearKeys();
         var newId = KeyHelper.registrationId();
         this.keys = Keys.random(newId);
         var newStore = Store.random(newId);
         newStore.listeners()
-                .addAll(store.listeners());
+                .addAll(oldListeners);
         this.store = newStore;
+    }
+
+    private void deleteAndClearKeys() {
+        keys.delete();
+        store.delete();
+        keys.clear();
+        store.clear();
     }
 
     public Contact createContact(ContactJid jid) {
@@ -1547,14 +1557,14 @@ public class Socket implements JacksonProvider, SignalSpecification {
 
         private void handleRecentMessage(Chat recent) {
             // TODO: 30/06/2022 merge chats
-            var oldChat = store.findChatByJid(recent.jid())
-                    .orElseGet(() -> createChat(recent.jid()));
+            var knownChat = store.findChatByJid(recent.jid())
+                    .orElseGet(() -> store.addChat(recent));
             recent.messages()
                     .stream()
                     .peek(message -> message.storeId(store.id()))
-                    .forEach(oldChat.messages()::add);
-            onChatRecentMessages(oldChat, false);
-            historyCache.put(oldChat, oldChat);
+                    .forEach(knownChat.messages()::add);
+            onChatRecentMessages(knownChat, false);
+            historyCache.put(knownChat, knownChat);
         }
 
         private void onChatRecentMessages(Chat chat, boolean last) {

@@ -23,7 +23,7 @@ If, for whatever reason, you'd like to use a version that supports the legacy ve
 <dependency>
     <groupId>com.github.auties00</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>3.0-RC12</version>
+    <version>3.0-RC13</version>
 </dependency>
 ```
 
@@ -31,12 +31,12 @@ If, for whatever reason, you'd like to use a version that supports the legacy ve
 
 1. Groovy DSL
    ```groovy
-   implementation 'com.github.auties00:whatsappweb4j:3.0-RC12'
+   implementation 'com.github.auties00:whatsappweb4j:3.0-RC13'
    ```
 
 2. Kotlin DSL
    ```kotlin
-   implementation("com.github.auties00:whatsappweb4j:3.0-RC12")
+   implementation("com.github.auties00:whatsappweb4j:3.0-RC13")
    ```
 
 ### Examples
@@ -258,7 +258,7 @@ private class BlockingDefaultSerializer implements Listener {
             return;
         }
 
-        // Syncronously as having async operations while the operation is shutting down is not a good idea
+        // Syncronously as having async operations while the the application is shutting down is not a good idea
         keys().save(false); 
         store().save(false);
     }
@@ -267,6 +267,17 @@ private class BlockingDefaultSerializer implements Listener {
 If your application needs to serialize data in a different way, for example in a database or when a different event is fired,
 the same event can be implemented inside any of your listeners.
 
+### How to delete a session
+
+To delete a particular session, call the delete method on a Whatsapp instance:
+```java
+api.delete();
+```
+
+Instead, if you want to delete all sessions use:
+```java
+Whatsapp.deleteSessions();
+```
 
 ### How to query chats, contacts, messages and status
 
@@ -477,17 +488,17 @@ All types of messages supported by Whatsapp are supported by this library:
            .create(); // Create the message
      api.sendMessage(chat, image);
      ```
-     
-   -  Audio or voice
 
-     ```java
+  - Audio or voice
+
+    ```java
      var audio = AudioMessage.newAudioMessage() // Create a new audio message builder
            .storeId(api.store().id()) // All media messages need a reference to their store
            .media(urlMedia) // Set the audio of this message
            .voiceMessage(false) // Set whether this message is a voice message
            .create(); // Create the message
      api.sendMessage(chat, audio);
-     ```
+    ```
 
   -  Video
 

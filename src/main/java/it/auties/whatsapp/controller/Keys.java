@@ -149,24 +149,6 @@ public final class Keys implements Controller {
     private Bytes writeKey, readKey;
 
     /**
-     * Deletes all the known keys from memory
-     */
-    public static void deleteAll() {
-        var preferences = Preferences.of("keys");
-        preferences.delete();
-    }
-
-    /**
-     * Clears the keys associated with the provided id
-     *
-     * @param id the id of the keys
-     */
-    public static void delete(int id) {
-        var preferences = Preferences.of("%s/keys.json", id);
-        preferences.delete();
-    }
-
-    /**
      * Returns a new instance of random keys
      *
      * @param id the unsigned id of these keys
@@ -200,14 +182,6 @@ public final class Keys implements Controller {
         this.writeKey = null;
         this.writeCounter.set(0);
         this.readCounter.set(0);
-    }
-
-    /**
-     * Deletes these keys from memory
-     */
-    @Override
-    public void delete() {
-        delete(id);
     }
 
     /**
@@ -394,22 +368,18 @@ public final class Keys implements Controller {
                 readCounter.get();
     }
 
-    /**
-     * Serializes this object to a json and saves it in memory
-     */
     @Override
-    public void save(boolean async) {
-        var preferences = Preferences.of("%s/keys.json", id);
-        if (async) {
-            preferences.writeJsonAsync(this);
-            return;
-        }
-
-        preferences.writeJson(this);
+    public void dispose() {
+        // Nothing to do
     }
 
     @JsonSetter
     private void defaultSignedKey() {
         this.signedKeyPair = SignalSignedKeyPair.of(id, identityKeyPair);
+    }
+
+    @Override
+    public Preferences preferences() {
+        return Preferences.of("%s/keys.json", id);
     }
 }
