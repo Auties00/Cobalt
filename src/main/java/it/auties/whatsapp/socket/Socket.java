@@ -2,7 +2,7 @@ package it.auties.whatsapp.socket;
 
 import it.auties.whatsapp.api.SocketEvent;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.binary.Message;
+import it.auties.whatsapp.binary.MessageWrapper;
 import it.auties.whatsapp.binary.Sync;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
@@ -151,7 +151,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
 
     @OnMessage
     public void onBinary(byte @NonNull [] raw) {
-        var message = new Message(raw);
+        var message = new MessageWrapper(raw);
         if (message.decoded()
                 .isEmpty()) {
             return;

@@ -13,14 +13,14 @@ import java.util.List;
 
 @Value
 @Accessors(fluent = true)
-public class Message {
+public class MessageWrapper {
     private static final Decoder DECODER = new Decoder();
 
     @NonNull Bytes raw;
 
     @NonNull LinkedList<Bytes> decoded;
 
-    public Message(@NonNull Bytes raw) {
+    public MessageWrapper(@NonNull Bytes raw) {
         this.raw = raw;
         var decoded = new LinkedList<Bytes>();
         while (raw.readableBytes() >= 3) {
@@ -35,7 +35,7 @@ public class Message {
         this.decoded = decoded;
     }
 
-    public Message(byte @NonNull [] array) {
+    public MessageWrapper(byte @NonNull [] array) {
         this(Bytes.of(array));
     }
 

@@ -23,7 +23,7 @@
     <scm>
         <url>https://github.com/Auties00/WhatsappWeb4j/tree/master</url>
         <connection>scm:git:https://github.com/Auties00/WhatsappWeb4j.git</connection>
-        <tag>whatsappweb4j-2.1.4</tag>
+        <tag>whatsappweb4j-3.0-RC14</tag>
     </scm>
     <distributionManagement>
         <snapshotRepository>
