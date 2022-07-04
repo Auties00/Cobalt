@@ -1,7 +1,7 @@
 package it.auties.whatsapp.listener;
 
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.binary.Socket;
+import it.auties.whatsapp.socket.Socket;
 
 import java.util.List;
 

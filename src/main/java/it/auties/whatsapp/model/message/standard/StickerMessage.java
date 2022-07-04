@@ -89,7 +89,7 @@ public final class StickerMessage extends MediaMessage {
     private long fileLength;
 
     /**
-     * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link StickerMessage#key()}
+     * The timestamp, that is the endTimeStamp elapsed since {@link java.time.Instant#EPOCH}, for {@link StickerMessage#key()}
      */
     @ProtobufProperty(index = 10, type = UINT64)
     private long mediaKeyTimestamp;

@@ -30,7 +30,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     private static final Encoder ENCODER = new Encoder();
 
     /**
-     * The timeout in seconds before a Request wrapping a Node fails
+     * The timeout in endTimeStamp before a Request wrapping a Node fails
      */
     private static final int TIMEOUT = 60;
 

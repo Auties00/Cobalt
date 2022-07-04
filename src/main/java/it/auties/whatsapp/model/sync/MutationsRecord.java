@@ -1,7 +1,8 @@
 package it.auties.whatsapp.model.sync;
 
-import java.util.List;
-import java.util.Map;
+import it.auties.whatsapp.crypto.LTHash;
 
-public record MutationsRecord(byte[] hash, Map<String, byte[]> indexValueMap, List<ActionDataSync> records) {
+import java.util.List;
+
+public record MutationsRecord(LTHashState state, LTHash.Result result, List<ActionDataSync> records) {
 }

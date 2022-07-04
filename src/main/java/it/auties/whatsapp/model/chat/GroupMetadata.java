@@ -16,28 +16,64 @@ import java.util.*;
 import static it.auties.whatsapp.model.chat.GroupPolicy.forData;
 import static it.auties.whatsapp.model.chat.GroupSetting.SEND_MESSAGES;
 
+/**
+ * This model class represents the metadata of a group
+ */
 @AllArgsConstructor
 @Value
 @Accessors(fluent = true)
 public class GroupMetadata implements ProtobufMessage {
+    /**
+     * The jid of the group
+     */
     @NonNull ContactJid jid;
 
+    /**
+     * The subject or name of the group
+     */
     @NonNull String subject;
 
+    /**
+     * The timestamp when the subject was last changed
+     */
     @NonNull ZonedDateTime subjectTimestamp;
 
+    /**
+     * The timestamp for when this group was created
+     */
     @NonNull ZonedDateTime foundationTimestamp;
 
+    /**
+     * The founder of the group.
+     * For very old groups this property is not known.
+     */
     ContactJid founder;
 
+    /**
+     * The description of the group.
+     * Some groups don't have a description.
+     */
     String description;
 
+    /**
+     * The id of the description.
+     * Only used by Whatsapp.
+     */
     String descriptionId;
 
+    /**
+     * The policies that regulate this group
+     */
     @NonNull Map<GroupSetting, GroupPolicy> policies;
 
+    /**
+     * The participants of this group
+     */
     @NonNull List<GroupParticipant> participants;
 
+    /**
+     * The expiration timer for this group if ephemeral messages are enabled
+     */
     ZonedDateTime ephemeralExpiration;
 
     public static GroupMetadata of(@NonNull Node node) {

@@ -3,7 +3,6 @@ package it.auties.whatsapp.crypto;
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.model.sync.LTHashState;
 import it.auties.whatsapp.model.sync.RecordSync;
-import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 
 import java.nio.ByteBuffer;
@@ -40,13 +39,17 @@ public class LTHash {
                 .toBase64();
         var prevOp = indexValueMap.get(indexMacBase64);
         if (operation == RecordSync.Operation.REMOVE) {
-            Validate.isTrue(prevOp != null, "No previous operation for %s", indexMacBase64);
-            Validate.isTrue(indexValueMap.remove(indexMacBase64, prevOp), "Cannot remove %s", indexMacBase64);
-        } else {
-            add.add(valueMac);
-            indexValueMap.put(indexMacBase64, valueMac);
+            if(prevOp == null){
+                return;
+            }
+
+            indexValueMap.remove(indexMacBase64, prevOp);
+            subtract.add(prevOp);
+            return;
         }
 
+        add.add(valueMac);
+        indexValueMap.put(indexMacBase64, valueMac);
         if (prevOp == null) {
             return;
         }

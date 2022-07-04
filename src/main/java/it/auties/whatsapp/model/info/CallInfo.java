@@ -37,7 +37,7 @@ public final class CallInfo implements Info {
     private byte[] data;
 
     /**
-     * The delay of this call in seconds
+     * The delay of this call in endTimeStamp
      */
     @ProtobufProperty(index = 4, type = UINT32)
     private int delay;

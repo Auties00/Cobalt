@@ -51,7 +51,7 @@ public final class RequestPaymentMessage implements PaymentMessage {
     private MessageContainer noteMessage;
 
     /**
-     * The timestamp, that is the endTimeStamp in seconds since {@link java.time.Instant#EPOCH}, for the expiration of this payment request
+     * The timestamp, that is the endTimeStamp in endTimeStamp since {@link java.time.Instant#EPOCH}, for the expiration of this payment request
      */
     @ProtobufProperty(index = 5, type = UINT64)
     private long expiryTimestamp;

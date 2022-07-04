@@ -6,7 +6,6 @@ import it.auties.bytes.Bytes;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
-import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.MediaConnection;
@@ -19,9 +18,7 @@ import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
-import lombok.extern.java.Log;
 
-import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -122,7 +119,7 @@ public final class Store implements Controller {
             .toLowerCase(Locale.ROOT);
 
     /**
-     * The timestamp in seconds for the initialization of this object
+     * The timestamp in endTimeStamp for the initialization of this object
      */
     @JsonIgnore
     @Default

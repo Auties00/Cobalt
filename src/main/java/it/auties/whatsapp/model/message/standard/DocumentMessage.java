@@ -95,7 +95,7 @@ public final class DocumentMessage extends MediaMessage {
     private String directPath;
 
     /**
-     * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link DocumentMessage#key()}
+     * The timestamp, that is the endTimeStamp elapsed since {@link java.time.Instant#EPOCH}, for {@link DocumentMessage#key()}
      */
     @ProtobufProperty(index = 11, type = UINT64)
     private long mediaKeyTimestamp;

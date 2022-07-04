@@ -1,5 +1,6 @@
-package it.auties.whatsapp.unit;
+package it.auties.whatsapp.ci;
 
+import it.auties.whatsapp.github.GithubActions;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 
@@ -30,12 +31,19 @@ public class TokensCollectorTest {
 
     @Test
     public void createClass() throws IOException, InterruptedException {
+        if (GithubActions.isActionsEnvironment()) {
+            System.out.println("Skipping tokens collector: detected non local environment");
+            return;
+        }
+
+        System.out.println("Creating tokens class...");
         var javascriptSource = getJavascriptSource();
         var singleByteToken = getSingleByteTokens(javascriptSource);
         var doubleByteTokens = getDoubleByteTokens(javascriptSource);
         var sourceFile = getSourceFile().formatted(singleByteToken, doubleByteTokens);
         Files.writeString(findTokensFile(), sourceFile, StandardOpenOption.CREATE,
                 StandardOpenOption.TRUNCATE_EXISTING);
+        System.out.printf("Created tokens class at %s%n", findTokensFile());
     }
 
     @SneakyThrows

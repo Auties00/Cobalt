@@ -63,4 +63,13 @@ public class MessageKey implements ProtobufMessage {
                 .toHex()
                 .toUpperCase(Locale.ROOT);
     }
+
+    /**
+     * Copies this key
+     *
+     * @return a non-null message key
+     */
+    public MessageKey copy(){
+        return new MessageKey(chatJid, fromMe, id, senderJid);
+    }
 }

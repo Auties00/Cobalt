@@ -6,12 +6,13 @@ import it.auties.whatsapp.model.message.business.InteractiveMessage;
 import it.auties.whatsapp.model.message.business.ProductMessage;
 import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.standard.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder.Default;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
-
-import java.util.Optional;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 

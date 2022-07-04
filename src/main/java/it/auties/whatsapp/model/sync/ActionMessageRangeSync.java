@@ -33,7 +33,12 @@ public class ActionMessageRangeSync implements ProtobufMessage {
 
     public ActionMessageRangeSync(@NonNull MessageInfo info) {
         this.lastMessageTimestamp = info.timestamp();
-        var syncMessage = new SyncActionMessage(info.key(), lastMessageTimestamp);
+        var key = info.key().copy();
+        if(key.senderJid() != null){
+            info.key().senderJid(info.key().senderJid().toUserJid());
+        }
+
+        var syncMessage = new SyncActionMessage(key, lastMessageTimestamp);
         this.messages = List.of(syncMessage);
     }
 

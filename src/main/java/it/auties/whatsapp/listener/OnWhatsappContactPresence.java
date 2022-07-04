@@ -1,10 +1,10 @@
 package it.auties.whatsapp.listener;
 
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.binary.Socket;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactStatus;
+import it.auties.whatsapp.socket.Socket;
 
 public interface OnWhatsappContactPresence extends Listener {
     /**

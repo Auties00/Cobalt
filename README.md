@@ -19,7 +19,6 @@ If, for whatever reason, you'd like to use a version that supports the legacy ve
 #### Maven
 
 ```xml
-
 <dependency>
     <groupId>com.github.auties00</groupId>
     <artifactId>whatsappweb4j</artifactId>
@@ -415,7 +414,7 @@ All types of messages supported by Whatsapp are supported by this library:
             .latitude(38.9193) // Set the longitude of the location to share
             .longitude(1183.1389) // Set the latitude of the location to share
             .accuracy(10) // Set the accuracy of the location in meters
-            .speed(12) // Set the speed of the device sharing the location in meter per seconds
+            .speed(12) // Set the speed of the device sharing the location in meter per endTimeStamp
             .create(); // Create the message
     api.sendMessage(chat,location);
     ```

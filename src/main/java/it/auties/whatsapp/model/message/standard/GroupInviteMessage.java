@@ -43,7 +43,7 @@ public final class GroupInviteMessage extends ContextualMessage {
     private String code;
 
     /**
-     * The expiration of this invite in seconds since {@link java.time.Instant#EPOCH}.
+     * The expiration of this invite in endTimeStamp since {@link java.time.Instant#EPOCH}.
      * For example if this invite should expire in three days: {@code ZonedDateTime.now().plusDays(3).toEpochSecond()}
      */
     @ProtobufProperty(index = 3, type = UINT64)

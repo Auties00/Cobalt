@@ -8,6 +8,7 @@ import it.auties.whatsapp.github.GithubActions;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
+import it.auties.whatsapp.model.chat.ChatMute;
 import it.auties.whatsapp.model.chat.GroupPolicy;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactStatus;
@@ -151,14 +152,14 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
 
     private void markAsUnread() throws Exception {
         log("Marking chat as unread...");
-        var markStatus = api.markAsUnread(contact)
+        var markStatus = api.markUnread(contact)
                 .get();
         log("Marked chat as unread: %s", markStatus);
     }
 
     private void markAsRead() throws Exception {
         log("Marking chat as read...");
-        var markStatus = api.markAsRead(contact)
+        var markStatus = api.markRead(contact)
                 .get();
         log("Marked chat as read: %s", markStatus);
     }
@@ -306,8 +307,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
         }
 
         log("Muting chat...");
-        var muteResponse = api.mute(group, ZonedDateTime.now()
-                        .plusDays(14))
+        var muteResponse = api.mute(group, ChatMute.mutedForOneWeek())
                 .get();
         log("Muted chat: %s", muteResponse);
     }

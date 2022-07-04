@@ -104,7 +104,7 @@ public final class ImageMessage extends MediaMessage {
     private String directPath;
 
     /**
-     * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link ImageMessage#key()}
+     * The timestamp, that is the endTimeStamp elapsed since {@link java.time.Instant#EPOCH}, for {@link ImageMessage#key()}
      */
     @ProtobufProperty(index = 12, type = UINT64)
     private long mediaKeyTimestamp;

@@ -70,7 +70,7 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
     private byte[] conversionData;
 
     /**
-     * Conversation delay in seconds
+     * Conversation delay in endTimeStamp
      */
     @ProtobufProperty(index = 20, type = UINT32)
     private int conversionDelaySeconds;
@@ -100,14 +100,14 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
     private MessageKey placeholderKey;
 
     /**
-     * The expiration in seconds for this ContextualMessage.
+     * The expiration in endTimeStamp for this ContextualMessage.
      * Only valid if the chat where this message was sent is ephemeral.
      */
     @ProtobufProperty(index = 25, type = UINT32)
     private int ephemeralExpiration;
 
     /**
-     * The timestamp, that is the endTimeStamp in seconds since {@link java.time.Instant#EPOCH}, of the last modification to the ephemeral settings
+     * The timestamp, that is the endTimeStamp in endTimeStamp since {@link java.time.Instant#EPOCH}, of the last modification to the ephemeral settings
      * for the chat where this ContextualMessage was sent.
      */
     @ProtobufProperty(index = 26, type = INT64)
@@ -138,7 +138,7 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
     private String entryPointConversionApp;
 
     /**
-     * Entry point conversion delay in seconds
+     * Entry point conversion delay in endTimeStamp
      */
     @ProtobufProperty(index = 31, type = UINT32)
     private int entryPointConversionDelaySeconds;

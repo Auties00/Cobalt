@@ -10,13 +10,16 @@ import it.auties.whatsapp.model.signal.session.Session;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 import it.auties.whatsapp.model.signal.session.SessionChain;
 import it.auties.whatsapp.model.signal.session.SessionState;
-import it.auties.whatsapp.util.*;
+import it.auties.whatsapp.util.HmacValidationException;
+import it.auties.whatsapp.util.KeyHelper;
+import it.auties.whatsapp.util.SignalSpecification;
+import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import static it.auties.curve25519.Curve25519.sharedKey;
@@ -126,33 +129,20 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
 
     public byte[] decrypt(SignalMessage message) {
         var session = loadSession();
-        var errors = new ArrayList<Throwable>();
-        for (var state : session.states()) {
-            var result = tryDecrypt(message, state);
-            if (result.data() != null) {
-                return result.data();
-            }
-
-            if (errors.stream()
-                    .map(Throwable::getMessage)
-                    .anyMatch(result.throwable()
-                            .getMessage()::equals)) {
-                continue;
-            }
-
-            errors.add(result.throwable());
-        }
-
-        throw Exceptions.make(new NoSuchElementException("Cannot decrypt message: no suitable session found"), errors);
+        return session.states()
+                .stream()
+                .map(state -> tryDecrypt(message, state))
+                .flatMap(Optional::stream)
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException("Cannot decrypt message: no suitable session found"));
     }
 
-    private DecryptionResult tryDecrypt(SignalMessage message, SessionState state) {
+    private Optional<byte[]> tryDecrypt(SignalMessage message, SessionState state) {
         try {
             Validate.isTrue(keys.hasTrust(address, state.remoteIdentityKey()), "Untrusted key");
-            var result = decrypt(message, state);
-            return new DecryptionResult(result, null);
+            return Optional.of(decrypt(message, state));
         } catch (Throwable throwable) {
-            return new DecryptionResult(null, throwable);
+            return Optional.empty();
         }
     }
 
@@ -236,9 +226,5 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
         return keys.findSessionByAddress(address)
                 .orElseGet(() -> requireNonNull(defaultSupplier.get(),
                         "Missing session for %s"));
-    }
-
-    private record DecryptionResult(byte[] data, Throwable throwable) {
-
     }
 }

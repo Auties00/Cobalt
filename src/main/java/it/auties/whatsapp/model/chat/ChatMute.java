@@ -1,8 +1,6 @@
 package it.auties.whatsapp.model.chat;
 
 import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.util.Clock;
 
 import java.time.Instant;
@@ -10,21 +8,30 @@ import java.time.ZonedDateTime;
 import java.util.Optional;
 
 /**
- * An immutable model class that represents a WhatsappMute.
- * To change the mute status of a {@link Chat} use {@link Whatsapp#mute(ContactJidProvider)} and {@link Whatsapp#unmute(ContactJidProvider)}.
+ * An immutable model class that represents a mute
  *
  * @param endTimeStamp the end date of the mute associated with this object stored as second since {@link Instant#EPOCH}
  */
 public record ChatMute(long endTimeStamp) implements ProtobufMessage {
     /**
+     * Not muted flag
+     */
+    private static final long NOT_MUTED_FLAG = 0;
+
+    /**
+     * Muted flag
+     */
+    private static final long MUTED_INDEFINITELY_FLAG = -1;
+
+    /**
      * Not muted constant
      */
-    private static final ChatMute NOT_MUTED = new ChatMute(-1);
+    private static final ChatMute NOT_MUTED = new ChatMute(NOT_MUTED_FLAG);
 
     /**
      * Muted constant
      */
-    private static final ChatMute MUTED = new ChatMute(0);
+    private static final ChatMute MUTED_INDEFINITELY = new ChatMute(MUTED_INDEFINITELY_FLAG);
 
     /**
      * Constructs a new not muted ChatMute
@@ -41,19 +48,43 @@ public record ChatMute(long endTimeStamp) implements ProtobufMessage {
      * @return a non-null mute
      */
     public static ChatMute muted() {
-        return MUTED;
+        return MUTED_INDEFINITELY;
     }
 
     /**
-     * Constructs a new muted ChatMute for an end timestamp in seconds
+     * Constructs a new mute that lasts eight hours
      *
-     * @param endTimeStamp an end timestamp
      * @return a non-null mute
      */
-    public static ChatMute muted(Long endTimeStamp) {
-        return endTimeStamp == null ?
-                NOT_MUTED :
-                new ChatMute(endTimeStamp);
+    public static ChatMute mutedForEightHours() {
+        return muted(ZonedDateTime.now().plusHours(8).toEpochSecond());
+    }
+
+    /**
+     * Constructs a new mute that lasts one week
+     *
+     * @return a non-null mute
+     */
+    public static ChatMute mutedForOneWeek() {
+        return muted(ZonedDateTime.now().plusWeeks(1).toEpochSecond());
+    }
+
+    /**
+     * Constructs a new mute for a duration in endTimeStamp
+     *
+     * @param seconds can be null and is considered as not muted
+     * @return a non-null mute
+     */
+    public static ChatMute muted(Long seconds) {
+        if(seconds == null || seconds == NOT_MUTED_FLAG){
+            return NOT_MUTED;
+        }
+
+        if(seconds == MUTED_INDEFINITELY_FLAG){
+            return MUTED_INDEFINITELY;
+        }
+
+        return new ChatMute(seconds);
     }
 
     /**
@@ -62,7 +93,7 @@ public record ChatMute(long endTimeStamp) implements ProtobufMessage {
      * @return true if the chat associated with this object is muted
      */
     public boolean isMuted() {
-        return type() != ChatMuteType.NOT_MUTED;
+        return type() != Type.NOT_MUTED;
     }
 
     /**
@@ -70,20 +101,20 @@ public record ChatMute(long endTimeStamp) implements ProtobufMessage {
      *
      * @return a non-null enum that describes the type of mute for this object
      */
-    public ChatMuteType type() {
-        if (endTimeStamp == -1) {
-            return ChatMuteType.MUTED_INDEFINITELY;
+    public Type type() {
+        if (endTimeStamp == MUTED_INDEFINITELY_FLAG) {
+            return Type.MUTED_INDEFINITELY;
         }
 
-        if (endTimeStamp == 0) {
-            return ChatMuteType.NOT_MUTED;
+        if (endTimeStamp == NOT_MUTED_FLAG) {
+            return Type.NOT_MUTED;
         }
 
-        return ChatMuteType.MUTED_FOR_TIMEFRAME;
+        return Type.MUTED_FOR_TIMEFRAME;
     }
 
     /**
-     * Returns an optional endTimeStamp representing the date that the mute associated with this object ends
+     * Returns the date when this mute expires if the chat is muted and not indefinitely
      *
      * @return a non-empty optional date if {@link ChatMute#endTimeStamp} > 0
      */
@@ -94,5 +125,28 @@ public record ChatMute(long endTimeStamp) implements ProtobufMessage {
     @Override
     public Long value() {
         return endTimeStamp;
+    }
+
+    /**
+     * The constants of this enumerated type describe the various types of mute a {@link ChatMute} can describe
+     */
+    public enum Type implements ProtobufMessage {
+        /**
+         * This constant describes a {@link ChatMute} that holds a endTimeStamp greater than 0
+         * Simply put, {@link ChatMute#endTimeStamp()} > 0
+         */
+        MUTED_FOR_TIMEFRAME,
+
+        /**
+         * This constant describes a {@link ChatMute} that holds a endTimeStamp equal to -1
+         * Simply put, {@link ChatMute#endTimeStamp()} == -1
+         */
+        MUTED_INDEFINITELY,
+
+        /**
+         * This constant describes a {@link ChatMute} that holds a endTimeStamp equal to 0
+         * Simply put, {@link ChatMute#endTimeStamp()} == 0
+         */
+        NOT_MUTED
     }
 }

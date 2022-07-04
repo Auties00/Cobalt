@@ -1,7 +1,7 @@
 package it.auties.whatsapp.listener;
 
-import it.auties.whatsapp.binary.Socket;
 import it.auties.whatsapp.controller.Store;
+import it.auties.whatsapp.socket.Socket;
 
 public interface OnStatus extends Listener {
     /**

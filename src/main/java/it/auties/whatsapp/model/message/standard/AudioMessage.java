@@ -57,7 +57,7 @@ public final class AudioMessage extends MediaMessage {
     private long fileLength;
 
     /**
-     * The unsigned length of the decoded audio in seconds
+     * The unsigned length of the decoded audio in endTimeStamp
      */
     @ProtobufProperty(index = 5, type = UINT32)
     private int duration;
@@ -87,7 +87,7 @@ public final class AudioMessage extends MediaMessage {
     private String directPath;
 
     /**
-     * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link AudioMessage#key()}
+     * The timestamp, that is the endTimeStamp elapsed since {@link java.time.Instant#EPOCH}, for {@link AudioMessage#key()}
      */
     @ProtobufProperty(index = 10, type = INT64)
     private long mediaKeyTimestamp;
