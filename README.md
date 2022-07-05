@@ -85,13 +85,15 @@ There are numerous named constructors that can be used to initiate a connection:
    var configuration = WhatsappOptions.newOptions() // Implement only the options that you need!
            .id(ThreadLocalRandom.current().nextInt()) // A random unique ID associated with the session
            .autodetectListeners(true) // Marks whether listeners marked with @RegisterListener should be automatically registered
+           .defaultSerialization(true) // Whether the default serialization mechanism should be used
+           .automaticTextPreview(true) // Whether link previews should automatically be generated for texts containing links
            .version(new Version(2,2212,7)) // The default version of this client
            .url("wss://web.whatsapp.com/ws") // The URL of WhatsappWeb's Socket
            .description("WhatsappWeb4j") // The name of the service that is displayed in Whatsapp's devices tab
            .historyLength(HistoryLength.THREE_MONTHS) // The amount of chat history that Whatsapp sends to the client on the first scan
            .errorHandler(ErrorHandler.toFile()) // Socket errrors handler
            .qrHandler(QrHandler.toTerminal()) // Qr code handler
-           .create(); // Creates an instance of WhatsappOptions
+           .build(); // Creates an instance of WhatsappOptions
    var api = Whatsapp.newConnection(options);
    ```
 
@@ -249,7 +251,11 @@ In practice, this means that this data needs to be serialized somewhere.
 By default, this library serializes data regarding a session at `$HOME/.whatsappweb4j/<session_id>` in two different files, 
 respectively for the store(chats, contacts and message) and keys(cryptographic data) as plain JSON only when the connection is closed.
 Here is the default implementation:
+
 ```java
+import it.auties.whatsapp.api.SocketEvent;
+import it.auties.whatsapp.listener.Listener;
+
 private class BlockingDefaultSerializer implements Listener {
     @Override
     public void onSocketEvent(SocketEvent event) {
@@ -258,13 +264,19 @@ private class BlockingDefaultSerializer implements Listener {
         }
 
         // Syncronously as having async operations while the the application is shutting down is not a good idea
-        keys().save(false); 
+        keys().save(false);
         store().save(false);
     }
 }
 ```
 If your application needs to serialize data in a different way, for example in a database or when a different event is fired,
 the same event can be implemented inside any of your listeners.
+The default serializer can then be disabled using the Options config:
+```java
+var options = Options.defaultOptions() // Use the default options
+        .withDefaultSerialization(false); // Disables default serialization
+var api = Whatsapp.newConnection(options); // Any named constructor can be used
+```
 
 ### How to delete a session
 
@@ -277,6 +289,41 @@ Instead, if you want to delete all sessions use:
 ```java
 Whatsapp.deleteSessions();
 ```
+
+### How to handle session disconnects
+
+When the session is closed, the onDisconnect method in any listener is invoked.
+There are three types of reasons for which this can happen:
+1. DISCONNECTED
+
+    A normal disconnection.
+    This doesn't indicate any error being thrown.
+
+2. RECONNECT
+
+    The client is being disconnected but only to reopen the connection.
+    This always happens when the QR is first scanned for example.
+
+3. LOGGED_OUT
+
+    The client was logged out by itself or by its companion.
+    When this happens the connection is terminated and becomes expired.
+    By default, no error is thrown if this happens, though this behaviour can be changed easily:
+    ```java
+    import it.auties.whatsapp.api.DisconnectReason;
+    import it.auties.whatsapp.listener.Listener;
+
+    class ThrowOnLogOut implements Listener {
+        @Override
+        public void onDisconnected(DisconnectReason reason) {
+            if (reason != SocketEvent.LOGGED_OUT) {
+                return;
+            }
+
+            throw new RuntimeException("Hey, I was logged off :/");
+        }
+    }
+    ```
 
 ### How to query chats, contacts, messages and status
 
@@ -391,7 +438,7 @@ All types of messages supported by Whatsapp are supported by this library:
             .matchedText("https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the matched text for the url in the message
             .title("A nice suprise") // Set the title of the url
             .description("Check me out") // Set the description of the url
-            .create(); // Create the message
+            .build(); // Create the message
     api.sendMessage(chat, message); 
     ```
 
@@ -402,7 +449,7 @@ All types of messages supported by Whatsapp are supported by this library:
             .caption("Look at this!") // Set the caption of the message, that is the text below the file
             .latitude(38.9193) // Set the longitude of the location to share
             .longitude(1183.1389) // Set the latitude of the location to share
-            .create(); // Create the message
+            .build(); // Create the message
     api.sendMessage(chat,location);
     ```
 
@@ -415,7 +462,7 @@ All types of messages supported by Whatsapp are supported by this library:
             .longitude(1183.1389) // Set the latitude of the location to share
             .accuracy(10) // Set the accuracy of the location in meters
             .speed(12) // Set the speed of the device sharing the location in meter per endTimeStamp
-            .create(); // Create the message
+            .build(); // Create the message
     api.sendMessage(chat,location);
     ```
   > **_IMPORTANT:_** Updating the position of a live location message is not supported as of now out of the box.
@@ -434,7 +481,7 @@ All types of messages supported by Whatsapp are supported by this library:
             .groupJid(group.jid())) // Set the jid of the group
             .inviteExpiration(ZonedDateTime.now().plusDays(3).toEpochSecond()) // Set the expiration of this invite
             .inviteCode(inviteCode) // Set the code of the group
-            .create(); // Create the message
+            .build(); // Create the message
     api.sendMessage(chat,groupInvite); 
     ```
 
@@ -443,7 +490,7 @@ All types of messages supported by Whatsapp are supported by this library:
     var contactMessage = ContactMessage.newContactMessage()  // Create a new contact message
             .name("A nice friend") // Set the display name of the contact
             .vcard(vcard) // Set the vcard(https://en.wikipedia.org/wiki/VCard) of the contact
-            .create(); // Create the message
+            .build(); // Create the message
     api.sendMessage(chat,contactMessage);
     ```
 
@@ -453,7 +500,7 @@ All types of messages supported by Whatsapp are supported by this library:
     var contactsMessage = ContactsArrayMessage.newContactsArrayMessage()  // Create a new contacts array message
             .name("A nice friend") // Set the display name of the first contact that this message contains
             .contacts(List.of(jack,lucy,jeff)) // Set a list of contact messages that this message wraps
-            .create(); // Create the message
+            .build(); // Create the message
     api.sendMessage(chat,contactsMessage);
     ```
 
@@ -484,7 +531,7 @@ All types of messages supported by Whatsapp are supported by this library:
            .storeId(api.store().id()) // All media messages need a reference to their store
            .media(media) // Set the image of this message
            .caption("A nice image") // Set the caption of this message
-           .create(); // Create the message
+           .build(); // Create the message
      api.sendMessage(chat, image);
      ```
 
@@ -495,7 +542,7 @@ All types of messages supported by Whatsapp are supported by this library:
            .storeId(api.store().id()) // All media messages need a reference to their store
            .media(urlMedia) // Set the audio of this message
            .voiceMessage(false) // Set whether this message is a voice message
-           .create(); // Create the message
+           .build(); // Create the message
      api.sendMessage(chat, audio);
     ```
 
@@ -508,7 +555,7 @@ All types of messages supported by Whatsapp are supported by this library:
            .caption("A nice video") // Set the caption of this message
            .width(100) // Set the width of the video
            .height(100) // Set the height of the video
-           .create(); // Create the message
+           .build(); // Create the message
      api.sendMessage(chat, video); 
      ```
      
@@ -520,7 +567,7 @@ All types of messages supported by Whatsapp are supported by this library:
            .media(urlMedia) // Set the gif of this message
            .caption("A nice video") // Set the caption of this message
            .gifAttribution(VideoMessageAttribution.TENOR) // Set the source of the gif
-           .create(); // Create the message
+           .build(); // Create the message
      api.sendMessage(chat, gif);
      ```
      > **_IMPORTANT:_** Whatsapp doesn't support conventional gifs. Instead, videos can be played as gifs if particular attributes are set. This is the reason why the gif builder is under the VideoMessage class. Sending a conventional gif will result in an exception if detected or in undefined behaviour.
@@ -534,7 +581,7 @@ All types of messages supported by Whatsapp are supported by this library:
            .title("A nice pdf") // Set the title of the document
            .fileName("pdf-test.pdf") // Set the name of the document
            .pageCount(1) // Set the number of pages of the document
-           .create(); // Create the message
+           .build(); // Create the message
      api.sendMessage(chat, document);
      ```
 

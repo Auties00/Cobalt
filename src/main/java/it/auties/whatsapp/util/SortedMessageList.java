@@ -10,9 +10,14 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public final class SortedMessageList implements List<MessageInfo> {
-    private static final Comparator<HistorySyncMessage> ENTRY_COMPARATOR = Comparator.comparingLong(
-            entry -> entry.message()
-                    .timestamp());
+    // This comparator does not return 0 for equal elements indeed
+    // But this system is necessary to preserve insertion order if two timestamps are equal
+    @SuppressWarnings("ComparatorMethodParameterNotUsed")
+    private static final Comparator<HistorySyncMessage> ENTRY_COMPARATOR = (x, y) -> x.message()
+            .timestamp() <= y.message()
+            .timestamp() ?
+            -1 :
+            1;
 
     private final List<HistorySyncMessage> internal;
 

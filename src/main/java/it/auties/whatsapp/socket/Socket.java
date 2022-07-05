@@ -1,5 +1,6 @@
 package it.auties.whatsapp.socket;
 
+import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.SocketEvent;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.binary.MessageWrapper;
@@ -34,8 +35,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import static it.auties.whatsapp.api.ErrorHandler.Location.ERRONEOUS_NODE;
-import static it.auties.whatsapp.api.ErrorHandler.Location.UNKNOWN;
+import static it.auties.whatsapp.api.ErrorHandler.Location.*;
 import static it.auties.whatsapp.model.request.Node.withAttributes;
 import static it.auties.whatsapp.model.request.Node.withChildren;
 import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
@@ -68,7 +68,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
     private final AppStateHandler appStateHandler;
 
     @NonNull
-    @Getter(AccessLevel.PROTECTED)
+    @Getter
     private final Whatsapp.Options options;
 
     @NonNull
@@ -125,6 +125,10 @@ public class Socket implements JacksonProvider, SignalSpecification {
         newStore.listeners()
                 .addAll(oldListeners);
         this.store = newStore;
+        store.invokeListeners(listener -> {
+            listener.onDisconnected(whatsapp, DisconnectReason.LOGGED_OUT);
+            listener.onDisconnected(DisconnectReason.LOGGED_OUT);
+        });
     }
     
     @NonNull
@@ -225,12 +229,12 @@ public class Socket implements JacksonProvider, SignalSpecification {
         }
 
         if (state.isConnected()) {
-            store.invokeListeners(listener -> listener.onDisconnected(true));
+            store.invokeListeners(listener -> listener.onDisconnected(DisconnectReason.RECONNECTING));
             reconnect();
             return;
         }
 
-        store.invokeListeners(listener -> listener.onDisconnected(false));
+        store.invokeListeners(listener -> listener.onDisconnected(DisconnectReason.DISCONNECTED));
         store.dispose();
         keys.dispose();
         onSocketEvent(SocketEvent.CLOSE);
@@ -253,7 +257,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
                         store.nextTag() :
                         null)
                 .send(session, keys, store)
-                .exceptionallyAsync(throwable -> errorHandler.handleFailure(ERRONEOUS_NODE, throwable));
+                .exceptionallyAsync(errorHandler::handleNodeFailure);
     }
 
     private void onNodeSent(Node node) {
@@ -289,7 +293,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
     }
 
     @SafeVarargs
-    public final CompletableFuture<Node> sendMessage(MessageInfo info, Entry<String, Object>... metadata) {
+    public final CompletableFuture<Void> sendMessage(MessageInfo info, Entry<String, Object>... metadata) {
         return messageHandler.encode(info, metadata);
     }
 

@@ -10,5 +10,6 @@ public interface OnWhatsappSetting extends Listener {
      *
      * @param setting the setting that was toggled
      */
+    @Override
     void onSetting(Whatsapp whatsapp, Setting setting);
 }

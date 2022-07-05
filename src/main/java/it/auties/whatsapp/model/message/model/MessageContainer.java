@@ -42,7 +42,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
  */
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder(builderMethodName = "newMessageContainer", buildMethodName = "create")
+@Builder(builderMethodName = "newMessageContainer")
 @Jacksonized
 @Accessors(fluent = true)
 public class MessageContainer implements ProtobufMessage {
@@ -335,7 +335,7 @@ public class MessageContainer implements ProtobufMessage {
     public static MessageContainer of(@NonNull String message) {
         return MessageContainer.newMessageContainer()
                 .text(TextMessage.of(message))
-                .create();
+                .build();
     }
 
     /**
@@ -347,7 +347,7 @@ public class MessageContainer implements ProtobufMessage {
     public static <T extends Message> MessageContainer ofViewOnce(@NonNull T message) {
         return MessageContainer.newMessageContainer()
                 .viewOnce(FutureMessageContainer.of(MessageContainer.of(message)))
-                .create();
+                .build();
     }
 
     /**
@@ -359,7 +359,7 @@ public class MessageContainer implements ProtobufMessage {
     public static <T extends Message> MessageContainer ofEphemeral(@NonNull T message) {
         return MessageContainer.newMessageContainer()
                 .ephemeral(FutureMessageContainer.of(MessageContainer.of(message)))
-                .create();
+                .build();
     }
 
     /**

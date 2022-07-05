@@ -2,7 +2,9 @@ package it.auties.whatsapp.model.sync;
 
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.message.model.MessageKey;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,6 +13,7 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.INT64;
@@ -31,15 +34,51 @@ public class ActionMessageRangeSync implements ProtobufMessage {
     @ProtobufProperty(index = 3, type = MESSAGE, concreteType = SyncActionMessage.class, repeated = true)
     private List<SyncActionMessage> messages;
 
-    public ActionMessageRangeSync(@NonNull MessageInfo info) {
-        this.lastMessageTimestamp = info.timestamp();
-        var key = info.key().copy();
-        if(key.senderJid() != null){
-            info.key().senderJid(info.key().senderJid().toUserJid());
+    public ActionMessageRangeSync(@NonNull Chat chat, boolean allMessages) {
+        chat.lastMessage()
+                .ifPresent(this::setTimestamp);
+        this.messages = createMessages(chat, allMessages);
+    }
+
+    private List<SyncActionMessage> createMessages(Chat chat, boolean allMessages) {
+        return allMessages ?
+                chat.messages()
+                        .stream()
+                        .map(this::createActionMessage)
+                        .toList() :
+                chat.lastMessage()
+                        .map(this::createActionMessage)
+                        .stream()
+                        .toList();
+    }
+
+    private void setTimestamp(MessageInfo message) {
+        if(message.message().isServer()){
+            this.lastSystemMessageTimestamp = message.timestamp();
+            return;
         }
 
-        var syncMessage = new SyncActionMessage(key, lastMessageTimestamp);
-        this.messages = List.of(syncMessage);
+        this.lastMessageTimestamp = message.timestamp();
+    }
+
+    private SyncActionMessage createActionMessage(MessageInfo info) {
+        var timestamp = info != null ?
+                info.timestamp() :
+                null;
+        var key = info != null ?
+                checkSenderKey(info.key()
+                        .copy()) :
+                null;
+        return new SyncActionMessage(key, timestamp);
+    }
+
+    private MessageKey checkSenderKey(MessageKey key) {
+        if (key.senderJid() == null) {
+            return key;
+        }
+
+        return key.senderJid(key.senderJid()
+                .toUserJid());
     }
 
     public static class ActionMessageRangeSyncBuilder {

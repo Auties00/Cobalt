@@ -17,7 +17,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
  */
 @AllArgsConstructor
 @NoArgsConstructor
-@SuperBuilder(builderMethodName = "newContactMessage", buildMethodName = "create")
+@SuperBuilder(builderMethodName = "newContactMessage")
 @Jacksonized
 @Data
 @EqualsAndHashCode(callSuper = true)

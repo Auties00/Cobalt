@@ -7,6 +7,7 @@ import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.Sha256;
 import it.auties.whatsapp.model.media.*;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
+import it.auties.whatsapp.model.message.standard.TextMessage;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
@@ -32,9 +33,12 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.MatchResult;
+import java.util.regex.Pattern;
 
 import static java.net.http.HttpRequest.BodyPublishers.ofByteArray;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
+import static java.util.Objects.requireNonNullElse;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 
@@ -43,7 +47,26 @@ public class Medias implements JacksonProvider {
     public static final int PROFILE_PIC_SIZE = 640;
     private static final int THUMBNAIL_SIZE = 32;
     private static final int RANDOM_FILE_NAME_LENGTH = 8;
+    private static final int PREVIEW_SIZE = 192;
     private static final Map<String, Path> CACHE = new ConcurrentHashMap<>();
+
+    public Optional<byte[]> getPreview(URI imageUri, URI videoUri) {
+        try {
+            if (imageUri == null && videoUri == null) {
+                return Optional.empty();
+            }
+
+            var bytes = requireNonNullElse(imageUri, videoUri).toURL()
+                    .openConnection()
+                    .getInputStream()
+                    .readAllBytes();
+            return Optional.ofNullable(imageUri != null ?
+                    getImage(bytes, Format.JPG, PREVIEW_SIZE) :
+                    getVideo(bytes, PREVIEW_SIZE));
+        } catch (IOException exception) {
+            return Optional.empty();
+        }
+    }
 
     public MediaFile upload(byte[] file, MediaMessageType type, Store store) {
         var client = HttpClient.newHttpClient();
@@ -233,36 +256,38 @@ public class Medias implements JacksonProvider {
     @SneakyThrows
     public byte[] getThumbnail(byte[] file, Format format) {
         return switch (format) {
-            case JPG, PNG -> {
-                var image = ImageIO.read(new ByteArrayInputStream(file));
-                var resizedImage = getResizedImage(image, THUMBNAIL_SIZE);
-                var outputStream = new ByteArrayOutputStream();
-                ImageIO.write(resizedImage, format.name()
-                        .toLowerCase(), outputStream);
-                yield outputStream.toByteArray();
-            }
-
-            case VIDEO -> {
-                var input = createTempFile(file, true);
-                var output = createTempFile(file, false);
-                try {
-                    var process = Runtime.getRuntime()
-                            .exec("ffmpeg -ss 00:00:00 -i %s -y -vf scale=%s:-1 -vframes 1 -f image2 %s".formatted(
-                                    input, THUMBNAIL_SIZE, output));
-                    if (process.waitFor() != 0) {
-                        yield null;
-                    }
-
-                    yield Files.readAllBytes(output);
-                } catch (Throwable throwable) {
-                    yield null;
-                } finally {
-                    Files.delete(output);
-                }
-            }
-
+            case JPG, PNG -> getImage(file, format, THUMBNAIL_SIZE);
+            case VIDEO -> getVideo(file, THUMBNAIL_SIZE);
             case FILE -> null; // TODO: 04/06/2022 Implement a file thumbnail
         };
+    }
+
+    private static byte[] getVideo(byte[] file, int dimensions) throws IOException {
+        var input = createTempFile(file, true);
+        var output = createTempFile(file, false);
+        try {
+            var process = Runtime.getRuntime()
+                    .exec("ffmpeg -ss 00:00:00 -i %s -y -vf scale=%s:-1 -vframes 1 -f image2 %s".formatted(input,
+                            dimensions, output));
+            if (process.waitFor() != 0) {
+                return null;
+            }
+
+            return Files.readAllBytes(output);
+        } catch (Throwable throwable) {
+            return null;
+        } finally {
+            Files.delete(output);
+        }
+    }
+
+    private static byte[] getImage(byte[] file, Format format, int dimensions) throws IOException {
+        var image = ImageIO.read(new ByteArrayInputStream(file));
+        var resizedImage = getResizedImage(image, dimensions);
+        var outputStream = new ByteArrayOutputStream();
+        ImageIO.write(resizedImage, format.name()
+                .toLowerCase(), outputStream);
+        return outputStream.toByteArray();
     }
 
     @SneakyThrows
@@ -290,7 +315,7 @@ public class Medias implements JacksonProvider {
                 originalImage.getType();
         var resizedImage = new BufferedImage(size, size, type);
         var graphics = resizedImage.createGraphics();
-        graphics.drawImage(originalImage, 0, 0, THUMBNAIL_SIZE, THUMBNAIL_SIZE, null);
+        graphics.drawImage(originalImage, 0, 0, size, size, null);
         graphics.dispose();
         graphics.setComposite(AlphaComposite.Src);
         graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
@@ -304,7 +329,7 @@ public class Medias implements JacksonProvider {
         var hex = Bytes.of(media)
                 .toHex();
         var cached = CACHE.get(hex);
-        if (useCache && cached != null) {
+        if (useCache && cached != null && Files.exists(cached)) {
             return cached;
         }
 

@@ -9,7 +9,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
-import static it.auties.whatsapp.api.ErrorHandler.Location.DISCONNECTED;
+import static it.auties.whatsapp.api.ErrorHandler.Location.LOGGED_OUT;
 import static it.auties.whatsapp.api.ErrorHandler.Location.MESSAGE;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
@@ -108,6 +108,10 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, Boolean> {
                                             BiConsumer<Location, Throwable> onRestore,
                                             BiConsumer<Location, Throwable> onIgnored, Level loggingLevel) {
         return (location, throwable) -> {
+            if(location == LOGGED_OUT){
+                return true;
+            }
+
             if (loggingLevel != null) {
                 LOGGER.log(loggingLevel, "Socket failure at %s".formatted(location));
             }
@@ -116,7 +120,7 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, Boolean> {
                 exceptionPrinter.accept(throwable);
             }
 
-            if (isIgnorable(location, throwable)) {
+            if (location != MESSAGE || !(throwable instanceof HmacValidationException)) {
                 if (loggingLevel != null) {
                     LOGGER.log(loggingLevel, "Ignored failure");
                 }
@@ -142,10 +146,6 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, Boolean> {
         };
     }
 
-    private static boolean isIgnorable(Location location, Throwable throwable) {
-        return location != DISCONNECTED && (location != MESSAGE || !(throwable instanceof HmacValidationException));
-    }
-
     /**
      * The constants of this enumerated type describe the various locations where an error can occur in the socket
      */
@@ -163,7 +163,7 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, Boolean> {
         /**
          * The client was manually disconnected from whatsapp
          */
-        DISCONNECTED,
+        LOGGED_OUT,
 
         /**
          * Called when the media connection cannot be renewed

@@ -27,7 +27,7 @@ import static it.auties.whatsapp.model.message.model.MediaMessageType.AUDIO;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(builderMethodName = "newRawAudioMessage", buildMethodName = "create")
+@SuperBuilder(builderMethodName = "newRawAudioMessage")
 @Jacksonized
 @Accessors(fluent = true)
 public final class AudioMessage extends MediaMessage {
@@ -111,7 +111,7 @@ public final class AudioMessage extends MediaMessage {
      * @param voiceMessage whether the new message should be considered as a voice message or as a normal audio, by default the latter is used
      * @return a non-null new message
      */
-    @Builder(builderClassName = "SimpleAudioMessageBuilder", builderMethodName = "newAudioMessage", buildMethodName = "create")
+    @Builder(builderClassName = "SimpleAudioMessageBuilder", builderMethodName = "newAudioMessage")
     private static AudioMessage builder(int storeId, byte @NonNull [] media, ContextInfo contextInfo, String mimeType,
                                         boolean voiceMessage) {
         var store = Store.findStoreById(storeId)
@@ -132,7 +132,7 @@ public final class AudioMessage extends MediaMessage {
                 .duration(duration)
                 .mimetype(mimeType)
                 .voiceMessage(voiceMessage)
-                .create();
+                .build();
     }
 
     /**

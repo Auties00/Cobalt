@@ -10,5 +10,6 @@ public interface OnMetadata extends Listener {
      *
      * @param metadata the updated list of properties
      */
+    @Override
     void onMetadata(Map<String, String> metadata);
 }

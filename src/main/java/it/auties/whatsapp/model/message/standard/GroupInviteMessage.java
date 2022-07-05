@@ -26,7 +26,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(builderMethodName = "newGroupInviteMessage", buildMethodName = "create")
+@SuperBuilder(builderMethodName = "newGroupInviteMessage")
 @Jacksonized
 @Accessors(fluent = true)
 public final class GroupInviteMessage extends ContextualMessage {

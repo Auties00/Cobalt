@@ -10,5 +10,6 @@ public interface OnWhatsappNewContact extends Listener {
      *
      * @param contact the new contact
      */
+    @Override
     void onNewContact(Whatsapp whatsapp, Contact contact);
 }

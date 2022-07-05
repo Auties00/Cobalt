@@ -19,7 +19,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(builderMethodName = "newLiveLocationMessage", buildMethodName = "create")
+@SuperBuilder(builderMethodName = "newLiveLocationMessage")
 @Jacksonized
 @Accessors(fluent = true)
 public final class LiveLocationMessage extends ContextualMessage {

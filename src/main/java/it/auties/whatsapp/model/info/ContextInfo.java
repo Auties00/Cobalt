@@ -23,7 +23,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @NoArgsConstructor
 @Data
 @Jacksonized
-@Builder(builderMethodName = "newContextInfo", buildMethodName = "create")
+@Builder(builderMethodName = "newContextInfo")
 @Accessors(fluent = true)
 public sealed class ContextInfo implements Info permits PaymentOrderMessage {
     /**

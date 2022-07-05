@@ -20,7 +20,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @NoArgsConstructor
 @Data
 @Jacksonized
-@Builder(builderMethodName = "newDeviceSentMessage", buildMethodName = "create")
+@Builder(builderMethodName = "newDeviceSentMessage")
 @Accessors(fluent = true)
 public final class DeviceSentMessage implements DeviceMessage {
     /**

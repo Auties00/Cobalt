@@ -32,7 +32,7 @@ import static java.util.Objects.requireNonNullElseGet;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Builder(builderMethodName = "newMessageInfo", buildMethodName = "create")
+@Builder(builderMethodName = "newMessageInfo")
 @Jacksonized
 @Accessors(fluent = true)
 @ToString(exclude = {"storeId", "cachedStore"})

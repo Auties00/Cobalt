@@ -5,6 +5,7 @@ import it.auties.whatsapp.binary.Encoder;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGmc;
+import it.auties.whatsapp.util.ErroneousNodeException;
 import it.auties.whatsapp.util.JacksonProvider;
 import jakarta.websocket.SendResult;
 import jakarta.websocket.Session;
@@ -135,8 +136,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
         }
 
         if (exceptionally || isErroneousNode(response)) {
-            future.completeExceptionally(new RuntimeException(
-                    "Cannot process request %s, erroneous response: %s".formatted(this, response)));
+            future.completeExceptionally(new ErroneousNodeException("Cannot process request %s".formatted(this), response));
             return;
         }
 

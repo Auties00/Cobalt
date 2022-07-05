@@ -84,7 +84,7 @@ class MessageHandler {
     }
 
     @SafeVarargs
-    protected final CompletableFuture<Node> encode(MessageInfo info, Map.Entry<String, Object>... attributes) {
+    protected final CompletableFuture<Void> encode(MessageInfo info, Map.Entry<String, Object>... attributes) {
         try {
             lock.acquire();
             var encodedMessage = BytesHelper.messageToBytes(info.message());
@@ -94,11 +94,12 @@ class MessageHandler {
                 var encodedDeviceMessage = BytesHelper.messageToBytes(deviceMessage);
                 var knownDevices = List.of(socket.keys().companion()
                         .toUserJid(), info.chatJid());
-                return getDevices(knownDevices, true).thenComposeAsync(
-                                allDevices -> createConversationNodes(allDevices, encodedMessage, encodedDeviceMessage))
+                return getDevices(knownDevices, true)
+                        .thenComposeAsync(allDevices -> createConversationNodes(allDevices, encodedMessage, encodedDeviceMessage))
                         .thenApplyAsync(sessions -> createEncodedMessageNode(info, sessions, null, attributes))
                         .thenComposeAsync(socket::send)
-                        .thenApplyAsync(this::releaseMessageLock)
+                        .thenRunAsync(() -> info.chat().ifPresent(chat -> chat.messages().add(info)))
+                        .thenRunAsync(lock::release)
                         .exceptionallyAsync(this::handleMessageFailure);
             }
 
@@ -116,22 +117,18 @@ class MessageHandler {
                     .thenComposeAsync(allDevices -> createGroupNodes(info, signalMessage, allDevices))
                     .thenApplyAsync(preKeys -> createEncodedMessageNode(info, preKeys, groupMessage, attributes))
                     .thenComposeAsync(socket::send)
-                    .thenApplyAsync(this::releaseMessageLock)
+                    .thenRunAsync(() -> info.chat().ifPresent(chat -> chat.messages().add(info)))
+                    .thenRunAsync(lock::release)
                     .exceptionallyAsync(this::handleMessageFailure);
         } catch (Throwable throwable) {
-            releaseMessageLock(null);
+            lock.release();
             throw new RuntimeException("Cannot send message", throwable);
         }
     }
 
-    private Node handleMessageFailure(Throwable throwable) {
+    private <T> T handleMessageFailure(Throwable throwable) {
         lock.release();
         return socket.errorHandler().handleFailure(MESSAGE, throwable);
-    }
-
-    private Node releaseMessageLock(Node node) {
-        lock.release();
-        return node;
     }
 
     private boolean isConversation(MessageInfo info) {
@@ -397,12 +394,12 @@ class MessageHandler {
             }
 
             var key = keyBuilder.id(id)
-                    .create();
+                    .build();
             var info = messageBuilder.storeId(socket.store().id())
                     .key(key)
                     .pushName(pushName)
                     .timestamp(timestamp)
-                    .create();
+                    .build();
 
             socket.sendMessageAck(infoNode, of("class", "receipt"));
             var encodedMessage = messageNode.bytes();
@@ -456,7 +453,7 @@ class MessageHandler {
                     yield session.decrypt(preKey);
                 }
 
-                case MSG -> {
+                case  MSG -> {
                     var session = new SessionCipher(info.senderJid()
                             .toSignalAddress(), socket.keys());
                     var signalMessage = SignalMessage.ofSerialized(message);
@@ -466,7 +463,7 @@ class MessageHandler {
                 default -> throw new IllegalArgumentException("Unsupported encoded message type: %s".formatted(type));
             });
         } catch (Throwable throwable) {
-            socket.errorHandler().handleFailure(MESSAGE, throwable);
+            socket.errorHandler().handleFailure(MESSAGE, new RuntimeException("Cannot decrypt message, partial: %s", throwable));
             return Optional.empty();
         }
     }

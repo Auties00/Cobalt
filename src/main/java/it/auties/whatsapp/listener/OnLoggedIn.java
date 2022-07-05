@@ -8,6 +8,7 @@ public interface OnLoggedIn extends Listener {
      * When this event is called, any data, including chats and contact, is not guaranteed to be already in memory.
      * Instead, {@link OnChats#onChats()} and {@link OnContacts#onContacts()} should be used.
      */
+    @Override
     void onLoggedIn();
 }
 

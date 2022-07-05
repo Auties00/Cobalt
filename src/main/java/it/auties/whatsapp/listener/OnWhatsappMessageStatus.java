@@ -18,5 +18,6 @@ public interface OnWhatsappMessageStatus extends Listener {
      * @param info    the message whose status changed
      * @param status  the new status of the message
      */
+    @Override
     void onMessageStatus(Whatsapp whatsapp, Chat chat, Contact contact, MessageInfo info, MessageStatus status);
 }

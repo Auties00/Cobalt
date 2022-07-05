@@ -9,5 +9,6 @@ public interface OnNewContact extends Listener {
      *
      * @param contact the new contact
      */
+    @Override
     void onNewContact(Contact contact);
 }

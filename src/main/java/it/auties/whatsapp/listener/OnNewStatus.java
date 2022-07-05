@@ -9,5 +9,6 @@ public interface OnNewStatus extends Listener {
      *
      * @param status the new status message
      */
+    @Override
     void onNewStatus(MessageInfo status);
 }

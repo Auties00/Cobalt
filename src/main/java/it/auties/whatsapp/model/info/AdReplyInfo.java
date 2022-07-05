@@ -17,7 +17,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @NoArgsConstructor
 @Data
 @Jacksonized
-@Builder(builderMethodName = "newAdReplyInfo", buildMethodName = "create")
+@Builder(builderMethodName = "newAdReplyInfo")
 @Accessors(fluent = true)
 public final class AdReplyInfo implements Info {
     /**

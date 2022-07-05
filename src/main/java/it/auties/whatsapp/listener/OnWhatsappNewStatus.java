@@ -10,5 +10,6 @@ public interface OnWhatsappNewStatus extends Listener {
      *
      * @param status the new status message
      */
+    @Override
     void onNewStatus(Whatsapp whatsapp, MessageInfo status);
 }

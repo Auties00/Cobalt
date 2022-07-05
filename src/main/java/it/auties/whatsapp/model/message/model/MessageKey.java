@@ -24,7 +24,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Data
 @Accessors(fluent = true)
 @Jacksonized
-@Builder(builderMethodName = "newMessageKey", buildMethodName = "create")
+@Builder(builderMethodName = "newMessageKey")
 public class MessageKey implements ProtobufMessage {
     /**
      * The jid of the contact or group that sent the message.

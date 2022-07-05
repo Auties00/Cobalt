@@ -10,5 +10,6 @@ public interface OnWhatsappNodeReceived extends Listener {
      *
      * @param incoming the non-null node that was just received
      */
+    @Override
     void onNodeReceived(Whatsapp whatsapp, Node incoming);
 }

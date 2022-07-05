@@ -8,5 +8,6 @@ public interface OnNewMessage extends Listener {
      *
      * @param info the message that was sent
      */
+    @Override
     void onNewMessage(MessageInfo info);
 }

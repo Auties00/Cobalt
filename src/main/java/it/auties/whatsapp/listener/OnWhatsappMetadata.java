@@ -12,5 +12,6 @@ public interface OnWhatsappMetadata extends Listener {
      *
      * @param metadata the updated list of properties
      */
+    @Override
     void onMetadata(Whatsapp whatsapp, Map<String, String> metadata);
 }

@@ -44,7 +44,7 @@ class StreamHandler {
     private static final byte[] SIGNATURE_HEADER = {6, 1};
 
     private final Socket socket;
-    
+
     @Getter(AccessLevel.PROTECTED)
     private ScheduledExecutorService pingService;
 
@@ -70,9 +70,15 @@ class StreamHandler {
                 .orElse("unknown");
         var reason = node.attributes()
                 .getInt("reason");
-        socket.errorHandler().handleFailure(reason == 401 ?
-                DISCONNECTED :
-                ERRONEOUS_NODE, new RuntimeException(location));
+        if (reason == 401) {
+            socket.errorHandler()
+                    .handleFailure(LOGGED_OUT, new RuntimeException(location));
+            return;
+        }
+
+
+        socket.errorHandler()
+                .handleNodeFailure(new ErroneousNodeException("Stream error", node));
     }
 
     private void digestChatState(Node node) {
@@ -248,7 +254,7 @@ class StreamHandler {
                 .getString("reason", type);
         socket.errorHandler()
                 .handleFailure(Objects.equals(reason, "device_removed") ?
-                        DISCONNECTED :
+                        LOGGED_OUT :
                         STREAM, new RuntimeException(reason));
     }
 
@@ -315,7 +321,8 @@ class StreamHandler {
 
     @SneakyThrows
     private void createMediaConnection() {
-        if (!socket.state().isConnected()) {
+        if (!socket.state()
+                .isConnected()) {
             return;
         }
 
@@ -328,10 +335,12 @@ class StreamHandler {
                 .thenRunAsync(socket.store()
                         .mediaConnectionLock()::release)
                 .exceptionallyAsync(this::handleMediaConnectionError)
-                .thenRunAsync(() -> runAsyncDelayed(this::createMediaConnection, socket.store().mediaConnection().ttl()));
+                .thenRunAsync(() -> runAsyncDelayed(this::createMediaConnection, socket.store()
+                        .mediaConnection()
+                        .ttl()));
     }
 
-    private void runAsyncDelayed(Runnable runnable, int seconds){
+    private void runAsyncDelayed(Runnable runnable, int seconds) {
         var mediaService = CompletableFuture.delayedExecutor(seconds, TimeUnit.SECONDS);
         CompletableFuture.runAsync(runnable, mediaService);
     }
@@ -340,7 +349,8 @@ class StreamHandler {
         socket.store()
                 .mediaConnectionLock()
                 .release();
-        return socket.errorHandler().handleFailure(MEDIA_CONNECTION, throwable);
+        return socket.errorHandler()
+                .handleFailure(MEDIA_CONNECTION, throwable);
     }
 
     private void digestIq(Node node) {
@@ -369,7 +379,8 @@ class StreamHandler {
     }
 
     private void sendPreKeys() {
-        if (socket.keys().hasPreKeys()) {
+        if (socket.keys()
+                .hasPreKeys()) {
             return;
         }
 
@@ -378,10 +389,12 @@ class StreamHandler {
                 .peek(socket.keys()::addPreKey)
                 .map(SignalPreKeyPair::toNode)
                 .toList();
-        socket.sendQuery("set", "encrypt", with("registration", BytesHelper.intToBytes(socket.keys().id(), 4)),
-                with("type", SignalSpecification.KEY_BUNDLE_TYPE), with("identity", socket.keys().identityKeyPair()
-                        .publicKey()), withChildren("list", preKeys), socket.keys().signedKeyPair()
-                        .toNode());
+        socket.sendQuery("set", "encrypt", with("registration", BytesHelper.intToBytes(socket.keys()
+                .id(), 4)), with("type", SignalSpecification.KEY_BUNDLE_TYPE), with("identity", socket.keys()
+                .identityKeyPair()
+                .publicKey()), withChildren("list", preKeys), socket.keys()
+                .signedKeyPair()
+                .toNode());
     }
 
     private void generateQrCode(Node node, Node container) {
@@ -392,14 +405,17 @@ class StreamHandler {
     private void printQrCode(Node container) {
         var ref = container.findNode("ref")
                 .orElseThrow(() -> new NoSuchElementException("Missing ref"));
-        var qr = "%s,%s,%s,%s".formatted(new String(ref.bytes(), StandardCharsets.UTF_8), Bytes.of(
-                        socket.keys().noiseKeyPair()
-                                .publicKey())
-                .toBase64(), Bytes.of(socket.keys().identityKeyPair()
+        var qr = "%s,%s,%s,%s".formatted(new String(ref.bytes(), StandardCharsets.UTF_8), Bytes.of(socket.keys()
+                        .noiseKeyPair()
                         .publicKey())
-                .toBase64(), Bytes.of(socket.keys().companionKey())
+                .toBase64(), Bytes.of(socket.keys()
+                        .identityKeyPair()
+                        .publicKey())
+                .toBase64(), Bytes.of(socket.keys()
+                        .companionKey())
                 .toBase64());
-        socket.options().qrHandler()
+        socket.options()
+                .qrHandler()
                 .accept(qr);
     }
 
@@ -410,30 +426,36 @@ class StreamHandler {
         var deviceIdentity = container.findNode("device-identity")
                 .orElseThrow(() -> new NoSuchElementException("Missing device identity"));
         var advIdentity = JacksonProvider.PROTOBUF.readMessage(deviceIdentity.bytes(), SignedDeviceIdentityHMAC.class);
-        var advSign = Hmac.calculateSha256(advIdentity.details(), socket.keys().companionKey());
+        var advSign = Hmac.calculateSha256(advIdentity.details(), socket.keys()
+                .companionKey());
         if (!Arrays.equals(advIdentity.hmac(), advSign)) {
-            socket.errorHandler().handleFailure(LOGIN, new HmacValidationException("adv_sign"));
+            socket.errorHandler()
+                    .handleFailure(LOGIN, new HmacValidationException("adv_sign"));
             return;
         }
 
         var account = JacksonProvider.PROTOBUF.readMessage(advIdentity.details(), SignedDeviceIdentity.class);
         var message = Bytes.of(MESSAGE_HEADER)
                 .append(account.details())
-                .append(socket.keys().identityKeyPair()
+                .append(socket.keys()
+                        .identityKeyPair()
                         .publicKey())
                 .toByteArray();
         if (!Curve25519.verifySignature(account.accountSignatureKey(), message, account.accountSignature())) {
-            socket.errorHandler().handleFailure(LOGIN, new HmacValidationException("message_header"));
+            socket.errorHandler()
+                    .handleFailure(LOGIN, new HmacValidationException("message_header"));
             return;
         }
 
         var deviceSignatureMessage = Bytes.of(SIGNATURE_HEADER)
                 .append(account.details())
-                .append(socket.keys().identityKeyPair()
+                .append(socket.keys()
+                        .identityKeyPair()
                         .publicKey())
                 .append(account.accountSignatureKey())
                 .toByteArray();
-        account.deviceSignature(Curve25519.sign(socket.keys().identityKeyPair()
+        account.deviceSignature(Curve25519.sign(socket.keys()
+                .identityKeyPair()
                 .privateKey(), deviceSignatureMessage, true));
 
         var keyIndex = JacksonProvider.PROTOBUF.readMessage(account.details(), DeviceIdentity.class)
@@ -441,7 +463,8 @@ class StreamHandler {
         var devicePairNode = withChildren("pair-device-sign", with("device-identity", of("key-index", keyIndex),
                 JacksonProvider.PROTOBUF.writeValueAsBytes(account.withoutKey())));
 
-        socket.keys().companionIdentity(account);
+        socket.keys()
+                .companionIdentity(account);
         sendConfirmNode(node, devicePairNode);
     }
 
@@ -461,6 +484,7 @@ class StreamHandler {
         var companion = node.attributes()
                 .getJid("jid")
                 .orElseThrow(() -> new NoSuchElementException("Missing companion"));
-        socket.keys().companion(companion);
+        socket.keys()
+                .companion(companion);
     }
 }

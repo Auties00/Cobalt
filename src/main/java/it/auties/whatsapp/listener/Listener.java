@@ -1,5 +1,6 @@
 package it.auties.whatsapp.listener;
 
+import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.SocketEvent;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.controller.Store;
@@ -104,10 +105,10 @@ public interface Listener {
     /**
      * Called when the socket successfully disconnects from WhatsappWeb's WebSocket
      *
-     * @param whatsapp  an instance to the calling api
-     * @param reconnect whether the connection is going to be re-established
+     * @param whatsapp an instance to the calling api
+     * @param reason   the reason why the session was disconnected
      */
-    default void onDisconnected(Whatsapp whatsapp, boolean reconnect) {
+    default void onDisconnected(Whatsapp whatsapp, DisconnectReason reason) {
 
     }
 
@@ -115,9 +116,9 @@ public interface Listener {
     /**
      * Called when the socket successfully disconnects from WhatsappWeb's WebSocket
      *
-     * @param reconnect whether the connection is going to be re-established
+     * @param reason   the reason why the session was disconnected
      */
-    default void onDisconnected(boolean reconnect) {
+    default void onDisconnected(DisconnectReason reason) {
 
     }
 
@@ -265,8 +266,8 @@ public interface Listener {
      * Called when the socket receives the recent message for a chat
      *
      * @param whatsapp an instance to the calling api
-     * @param chat the chat
-     * @param last whether the messages in this chat are complete or there are more coming
+     * @param chat     the chat
+     * @param last     whether the messages in this chat are complete or there are more coming
      */
     default void onChatMessages(Whatsapp whatsapp, Chat chat, boolean last) {
 

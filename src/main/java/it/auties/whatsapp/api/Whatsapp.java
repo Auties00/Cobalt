@@ -22,6 +22,7 @@ import it.auties.whatsapp.model.sync.ActionValueSync;
 import it.auties.whatsapp.model.sync.PatchRequest;
 import it.auties.whatsapp.socket.Socket;
 import it.auties.whatsapp.util.*;
+import it.auties.linkpreview.LinkPreview;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Data;
@@ -43,6 +44,7 @@ import static it.auties.whatsapp.controller.Controller.knownIds;
 import static it.auties.whatsapp.model.request.Node.*;
 import static it.auties.whatsapp.model.sync.RecordSync.Operation.SET;
 import static java.util.Map.of;
+import static java.util.Objects.requireNonNullElse;
 import static java.util.Objects.requireNonNullElseGet;
 
 /**
@@ -54,24 +56,9 @@ import static java.util.Objects.requireNonNullElseGet;
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public class Whatsapp {
     /**
-     * Constant for unlimited listeners size
-     */
-    private static final int UNLIMITED_LISTENERS = -1;
-
-    /**
      * The socket associated with this session
      */
     private final Socket socket;
-
-    /**
-     * Listeners limit
-     */
-    private int listenersLimit;
-
-    /**
-     * Default serialization listener
-     */
-    private Listener defaultSerializer;
 
     private Whatsapp(Options options) {
         this(options, Store.of(options.id()), Keys.of(options.id()));
@@ -79,15 +66,14 @@ public class Whatsapp {
 
     private Whatsapp(Options options, Store store, Keys keys) {
         this.socket = new Socket(this, options, store, keys);
-        this.listenersLimit = UNLIMITED_LISTENERS;
-        this.defaultSerializer = new BlockingDefaultSerializer();
-        addListener(defaultSerializer);
-        if (!options.autodetectListeners()) {
-            return;
+        if (options.defaultSerialization()) {
+            addListener(new BlockingDefaultSerializer());
         }
 
-        ListenerScanner.scan(this)
-                .forEach(this::addListener);
+        if (options.autodetectListeners()) {
+            ListenerScanner.scan(this)
+                    .forEach(this::addListener);
+        }
     }
 
     /**
@@ -239,32 +225,17 @@ public class Whatsapp {
      * @return the same instance
      */
     public Whatsapp addListener(@NonNull Listener listener) {
-        Validate.isTrue(listenersLimit < 0 || store().listeners()
-                        .size() + 1 <= listenersLimit, "The number of listeners is too high: expected %s, got %s",
-                listenersLimit, socket.store()
-                        .listeners()
-                        .size());
+        Validate.isTrue(socket.options()
+                .listenersLimit() < 0 || store().listeners()
+                .size() + 1 <= socket.options()
+                .listenersLimit(), "The number of listeners is too high: expected %s, got %s", socket.options()
+                .listenersLimit(), socket.store()
+                .listeners()
+                .size());
         Validate.isTrue(socket.store()
                 .listeners()
                 .add(listener), "WhatsappAPI: Cannot add listener %s", listener.getClass()
                 .getName());
-        return this;
-    }
-
-    /**
-     * Limits the number of listeners that this connection can have.
-     * This limit is enforced as soon as the method is called and for future modifications to the listeners.
-     *
-     * @param size the maximum number of listeners
-     * @return the same instance
-     * @throws IllegalStateException if the number of listeners is already too high
-     */
-    public Whatsapp limitListeners(int size) {
-        this.listenersLimit = size;
-        Validate.isTrue(store().listeners()
-                        .size() <= size, "The number of listeners is too high: expected %s, got %s", listenersLimit,
-                store().listeners()
-                        .size(), IllegalStateException.class);
         return this;
     }
 
@@ -679,37 +650,6 @@ public class Whatsapp {
     }
 
     /**
-     * Uses the default serialization mechanism.
-     * Calling this method is not necessary unless {@link Whatsapp#withoutDefaultSerialization()} has been called previously.
-     *
-     * @return the same instance
-     */
-    public Whatsapp withDefaultSerialization() {
-        if (defaultSerializer != null) {
-            return this;
-        }
-
-        this.defaultSerializer = new BlockingDefaultSerializer();
-        addListener(defaultSerializer);
-        return this;
-    }
-
-    /**
-     * Disables the default serialization mechanism.
-     *
-     * @return the same instance
-     */
-    public Whatsapp withoutDefaultSerialization() {
-        if (defaultSerializer == null) {
-            return this;
-        }
-
-        removeListener(defaultSerializer);
-        this.defaultSerializer = null;
-        return this;
-    }
-
-    /**
      * Removes a listener
      *
      * @param listener the listener to remove
@@ -855,7 +795,22 @@ public class Whatsapp {
             context.quotedMessageChat(quotedMessage.chatJid());
         }
 
-        return sendMessage(chat, message, context.create());
+        return sendMessage(chat, message, context.build());
+    }
+
+    /**
+     * Builds and sends a message from a chat, a message and a context
+     *
+     * @param chat        the chat where the message should be sent
+     * @param message     the message to send
+     * @param contextInfo the context of the message to send
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJidProvider chat,
+                                                      @NonNull ContextualMessage message,
+                                                      @NonNull ContextInfo contextInfo) {
+        message.contextInfo(contextInfo);
+        return sendMessage(chat, message);
     }
 
     /**
@@ -885,7 +840,7 @@ public class Whatsapp {
                         .isGroup() ?
                         keys().companion() :
                         null)
-                .create();
+                .build();
         var info = MessageInfo.newMessageInfo()
                 .storeId(store().id())
                 .senderJid(chat.toJid()
@@ -894,41 +849,11 @@ public class Whatsapp {
                         null)
                 .key(key)
                 .message(message)
-                .create();
+                .timestamp(Clock.now())
+                .build();
         return sendMessage(info);
     }
 
-    /**
-     * Builds and sends a message from a chat, a message and a context
-     *
-     * @param chat        the chat where the message should be sent
-     * @param message     the message to send
-     * @param contextInfo the context of the message to send
-     * @return a CompletableFuture
-     */
-    public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJidProvider chat,
-                                                      @NonNull ContextualMessage message,
-                                                      @NonNull ContextInfo contextInfo) {
-        var key = MessageKey.newMessageKey()
-                .chatJid(chat.toJid())
-                .fromMe(true)
-                .senderJid(chat.toJid()
-                        .isGroup() ?
-                        keys().companion() :
-                        null)
-                .create();
-        var info = MessageInfo.newMessageInfo()
-                .storeId(store().id())
-                .senderJid(chat.toJid()
-                        .isGroup() ?
-                        keys().companion() :
-                        null)
-                .key(key)
-                .message(MessageContainer.of(message.contextInfo(contextInfo)))
-                .timestamp(Clock.now())
-                .create();
-        return sendMessage(info);
-    }
 
     /**
      * Sends a message info to a chat
@@ -945,12 +870,53 @@ public class Whatsapp {
             mediaMessage.storeId(store().id());
         }
 
+        createTextPreview(info);
         parseEphemeralMessage(info);
         return socket.sendMessage(info)
                 .thenApplyAsync(ignored -> info);
     }
 
+    private void createTextPreview(MessageInfo info) {
+        if (!(info.message()
+                .content() instanceof TextMessage textMessage)) {
+            return;
+        }
+
+        if (!socket.options()
+                .automaticTextPreview()) {
+            return;
+        }
+
+        var preview = LinkPreview.createPreview(textMessage.text())
+                .orElse(null);
+        if (preview == null) {
+            return;
+        }
+
+        var imageUri = preview.images()
+                .stream()
+                .findFirst()
+                .orElse(null);
+        var videoUri = preview.videos()
+                .stream()
+                .findFirst()
+                .orElse(null);
+        textMessage.canonicalUrl(requireNonNullElse(videoUri, preview.uri()).toString());
+        textMessage.matchedText(preview.uri()
+                .toString());
+        textMessage.thumbnail(Medias.getPreview(imageUri, videoUri)
+                .orElse(null));
+        textMessage.description(preview.siteDescription());
+        textMessage.title(preview.title());
+        textMessage.previewType(TextMessage.TextMessagePreviewType.VIDEO);
+    }
+
     private void parseEphemeralMessage(MessageInfo info) {
+        if (info.message()
+                .isServer()) {
+            return;
+        }
+
         info.chat()
                 .filter(Chat::isEphemeral)
                 .ifPresent(chat -> createEphemeralMessage(info, chat));
@@ -1115,7 +1081,8 @@ public class Whatsapp {
      * @param presence the new status
      * @return a CompletableFuture
      */
-    public <T extends ContactJidProvider> CompletableFuture<T> changePresence(@NonNull T chat, @NonNull ContactStatus presence) {
+    public <T extends ContactJidProvider> CompletableFuture<T> changePresence(@NonNull T chat,
+                                                                              @NonNull ContactStatus presence) {
         var node = withAttributes("presence", of("to", chat.toJid(), "type", presence.data()));
         return socket.sendWithNoResponse(node)
                 .thenApplyAsync(ignored -> chat);
@@ -1208,7 +1175,8 @@ public class Whatsapp {
      * @return a CompletableFuture
      * @throws IllegalArgumentException if the provided new name is empty or blank
      */
-    public <T extends ContactJidProvider> CompletableFuture<T> changeSubject(@NonNull T group, @NonNull String newName) {
+    public <T extends ContactJidProvider> CompletableFuture<T> changeSubject(@NonNull T group,
+                                                                             @NonNull String newName) {
         var body = with("subject", newName.getBytes(StandardCharsets.UTF_8));
         return socket.sendQuery(group.toJid(), "set", "w:g2", body)
                 .thenApplyAsync(ignored -> group);
@@ -1250,7 +1218,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> changeWhoCanSendMessages(@NonNull T group,
-                                                            @NonNull GroupPolicy policy) {
+                                                                                        @NonNull GroupPolicy policy) {
         var body = with(policy != GroupPolicy.ANYONE ?
                 "not_announcement" :
                 "announcement");
@@ -1266,7 +1234,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> changeWhoCanEditInfo(@NonNull T group,
-                                                        @NonNull GroupPolicy policy) {
+                                                                                    @NonNull GroupPolicy policy) {
         var body = with(policy != GroupPolicy.ANYONE ?
                 "locked" :
                 "unlocked");
@@ -1296,7 +1264,8 @@ public class Whatsapp {
                 Medias.getProfilePic(image) :
                 null;
         var body = with("picture", of("type", "image"), profilePic);
-        return socket.sendQuery(group.toJid().toUserJid(), "set", "w:profile:picture", body)
+        return socket.sendQuery(group.toJid()
+                        .toUserJid(), "set", "w:profile:picture", body)
                 .thenApplyAsync(ignored -> group);
     }
 
@@ -1315,7 +1284,10 @@ public class Whatsapp {
         var body = withChildren("create", of("subject", subject, "key", key), participants);
         return socket.sendQuery(ContactJid.GROUP, "set", "w:g2", body)
                 .thenApplyAsync(response -> response.findNode("group")
-                        .orElseThrow(() -> new NoSuchElementException("Missing group response, something went wrong")))
+                        .orElseThrow(() -> new NoSuchElementException(
+                                "Missing group response, something went wrong: %s".formatted(response.findNode("error")
+                                        .map(Node::toString)
+                                        .orElse("unknown")))))
                 .thenApplyAsync(GroupMetadata::of);
     }
 
@@ -1406,7 +1378,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> changeEphemeralTimer(@NonNull T chat,
-                                                        @NonNull ChatEphemeralTimer timer) {
+                                                                                    @NonNull ChatEphemeralTimer timer) {
         return switch (chat.toJid()
                 .server()) {
             case USER, WHATSAPP -> {
@@ -1414,9 +1386,8 @@ public class Whatsapp {
                         .type(ProtocolMessage.ProtocolMessageType.EPHEMERAL_SETTING)
                         .ephemeralExpiration(timer.period()
                                 .toSeconds())
-                        .create();
-                yield sendMessage(chat, message)
-                        .thenApplyAsync(ignored -> chat);
+                        .build();
+                yield sendMessage(chat, message).thenApplyAsync(ignored -> chat);
             }
 
             case GROUP -> {
@@ -1455,7 +1426,7 @@ public class Whatsapp {
     }
 
     private <T extends ContactJidProvider> CompletableFuture<T> mark(@NonNull T chat, boolean read) {
-        var range = createLastMessageRange(chat);
+        var range = createRange(chat, false);
         var markAction = new MarkChatAsReadAction(read, range);
         var syncAction = new ActionValueSync(markAction);
         var request = PatchRequest.of(REGULAR_LOW, syncAction, SET, 3, chat.toJid()
@@ -1515,17 +1486,11 @@ public class Whatsapp {
         return star(info, false);
     }
 
-    private CompletableFuture<MessageInfo>  star(MessageInfo info, boolean star) {
+    private CompletableFuture<MessageInfo> star(MessageInfo info, boolean star) {
         var starAction = new StarAction(star);
         var syncAction = new ActionValueSync(starAction);
         var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 3, info.chatJid()
-                .toString(), info.id(), String.valueOf(info.fromMe() ?
-                1 :
-                0), info.chatJid()
-                .server() == ContactJid.Server.GROUP && !info.fromMe() ?
-                info.senderJid()
-                        .toString() :
-                "0");
+                .toString(), info.id(), fromMeToFlag(info), participantToFlag(info));
         return socket.pushPatch(request)
                 .thenApplyAsync(ignored -> info);
     }
@@ -1552,7 +1517,7 @@ public class Whatsapp {
     }
 
     private <T extends ContactJidProvider> CompletableFuture<T> archive(T chat, boolean archive) {
-        var range = createLastMessageRange(chat);
+        var range = createRange(chat, false);
         var archiveAction = new ArchiveChatAction(archive, range);
         var syncAction = new ActionValueSync(archiveAction);
         var request = PatchRequest.of(REGULAR_LOW, syncAction, SET, 3, chat.toJid()
@@ -1561,17 +1526,93 @@ public class Whatsapp {
                 .thenApplyAsync(ignored -> chat);
     }
 
-    private ActionMessageRangeSync createLastMessageRange(ContactJidProvider chat) {
+    /**
+     * Deletes a message
+     *
+     * @param info     the non-null message to delete
+     * @param everyone whether the message should be deleted for everyone or only for this client and its companions
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<MessageInfo> delete(@NonNull MessageInfo info, boolean everyone) {
+        if (everyone) {
+            var message = ProtocolMessage.newProtocolMessage()
+                    .type(ProtocolMessage.ProtocolMessageType.REVOKE)
+                    .key(info.key())
+                    .build();
+            return sendMessage(info.chatJid(), message);
+        }
+
+        var range = createRange(info.chatJid(), false);
+        var deleteMessageAction = new DeleteMessageForMeAction(false, info.timestamp());
+        var syncAction = new ActionValueSync(deleteMessageAction);
+        var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 3, info.chatJid()
+                .toString(), info.id(), fromMeToFlag(info), participantToFlag(info));
+        return socket.pushPatch(request)
+                .thenApplyAsync(ignored -> info);
+    }
+
+    /**
+     * Deletes a chat for this client and its companions using a modern version of Whatsapp
+     *
+     * @param chat                the non-null chat to delete
+     * @return a CompletableFuture
+     */
+    public <T extends ContactJidProvider> CompletableFuture<T> delete(@NonNull T chat) {
+        var range = createRange(chat.toJid(), true);
+        var deleteChatAction = new DeleteChatAction(range);
+        var syncAction = new ActionValueSync(deleteChatAction);
+        var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 6, chat.toJid()
+                .toString(), "1");
+        return socket.pushPatch(request)
+                .thenApplyAsync(ignored -> chat);
+    }
+
+    /**
+     * Clears the content of a chat for this client and its companions using a modern version of Whatsapp
+     *
+     * @param chat                the non-null chat to clear
+     * @param keepStarredMessages whether starred messages in this chat should be kept
+     * @return a CompletableFuture
+     */
+    public <T extends ContactJidProvider> CompletableFuture<T> clear(@NonNull T chat, boolean keepStarredMessages) {
+        var known = store().findChatByJid(chat);
+        var range = createRange(chat.toJid(), true);
+        var clearChatAction = new ClearChatAction(range);
+        var syncAction = new ActionValueSync(clearChatAction);
+        var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 6, chat.toJid()
+                .toString(), booleanToInt(keepStarredMessages), "0");
+        return socket.pushPatch(request)
+                .thenApplyAsync(ignored -> chat);
+    }
+
+    private ActionMessageRangeSync createRange(ContactJidProvider chat, boolean allMessages) {
         return store().findChatByJid(chat.toJid())
-                .flatMap(Chat::lastMessage)
-                .map(ActionMessageRangeSync::new)
-                .orElseGet(() -> new ActionMessageRangeSync(null, null, null));
+                .map(result -> new ActionMessageRangeSync(result, allMessages))
+                .orElseThrow(() -> new NoSuchElementException("Missing chat: %s".formatted(chat.toJid())));
+    }
+
+    private String participantToFlag(MessageInfo info) {
+        return info.chatJid()
+                .isGroup() && !info.fromMe() ?
+                info.senderJid()
+                        .toString() :
+                "0";
+    }
+
+    private String fromMeToFlag(MessageInfo info) {
+        return booleanToInt(info.fromMe());
+    }
+
+    private String booleanToInt(boolean keepStarredMessages) {
+        return keepStarredMessages ?
+                "1" :
+                "0";
     }
 
     /**
      * A configuration class used to specify the behaviour of {@link Whatsapp}
      */
-    @Builder(builderMethodName = "newOptions", buildMethodName = "create")
+    @Builder(builderMethodName = "newOptions")
     @With
     @Data
     @Accessors(fluent = true)
@@ -1580,6 +1621,11 @@ public class Whatsapp {
          * Last known version of Whatsapp
          */
         private static final Version WHATSAPP_VERSION = new Version(2, 2212, 7);
+
+        /**
+         * Constant for unlimited listeners size
+         */
+        private static final int UNLIMITED_LISTENERS = -1;
 
         /**
          * The id of the session.
@@ -1595,6 +1641,20 @@ public class Whatsapp {
          */
         @Default
         private final boolean autodetectListeners = true;
+
+        /**
+         * Whether the default serialization mechanism should be used or not.
+         * Set this to false if you want to implement a custom serializer.
+         */
+        @Default
+        private final boolean defaultSerialization = true;
+
+        /**
+         * Whether a preview should be automatically generated and attached to text messages that contain links.
+         * By default, true
+         */
+        @Default
+        private final boolean automaticTextPreview = true;
 
         /**
          * The version of WhatsappWeb to use.
@@ -1643,12 +1703,19 @@ public class Whatsapp {
         private ErrorHandler errorHandler = ErrorHandler.toFile();
 
         /**
+         * The number of maximum listeners that the linked Whatsapp instance supports.
+         * By default, unlimited.
+         */
+        @Default
+        private int listenersLimit = UNLIMITED_LISTENERS;
+
+        /**
          * Constructs a new instance of WhatsappConfiguration with default options
          *
          * @return a non-null options configuration
          */
         public static Options defaultOptions() {
-            return newOptions().create();
+            return newOptions().build();
         }
     }
 

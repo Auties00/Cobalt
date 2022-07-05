@@ -9,5 +9,6 @@ public interface OnWhatsappNewMessage extends Listener {
      *
      * @param info the message that was sent
      */
+    @Override
     void onNewMessage(Whatsapp whatsapp, MessageInfo info);
 }

@@ -29,7 +29,7 @@ import static java.util.Objects.requireNonNullElse;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(builderMethodName = "newRawDocumentMessage", buildMethodName = "create")
+@SuperBuilder(builderMethodName = "newRawDocumentMessage")
 @Jacksonized
 @Accessors(fluent = true)
 public final class DocumentMessage extends MediaMessage {
@@ -120,7 +120,7 @@ public final class DocumentMessage extends MediaMessage {
      * @param contextInfo the context info that the new message wraps
      * @return a non-null new message
      */
-    @Builder(builderClassName = "SimpleDocumentMessageBuilder", builderMethodName = "newDocumentMessage", buildMethodName = "create")
+    @Builder(builderClassName = "SimpleDocumentMessageBuilder", builderMethodName = "newDocumentMessage")
     private static DocumentMessage builder(int storeId, byte @NonNull [] media, String mimeType, String title,
                                            int pageCount, String fileName, byte[] thumbnail, ContextInfo contextInfo) {
         var store = Store.findStoreById(storeId)
@@ -144,7 +144,7 @@ public final class DocumentMessage extends MediaMessage {
                         thumbnail :
                         Medias.getThumbnail(media, FILE))
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
-                .create();
+                .build();
     }
 
     /**

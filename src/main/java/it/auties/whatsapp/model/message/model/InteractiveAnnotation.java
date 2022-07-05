@@ -18,7 +18,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
  */
 @AllArgsConstructor
 @Data
-@Builder(builderMethodName = "newInteractiveAnnotation", buildMethodName = "create")
+@Builder(builderMethodName = "newInteractiveAnnotation")
 @Jacksonized
 @Accessors(fluent = true)
 public class InteractiveAnnotation implements ProtobufMessage {

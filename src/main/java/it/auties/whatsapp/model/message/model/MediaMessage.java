@@ -22,7 +22,7 @@ import java.util.Objects;
  * Considering that passing the same instance to {@link MediaMessage#decodedMedia()} is verbose and unnecessary, there is a copy here.
  */
 @AllArgsConstructor
-@SuperBuilder(buildMethodName = "create")
+@SuperBuilder
 @NoArgsConstructor
 @Accessors(fluent = true)
 @EqualsAndHashCode(exclude = {"storeId", "cachedStore"}, callSuper = true)

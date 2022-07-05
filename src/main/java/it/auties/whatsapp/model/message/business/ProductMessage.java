@@ -24,7 +24,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(builderMethodName = "newProductMessage", buildMethodName = "create")
+@SuperBuilder(builderMethodName = "newProductMessage")
 @Jacksonized
 @Accessors(fluent = true)
 public final class ProductMessage extends ContextualMessage implements BusinessMessage {

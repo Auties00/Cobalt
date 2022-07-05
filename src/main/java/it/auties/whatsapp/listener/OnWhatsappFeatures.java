@@ -11,5 +11,6 @@ public interface OnWhatsappFeatures extends Listener {
      *
      * @param features the non-null features that were sent
      */
+    @Override
     void onFeatures(Whatsapp whatsapp, List<String> features);
 }

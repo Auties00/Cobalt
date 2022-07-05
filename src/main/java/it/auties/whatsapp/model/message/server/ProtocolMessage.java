@@ -21,7 +21,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT64;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Builder(builderMethodName = "newProtocolMessage", buildMethodName = "create")
+@Builder(builderMethodName = "newProtocolMessage")
 @Jacksonized
 @Accessors(fluent = true)
 public final class ProtocolMessage implements ServerMessage {

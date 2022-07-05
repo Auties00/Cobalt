@@ -1,14 +1,17 @@
 package it.auties.whatsapp.listener;
 
+import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.socket.Socket;
 
 public interface OnWhatsappDisconnected extends Listener {
     /**
-     * Called when {@link Socket} successfully disconnects from WhatsappWeb's WebSocket
+     * Called when the socket successfully disconnects from WhatsappWeb's WebSocket
      *
-     * @param reconnect whether the connection is going to be re-established
+     * @param whatsapp an instance to the calling api
+     * @param reason   the reason why the session was disconnected
      */
-    void onDisconnected(Whatsapp whatsapp, boolean reconnect);
+    @Override
+    void onDisconnected(Whatsapp whatsapp, DisconnectReason reason);
 }
 

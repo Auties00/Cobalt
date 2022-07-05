@@ -9,5 +9,6 @@ public interface OnSetting extends Listener {
      *
      * @param setting the setting that was toggled
      */
+    @Override
     void onSetting(Setting setting);
 }

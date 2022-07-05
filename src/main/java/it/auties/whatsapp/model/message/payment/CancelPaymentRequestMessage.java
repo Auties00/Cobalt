@@ -17,7 +17,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
  */
 @AllArgsConstructor(staticName = "newCancelPaymentMessage")
 @NoArgsConstructor
-@Builder(builderMethodName = "newCancelPaymentMessage", buildMethodName = "create")
+@Builder(builderMethodName = "newCancelPaymentMessage")
 @Jacksonized
 @Data
 @Accessors(fluent = true)

@@ -14,5 +14,6 @@ public interface OnWhatsappContactPresence extends Listener {
      * @param contact the contact that this update regards
      * @param status  the new status of the contact
      */
+    @Override
     void onContactPresence(Whatsapp whatsapp, Chat chat, Contact contact, ContactStatus status);
 }

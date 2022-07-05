@@ -13,5 +13,6 @@ public interface OnContactPresence extends Listener {
      * @param contact the contact that this update regards
      * @param status  the new status of the contact
      */
+    @Override
     void onContactPresence(Chat chat, Contact contact, ContactStatus status);
 }

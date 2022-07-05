@@ -30,7 +30,7 @@ import static java.util.Objects.requireNonNullElse;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(builderMethodName = "newRawVideoMessage", buildMethodName = "create")
+@SuperBuilder(builderMethodName = "newRawVideoMessage")
 @Jacksonized
 @Accessors(fluent = true)
 public final class VideoMessage extends MediaMessage {
@@ -150,7 +150,7 @@ public final class VideoMessage extends MediaMessage {
      * @param contextInfo the context info that the new message wraps
      * @return a non-null new message
      */
-    @Builder(builderClassName = "SimpleVideoMessageBuilder", builderMethodName = "newVideoMessage", buildMethodName = "create")
+    @Builder(builderClassName = "SimpleVideoMessageBuilder", builderMethodName = "newVideoMessage")
     private static VideoMessage videoBuilder(int storeId, byte @NonNull [] media, String mimeType, String caption,
                                              byte[] thumbnail, ContextInfo contextInfo) {
         var store = Store.findStoreById(storeId)
@@ -177,7 +177,7 @@ public final class VideoMessage extends MediaMessage {
                 .height(dimensions.height())
                 .duration(duration)
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
-                .create();
+                .build();
     }
 
     /**
@@ -195,7 +195,7 @@ public final class VideoMessage extends MediaMessage {
      * @param contextInfo    the context info that the new message wraps
      * @return a non-null new message
      */
-    @Builder(builderClassName = "SimpleGifBuilder", builderMethodName = "newGifMessage", buildMethodName = "create")
+    @Builder(builderClassName = "SimpleGifBuilder", builderMethodName = "newGifMessage")
     private static VideoMessage gifBuilder(int storeId, byte @NonNull [] media, String mimeType, String caption,
                                            VideoMessageAttribution gifAttribution, byte[] thumbnail,
                                            ContextInfo contextInfo) {
@@ -227,7 +227,7 @@ public final class VideoMessage extends MediaMessage {
                 .gifPlayback(true)
                 .gifAttribution(requireNonNullElse(gifAttribution, VideoMessageAttribution.NONE))
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
-                .create();
+                .build();
     }
 
     private static boolean isGif(byte[] media, String mimeType) {

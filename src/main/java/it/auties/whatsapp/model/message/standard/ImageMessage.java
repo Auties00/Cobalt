@@ -32,7 +32,7 @@ import static java.util.Objects.requireNonNullElse;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(builderMethodName = "newRawImageMessage", buildMethodName = "create")
+@SuperBuilder(builderMethodName = "newRawImageMessage")
 @Jacksonized
 @Accessors(fluent = true)
 public final class ImageMessage extends MediaMessage {
@@ -169,7 +169,7 @@ public final class ImageMessage extends MediaMessage {
      * @param contextInfo the context info that the new message wraps
      * @return a non-null new message
      */
-    @Builder(builderClassName = "SimpleImageBuilder", builderMethodName = "newImageMessage", buildMethodName = "create")
+    @Builder(builderClassName = "SimpleImageBuilder", builderMethodName = "newImageMessage")
     private static ImageMessage simpleBuilder(int storeId, byte @NonNull [] media, String mimeType, String caption,
                                               byte[] thumbnail, ContextInfo contextInfo) {
         var store = Store.findStoreById(storeId)
@@ -194,7 +194,7 @@ public final class ImageMessage extends MediaMessage {
                         thumbnail :
                         Medias.getThumbnail(media, JPG))
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
-                .create();
+                .build();
     }
 
     /**

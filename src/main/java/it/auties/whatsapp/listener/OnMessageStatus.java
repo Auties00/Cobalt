@@ -17,5 +17,6 @@ public interface OnMessageStatus extends Listener {
      * @param info    the message whose status changed
      * @param status  the new status of the message
      */
+    @Override
     void onMessageStatus(Chat chat, Contact contact, MessageInfo info, MessageStatus status);
 }

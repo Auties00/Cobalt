@@ -155,7 +155,7 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
     }
 
     public static class ButtonsMessageBuilder {
-        public ButtonsMessageBuilder polygonVertices(List<Button> buttons) {
+        public ButtonsMessageBuilder buttons(List<Button> buttons) {
             if (this.buttons == null)
                 this.buttons = new ArrayList<>();
             this.buttons.addAll(buttons);

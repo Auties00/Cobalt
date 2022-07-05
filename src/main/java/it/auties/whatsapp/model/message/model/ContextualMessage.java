@@ -22,7 +22,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
  */
 @AllArgsConstructor
 @NoArgsConstructor
-@SuperBuilder(buildMethodName = "create")
+@SuperBuilder
 @Data
 @Accessors(fluent = true)
 public sealed abstract class ContextualMessage implements Message

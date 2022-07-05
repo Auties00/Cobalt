@@ -29,7 +29,7 @@ import static java.util.Objects.requireNonNullElse;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(builderMethodName = "newRawStickerMessage", buildMethodName = "create")
+@SuperBuilder(builderMethodName = "newRawStickerMessage")
 @Jacksonized
 @Accessors(fluent = true)
 public final class StickerMessage extends MediaMessage {
@@ -130,7 +130,7 @@ public final class StickerMessage extends MediaMessage {
      * @param contextInfo the context info that the new message wraps
      * @return a non-null new message
      */
-    @Builder(builderClassName = "SimpleStickerMessageBuilder", builderMethodName = "newStickerMessage", buildMethodName = "create")
+    @Builder(builderClassName = "SimpleStickerMessageBuilder", builderMethodName = "newStickerMessage")
     private static StickerMessage builder(int storeId, byte @NonNull [] media, String mimeType, byte[] thumbnail,
                                           boolean animated, ContextInfo contextInfo) {
         var store = Store.findStoreById(storeId)
@@ -152,7 +152,7 @@ public final class StickerMessage extends MediaMessage {
                         Medias.getThumbnail(media, PNG))
                 .animated(animated)
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
-                .create();
+                .build();
     }
 
     /**

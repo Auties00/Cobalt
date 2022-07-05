@@ -18,7 +18,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @AllArgsConstructor(staticName = "newDeclinePaymentRequestMessage")
 @NoArgsConstructor
 @Data
-@Builder(builderMethodName = "newDeclinePaymentRequestMessage", buildMethodName = "create")
+@Builder(builderMethodName = "newDeclinePaymentRequestMessage")
 @Jacksonized
 @Accessors(fluent = true)
 public final class DeclinePaymentRequestMessage implements PaymentMessage {
