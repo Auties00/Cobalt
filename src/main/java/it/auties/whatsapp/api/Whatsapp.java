@@ -66,14 +66,12 @@ public class Whatsapp {
 
     private Whatsapp(Options options, Store store, Keys keys) {
         this.socket = new Socket(this, options, store, keys);
-        if (options.defaultSerialization()) {
-            addListener(new BlockingDefaultSerializer());
+        if (!options.autodetectListeners()) {
+            return;
         }
 
-        if (options.autodetectListeners()) {
-            ListenerScanner.scan(this)
-                    .forEach(this::addListener);
-        }
+        ListenerScanner.scan(this)
+                .forEach(this::addListener);
     }
 
     /**
@@ -1558,11 +1556,12 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> delete(@NonNull T chat) {
-        var range = createRange(chat.toJid(), true);
+        var range = createRange(chat.toJid(), false);
         var deleteChatAction = new DeleteChatAction(range);
         var syncAction = new ActionValueSync(deleteChatAction);
         var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 6, chat.toJid()
                 .toString(), "1");
+        System.out.println(store().findChatByJid(chat).get().messages().stream().map(e -> ((TextMessage) e.message().content()).text()).toList());
         return socket.pushPatch(request)
                 .thenApplyAsync(ignored -> chat);
     }
@@ -1586,9 +1585,9 @@ public class Whatsapp {
     }
 
     private ActionMessageRangeSync createRange(ContactJidProvider chat, boolean allMessages) {
-        return store().findChatByJid(chat.toJid())
-                .map(result -> new ActionMessageRangeSync(result, allMessages))
-                .orElseThrow(() -> new NoSuchElementException("Missing chat: %s".formatted(chat.toJid())));
+        var known = store().findChatByJid(chat.toJid())
+                .orElseGet(() -> socket.createChat(chat.toJid()));
+        return new ActionMessageRangeSync(known, allMessages);
     }
 
     private String participantToFlag(MessageInfo info) {
@@ -1681,10 +1680,10 @@ public class Whatsapp {
 
         /**
          * Describes how much chat history Whatsapp should send when the QR is first scanned.
-         * By default, three months are chosen.
+         * By default, one year.
          */
         @Default
-        private HistoryLength historyLength = HistoryLength.THREE_MONTHS;
+        private HistoryLength historyLength = HistoryLength.ONE_YEAR;
 
         /**
          * Handles the qr code when a connection is first established with Whatsapp.
@@ -1716,18 +1715,6 @@ public class Whatsapp {
          */
         public static Options defaultOptions() {
             return newOptions().build();
-        }
-    }
-
-    private class BlockingDefaultSerializer implements OnSocketEvent {
-        @Override
-        public void onSocketEvent(SocketEvent event) {
-            if (event != SocketEvent.CLOSE) {
-                return;
-            }
-
-            store().save(false);
-            keys().save(false);
         }
     }
 }

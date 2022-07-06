@@ -93,15 +93,19 @@ public class Socket implements JacksonProvider, SignalSpecification {
                   @NonNull Keys keys) {
         this.whatsapp = whatsapp;
         this.options = options;
-        this.store = store;
-        this.keys = keys;
+        this.store = store.useDefaultSerializer(options.defaultSerialization());
+        this.keys = keys.useDefaultSerializer(options.defaultSerialization());
         this.state = SocketState.WAITING;
         this.authHandler = new AuthHandler(this);
         this.streamHandler = new StreamHandler(this);
         this.messageHandler = new MessageHandler(this);
         this.appStateHandler = new AppStateHandler(this);
         this.errorHandler = new FailureHandler(this);
-        getRuntime().addShutdownHook(new Thread(() -> onSocketEvent(SocketEvent.CLOSE)));
+        getRuntime().addShutdownHook(new Thread(() -> {
+            keys.dispose();
+            store.dispose();
+            onSocketEvent(SocketEvent.CLOSE);
+        }));
     }
 
     public Contact createContact(ContactJid jid) {

@@ -56,8 +56,7 @@ class AppStateHandler {
                     .orElseThrow(() -> new NoSuchElementException("Missing patch for %s".formatted(patch.type())));
             var newState = oldState.copy();
 
-            var key = Objects.requireNonNull(socket.keys().appStateKeys()
-                    .peekLast(), "No keys available for push");
+            var key = socket.keys().appKey();
 
             var index = patch.index()
                     .getBytes(StandardCharsets.UTF_8);
@@ -328,11 +327,11 @@ class AppStateHandler {
             var targetMessage = targetChat.flatMap(chat -> socket.store().findMessageById(chat, mutation.messageIndex()
                     .messageId()));
             switch (action) {
-                case ClearChatAction ignored -> targetChat.map(Chat::messages)
-                        .ifPresent(SortedMessageList::clear);
+                case ClearChatAction clearChatAction -> clearMessages(targetChat.orElse(null), clearChatAction);
                 case ContactAction contactAction -> updateName(targetContact.orElseGet(() -> socket.createContact(jid)),
                         targetChat.orElseGet(() -> socket.createChat(jid)), contactAction);
-                case DeleteChatAction ignored -> targetChat.ifPresent(socket.store().chats()::remove);
+                case DeleteChatAction ignored -> targetChat.map(Chat::messages)
+                        .ifPresent(SortedMessageList::clear);
                 case DeleteMessageForMeAction ignored ->
                         targetMessage.ifPresent(message -> targetChat.ifPresent(chat -> deleteMessage(message, chat)));
                 case MarkChatAsReadAction markAction -> targetChat.ifPresent(chat -> chat.unreadMessages(
@@ -348,8 +347,7 @@ class AppStateHandler {
                 case StarAction starAction -> targetMessage.ifPresent(message -> message.starred(starAction.starred()));
                 case ArchiveChatAction archiveChatAction ->
                         targetChat.ifPresent(chat -> chat.archived(archiveChatAction.archived()));
-                default -> {
-                }
+                default -> {}
             }
 
             socket.onAction(action);
@@ -370,6 +368,21 @@ class AppStateHandler {
                 .isEmpty()) {
             socket.onFeatures(features);
         }
+    }
+
+    private static void clearMessages(Chat targetChat, ClearChatAction clearChatAction) {
+        if (targetChat == null || clearChatAction.messageRange() == null || clearChatAction.messageRange()
+                .messages() == null) {
+            return;
+        }
+
+        clearChatAction.messageRange()
+                .messages()
+                .stream()
+                .map(SyncActionMessage::key)
+                .filter(Objects::nonNull)
+                .forEach(key -> targetChat.messages()
+                        .removeIf(entry -> Objects.equals(entry.id(), key.id())));
     }
 
     private void updateName(Contact contact, Chat chat, ContactAction contactAction) {

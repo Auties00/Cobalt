@@ -10,35 +10,17 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public final class SortedMessageList implements List<MessageInfo> {
-    // This comparator does not return 0 for equal elements indeed
-    // But this system is necessary to preserve insertion order if two timestamps are equal
-    @SuppressWarnings("ComparatorMethodParameterNotUsed")
-    private static final Comparator<HistorySyncMessage> ENTRY_COMPARATOR = (x, y) -> x.message()
-            .timestamp() <= y.message()
-            .timestamp() ?
-            -1 :
-            1;
-
     private final List<HistorySyncMessage> internal;
-
     public SortedMessageList(List<HistorySyncMessage> internal) {
         this.internal = internal;
     }
 
     public SortedMessageList() {
-        this(new ArrayList<>());
+        this(new LinkedList<>());
     }
 
     public boolean add(@NonNull MessageInfo message) {
-        internal.removeIf(entry -> Objects.equals(message.id(), entry.message()
-                .id()));
-        var initialSize = internal.size();
-        var newEntry = new HistorySyncMessage(message, -1L);
-        var insertionPoint = Collections.binarySearch(internal, newEntry, ENTRY_COMPARATOR);
-        internal.add(insertionPoint > -1 ?
-                insertionPoint :
-                -insertionPoint - 1, newEntry);
-        return internal.size() != initialSize;
+        return internal.add(new HistorySyncMessage(message, size()));
     }
 
     @Override
@@ -92,13 +74,10 @@ public final class SortedMessageList implements List<MessageInfo> {
         return internal.toArray();
     }
 
-    @SuppressWarnings("SuspiciousToArrayCall")
+
     @Override
     public <T> T @NonNull [] toArray(T @NonNull [] a) {
-        return internal.stream()
-                .map(HistorySyncMessage::message)
-                .toList()
-                .toArray(a);
+        throw new UnsupportedOperationException("To array is not supported");
     }
 
     public MessageInfo get(int index) {

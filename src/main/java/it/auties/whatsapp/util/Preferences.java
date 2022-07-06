@@ -68,12 +68,12 @@ public final class Preferences implements JacksonProvider {
     }
 
     @SneakyThrows
-    public void writeJsonAsync(@NonNull Object input) {
-        CompletableFuture.runAsync(() -> writeJson(input));
-    }
+    public void writeJson(@NonNull Object input, boolean async) {
+        if(async){
+            CompletableFuture.runAsync(() -> writeJson(input, false));
+            return;
+        }
 
-    @SneakyThrows
-    public void writeJson(@NonNull Object input) {
         Files.createDirectories(file.getParent());
         Files.writeString(file, JSON.writeValueAsString(input), StandardOpenOption.CREATE,
                 StandardOpenOption.TRUNCATE_EXISTING);

@@ -23,10 +23,7 @@ import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
@@ -39,13 +36,13 @@ import static java.util.Objects.requireNonNullElseGet;
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder(access = AccessLevel.PROTECTED)
 @Jacksonized
-@Data
 @Accessors(fluent = true, chain = true)
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public final class Keys implements Controller {
+public final class Keys implements Controller<Keys> {
     /**
      * The client id
      */
+    @Getter
     private int id;
 
     /**
@@ -53,6 +50,7 @@ public final class Keys implements Controller {
      */
     @Default
     @NonNull
+    @Getter
     private SignalKeyPair noiseKeyPair = SignalKeyPair.random();
 
     /**
@@ -60,6 +58,7 @@ public final class Keys implements Controller {
      */
     @Default
     @NonNull
+    @Getter
     private SignalKeyPair ephemeralKeyPair = SignalKeyPair.random();
 
     /**
@@ -67,11 +66,14 @@ public final class Keys implements Controller {
      */
     @Default
     @NonNull
+    @Getter
     private SignalKeyPair identityKeyPair = SignalKeyPair.random();
 
     /**
      * The signed pre key
      */
+    @Getter
+    @Setter(AccessLevel.PRIVATE)
     private SignalSignedKeyPair signedKeyPair;
 
     /**
@@ -84,18 +86,23 @@ public final class Keys implements Controller {
     /**
      * The user using these keys
      */
+    @Getter
+    @Setter
     private ContactJid companion;
 
     /**
      * The companion secret key
      */
     @Default
+    @Getter
     private byte[] companionKey = SignalKeyPair.random()
             .publicKey();
 
     /**
      * The bytes of the encoded {@link SignedDeviceIdentityHMAC} received during the auth process
      */
+    @Getter
+    @Setter
     private SignedDeviceIdentity companionIdentity;
 
     /**
@@ -146,7 +153,14 @@ public final class Keys implements Controller {
      * Session dependent keys to write and read cyphered messages
      */
     @JsonIgnore
+    @Getter
+    @Setter
     private Bytes writeKey, readKey;
+
+    @JsonIgnore
+    @Getter
+    @Setter
+    private boolean useDefaultSerializer;
 
     /**
      * Returns a new instance of random keys
@@ -307,6 +321,7 @@ public final class Keys implements Controller {
      */
     public Keys putKey(@NonNull SessionAddress address, @NonNull Session record) {
         sessions.put(address, record);
+        serialize(false);
         return this;
     }
 
@@ -319,6 +334,7 @@ public final class Keys implements Controller {
      */
     public Keys putState(@NonNull Sync sync, @NonNull LTHashState state) {
         hashStates.put(sync, state);
+        serialize(false);
         return this;
     }
 
@@ -330,6 +346,7 @@ public final class Keys implements Controller {
      */
     public Keys addAppKeys(@NonNull Collection<AppStateSyncKey> keys) {
         appStateKeys.addAll(keys);
+        serialize(false);
         return this;
     }
 
@@ -341,6 +358,7 @@ public final class Keys implements Controller {
      */
     public Keys addPreKey(SignalPreKeyPair preKey) {
         preKeys.add(preKey);
+        serialize(false);
         return this;
     }
 
@@ -368,9 +386,18 @@ public final class Keys implements Controller {
                 readCounter.get();
     }
 
+    /**
+     * Get any available app key
+     *
+     * @return a non-null app key
+     */
+    public AppStateSyncKey appKey() {
+        return Objects.requireNonNull(appStateKeys.peekLast(), "No keys available");
+    }
+
     @Override
     public void dispose() {
-        // Nothing to do
+        serialize(true);
     }
 
     @JsonSetter

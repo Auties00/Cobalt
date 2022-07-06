@@ -4,6 +4,7 @@ import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.setting.*;
+import it.auties.whatsapp.util.Clock;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -107,6 +108,7 @@ public class ActionValueSync implements ProtobufMessage {
     //<editor-fold desc="Constructors">
     @SuppressWarnings("PatternVariableHidesField")
     public ActionValueSync(@NonNull Action action) {
+        this.timestamp = Clock.now();
         switch (action) {
             case StarAction starAction -> this.starAction = starAction;
             case ContactAction contactAction -> this.contactAction = contactAction;
@@ -133,6 +135,7 @@ public class ActionValueSync implements ProtobufMessage {
 
     @SuppressWarnings("PatternVariableHidesField")
     public ActionValueSync(@NonNull Setting setting) {
+        this.timestamp = Clock.now();
         switch (setting) {
             case SecurityNotificationSetting securityNotificationSetting ->
                     this.securityNotificationSetting = securityNotificationSetting;

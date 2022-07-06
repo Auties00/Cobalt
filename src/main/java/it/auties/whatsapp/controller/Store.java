@@ -37,10 +37,9 @@ import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 @Jacksonized
 @Builder(access = AccessLevel.PROTECTED)
-@Data
 @Accessors(fluent = true, chain = true)
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public final class Store implements Controller {
+public final class Store implements Controller<Store> {
     /**
      * All the known stores
      */
@@ -50,6 +49,7 @@ public final class Store implements Controller {
     /**
      * The session id of this store
      */
+    @Getter
     private int id;
 
     /**
@@ -57,6 +57,7 @@ public final class Store implements Controller {
      */
     @NonNull
     @Default
+    @Getter
     private ConcurrentLinkedDeque<Chat> chats = new ConcurrentLinkedDeque<>();
 
     /**
@@ -64,6 +65,7 @@ public final class Store implements Controller {
      */
     @NonNull
     @Default
+    @Getter
     private ConcurrentLinkedDeque<MessageInfo> status = new ConcurrentLinkedDeque<>();
 
     /**
@@ -71,17 +73,22 @@ public final class Store implements Controller {
      */
     @NonNull
     @Default
+    @Getter
     private ConcurrentLinkedDeque<Contact> contacts = new ConcurrentLinkedDeque<>();
 
     /**
      * Whether this store has already received the snapshot from
      * Whatsapp Web containing chats and contacts
      */
+    @Getter
+    @Setter
     private boolean hasSnapshot;
 
     /**
      * Whether chats should be unarchived if a new message arrives
      */
+    @Getter
+    @Setter
     private boolean unarchiveChats;
 
     /**
@@ -90,6 +97,7 @@ public final class Store implements Controller {
     @NonNull
     @JsonIgnore
     @Default
+    @Getter
     private ConcurrentLinkedDeque<Request> pendingRequests = new ConcurrentLinkedDeque<>();
 
     /**
@@ -98,6 +106,7 @@ public final class Store implements Controller {
     @NonNull
     @JsonIgnore
     @Default
+    @Getter
     private ConcurrentLinkedDeque<Listener> listeners = new ConcurrentLinkedDeque<>();
 
     /**
@@ -123,6 +132,7 @@ public final class Store implements Controller {
      */
     @JsonIgnore
     @Default
+    @Getter
     private long initializationTimeStamp = Clock.now();
 
     /**
@@ -146,7 +156,13 @@ public final class Store implements Controller {
      */
     @Default
     @JsonIgnore
+    @Getter
     private Semaphore mediaConnectionLock = new Semaphore(1);
+
+    @JsonIgnore
+    @Getter
+    @Setter
+    private boolean useDefaultSerializer;
 
     /**
      * Constructs a new default instance of WhatsappStore
@@ -319,7 +335,7 @@ public final class Store implements Controller {
     public Optional<Request> findPendingRequest(String id) {
         return id == null ?
                 Optional.empty() :
-                pendingRequests().parallelStream()
+                pendingRequests.parallelStream()
                         .filter(request -> Objects.equals(request.id(), id))
                         .findAny();
     }
@@ -345,6 +361,7 @@ public final class Store implements Controller {
         chat.messages()
                 .forEach(message -> message.storeId(id()));
         chats.add(chat);
+        serialize(false);
         return chat;
     }
 
@@ -356,6 +373,7 @@ public final class Store implements Controller {
      */
     public Contact addContact(Contact contact) {
         contacts.add(contact);
+        serialize(false);
         return contact;
     }
 
@@ -400,6 +418,7 @@ public final class Store implements Controller {
      */
     public void dispose() {
         requestsService.shutdownNow();
+        serialize(true);
     }
 
     /**

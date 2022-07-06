@@ -1,6 +1,7 @@
 package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import it.auties.whatsapp.util.ControllerSerializerLoader;
 import it.auties.whatsapp.util.Preferences;
 
 import java.io.IOException;
@@ -18,7 +19,7 @@ import static it.auties.whatsapp.util.JacksonProvider.JSON;
  * It provides an easy way to store IDs and serialize said class.
  */
 @SuppressWarnings("unused")
-public sealed interface Controller permits Store, Keys {
+public sealed interface Controller<T extends Controller<T>> permits Store, Keys {
     /**
      * Returns all the known IDs
      *
@@ -53,17 +54,13 @@ public sealed interface Controller permits Store, Keys {
     }
 
     /**
-     * Saves this object as a JSON
+     * Serializes this object
      *
-     * @param async whether to perform the write operation asynchronously or not
+     * @param close whether this method was called because the socket was closed
      */
-    default void save(boolean async) {
-        if (async) {
-            preferences().writeJsonAsync(this);
-            return;
-        }
-
-        preferences().writeJson(this);
+    default void serialize(boolean close) {
+        ControllerSerializerLoader.providers(useDefaultSerializer())
+                .forEach(serializer -> serializer.serialize(this, close));
     }
 
     /**
@@ -96,4 +93,16 @@ public sealed interface Controller permits Store, Keys {
      * Disposes this object
      */
     void dispose();
+
+    /**
+     * Whether the default serializer should be used
+     *
+     * @return a boolean
+     */
+    boolean useDefaultSerializer();
+
+    /**
+     * Set whether the default serializer should be used
+     */
+    T useDefaultSerializer(boolean useDefaultSerializer);
 }

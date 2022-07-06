@@ -330,20 +330,9 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     }
 
     /**
-     * Returns an optional value containing the latest message in chronological terms for this chat sent from you
-     *
-     * @return a non-empty optional if {@link Chat#messages} isn't empty and there is a message from you
-     */
-    public Optional<MessageInfo> lastMessageFromMe() {
-        return messages.stream()
-                .filter(MessageInfo::fromMe)
-                .reduce((first, second) -> second);
-    }
-
-    /**
      * Returns an optional value containing the latest message in chronological terms for this chat
      *
-     * @return a non-empty optional if {@link Chat#messages} isn't empty
+     * @return an optional
      */
     public Optional<MessageInfo> lastMessage() {
         return messages.isEmpty() ?
@@ -352,9 +341,42 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     }
 
     /**
+     * Returns an optional value containing the latest message in chronological terms for this chat sent from you
+     *
+     * @return an optional
+     */
+    public Optional<MessageInfo> lastMessageFromMe() {
+        return messages.stream()
+                .filter(MessageInfo::fromMe)
+                .reduce((first, second) -> second);
+    }
+
+    /**
+     * Returns an optional value containing the latest message in chronological terms for this chat with type server
+     *
+     * @return an optional
+     */
+    public Optional<MessageInfo> lastServerMessage() {
+        return messages.stream()
+                .filter(info -> info.message().isServer())
+                .reduce((first, second) -> second);
+    }
+
+    /**
+     * Returns an optional value containing the first message in chronological terms for this chat
+     *
+     * @return an optional
+     */
+    public Optional<MessageInfo> firstMessage() {
+        return messages.isEmpty() ?
+                Optional.empty() :
+                Optional.of(messages.get(0));
+    }
+
+    /**
      * Returns an optional value containing the first message in chronological terms for this chat sent from you
      *
-     * @return a non-empty optional if {@link Chat#messages} isn't empty and there is a message from you
+     * @return an optional
      */
     public Optional<MessageInfo> firstMessageFromMe() {
         return messages.stream()
@@ -363,14 +385,14 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     }
 
     /**
-     * Returns an optional value containing the first message in chronological terms for this chat
+     * Returns an optional value containing the first message in chronological terms for this chat with type server
      *
-     * @return a non-empty optional if {@link Chat#messages} isn't empty
+     * @return an optional
      */
-    public Optional<MessageInfo> firstMessage() {
-        return messages.isEmpty() ?
-                Optional.empty() :
-                Optional.of(messages.get(0));
+    public Optional<MessageInfo> firstServerMessage() {
+        return messages.stream()
+                .filter(info -> info.message().isServer())
+                .findFirst();
     }
 
     /**

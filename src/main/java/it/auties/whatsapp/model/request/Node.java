@@ -9,11 +9,11 @@ import java.util.*;
 import static java.util.Objects.requireNonNull;
 
 /**
- * An immutable model class that represents the primary unit used by WhatsappWeb's WebSocket to communicate with the client.
+ * An immutable model class that represents the primary unit used by WhatsappWeb's WebSocket to communicate with the client
  *
  * @param description a non-null String that describes the content of this node
  * @param attributes  a non-null Map that describes the metadata of this object
- * @param content     a nullable object, usually a List of {@link Node}, a {@link String} or a {@link Number}
+ * @param content     a nullable object: a List of {@link Node}, a {@link String} or a {@link Number}
  */
 public record Node(@NonNull String description, @NonNull Attributes attributes, Object content) {
     /**
@@ -111,7 +111,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
     }
 
     /**
-     * Returns the nullable jid of this node
+     * Returns the nullable id of this node
      *
      * @return a nullable String
      */
@@ -156,9 +156,19 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
     }
 
     /**
-     * Returns a body that matches the nullable description provided
+     * Finds the first child node
      *
-     * @return a nullable node
+     * @return an optional
+     */
+    public Optional<Node> findFirst() {
+        return children().stream()
+                .findFirst();
+    }
+
+    /**
+     * Returns the first node that matches the description provided
+     *
+     * @return an optional
      */
     public Optional<Node> findNode(String description) {
         return children().stream()
@@ -167,7 +177,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
     }
 
     /**
-     * Returns a body that matches the nullable description provided
+     * Returns all the nodes that match the description provided
      *
      * @return an optional body, present if a result was found
      */
