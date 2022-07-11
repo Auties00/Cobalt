@@ -12,15 +12,18 @@ import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.util.Clock;
+import it.auties.whatsapp.util.InitializationLock;
 import it.auties.whatsapp.util.Preferences;
-import it.auties.whatsapp.util.Validate;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -57,38 +60,33 @@ public final class Store implements Controller<Store> {
      */
     @NonNull
     @Default
-    @Getter
-    private ConcurrentLinkedDeque<Chat> chats = new ConcurrentLinkedDeque<>();
+    private Set<Chat> chats = ConcurrentHashMap.newKeySet();
 
     /**
      * The non-null list of status messages
      */
     @NonNull
     @Default
-    @Getter
-    private ConcurrentLinkedDeque<MessageInfo> status = new ConcurrentLinkedDeque<>();
+    private Set<MessageInfo> status = ConcurrentHashMap.newKeySet();
 
     /**
      * The non-null list of contacts
      */
     @NonNull
     @Default
-    @Getter
-    private ConcurrentLinkedDeque<Contact> contacts = new ConcurrentLinkedDeque<>();
+    private Set<Contact> contacts = ConcurrentHashMap.newKeySet();
 
     /**
      * Whether this store has already received the snapshot from
      * Whatsapp Web containing chats and contacts
      */
     @Getter
-    @Setter
     private boolean hasSnapshot;
 
     /**
      * Whether chats should be unarchived if a new message arrives
      */
     @Getter
-    @Setter
     private boolean unarchiveChats;
 
     /**
@@ -97,7 +95,6 @@ public final class Store implements Controller<Store> {
     @NonNull
     @JsonIgnore
     @Default
-    @Getter
     private ConcurrentLinkedDeque<Request> pendingRequests = new ConcurrentLinkedDeque<>();
 
     /**
@@ -147,17 +144,9 @@ public final class Store implements Controller<Store> {
     /**
      * The media connection associated with this store
      */
-    @Setter
     @JsonIgnore
-    private MediaConnection mediaConnection;
-
-    /**
-     * The media connection lock
-     */
     @Default
-    @JsonIgnore
-    @Getter
-    private Semaphore mediaConnectionLock = new Semaphore(1);
+    private InitializationLock<MediaConnection> mediaConnection = new InitializationLock<>();
 
     @JsonIgnore
     @Getter
@@ -361,7 +350,7 @@ public final class Store implements Controller<Store> {
         chat.messages()
                 .forEach(message -> message.storeId(id()));
         chats.add(chat);
-        serialize(false);
+        serialize();
         return chat;
     }
 
@@ -373,7 +362,7 @@ public final class Store implements Controller<Store> {
      */
     public Contact addContact(Contact contact) {
         contacts.add(contact);
-        serialize(false);
+        serialize();
         return contact;
     }
 
@@ -410,7 +399,6 @@ public final class Store implements Controller<Store> {
         status.clear();
         pendingRequests.forEach(request -> request.complete(null, false));
         pendingRequests.clear();
-        listeners.clear();
     }
 
     /**
@@ -418,7 +406,6 @@ public final class Store implements Controller<Store> {
      */
     public void dispose() {
         requestsService.shutdownNow();
-        serialize(true);
     }
 
     /**
@@ -481,21 +468,92 @@ public final class Store implements Controller<Store> {
      * @return the media connection
      */
     public MediaConnection mediaConnection() {
-        if(mediaConnectionLock.availablePermits() == 0){
-            waitForConnection();
-        }
-
-        return mediaConnection;
+        return mediaConnection.read();
     }
 
-    private void waitForConnection() {
-        try {
-            Validate.isTrue(mediaConnectionLock.tryAcquire(1, TimeUnit.MINUTES),
-                    "Cannot acquire media sessions lock", IllegalStateException.class);
-            mediaConnectionLock.release();
-        }catch (InterruptedException exception){
-            throw new IllegalArgumentException("Cannot acquire media session lock", exception);
-        }
+    /**
+     * Writes a media connection
+     *
+     * @param mediaConnection a media connection
+     * @return the same instance
+     */
+    public Store mediaConnection(MediaConnection mediaConnection) {
+        this.mediaConnection.write(mediaConnection);
+        return this;
+    }
+
+    /**
+     * Returns all the chats
+     *
+     * @return an immutable set
+     */
+    public Set<Chat> chats() {
+        return Collections.unmodifiableSet(chats);
+    }
+
+    /**
+     * Returns all the status
+     *
+     * @return an immutable set
+     */
+    public Set<MessageInfo> status() {
+        return Collections.unmodifiableSet(status);
+    }
+
+    /**
+     * Returns all the contacts
+     *
+     * @return an immutable set
+     */
+    public Set<Contact> contacts() {
+        return Collections.unmodifiableSet(contacts);
+    }
+
+    /**
+     * Add a status to this store
+     *
+     * @param info the non-null status to add
+     * @return the same instance
+     */
+    public Store addStatus(MessageInfo info){
+        status.add(info);
+        return this;
+    }
+
+    /**
+     * Add a pending request to this store
+     *
+     * @param request the non-null status to add
+     * @return the same instance
+     */
+    public Store addPendingRequest(@NonNull Request request){
+        pendingRequests.add(request);
+        return this;
+    }
+
+    /**
+     * This function sets the value of the hasSnapshot variable to the value of the hasSnapshot parameter, then serializes
+     * the object and returns the object.
+     *
+     * @param hasSnapshot Whether the store has a snapshot.
+     * @return the same instance
+     */
+    public Store hasSnapshot(boolean hasSnapshot) {
+        this.hasSnapshot = hasSnapshot;
+        serialize();
+        return this;
+    }
+
+    /**
+     * This function unarchives chats
+     *
+     * @param unarchiveChats Whether to unarchive chats or not.
+     * @return The Store object
+     */
+    public Store unarchiveChats(boolean unarchiveChats) {
+        this.unarchiveChats = unarchiveChats;
+        serialize();
+        return this;
     }
 
     @Override

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.bytes.Bytes;
-import it.auties.whatsapp.binary.Sync;
+import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
@@ -87,7 +87,6 @@ public final class Keys implements Controller<Keys> {
      * The user using these keys
      */
     @Getter
-    @Setter
     private ContactJid companion;
 
     /**
@@ -102,7 +101,6 @@ public final class Keys implements Controller<Keys> {
      * The bytes of the encoded {@link SignedDeviceIdentityHMAC} received during the auth process
      */
     @Getter
-    @Setter
     private SignedDeviceIdentity companionIdentity;
 
     /**
@@ -131,7 +129,7 @@ public final class Keys implements Controller<Keys> {
      */
     @NonNull
     @Default
-    private Map<Sync, LTHashState> hashStates = new ConcurrentHashMap<>();
+    private Map<PatchType, LTHashState> hashStates = new ConcurrentHashMap<>();
 
     /**
      * Write counter for IV
@@ -172,7 +170,9 @@ public final class Keys implements Controller<Keys> {
         var result = Keys.builder()
                 .id(id)
                 .build();
-        return result.signedKeyPair(SignalSignedKeyPair.of(result.id(), result.identityKeyPair()));
+        result.signedKeyPair(SignalSignedKeyPair.of(result.id(), result.identityKeyPair()));
+        result.serialize();
+        return result;
     }
 
     /**
@@ -284,11 +284,11 @@ public final class Keys implements Controller<Keys> {
      * Queries the hash state that matches {@code name}.
      * Otherwise, creates a new one.
      *
-     * @param sync the non-null name to search
+     * @param patchType the non-null name to search
      * @return a non-null hash state
      */
-    public Optional<LTHashState> findHashStateByName(@NonNull Sync sync) {
-        return Optional.ofNullable(hashStates.get(sync));
+    public Optional<LTHashState> findHashStateByName(@NonNull PatchType patchType) {
+        return Optional.ofNullable(hashStates.get(patchType));
     }
 
     /**
@@ -321,20 +321,20 @@ public final class Keys implements Controller<Keys> {
      */
     public Keys putKey(@NonNull SessionAddress address, @NonNull Session record) {
         sessions.put(address, record);
-        serialize(false);
+        serialize();
         return this;
     }
 
     /**
      * Adds the provided hash state to the known ones
      *
-     * @param sync  the non-null sync name
+     * @param patchType  the non-null sync name
      * @param state the non-null hash state
      * @return this
      */
-    public Keys putState(@NonNull Sync sync, @NonNull LTHashState state) {
-        hashStates.put(sync, state);
-        serialize(false);
+    public Keys putState(@NonNull PatchType patchType, @NonNull LTHashState state) {
+        hashStates.put(patchType, state);
+        serialize();
         return this;
     }
 
@@ -346,7 +346,7 @@ public final class Keys implements Controller<Keys> {
      */
     public Keys addAppKeys(@NonNull Collection<AppStateSyncKey> keys) {
         appStateKeys.addAll(keys);
-        serialize(false);
+        serialize();
         return this;
     }
 
@@ -358,7 +358,7 @@ public final class Keys implements Controller<Keys> {
      */
     public Keys addPreKey(SignalPreKeyPair preKey) {
         preKeys.add(preKey);
-        serialize(false);
+        serialize();
         return this;
     }
 
@@ -387,6 +387,15 @@ public final class Keys implements Controller<Keys> {
     }
 
     /**
+     * Returns the id of the last available pre key
+     *
+     * @return an integer
+     */
+    public int lastPreKeyId(){
+        return preKeys.isEmpty() ? 0 : preKeys.getLast().id();
+    }
+
+    /**
      * Get any available app key
      *
      * @return a non-null app key
@@ -397,7 +406,7 @@ public final class Keys implements Controller<Keys> {
 
     @Override
     public void dispose() {
-        serialize(true);
+        // Nothing to do
     }
 
     @JsonSetter
@@ -408,5 +417,31 @@ public final class Keys implements Controller<Keys> {
     @Override
     public Preferences preferences() {
         return Preferences.of("%s/keys.json", id);
+    }
+
+    /**
+     * This function sets the companion field to the value of the companion parameter, serializes the object, and returns
+     * the object.
+     *
+     * @param companion the non-null companion
+     * @return The object itself.
+     */
+    public Keys companion(ContactJid companion) {
+        this.companion = companion;
+        serialize();
+        return this;
+    }
+
+    /**
+     * This function sets the companionIdentity field to the value of the companionIdentity parameter, serializes the
+     * object, and returns the object.
+     *
+     * @param companionIdentity The identity of the companion device.
+     * @return The object itself.
+     */
+    public Keys companionIdentity(SignedDeviceIdentity companionIdentity) {
+        this.companionIdentity = companionIdentity;
+        serialize();
+        return this;
     }
 }

@@ -46,7 +46,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.stream.Collectors.*;
 
-class MessageHandler {
+class MessageHandler implements JacksonProvider {
     private static final String SKMSG = "skmsg";
     private static final String PKMSG = "pkmsg";
     private static final String MSG = "msg";
@@ -61,7 +61,7 @@ class MessageHandler {
         this.socket = socket;
         this.groupsCache = createCache(Duration.ofMinutes(5), null);
         this.devicesCache = createCache(Duration.ofMinutes(5), null);
-        this.historyCache = createCache(Duration.ofSeconds(30), this::onChatReady);
+        this.historyCache = createCache(Duration.ofMinutes(1), this::onChatReady);
         this.lock = new Semaphore(1);
     }
 
@@ -151,7 +151,7 @@ class MessageHandler {
         }
 
         if (hasPreKeyMessage(preKeys)) {
-            var identity = JacksonProvider.PROTOBUF.writeValueAsBytes(socket.keys().companionIdentity());
+            var identity = PROTOBUF.writeValueAsBytes(socket.keys().companionIdentity());
             body.add(with("device-identity", identity));
         }
 
@@ -337,10 +337,10 @@ class MessageHandler {
                 .getJid("jid")
                 .orElseThrow(() -> new NoSuchElementException("Missing jid for session"));
         var registrationId = node.findNode("registration")
-                .map(id -> BytesHelper.bytesToInt(id.bytes(), 4))
+                .map(id -> BytesHelper.bytesToInt(id.contentAsBytes(), 4))
                 .orElseThrow(() -> new NoSuchElementException("Missing id"));
         var identity = node.findNode("identity")
-                .map(Node::bytes)
+                .map(Node::contentAsBytes)
                 .map(KeyHelper::withHeader)
                 .orElseThrow(() -> new NoSuchElementException("Missing identity"));
         var signedKey = node.findNode("skey")
@@ -380,11 +380,13 @@ class MessageHandler {
             switch (from.type()) {
                 case USER, OFFICIAL_BUSINESS_ACCOUNT, STATUS, ANNOUNCEMENT, COMPANION -> {
                     keyBuilder.chatJid(recipient);
+                    keyBuilder.senderJid(from);
                     messageBuilder.senderJid(from);
                 }
 
                 case GROUP, GROUP_CALL, BROADCAST -> {
                     keyBuilder.chatJid(from);
+                    keyBuilder.senderJid(requireNonNull(participant, "Missing participant in group message"));
                     messageBuilder.senderJid(requireNonNull(participant, "Missing participant in group message"));
                 }
 
@@ -402,7 +404,7 @@ class MessageHandler {
                     .build();
 
             socket.sendMessageAck(infoNode, of("class", "receipt"));
-            var encodedMessage = messageNode.bytes();
+            var encodedMessage = messageNode.contentAsBytes();
             var type = messageNode.attributes()
                     .getString("type");
             var buffer = decode(info, encodedMessage, type);
@@ -447,13 +449,13 @@ class MessageHandler {
                 }
 
                 case PKMSG -> {
-                    var session = new SessionCipher(info.senderJid()
+                    var session = new SessionCipher(info.chatJid()
                             .toSignalAddress(), socket.keys());
                     var preKey = SignalPreKeyMessage.ofSerialized(message);
                     yield session.decrypt(preKey);
                 }
 
-                case  MSG -> {
+                case MSG -> {
                     var session = new SessionCipher(info.senderJid()
                             .toSignalAddress(), socket.keys());
                     var signalMessage = SignalMessage.ofSerialized(message);
@@ -463,7 +465,7 @@ class MessageHandler {
                 default -> throw new IllegalArgumentException("Unsupported encoded message type: %s".formatted(type));
             });
         } catch (Throwable throwable) {
-            socket.errorHandler().handleFailure(MESSAGE, new RuntimeException("Cannot decrypt message, partial: %s", throwable));
+            socket.errorHandler().handleFailure(MESSAGE, new RuntimeException("Cannot decrypt message with type %s, partial: %s".formatted(type, info), throwable));
             return Optional.empty();
         }
     }
@@ -476,8 +478,7 @@ class MessageHandler {
 
         if (info.chatJid()
                 .equals(ContactJid.STATUS_ACCOUNT)) {
-            socket.store().status()
-                    .add(info);
+            socket.store().addStatus(info);
             socket.onNewStatus(info);
             return;
         }
@@ -516,7 +517,7 @@ class MessageHandler {
             case HISTORY_SYNC_NOTIFICATION -> {
                 var compressed = Medias.download(protocolMessage.historySyncNotification(), socket.store());
                 var decompressed = BytesHelper.deflate(compressed);
-                var history = JacksonProvider.PROTOBUF.readMessage(decompressed, HistorySync.class);
+                var history = PROTOBUF.readMessage(decompressed, HistorySync.class);
 
                 switch (history.syncType()) {
                     case INITIAL_BOOTSTRAP -> {
@@ -533,7 +534,7 @@ class MessageHandler {
                         history.statusV3Messages()
                                 .stream()
                                 .peek(message -> message.storeId(socket.store().id()))
-                                .forEach(socket.store().status()::add);
+                                .forEach(socket.store()::addStatus);
                         socket.store().invokeListeners(Listener::onStatus);
                     }
 

@@ -11,6 +11,11 @@ public class ErroneousNodeException extends RuntimeException {
         this.error = error;
     }
 
+    public ErroneousNodeException(String message, Node error, Throwable cause){
+        super(message, cause);
+        this.error = error;
+    }
+
     public Node error() {
         return error;
     }

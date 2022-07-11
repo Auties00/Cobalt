@@ -5,8 +5,8 @@ import it.auties.whatsapp.controller.ControllerSerializer;
 
 public class DefaultControllerSerializer implements ControllerSerializer {
     @Override
-    public void serialize(Controller<?> controller, boolean close) {
+    public void serialize(Controller<?> controller) {
         controller.preferences()
-                .writeJson(controller, !close);
+                .writeJson(controller, true);
     }
 }

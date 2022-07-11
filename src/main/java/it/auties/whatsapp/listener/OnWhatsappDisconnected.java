@@ -2,7 +2,6 @@ package it.auties.whatsapp.listener;
 
 import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.socket.Socket;
 
 public interface OnWhatsappDisconnected extends Listener {
     /**

@@ -341,6 +341,17 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     }
 
     /**
+     * Returns an optional value containing the latest message in chronological terms for this chat with type that isn't server
+     *
+     * @return an optional
+     */
+    public Optional<MessageInfo> lastStandardMessage() {
+        return messages.stream()
+                .filter(info -> !info.message().isServer())
+                .reduce((first, second) -> second);
+    }
+
+    /**
      * Returns an optional value containing the latest message in chronological terms for this chat sent from you
      *
      * @return an optional
@@ -381,6 +392,17 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     public Optional<MessageInfo> firstMessageFromMe() {
         return messages.stream()
                 .filter(MessageInfo::fromMe)
+                .findFirst();
+    }
+
+    /**
+     * Returns an optional value containing the first message in chronological terms for this chat with type that isn't server
+     *
+     * @return an optional
+     */
+    public Optional<MessageInfo> firstStandardMessage() {
+        return messages.stream()
+                .filter(info -> !info.message().isServer())
                 .findFirst();
     }
 

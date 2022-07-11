@@ -10,7 +10,7 @@ import java.time.ZonedDateTime;
 public record ContactStatusResponse(@NonNull String status, @NonNull ZonedDateTime timestamp)
         implements ResponseWrapper {
     public ContactStatusResponse(@NonNull Node source) {
-        this(new String(source.bytes(), StandardCharsets.UTF_8), Clock.parse(source.attributes()
+        this(new String(source.contentAsBytes(), StandardCharsets.UTF_8), Clock.parse(source.attributes()
                         .getLong("t"))
                 .orElse(ZonedDateTime.now()));
     }

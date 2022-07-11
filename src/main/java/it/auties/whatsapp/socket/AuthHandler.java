@@ -17,7 +17,7 @@ import java.util.concurrent.CompletableFuture;
 import static java.lang.Long.parseLong;
 
 @RequiredArgsConstructor
-class AuthHandler {
+class AuthHandler implements JacksonProvider {
     private final Socket socket;
     private Handshake handshake;
     private CompletableFuture<Void> future;
@@ -29,7 +29,7 @@ class AuthHandler {
     
     @SneakyThrows
     protected CompletableFuture<Void> login(Session session, byte[] message) {
-        var serverHello = JacksonProvider.PROTOBUF.readMessage(message, HandshakeMessage.class)
+        var serverHello = PROTOBUF.readMessage(message, HandshakeMessage.class)
                 .serverHello();
         handshake.updateHash(serverHello.ephemeral());
         var sharedEphemeral = Curve25519.sharedKey(serverHello.ephemeral(), socket.keys().ephemeralKeyPair()
@@ -65,7 +65,7 @@ class AuthHandler {
                 .userAgent(createUserAgent())
                 .passive(true)
                 .webInfo(new WebInfo(WebInfo.WebInfoWebSubPlatform.WEB_BROWSER));
-        return JacksonProvider.PROTOBUF.writeValueAsBytes(finishUserPayload(builder));
+        return PROTOBUF.writeValueAsBytes(finishUserPayload(builder));
     }
 
     private ClientPayload finishUserPayload(ClientPayload.ClientPayloadBuilder builder) {
@@ -94,7 +94,7 @@ class AuthHandler {
         return CompanionData.builder()
                 .buildHash(socket.options().version()
                         .toHash())
-                .companion(JacksonProvider.PROTOBUF.writeValueAsBytes(createCompanionProps()))
+                .companion(PROTOBUF.writeValueAsBytes(createCompanionProps()))
                 .id(BytesHelper.intToBytes(socket.keys().id(), 4))
                 .keyType(BytesHelper.intToBytes(SignalSpecification.KEY_TYPE, 1))
                 .identifier(socket.keys().identityKeyPair()

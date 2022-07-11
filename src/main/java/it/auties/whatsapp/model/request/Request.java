@@ -6,6 +6,7 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.util.ErroneousNodeException;
+import it.auties.whatsapp.util.Exceptions;
 import it.auties.whatsapp.util.JacksonProvider;
 import jakarta.websocket.SendResult;
 import jakarta.websocket.Session;
@@ -13,7 +14,6 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeoutException;
 
 import static it.auties.whatsapp.crypto.Handshake.PROLOGUE;
 import static java.util.concurrent.CompletableFuture.delayedExecutor;
@@ -23,7 +23,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * An abstract model class that represents a request made from the client to the server.
  */
 @SuppressWarnings("UnusedReturnValue")
-public record Request(String id, @NonNull Object body, @NonNull CompletableFuture<Node> future)
+public record Request(String id, @NonNull Object body, @NonNull CompletableFuture<Node> future, Throwable caller)
         implements JacksonProvider {
     /**
      * The binary encoder, used to encode requests that take as a parameter a node
@@ -35,21 +35,25 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      */
     private static final int TIMEOUT = 60;
 
-    /**
-     * Constructs a new request with the provided body expecting a response
-     */
-    public static Request with(@NonNull Node body) {
-        var future = new CompletableFuture<Node>();
-        delayedExecutor(TIMEOUT, SECONDS).execute(() -> cancelTimedFuture(future, body));
-        return new Request(body.id(), body, future);
+    private Request(String id, @NonNull Object body) {
+        this(id, body, new CompletableFuture<>(), Exceptions.current());
+        delayedExecutor(TIMEOUT, SECONDS).execute(this::cancelTimedFuture);
     }
 
-    private static void cancelTimedFuture(CompletableFuture<Node> future, Node node) {
+    private void cancelTimedFuture() {
         if (future.isDone()) {
             return;
         }
 
-        future.completeExceptionally(new TimeoutException("%s timed out: no response from WhatsApp".formatted(node)));
+        future.completeExceptionally(
+                new RequestException("%s timed out: no response from WhatsApp".formatted(body), caller));
+    }
+
+    /**
+     * Constructs a new request with the provided body expecting a response
+     */
+    public static Request with(@NonNull Node body) {
+        return new Request(body.id(), body);
     }
 
     /**
@@ -57,7 +61,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      */
     @SneakyThrows
     public static Request with(@NonNull Object body) {
-        return new Request(null, PROTOBUF.writeValueAsBytes(body), new CompletableFuture<>());
+        return new Request(null, PROTOBUF.writeValueAsBytes(body));
     }
 
     /**
@@ -118,7 +122,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
             session.getAsyncRemote()
                     .sendBinary(buffer, result -> handleSendResult(store, result, response));
         } catch (Exception exception) {
-            future.completeExceptionally(new RuntimeException("Cannot send %s".formatted(this), exception));
+            future.completeExceptionally(new RequestException("Cannot send %s".formatted(this), exception));
         }
 
         return future;
@@ -136,7 +140,9 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
         }
 
         if (exceptionally || isErroneousNode(response)) {
-            future.completeExceptionally(new ErroneousNodeException("Cannot process request %s".formatted(this), response));
+            future.completeExceptionally(
+                    new ErroneousNodeException("Cannot process request %s with %s".formatted(this, response), response,
+                            caller));
             return;
         }
 
@@ -152,9 +158,9 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
 
     private void handleSendResult(Store store, SendResult result, boolean response) {
         if (!result.isOK()) {
-            future.completeExceptionally(new IllegalArgumentException(
-                    ("Cannot send request %s, erroneous send result: %s".formatted(this, result)),
-                    result.getException()));
+            future.completeExceptionally(
+                    new RequestException(("Cannot send request %s, erroneous send result: %s".formatted(this, result)),
+                            result.getException()));
             return;
         }
 
@@ -163,8 +169,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
             return;
         }
 
-        store.pendingRequests()
-                .add(this);
+        store.addPendingRequest(this);
     }
 
     private byte[] encryptMessage(Keys keys) {
@@ -173,7 +178,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
             case byte[] bytes -> bytes;
             case Node node -> ENCODER.encode(node);
             default ->
-                    throw new IllegalStateException("Cannot create request, illegal body: %s".formatted(encodedBody));
+                    throw new IllegalArgumentException("Cannot create request, illegal body: %s".formatted(encodedBody));
         };
 
         if (keys.writeKey() == null) {

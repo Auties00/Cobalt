@@ -9,7 +9,6 @@ public interface ControllerSerializer {
      * Serializes a controller
      *
      * @param controller the non-null controller to serialize
-     * @param close      whether this method was called because the connection was closed, this means that async operations should not be used
      */
-    void serialize(Controller<?> controller, boolean close);
+    void serialize(Controller<?> controller);
 }

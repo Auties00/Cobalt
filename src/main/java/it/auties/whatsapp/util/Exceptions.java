@@ -10,6 +10,13 @@ import java.util.Objects;
 
 @UtilityClass
 public class Exceptions {
+    public Throwable current(){
+        var trace = Thread.currentThread().getStackTrace();
+        var result = new RuntimeException();
+        result.setStackTrace(trace);
+        return result;
+    }
+
     public Path save(Throwable throwable) {
         var actual = Objects.requireNonNullElseGet(throwable, RuntimeException::new);
         try {

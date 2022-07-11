@@ -20,6 +20,7 @@ import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.utils.ConfigUtils;
 import it.auties.whatsapp.utils.MediaUtils;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 
@@ -638,39 +639,18 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(39)
     public void testClearChat() {
-        if (group == null) {
-            testGroupCreation();
-        }
-
-
-        IntStream.range(0, 10)
-                .forEach(index -> api.sendMessage(group, String.valueOf(index)).join());
-        CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS)
-                .execute(() -> {
-                    log("Clearing chat...");
-                    var ephemeralResponse = api.clear(group, false)
-                            .join();
-                    log("Cleared chat: %s", ephemeralResponse);
-                });
-    }
-
-    @Override
-    public void onNewMessage(MessageInfo info) {
-        System.out.printf("New message: %s%n", info);
+        log("Clearing chat...");
+        var ephemeralResponse = api.clear(contact, false)
+                .join();
+        log("Cleared chat: %s", ephemeralResponse);
     }
 
     @Test
     @Order(40)
+    @SneakyThrows
     public void testDeleteChat() {
-        if(group == null){
-            testGroupCreation();
-        }
-
-        IntStream.range(0, 10)
-                .forEach(index -> api.sendMessage(group, String.valueOf(index)).join());
         log("Deleting chat...");
-        var ephemeralResponse = api.delete(group)
-                .join();
+        var ephemeralResponse = api.delete(contact);
         log("Deleted chat: %s", ephemeralResponse);
     }
 
@@ -682,6 +662,11 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
                 .execute(api::disconnect);
         api.await();
         log("Logged off");
+    }
+
+    @Override
+    public void onNewMessage(MessageInfo info) {
+        System.out.printf("New message: %s%n", info);
     }
 
     @Override

@@ -7,16 +7,20 @@ import lombok.NonNull;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.IntFunction;
+import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 public final class SortedMessageList implements List<MessageInfo> {
     private final List<HistorySyncMessage> internal;
+
     public SortedMessageList(List<HistorySyncMessage> internal) {
         this.internal = internal;
     }
 
     public SortedMessageList() {
-        this(new LinkedList<>());
+        this(new ArrayList<>());
     }
 
     public boolean add(@NonNull MessageInfo message) {
@@ -71,9 +75,8 @@ public final class SortedMessageList implements List<MessageInfo> {
 
     @Override
     public Object @NonNull [] toArray() {
-        return internal.toArray();
+        throw new UnsupportedOperationException("To array is not supported");
     }
-
 
     @Override
     public <T> T @NonNull [] toArray(T @NonNull [] a) {
@@ -104,8 +107,17 @@ public final class SortedMessageList implements List<MessageInfo> {
     }
 
     @Override
-    public int indexOf(Object o) {
-        return internal.indexOf(o);
+    public int indexOf(Object object) {
+        return switch (object) {
+            case HistorySyncMessage historySyncMessage -> internal.indexOf(historySyncMessage);
+            case MessageInfo messageInfo -> internal.stream()
+                    .map(HistorySyncMessage::message)
+                    .filter(messageInfo::equals)
+                    .findFirst()
+                    .map(internal::indexOf)
+                    .orElse(-1);
+            default -> throw new IllegalArgumentException("Cannot find index of %s".formatted(object));
+        };
     }
 
     @Override
@@ -171,5 +183,35 @@ public final class SortedMessageList implements List<MessageInfo> {
     @JsonValue
     public List<HistorySyncMessage> toSync() {
         return internal;
+    }
+
+    @Override
+    public void replaceAll(UnaryOperator<MessageInfo> operator) {
+        internal.replaceAll(historySyncMessage -> new HistorySyncMessage(operator.apply(historySyncMessage.message()),
+                indexOf(historySyncMessage.message())));
+    }
+
+    @Override
+    public void sort(Comparator<? super MessageInfo> comparator) {
+        internal.sort((o1, o2) -> comparator.compare(o1 != null ?
+                o1.message() :
+                null, o2 != null ? o2.message() : null));
+    }
+
+    @Override
+    public Spliterator<MessageInfo> spliterator() {
+        return internal.stream()
+                .map(HistorySyncMessage::message)
+                .spliterator();
+    }
+
+    @Override
+    public <T> T[] toArray(IntFunction<T[]> generator) {
+        throw new UnsupportedOperationException("To array is not supported");
+    }
+
+    @Override
+    public boolean removeIf(Predicate<? super MessageInfo> filter) {
+        return internal.removeIf(entry -> filter.test(entry.message()));
     }
 }

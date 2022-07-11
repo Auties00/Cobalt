@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.sync;
 
-import it.auties.whatsapp.binary.Sync;
+import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.Attributes;
 import lombok.AllArgsConstructor;
@@ -23,7 +23,7 @@ import static it.auties.whatsapp.model.request.Node.withAttributes;
 @Data
 @Accessors(fluent = true)
 public class LTHashState {
-    private Sync name;
+    private PatchType name;
 
     private long version;
 
@@ -31,11 +31,11 @@ public class LTHashState {
 
     private Map<String, byte[]> indexValueMap;
 
-    public LTHashState(Sync name) {
+    public LTHashState(PatchType name) {
         this(name, 0);
     }
 
-    public LTHashState(Sync name, long version) {
+    public LTHashState(PatchType name, long version) {
         this.name = name;
         this.version = version;
         this.hash = new byte[128];

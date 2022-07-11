@@ -103,7 +103,7 @@ public final class DocumentMessage extends MediaMessage {
     /**
      * The thumbnail for this document encoded as jpeg in an array of bytes
      */
-    @ProtobufProperty(index = 16, type = STRING)
+    @ProtobufProperty(index = 16, type = BYTES)
     private byte[] thumbnail;
 
     /**

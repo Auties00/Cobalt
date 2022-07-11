@@ -125,15 +125,49 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @return a non-null array of bytes
      * @throws UnsupportedOperationException if this node doesn't wrap an array of bytes
      */
-    public byte[] bytes() {
-        if (content instanceof byte[] bytes) {
-            return bytes;
+    public byte[] contentAsBytes() {
+        if (!(content instanceof byte[] bytes)) {
+            throw new UnsupportedOperationException("Unsupported content type: %s".formatted(content == null ?
+                    null :
+                    content.getClass()
+                            .getName()));
         }
 
-        throw new UnsupportedOperationException("Unsupported content type: %s".formatted(content == null ?
-                null :
-                content.getClass()
-                        .getName()));
+        return bytes;
+    }
+
+    /**
+     * Returns the content of this object as a long
+     *
+     * @return a long
+     * @throws UnsupportedOperationException if this node doesn't wrap a long
+     */
+    public long contentAsLong() {
+        if (!(content instanceof Number number)) {
+            throw new UnsupportedOperationException("Unsupported content type: %s".formatted(content == null ?
+                    null :
+                    content.getClass()
+                            .getName()));
+        }
+
+        return number.longValue();
+    }
+
+    /**
+     * Returns the content of this object as a double
+     *
+     * @return a double
+     * @throws UnsupportedOperationException if this node doesn't wrap a double
+     */
+    public double contentAsDouble() {
+        if (!(content instanceof Number number)) {
+            throw new UnsupportedOperationException("Unsupported content type: %s".formatted(content == null ?
+                    null :
+                    content.getClass()
+                            .getName()));
+        }
+
+        return number.doubleValue();
     }
 
     /**
@@ -160,7 +194,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      *
      * @return an optional
      */
-    public Optional<Node> findFirst() {
+    public Optional<Node> findNode() {
         return children().stream()
                 .findFirst();
     }

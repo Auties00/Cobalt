@@ -7,7 +7,6 @@ import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.Sha256;
 import it.auties.whatsapp.model.media.*;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
-import it.auties.whatsapp.model.message.standard.TextMessage;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
@@ -33,8 +32,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.MatchResult;
-import java.util.regex.Pattern;
 
 import static java.net.http.HttpRequest.BodyPublishers.ofByteArray;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;

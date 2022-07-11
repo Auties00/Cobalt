@@ -11,16 +11,24 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 @RequiredArgsConstructor(staticName = "of")
 public final class Preferences implements JacksonProvider {
     private static final Path DEFAULT_DIRECTORY;
+    private static final Queue<CompletableFuture<Void>> ASYNC_WRITES;
 
     static {
         try {
             DEFAULT_DIRECTORY = Path.of(System.getProperty("user.home") + "/.whatsappweb4j/");
             Files.createDirectories(DEFAULT_DIRECTORY);
+            ASYNC_WRITES = new ConcurrentLinkedQueue<>();
+            Runtime.getRuntime()
+                    .addShutdownHook(new Thread(
+                            () -> CompletableFuture.allOf(ASYNC_WRITES.toArray(CompletableFuture[]::new))
+                                    .join()));
         } catch (IOException exception) {
             throw new RuntimeException("Cannot create home path", exception);
         }
@@ -28,6 +36,7 @@ public final class Preferences implements JacksonProvider {
 
     @NonNull
     private final Path file;
+
     private String cache;
 
     public static Path home() {
@@ -67,13 +76,17 @@ public final class Preferences implements JacksonProvider {
         return this.cache = Files.readString(file);
     }
 
-    @SneakyThrows
-    public void writeJson(@NonNull Object input, boolean async) {
-        if(async){
-            CompletableFuture.runAsync(() -> writeJson(input, false));
+    public void writeJson(Object input, boolean async) {
+        if (!async) {
+            writeObject(input);
             return;
         }
 
+        ASYNC_WRITES.add(CompletableFuture.runAsync(() -> writeObject(input)));
+    }
+
+    @SneakyThrows
+    private void writeObject(Object input) {
         Files.createDirectories(file.getParent());
         Files.writeString(file, JSON.writeValueAsString(input), StandardOpenOption.CREATE,
                 StandardOpenOption.TRUNCATE_EXISTING);

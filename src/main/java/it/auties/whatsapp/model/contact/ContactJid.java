@@ -192,6 +192,16 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
     }
 
     /**
+     * Returns whether this jid is a server jid
+     *
+     * @param server the server to check against
+     * @return a boolean
+     */
+    public boolean isServer(Server server) {
+        return user() == null && server() == server;
+    }
+
+    /**
      * Returns whether this jid is a group
      *
      * @return a boolean

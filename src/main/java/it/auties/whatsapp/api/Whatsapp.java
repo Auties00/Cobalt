@@ -1,5 +1,6 @@
 package it.auties.whatsapp.api;
 
+import it.auties.linkpreview.LinkPreview;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.listener.*;
@@ -22,7 +23,6 @@ import it.auties.whatsapp.model.sync.ActionValueSync;
 import it.auties.whatsapp.model.sync.PatchRequest;
 import it.auties.whatsapp.socket.Socket;
 import it.auties.whatsapp.util.*;
-import it.auties.linkpreview.LinkPreview;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Data;
@@ -38,8 +38,8 @@ import java.util.stream.Stream;
 
 import static it.auties.bytes.Bytes.ofRandom;
 import static it.auties.whatsapp.api.Whatsapp.Options.defaultOptions;
-import static it.auties.whatsapp.binary.Sync.REGULAR_HIGH;
-import static it.auties.whatsapp.binary.Sync.REGULAR_LOW;
+import static it.auties.whatsapp.binary.PatchType.REGULAR_HIGH;
+import static it.auties.whatsapp.binary.PatchType.REGULAR_LOW;
 import static it.auties.whatsapp.controller.Controller.knownIds;
 import static it.auties.whatsapp.model.request.Node.*;
 import static it.auties.whatsapp.model.sync.RecordSync.Operation.SET;
@@ -1281,11 +1281,14 @@ public class Whatsapp {
         var key = ofRandom(12).toHex();
         var body = withChildren("create", of("subject", subject, "key", key), participants);
         return socket.sendQuery(ContactJid.GROUP, "set", "w:g2", body)
-                .thenApplyAsync(response -> response.findNode("group")
+                .thenApplyAsync(response -> Optional.ofNullable(response)
+                        .flatMap(node -> node.findNode("group"))
                         .orElseThrow(() -> new NoSuchElementException(
-                                "Missing group response, something went wrong: %s".formatted(response.findNode("error")
-                                        .map(Node::toString)
-                                        .orElse("unknown")))))
+                                "Missing group response, something went wrong: %s".formatted(
+                                        Optional.ofNullable(response)
+                                                .flatMap(node -> node.findNode("error"))
+                                                .map(Node::toString)
+                                                .orElse("unknown")))))
                 .thenApplyAsync(GroupMetadata::of);
     }
 
@@ -1552,7 +1555,7 @@ public class Whatsapp {
     /**
      * Deletes a chat for this client and its companions using a modern version of Whatsapp
      *
-     * @param chat                the non-null chat to delete
+     * @param chat the non-null chat to delete
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> delete(@NonNull T chat) {
@@ -1561,7 +1564,6 @@ public class Whatsapp {
         var syncAction = new ActionValueSync(deleteChatAction);
         var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 6, chat.toJid()
                 .toString(), "1");
-        System.out.println(store().findChatByJid(chat).get().messages().stream().map(e -> ((TextMessage) e.message().content()).text()).toList());
         return socket.pushPatch(request)
                 .thenApplyAsync(ignored -> chat);
     }
@@ -1694,12 +1696,10 @@ public class Whatsapp {
 
         /**
          * Handles failures in the WebSocket.
-         * Returns true if the current connection should be killed and a new one created.
-         * Otherwise, the connection will not be killed, but more failures may be caused by the latter.
-         * By default, false.
+         * By default, uses the simple handler and prints to the terminal.
          */
         @Default
-        private ErrorHandler errorHandler = ErrorHandler.toFile();
+        private ErrorHandler errorHandler = ErrorHandler.toTerminal();
 
         /**
          * The number of maximum listeners that the linked Whatsapp instance supports.

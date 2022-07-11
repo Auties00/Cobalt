@@ -4,7 +4,7 @@ import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.SocketEvent;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.binary.MessageWrapper;
-import it.auties.whatsapp.binary.Sync;
+import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.listener.Listener;
@@ -35,7 +35,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import static it.auties.whatsapp.api.ErrorHandler.Location.*;
+import static it.auties.whatsapp.api.ErrorHandler.Location.UNKNOWN;
 import static it.auties.whatsapp.model.request.Node.withAttributes;
 import static it.auties.whatsapp.model.request.Node.withChildren;
 import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
@@ -101,11 +101,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
         this.messageHandler = new MessageHandler(this);
         this.appStateHandler = new AppStateHandler(this);
         this.errorHandler = new FailureHandler(this);
-        getRuntime().addShutdownHook(new Thread(() -> {
-            keys.dispose();
-            store.dispose();
-            onSocketEvent(SocketEvent.CLOSE);
-        }));
+        getRuntime().addShutdownHook(new Thread(() -> onSocketEvent(SocketEvent.CLOSE)));
     }
 
     public Contact createContact(ContactJid jid) {
@@ -288,8 +284,8 @@ public class Socket implements JacksonProvider, SignalSpecification {
         appStateHandler.pull();
     }
 
-    public void pullPatch(Sync... syncs) {
-        appStateHandler.pull(syncs);
+    public void pullPatch(PatchType... patchTypes) {
+        appStateHandler.pull(patchTypes);
     }
 
     public void readMessage(Node node) {
@@ -347,8 +343,10 @@ public class Socket implements JacksonProvider, SignalSpecification {
     @SneakyThrows
     public CompletableFuture<GroupMetadata> queryGroupMetadata(ContactJid group) {
         var body = withAttributes("query", of("request", "interactive"));
-        return sendQuery(group, "get", "w:g2", body).thenApplyAsync(node -> node.findNode("group")
-                        .orElseThrow(() -> new NoSuchElementException("Missing group node")))
+        return sendQuery(group, "get", "w:g2", body)
+                .thenApplyAsync(node -> node.findNode("group")
+                        .orElseThrow(() -> new ErroneousNodeException("Missing group node", node)))
+                .exceptionallyAsync(errorHandler::handleNodeFailure)
                 .thenApplyAsync(GroupMetadata::of);
     }
 
