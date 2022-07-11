@@ -62,7 +62,7 @@ class AppStateHandler implements JacksonProvider {
 
             var oldState = socket.keys()
                     .findHashStateByName(patch.type())
-                    .orElseThrow(() -> new NoSuchElementException("Missing patch for %s".formatted(patch.type())));
+                    .orElseGet(() -> new LTHashState(patch.type()));
             var newState = oldState.copy();
 
             var key = socket.keys()
@@ -135,7 +135,8 @@ class AppStateHandler implements JacksonProvider {
     }
 
     private void handleSyncRequest(PatchType patchType, PatchSync patch, LTHashState oldState, long newVersion) {
-        decodePatches(patchType, 0, List.of(patch.withVersion(new VersionSync(newVersion))), oldState).records()
+        decodePatches(patchType, 0, List.of(patch.withVersion(new VersionSync(newVersion))), oldState)
+                .records()
                 .forEach(this::processActions);
     }
 

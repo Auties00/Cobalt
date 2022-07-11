@@ -650,7 +650,8 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @SneakyThrows
     public void testDeleteChat() {
         log("Deleting chat...");
-        var ephemeralResponse = api.delete(contact);
+        var ephemeralResponse = api.delete(contact)
+                .join();
         log("Deleted chat: %s", ephemeralResponse);
     }
 

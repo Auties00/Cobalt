@@ -116,12 +116,12 @@ public class Encoder {
         }
 
         var length = length(input);
-        if (length < 128 && Tokens.noMatch(input, Tokens.NUMBERS_REGEX)) {
+        if (length < 128 && !Tokens.anyMatch(input, Tokens.NUMBERS_REGEX)) {
             writeString(input, NIBBLE_8);
             return;
         }
 
-        if (length < 128 && Tokens.noMatch(input, Tokens.HEX_REGEX)) {
+        if (length < 128 && !Tokens.anyMatch(input, Tokens.HEX_REGEX)) {
             writeString(input, HEX_8);
             return;
         }

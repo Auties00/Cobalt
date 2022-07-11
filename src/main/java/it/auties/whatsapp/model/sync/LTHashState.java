@@ -52,12 +52,7 @@ public class LTHashState {
     }
 
     public LTHashState copy() {
-        var newHash = Arrays.copyOf(hash, hash.length);
-        var newData = indexValueMap.entrySet()
-                .stream()
-                .map(entry -> Map.entry(entry.getKey(), Arrays.copyOf(entry.getValue(), entry.getValue().length)))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        return new LTHashState(name, version, newHash, newData);
+        return new LTHashState(name, version, Arrays.copyOf(hash, hash.length), new HashMap<>(indexValueMap));
     }
 
     @Override
