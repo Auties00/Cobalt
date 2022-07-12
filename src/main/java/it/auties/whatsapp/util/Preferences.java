@@ -12,14 +12,14 @@ import java.nio.file.StandardOpenOption;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 @RequiredArgsConstructor(staticName = "of")
 public final class Preferences implements JacksonProvider {
     private static final Path DEFAULT_DIRECTORY;
-    private static final Map<Path, TreeMap<Long, CompletableFuture<Void>>> ASYNC_WRITES;
+    private static final Map<Path, ConcurrentSkipListMap<Long, CompletableFuture<Void>>> ASYNC_WRITES;
 
     static {
         try {
@@ -43,7 +43,7 @@ public final class Preferences implements JacksonProvider {
         var futures = ASYNC_WRITES.values()
                 .stream()
                 .peek(Preferences::cancelOutdatedOperations)
-                .map(TreeMap::lastEntry)
+                .map(ConcurrentSkipListMap::lastEntry)
                 .filter(Objects::nonNull)
                 .map(Map.Entry::getValue)
                 .toArray(CompletableFuture[]::new);
@@ -51,7 +51,7 @@ public final class Preferences implements JacksonProvider {
                 .join();
     }
 
-    private static void cancelOutdatedOperations(TreeMap<Long, CompletableFuture<Void>> data) {
+    private static void cancelOutdatedOperations(ConcurrentSkipListMap<Long, CompletableFuture<Void>> data) {
         var lastEntry = data.lastEntry();
         if (lastEntry == null) {
             return;
@@ -71,7 +71,7 @@ public final class Preferences implements JacksonProvider {
         return new Preferences(location.toAbsolutePath());
     }
 
-    private static Void onError(long id, TreeMap<Long, CompletableFuture<Void>> writes, Throwable throwable) {
+    private static Void onError(long id, Map<Long, ?> writes, Throwable throwable) {
         writes.remove(id);
         throwable.printStackTrace();
         return null;
@@ -110,7 +110,7 @@ public final class Preferences implements JacksonProvider {
             return;
         }
 
-        var writes = ASYNC_WRITES.getOrDefault(file, new TreeMap<>());
+        var writes = ASYNC_WRITES.getOrDefault(file, new ConcurrentSkipListMap<>());
         var lastEntry = writes.lastEntry();
         var id = lastEntry != null ?
                 lastEntry.getKey() + 1 :

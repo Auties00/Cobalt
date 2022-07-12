@@ -2,9 +2,9 @@ package it.auties.whatsapp.model.info;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.business.BusinessActorsType;
+import it.auties.whatsapp.model.business.BusinessCertificate;
 import it.auties.whatsapp.model.business.BusinessStorageType;
 import it.auties.whatsapp.model.business.BusinessVerifiedLevel;
-import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -31,8 +31,8 @@ public final class BusinessIdentityInfo implements Info {
     /**
      * The certificate of this account
      */
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = BusinessVerifiedNameCertificate.class)
-    private BusinessVerifiedNameCertificate certificate;
+    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = BusinessCertificate.class)
+    private BusinessCertificate certificate;
 
     /**
      * Indicates whether this account has a signed certificate

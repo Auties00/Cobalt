@@ -16,6 +16,9 @@ import java.util.Arrays;
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 
+/**
+ * A model class that represents a button
+ */
 @AllArgsConstructor
 @Data
 @Builder(builderMethodName = "newRawButtonBuilder")
@@ -23,10 +26,10 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Accessors(fluent = true)
 public class Button implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = STRING)
-    private String buttonId;
+    private String id;
 
     @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ButtonText.class)
-    private ButtonText buttonText;
+    private ButtonText text;
 
     @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ButtonType.class)
     private ButtonType type;
@@ -56,8 +59,8 @@ public class Button implements ProtobufMessage {
      */
     public static Button newTextResponseButton(@NonNull String id, @NonNull String text) {
         return Button.newRawButtonBuilder()
-                .buttonId(id)
-                .buttonText(new ButtonText(text))
+                .id(id)
+                .text(ButtonText.of(text))
                 .type(ButtonType.RESPONSE)
                 .build();
     }

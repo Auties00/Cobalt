@@ -10,18 +10,30 @@ import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 
-@AllArgsConstructor
+/**
+ * A model class that represents a time a localizable name
+ */
+@AllArgsConstructor(staticName = "of")
 @Data
-@Builder
+@Builder(builderMethodName = "newLocalizedName")
 @Jacksonized
 @Accessors(fluent = true)
 public class BusinessLocalizedName implements ProtobufMessage {
+    /**
+     * Lg
+     */
     @ProtobufProperty(index = 1, type = STRING)
     private String lg;
 
+    /**
+     * Lc
+     */
     @ProtobufProperty(index = 2, type = STRING)
     private String lc;
 
+    /**
+     * The localized name
+     */
     @ProtobufProperty(index = 3, type = STRING)
     private String name;
 }

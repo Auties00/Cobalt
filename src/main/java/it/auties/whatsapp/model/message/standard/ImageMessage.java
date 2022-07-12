@@ -31,7 +31,7 @@ import static java.util.Objects.requireNonNullElse;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(builderMethodName = "newRawImageBuilder")
+@SuperBuilder(builderMethodName = "newRawImageMessageBuilder")
 @Jacksonized
 @Accessors(fluent = true)
 public final class ImageMessage extends MediaMessage {
@@ -168,12 +168,12 @@ public final class ImageMessage extends MediaMessage {
      * @param contextInfo     the context info that the new message wraps
      * @return a non-null new message
      */
-    @Builder(builderClassName = "SimpleImageBuilder", builderMethodName = "newImageBuilder")
+    @Builder(builderClassName = "SimpleImageBuilder", builderMethodName = "newImageMessageBuilder")
     private static ImageMessage builder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media,
                                         String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
         var dimensions = Medias.getDimensions(media, false);
         var upload = Medias.upload(media, IMAGE, mediaConnection);
-        return ImageMessage.newRawImageBuilder()
+        return ImageMessage.newRawImageMessageBuilder()
                 .fileSha256(upload.fileSha256())
                 .fileEncSha256(upload.fileEncSha256())
                 .key(upload.mediaKey())

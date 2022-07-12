@@ -24,7 +24,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(builderMethodName = "newProductBuilder")
+@SuperBuilder(builderMethodName = "newProductMessageBuilder")
 @Jacksonized
 @Accessors(fluent = true)
 public final class ProductMessage extends ContextualMessage implements BusinessMessage {
@@ -38,11 +38,23 @@ public final class ProductMessage extends ContextualMessage implements BusinessM
      * The jid of the WhatsappBusiness account that owns the product that this message wraps
      */
     @ProtobufProperty(index = 2, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
-    private ContactJid businessOwnerId;
+    private ContactJid businessOwnerJid;
 
     /**
      * The catalog where the product that this message wraps is
      */
     @ProtobufProperty(index = 4, type = MESSAGE, concreteType = ProductCatalog.class)
     private ProductCatalog catalog;
+
+    /**
+     * The body of this message
+     */
+    @ProtobufProperty(index = 5, type = STRING)
+    private String body;
+
+    /**
+     * The footer of this message
+     */
+    @ProtobufProperty(index = 6, type = STRING)
+    private String footer;
 }

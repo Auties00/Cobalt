@@ -14,15 +14,26 @@ import java.util.List;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 
+/**
+ * A model clas that represents a change in the weight of recent emojis
+ */
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Data
-@Builder
+@Builder(access = AccessLevel.PROTECTED)
 @Jacksonized
 @Accessors(fluent = true)
 public final class RecentEmojiWeightsAction implements Action {
+    /**
+     * The weight of the emojis
+     */
     @ProtobufProperty(index = 1, type = MESSAGE, concreteType = RecentEmojiWeight.class, repeated = true)
     private List<RecentEmojiWeight> weights;
 
+    /**
+     * Always throws an exception as this action cannot be serialized
+     *
+     * @return an exception
+     */
     @Override
     public String indexName() {
         throw new UnsupportedOperationException("Cannot send action: no index name");

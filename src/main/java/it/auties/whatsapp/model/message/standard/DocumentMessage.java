@@ -28,7 +28,7 @@ import static it.auties.whatsapp.util.Medias.Format.FILE;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(builderMethodName = "newRawDocumentBuilder")
+@SuperBuilder(builderMethodName = "newRawDocumentMessageBuilder")
 @Jacksonized
 @Accessors(fluent = true)
 public final class DocumentMessage extends MediaMessage {
@@ -119,12 +119,12 @@ public final class DocumentMessage extends MediaMessage {
      * @param contextInfo     the context info that the new message wraps
      * @return a non-null new message
      */
-    @Builder(builderClassName = "SimpleDocumentMessageBuilder", builderMethodName = "newDocumentBuilder")
+    @Builder(builderClassName = "SimpleDocumentMessageBuilder", builderMethodName = "newDocumentMessageBuilder")
     private static DocumentMessage builder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media,
                                            String mimeType, String title, int pageCount, String fileName,
                                            byte[] thumbnail, ContextInfo contextInfo) {
         var upload = Medias.upload(media, DOCUMENT, mediaConnection);
-        return DocumentMessage.newRawDocumentBuilder()
+        return DocumentMessage.newRawDocumentMessageBuilder()
                 .fileSha256(upload.fileSha256())
                 .fileEncSha256(upload.fileEncSha256())
                 .key(upload.mediaKey())

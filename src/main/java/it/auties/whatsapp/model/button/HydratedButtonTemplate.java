@@ -13,25 +13,25 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT32;
 
 /**
- * A model class that represents a template for a button
+ * A model class that represents a hydrated template for a button
  */
 @AllArgsConstructor
 @Data
-@Builder(builderMethodName = "newRawButtonTemplateBuilder")
+@Builder(builderMethodName = "newRawHydratedButtonTemplateBuilder")
 @Jacksonized
 @Accessors(fluent = true)
-public class ButtonTemplate implements ProtobufMessage {
+public class HydratedButtonTemplate implements ProtobufMessage {
+    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = HydratedQuickReplyButton.class)
+    private HydratedQuickReplyButton quickReplyButton;
+
+    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = HydratedURLButton.class)
+    private HydratedURLButton urlButton;
+
+    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = HydratedCallButton.class)
+    private HydratedCallButton callButton;
+
     @ProtobufProperty(index = 4, type = UINT32)
     private int index;
-
-    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = QuickReplyButton.class)
-    private QuickReplyButton quickReplyButton;
-
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = URLButton.class)
-    private URLButton urlButton;
-
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = CallButton.class)
-    private CallButton callButton;
 
     /**
      * Constructs a new template from a quick reply
@@ -40,8 +40,8 @@ public class ButtonTemplate implements ProtobufMessage {
      * @param quickReplyButton the non-null quick reply
      * @return a non-null button template
      */
-    public static ButtonTemplate of(int index, @NonNull QuickReplyButton quickReplyButton) {
-        return ButtonTemplate.newRawButtonTemplateBuilder()
+    public static HydratedButtonTemplate of(int index, @NonNull HydratedQuickReplyButton quickReplyButton) {
+        return HydratedButtonTemplate.newRawHydratedButtonTemplateBuilder()
                 .index(index)
                 .quickReplyButton(quickReplyButton)
                 .build();
@@ -54,8 +54,8 @@ public class ButtonTemplate implements ProtobufMessage {
      * @param urlButton the non-null url button
      * @return a non-null button template
      */
-    public static ButtonTemplate of(int index, @NonNull URLButton urlButton) {
-        return ButtonTemplate.newRawButtonTemplateBuilder()
+    public static HydratedButtonTemplate of(int index, @NonNull HydratedURLButton urlButton) {
+        return HydratedButtonTemplate.newRawHydratedButtonTemplateBuilder()
                 .index(index)
                 .urlButton(urlButton)
                 .build();
@@ -68,8 +68,8 @@ public class ButtonTemplate implements ProtobufMessage {
      * @param callButton the non-null call button
      * @return a non-null button template
      */
-    public static ButtonTemplate of(int index, @NonNull CallButton callButton) {
-        return ButtonTemplate.newRawButtonTemplateBuilder()
+    public static HydratedButtonTemplate of(int index, @NonNull HydratedCallButton callButton) {
+        return HydratedButtonTemplate.newRawHydratedButtonTemplateBuilder()
                 .index(index)
                 .callButton(callButton)
                 .build();
@@ -105,7 +105,6 @@ public class ButtonTemplate implements ProtobufMessage {
          * Quick reply button
          */
         QUICK_REPLY_BUTTON(1),
-
 
         /**
          * Url button

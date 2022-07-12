@@ -1,7 +1,6 @@
-package it.auties.whatsapp.model.message.business;
+package it.auties.whatsapp.model.business;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
-import it.auties.whatsapp.model.message.model.BusinessMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,14 +13,14 @@ import java.util.Arrays;
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
 /**
- * A model class that represents a message holding a shop inside
+ * A model class that represents a shop
  */
-@AllArgsConstructor
+@AllArgsConstructor(staticName = "of")
 @Data
-@Builder
+@Builder(builderMethodName = "newShopBuilder")
 @Jacksonized
 @Accessors(fluent = true)
-public final class ShopMessage implements BusinessMessage {
+public final class BusinessShop {
     /**
      * The id of the shop
      */
@@ -31,21 +30,21 @@ public final class ShopMessage implements BusinessMessage {
     /**
      * The surface of the shop
      */
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ShopMessageSurface.class)
-    private ShopMessageSurface surface;
+    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = SurfaceType.class)
+    private SurfaceType surfaceType;
 
     /**
      * The version of the message
      */
     @ProtobufProperty(index = 3, type = INT32)
-    private int messageVersion;
+    private int version;
 
     /**
-     * The constants of this enumerated type describe the various types of surfaces that a {@link ShopMessage} can have
+     * The constants of this enumerated type describe the various types of surfaces that a {@link BusinessShop} can have
      */
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum ShopMessageSurface {
+    public enum SurfaceType {
         /**
          * Unknown
          */
@@ -54,22 +53,22 @@ public final class ShopMessage implements BusinessMessage {
         /**
          * Facebook
          */
-        FB(1),
+        FACEBOOK(1),
 
         /**
          * Instagram
          */
-        IG(2),
+        INSTAGRAM(2),
 
         /**
          * Whatsapp
          */
-        WA(3);
+        WHATSAPP(3);
 
         @Getter
         private final int index;
 
-        public static ShopMessageSurface forIndex(int index) {
+        public static SurfaceType forIndex(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

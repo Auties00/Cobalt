@@ -33,7 +33,7 @@ import static java.util.Objects.requireNonNullElse;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(builderMethodName = "newRawVideoBuilder")
+@SuperBuilder(builderMethodName = "newRawVideoMessageBuilder")
 @Jacksonized
 @Accessors(fluent = true)
 public final class VideoMessage extends MediaMessage {
@@ -153,14 +153,14 @@ public final class VideoMessage extends MediaMessage {
      * @param contextInfo     the context info that the new message wraps
      * @return a non-null new message
      */
-    @Builder(builderClassName = "SimpleVideoMessageBuilder", builderMethodName = "newVideoBuilder")
+    @Builder(builderClassName = "SimpleVideoMessageBuilder", builderMethodName = "newVideoMessageBuilder")
     private static VideoMessage videoBuilder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media,
                                              String mimeType, String caption, byte[] thumbnail,
                                              ContextInfo contextInfo) {
         var dimensions = Medias.getDimensions(media, true);
         var duration = Medias.getDuration(media, true);
         var upload = Medias.upload(media, VIDEO, mediaConnection);
-        return VideoMessage.newRawVideoBuilder()
+        return VideoMessage.newRawVideoMessageBuilder()
                 .fileSha256(upload.fileSha256())
                 .fileEncSha256(upload.fileEncSha256())
                 .key(upload.mediaKey())
@@ -195,7 +195,7 @@ public final class VideoMessage extends MediaMessage {
      * @param contextInfo     the context info that the new message wraps
      * @return a non-null new message
      */
-    @Builder(builderClassName = "SimpleGifBuilder", builderMethodName = "newGifBuilder")
+    @Builder(builderClassName = "SimpleGifBuilder", builderMethodName = "newGifMessageBuilder")
     private static VideoMessage gifBuilder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media,
                                            String mimeType, String caption, VideoMessageAttribution gifAttribution,
                                            byte[] thumbnail, ContextInfo contextInfo) {
@@ -204,7 +204,7 @@ public final class VideoMessage extends MediaMessage {
         var dimensions = Medias.getDimensions(media, true);
         var duration = Medias.getDuration(media, true);
         var upload = Medias.upload(media, VIDEO, mediaConnection);
-        return VideoMessage.newRawVideoBuilder()
+        return VideoMessage.newRawVideoMessageBuilder()
                 .fileSha256(upload.fileSha256())
                 .fileEncSha256(upload.fileEncSha256())
                 .key(upload.mediaKey())

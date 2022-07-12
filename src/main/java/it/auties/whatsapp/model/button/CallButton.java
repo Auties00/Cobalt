@@ -2,7 +2,8 @@ package it.auties.whatsapp.model.button;
 
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
-import it.auties.whatsapp.model.message.button.ButtonStructureMessage;
+import it.auties.whatsapp.model.message.business.HighlyStructuredMessage;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,15 +12,24 @@ import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 
-@AllArgsConstructor
+/**
+ * A model class that represents a button that can start a phone call
+ */
+@AllArgsConstructor(staticName = "of")
 @Data
-@Builder
+@Builder(access = AccessLevel.PROTECTED)
 @Jacksonized
 @Accessors(fluent = true)
 public class CallButton implements ProtobufMessage {
-    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = ButtonStructureMessage.class)
-    private ButtonStructureMessage displayText;
+    /**
+     * The text of this button
+     */
+    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = HighlyStructuredMessage.class)
+    private HighlyStructuredMessage text;
 
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ButtonStructureMessage.class)
-    private ButtonStructureMessage phoneNumber;
+    /**
+     * The phone number
+     */
+    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = HighlyStructuredMessage.class)
+    private HighlyStructuredMessage phoneNumber;
 }

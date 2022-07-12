@@ -1376,7 +1376,7 @@ public class Whatsapp {
         return switch (chat.toJid()
                 .server()) {
             case USER, WHATSAPP -> {
-                var message = ProtocolMessage.newProtocolBuilder()
+                var message = ProtocolMessage.newProtocolMessageBuilder()
                         .type(ProtocolMessage.ProtocolMessageType.EPHEMERAL_SETTING)
                         .ephemeralExpiration(timer.period()
                                 .toSeconds())
@@ -1529,7 +1529,7 @@ public class Whatsapp {
      */
     public CompletableFuture<MessageInfo> delete(@NonNull MessageInfo info, boolean everyone) {
         if (everyone) {
-            var message = ProtocolMessage.newProtocolBuilder()
+            var message = ProtocolMessage.newProtocolMessageBuilder()
                     .type(ProtocolMessage.ProtocolMessageType.REVOKE)
                     .key(info.key())
                     .build();

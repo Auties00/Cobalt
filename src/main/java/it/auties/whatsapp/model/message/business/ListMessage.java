@@ -1,13 +1,14 @@
-package it.auties.whatsapp.model.message.button;
+package it.auties.whatsapp.model.message.business;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.button.ButtonSection;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.ProductListInfo;
-import it.auties.whatsapp.model.message.model.ButtonMessage;
+import it.auties.whatsapp.model.message.model.BusinessMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import lombok.*;
+import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
@@ -26,9 +27,9 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Jacksonized
-@Builder
+@Builder(builderMethodName = "newListMessageBuilder")
 @Accessors(fluent = true)
-public final class ButtonListMessage extends ContextualMessage implements ButtonMessage {
+public final class ListMessage extends ContextualMessage implements BusinessMessage {
     /**
      * The title of this message
      */
@@ -45,7 +46,7 @@ public final class ButtonListMessage extends ContextualMessage implements Button
      * The text of the button of this message
      */
     @ProtobufProperty(index = 3, type = STRING)
-    private String buttonText;
+    private String button;
 
     /**
      * The type of this message
@@ -69,17 +70,17 @@ public final class ButtonListMessage extends ContextualMessage implements Button
      * The footer text of this message
      */
     @ProtobufProperty(index = 7, type = STRING)
-    private String footerText;
+    private String footer;
 
     /**
      * The context info of this message
      */
     @ProtobufProperty(index = 8, type = MESSAGE, concreteType = ContextInfo.class)
-    @Builder.Default
+    @Default
     private ContextInfo contextInfo = new ContextInfo();  // Overrides ContextualMessage's context info
 
     /**
-     * The constants of this enumerated type describe the various types of {@link ButtonListMessage}
+     * The constants of this enumerated type describe the various types of {@link ListMessage}
      */
     @AllArgsConstructor
     @Accessors(fluent = true)
@@ -111,8 +112,8 @@ public final class ButtonListMessage extends ContextualMessage implements Button
         }
     }
 
-    public static class ButtonListMessageBuilder {
-        public ButtonListMessageBuilder sections(List<ButtonSection> sections) {
+    public static class ListMessageBuilder {
+        public ListMessageBuilder sections(List<ButtonSection> sections) {
             if (this.sections == null)
                 this.sections = new ArrayList<>();
             this.sections.addAll(sections);

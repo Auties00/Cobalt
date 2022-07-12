@@ -13,9 +13,24 @@ import java.util.Arrays;
 @AllArgsConstructor
 @Accessors(fluent = true)
 public enum BusinessPrivacyStatus {
+    /**
+     * End-to-end encryption
+     */
     E2EE(0),
+
+    /**
+     * Bsp encryption
+     */
     BSP(1),
-    FB(2),
+
+    /**
+     * Facebook encryption
+     */
+    FACEBOOK(2),
+
+    /**
+     * Facebook and bsp encryption
+     */
     BSP_AND_FB(3);
 
     @Getter

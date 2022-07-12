@@ -1,8 +1,7 @@
-package it.auties.whatsapp.model.message.business;
+package it.auties.whatsapp.model.business;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.button.NativeFlowButton;
-import it.auties.whatsapp.model.message.model.BusinessMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,23 +13,35 @@ import java.util.List;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
-@AllArgsConstructor
+/**
+ * A model class that represents a native flow
+ */
+@AllArgsConstructor(staticName = "of")
 @Data
-@Builder
+@Builder(builderMethodName = "newNativeFlow")
 @Jacksonized
 @Accessors(fluent = true)
-public final class NativeFlowMessage implements BusinessMessage {
+public final class BusinessNativeFlow {
+    /**
+     * The buttons of this flow
+     */
     @ProtobufProperty(index = 1, type = MESSAGE, concreteType = NativeFlowButton.class, repeated = true)
     private List<NativeFlowButton> buttons;
 
+    /**
+     * The parameters of this flow as json
+     */
     @ProtobufProperty(index = 2, type = STRING)
-    private String messageParamsJson;
+    private String parameters;
 
+    /**
+     * The version of this flow
+     */
     @ProtobufProperty(index = 3, type = INT32)
-    private int messageVersion;
+    private int version;
 
-    public static class NativeFlowMessageBuilder {
-        public NativeFlowMessageBuilder buttons(List<NativeFlowButton> buttons) {
+    public static class BusinessNativeFlowBuilder {
+        public BusinessNativeFlowBuilder buttons(List<NativeFlowButton> buttons) {
             if (this.buttons == null)
                 this.buttons = new ArrayList<>();
             this.buttons.addAll(buttons);

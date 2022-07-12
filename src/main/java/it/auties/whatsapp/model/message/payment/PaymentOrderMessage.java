@@ -21,7 +21,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Jacksonized
-@Builder(builderMethodName = "newPaymentOrderBuilder")
+@Builder(builderMethodName = "newPaymentOrderMessageBuilder")
 @Accessors(fluent = true)
 public final class PaymentOrderMessage extends ContextInfo implements PaymentMessage {
     /**

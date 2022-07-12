@@ -1,8 +1,8 @@
-package it.auties.whatsapp.model.message.button;
+package it.auties.whatsapp.model.message.business;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.business.BusinessLocalizableParameter;
-import it.auties.whatsapp.model.message.model.ButtonMessage;
+import it.auties.whatsapp.model.message.model.BusinessMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,15 +17,16 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 
 /**
- * A model class that represents a message that contains a highly structured message inside
+ * A model class that represents a message that contains a highly structured message inside.
+ * Not really clear how this could be used, contributions are welcomed.
  */
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
 @Jacksonized
-@Builder(builderMethodName = "newHighlyStructuredBuilder")
+@Builder(builderMethodName = "newHighlyStructuredMessageBuilder")
 @Accessors(fluent = true)
-public final class ButtonStructureMessage implements ButtonMessage {
+public final class HighlyStructuredMessage implements BusinessMessage {
     /**
      * Namespace
      */
@@ -60,7 +61,7 @@ public final class ButtonStructureMessage implements ButtonMessage {
      * Localizable Params
      */
     @ProtobufProperty(index = 6, type = MESSAGE, concreteType = BusinessLocalizableParameter.class, repeated = true)
-    private List<BusinessLocalizableParameter> localizableParams;
+    private List<BusinessLocalizableParameter> localizableParameters;
 
     /**
      * DeterministicLg
@@ -77,21 +78,22 @@ public final class ButtonStructureMessage implements ButtonMessage {
     /**
      * Hydrated message
      */
-    @ProtobufProperty(index = 9, type = MESSAGE, concreteType = ButtonTemplateMessage.class)
-    private ButtonTemplateMessage hydratedHsm;
+    @ProtobufProperty(index = 9, type = MESSAGE, concreteType = TemplateMessage.class)
+    private TemplateMessage templateMessage;
 
-    public static class ButtonStructureMessageBuilder {
-        public ButtonStructureMessageBuilder params(List<String> params) {
+    public static class HighlyStructuredMessageBuilder {
+        public HighlyStructuredMessageBuilder params(List<String> params) {
             if (this.params == null)
                 this.params = new ArrayList<>();
             this.params.addAll(params);
             return this;
         }
 
-        public ButtonStructureMessageBuilder localizableParams(List<BusinessLocalizableParameter> localizableParams) {
-            if (this.localizableParams == null)
-                this.localizableParams = new ArrayList<>();
-            this.localizableParams.addAll(localizableParams);
+        public HighlyStructuredMessageBuilder localizableParameters(
+                List<BusinessLocalizableParameter> localizableParams) {
+            if (this.localizableParameters == null)
+                this.localizableParameters = new ArrayList<>();
+            this.localizableParameters.addAll(localizableParams);
             return this;
         }
     }

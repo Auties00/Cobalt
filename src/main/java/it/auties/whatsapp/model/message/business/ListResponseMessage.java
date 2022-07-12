@@ -1,9 +1,9 @@
-package it.auties.whatsapp.model.message.button;
+package it.auties.whatsapp.model.message.business;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
-import it.auties.whatsapp.model.button.SingleSelectReply;
+import it.auties.whatsapp.model.button.SingleSelectReplyButton;
 import it.auties.whatsapp.model.info.ContextInfo;
-import it.auties.whatsapp.model.message.model.ButtonMessage;
+import it.auties.whatsapp.model.message.model.BusinessMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,14 +14,14 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 
 /**
- * A model class that represents a message that contains a response to a previous {@link ButtonListMessage}
+ * A model class that represents a message that contains a response to a previous {@link ListMessage}
  */
 @AllArgsConstructor
 @Data
-@Builder
+@Builder(builderMethodName = "newListResponseMessageBuilder")
 @Jacksonized
 @Accessors(fluent = true)
-public final class ButtonListResponseMessage implements ButtonMessage {
+public final class ListResponseMessage implements BusinessMessage {
     /**
      * The title of this message
      */
@@ -31,8 +31,8 @@ public final class ButtonListResponseMessage implements ButtonMessage {
     /**
      * The selected option
      */
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = SingleSelectReply.class)
-    private SingleSelectReply reply;
+    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = SingleSelectReplyButton.class)
+    private SingleSelectReplyButton reply;
 
     /**
      * The context info of this message

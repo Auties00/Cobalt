@@ -18,7 +18,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.BYTES;
 @NoArgsConstructor
 @Data
 @Jacksonized
-@Builder(builderMethodName = "newDeviceSyncBuilder")
+@Builder(builderMethodName = "newDeviceSyncMessageBuilder")
 @Accessors(fluent = true)
 public final class DeviceSyncMessage implements DeviceMessage {
     /**

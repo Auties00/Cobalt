@@ -11,15 +11,24 @@ import lombok.extern.jackson.Jacksonized;
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.INT64;
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 
-@AllArgsConstructor
+/**
+ * A model class that represents a currency
+ */
+@AllArgsConstructor(staticName = "of")
 @Data
-@Builder
+@Builder(builderMethodName = "newCurrencyBuilder")
 @Jacksonized
 @Accessors(fluent = true)
 public class BusinessCurrency implements ProtobufMessage {
+    /**
+     * The currency code
+     */
     @ProtobufProperty(index = 1, type = STRING)
     private String currencyCode;
 
+    /**
+     * The amount
+     */
     @ProtobufProperty(index = 2, type = INT64)
     private long amount1000;
 }

@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.button;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,15 +10,24 @@ import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 
-@AllArgsConstructor
+/**
+ * A model class that represents a native flow button
+ */
+@AllArgsConstructor(staticName = "of")
 @Data
-@Builder
+@Builder(access = AccessLevel.PROTECTED)
 @Jacksonized
 @Accessors(fluent = true)
 public class NativeFlowButton {
+    /**
+     * The name of this button
+     */
     @ProtobufProperty(index = 1, type = STRING)
     private String name;
 
+    /**
+     * The parameters of this button as json
+     */
     @ProtobufProperty(index = 2, type = STRING)
-    private String buttonParamsJson;
+    private String parameters;
 }

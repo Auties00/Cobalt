@@ -14,15 +14,26 @@ import java.util.List;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 
+/**
+ * A model clas that represents a change in the weight of recent stickers
+ */
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Data
-@Builder
+@Builder(access = AccessLevel.PROTECTED)
 @Jacksonized
 @Accessors(fluent = true)
 public final class RecentStickerWeightsAction implements Action {
+    /**
+     * The weight of the stickers
+     */
     @ProtobufProperty(index = 1, type = MESSAGE, concreteType = RecentStickerWeight.class, repeated = true)
     private List<RecentStickerWeight> weights;
 
+    /**
+     * Always throws an exception as this action cannot be serialized
+     *
+     * @return an exception
+     */
     @Override
     public String indexName() {
         throw new UnsupportedOperationException("Cannot send action: no index name");

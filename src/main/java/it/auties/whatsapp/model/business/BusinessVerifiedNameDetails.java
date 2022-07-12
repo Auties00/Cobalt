@@ -12,24 +12,42 @@ import java.util.List;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
+/**
+ * A model class that represents a verified name
+ */
 @AllArgsConstructor
 @Data
-@Builder
+@Builder(builderMethodName = "newVerifiedNameDetailsBuilder")
 @Jacksonized
 @Accessors(fluent = true)
 public class BusinessVerifiedNameDetails {
+    /**
+     * The verified serial
+     */
     @ProtobufProperty(index = 1, type = UINT64)
     private long serial;
 
+    /**
+     * The issuer of this certificate
+     */
     @ProtobufProperty(index = 2, type = STRING)
     private String issuer;
 
+    /**
+     * The verified name
+     */
     @ProtobufProperty(index = 4, type = STRING)
-    private String verifiedName;
+    private String name;
 
+    /**
+     * The localizable names
+     */
     @ProtobufProperty(index = 8, type = MESSAGE, concreteType = BusinessLocalizedName.class, repeated = true)
     private List<BusinessLocalizedName> localizedNames;
 
+    /**
+     * The timestamp when this certificate was issued
+     */
     @ProtobufProperty(index = 10, type = UINT64)
     private long issueTime;
 

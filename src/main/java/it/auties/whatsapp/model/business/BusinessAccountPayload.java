@@ -15,9 +15,9 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 /**
  * A model class that holds a payload about a business account.
  */
-@AllArgsConstructor
+@AllArgsConstructor(staticName = "of")
 @Data
-@Builder
+@Builder(builderMethodName = "newAccountPayloadBuilder")
 @Jacksonized
 @Accessors(fluent = true)
 public class BusinessAccountPayload implements ProtobufMessage, JacksonProvider {

@@ -26,7 +26,7 @@ import static it.auties.whatsapp.model.message.model.MediaMessageType.AUDIO;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(builderMethodName = "newRawAudioBuilder")
+@SuperBuilder(builderMethodName = "newRawAudioMessageBuilder")
 @Jacksonized
 @Accessors(fluent = true)
 public final class AudioMessage extends MediaMessage {
@@ -110,12 +110,12 @@ public final class AudioMessage extends MediaMessage {
      * @param voiceMessage    whether the new message should be considered as a voice message or as a normal audio, by default the latter is used
      * @return a non-null new message
      */
-    @Builder(builderClassName = "SimpleAudioMessageBuilder", builderMethodName = "newAudioBuilder")
+    @Builder(builderClassName = "SimpleAudioMessageBuilder", builderMethodName = "newAudioMessageBuilder")
     private static AudioMessage builder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media,
                                         ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
         var duration = Medias.getDuration(media, true);
         var upload = Medias.upload(media, AUDIO, mediaConnection);
-        return AudioMessage.newRawAudioBuilder()
+        return AudioMessage.newRawAudioMessageBuilder()
                 .fileSha256(upload.fileSha256())
                 .fileEncSha256(upload.fileEncSha256())
                 .key(upload.mediaKey())

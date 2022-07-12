@@ -21,80 +21,208 @@ import java.util.List;
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 
+/**
+ * A model class that represents a hydrated four row template
+ */
 @AllArgsConstructor
 @Data
-@Builder
+@Builder(builderMethodName = "newRawHydratedFourRowTemplate")
 @Jacksonized
 @Accessors(fluent = true)
 public class HydratedFourRowTemplate implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, concreteType = DocumentMessage.class)
-    private DocumentMessage documentMessage;
+    private DocumentMessage documentTitle;
 
     @ProtobufProperty(index = 2, type = STRING)
-    private String hydratedTitleText;
+    private String textTitle;
 
     @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ImageMessage.class)
-    private ImageMessage imageMessage;
+    private ImageMessage imageTitle;
 
     @ProtobufProperty(index = 4, type = MESSAGE, concreteType = VideoMessage.class)
-    private VideoMessage videoMessage;
+    private VideoMessage videoTitle;
 
     @ProtobufProperty(index = 5, type = MESSAGE, concreteType = LocationMessage.class)
-    private LocationMessage locationMessage;
+    private LocationMessage locationTitle;
 
     @ProtobufProperty(index = 6, type = STRING)
-    private String hydratedContentText;
+    private String content;
 
     @ProtobufProperty(index = 7, type = STRING)
-    private String hydratedFooterText;
+    private String footer;
 
-    @ProtobufProperty(index = 8, type = MESSAGE, concreteType = HydratedTemplateButton.class, repeated = true)
-    private List<HydratedTemplateButton> hydratedButtons;
+    @ProtobufProperty(index = 8, type = MESSAGE, concreteType = HydratedButtonTemplate.class, repeated = true)
+    private List<HydratedButtonTemplate> buttons;
 
     @ProtobufProperty(index = 9, type = STRING)
-    private String templateId;
+    private String id;
 
-    public Title titleType() {
-        if (documentMessage != null)
-            return Title.DOCUMENT_MESSAGE;
-        if (hydratedTitleText != null)
-            return Title.HYDRATED_TITLE_TEXT;
-        if (imageMessage != null)
-            return Title.IMAGE_MESSAGE;
-        if (videoMessage != null)
-            return Title.VIDEO_MESSAGE;
-        if (locationMessage != null)
-            return Title.LOCATION_MESSAGE;
-        return Title.UNKNOWN;
+    /**
+     * Constructs a new builder to create a four row template with a document title
+     *
+     * @param title   the title of this template
+     * @param content the content of this template
+     * @param footer  the footer of this template
+     * @param buttons the buttons of this template
+     * @return a non-null new template
+     */
+    @Builder(builderClassName = "DocumentHydratedFourRowTemplateBuilder", builderMethodName = "newHydratedFourRowTemplateWithDocumentTitleBuilder")
+    private static HydratedFourRowTemplate documentBuilder(DocumentMessage title, String content, String footer,
+                                                           List<HydratedButtonTemplate> buttons, String id) {
+        return createBuilder(content, footer, buttons, id).documentTitle(title)
+                .build();
+
     }
 
+    /**
+     * Constructs a new builder to create a four row template with a text title
+     *
+     * @param title   the title of this template
+     * @param content the content of this template
+     * @param footer  the footer of this template
+     * @param buttons the buttons of this template
+     * @return a non-null new template
+     */
+    @Builder(builderClassName = "HighlyStructuredHydratedFourRowTemplateBuilder", builderMethodName = "newHydratedFourRowTemplateWithTextTitleBuilder")
+    private static HydratedFourRowTemplate textBuilder(String title, String content, String footer,
+                                                       List<HydratedButtonTemplate> buttons, String id) {
+        return createBuilder(content, footer, buttons, id).textTitle(title)
+                .build();
+    }
+
+    /**
+     * Constructs a new builder to create a four row template with an image title
+     *
+     * @param title   the title of this template
+     * @param content the content of this template
+     * @param footer  the footer of this template
+     * @param buttons the buttons of this template
+     * @return a non-null new template
+     */
+    @Builder(builderClassName = "ImageHydratedFourRowTemplateBuilder", builderMethodName = "newHydratedFourRowTemplateWithImageTitleBuilder")
+    private static HydratedFourRowTemplate imageBuilder(ImageMessage title, String content, String footer,
+                                                        List<HydratedButtonTemplate> buttons, String id) {
+        return createBuilder(content, footer, buttons, id).imageTitle(title)
+                .build();
+
+    }
+
+    /**
+     * Constructs a new builder to create a four row template with a video title
+     *
+     * @param title   the title of this template
+     * @param content the content of this template
+     * @param footer  the footer of this template
+     * @param buttons the buttons of this template
+     * @return a non-null new template
+     */
+    @Builder(builderClassName = "VideoHydratedFourRowTemplateBuilder", builderMethodName = "newHydratedFourRowTemplateWithVideoTitleBuilder")
+    private static HydratedFourRowTemplate videoBuilder(VideoMessage title, String content, String footer,
+                                                        List<HydratedButtonTemplate> buttons, String id) {
+        return createBuilder(content, footer, buttons, id).videoTitle(title)
+                .build();
+
+    }
+
+    /**
+     * Constructs a new builder to create a four row template with a location title
+     *
+     * @param title   the title of this template
+     * @param content the content of this template
+     * @param footer  the footer of this template
+     * @param buttons the buttons of this template
+     * @return a non-null new template
+     */
+    @Builder(builderClassName = "LocationHydratedFourRowTemplateBuilder", builderMethodName = "newHydratedFourRowTemplateWithLocationTitleBuilder")
+    private static HydratedFourRowTemplate locationBuilder(LocationMessage title, String content, String footer,
+                                                           List<HydratedButtonTemplate> buttons, String id) {
+        return createBuilder(content, footer, buttons, id).locationTitle(title)
+                .build();
+
+    }
+
+    private static HydratedFourRowTemplate.HydratedFourRowTemplateBuilder createBuilder(String content, String footer,
+                                                                                        List<HydratedButtonTemplate> buttons,
+                                                                                        String id) {
+        return HydratedFourRowTemplate.newRawHydratedFourRowTemplate()
+                .content(content)
+                .footer(footer)
+                .buttons(buttons)
+                .id(id);
+    }
+
+    /**
+     * Returns the type of title that this template wraps
+     *
+     * @return a non-null title type
+     */
+    public TitleType titleType() {
+        if (documentTitle != null)
+            return TitleType.DOCUMENT_MESSAGE;
+        if (textTitle != null)
+            return TitleType.TEXT_TITLE;
+        if (imageTitle != null)
+            return TitleType.IMAGE_MESSAGE;
+        if (videoTitle != null)
+            return TitleType.VIDEO_MESSAGE;
+        if (locationTitle != null)
+            return TitleType.LOCATION_MESSAGE;
+        return TitleType.NONE;
+    }
+
+    /**
+     * The constants of this enumerated type describe the various types of title that a template can wrap
+     */
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum Title implements ProtobufMessage {
-        UNKNOWN(0),
+    public enum TitleType implements ProtobufMessage {
+        /**
+         * No title
+         */
+        NONE(0),
+
+        /**
+         * Document title
+         */
         DOCUMENT_MESSAGE(1),
-        HYDRATED_TITLE_TEXT(2),
+
+        /**
+         * Text title
+         */
+        TEXT_TITLE(2),
+
+        /**
+         * Image title
+         */
         IMAGE_MESSAGE(3),
+
+        /**
+         * Video title
+         */
         VIDEO_MESSAGE(4),
+
+        /**
+         * Location title
+         */
         LOCATION_MESSAGE(5);
 
         @Getter
         private final int index;
 
         @JsonCreator
-        public static Title forIndex(int index) {
+        public static TitleType forIndex(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()
-                    .orElse(Title.UNKNOWN);
+                    .orElse(TitleType.NONE);
         }
     }
 
     public static class HydratedFourRowTemplateBuilder {
-        public HydratedFourRowTemplateBuilder hydratedButtons(List<HydratedTemplateButton> hydratedButtons) {
-            if (this.hydratedButtons == null)
-                this.hydratedButtons = new ArrayList<>();
-            this.hydratedButtons.addAll(hydratedButtons);
+        public HydratedFourRowTemplateBuilder buttons(List<HydratedButtonTemplate> hydratedButtons) {
+            if (this.buttons == null)
+                this.buttons = new ArrayList<>();
+            this.buttons.addAll(hydratedButtons);
             return this;
         }
     }

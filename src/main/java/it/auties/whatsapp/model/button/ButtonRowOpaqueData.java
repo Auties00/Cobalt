@@ -15,7 +15,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class RowOpaqueData implements ProtobufMessage {
+public class ButtonRowOpaqueData implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, concreteType = ButtonOpaqueData.class)
     private ButtonOpaqueData currentMsg;
 

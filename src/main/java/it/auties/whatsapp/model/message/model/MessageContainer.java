@@ -4,9 +4,7 @@ import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.info.CallInfo;
 import it.auties.whatsapp.model.info.MessageContextInfo;
-import it.auties.whatsapp.model.message.business.InteractiveMessage;
-import it.auties.whatsapp.model.message.business.ProductMessage;
-import it.auties.whatsapp.model.message.button.*;
+import it.auties.whatsapp.model.message.business.*;
 import it.auties.whatsapp.model.message.device.DeviceSentMessage;
 import it.auties.whatsapp.model.message.device.DeviceSyncMessage;
 import it.auties.whatsapp.model.message.payment.*;
@@ -118,8 +116,8 @@ public class MessageContainer implements ProtobufMessage {
     /**
      * Highly structured message
      */
-    @ProtobufProperty(index = 14, type = MESSAGE, concreteType = ButtonStructureMessage.class)
-    private ButtonStructureMessage highlyStructured;
+    @ProtobufProperty(index = 14, type = MESSAGE, concreteType = HighlyStructuredMessage.class)
+    private HighlyStructuredMessage highlyStructured;
 
     /**
      * Send payment message
@@ -154,8 +152,8 @@ public class MessageContainer implements ProtobufMessage {
     /**
      * Template message
      */
-    @ProtobufProperty(index = 25, type = MESSAGE, concreteType = ButtonTemplateMessage.class)
-    private ButtonTemplateMessage template;
+    @ProtobufProperty(index = 25, type = MESSAGE, concreteType = TemplateMessage.class)
+    private TemplateMessage template;
 
     /**
      * Sticker message
@@ -172,8 +170,8 @@ public class MessageContainer implements ProtobufMessage {
     /**
      * Template button reply message
      */
-    @ProtobufProperty(index = 29, type = MESSAGE, concreteType = ButtonTemplateReplyMessage.class)
-    private ButtonTemplateReplyMessage templateButtonReply;
+    @ProtobufProperty(index = 29, type = MESSAGE, concreteType = TemplateReplyMessage.class)
+    private TemplateReplyMessage templateButtonReply;
 
     /**
      * Product message
@@ -196,8 +194,8 @@ public class MessageContainer implements ProtobufMessage {
     /**
      * List message
      */
-    @ProtobufProperty(index = 36, type = MESSAGE, concreteType = ButtonListMessage.class)
-    private ButtonListMessage buttonList;
+    @ProtobufProperty(index = 36, type = MESSAGE, concreteType = ListMessage.class)
+    private ListMessage buttonList;
 
     /**
      * View once message
@@ -214,8 +212,8 @@ public class MessageContainer implements ProtobufMessage {
     /**
      * List response message
      */
-    @ProtobufProperty(index = 39, type = MESSAGE, concreteType = ButtonListResponseMessage.class)
-    private ButtonListResponseMessage buttonListResponse;
+    @ProtobufProperty(index = 39, type = MESSAGE, concreteType = ListResponseMessage.class)
+    private ListResponseMessage buttonListResponse;
 
     /**
      * Ephemeral message
@@ -292,27 +290,30 @@ public class MessageContainer implements ProtobufMessage {
             case VideoMessage video -> this.video = video;
             case ProtocolMessage protocol -> this.protocol = protocol;
             case ContactsArrayMessage contactsArray -> this.contactsArray = contactsArray;
-            case ButtonStructureMessage highlyStructured -> this.highlyStructured = highlyStructured;
+            case HighlyStructuredMessage highlyStructured -> this.highlyStructured = highlyStructured;
             case SendPaymentMessage sendPayment -> this.sendPayment = sendPayment;
             case LiveLocationMessage liveLocation -> this.liveLocation = liveLocation;
             case RequestPaymentMessage requestPayment -> this.requestPayment = requestPayment;
             case DeclinePaymentRequestMessage declinePaymentRequest ->
                     this.declinePaymentRequest = declinePaymentRequest;
             case CancelPaymentRequestMessage cancelPaymentRequest -> this.cancelPaymentRequest = cancelPaymentRequest;
-            case ButtonTemplateMessage template -> this.template = template;
+            case TemplateMessage template -> this.template = template;
             case StickerMessage sticker -> this.sticker = sticker;
             case GroupInviteMessage groupInvite -> this.groupInvite = groupInvite;
-            case ButtonTemplateReplyMessage templateButtonReply -> this.templateButtonReply = templateButtonReply;
+            case TemplateReplyMessage templateButtonReply -> this.templateButtonReply = templateButtonReply;
             case ProductMessage product -> this.product = product;
             case DeviceSentMessage deviceSent -> this.deviceSent = deviceSent;
             case DeviceSyncMessage deviceSync -> this.deviceSync = deviceSync;
-            case ButtonListMessage buttonsList -> this.buttonList = buttonsList;
+            case ListMessage buttonsList -> this.buttonList = buttonsList;
             case PaymentOrderMessage order -> this.order = order;
-            case ButtonListResponseMessage listResponse -> this.buttonListResponse = listResponse;
+            case ListResponseMessage listResponse -> this.buttonListResponse = listResponse;
             case PaymentInvoiceMessage invoice -> this.invoice = invoice;
             case ButtonsMessage buttons -> this.buttons = buttons;
             case ButtonsResponseMessage buttonsResponse -> this.buttonsResponse = buttonsResponse;
             case PaymentInviteMessage paymentInvite -> this.paymentInvite = paymentInvite;
+            case InteractiveMessage interactive -> this.interactive = interactive;
+            case ReactionMessage reaction -> this.reaction = reaction;
+            case StickerSyncRMRMessage stickerSync -> this.stickerSync = stickerSync;
             default -> throw new IllegalStateException("Unsupported message: " + message);
         }
     }
@@ -434,6 +435,12 @@ public class MessageContainer implements ProtobufMessage {
             return buttonsResponse;
         if (this.paymentInvite != null)
             return paymentInvite;
+        if (interactive != null)
+            return interactive;
+        if (reaction != null)
+            return reaction;
+        if (stickerSync != null)
+            return stickerSync;
         return null;
     }
 
@@ -497,8 +504,7 @@ public class MessageContainer implements ProtobufMessage {
             case DeviceMessage ignored -> ContentType.DEVICE;
             case PaymentMessage ignored -> ContentType.PAYMENT;
             case ServerMessage ignored -> ContentType.SERVER;
-            case ButtonMessage ignored -> ContentType.BUTTON;
-            case ProductMessage ignored -> ContentType.PRODUCT;
+            case BusinessMessage ignored -> ContentType.BUSINESS;
             default -> ContentType.STANDARD;
         };
     }
@@ -586,14 +592,9 @@ public class MessageContainer implements ProtobufMessage {
         EMPTY,
 
         /**
-         * Server message
+         * Business message
          */
-        SERVER,
-
-        /**
-         * PAYMENT message
-         */
-        PAYMENT,
+        BUSINESS,
 
         /**
          * Device message
@@ -601,14 +602,14 @@ public class MessageContainer implements ProtobufMessage {
         DEVICE,
 
         /**
-         * Button message
+         * PAYMENT message
          */
-        BUTTON,
+        PAYMENT,
 
         /**
-         * Product message
+         * Server message
          */
-        PRODUCT,
+        SERVER,
 
         /**
          * Standard message
