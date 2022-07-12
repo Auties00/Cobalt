@@ -11,6 +11,7 @@ public class WaitTest {
         var options = Whatsapp.Options.defaultOptions()
                 .withErrorHandler(ErrorHandler.toTerminal());
         var whatsapp = Whatsapp.lastConnection(options)
+                .addLoggedInListener(() -> System.out.println("Connected"))
                 .connect()
                 .join();
         whatsapp.await();

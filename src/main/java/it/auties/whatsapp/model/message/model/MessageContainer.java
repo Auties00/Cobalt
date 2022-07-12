@@ -479,6 +479,10 @@ public class MessageContainer implements ProtobufMessage {
             return Optional.of(buttons);
         if (this.buttonsResponse != null)
             return Optional.of(buttonsResponse);
+        if (this.viewOnce != null && viewOnce.unbox() instanceof ContextualMessage contextualViewOnce)
+            return Optional.of(contextualViewOnce);
+        if (this.ephemeral != null && ephemeral.unbox() instanceof ContextualMessage contextualEphemeral)
+            return Optional.of(contextualEphemeral);
         return Optional.empty();
     }
 

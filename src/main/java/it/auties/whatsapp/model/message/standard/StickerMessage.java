@@ -5,6 +5,7 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.util.Clock;
@@ -29,7 +30,7 @@ import static java.util.Objects.requireNonNullElse;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(builderMethodName = "newRawStickerMessage")
+@SuperBuilder(builderMethodName = "newRawStickerBuilder")
 @Jacksonized
 @Accessors(fluent = true)
 public final class StickerMessage extends MediaMessage {
@@ -122,7 +123,7 @@ public final class StickerMessage extends MediaMessage {
      * Constructs a new builder to create a StickerMessage.
      * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
      *
-     * @param storeId     the id of the store where this message will be stored
+     * @param mediaConnection the media connection to use to upload this message
      * @param media       the non-null sticker that the new message wraps
      * @param mimeType    the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
      * @param thumbnail   the thumbnail of the sticker that the new message wraps as a png
@@ -130,15 +131,11 @@ public final class StickerMessage extends MediaMessage {
      * @param contextInfo the context info that the new message wraps
      * @return a non-null new message
      */
-    @Builder(builderClassName = "SimpleStickerMessageBuilder", builderMethodName = "newStickerMessage")
-    private static StickerMessage builder(int storeId, byte @NonNull [] media, String mimeType, byte[] thumbnail,
+    @Builder(builderClassName = "SimpleStickerMessageBuilder", builderMethodName = "newStickerBuilder")
+    private static StickerMessage builder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media, String mimeType, byte[] thumbnail,
                                           boolean animated, ContextInfo contextInfo) {
-        var store = Store.findStoreById(storeId)
-                .orElseThrow(() -> new NoSuchElementException(
-                        "Cannot create sticker message, invalid store id: %s".formatted(storeId)));
-        var upload = Medias.upload(media, STICKER, store);
-        return StickerMessage.newRawStickerMessage()
-                .storeId(storeId)
+        var upload = Medias.upload(media, STICKER, mediaConnection);
+        return StickerMessage.newRawStickerBuilder()
                 .fileSha256(upload.fileSha256())
                 .fileEncSha256(upload.fileEncSha256())
                 .key(upload.mediaKey())

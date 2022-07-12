@@ -783,17 +783,7 @@ public class Whatsapp {
                 .isEmpty(), "Cannot quote an empty message");
         Validate.isTrue(!quotedMessage.message()
                 .isServer(), "Cannot quote a server message");
-        var context = ContextInfo.newContextInfo()
-                .quotedMessageSender(quotedMessage.fromMe() ?
-                        keys().companion() :
-                        quotedMessage.senderJid())
-                .quotedMessageId(quotedMessage.id())
-                .quotedMessage(quotedMessage.message());
-        if (!Objects.equals(quotedMessage.senderJid(), quotedMessage.chatJid())) {
-            context.quotedMessageChat(quotedMessage.chatJid());
-        }
-
-        return sendMessage(chat, message, context.build());
+        return sendMessage(chat, message, ContextInfo.of(quotedMessage));
     }
 
     /**
@@ -840,7 +830,6 @@ public class Whatsapp {
                         null)
                 .build();
         var info = MessageInfo.newMessageInfo()
-                .storeId(store().id())
                 .senderJid(chat.toJid()
                         .isGroup() ?
                         keys().companion() :
@@ -860,14 +849,9 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull MessageInfo info) {
-        info.key()
-                .chatJid(info.chatJid()
-                        .toUserJid());
-        if (info.message()
-                .content() instanceof MediaMessage mediaMessage) {
-            mediaMessage.storeId(store().id());
-        }
-
+        store().attribute(info);
+        info.key().chatJid(info.chatJid().toUserJid());
+        info.key().senderJid(info.senderJid() == null ? null : info.senderJid().toUserJid());
         createTextPreview(info);
         parseEphemeralMessage(info);
         return socket.sendMessage(info)
@@ -1383,7 +1367,7 @@ public class Whatsapp {
         return switch (chat.toJid()
                 .server()) {
             case USER, WHATSAPP -> {
-                var message = ProtocolMessage.newProtocolMessage()
+                var message = ProtocolMessage.newProtocolBuilder()
                         .type(ProtocolMessage.ProtocolMessageType.EPHEMERAL_SETTING)
                         .ephemeralExpiration(timer.period()
                                 .toSeconds())
@@ -1536,7 +1520,7 @@ public class Whatsapp {
      */
     public CompletableFuture<MessageInfo> delete(@NonNull MessageInfo info, boolean everyone) {
         if (everyone) {
-            var message = ProtocolMessage.newProtocolMessage()
+            var message = ProtocolMessage.newProtocolBuilder()
                     .type(ProtocolMessage.ProtocolMessageType.REVOKE)
                     .key(info.key())
                     .build();

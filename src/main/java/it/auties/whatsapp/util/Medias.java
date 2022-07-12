@@ -1,7 +1,6 @@
 package it.auties.whatsapp.util;
 
 import it.auties.bytes.Bytes;
-import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesCbc;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.Sha256;
@@ -65,11 +64,10 @@ public class Medias implements JacksonProvider {
         }
     }
 
-    public MediaFile upload(byte[] file, MediaMessageType type, Store store) {
+    public MediaFile upload(byte[] file, MediaMessageType type, MediaConnection mediaConnection) {
         var client = HttpClient.newHttpClient();
-        var auth = URLEncoder.encode(store.mediaConnection()
-                .auth(), StandardCharsets.UTF_8);
-        var hosts = getHosts(store);
+        var auth = URLEncoder.encode(mediaConnection.auth(), StandardCharsets.UTF_8);
+        var hosts = getHosts(mediaConnection);
         return hosts.stream()
                 .map(host -> upload(file, type, client, auth, host))
                 .flatMap(Optional::stream)
@@ -110,8 +108,8 @@ public class Medias implements JacksonProvider {
         }
     }
 
-    public byte[] download(AttachmentProvider provider, Store store) {
-        return getDownloadUrls(provider, store).stream()
+    public byte[] download(AttachmentProvider provider, MediaConnection mediaConnection) {
+        return getDownloadUrls(provider, mediaConnection).stream()
                 .map(url -> download(provider, url))
                 .flatMap(Optional::stream)
                 .findFirst()
@@ -155,23 +153,50 @@ public class Medias implements JacksonProvider {
                 .toByteArray();
     }
 
-    private List<String> getDownloadUrls(AttachmentProvider provider, Store store) {
+    private List<String> getDownloadUrls(AttachmentProvider provider, MediaConnection mediaConnection) {
         if (provider.url() != null) {
             return List.of(provider.url());
         }
 
         var fileEncSha256 = Base64.getEncoder()
                 .encode(provider.fileEncSha256());
-        return getHosts(store).stream()
+        return getHosts(mediaConnection).stream()
                 .map(host -> "https://%s%s&hash=%s&mms-type=%s&__wa-mms=".formatted(host, provider.directPath(),
                         fileEncSha256, provider.name()))
                 .toList();
     }
 
-    private List<String> getHosts(Store store) {
-        return Optional.ofNullable(store.mediaConnection())
+    private List<String> getHosts(MediaConnection mediaConnection) {
+        return Optional.ofNullable(mediaConnection)
                 .map(MediaConnection::hosts)
                 .orElse(List.of("mmg.whatsapp.net"));
+    }
+
+    public Optional<String> getMimeType(String name){
+        return getExtension(name)
+                .map(extension -> Path.of("bogus%s".formatted(extension)))
+                .flatMap(Medias::getMimeType);
+    }
+
+    public Optional<String> getMimeType(Path path) {
+        try {
+            return Optional.ofNullable(Files.probeContentType(path));
+        } catch (IOException exception) {
+            return Optional.empty();
+        }
+    }
+
+    private Optional<String> getExtension(String name){
+        if(name == null){
+            return Optional.empty();
+        }
+
+        var index = name.lastIndexOf(".");
+        if(index == -1){
+            return Optional.empty();
+        }
+
+        return Optional.of(name.substring(index));
     }
 
     public Optional<String> getMimeType(byte[] media) {

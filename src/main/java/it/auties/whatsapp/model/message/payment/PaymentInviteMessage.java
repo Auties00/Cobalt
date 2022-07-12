@@ -19,7 +19,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT64;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Builder(builderMethodName = "newPaymentInviteMessage")
+@Builder(builderMethodName = "newPaymentInviteBuilder")
 @Jacksonized
 @Accessors(fluent = true)
 public final class PaymentInviteMessage implements PaymentMessage {

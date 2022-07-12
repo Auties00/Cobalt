@@ -432,7 +432,7 @@ All types of messages supported by Whatsapp are supported by this library:
 - Complex text
 
     ```java
-    var message = TextMessage.newTextMessage() // Create a new text message
+    var message = TextMessage.newTextBuilder() // Create a new text message
             .text("Check this video out: https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the text of the message
             .canonicalUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the url of the message
             .matchedText("https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the matched text for the url in the message
@@ -445,7 +445,7 @@ All types of messages supported by Whatsapp are supported by this library:
 - Location
 
     ```java
-    var location = LocationMessage.newLocationMessage() // Create a new location message
+    var location = LocationMessage.newLocationBuilder() // Create a new location message
             .caption("Look at this!") // Set the caption of the message, that is the text below the file
             .latitude(38.9193) // Set the longitude of the location to share
             .longitude(1183.1389) // Set the latitude of the location to share
@@ -456,7 +456,7 @@ All types of messages supported by Whatsapp are supported by this library:
 - Live location
 
     ```java
-    var location = LiveLocationMessage.newLiveLocationMessage() // Create a new live location message
+    var location = LiveLocationMessage.newLiveLocationBuilder() // Create a new live location message
             .caption("Look at this!") // Set the caption of the message, that is the text below the file. Not available if this message is live
             .latitude(38.9193) // Set the longitude of the location to share
             .longitude(1183.1389) // Set the latitude of the location to share
@@ -475,7 +475,7 @@ All types of messages supported by Whatsapp are supported by this library:
             .filter(Chat::isGroup)
             .orElseThrow(() -> new NoSuchElementException("Hey, you don't exist"));
     var inviteCode = api.queryInviteCode(group).join();
-    var groupInvite = GroupInviteMessage.newGroupInviteMessage() // Create a new group invite message
+    var groupInvite = GroupInviteMessage.newGroupInviteBuilder() // Create a new group invite message
             .caption("Come join my group of fellow programmers") // Set the caption of this message
             .name(group.name()) // Set the name of the group
             .groupJid(group.jid())) // Set the jid of the group
@@ -487,7 +487,7 @@ All types of messages supported by Whatsapp are supported by this library:
 
 - Contact
     ```java
-    var contactMessage = ContactMessage.newContactMessage()  // Create a new contact message
+    var contactMessage = ContactMessage.newContactBuilder()  // Create a new contact message
             .name("A nice friend") // Set the display name of the contact
             .vcard(vcard) // Set the vcard(https://en.wikipedia.org/wiki/VCard) of the contact
             .build(); // Create the message
@@ -497,7 +497,7 @@ All types of messages supported by Whatsapp are supported by this library:
 - Contact array
 
     ```java
-    var contactsMessage = ContactsArrayMessage.newContactsArrayMessage()  // Create a new contacts array message
+    var contactsMessage = ContactsArrayMessage.newContactsArrayBuilder()  // Create a new contacts array message
             .name("A nice friend") // Set the display name of the first contact that this message contains
             .contacts(List.of(jack,lucy,jeff)) // Set a list of contact messages that this message wraps
             .build(); // Create the message
@@ -505,7 +505,87 @@ All types of messages supported by Whatsapp are supported by this library:
     ```
 
 - Button
-  > **_IMPORTANT:_** This is not documented yet, but it can be done easily inside the api
+   
+   To create any number of messages to attach to a buttons message use the Button class:
+   ```java
+   var button = Button.newTextResponseButton("A nice button!");
+   var anotherButton = Button.newTextResponseButton("Another button :)");
+   ```
+  
+   There are several types of buttons, here are the most useful ones:
+   
+   - Response button
+
+     - Empty header
+
+          ```java
+          var buttons = ButtonsMessage.newButtonsWithoutHeaderBuilder()
+               .body("A nice body")
+               .footer("A nice footer")
+               .buttons(List.of(button, anotherButton))
+               .build();
+          api.sendMessage(contact, emptyButtons);
+          ```
+
+     - Text header
+
+          ```java
+          var buttons = ButtonsMessage.newButtonsWithTextHeaderBuilder()
+               .header("A nice header :)")
+               .body("A nice body")
+               .footer("A nice footer")
+               .buttons(List.of(button, anotherButton))
+               .build();
+          api.sendMessage(contact, buttons);
+          ```
+  
+     - Document header
+
+          ```java
+          var buttons = ButtonsMessage.newButtonsWithDocumentHeaderBuilder()
+               .header(documentMessage)
+               .body("A nice body")
+               .footer("A nice footer")
+               .buttons(List.of(button, anotherButton))
+               .build();
+          api.sendMessage(contact, buttons);
+          ```
+  
+     - Image header
+
+          ```java
+          var buttons = ButtonsMessage.newButtonsWithImageHeaderBuilder()
+               .header(imageMessage)
+               .body("A nice body")
+               .footer("A nice footer")
+               .buttons(List.of(button, anotherButton))
+               .build();
+          api.sendMessage(contact, buttons);
+          ```
+  
+     - Video header
+
+          ```java
+          var buttons = ButtonsMessage.newButtonsWithVideoHeaderBuilder()
+               .header(videoMessage)
+               .body("A nice body")
+               .footer("A nice footer")
+               .buttons(List.of(button, anotherButton))
+               .build();
+          api.sendMessage(contact, buttons);
+          ```
+
+     - Location header
+
+          ```java
+          var buttons = ButtonsMessage.newButtonsWithLocationHeaderBuilder()
+               .header(locationMessage)
+               .body("A nice body")
+               .footer("A nice footer")
+               .buttons(List.of(button, anotherButton))
+               .build();
+          api.sendMessage(contact, buttons);
+          ```
 
 - Media
 
@@ -527,8 +607,8 @@ All types of messages supported by Whatsapp are supported by this library:
    - Image
   
      ```java
-     var image = ImageMessage.newImageMessage() // Create a new image message builder
-           .storeId(api.store().id()) // All media messages need a reference to their store
+     var image = ImageMessage.newImageBuilder() // Create a new image message builder
+           .mediaConnection(api.store().mediaConnection()) // The media connection to use for the upload
            .media(media) // Set the image of this message
            .caption("A nice image") // Set the caption of this message
            .build(); // Create the message
@@ -538,8 +618,8 @@ All types of messages supported by Whatsapp are supported by this library:
   - Audio or voice
 
     ```java
-     var audio = AudioMessage.newAudioMessage() // Create a new audio message builder
-           .storeId(api.store().id()) // All media messages need a reference to their store
+     var audio = AudioMessage.newAudioBuilder() // Create a new audio message builder
+           .mediaConnection(api.store().mediaConnection()) // The media connection to use for the upload
            .media(urlMedia) // Set the audio of this message
            .voiceMessage(false) // Set whether this message is a voice message
            .build(); // Create the message
@@ -549,8 +629,8 @@ All types of messages supported by Whatsapp are supported by this library:
   -  Video
 
      ```java
-     var video = VideoMessage.newVideoMessage() // Create a new video message builder
-           .storeId(api.store().id()) // All media messages need a reference to their store
+     var video = VideoMessage.newVideoBuilder() // Create a new video message builder
+           .mediaConnection(api.store().mediaConnection()) // The media connection to use for the upload
            .media(urlMedia) // Set the video of this message
            .caption("A nice video") // Set the caption of this message
            .width(100) // Set the width of the video
@@ -562,8 +642,8 @@ All types of messages supported by Whatsapp are supported by this library:
   -  GIF(Video)
 
      ```java
-     var gif = VideoMessage.newGifMessage() // Create a new gif message builder
-           .storeId(api.store().id()) // All media messages need a reference to their store
+     var gif = VideoMessage.newGifBuilder() // Create a new gif message builder
+           .mediaConnection(api.store().mediaConnection()) // The media connection to use for the upload
            .media(urlMedia) // Set the gif of this message
            .caption("A nice video") // Set the caption of this message
            .gifAttribution(VideoMessageAttribution.TENOR) // Set the source of the gif
@@ -575,8 +655,8 @@ All types of messages supported by Whatsapp are supported by this library:
   -  Document
 
      ```java
-     var document = DocumentMessage.newDocumentMessage() // Create a new document message builder
-           .storeId(api.store().id()) // All media messages need a reference to their store
+     var document = DocumentMessage.newDocumentBuilder() // Create a new document message builder
+           .mediaConnection(api.store().mediaConnection()) // The media connection to use for the upload
            .media(urlMedia) // Set the document of this message
            .title("A nice pdf") // Set the title of the document
            .fileName("pdf-test.pdf") // Set the name of the document

@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.chat;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
@@ -51,6 +52,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     @ProtobufProperty(index = 2, type = MESSAGE, concreteType = HistorySyncMessage.class, repeated = true)
     @Default
     @NonNull
+    @JsonManagedReference
     private SortedMessageList messages = new SortedMessageList();
 
     /**
@@ -426,6 +428,24 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
         return messages.stream()
                 .filter(MessageInfo::starred)
                 .toList();
+    }
+
+    /**
+     * Adds a message to the chat
+     *
+     * @param info The message to be added to the chat.
+     */
+    public void addMessage(@NonNull MessageInfo info){
+        messages.add(info);
+    }
+
+    /**
+     * Remove a message from the chat
+     *
+     * @param info The message to remove
+     */
+    public void removeMessage(@NonNull MessageInfo info){
+        messages.remove(info);
     }
 
     /**

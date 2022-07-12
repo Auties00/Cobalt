@@ -3,9 +3,9 @@ package it.auties.whatsapp.model.message.standard;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.model.InteractiveAnnotation;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
@@ -30,7 +30,7 @@ import static java.util.Objects.requireNonNullElse;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(builderMethodName = "newRawVideoMessage")
+@SuperBuilder(builderMethodName = "newRawVideoBuilder")
 @Jacksonized
 @Accessors(fluent = true)
 public final class VideoMessage extends MediaMessage {
@@ -142,7 +142,7 @@ public final class VideoMessage extends MediaMessage {
      * Constructs a new builder to create a VideoMessage that wraps a video.
      * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
      *
-     * @param storeId     the id of the store where this message will be stored
+     * @param mediaConnection the media connection to use to upload this message
      * @param media       the non-null video that the new message wraps
      * @param mimeType    the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
      * @param caption     the caption of the new message
@@ -150,17 +150,13 @@ public final class VideoMessage extends MediaMessage {
      * @param contextInfo the context info that the new message wraps
      * @return a non-null new message
      */
-    @Builder(builderClassName = "SimpleVideoMessageBuilder", builderMethodName = "newVideoMessage")
-    private static VideoMessage videoBuilder(int storeId, byte @NonNull [] media, String mimeType, String caption,
-                                             byte[] thumbnail, ContextInfo contextInfo) {
-        var store = Store.findStoreById(storeId)
-                .orElseThrow(() -> new NoSuchElementException(
-                        "Cannot create video message, invalid store id: %s".formatted(storeId)));
+    @Builder(builderClassName = "SimpleVideoMessageBuilder", builderMethodName = "newVideoBuilder")
+    private static VideoMessage videoBuilder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media, String mimeType,
+                                             String caption, byte[] thumbnail, ContextInfo contextInfo) {
         var dimensions = Medias.getDimensions(media, true);
         var duration = Medias.getDuration(media, true);
-        var upload = Medias.upload(media, VIDEO, store);
-        return VideoMessage.newRawVideoMessage()
-                .storeId(storeId)
+        var upload = Medias.upload(media, VIDEO, mediaConnection);
+        return VideoMessage.newRawVideoBuilder()
                 .fileSha256(upload.fileSha256())
                 .fileEncSha256(upload.fileEncSha256())
                 .key(upload.mediaKey())
@@ -186,7 +182,7 @@ public final class VideoMessage extends MediaMessage {
      * This is because Whatsapp doesn't support standard gifs.
      * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
      *
-     * @param storeId        the id of the store where this message will be stored
+     * @param mediaConnection the media connection to use to upload this message
      * @param media          the non-null video that the new message wraps
      * @param mimeType       the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
      * @param caption        the caption of the new message
@@ -195,20 +191,16 @@ public final class VideoMessage extends MediaMessage {
      * @param contextInfo    the context info that the new message wraps
      * @return a non-null new message
      */
-    @Builder(builderClassName = "SimpleGifBuilder", builderMethodName = "newGifMessage")
-    private static VideoMessage gifBuilder(int storeId, byte @NonNull [] media, String mimeType, String caption,
-                                           VideoMessageAttribution gifAttribution, byte[] thumbnail,
+    @Builder(builderClassName = "SimpleGifBuilder", builderMethodName = "newGifBuilder")
+    private static VideoMessage gifBuilder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media, String mimeType,
+                                           String caption, VideoMessageAttribution gifAttribution, byte[] thumbnail,
                                            ContextInfo contextInfo) {
-        Validate.isTrue(isGif(media, mimeType),
+        Validate.isTrue(isNotGif(media, mimeType),
                 "Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
-        var store = Store.findStoreById(storeId)
-                .orElseThrow(() -> new NoSuchElementException(
-                        "Cannot create video message, invalid store id: %s".formatted(storeId)));
         var dimensions = Medias.getDimensions(media, true);
         var duration = Medias.getDuration(media, true);
-        var upload = Medias.upload(media, VIDEO, store);
-        return VideoMessage.newRawVideoMessage()
-                .storeId(storeId)
+        var upload = Medias.upload(media, VIDEO, mediaConnection);
+        return VideoMessage.newRawVideoBuilder()
                 .fileSha256(upload.fileSha256())
                 .fileEncSha256(upload.fileEncSha256())
                 .key(upload.mediaKey())
@@ -230,7 +222,7 @@ public final class VideoMessage extends MediaMessage {
                 .build();
     }
 
-    private static boolean isGif(byte[] media, String mimeType) {
+    private static boolean isNotGif(byte[] media, String mimeType) {
         return Medias.getMimeType(media)
                 .filter("image/gif"::equals)
                 .isEmpty() && !Objects.equals(mimeType, "image/gif");

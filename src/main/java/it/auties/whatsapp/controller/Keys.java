@@ -406,7 +406,7 @@ public final class Keys implements Controller<Keys> {
 
     @Override
     public void dispose() {
-        // Nothing to do
+        serialize();
     }
 
     @JsonSetter

@@ -5,6 +5,7 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.util.Clock;
@@ -27,7 +28,7 @@ import static it.auties.whatsapp.model.message.model.MediaMessageType.AUDIO;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(builderMethodName = "newRawAudioMessage")
+@SuperBuilder(builderMethodName = "newRawAudioBuilder")
 @Jacksonized
 @Accessors(fluent = true)
 public final class AudioMessage extends MediaMessage {
@@ -104,23 +105,19 @@ public final class AudioMessage extends MediaMessage {
      * Constructs a new builder to create a AudioMessage.
      * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
      *
-     * @param storeId      the id of the store where this message will be stored
-     * @param media        the non-null image that the new message holds
-     * @param mimeType     the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
-     * @param contextInfo  the context info that the new message wraps
-     * @param voiceMessage whether the new message should be considered as a voice message or as a normal audio, by default the latter is used
+     * @param mediaConnection the media connection to use to upload this message
+     * @param media           the non-null image that the new message holds
+     * @param mimeType        the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
+     * @param contextInfo     the context info that the new message wraps
+     * @param voiceMessage    whether the new message should be considered as a voice message or as a normal audio, by default the latter is used
      * @return a non-null new message
      */
-    @Builder(builderClassName = "SimpleAudioMessageBuilder", builderMethodName = "newAudioMessage")
-    private static AudioMessage builder(int storeId, byte @NonNull [] media, ContextInfo contextInfo, String mimeType,
-                                        boolean voiceMessage) {
-        var store = Store.findStoreById(storeId)
-                .orElseThrow(() -> new NoSuchElementException(
-                        "Cannot create audio message, invalid store id: %s".formatted(storeId)));
+    @Builder(builderClassName = "SimpleAudioMessageBuilder", builderMethodName = "newAudioBuilder")
+    private static AudioMessage builder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media,
+                                        ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
         var duration = Medias.getDuration(media, true);
-        var upload = Medias.upload(media, AUDIO, store);
-        return AudioMessage.newRawAudioMessage()
-                .storeId(storeId)
+        var upload = Medias.upload(media, AUDIO, mediaConnection);
+        return AudioMessage.newRawAudioBuilder()
                 .fileSha256(upload.fileSha256())
                 .fileEncSha256(upload.fileEncSha256())
                 .key(upload.mediaKey())

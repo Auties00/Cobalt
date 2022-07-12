@@ -1,7 +1,8 @@
 package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.business.BusinessPrivacyStatus;
@@ -35,19 +36,7 @@ import static java.util.Objects.requireNonNullElseGet;
 @Builder(builderMethodName = "newMessageInfo")
 @Jacksonized
 @Accessors(fluent = true)
-@ToString(exclude = {"storeId", "cachedStore"})
 public final class MessageInfo implements Info {
-    /**
-     * The id of the store associated with this message
-     */
-    private int storeId;
-
-    /**
-     * The cached store
-     */
-    @JsonIgnore
-    private Store cachedStore;
-
     /**
      * The MessageKey of this message
      */
@@ -95,7 +84,10 @@ public final class MessageInfo implements Info {
      * The jid of the sender
      */
     @ProtobufProperty(index = 5, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
+    @Setter(AccessLevel.NONE)
     private ContactJid senderJid;
+
+    private Contact sender;
 
     /**
      * Message C2 timestamp
@@ -292,15 +284,6 @@ public final class MessageInfo implements Info {
         this.individualStatus = new ConcurrentHashMap<>();
     }
 
-    public boolean equals(Object object) {
-        return object instanceof MessageInfo that && Objects.equals(this.id(), that.id());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(id());
-    }
-
     /**
      * Returns the jid of the contact or group that sent the message.
      *
@@ -334,7 +317,7 @@ public final class MessageInfo implements Info {
      * @return a non-null ContactJid
      */
     public ContactJid senderJid() {
-        return requireNonNullElseGet(senderJid, () -> requireNonNullElseGet(key.senderJid(), key::chatJid));
+        return requireNonNullElseGet(senderJid, () -> key.senderJid().orElseGet(key::chatJid));
     }
 
     /**
@@ -342,7 +325,6 @@ public final class MessageInfo implements Info {
      *
      * @return a non-null String
      */
-    @JsonIgnore
     public String chatName() {
         return chat().map(Chat::name)
                 .orElseGet(chatJid()::user);
@@ -353,7 +335,6 @@ public final class MessageInfo implements Info {
      *
      * @return a non-null String
      */
-    @JsonIgnore
     public String senderName() {
         return sender().map(Contact::name)
                 .orElseGet(senderJid()::user);
@@ -362,21 +343,20 @@ public final class MessageInfo implements Info {
     /**
      * Returns the chat where the message was sent
      *
-     * @return an optional wrapping a {@link Chat}
+     * @return an optional
      */
-    @JsonIgnore
     public Optional<Chat> chat() {
-        return store().findChatByJid(chatJid());
+        return key.chat();
     }
 
     /**
      * Returns the contact that sent the message
      *
-     * @return an optional wrapping a {@link Contact}
+     * @return an optional
      */
-    @JsonIgnore
     public Optional<Contact> sender() {
-        return store().findContactByJid(senderJid());
+        return Optional.ofNullable(sender)
+                .or(key::sender);
     }
 
     /**
@@ -384,26 +364,11 @@ public final class MessageInfo implements Info {
      *
      * @return a non-empty optional {@link MessageInfo} if this message quotes a message in memory
      */
-    @JsonIgnore
     public Optional<MessageInfo> quotedMessage() {
         return Optional.of(message)
                 .flatMap(MessageContainer::contentWithContext)
                 .map(ContextualMessage::contextInfo)
-                .flatMap(this::quotedMessage);
-    }
-
-    private Optional<MessageInfo> quotedMessage(ContextInfo contextualMessage) {
-        var chat = chat().orElseThrow(() -> new NoSuchElementException("Cannot get quoted message: missing chat"));
-        return store().findMessageById(chat, contextualMessage.quotedMessageId());
-    }
-
-    public Store store() {
-        return Objects.requireNonNullElseGet(cachedStore, () -> this.cachedStore = cacheStore());
-    }
-
-    private Store cacheStore() {
-        return Store.findStoreById(storeId)
-                .orElseThrow(() -> new NoSuchElementException("Missing store for id %s".formatted(storeId)));
+                .flatMap(ContextInfo::quotedMessage);
     }
 
     /**
@@ -606,5 +571,14 @@ public final class MessageInfo implements Info {
                             .contains(symbol))
                     .findFirst();
         }
+    }
+
+    public boolean equals(Object object) {
+        return object instanceof MessageInfo that && Objects.equals(this.id(), that.id());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(id());
     }
 }

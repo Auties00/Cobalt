@@ -21,6 +21,7 @@ import lombok.SneakyThrows;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -37,12 +38,13 @@ class AppStateHandler implements JacksonProvider {
 
     private final Socket socket;
     private final Semaphore lock;
+    private final CountDownLatch latch;
 
     @SneakyThrows
     protected AppStateHandler(Socket socket) {
         this.socket = socket;
         this.lock = new Semaphore(1);
-        lock.acquire();
+        this.latch = new CountDownLatch(1);
     }
 
     protected CompletableFuture<Void> push(@NonNull PatchRequest patch) {
@@ -141,20 +143,20 @@ class AppStateHandler implements JacksonProvider {
     }
 
     protected void pull() {
-        pull(Arrays.asList(PatchType.values()), false);
+        pull(Arrays.asList(PatchType.values()))
+                .thenRunAsync(latch::countDown);
     }
 
+    @SneakyThrows
     protected CompletableFuture<Boolean> pull(PatchType... patchTypes) {
+        latch.await();
         Validate.isTrue(patchTypes.length != 0, "Cannot pull no patches", IllegalArgumentException.class);
-        return pull(Arrays.asList(patchTypes), true);
+        return pull(Arrays.asList(patchTypes));
     }
 
-    private CompletableFuture<Boolean> pull(List<PatchType> patchTypes, boolean useLock) {
+    private CompletableFuture<Boolean> pull(List<PatchType> patchTypes) {
         try {
-            if (useLock) {
-                lock.acquire();
-            }
-
+            lock.acquire();
             var versions = new HashMap<PatchType, Long>();
             var attempts = new HashMap<PatchType, Integer>();
             return pullPatches(patchTypes, versions, attempts)
@@ -288,7 +290,7 @@ class AppStateHandler implements JacksonProvider {
         }
 
         var blob = PROTOBUF.readMessage(snapshot.contentAsBytes(), ExternalBlobReference.class);
-        var syncedData = Medias.download(blob, socket.store());
+        var syncedData = Medias.download(blob, socket.store().mediaConnection());
         return PROTOBUF.readMessage(syncedData, SnapshotSync.class);
     }
 
@@ -398,8 +400,7 @@ class AppStateHandler implements JacksonProvider {
     }
 
     private void deleteMessage(MessageInfo message, Chat chat) {
-        chat.messages()
-                .remove(message);
+        chat.removeMessage(message);
         socket.onMessageDeleted(message, false);
     }
 
@@ -418,7 +419,7 @@ class AppStateHandler implements JacksonProvider {
     private Optional<MutationsRecord> decodePatch(PatchType patchType, long minimumVersion, LTHashState newState,
                                                   PatchSync patch) {
         if (patch.hasExternalMutations()) {
-            var blob = Medias.download(patch.externalMutations(), socket.store());
+            var blob = Medias.download(patch.externalMutations(), socket.store().mediaConnection());
             var mutationsSync = PROTOBUF.readMessage(blob, MutationsSync.class);
             Validate.isTrue(patch.mutations()
                     .addAll(mutationsSync.mutations()), "Cannot add patches to known patches");
@@ -560,6 +561,10 @@ class AppStateHandler implements JacksonProvider {
                         .getBytes(StandardCharsets.UTF_8))
                 .toByteArray();
         return Hmac.calculateSha256(total, key);
+    }
+
+    public CountDownLatch latch() {
+        return latch;
     }
 
     record SyncRecord(LTHashState state, List<ActionDataSync> records) {

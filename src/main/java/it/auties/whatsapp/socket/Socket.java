@@ -101,7 +101,12 @@ public class Socket implements JacksonProvider, SignalSpecification {
         this.messageHandler = new MessageHandler(this);
         this.appStateHandler = new AppStateHandler(this);
         this.errorHandler = new FailureHandler(this);
-        getRuntime().addShutdownHook(new Thread(() -> onSocketEvent(SocketEvent.CLOSE)));
+        getRuntime().addShutdownHook(new Thread(() -> {
+            keys.dispose();
+            store.dispose();
+            Preferences.waitAsyncOperations();
+            onSocketEvent(SocketEvent.CLOSE);
+        }));
     }
 
     public Contact createContact(ContactJid jid) {
@@ -495,6 +500,11 @@ public class Socket implements JacksonProvider, SignalSpecification {
     protected void onLoggedIn() {
         store.invokeListeners(Listener::onLoggedIn);
         authHandler.future().complete(null);
+    }
+
+    @SneakyThrows
+    protected void awaitReadyState() {
+        appStateHandler.latch().await();
     }
 
     public static class OriginPatcher extends Configurator {

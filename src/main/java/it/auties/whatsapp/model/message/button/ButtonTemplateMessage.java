@@ -22,7 +22,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(builderMethodName = "newTemplateMessage")
+@SuperBuilder(builderMethodName = "newTemplateBuilder")
 @Accessors(fluent = true)
 public final class ButtonTemplateMessage extends ContextualMessage implements ButtonMessage {
     /**

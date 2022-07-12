@@ -16,11 +16,15 @@ public class InitializationLock<T> {
     }
 
     public T read(){
+        await();
+        return element;
+    }
+
+    public void await() {
         try {
             latch.await();
-            return element;
-        }catch (InterruptedException exception){
-            throw new RuntimeException("Cannot read value", exception);
+        } catch (InterruptedException exception) {
+            throw new RuntimeException("Cannot lock", exception);
         }
     }
 }

@@ -1,8 +1,10 @@
 package it.auties.whatsapp.model.message.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.media.AttachmentProvider;
+import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.payment.PaymentInvoiceMessage;
 import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.util.Medias;
@@ -19,13 +21,13 @@ import java.util.Objects;
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
  * Even though the same instance is in the wrapping message info(MessageInfo -> MessageContainer -> MediaMessage),
  * there is currently no way to navigate the tree upwards or any reason to do so considering that this is a special use case.
- * Considering that passing the same instance to {@link MediaMessage#decodedMedia()} is verbose and unnecessary, there is a copy here.
+ * Considering that passing the same instance to {@link MediaMessage#decodedMedia(MediaConnection)} is verbose and unnecessary, there is a copy here.
  */
 @AllArgsConstructor
 @SuperBuilder
 @NoArgsConstructor
 @Accessors(fluent = true)
-@EqualsAndHashCode(exclude = {"storeId", "cachedStore"}, callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 public abstract sealed class MediaMessage extends ContextualMessage implements AttachmentProvider
         permits PaymentInvoiceMessage, AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoMessage {
     /**
@@ -34,45 +36,25 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
     private byte[] decodedMedia;
 
     /**
-     * The id of the store where this message is located
-     */
-    @Getter
-    @Setter
-    private int storeId;
-
-    /**
-     * The cached store
-     */
-    @JsonIgnore
-    private Store cachedStore;
-
-    protected Store store() {
-        return Objects.requireNonNullElseGet(cachedStore, () -> this.cachedStore = cacheStore());
-    }
-
-    private Store cacheStore() {
-        return Store.findStoreById(storeId)
-                .orElseThrow(() -> new NoSuchElementException("Missing store for id %s".formatted(storeId)));
-    }
-
-    /**
      * Returns the cached decoded media wrapped by this object if available.
      * Otherwise, the encoded media that this object wraps is decoded, cached and returned.
      *
+     * @param mediaConnection the non-null media connection to use to decode this media
      * @return a non-null array of bytes
      */
-    public byte[] decodedMedia() {
-        return Objects.requireNonNullElseGet(decodedMedia, () -> (this.decodedMedia = Medias.download(this, store())));
+    public byte[] decodedMedia(@NonNull MediaConnection mediaConnection) {
+        return Objects.requireNonNullElseGet(decodedMedia, () -> (this.decodedMedia = Medias.download(this, mediaConnection)));
     }
 
     /**
      * Decodes the encoded media that this object wraps, caches it and returns the decoded media.
      *
+     * @param mediaConnection the non-null media connection to use to decode this media
      * @return a non-null array of bytes
      */
-    public byte[] refreshMedia() {
+    public byte[] refreshMedia(@NonNull MediaConnection mediaConnection) {
         this.decodedMedia = null;
-        return decodedMedia();
+        return decodedMedia(mediaConnection);
     }
 
     /**

@@ -1,18 +1,19 @@
 package it.auties.whatsapp.model.info;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatDisappear;
+import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.message.model.ActionLink;
-import it.auties.whatsapp.model.message.model.ContextualMessage;
-import it.auties.whatsapp.model.message.model.MessageContainer;
-import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.payment.PaymentOrderMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
+import java.util.Optional;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
@@ -36,19 +37,38 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
      * The jid of the contact that sent the message that this ContextualMessage quotes
      */
     @ProtobufProperty(index = 2, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
-    private ContactJid quotedMessageSender;
+    @Setter(AccessLevel.NONE)
+    private ContactJid quotedMessageSenderJid;
+
+    /**
+     * The contact that sent the message that this ContextualMessage quotes
+     */
+    private Contact quotedMessageSender;
+
+    /**
+     * The message container that this ContextualMessage quotes
+     */
+    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = MessageContainer.class)
+    @Setter(AccessLevel.NONE)
+    private MessageContainer quotedMessageContainer;
 
     /**
      * The message that this ContextualMessage quotes
      */
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = MessageContainer.class)
-    private MessageContainer quotedMessage;
+    private MessageInfo quotedMessage;
 
     /**
      * The jid of the contact that sent the message that this ContextualMessage quotes
      */
     @ProtobufProperty(index = 4, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
-    private ContactJid quotedMessageChat;
+    @Setter(AccessLevel.NONE)
+    private ContactJid quotedMessageChatJid;
+
+    /**
+     * The contact that sent the message that this ContextualMessage quotes
+     */
+    @JsonBackReference
+    private Chat quotedMessageChat;
 
     /**
      * A list of the contacts' jids mentioned in this ContextualMessage
@@ -167,16 +187,44 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
     @ProtobufProperty(index = 35, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
     private ContactJid parentGroup;
 
-
     /**
      * Constructs a ContextInfo from a quoted message
      *
      * @param quotedMessage the message to quote
+     * @return a non-null context info
      */
-    public ContextInfo(@NonNull MessageInfo quotedMessage) {
-        this.quotedMessage = quotedMessage.message();
+    public static ContextInfo of(@NonNull MessageInfo quotedMessage){
+        return new ContextInfo(quotedMessage);
+    }
+
+    private ContextInfo(@NonNull MessageInfo quotedMessage) {
         this.quotedMessageId = quotedMessage.key()
                 .id();
-        this.quotedMessageSender = quotedMessage.senderJid();
+        this.quotedMessageSenderJid = quotedMessage.senderJid();
+        this.quotedMessageSender = quotedMessage.sender()
+                .orElse(null);
+        this.quotedMessageChatJid = quotedMessage.chatJid();
+        this.quotedMessageChat = quotedMessage.chat()
+                .orElse(null);
+        this.quotedMessage = quotedMessage;
+        this.quotedMessageContainer = quotedMessage.message();
+    }
+
+    /**
+     * Returns the quoted message info
+     *
+     * @return an optional
+     */
+    public Optional<MessageInfo> quotedMessage() {
+        return Optional.ofNullable(quotedMessage);
+    }
+
+    /**
+     * Returns the quoted message
+     *
+     * @return an optional
+     */
+     public Optional<MessageContainer> quotedMessageContainer() {
+        return Optional.ofNullable(quotedMessage != null ? quotedMessage.message() : quotedMessageContainer);
     }
 }

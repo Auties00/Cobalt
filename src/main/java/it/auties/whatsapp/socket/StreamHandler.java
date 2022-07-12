@@ -45,6 +45,7 @@ class StreamHandler implements JacksonProvider {
     private static final byte[] SIGNATURE_HEADER = {6, 1};
     private static final int REQUIRED_PRE_KEYS_SIZE = 5;
     private static final int PRE_KEYS_UPLOAD_CHUNK = 30;
+    private static final int PING_INTERVAL = 30;
 
     private final Socket socket;
 
@@ -259,7 +260,7 @@ class StreamHandler implements JacksonProvider {
         var known = socket.store()
                 .findChatByJid(chat)
                 .orElseGet(() -> socket.createChat(chat));
-        known.messages().add(message);
+        known.addMessage(message);
     }
 
     private void digestIb(Node node) {
@@ -337,7 +338,7 @@ class StreamHandler implements JacksonProvider {
         }
 
         this.pingService = newSingleThreadScheduledExecutor();
-        pingService.scheduleAtFixedRate(this::sendPing, 20L, 20L, TimeUnit.SECONDS);
+        pingService.scheduleAtFixedRate(this::sendPing, PING_INTERVAL, PING_INTERVAL, TimeUnit.SECONDS);
     }
 
     private void sendStatusUpdate() {
@@ -369,6 +370,7 @@ class StreamHandler implements JacksonProvider {
             return;
         }
 
+        socket.store().serialize();
         socket.sendQuery("get", "w:p", with("ping"));
         socket.onSocketEvent(SocketEvent.PING);
     }

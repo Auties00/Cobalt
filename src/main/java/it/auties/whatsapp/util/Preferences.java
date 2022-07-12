@@ -9,29 +9,48 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Queue;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.*;
+import java.util.concurrent.*;
 
 @RequiredArgsConstructor(staticName = "of")
 public final class Preferences implements JacksonProvider {
     private static final Path DEFAULT_DIRECTORY;
-    private static final Queue<CompletableFuture<Void>> ASYNC_WRITES;
+    private static final Map<Path, TreeMap<Long, CompletableFuture<Void>>> ASYNC_WRITES;
 
     static {
         try {
             DEFAULT_DIRECTORY = Path.of(System.getProperty("user.home") + "/.whatsappweb4j/");
             Files.createDirectories(DEFAULT_DIRECTORY);
-            ASYNC_WRITES = new ConcurrentLinkedQueue<>();
-            Runtime.getRuntime()
-                    .addShutdownHook(new Thread(
-                            () -> CompletableFuture.allOf(ASYNC_WRITES.toArray(CompletableFuture[]::new))
-                                    .join()));
+            ASYNC_WRITES = new ConcurrentHashMap<>();
         } catch (IOException exception) {
             throw new RuntimeException("Cannot create home path", exception);
         }
+    }
+
+    public static void waitAsyncOperations() {
+        if(ASYNC_WRITES.isEmpty()){
+            return;
+        }
+
+        var futures = ASYNC_WRITES.values()
+                .stream()
+                .peek(Preferences::cancelOutdatedOperations)
+                .map(TreeMap::lastEntry)
+                .filter(Objects::nonNull)
+                .map(Map.Entry::getValue)
+                .toArray(CompletableFuture[]::new);
+        CompletableFuture.allOf(futures)
+                .join();
+    }
+
+    private static void cancelOutdatedOperations(TreeMap<Long, CompletableFuture<Void>> data) {
+        var lastEntry = data.lastEntry();
+        if(lastEntry == null){
+            return;
+        }
+
+        data.headMap(lastEntry.getKey())
+                .forEach((id, future) -> future.cancel(true));
     }
 
     @NonNull
@@ -76,20 +95,36 @@ public final class Preferences implements JacksonProvider {
         return this.cache = Files.readString(file);
     }
 
-    public void writeJson(Object input, boolean async) {
+    public synchronized void writeJson(Object input, boolean async) {
         if (!async) {
             writeObject(input);
             return;
         }
 
-        ASYNC_WRITES.add(CompletableFuture.runAsync(() -> writeObject(input)));
+        var writes = ASYNC_WRITES.getOrDefault(file, new TreeMap<>());
+        var lastEntry = writes.lastEntry();
+        var id = lastEntry != null ? lastEntry.getKey() + 1 : 0;
+        var future = CompletableFuture.runAsync(() -> writeObject(input))
+                .thenRunAsync(() -> writes.remove(id))
+                .exceptionallyAsync(throwable -> onError(id, writes, throwable));
+        writes.put(id, future);
+        ASYNC_WRITES.put(file, writes);
     }
 
-    @SneakyThrows
+    private static Void onError(long id, TreeMap<Long, CompletableFuture<Void>> writes, Throwable throwable) {
+        writes.remove(id);
+        throwable.printStackTrace();
+        return null;
+    }
+
     private void writeObject(Object input) {
-        Files.createDirectories(file.getParent());
-        Files.writeString(file, JSON.writeValueAsString(input), StandardOpenOption.CREATE,
-                StandardOpenOption.TRUNCATE_EXISTING);
+        try {
+            Files.createDirectories(file.getParent());
+            Files.writeString(file, JSON.writeValueAsString(input), StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING);
+        } catch (IOException exception) {
+            throw new RuntimeException("Cannot write object", exception);
+        }
     }
 
     @SneakyThrows

@@ -19,7 +19,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Builder(builderMethodName = "newSenderKeyDistributionMessage")
+@Builder(builderMethodName = "newSenderKeyDistributionBuilder")
 @Jacksonized
 @Accessors(fluent = true)
 public final class SenderKeyDistributionMessage implements ServerMessage {

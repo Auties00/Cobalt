@@ -1,8 +1,13 @@
 package it.auties.whatsapp.model.message.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.whatsapp.model.chat.Chat;
+import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.MessageInfo;
 import lombok.*;
@@ -11,6 +16,7 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Locale;
+import java.util.Optional;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.BOOLEAN;
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
@@ -27,11 +33,17 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Builder(builderMethodName = "newMessageKey")
 public class MessageKey implements ProtobufMessage {
     /**
-     * The jid of the contact or group that sent the message.
+     * The jid of the chat where the message was sent
      */
     @ProtobufProperty(index = 1, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
     @NonNull
     private ContactJid chatJid;
+
+    /**
+     * The chat where the message was sent
+     */
+    @JsonBackReference
+    private Chat chat;
 
     /**
      * Determines whether the message was sent by you or by someone else
@@ -54,6 +66,11 @@ public class MessageKey implements ProtobufMessage {
     private ContactJid senderJid;
 
     /**
+     * The sender of the message
+     */
+    private Contact sender;
+
+    /**
      * Generates a random message id
      *
      * @return a non-null String
@@ -65,11 +82,38 @@ public class MessageKey implements ProtobufMessage {
     }
 
     /**
+     * Returns the chat where the message was sent
+     *
+     * @return an optional
+     */
+    public Optional<Chat> chat() {
+        return Optional.ofNullable(chat);
+    }
+
+    /**
+     * Returns the contact that sent the message
+     *
+     * @return an optional
+     */
+    public Optional<Contact> sender() {
+        return Optional.ofNullable(sender);
+    }
+
+    /**
+     * Returns the jid of the contact that sent the message
+     *
+     * @return an optional
+     */
+    public Optional<ContactJid> senderJid() {
+        return Optional.ofNullable(senderJid);
+    }
+
+    /**
      * Copies this key
      *
      * @return a non-null message key
      */
     public MessageKey copy(){
-        return new MessageKey(chatJid, fromMe, id, senderJid);
+        return new MessageKey(chatJid, chat, fromMe, id, senderJid, sender);
     }
 }

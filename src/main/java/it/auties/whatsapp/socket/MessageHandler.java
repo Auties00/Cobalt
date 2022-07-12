@@ -86,6 +86,7 @@ class MessageHandler implements JacksonProvider {
     @SafeVarargs
     protected final CompletableFuture<Void> encode(MessageInfo info, Map.Entry<String, Object>... attributes) {
         try {
+            socket.awaitReadyState();
             lock.acquire();
             var encodedMessage = BytesHelper.messageToBytes(info.message());
             if (isConversation(info)) {
@@ -98,7 +99,7 @@ class MessageHandler implements JacksonProvider {
                         .thenComposeAsync(allDevices -> createConversationNodes(allDevices, encodedMessage, encodedDeviceMessage))
                         .thenApplyAsync(sessions -> createEncodedMessageNode(info, sessions, null, attributes))
                         .thenComposeAsync(socket::send)
-                        .thenRunAsync(() -> info.chat().ifPresent(chat -> chat.messages().add(info)))
+                        .thenRunAsync(() -> info.chat().ifPresent(chat -> chat.addMessage(info)))
                         .thenRunAsync(lock::release)
                         .exceptionallyAsync(this::handleMessageFailure);
             }
@@ -117,7 +118,7 @@ class MessageHandler implements JacksonProvider {
                     .thenComposeAsync(allDevices -> createGroupNodes(info, signalMessage, allDevices))
                     .thenApplyAsync(preKeys -> createEncodedMessageNode(info, preKeys, groupMessage, attributes))
                     .thenComposeAsync(socket::send)
-                    .thenRunAsync(() -> info.chat().ifPresent(chat -> chat.messages().add(info)))
+                    .thenRunAsync(() -> info.chat().ifPresent(chat -> chat.addMessage(info)))
                     .thenRunAsync(lock::release)
                     .exceptionallyAsync(this::handleMessageFailure);
         } catch (Throwable throwable) {
@@ -397,8 +398,7 @@ class MessageHandler implements JacksonProvider {
 
             var key = keyBuilder.id(id)
                     .build();
-            var info = messageBuilder.storeId(socket.store().id())
-                    .key(key)
+            var info = messageBuilder.key(key)
                     .pushName(pushName)
                     .timestamp(timestamp)
                     .build();
@@ -471,11 +471,7 @@ class MessageHandler implements JacksonProvider {
     }
 
     private void saveMessage(MessageInfo info) {
-        if (info.message()
-                .content() instanceof MediaMessage mediaMessage) {
-            mediaMessage.storeId(info.storeId());
-        }
-
+        socket.store().attribute(info);
         if (info.chatJid()
                 .equals(ContactJid.STATUS_ACCOUNT)) {
             socket.store().addStatus(info);
@@ -485,8 +481,7 @@ class MessageHandler implements JacksonProvider {
 
         var chat = info.chat()
                 .orElseGet(() -> socket.createChat(info.chatJid()));
-        chat.messages()
-                .add(info);
+        chat.addMessage(info);
         if (info.timestamp() <= socket.store().initializationTimeStamp()) {
             return;
         }
@@ -515,7 +510,7 @@ class MessageHandler implements JacksonProvider {
     private void handleProtocolMessage(MessageInfo info, ProtocolMessage protocolMessage, boolean peer) {
         switch (protocolMessage.type()) {
             case HISTORY_SYNC_NOTIFICATION -> {
-                var compressed = Medias.download(protocolMessage.historySyncNotification(), socket.store());
+                var compressed = Medias.download(protocolMessage.historySyncNotification(), socket.store().mediaConnection());
                 var decompressed = BytesHelper.deflate(compressed);
                 var history = PROTOBUF.readMessage(decompressed, HistorySync.class);
 
@@ -532,8 +527,6 @@ class MessageHandler implements JacksonProvider {
 
                     case INITIAL_STATUS_V3 -> {
                         history.statusV3Messages()
-                                .stream()
-                                .peek(message -> message.storeId(socket.store().id()))
                                 .forEach(socket.store()::addStatus);
                         socket.store().invokeListeners(Listener::onStatus);
                     }
@@ -552,6 +545,10 @@ class MessageHandler implements JacksonProvider {
             }
 
             case APP_STATE_SYNC_KEY_SHARE -> {
+                if(protocolMessage.appStateSyncKeyShare().keys().isEmpty()){
+                    return;
+                }
+
                 socket.keys().addAppKeys(protocolMessage.appStateSyncKeyShare()
                         .keys());
                 socket.pullPatches();
@@ -563,8 +560,7 @@ class MessageHandler implements JacksonProvider {
                 socket.store().findMessageById(chat, protocolMessage.key()
                                 .id())
                         .ifPresent(message -> {
-                            chat.messages()
-                                    .remove(message);
+                            chat.removeMessage(message);
                             socket.onMessageDeleted(message, true);
                         });
             }

@@ -21,7 +21,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @NoArgsConstructor
 @Data
 @Jacksonized
-@Builder(builderMethodName = "newRequestPaymentMessage")
+@Builder(builderMethodName = "newRequestPaymentBuilder")
 @Accessors(fluent = true)
 public final class RequestPaymentMessage implements PaymentMessage {
     /**

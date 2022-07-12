@@ -1,17 +1,21 @@
 package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJidProvider;
+import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.MediaConnection;
+import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.util.Clock;
+import it.auties.whatsapp.util.ConcurrentSet;
 import it.auties.whatsapp.util.InitializationLock;
 import it.auties.whatsapp.util.Preferences;
 import lombok.*;
@@ -47,7 +51,7 @@ public final class Store implements Controller<Store> {
      * All the known stores
      */
     @JsonIgnore
-    private static Set<Store> stores = ConcurrentHashMap.newKeySet();
+    private static ConcurrentSet<Store> stores = new ConcurrentSet<>();
 
     /**
      * The session id of this store
@@ -60,33 +64,35 @@ public final class Store implements Controller<Store> {
      */
     @NonNull
     @Default
-    private Set<Chat> chats = ConcurrentHashMap.newKeySet();
+    private ConcurrentSet<Chat> chats = new ConcurrentSet<>();
 
     /**
      * The non-null list of status messages
      */
     @NonNull
     @Default
-    private Set<MessageInfo> status = ConcurrentHashMap.newKeySet();
+    private ConcurrentSet<MessageInfo> status = new ConcurrentSet<>();
 
     /**
      * The non-null list of contacts
      */
     @NonNull
     @Default
-    private Set<Contact> contacts = ConcurrentHashMap.newKeySet();
+    private ConcurrentSet<Contact> contacts = new ConcurrentSet<>();
 
     /**
      * Whether this store has already received the snapshot from
      * Whatsapp Web containing chats and contacts
      */
     @Getter
+    @Setter
     private boolean hasSnapshot;
 
     /**
      * Whether chats should be unarchived if a new message arrives
      */
     @Getter
+    @Setter
     private boolean unarchiveChats;
 
     /**
@@ -348,10 +354,35 @@ public final class Store implements Controller<Store> {
      */
     public Chat addChat(Chat chat) {
         chat.messages()
-                .forEach(message -> message.storeId(id()));
+                .forEach(this::attribute);
         chats.add(chat);
-        serialize();
         return chat;
+    }
+
+    public void attribute(MessageInfo info) {
+        info.key()
+                .chat(findChatByJid(info.key()
+                        .chatJid()).orElse(null));
+        info.key()
+                .senderJid()
+                .ifPresent(senderJid -> info.key()
+                        .sender(findContactByJid(senderJid).orElse(null)));
+        info.sender(findContactByJid(info.senderJid()).orElse(null));
+        info.message()
+                .contentWithContext()
+                .map(ContextualMessage::contextInfo)
+                .ifPresent(this::attribute);
+    }
+
+    private void attribute(ContextInfo contextInfo) {
+        contextInfo.quotedMessageSender(findContactByJid(contextInfo.quotedMessageSenderJid()).orElse(null));
+        var chat = findChatByJid(contextInfo.quotedMessageChatJid()).orElse(null);
+        if (chat == null) {
+            return;
+        }
+
+        contextInfo.quotedMessageChat(chat);
+        contextInfo.quotedMessage(findMessageById(chat, contextInfo.quotedMessageId()).orElse(null));
     }
 
     /**
@@ -362,7 +393,6 @@ public final class Store implements Controller<Store> {
      */
     public Contact addContact(Contact contact) {
         contacts.add(contact);
-        serialize();
         return contact;
     }
 
@@ -401,11 +431,9 @@ public final class Store implements Controller<Store> {
         pendingRequests.clear();
     }
 
-    /**
-     * Terminate the service associated with this store
-     */
     public void dispose() {
         requestsService.shutdownNow();
+        serialize();
     }
 
     /**
@@ -515,7 +543,8 @@ public final class Store implements Controller<Store> {
      * @param info the non-null status to add
      * @return the same instance
      */
-    public Store addStatus(MessageInfo info){
+    public Store addStatus(@NonNull MessageInfo info) {
+        attribute(info);
         status.add(info);
         return this;
     }
@@ -526,33 +555,8 @@ public final class Store implements Controller<Store> {
      * @param request the non-null status to add
      * @return the same instance
      */
-    public Store addPendingRequest(@NonNull Request request){
+    public Store addPendingRequest(@NonNull Request request) {
         pendingRequests.add(request);
-        return this;
-    }
-
-    /**
-     * This function sets the value of the hasSnapshot variable to the value of the hasSnapshot parameter, then serializes
-     * the object and returns the object.
-     *
-     * @param hasSnapshot Whether the store has a snapshot.
-     * @return the same instance
-     */
-    public Store hasSnapshot(boolean hasSnapshot) {
-        this.hasSnapshot = hasSnapshot;
-        serialize();
-        return this;
-    }
-
-    /**
-     * This function unarchives chats
-     *
-     * @param unarchiveChats Whether to unarchive chats or not.
-     * @return The Store object
-     */
-    public Store unarchiveChats(boolean unarchiveChats) {
-        this.unarchiveChats = unarchiveChats;
-        serialize();
         return this;
     }
 

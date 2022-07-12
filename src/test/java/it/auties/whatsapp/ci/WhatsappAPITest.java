@@ -26,9 +26,11 @@ import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -400,7 +402,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
 
     @Test
     @Order(26)
-    public void testTextMessage() {
+    public void testTextBuilder() {
         log("Sending text...");
         info = api.sendMessage(contact, "Hello: https://www.youtube.com/watch?v=4boXExbbGCk")
                 .join();
@@ -409,9 +411,9 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
 
     @Test
     @Order(27)
-    public void deleteMessage() {
+    public void deleteBuilder() {
         if(info == null){
-            testTextMessage();
+            testTextBuilder();
         }
 
         log("Deleting for you...");
@@ -425,40 +427,75 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
         log("Deleted for everyone");
     }
 
+    @SuppressWarnings("HttpUrlsUsage")
     @Test
     @Order(28)
-    public void testButtonsMessage() {
-        log("Sending button...");
-        var message = ButtonsMessage.builder()
-                .text("Buttons message")
-                .footerText("Just testing")
-                .buttons(IntStream.range(0, 3)
-                        .mapToObj(String::valueOf)
-                        .map(this::createButton)
-                        .toList())
+    public void testButtonsBuilder() {
+        log("Sending buttons...");
+        var emptyButtons = ButtonsMessage.newButtonsWithoutHeaderBuilder()
+                .body("A nice body")
+                .footer("A nice footer")
+                .buttons(createButtons())
                 .build();
-        var buttonsResponse = api.sendMessage(contact, message)
+        api.sendMessage(contact, emptyButtons)
                 .join();
-        log("Sent buttons: %s", buttonsResponse);
+
+        var textButtons = ButtonsMessage.newButtonsWithTextHeaderBuilder()
+                .header("A nice header")
+                .body("A nice body")
+                .footer("A nice footer")
+                .buttons(createButtons())
+                .build();
+        api.sendMessage(contact, textButtons)
+                .join();
+
+        var document = DocumentMessage.newDocumentBuilder()
+                .mediaConnection(api.store().mediaConnection())
+                .media(MediaUtils.readBytes("http://www.orimi.com/pdf-test.pdf"))
+                .title("Pdf test")
+                .fileName("pdf-test.pdf")
+                .pageCount(1)
+                .build();
+        var documentButtons = ButtonsMessage.newButtonsWithDocumentHeaderBuilder()
+                .header(document)
+                .body("A nice body")
+                .footer("A nice footer")
+                .buttons(createButtons())
+                .build();
+        api.sendMessage(contact, documentButtons)
+                .join();
+
+        var image = ImageMessage.newImageBuilder()
+                .mediaConnection(api.store().mediaConnection())
+                .media(MediaUtils.readBytes(
+                        "https://2.bp.blogspot.com/-DqXILvtoZFA/Wmmy7gRahnI/AAAAAAAAB0g/59c8l63QlJcqA0591t8-kWF739DiOQLcACEwYBhgL/s1600/pol-venere-botticelli-01.jpg"))
+                .caption("Image test")
+                .build();
+        var imageButtons = ButtonsMessage.newButtonsWithImageHeaderBuilder()
+                .header(image)
+                .body("A nice body")
+                .footer("A nice footer")
+                .buttons(createButtons())
+                .build();
+        api.sendMessage(contact, imageButtons)
+                .join();
+
+        log("Sent buttons");
     }
 
-    private Button createButton(String name) {
-        return Button.builder()
-                .buttonId(name)
-                .buttonText(ButtonText.builder()
-                        .displayText("Button %s".formatted(name))
-                        .build())
-                .type(Button.ButtonType.RESPONSE)
-                .build();
+    private List<Button> createButtons() {
+        return IntStream.range(0, 3)
+                .mapToObj("Button %s"::formatted)
+                .map(Button::newTextResponseButton)
+                .toList();
     }
 
     @Test
     @Order(29)
-    public void testImageMessage() {
+    public void testImageBuilder() {
         log("Sending image...");
-        var image = ImageMessage.newImageMessage()
-                .storeId(api.store()
-                        .id())
+        var image = ImageMessage.newImageBuilder()
+                .mediaConnection(api.store().mediaConnection())
                 .media(MediaUtils.readBytes(
                         "https://2.bp.blogspot.com/-DqXILvtoZFA/Wmmy7gRahnI/AAAAAAAAB0g/59c8l63QlJcqA0591t8-kWF739DiOQLcACEwYBhgL/s1600/pol-venere-botticelli-01.jpg"))
                 .caption("Image test")
@@ -470,11 +507,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
 
     @Test
     @Order(30)
-    public void testAudioMessage() {
+    public void testAudioBuilder() {
         log("Sending audio...");
-        var audio = AudioMessage.newAudioMessage()
-                .storeId(api.store()
-                        .id())
+        var audio = AudioMessage.newAudioBuilder()
+                .mediaConnection(api.store().mediaConnection())
                 .media(MediaUtils.readBytes("https://www.kozco.com/tech/organfinale.mp3"))
                 .build();
         var textResponse = api.sendMessage(contact, audio)
@@ -485,11 +521,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @SuppressWarnings("HttpUrlsUsage")
     @Test
     @Order(31)
-    public void testVideoMessage() {
+    public void testVideoBuilder() {
         log("Sending video...");
-        var video = VideoMessage.newVideoMessage()
-                .storeId(api.store()
-                        .id())
+        var video = VideoMessage.newVideoBuilder()
+                .mediaConnection(api.store().mediaConnection())
                 .media(MediaUtils.readBytes("http://techslides.com/demos/sample-videos/small.mp4"))
                 .caption("Video")
                 .build();
@@ -501,11 +536,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @SuppressWarnings("HttpUrlsUsage")
     @Test
     @Order(32)
-    public void testGifMessage() {
+    public void testGifBuilder() {
         log("Sending gif...");
-        var video = VideoMessage.newGifMessage()
-                .storeId(api.store()
-                        .id())
+        var video = VideoMessage.newGifBuilder()
+                .mediaConnection(api.store().mediaConnection())
                 .media(MediaUtils.readBytes("http://techslides.com/demos/sample-videos/small.mp4"))
                 .caption("Gif")
                 .build();
@@ -517,11 +551,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @SuppressWarnings("HttpUrlsUsage")
     @Test
     @Order(33)
-    public void testPdfMessage() {
+    public void testPdfBuilder() {
         log("Sending pdf...");
-        var document = DocumentMessage.newDocumentMessage()
-                .storeId(api.store()
-                        .id())
+        var document = DocumentMessage.newDocumentBuilder()
+                .mediaConnection(api.store().mediaConnection())
                 .media(MediaUtils.readBytes("http://www.orimi.com/pdf-test.pdf"))
                 .title("Pdf test")
                 .fileName("pdf-test.pdf")
@@ -534,10 +567,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
 
     @Test
     @Order(34)
-    public void testContactMessage() {
+    public void testContactBuilder() {
         log("Sending contact message...");
         var vcard = buildVcard();
-        var document = ContactMessage.newContactMessage()
+        var document = ContactMessage.newContactBuilder()
                 .name("Test")
                 .vcard(vcard)
                 .build();
@@ -559,9 +592,9 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
 
     @Test
     @Order(35)
-    public void testLocationMessage() {
+    public void testLocationBuilder() {
         log("Sending location message...");
-        var location = LocationMessage.newLocationMessage()
+        var location = LocationMessage.newLocationBuilder()
                 .latitude(40.730610)
                 .longitude(-73.935242)
                 .magneticNorthOffset(0)
@@ -573,7 +606,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
 
     @Test
     @Order(36)
-    public void testGroupInviteMessage() {
+    public void testGroupInviteBuilder() {
         if (group == null) {
             testGroupCreation();
         }
@@ -584,7 +617,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
         log("Queried %s", code);
 
         log("Sending group invite message...");
-        var invite = GroupInviteMessage.newGroupInviteMessage()
+        var invite = GroupInviteMessage.newGroupInviteBuilder()
                 .groupId(group)
                 .code(code)
                 .expiration(ZonedDateTime.now()

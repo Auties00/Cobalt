@@ -5,6 +5,7 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.model.InteractiveAnnotation;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
@@ -32,7 +33,7 @@ import static java.util.Objects.requireNonNullElse;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(builderMethodName = "newRawImageMessage")
+@SuperBuilder(builderMethodName = "newRawImageBuilder")
 @Jacksonized
 @Accessors(fluent = true)
 public final class ImageMessage extends MediaMessage {
@@ -161,7 +162,7 @@ public final class ImageMessage extends MediaMessage {
      * Constructs a new builder to create a ImageMessage.
      * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
      *
-     * @param storeId     the id of the store where this message will be stored
+     * @param mediaConnection the media connection to use to upload this message
      * @param media       the non-null image that the new message wraps
      * @param mimeType    the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
      * @param caption     the caption of the new message
@@ -169,16 +170,12 @@ public final class ImageMessage extends MediaMessage {
      * @param contextInfo the context info that the new message wraps
      * @return a non-null new message
      */
-    @Builder(builderClassName = "SimpleImageBuilder", builderMethodName = "newImageMessage")
-    private static ImageMessage simpleBuilder(int storeId, byte @NonNull [] media, String mimeType, String caption,
-                                              byte[] thumbnail, ContextInfo contextInfo) {
-        var store = Store.findStoreById(storeId)
-                .orElseThrow(() -> new NoSuchElementException(
-                        "Cannot create image message, invalid store id: %s".formatted(storeId)));
+    @Builder(builderClassName = "SimpleImageBuilder", builderMethodName = "newImageBuilder")
+    private static ImageMessage builder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media, String mimeType, String caption,
+                                        byte[] thumbnail, ContextInfo contextInfo) {
         var dimensions = Medias.getDimensions(media, false);
-        var upload = Medias.upload(media, IMAGE, store);
-        return ImageMessage.newRawImageMessage()
-                .storeId(storeId)
+        var upload = Medias.upload(media, IMAGE, mediaConnection);
+        return ImageMessage.newRawImageBuilder()
                 .fileSha256(upload.fileSha256())
                 .fileEncSha256(upload.fileEncSha256())
                 .key(upload.mediaKey())
