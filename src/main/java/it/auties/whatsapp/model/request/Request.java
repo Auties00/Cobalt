@@ -40,15 +40,6 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
         delayedExecutor(TIMEOUT, SECONDS).execute(this::cancelTimedFuture);
     }
 
-    private void cancelTimedFuture() {
-        if (future.isDone()) {
-            return;
-        }
-
-        future.completeExceptionally(
-                new RequestException("%s timed out: no response from WhatsApp".formatted(body), caller));
-    }
-
     /**
      * Constructs a new request with the provided body expecting a response
      */
@@ -62,6 +53,15 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     @SneakyThrows
     public static Request with(@NonNull Object body) {
         return new Request(null, PROTOBUF.writeValueAsBytes(body));
+    }
+
+    private void cancelTimedFuture() {
+        if (future.isDone()) {
+            return;
+        }
+
+        future.completeExceptionally(
+                new RequestException("%s timed out: no response from WhatsApp".formatted(body), caller));
     }
 
     /**
@@ -177,8 +177,8 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
         var body = switch (encodedBody) {
             case byte[] bytes -> bytes;
             case Node node -> ENCODER.encode(node);
-            default ->
-                    throw new IllegalArgumentException("Cannot create request, illegal body: %s".formatted(encodedBody));
+            default -> throw new IllegalArgumentException(
+                    "Cannot create request, illegal body: %s".formatted(encodedBody));
         };
 
         if (keys.writeKey() == null) {

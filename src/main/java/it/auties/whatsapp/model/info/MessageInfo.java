@@ -1,10 +1,7 @@
 package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonGetter;
-import com.fasterxml.jackson.annotation.JsonSetter;
 import it.auties.protobuf.api.model.ProtobufProperty;
-import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.business.BusinessPrivacyStatus;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
@@ -317,7 +314,8 @@ public final class MessageInfo implements Info {
      * @return a non-null ContactJid
      */
     public ContactJid senderJid() {
-        return requireNonNullElseGet(senderJid, () -> key.senderJid().orElseGet(key::chatJid));
+        return requireNonNullElseGet(senderJid, () -> key.senderJid()
+                .orElseGet(key::chatJid));
     }
 
     /**
@@ -378,6 +376,15 @@ public final class MessageInfo implements Info {
      */
     public boolean hasStub() {
         return stubType != null;
+    }
+
+    public boolean equals(Object object) {
+        return object instanceof MessageInfo that && Objects.equals(this.id(), that.id());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(id());
     }
 
     /**
@@ -571,14 +578,5 @@ public final class MessageInfo implements Info {
                             .contains(symbol))
                     .findFirst();
         }
-    }
-
-    public boolean equals(Object object) {
-        return object instanceof MessageInfo that && Objects.equals(this.id(), that.id());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(id());
     }
 }

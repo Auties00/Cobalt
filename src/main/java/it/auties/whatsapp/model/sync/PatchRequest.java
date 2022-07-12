@@ -14,7 +14,8 @@ public record PatchRequest(PatchType type, ActionValueSync sync, String index, i
         implements JacksonProvider, SignalSpecification {
 
     @SneakyThrows
-    public static PatchRequest of(PatchType type, ActionValueSync sync, Operation operation, int version, String... args) {
+    public static PatchRequest of(PatchType type, ActionValueSync sync, Operation operation, int version,
+                                  String... args) {
         var index = JSON.writeValueAsString(createArguments(sync, args));
         return new PatchRequest(type, sync, index, version, operation);
     }

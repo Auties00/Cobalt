@@ -195,7 +195,9 @@ public final class SortedMessageList implements List<MessageInfo> {
     public void sort(Comparator<? super MessageInfo> comparator) {
         internal.sort((o1, o2) -> comparator.compare(o1 != null ?
                 o1.message() :
-                null, o2 != null ? o2.message() : null));
+                null, o2 != null ?
+                o2.message() :
+                null));
     }
 
     @Override

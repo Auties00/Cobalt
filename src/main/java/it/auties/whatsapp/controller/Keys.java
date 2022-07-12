@@ -328,8 +328,8 @@ public final class Keys implements Controller<Keys> {
     /**
      * Adds the provided hash state to the known ones
      *
-     * @param patchType  the non-null sync name
-     * @param state the non-null hash state
+     * @param patchType the non-null sync name
+     * @param state     the non-null hash state
      * @return this
      */
     public Keys putState(@NonNull PatchType patchType, @NonNull LTHashState state) {
@@ -391,8 +391,11 @@ public final class Keys implements Controller<Keys> {
      *
      * @return an integer
      */
-    public int lastPreKeyId(){
-        return preKeys.isEmpty() ? 0 : preKeys.getLast().id();
+    public int lastPreKeyId() {
+        return preKeys.isEmpty() ?
+                0 :
+                preKeys.getLast()
+                        .id();
     }
 
     /**

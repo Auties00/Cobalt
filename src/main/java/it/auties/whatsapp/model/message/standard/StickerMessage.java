@@ -2,7 +2,6 @@ package it.auties.whatsapp.model.message.standard;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.MediaConnection;
@@ -15,7 +14,6 @@ import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.NoSuchElementException;
 import java.util.Objects;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
@@ -124,16 +122,17 @@ public final class StickerMessage extends MediaMessage {
      * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
      *
      * @param mediaConnection the media connection to use to upload this message
-     * @param media       the non-null sticker that the new message wraps
-     * @param mimeType    the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
-     * @param thumbnail   the thumbnail of the sticker that the new message wraps as a png
-     * @param animated    whether the sticker that the new message wraps is animated
-     * @param contextInfo the context info that the new message wraps
+     * @param media           the non-null sticker that the new message wraps
+     * @param mimeType        the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
+     * @param thumbnail       the thumbnail of the sticker that the new message wraps as a png
+     * @param animated        whether the sticker that the new message wraps is animated
+     * @param contextInfo     the context info that the new message wraps
      * @return a non-null new message
      */
     @Builder(builderClassName = "SimpleStickerMessageBuilder", builderMethodName = "newStickerBuilder")
-    private static StickerMessage builder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media, String mimeType, byte[] thumbnail,
-                                          boolean animated, ContextInfo contextInfo) {
+    private static StickerMessage builder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media,
+                                          String mimeType, byte[] thumbnail, boolean animated,
+                                          ContextInfo contextInfo) {
         var upload = Medias.upload(media, STICKER, mediaConnection);
         return StickerMessage.newRawStickerBuilder()
                 .fileSha256(upload.fileSha256())

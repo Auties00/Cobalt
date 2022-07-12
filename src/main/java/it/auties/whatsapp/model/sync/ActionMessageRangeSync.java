@@ -65,7 +65,8 @@ public class ActionMessageRangeSync implements ProtobufMessage {
     }
 
     private MessageKey checkSenderKey(MessageKey key) {
-        key.senderJid().ifPresent(jid -> key.senderJid(jid.toUserJid()));
+        key.senderJid()
+                .ifPresent(jid -> key.senderJid(jid.toUserJid()));
         return key;
     }
 

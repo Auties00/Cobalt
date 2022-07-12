@@ -349,7 +349,8 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      */
     public Optional<MessageInfo> lastStandardMessage() {
         return messages.stream()
-                .filter(info -> !info.message().isServer())
+                .filter(info -> !info.message()
+                        .isServer())
                 .reduce((first, second) -> second);
     }
 
@@ -371,7 +372,8 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      */
     public Optional<MessageInfo> lastServerMessage() {
         return messages.stream()
-                .filter(info -> info.message().isServer())
+                .filter(info -> info.message()
+                        .isServer())
                 .reduce((first, second) -> second);
     }
 
@@ -404,7 +406,8 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      */
     public Optional<MessageInfo> firstStandardMessage() {
         return messages.stream()
-                .filter(info -> !info.message().isServer())
+                .filter(info -> !info.message()
+                        .isServer())
                 .findFirst();
     }
 
@@ -415,7 +418,8 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      */
     public Optional<MessageInfo> firstServerMessage() {
         return messages.stream()
-                .filter(info -> info.message().isServer())
+                .filter(info -> info.message()
+                        .isServer())
                 .findFirst();
     }
 
@@ -435,7 +439,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      *
      * @param info The message to be added to the chat.
      */
-    public void addMessage(@NonNull MessageInfo info){
+    public void addMessage(@NonNull MessageInfo info) {
         messages.add(info);
     }
 
@@ -444,7 +448,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      *
      * @param info The message to remove
      */
-    public void removeMessage(@NonNull MessageInfo info){
+    public void removeMessage(@NonNull MessageInfo info) {
         messages.remove(info);
     }
 

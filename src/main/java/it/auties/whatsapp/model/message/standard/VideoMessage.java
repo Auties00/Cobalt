@@ -17,7 +17,10 @@ import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 import static it.auties.whatsapp.model.message.model.MediaMessageType.VIDEO;
@@ -143,16 +146,17 @@ public final class VideoMessage extends MediaMessage {
      * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
      *
      * @param mediaConnection the media connection to use to upload this message
-     * @param media       the non-null video that the new message wraps
-     * @param mimeType    the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
-     * @param caption     the caption of the new message
-     * @param thumbnail   the thumbnail of the sticker that the new message wraps as a jpg
-     * @param contextInfo the context info that the new message wraps
+     * @param media           the non-null video that the new message wraps
+     * @param mimeType        the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
+     * @param caption         the caption of the new message
+     * @param thumbnail       the thumbnail of the sticker that the new message wraps as a jpg
+     * @param contextInfo     the context info that the new message wraps
      * @return a non-null new message
      */
     @Builder(builderClassName = "SimpleVideoMessageBuilder", builderMethodName = "newVideoBuilder")
-    private static VideoMessage videoBuilder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media, String mimeType,
-                                             String caption, byte[] thumbnail, ContextInfo contextInfo) {
+    private static VideoMessage videoBuilder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media,
+                                             String mimeType, String caption, byte[] thumbnail,
+                                             ContextInfo contextInfo) {
         var dimensions = Medias.getDimensions(media, true);
         var duration = Medias.getDuration(media, true);
         var upload = Medias.upload(media, VIDEO, mediaConnection);
@@ -183,18 +187,18 @@ public final class VideoMessage extends MediaMessage {
      * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
      *
      * @param mediaConnection the media connection to use to upload this message
-     * @param media          the non-null video that the new message wraps
-     * @param mimeType       the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
-     * @param caption        the caption of the new message
-     * @param gifAttribution the length in endTimeStamp of the video that the new message wraps
-     * @param thumbnail      the thumbnail of the sticker that the new message wraps as a jpg
-     * @param contextInfo    the context info that the new message wraps
+     * @param media           the non-null video that the new message wraps
+     * @param mimeType        the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
+     * @param caption         the caption of the new message
+     * @param gifAttribution  the length in endTimeStamp of the video that the new message wraps
+     * @param thumbnail       the thumbnail of the sticker that the new message wraps as a jpg
+     * @param contextInfo     the context info that the new message wraps
      * @return a non-null new message
      */
     @Builder(builderClassName = "SimpleGifBuilder", builderMethodName = "newGifBuilder")
-    private static VideoMessage gifBuilder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media, String mimeType,
-                                           String caption, VideoMessageAttribution gifAttribution, byte[] thumbnail,
-                                           ContextInfo contextInfo) {
+    private static VideoMessage gifBuilder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media,
+                                           String mimeType, String caption, VideoMessageAttribution gifAttribution,
+                                           byte[] thumbnail, ContextInfo contextInfo) {
         Validate.isTrue(isNotGif(media, mimeType),
                 "Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
         var dimensions = Medias.getDimensions(media, true);

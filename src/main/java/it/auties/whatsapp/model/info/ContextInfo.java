@@ -6,7 +6,10 @@ import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatDisappear;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.message.model.*;
+import it.auties.whatsapp.model.message.model.ActionLink;
+import it.auties.whatsapp.model.message.model.ContextualMessage;
+import it.auties.whatsapp.model.message.model.MessageContainer;
+import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.payment.PaymentOrderMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -73,8 +76,7 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
     /**
      * A list of the contacts' jids mentioned in this ContextualMessage
      */
-    @ProtobufProperty(index = 15, type = STRING, repeated = true,
-            concreteType = ContactJid.class, requiresConversion = true)
+    @ProtobufProperty(index = 15, type = STRING, repeated = true, concreteType = ContactJid.class, requiresConversion = true)
     private List<ContactJid> mentions;
 
     /**
@@ -187,16 +189,6 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
     @ProtobufProperty(index = 35, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
     private ContactJid parentGroup;
 
-    /**
-     * Constructs a ContextInfo from a quoted message
-     *
-     * @param quotedMessage the message to quote
-     * @return a non-null context info
-     */
-    public static ContextInfo of(@NonNull MessageInfo quotedMessage){
-        return new ContextInfo(quotedMessage);
-    }
-
     private ContextInfo(@NonNull MessageInfo quotedMessage) {
         this.quotedMessageId = quotedMessage.key()
                 .id();
@@ -208,6 +200,16 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
                 .orElse(null);
         this.quotedMessage = quotedMessage;
         this.quotedMessageContainer = quotedMessage.message();
+    }
+
+    /**
+     * Constructs a ContextInfo from a quoted message
+     *
+     * @param quotedMessage the message to quote
+     * @return a non-null context info
+     */
+    public static ContextInfo of(@NonNull MessageInfo quotedMessage) {
+        return new ContextInfo(quotedMessage);
     }
 
     /**
@@ -224,7 +226,9 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
      *
      * @return an optional
      */
-     public Optional<MessageContainer> quotedMessageContainer() {
-        return Optional.ofNullable(quotedMessage != null ? quotedMessage.message() : quotedMessageContainer);
+    public Optional<MessageContainer> quotedMessageContainer() {
+        return Optional.ofNullable(quotedMessage != null ?
+                quotedMessage.message() :
+                quotedMessageContainer);
     }
 }

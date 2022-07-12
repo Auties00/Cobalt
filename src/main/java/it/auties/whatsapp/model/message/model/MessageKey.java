@@ -1,8 +1,6 @@
 package it.auties.whatsapp.model.message.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
@@ -113,7 +111,7 @@ public class MessageKey implements ProtobufMessage {
      *
      * @return a non-null message key
      */
-    public MessageKey copy(){
+    public MessageKey copy() {
         return new MessageKey(chatJid, chat, fromMe, id, senderJid, sender);
     }
 }

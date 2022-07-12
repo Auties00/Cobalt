@@ -13,7 +13,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static it.auties.whatsapp.model.request.Node.withAttributes;
 
@@ -42,6 +41,12 @@ public class LTHashState {
         this.indexValueMap = new HashMap<>();
     }
 
+    private static boolean checkIndexEntryEquality(LTHashState that, String thisKey, byte[] thisValue) {
+        var thatValue = that.indexValueMap()
+                .get(thisKey);
+        return thatValue != null && Arrays.equals(thatValue, thisValue);
+    }
+
     public Node toNode() {
         var attributes = Attributes.empty()
                 .put("name", name)
@@ -57,11 +62,8 @@ public class LTHashState {
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof LTHashState that
-                && this.version == that.version()
-                && this.name == that.name()
-                && Arrays.equals(this.hash, that.hash())
-                && checkIndexEquality(that);
+        return o instanceof LTHashState that && this.version == that.version() && this.name == that.name() && Arrays.equals(
+                this.hash, that.hash()) && checkIndexEquality(that);
     }
 
     private boolean checkIndexEquality(LTHashState that) {
@@ -73,12 +75,6 @@ public class LTHashState {
         return indexValueMap().entrySet()
                 .stream()
                 .allMatch(entry -> checkIndexEntryEquality(that, entry.getKey(), entry.getValue()));
-    }
-
-    private static boolean checkIndexEntryEquality(LTHashState that, String thisKey, byte[] thisValue) {
-        var thatValue = that.indexValueMap()
-                .get(thisKey);
-        return thatValue != null && Arrays.equals(thatValue, thisValue);
     }
 
     @Override

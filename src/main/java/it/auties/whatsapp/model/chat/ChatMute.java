@@ -57,7 +57,9 @@ public record ChatMute(long endTimeStamp) implements ProtobufMessage {
      * @return a non-null mute
      */
     public static ChatMute mutedForEightHours() {
-        return muted(ZonedDateTime.now().plusHours(8).toEpochSecond());
+        return muted(ZonedDateTime.now()
+                .plusHours(8)
+                .toEpochSecond());
     }
 
     /**
@@ -66,7 +68,9 @@ public record ChatMute(long endTimeStamp) implements ProtobufMessage {
      * @return a non-null mute
      */
     public static ChatMute mutedForOneWeek() {
-        return muted(ZonedDateTime.now().plusWeeks(1).toEpochSecond());
+        return muted(ZonedDateTime.now()
+                .plusWeeks(1)
+                .toEpochSecond());
     }
 
     /**
@@ -76,11 +80,11 @@ public record ChatMute(long endTimeStamp) implements ProtobufMessage {
      * @return a non-null mute
      */
     public static ChatMute muted(Long seconds) {
-        if(seconds == null || seconds == NOT_MUTED_FLAG){
+        if (seconds == null || seconds == NOT_MUTED_FLAG) {
             return NOT_MUTED;
         }
 
-        if(seconds == MUTED_INDEFINITELY_FLAG){
+        if (seconds == MUTED_INDEFINITELY_FLAG) {
             return MUTED_INDEFINITELY;
         }
 

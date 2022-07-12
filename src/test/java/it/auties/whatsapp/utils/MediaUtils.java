@@ -12,7 +12,7 @@ public class MediaUtils {
         try {
             return new URL(url).openStream()
                     .readAllBytes();
-        }catch (IOException exception){
+        } catch (IOException exception) {
             throw new UncheckedIOException("Cannot download media", exception);
         }
     }

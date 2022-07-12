@@ -3,19 +3,20 @@ package it.auties.whatsapp.util;
 import java.util.concurrent.CountDownLatch;
 
 public class InitializationLock<T> {
-    private T element;
     private final CountDownLatch latch;
-    public InitializationLock(){
+    private T element;
+
+    public InitializationLock() {
         this.latch = new CountDownLatch(1);
     }
 
-    public InitializationLock<T> write(T element){
+    public InitializationLock<T> write(T element) {
         latch.countDown();
         this.element = element;
         return this;
     }
 
-    public T read(){
+    public T read() {
         await();
         return element;
     }

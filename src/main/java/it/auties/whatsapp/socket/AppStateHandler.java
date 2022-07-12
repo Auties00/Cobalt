@@ -48,8 +48,7 @@ class AppStateHandler implements JacksonProvider {
     }
 
     protected CompletableFuture<Void> push(@NonNull PatchRequest patch) {
-        return pull(patch.type())
-                .thenComposeAsync(success -> doPush(patch, success))
+        return pull(patch.type()).thenComposeAsync(success -> doPush(patch, success))
                 .thenRunAsync(lock::release);
     }
 
@@ -129,7 +128,8 @@ class AppStateHandler implements JacksonProvider {
                     .thenRunAsync(() -> socket.keys()
                             .putState(patch.type(), newState))
                     .thenRunAsync(() -> handleSyncRequest(patch.type(), sync, oldState, newState.version()))
-                    .exceptionallyAsync(throwable -> socket.errorHandler().handleFailure(APP_STATE_SYNC, throwable));
+                    .exceptionallyAsync(throwable -> socket.errorHandler()
+                            .handleFailure(APP_STATE_SYNC, throwable));
         } catch (Throwable throwable) {
             lock.release();
             throw new RuntimeException("Cannot push patch", throwable);
@@ -137,14 +137,12 @@ class AppStateHandler implements JacksonProvider {
     }
 
     private void handleSyncRequest(PatchType patchType, PatchSync patch, LTHashState oldState, long newVersion) {
-        decodePatches(patchType, 0, List.of(patch.withVersion(new VersionSync(newVersion))), oldState)
-                .records()
+        decodePatches(patchType, 0, List.of(patch.withVersion(new VersionSync(newVersion))), oldState).records()
                 .forEach(this::processActions);
     }
 
     protected void pull() {
-        pull(Arrays.asList(PatchType.values()))
-                .thenRunAsync(latch::countDown);
+        pull(Arrays.asList(PatchType.values())).thenRunAsync(latch::countDown);
     }
 
     @SneakyThrows
@@ -159,8 +157,10 @@ class AppStateHandler implements JacksonProvider {
             lock.acquire();
             var versions = new HashMap<PatchType, Long>();
             var attempts = new HashMap<PatchType, Integer>();
-            return pullPatches(patchTypes, versions, attempts)
-                    .thenApplyAsync(result -> { lock.release(); return result; });
+            return pullPatches(patchTypes, versions, attempts).thenApplyAsync(result -> {
+                lock.release();
+                return result;
+            });
         } catch (InterruptedException exception) {
             lock.release();
             throw new RuntimeException("Cannot lock to pull patches", exception);
@@ -182,7 +182,8 @@ class AppStateHandler implements JacksonProvider {
                         completedFuture(null) :
                         pullPatches(remaining, versions, attempts))
                 .thenApplyAsync(ignored -> true)
-                .exceptionallyAsync(throwable -> socket.errorHandler().handleFailure(APP_STATE_SYNC, throwable));
+                .exceptionallyAsync(throwable -> socket.errorHandler()
+                        .handleFailure(APP_STATE_SYNC, throwable));
     }
 
     private List<PatchType> decodeSyncs(Map<PatchType, Long> versions, Map<PatchType, Integer> attempts,
@@ -290,7 +291,8 @@ class AppStateHandler implements JacksonProvider {
         }
 
         var blob = PROTOBUF.readMessage(snapshot.contentAsBytes(), ExternalBlobReference.class);
-        var syncedData = Medias.download(blob, socket.store().mediaConnection());
+        var syncedData = Medias.download(blob, socket.store()
+                .mediaConnection());
         return PROTOBUF.readMessage(syncedData, SnapshotSync.class);
     }
 
@@ -419,7 +421,8 @@ class AppStateHandler implements JacksonProvider {
     private Optional<MutationsRecord> decodePatch(PatchType patchType, long minimumVersion, LTHashState newState,
                                                   PatchSync patch) {
         if (patch.hasExternalMutations()) {
-            var blob = Medias.download(patch.externalMutations(), socket.store().mediaConnection());
+            var blob = Medias.download(patch.externalMutations(), socket.store()
+                    .mediaConnection());
             var mutationsSync = PROTOBUF.readMessage(blob, MutationsSync.class);
             Validate.isTrue(patch.mutations()
                     .addAll(mutationsSync.mutations()), "Cannot add patches to known patches");

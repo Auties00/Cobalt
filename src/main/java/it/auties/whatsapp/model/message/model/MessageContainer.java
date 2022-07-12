@@ -553,7 +553,7 @@ public class MessageContainer implements ProtobufMessage {
      *
      * @return a non-null message container
      */
-    public MessageContainer toEphemeral(){
+    public MessageContainer toEphemeral() {
         return MessageContainer.ofEphemeral(content());
     }
 
@@ -562,7 +562,7 @@ public class MessageContainer implements ProtobufMessage {
      *
      * @return a non-null message container
      */
-    public MessageContainer toViewOnce(){
+    public MessageContainer toViewOnce() {
         return MessageContainer.ofViewOnce(content());
     }
 

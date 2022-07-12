@@ -10,8 +10,9 @@ import java.util.Objects;
 
 @UtilityClass
 public class Exceptions {
-    public Throwable current(){
-        var trace = Thread.currentThread().getStackTrace();
+    public Throwable current() {
+        var trace = Thread.currentThread()
+                .getStackTrace();
         var result = new RuntimeException();
         result.setStackTrace(trace);
         return result;

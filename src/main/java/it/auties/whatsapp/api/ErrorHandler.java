@@ -108,7 +108,7 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, Boolean> {
                                             BiConsumer<Location, Throwable> onRestore,
                                             BiConsumer<Location, Throwable> onIgnored, Level loggingLevel) {
         return (location, throwable) -> {
-            if(location == LOGGED_OUT){
+            if (location == LOGGED_OUT) {
                 return true;
             }
 

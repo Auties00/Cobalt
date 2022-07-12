@@ -1,19 +1,18 @@
 package it.auties.whatsapp.model.message.model;
 
-import com.fasterxml.jackson.annotation.JsonGetter;
-import com.fasterxml.jackson.annotation.JsonSetter;
-import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.media.AttachmentProvider;
 import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.payment.PaymentInvoiceMessage;
 import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.util.Medias;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 
 import java.util.Locale;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 
 /**
@@ -43,7 +42,8 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
      * @return a non-null array of bytes
      */
     public byte[] decodedMedia(@NonNull MediaConnection mediaConnection) {
-        return Objects.requireNonNullElseGet(decodedMedia, () -> (this.decodedMedia = Medias.download(this, mediaConnection)));
+        return Objects.requireNonNullElseGet(decodedMedia,
+                () -> (this.decodedMedia = Medias.download(this, mediaConnection)));
     }
 
     /**

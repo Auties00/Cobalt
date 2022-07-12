@@ -2,7 +2,6 @@ package it.auties.whatsapp.ci;
 
 import it.auties.whatsapp.api.ErrorHandler;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.model.contact.ContactJid;
 import org.junit.jupiter.api.Test;
 
 public class WaitTest {

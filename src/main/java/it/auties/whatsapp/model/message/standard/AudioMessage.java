@@ -2,7 +2,6 @@ package it.auties.whatsapp.model.message.standard;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.MediaConnection;
@@ -15,7 +14,6 @@ import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.NoSuchElementException;
 import java.util.Objects;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;

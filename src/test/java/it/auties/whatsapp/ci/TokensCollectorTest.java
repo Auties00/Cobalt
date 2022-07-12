@@ -29,6 +29,22 @@ public class TokensCollectorTest {
     private static final String DICTIONARY_2_REGEX = "const i=\\[\"(.*?)\"]";
     private static final String DICTIONARY_3_REGEX = "const a=\\[\"(.*?)\"]";
 
+    private static HttpRequest createRequest(String url) {
+        return HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Host", "web.whatsapp.com")
+                .header("Connection", "keep-alive")
+                .header("Pragma", "no-cache")
+                .header("Cache-Control", "no-cache")
+                .header("Sec-Fetch-Site", "same-origin")
+                .header("Sec-Fetch-Mode", "no-cors")
+                .header("Sec-Fetch-Dest", "empty")
+                .header("User-Agent",
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36")
+                .GET()
+                .build();
+    }
+
     @Test
     public void createClass() throws IOException, InterruptedException {
         if (GithubActions.isActionsEnvironment()) {
@@ -88,21 +104,5 @@ public class TokensCollectorTest {
                 .map(e -> e.group(1))
                 .findFirst()
                 .orElseThrow();
-    }
-
-    private static HttpRequest createRequest(String url) {
-        return HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .header("Host", "web.whatsapp.com")
-                .header("Connection", "keep-alive")
-                .header("Pragma", "no-cache")
-                .header("Cache-Control", "no-cache")
-                .header("Sec-Fetch-Site", "same-origin")
-                .header("Sec-Fetch-Mode", "no-cors")
-                .header("Sec-Fetch-Dest", "empty")
-                .header("User-Agent",
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36")
-                .GET()
-                .build();
     }
 }

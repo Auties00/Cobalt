@@ -14,7 +14,7 @@ public class ConcurrentSet<T> extends HashSet<T> {
     @NonNull
     private final Set<T> internal;
 
-    public ConcurrentSet(){
+    public ConcurrentSet() {
         this.internal = ConcurrentHashMap.newKeySet();
     }
 

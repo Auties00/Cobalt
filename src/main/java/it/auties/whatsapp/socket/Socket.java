@@ -50,31 +50,23 @@ public class Socket implements JacksonProvider, SignalSpecification {
         getWebSocketContainer().setDefaultMaxSessionIdleTimeout(0);
     }
 
-    private Session session;
-    
     @NonNull
     private final Whatsapp whatsapp;
-
     @NonNull
     private final AuthHandler authHandler;
-
     @NonNull
     private final StreamHandler streamHandler;
-
     @NonNull
     private final MessageHandler messageHandler;
-
     @NonNull
     private final AppStateHandler appStateHandler;
-
     @NonNull
     @Getter
     private final Whatsapp.Options options;
-
     @NonNull
     @Getter(AccessLevel.PROTECTED)
     private final FailureHandler errorHandler;
-
+    private Session session;
     @NonNull
     @Getter(AccessLevel.PROTECTED)
     @Setter(AccessLevel.PROTECTED)
@@ -135,7 +127,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
             listener.onDisconnected(DisconnectReason.LOGGED_OUT);
         });
     }
-    
+
     @NonNull
     public Session session() {
         return session;
@@ -170,7 +162,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
                 .getFirst();
         if (!state.isConnected()) {
             authHandler.login(session(), header.toByteArray())
-                    .thenRunAsync(() ->  state(SocketState.CONNECTED));
+                    .thenRunAsync(() -> state(SocketState.CONNECTED));
             return;
         }
 
@@ -193,7 +185,8 @@ public class Socket implements JacksonProvider, SignalSpecification {
 
     @SneakyThrows
     public CompletableFuture<Void> connect() {
-        if (authHandler.future() == null || authHandler.future().isDone()) {
+        if (authHandler.future() == null || authHandler.future()
+                .isDone()) {
             authHandler.createFuture();
         }
 
@@ -208,7 +201,8 @@ public class Socket implements JacksonProvider, SignalSpecification {
             return;
         }
 
-        streamHandler.pingService().awaitTermination(Integer.MAX_VALUE, TimeUnit.DAYS);
+        streamHandler.pingService()
+                .awaitTermination(Integer.MAX_VALUE, TimeUnit.DAYS);
     }
 
     public CompletableFuture<Void> reconnect() {
@@ -229,8 +223,10 @@ public class Socket implements JacksonProvider, SignalSpecification {
 
     @OnClose
     public void onClose() {
-        if (authHandler.future() != null && !authHandler.future().isDone() && state == SocketState.DISCONNECTED) {
-            authHandler.future().complete(null);
+        if (authHandler.future() != null && !authHandler.future()
+                .isDone() && state == SocketState.DISCONNECTED) {
+            authHandler.future()
+                    .complete(null);
         }
 
         if (state.isConnected()) {
@@ -246,8 +242,9 @@ public class Socket implements JacksonProvider, SignalSpecification {
         if (streamHandler.pingService() == null) {
             return;
         }
-        
-        streamHandler.pingService().shutdownNow();
+
+        streamHandler.pingService()
+                .shutdownNow();
     }
 
     @OnError
@@ -348,8 +345,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
     @SneakyThrows
     public CompletableFuture<GroupMetadata> queryGroupMetadata(ContactJid group) {
         var body = withAttributes("query", of("request", "interactive"));
-        return sendQuery(group, "get", "w:g2", body)
-                .thenApplyAsync(node -> node.findNode("group")
+        return sendQuery(group, "get", "w:g2", body).thenApplyAsync(node -> node.findNode("group")
                         .orElseThrow(() -> new ErroneousNodeException("Missing group node", node)))
                 .exceptionallyAsync(errorHandler::handleNodeFailure)
                 .thenApplyAsync(GroupMetadata::of);
@@ -440,7 +436,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
             listener.onContactPresence(chat, contact, ContactStatus.AVAILABLE);
         });
     }
-    
+
     protected void onNewMessage(MessageInfo info) {
         store.callListeners(listener -> {
             listener.onNewMessage(whatsapp, info);
@@ -499,12 +495,14 @@ public class Socket implements JacksonProvider, SignalSpecification {
 
     protected void onLoggedIn() {
         store.invokeListeners(Listener::onLoggedIn);
-        authHandler.future().complete(null);
+        authHandler.future()
+                .complete(null);
     }
 
     @SneakyThrows
     protected void awaitReadyState() {
-        appStateHandler.latch().await();
+        appStateHandler.latch()
+                .await();
     }
 
     public static class OriginPatcher extends Configurator {

@@ -172,9 +172,8 @@ public class Medias implements JacksonProvider {
                 .orElse(List.of("mmg.whatsapp.net"));
     }
 
-    public Optional<String> getMimeType(String name){
-        return getExtension(name)
-                .map(extension -> Path.of("bogus%s".formatted(extension)))
+    public Optional<String> getMimeType(String name) {
+        return getExtension(name).map(extension -> Path.of("bogus%s".formatted(extension)))
                 .flatMap(Medias::getMimeType);
     }
 
@@ -186,13 +185,13 @@ public class Medias implements JacksonProvider {
         }
     }
 
-    private Optional<String> getExtension(String name){
-        if(name == null){
+    private Optional<String> getExtension(String name) {
+        if (name == null) {
             return Optional.empty();
         }
 
         var index = name.lastIndexOf(".");
-        if(index == -1){
+        if (index == -1) {
             return Optional.empty();
         }
 

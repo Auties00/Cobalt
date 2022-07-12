@@ -153,7 +153,9 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
                 .orElseThrow(() -> new NoSuchElementException("Invalid chain"));
         fillMessageKeys(chain, message.counter());
 
-        Validate.isTrue(chain.hasMessageKey(message.counter()), "Key used already or never filled for %s. Known keys: %s".formatted(message.counter(), chain.messageKeys()));
+        Validate.isTrue(chain.hasMessageKey(message.counter()),
+                "Key used already or never filled for %s. Known keys: %s".formatted(message.counter(),
+                        chain.messageKeys()));
         var messageKey = chain.messageKeys()
                 .get(message.counter());
         chain.messageKeys()
@@ -224,7 +226,6 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
 
     private Session loadSession(Supplier<Session> defaultSupplier) {
         return keys.findSessionByAddress(address)
-                .orElseGet(() -> requireNonNull(defaultSupplier.get(),
-                        "Missing session for %s"));
+                .orElseGet(() -> requireNonNull(defaultSupplier.get(), "Missing session for %s"));
     }
 }

@@ -11,7 +11,10 @@ import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.message.model.*;
+import it.auties.whatsapp.model.message.model.ContextualMessage;
+import it.auties.whatsapp.model.message.model.Message;
+import it.auties.whatsapp.model.message.model.MessageContainer;
+import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.standard.TextMessage;
 import it.auties.whatsapp.model.request.Node;
@@ -850,8 +853,14 @@ public class Whatsapp {
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull MessageInfo info) {
         store().attribute(info);
-        info.key().chatJid(info.chatJid().toUserJid());
-        info.key().senderJid(info.senderJid() == null ? null : info.senderJid().toUserJid());
+        info.key()
+                .chatJid(info.chatJid()
+                        .toUserJid());
+        info.key()
+                .senderJid(info.senderJid() == null ?
+                        null :
+                        info.senderJid()
+                                .toUserJid());
         createTextPreview(info);
         parseEphemeralMessage(info);
         return socket.sendMessage(info)

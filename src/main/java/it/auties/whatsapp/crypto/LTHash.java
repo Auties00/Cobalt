@@ -39,7 +39,7 @@ public class LTHash {
                 .toBase64();
         var prevOp = indexValueMap.get(indexMacBase64);
         if (operation == RecordSync.Operation.REMOVE) {
-            if(prevOp == null){
+            if (prevOp == null) {
                 return;
             }
 

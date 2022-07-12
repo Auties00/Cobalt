@@ -7,7 +7,6 @@ import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.github.GithubActions;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.button.Button;
-import it.auties.whatsapp.model.button.ButtonText;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.chat.ChatMute;
@@ -26,7 +25,6 @@ import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Base64;
@@ -412,7 +410,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(27)
     public void deleteBuilder() {
-        if(info == null){
+        if (info == null) {
             testTextBuilder();
         }
 
@@ -450,7 +448,8 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
                 .join();
 
         var document = DocumentMessage.newDocumentBuilder()
-                .mediaConnection(api.store().mediaConnection())
+                .mediaConnection(api.store()
+                        .mediaConnection())
                 .media(MediaUtils.readBytes("http://www.orimi.com/pdf-test.pdf"))
                 .title("Pdf test")
                 .fileName("pdf-test.pdf")
@@ -466,7 +465,8 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
                 .join();
 
         var image = ImageMessage.newImageBuilder()
-                .mediaConnection(api.store().mediaConnection())
+                .mediaConnection(api.store()
+                        .mediaConnection())
                 .media(MediaUtils.readBytes(
                         "https://2.bp.blogspot.com/-DqXILvtoZFA/Wmmy7gRahnI/AAAAAAAAB0g/59c8l63QlJcqA0591t8-kWF739DiOQLcACEwYBhgL/s1600/pol-venere-botticelli-01.jpg"))
                 .caption("Image test")
@@ -495,7 +495,8 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     public void testImageBuilder() {
         log("Sending image...");
         var image = ImageMessage.newImageBuilder()
-                .mediaConnection(api.store().mediaConnection())
+                .mediaConnection(api.store()
+                        .mediaConnection())
                 .media(MediaUtils.readBytes(
                         "https://2.bp.blogspot.com/-DqXILvtoZFA/Wmmy7gRahnI/AAAAAAAAB0g/59c8l63QlJcqA0591t8-kWF739DiOQLcACEwYBhgL/s1600/pol-venere-botticelli-01.jpg"))
                 .caption("Image test")
@@ -510,7 +511,8 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     public void testAudioBuilder() {
         log("Sending audio...");
         var audio = AudioMessage.newAudioBuilder()
-                .mediaConnection(api.store().mediaConnection())
+                .mediaConnection(api.store()
+                        .mediaConnection())
                 .media(MediaUtils.readBytes("https://www.kozco.com/tech/organfinale.mp3"))
                 .build();
         var textResponse = api.sendMessage(contact, audio)
@@ -524,7 +526,8 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     public void testVideoBuilder() {
         log("Sending video...");
         var video = VideoMessage.newVideoBuilder()
-                .mediaConnection(api.store().mediaConnection())
+                .mediaConnection(api.store()
+                        .mediaConnection())
                 .media(MediaUtils.readBytes("http://techslides.com/demos/sample-videos/small.mp4"))
                 .caption("Video")
                 .build();
@@ -539,7 +542,8 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     public void testGifBuilder() {
         log("Sending gif...");
         var video = VideoMessage.newGifBuilder()
-                .mediaConnection(api.store().mediaConnection())
+                .mediaConnection(api.store()
+                        .mediaConnection())
                 .media(MediaUtils.readBytes("http://techslides.com/demos/sample-videos/small.mp4"))
                 .caption("Gif")
                 .build();
@@ -554,7 +558,8 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     public void testPdfBuilder() {
         log("Sending pdf...");
         var document = DocumentMessage.newDocumentBuilder()
-                .mediaConnection(api.store().mediaConnection())
+                .mediaConnection(api.store()
+                        .mediaConnection())
                 .media(MediaUtils.readBytes("http://www.orimi.com/pdf-test.pdf"))
                 .title("Pdf test")
                 .fileName("pdf-test.pdf")

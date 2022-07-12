@@ -9,8 +9,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.TreeMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RequiredArgsConstructor(staticName = "of")
 public final class Preferences implements JacksonProvider {
@@ -27,8 +31,12 @@ public final class Preferences implements JacksonProvider {
         }
     }
 
+    @NonNull
+    private final Path file;
+    private String cache;
+
     public static void waitAsyncOperations() {
-        if(ASYNC_WRITES.isEmpty()){
+        if (ASYNC_WRITES.isEmpty()) {
             return;
         }
 
@@ -45,18 +53,13 @@ public final class Preferences implements JacksonProvider {
 
     private static void cancelOutdatedOperations(TreeMap<Long, CompletableFuture<Void>> data) {
         var lastEntry = data.lastEntry();
-        if(lastEntry == null){
+        if (lastEntry == null) {
             return;
         }
 
         data.headMap(lastEntry.getKey())
                 .forEach((id, future) -> future.cancel(true));
     }
-
-    @NonNull
-    private final Path file;
-
-    private String cache;
 
     public static Path home() {
         return DEFAULT_DIRECTORY;
@@ -66,6 +69,12 @@ public final class Preferences implements JacksonProvider {
     public static Preferences of(String path, Object... args) {
         var location = Path.of("%s/%s".formatted(DEFAULT_DIRECTORY, path.formatted(args)));
         return new Preferences(location.toAbsolutePath());
+    }
+
+    private static Void onError(long id, TreeMap<Long, CompletableFuture<Void>> writes, Throwable throwable) {
+        writes.remove(id);
+        throwable.printStackTrace();
+        return null;
     }
 
     @SneakyThrows
@@ -103,18 +112,14 @@ public final class Preferences implements JacksonProvider {
 
         var writes = ASYNC_WRITES.getOrDefault(file, new TreeMap<>());
         var lastEntry = writes.lastEntry();
-        var id = lastEntry != null ? lastEntry.getKey() + 1 : 0;
+        var id = lastEntry != null ?
+                lastEntry.getKey() + 1 :
+                0;
         var future = CompletableFuture.runAsync(() -> writeObject(input))
                 .thenRunAsync(() -> writes.remove(id))
                 .exceptionallyAsync(throwable -> onError(id, writes, throwable));
         writes.put(id, future);
         ASYNC_WRITES.put(file, writes);
-    }
-
-    private static Void onError(long id, TreeMap<Long, CompletableFuture<Void>> writes, Throwable throwable) {
-        writes.remove(id);
-        throwable.printStackTrace();
-        return null;
     }
 
     private void writeObject(Object input) {

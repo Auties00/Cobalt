@@ -2,13 +2,11 @@ package it.auties.whatsapp.model.message.standard;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
-import it.auties.whatsapp.model.product.ProductHeader;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
 import lombok.*;
@@ -16,14 +14,12 @@ import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 import static it.auties.whatsapp.model.message.model.MediaMessageType.DOCUMENT;
 import static it.auties.whatsapp.util.Medias.Format.FILE;
-import static java.util.Objects.requireNonNullElse;
 
 /**
  * A model class that represents a message holding a document inside

@@ -10,7 +10,7 @@ import lombok.AllArgsConstructor;
 class FailureHandler implements JacksonProvider {
     private final Socket socket;
 
-    protected Node handleNodeFailure(Throwable throwable){
+    protected Node handleNodeFailure(Throwable throwable) {
         handleFailure(ErrorHandler.Location.ERRONEOUS_NODE, throwable);
         return throwable instanceof ErroneousNodeException erroneousNodeException ?
                 erroneousNodeException.error() :
@@ -22,13 +22,15 @@ class FailureHandler implements JacksonProvider {
             return null;
         }
 
-        if (!socket.options().errorHandler()
+        if (!socket.options()
+                .errorHandler()
                 .apply(location, throwable)) {
             return null;
         }
 
         socket.state(SocketState.RESTORING_FAILURE);
-        socket.store().clear();
+        socket.store()
+                .clear();
         socket.changeKeys();
         socket.reconnect();
         return null;

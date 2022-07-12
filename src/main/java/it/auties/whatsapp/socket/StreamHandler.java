@@ -219,7 +219,8 @@ class StreamHandler implements JacksonProvider {
     private void handleMessageNotification(Node node) {
         var body = node.findNode()
                 .orElseThrow(() -> new NoSuchElementException("Missing body in notification"));
-        if(body.description().equals("encrypt")){
+        if (body.description()
+                .equals("encrypt")) {
             var chat = node.attributes()
                     .getJid("from")
                     .orElseThrow(() -> new NoSuchElementException("Missing chat in notification"));
@@ -238,7 +239,7 @@ class StreamHandler implements JacksonProvider {
         }
 
         var stubType = MessageInfo.StubType.forSymbol(body.description());
-        if(stubType.isEmpty()){
+        if (stubType.isEmpty()) {
             return;
         }
 
@@ -312,7 +313,8 @@ class StreamHandler implements JacksonProvider {
 
     private void digestSuccess() {
         confirmConnection();
-        if (!socket.keys().hasPreKeys()) {
+        if (!socket.keys()
+                .hasPreKeys()) {
             sendPreKeys();
         }
 
@@ -370,7 +372,8 @@ class StreamHandler implements JacksonProvider {
             return;
         }
 
-        socket.store().serialize();
+        socket.store()
+                .serialize();
         socket.sendQuery("get", "w:p", with("ping"));
         socket.onSocketEvent(SocketEvent.PING);
     }
@@ -384,8 +387,10 @@ class StreamHandler implements JacksonProvider {
 
         socket.sendQuery("set", "w:m", with("media_conn"))
                 .thenApplyAsync(MediaConnection::of)
-                .thenApplyAsync(result -> socket.store().mediaConnection(result))
-                .exceptionallyAsync(throwable -> socket.errorHandler().handleFailure(MEDIA_CONNECTION, throwable))
+                .thenApplyAsync(result -> socket.store()
+                        .mediaConnection(result))
+                .exceptionallyAsync(throwable -> socket.errorHandler()
+                        .handleFailure(MEDIA_CONNECTION, throwable))
                 .thenRunAsync(() -> runAsyncDelayed(this::createMediaConnection, socket.store()
                         .mediaConnection()
                         .ttl()));
@@ -422,7 +427,8 @@ class StreamHandler implements JacksonProvider {
     }
 
     private void sendPreKeys() {
-        var startId = socket.keys().lastPreKeyId() + 1;
+        var startId = socket.keys()
+                .lastPreKeyId() + 1;
         var preKeys = IntStream.range(startId, startId + PRE_KEYS_UPLOAD_CHUNK)
                 .mapToObj(SignalPreKeyPair::random)
                 .peek(socket.keys()::addPreKey)
@@ -444,9 +450,10 @@ class StreamHandler implements JacksonProvider {
     private void printQrCode(Node container) {
         var ref = container.findNode("ref")
                 .orElseThrow(() -> new NoSuchElementException("Missing ref"));
-        var qr = "%s,%s,%s,%s".formatted(new String(ref.contentAsBytes(), StandardCharsets.UTF_8), Bytes.of(socket.keys()
-                        .noiseKeyPair()
-                        .publicKey())
+        var qr = "%s,%s,%s,%s".formatted(new String(ref.contentAsBytes(), StandardCharsets.UTF_8), Bytes.of(
+                        socket.keys()
+                                .noiseKeyPair()
+                                .publicKey())
                 .toBase64(), Bytes.of(socket.keys()
                         .identityKeyPair()
                         .publicKey())
@@ -499,8 +506,8 @@ class StreamHandler implements JacksonProvider {
 
         var keyIndex = PROTOBUF.readMessage(account.details(), DeviceIdentity.class)
                 .keyIndex();
-        var devicePairNode = withChildren("pair-device-sign", with("device-identity", of("key-index", keyIndex),
-                PROTOBUF.writeValueAsBytes(account.withoutKey())));
+        var devicePairNode = withChildren("pair-device-sign",
+                with("device-identity", of("key-index", keyIndex), PROTOBUF.writeValueAsBytes(account.withoutKey())));
 
         socket.keys()
                 .companionIdentity(account);

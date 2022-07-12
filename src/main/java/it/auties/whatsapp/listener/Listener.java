@@ -117,7 +117,7 @@ public interface Listener {
     /**
      * Called when the socket successfully disconnects from WhatsappWeb's WebSocket
      *
-     * @param reason   the reason why the session was disconnected
+     * @param reason the reason why the session was disconnected
      */
     default void onDisconnected(DisconnectReason reason) {
 

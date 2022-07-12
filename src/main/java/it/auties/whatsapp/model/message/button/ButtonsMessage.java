@@ -9,7 +9,10 @@ import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
-import it.auties.whatsapp.model.message.standard.*;
+import it.auties.whatsapp.model.message.standard.DocumentMessage;
+import it.auties.whatsapp.model.message.standard.ImageMessage;
+import it.auties.whatsapp.model.message.standard.LocationMessage;
+import it.auties.whatsapp.model.message.standard.VideoMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -105,11 +108,10 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
      */
     @Builder(builderClassName = "EmptyButtonsMessageBuilder", builderMethodName = "newButtonsWithoutHeaderBuilder")
     private static ButtonsMessage emptyBuilder(String body, String footer, ContextInfo contextInfo,
-                                                  List<Button> buttons) {
-        return createBuilder(HeaderType.EMPTY, body, footer, contextInfo, buttons)
-                .build();
+                                               List<Button> buttons) {
+        return createBuilder(HeaderType.EMPTY, body, footer, contextInfo, buttons).build();
     }
-    
+
     /**
      * Constructs a new builder to create a buttons message with a text header.
      * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
@@ -123,12 +125,11 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
      */
     @Builder(builderClassName = "TextButtonsMessageBuilder", builderMethodName = "newButtonsWithTextHeaderBuilder")
     private static ButtonsMessage textBuilder(String header, String body, String footer, ContextInfo contextInfo,
-                                                  List<Button> buttons) {
-        return createBuilder(HeaderType.TEXT, body, footer, contextInfo, buttons)
-                .headerText(header)
+                                              List<Button> buttons) {
+        return createBuilder(HeaderType.TEXT, body, footer, contextInfo, buttons).headerText(header)
                 .build();
     }
-    
+
     /**
      * Constructs a new builder to create a buttons message with a document header.
      * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
@@ -143,8 +144,7 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
     @Builder(builderClassName = "DocumentButtonsMessageBuilder", builderMethodName = "newButtonsWithDocumentHeaderBuilder")
     private static ButtonsMessage documentBuilder(DocumentMessage header, String body, String footer,
                                                   ContextInfo contextInfo, List<Button> buttons) {
-        return createBuilder(HeaderType.DOCUMENT, body, footer, contextInfo, buttons)
-                .headerDocument(header)
+        return createBuilder(HeaderType.DOCUMENT, body, footer, contextInfo, buttons).headerDocument(header)
                 .build();
     }
 
@@ -160,10 +160,9 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
      * @return a non-null new message
      */
     @Builder(builderClassName = "ImageButtonsMessageBuilder", builderMethodName = "newButtonsWithImageHeaderBuilder")
-    private static ButtonsMessage imageBuilder(ImageMessage header, String body, String footer,
-                                                  ContextInfo contextInfo, List<Button> buttons) {
-        return createBuilder(HeaderType.IMAGE, body, footer, contextInfo, buttons)
-                .headerImage(header)
+    private static ButtonsMessage imageBuilder(ImageMessage header, String body, String footer, ContextInfo contextInfo,
+                                               List<Button> buttons) {
+        return createBuilder(HeaderType.IMAGE, body, footer, contextInfo, buttons).headerImage(header)
                 .build();
     }
 
@@ -179,10 +178,9 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
      * @return a non-null new message
      */
     @Builder(builderClassName = "VideoButtonsMessageBuilder", builderMethodName = "newButtonsWithVideoHeaderBuilder")
-    private static ButtonsMessage videoBuilder(VideoMessage header, String body, String footer,
-                                                  ContextInfo contextInfo, List<Button> buttons) {
-        return createBuilder(HeaderType.VIDEO, body, footer, contextInfo, buttons)
-                .headerVideo(header)
+    private static ButtonsMessage videoBuilder(VideoMessage header, String body, String footer, ContextInfo contextInfo,
+                                               List<Button> buttons) {
+        return createBuilder(HeaderType.VIDEO, body, footer, contextInfo, buttons).headerVideo(header)
                 .build();
     }
 
@@ -200,21 +198,19 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
     @Builder(builderClassName = "LocationHeaderButtonsMessageBuilder", builderMethodName = "newButtonsWithLocationHeaderBuilder")
     private static ButtonsMessage locationBuilder(LocationMessage header, String body, String footer,
                                                   ContextInfo contextInfo, List<Button> buttons) {
-        return createBuilder(HeaderType.LOCATION, body, footer, contextInfo, buttons)
-                .headerLocation(header)
+        return createBuilder(HeaderType.LOCATION, body, footer, contextInfo, buttons).headerLocation(header)
                 .build();
     }
 
-    private static ButtonsMessageBuilder createBuilder(HeaderType image, String body,
-                                                       String footer, ContextInfo contextInfo, List<Button> buttons) {
-        return newRawButtonsBuilder()
-                .headerType(image)
+    private static ButtonsMessageBuilder createBuilder(HeaderType image, String body, String footer,
+                                                       ContextInfo contextInfo, List<Button> buttons) {
+        return newRawButtonsBuilder().headerType(image)
                 .body(body)
                 .footer(footer)
                 .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .buttons(requireNonNullElseGet(buttons, List::of));
     }
-    
+
     /**
      * The constants of this enumerated type describe the various of types of headers that a {@link ButtonsMessage} can have
      */

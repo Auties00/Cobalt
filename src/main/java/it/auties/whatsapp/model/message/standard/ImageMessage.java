@@ -2,7 +2,6 @@ package it.auties.whatsapp.model.message.standard;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.MediaConnection;
@@ -18,7 +17,6 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
@@ -163,16 +161,16 @@ public final class ImageMessage extends MediaMessage {
      * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
      *
      * @param mediaConnection the media connection to use to upload this message
-     * @param media       the non-null image that the new message wraps
-     * @param mimeType    the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
-     * @param caption     the caption of the new message
-     * @param thumbnail   the thumbnail of the document that the new message wraps
-     * @param contextInfo the context info that the new message wraps
+     * @param media           the non-null image that the new message wraps
+     * @param mimeType        the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
+     * @param caption         the caption of the new message
+     * @param thumbnail       the thumbnail of the document that the new message wraps
+     * @param contextInfo     the context info that the new message wraps
      * @return a non-null new message
      */
     @Builder(builderClassName = "SimpleImageBuilder", builderMethodName = "newImageBuilder")
-    private static ImageMessage builder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media, String mimeType, String caption,
-                                        byte[] thumbnail, ContextInfo contextInfo) {
+    private static ImageMessage builder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media,
+                                        String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
         var dimensions = Medias.getDimensions(media, false);
         var upload = Medias.upload(media, IMAGE, mediaConnection);
         return ImageMessage.newRawImageBuilder()
