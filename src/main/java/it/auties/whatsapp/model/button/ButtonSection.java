@@ -17,7 +17,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 /**
  * A model class that represents a section of buttons
  */
-@AllArgsConstructor
+@AllArgsConstructor(staticName = "of")
 @Data
 @Builder(builderMethodName = "newButtonSectionBuilder")
 @Jacksonized
@@ -36,7 +36,7 @@ public class ButtonSection implements ProtobufMessage {
     private List<ButtonRow> rows;
 
     public static class ButtonSectionBuilder {
-        public ButtonSectionBuilder hydratedButtons(List<ButtonRow> rows) {
+        public ButtonSectionBuilder rows(List<ButtonRow> rows) {
             if (this.rows == null)
                 this.rows = new ArrayList<>();
             this.rows.addAll(rows);

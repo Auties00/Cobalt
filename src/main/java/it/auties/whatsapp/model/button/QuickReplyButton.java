@@ -3,7 +3,6 @@ package it.auties.whatsapp.model.button;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.message.business.HighlyStructuredMessage;
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,19 +16,19 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
  */
 @AllArgsConstructor(staticName = "of")
 @Data
-@Builder(access = AccessLevel.PROTECTED)
+@Builder(builderMethodName = "newQuickReplyButtonBuilder")
 @Jacksonized
 @Accessors(fluent = true)
 public class QuickReplyButton implements ProtobufMessage {
-    /**
-     * The id of this button
-     */
-    @ProtobufProperty(index = 2, type = STRING)
-    private String id;
-
     /**
      * The text of this button
      */
     @ProtobufProperty(index = 1, type = STRING)
     private HighlyStructuredMessage text;
+
+    /**
+     * The id of this button
+     */
+    @ProtobufProperty(index = 2, type = STRING)
+    private String id;
 }

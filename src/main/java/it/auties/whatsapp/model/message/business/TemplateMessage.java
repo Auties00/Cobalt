@@ -54,39 +54,78 @@ public final class TemplateMessage extends ContextualMessage implements Business
     @ProtobufProperty(index = 4, type = MESSAGE, concreteType = HydratedFourRowTemplate.class)
     private HydratedFourRowTemplate hydratedTemplate;
 
+
     /**
-     * Constructs a new builder to create an interactive message with a four row template
+     * Constructs a new template message
      *
-     * @param template         the template of this message
-     * @param hydratedTemplate the hydrated template of this message
-     * @param contextInfo      the context info of this message
-     * @return a non-null new message
+     * @param template the non-null template
+     * @return a non-null template message
      */
-    @Builder(builderClassName = "FourRowTemplateMessageBuilder", builderMethodName = "newFourRowTemplateMessageBuilder")
-    private static TemplateMessage fourRowBuilder(FourRowTemplate template, HydratedFourRowTemplate hydratedTemplate,
-                                                  ContextInfo contextInfo) {
+    public static TemplateMessage newFourRowTemplateMessage(@NonNull FourRowTemplate template) {
+        return newFourRowTemplateMessage(template, null);
+    }
+
+    /**
+     * Constructs a new template message
+     *
+     * @param template    the non-null template
+     * @param contextInfo the nullable context info
+     * @return a non-null template message
+     */
+    public static TemplateMessage newFourRowTemplateMessage(@NonNull FourRowTemplate template,
+                                                            ContextInfo contextInfo) {
         return TemplateMessage.newRawTemplateMessageBuilder()
                 .fourRowTemplate(template)
-                .hydratedTemplate(hydratedTemplate)
                 .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .build();
     }
 
     /**
-     * Constructs a new builder to create an interactive message with a hydrated four row template
+     * Constructs a new template message
      *
-     * @param template         the template of this message
-     * @param hydratedTemplate the hydrated template of this message
-     * @param contextInfo      the context info of this message
-     * @return a non-null new message
+     * @param template the non-null template
+     * @return a non-null template message
      */
-    @Builder(builderClassName = "FourRowTemplateMessageBuilder", builderMethodName = "newHydratedFourRowTemplateMessageBuilder")
-    private static TemplateMessage hydratedFourRowBuilder(HydratedFourRowTemplate template,
-                                                          HydratedFourRowTemplate hydratedTemplate,
-                                                          ContextInfo contextInfo) {
+    public static TemplateMessage newHydratedFourRowTemplateMessage(@NonNull HydratedFourRowTemplate template) {
+        return newHydratedFourRowTemplateMessage(template, null);
+    }
+
+    /**
+     * Constructs a new template message
+     *
+     * @param template    the non-null template
+     * @param contextInfo the nullable context info
+     * @return a non-null template message
+     */
+    public static TemplateMessage newHydratedFourRowTemplateMessage(@NonNull HydratedFourRowTemplate template,
+                                                                    ContextInfo contextInfo) {
         return TemplateMessage.newRawTemplateMessageBuilder()
                 .hydratedFourRowTemplate(template)
-                .hydratedTemplate(hydratedTemplate)
+                .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new))
+                .build();
+    }
+
+    /**
+     * Constructs a new template message
+     *
+     * @param template the non-null template
+     * @return a non-null template message
+     */
+    public static TemplateMessage newHydratedTemplateMessage(@NonNull HydratedFourRowTemplate template) {
+        return newHydratedFourRowTemplateMessage(template, null);
+    }
+
+    /**
+     * Constructs a new template message
+     *
+     * @param template    the non-null template
+     * @param contextInfo the nullable context info
+     * @return a non-null template message
+     */
+    public static TemplateMessage newHydratedTemplateMessage(@NonNull HydratedFourRowTemplate template,
+                                                             ContextInfo contextInfo) {
+        return TemplateMessage.newRawTemplateMessageBuilder()
+                .hydratedTemplate(template)
                 .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .build();
     }

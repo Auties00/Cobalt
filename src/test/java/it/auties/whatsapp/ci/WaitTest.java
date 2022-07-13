@@ -11,6 +11,7 @@ public class WaitTest {
                 .withErrorHandler(ErrorHandler.toTerminal());
         var whatsapp = Whatsapp.lastConnection(options)
                 .addLoggedInListener(() -> System.out.println("Connected"))
+                .addNewMessageListener(message -> System.out.printf("New message: %s%n", message))
                 .connect()
                 .join();
         whatsapp.await();

@@ -10,15 +10,24 @@ import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 
-@AllArgsConstructor
+/**
+ * A model class that represents data about a row
+ */
+@AllArgsConstructor(staticName = "of")
 @Data
-@Builder
+@Builder(builderMethodName = "newButtonRowOpaqueDataBuilder")
 @Jacksonized
 @Accessors(fluent = true)
 public class ButtonRowOpaqueData implements ProtobufMessage {
+    /**
+     * The current message
+     */
     @ProtobufProperty(index = 1, type = MESSAGE, concreteType = ButtonOpaqueData.class)
-    private ButtonOpaqueData currentMsg;
+    private ButtonOpaqueData currentMessage;
 
+    /**
+     * The quoted message
+     */
     @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ButtonOpaqueData.class)
-    private ButtonOpaqueData quotedMsg;
+    private ButtonOpaqueData quotedMessage;
 }

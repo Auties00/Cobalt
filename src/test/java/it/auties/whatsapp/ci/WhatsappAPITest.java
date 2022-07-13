@@ -7,16 +7,21 @@ import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.github.GithubActions;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.business.BusinessCollection;
-import it.auties.whatsapp.model.button.Button;
+import it.auties.whatsapp.model.business.BusinessNativeFlow;
+import it.auties.whatsapp.model.business.BusinessShop;
+import it.auties.whatsapp.model.button.*;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.chat.ChatMute;
 import it.auties.whatsapp.model.chat.GroupPolicy;
+import it.auties.whatsapp.model.contact.ContactCard;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.business.ButtonsMessage;
 import it.auties.whatsapp.model.message.business.InteractiveMessage;
+import it.auties.whatsapp.model.message.business.ListMessage;
+import it.auties.whatsapp.model.message.business.TemplateMessage;
 import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.utils.ConfigUtils;
@@ -487,7 +492,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     private List<Button> createButtons() {
         return IntStream.range(0, 3)
                 .mapToObj("Button %s"::formatted)
-                .map(Button::newTextResponseButton)
+                .map(Button::newResponseButton)
                 .toList();
     }
 
@@ -575,25 +580,14 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Order(34)
     public void testContactMessageBuilder() {
         log("Sending contact message...");
-        var vcard = buildVcard();
-        var document = ContactMessage.newContactMessageBuilder()
-                .name("Test")
-                .vcard(vcard)
+        var vcard = ContactCard.newContactCardBuilder()
+                .name("A nice contact")
+                .phoneNumber(contact)
                 .build();
-        var textResponse = api.sendMessage(contact, document)
+        var contactMessage = ContactMessage.newContactMessage("A nice contact", vcard);
+        var response = api.sendMessage(contact, contactMessage)
                 .join();
-        log("Sent contact: %s", textResponse);
-    }
-
-    private String buildVcard() {
-        return """
-                BEGIN:VCARD
-                VERSION:3.0
-                N:%s
-                FN:%s
-                TEL;type=CELL:+%s
-                END:VCARD
-                """.formatted("Test", "Testing", contact.user());
+        log("Sent contact: %s", response);
     }
 
     @Test
@@ -697,20 +691,89 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
 
     @Test
     @Order(41)
-    public void testCollectionMessage() {
-        log("Sending collection message...");
+    public void testInteractiveMessage() { // These are not even supported as far as I can tell, though we have a test lol
+        log("Sending interactive messages..");
+
         var collectionMessage = BusinessCollection.builder()
                 .businessJid(ContactJid.of("15086146312@s.whatsapp.net"))
                 .id("15086146312")
                 .version(3)
                 .build();
-        var interactiveMessage = InteractiveMessage.newInteractiveWithCollectionMessageBuilder()
+        var interactiveMessageWithCollection = InteractiveMessage.newInteractiveWithCollectionMessageBuilder()
                 .content(collectionMessage)
                 .build();
-        api.sendMessage(contact, interactiveMessage)
+        api.sendMessage(contact, interactiveMessageWithCollection)
                 .join();
-        log("Sent collection message");
+
+        var shopMessage = BusinessShop.newShopBuilder()
+                .id(Bytes.ofRandom(5)
+                        .toHex())
+                .version(3)
+                .surfaceType(BusinessShop.SurfaceType.WHATSAPP)
+                .build();
+        var interactiveMessageWithShop = InteractiveMessage.newInteractiveWithShopMessageBuilder()
+                .content(shopMessage)
+                .build();
+        api.sendMessage(contact, interactiveMessageWithShop)
+                .join();
+
+        var nativeFlowMessage = BusinessNativeFlow.newNativeFlow()
+                .buttons(List.of(NativeFlowButton.of("hello :)", "")))
+                .version(3)
+                .parameters("")
+                .build();
+        var interactiveMessageWithFlow = InteractiveMessage.newInteractiveWithNativeFlowMessageBuilder()
+                .content(nativeFlowMessage)
+                .build();
+        api.sendMessage(contact, interactiveMessageWithFlow)
+                .join();
+
+        log("Sent interactive messages");
     }
+
+    @Test
+    @Order(42)
+    public void testTemplateMessage() {
+        log("Sending template message...");
+        var quickReplyButton = HydratedButtonTemplate.of(1, HydratedQuickReplyButton.of("Click me!", "random"));
+        var urlButton = HydratedButtonTemplate.of(2, HydratedURLButton.of("Search it", "https://google.com"));
+        var callButton = HydratedButtonTemplate.of(3,
+                HydratedCallButton.of("Call me", "+%s".formatted(contact.user())));
+        var fourRowTemplate = HydratedFourRowTemplate.newHydratedFourRowTemplateWithTextTitleBuilder()
+                .title("A nice title")
+                .body("A nice body")
+                .buttons(List.of(quickReplyButton, urlButton, callButton))
+                .build();
+        var templateMessage = TemplateMessage.newHydratedTemplateMessage(fourRowTemplate);
+        api.sendMessage(contact, templateMessage)
+                .join();
+        log("Sent template message");
+    }
+
+    @Test
+    @Order(42)
+    public void testListMessage() {
+        var buttons = List.of(ButtonRow.of("First option", "A nice description"),
+                ButtonRow.of("Second option", "A nice description"),
+                ButtonRow.of("Third option", "A nice description"));
+        var section = ButtonSection.of("First section", buttons);
+        var otherButtons = List.of(ButtonRow.of("First option", "A nice description"),
+                ButtonRow.of("Second option", "A nice description"),
+                ButtonRow.of("Third option", "A nice description"));
+        var anotherSection = ButtonSection.of("First section", otherButtons);
+        var listMessage = ListMessage.newListMessageBuilder()
+                .sections(List.of(section, anotherSection))
+                .button("Click me")
+                .title("A nice title")
+                .description("A nice description")
+                .footer("A nice footer")
+                .type(ListMessage.Type.SINGLE_SELECT)
+                .build();
+        api.sendMessage(contact, listMessage)
+                .join();
+        log("Sent list message");
+    }
+
 
     @SuppressWarnings("JUnit3StyleTestMethodInJUnit4Class")
     @AfterAll

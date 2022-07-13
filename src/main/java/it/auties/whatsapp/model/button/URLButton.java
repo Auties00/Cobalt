@@ -14,9 +14,9 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 /**
  * A model class that represents an url button
  */
-@AllArgsConstructor
+@AllArgsConstructor(staticName = "of")
 @Data
-@Builder
+@Builder(builderMethodName = "newURLButtonBuilder")
 @Jacksonized
 @Accessors(fluent = true)
 public class URLButton implements ProtobufMessage {

@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.button;
 
+import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,10 +15,10 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
  */
 @AllArgsConstructor(staticName = "of")
 @Data
-@Builder(access = AccessLevel.PROTECTED)
+@Builder(builderMethodName = "newNativeFlowButtonBuilder")
 @Jacksonized
 @Accessors(fluent = true)
-public class NativeFlowButton {
+public class NativeFlowButton implements ProtobufMessage {
     /**
      * The name of this button
      */

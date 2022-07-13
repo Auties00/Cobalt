@@ -844,7 +844,6 @@ public class Whatsapp {
         return sendMessage(info);
     }
 
-
     /**
      * Sends a message info to a chat
      *
@@ -1315,10 +1314,10 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> mute(@NonNull T chat, @NonNull ChatMute mute) {
-        var muteAction = new MuteAction(true, mute.type() == ChatMute.Type.MUTED_FOR_TIMEFRAME ?
+        var muteAction = MuteAction.of(true, mute.type() == ChatMute.Type.MUTED_FOR_TIMEFRAME ?
                 mute.endTimeStamp() * 1000L :
                 mute.endTimeStamp());
-        var syncAction = new ActionValueSync(muteAction);
+        var syncAction = ActionValueSync.of(muteAction);
         var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 2, chat.toJid()
                 .toString());
         return socket.pushPatch(request)
@@ -1332,8 +1331,8 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> unmute(@NonNull T chat) {
-        var muteAction = new MuteAction(false, null);
-        var syncAction = new ActionValueSync(muteAction);
+        var muteAction = MuteAction.of(false, null);
+        var syncAction = ActionValueSync.of(muteAction);
         var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 2, chat.toJid()
                 .toString());
         return socket.pushPatch(request)
@@ -1421,8 +1420,8 @@ public class Whatsapp {
 
     private <T extends ContactJidProvider> CompletableFuture<T> mark(@NonNull T chat, boolean read) {
         var range = createRange(chat, false);
-        var markAction = new MarkChatAsReadAction(read, range);
-        var syncAction = new ActionValueSync(markAction);
+        var markAction = MarkChatAsReadAction.of(read, range);
+        var syncAction = ActionValueSync.of(markAction);
         var request = PatchRequest.of(REGULAR_LOW, syncAction, SET, 3, chat.toJid()
                 .toString());
         return socket.pushPatch(request)
@@ -1452,8 +1451,8 @@ public class Whatsapp {
     }
 
     private <T extends ContactJidProvider> CompletableFuture<T> pin(T chat, boolean pin) {
-        var pinAction = new PinAction(pin);
-        var syncAction = new ActionValueSync(pinAction);
+        var pinAction = PinAction.of(pin);
+        var syncAction = ActionValueSync.of(pinAction);
         var request = PatchRequest.of(REGULAR_LOW, syncAction, SET, 5, chat.toJid()
                 .toString());
         return socket.pushPatch(request)
@@ -1481,8 +1480,8 @@ public class Whatsapp {
     }
 
     private CompletableFuture<MessageInfo> star(MessageInfo info, boolean star) {
-        var starAction = new StarAction(star);
-        var syncAction = new ActionValueSync(starAction);
+        var starAction = StarAction.of(star);
+        var syncAction = ActionValueSync.of(starAction);
         var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 3, info.chatJid()
                 .toString(), info.id(), fromMeToFlag(info), participantToFlag(info));
         return socket.pushPatch(request)
@@ -1512,8 +1511,8 @@ public class Whatsapp {
 
     private <T extends ContactJidProvider> CompletableFuture<T> archive(T chat, boolean archive) {
         var range = createRange(chat, false);
-        var archiveAction = new ArchiveChatAction(archive, range);
-        var syncAction = new ActionValueSync(archiveAction);
+        var archiveAction = ArchiveChatAction.of(archive, range);
+        var syncAction = ActionValueSync.of(archiveAction);
         var request = PatchRequest.of(REGULAR_LOW, syncAction, SET, 3, chat.toJid()
                 .toString());
         return socket.pushPatch(request)
@@ -1537,8 +1536,8 @@ public class Whatsapp {
         }
 
         var range = createRange(info.chatJid(), false);
-        var deleteMessageAction = new DeleteMessageForMeAction(false, info.timestamp());
-        var syncAction = new ActionValueSync(deleteMessageAction);
+        var deleteMessageAction = DeleteMessageForMeAction.of(false, info.timestamp());
+        var syncAction = ActionValueSync.of(deleteMessageAction);
         var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 3, info.chatJid()
                 .toString(), info.id(), fromMeToFlag(info), participantToFlag(info));
         return socket.pushPatch(request)
@@ -1553,8 +1552,8 @@ public class Whatsapp {
      */
     public <T extends ContactJidProvider> CompletableFuture<T> delete(@NonNull T chat) {
         var range = createRange(chat.toJid(), false);
-        var deleteChatAction = new DeleteChatAction(range);
-        var syncAction = new ActionValueSync(deleteChatAction);
+        var deleteChatAction = DeleteChatAction.of(range);
+        var syncAction = ActionValueSync.of(deleteChatAction);
         var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 6, chat.toJid()
                 .toString(), "1");
         return socket.pushPatch(request)
@@ -1571,8 +1570,8 @@ public class Whatsapp {
     public <T extends ContactJidProvider> CompletableFuture<T> clear(@NonNull T chat, boolean keepStarredMessages) {
         var known = store().findChatByJid(chat);
         var range = createRange(chat.toJid(), true);
-        var clearChatAction = new ClearChatAction(range);
-        var syncAction = new ActionValueSync(clearChatAction);
+        var clearChatAction = ClearChatAction.of(range);
+        var syncAction = ActionValueSync.of(clearChatAction);
         var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 6, chat.toJid()
                 .toString(), booleanToInt(keepStarredMessages), "0");
         return socket.pushPatch(request)

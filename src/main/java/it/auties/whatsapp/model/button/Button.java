@@ -44,8 +44,8 @@ public class Button implements ProtobufMessage {
      * @param text the non-null text of this button
      * @return a non-null button
      */
-    public static Button newTextResponseButton(@NonNull String text) {
-        return newTextResponseButton(Bytes.ofRandom(6)
+    public static Button newResponseButton(@NonNull String text) {
+        return newResponseButton(Bytes.ofRandom(6)
                 .toHex(), text);
     }
 
@@ -57,7 +57,7 @@ public class Button implements ProtobufMessage {
      * @param text the non-null text of this button
      * @return a non-null button
      */
-    public static Button newTextResponseButton(@NonNull String id, @NonNull String text) {
+    public static Button newResponseButton(@NonNull String id, @NonNull String text) {
         return Button.newRawButtonBuilder()
                 .id(id)
                 .text(ButtonText.of(text))

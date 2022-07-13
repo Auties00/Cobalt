@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.business;
 
+import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,7 +21,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @Builder(builderMethodName = "newShopBuilder")
 @Jacksonized
 @Accessors(fluent = true)
-public final class BusinessShop {
+public final class BusinessShop implements ProtobufMessage {
     /**
      * The id of the shop
      */

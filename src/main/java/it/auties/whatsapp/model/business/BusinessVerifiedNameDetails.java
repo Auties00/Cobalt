@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.business;
 
+import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,7 +21,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @Builder(builderMethodName = "newVerifiedNameDetailsBuilder")
 @Jacksonized
 @Accessors(fluent = true)
-public class BusinessVerifiedNameDetails {
+public class BusinessVerifiedNameDetails implements ProtobufMessage {
     /**
      * The verified serial
      */

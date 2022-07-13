@@ -28,5 +28,5 @@ public final class NativeFlowInfo implements Info {
      * The params of the flow, encoded as json
      */
     @ProtobufProperty(index = 2, type = STRING)
-    private String paramsJson;
+    private String parameters;
 }

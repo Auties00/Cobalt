@@ -619,7 +619,7 @@ class MessageHandler implements JacksonProvider {
                 .findContactByJid(jid)
                 .orElseGet(() -> socket.createContact(jid))
                 .chosenName(pushName.name());
-        var action = new ContactAction(pushName.name(), null);
+        var action = ContactAction.of(pushName.name(), null);
         socket.onAction(action);
     }
 

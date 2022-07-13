@@ -107,7 +107,7 @@ public class ActionValueSync implements ProtobufMessage {
 
     //<editor-fold desc="Constructors">
     @SuppressWarnings("PatternVariableHidesField")
-    public ActionValueSync(@NonNull Action action) {
+    private ActionValueSync(@NonNull Action action) {
         this.timestamp = Clock.now();
         switch (action) {
             case StarAction starAction -> this.starAction = starAction;
@@ -134,7 +134,7 @@ public class ActionValueSync implements ProtobufMessage {
     }
 
     @SuppressWarnings("PatternVariableHidesField")
-    public ActionValueSync(@NonNull Setting setting) {
+    private ActionValueSync(@NonNull Setting setting) {
         this.timestamp = Clock.now();
         switch (setting) {
             case SecurityNotificationSetting securityNotificationSetting ->
@@ -145,6 +145,14 @@ public class ActionValueSync implements ProtobufMessage {
             case EphemeralSetting ephemeralSetting -> throw new UnsupportedOperationException(
                     "Cannot wrap %s in action value sync".formatted(ephemeralSetting));
         }
+    }
+
+    public static ActionValueSync of(@NonNull Action action) {
+        return new ActionValueSync(action);
+    }
+
+    public static ActionValueSync of(@NonNull Setting setting) {
+        return new ActionValueSync(setting);
     }
 
     //</editor-fold>

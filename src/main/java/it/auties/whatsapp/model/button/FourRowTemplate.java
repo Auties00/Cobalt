@@ -79,6 +79,21 @@ public class FourRowTemplate implements ProtobufMessage {
     private List<ButtonTemplate> buttons;
 
     /**
+     * Constructs a new builder to create a four row template without title
+     *
+     * @param content the content of this template
+     * @param footer  the footer of this template
+     * @param buttons the buttons of this template
+     * @return a non-null new template
+     */
+    @Builder(builderClassName = "EmptyFourRowTemplateBuilder", builderMethodName = "newFourRowTemplateWithoutTitleBuilder")
+    private static FourRowTemplate emptyBuilder(HighlyStructuredMessage content, HighlyStructuredMessage footer,
+                                                List<ButtonTemplate> buttons) {
+        return createBuilder(content, footer, buttons).build();
+
+    }
+
+    /**
      * Constructs a new builder to create a four row template with a document title
      *
      * @param title   the title of this template

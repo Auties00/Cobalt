@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.product;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
@@ -24,7 +25,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @Builder(builderMethodName = "newRawProductHeaderBuilder")
 @Jacksonized
 @Accessors(fluent = true)
-public class ProductHeader {
+public class ProductHeader implements ProtobufMessage {
     /**
      * The title of this header
      */

@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.product;
 
+import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -18,7 +19,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Builder(access = AccessLevel.PROTECTED)
 @Jacksonized
 @Accessors(fluent = true)
-public class ProductFooter {
+public class ProductFooter implements ProtobufMessage {
     /**
      * The footer of this product
      */

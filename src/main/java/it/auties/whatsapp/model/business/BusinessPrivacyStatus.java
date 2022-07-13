@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.business;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.api.model.ProtobufMessage;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -12,7 +13,7 @@ import java.util.Arrays;
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum BusinessPrivacyStatus {
+public enum BusinessPrivacyStatus implements ProtobufMessage {
     /**
      * End-to-end encryption
      */

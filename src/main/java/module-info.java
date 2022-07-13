@@ -25,6 +25,7 @@ open module it.auties.whatsappweb4j {
     requires it.auties.curve;
     requires com.github.benmanes.caffeine;
     requires it.auties.linkpreview;
+    requires ez.vcard;
 
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;
