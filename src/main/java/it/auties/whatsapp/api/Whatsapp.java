@@ -5,6 +5,8 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.listener.*;
 import it.auties.whatsapp.model.action.*;
+import it.auties.whatsapp.model.business.BusinessCategory;
+import it.auties.whatsapp.model.business.BusinessProfile;
 import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJidProvider;
@@ -199,6 +201,27 @@ public class Whatsapp {
                 .orElseThrow(() -> new NoSuchElementException("Missing invite code in invite response"))
                 .attributes()
                 .getRequiredString("code");
+    }
+
+    private static List<BusinessCategory> parseBusinessCategories(Node result) {
+        return result.findNode("response")
+                .flatMap(entry -> entry.findNode("categories"))
+                .stream()
+                .map(entry -> entry.findNodes("category"))
+                .flatMap(Collection::stream)
+                .map(BusinessCategory::of)
+                .toList();
+    }
+
+    private static List<Node> createWebsites(List<URI> websites) {
+        if (websites == null) {
+            return List.of();
+        }
+
+        return websites.stream()
+                .map(entry -> with("website", entry.toString()
+                        .getBytes(StandardCharsets.UTF_8)))
+                .toList();
     }
 
     /**
@@ -980,12 +1003,12 @@ public class Whatsapp {
     }
 
     /**
-     * Queries the profile picture of a chat.
+     * Queries the profile picture
      *
      * @param chat the chat of the chat to query
      * @return a CompletableFuture that wraps nullable jpg url hosted on Whatsapp's servers
      */
-    public CompletableFuture<Optional<URI>> queryPic(@NonNull ContactJidProvider chat) {
+    public CompletableFuture<Optional<URI>> queryPicture(@NonNull ContactJidProvider chat) {
         var body = withAttributes("picture", of("query", "url"));
         return socket.sendQuery("get", "w:profile:picture", of("target", chat.toJid()), body)
                 .thenApplyAsync(this::parseChatPicture);
@@ -1009,12 +1032,42 @@ public class Whatsapp {
     }
 
     /**
+     * Queries a business profile, if any exists
+     *
+     * @param contact the target contact
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<Optional<BusinessProfile>> queryBusinessProfile(@NonNull ContactJidProvider contact) {
+        return socket.sendQuery("get", "w:biz",
+                        withChildren("business_profile", of("v", "116"), withAttributes("profile", of("jid", contact.toJid()))))
+                .thenApplyAsync(this::getBusinessProfile);
+    }
+
+    private Optional<BusinessProfile> getBusinessProfile(Node result) {
+        return result.findNode("business_profile")
+                .flatMap(entry -> entry.findNode("profile"))
+                .map(BusinessProfile::of);
+    }
+
+    /**
+     * Queries all the known business categories
+     *
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<List<BusinessCategory>> queryBusinessCategories() {
+        return socket.sendQuery("get", "fb:thrift_iq",
+                        with("request", of("op", "profile_typeahead", "type", "catkit", "v", "1"),
+                                withChildren("query", List.of())))
+                .thenApplyAsync(Whatsapp::parseBusinessCategories);
+    }
+
+    /**
      * Queries the invite code of a group
      *
      * @param chat the target group
      * @return a CompletableFuture
      */
-    public CompletableFuture<String> queryInviteCode(@NonNull ContactJidProvider chat) {
+    public CompletableFuture<String> queryGroupInviteCode(@NonNull ContactJidProvider chat) {
         return socket.sendQuery(chat.toJid(), "get", "w:g2", with("invite"))
                 .thenApplyAsync(Whatsapp::parseInviteCode);
     }
@@ -1109,8 +1162,8 @@ public class Whatsapp {
      * @param contacts the target contact/s
      * @return a CompletableFuture
      */
-    public CompletableFuture<List<ContactJid>> add(@NonNull ContactJidProvider group,
-                                                   @NonNull ContactJidProvider @NonNull ... contacts) {
+    public CompletableFuture<List<ContactJid>> addGroupParticipant(@NonNull ContactJidProvider group,
+                                                                   @NonNull ContactJidProvider @NonNull ... contacts) {
         return executeActionOnGroupParticipant(group, GroupAction.ADD, contacts);
     }
 
@@ -1121,8 +1174,8 @@ public class Whatsapp {
      * @param contacts the target contact/s
      * @return a CompletableFuture
      */
-    public CompletableFuture<List<ContactJid>> remove(@NonNull ContactJidProvider group,
-                                                      @NonNull ContactJidProvider @NonNull ... contacts) {
+    public CompletableFuture<List<ContactJid>> removeGroupParticipant(@NonNull ContactJidProvider group,
+                                                                      @NonNull ContactJidProvider @NonNull ... contacts) {
         return executeActionOnGroupParticipant(group, GroupAction.REMOVE, contacts);
     }
 
@@ -1165,8 +1218,8 @@ public class Whatsapp {
      * @return a CompletableFuture
      * @throws IllegalArgumentException if the provided new name is empty or blank
      */
-    public <T extends ContactJidProvider> CompletableFuture<T> changeSubject(@NonNull T group,
-                                                                             @NonNull String newName) {
+    public <T extends ContactJidProvider> CompletableFuture<T> changeGroupSubject(@NonNull T group,
+                                                                                  @NonNull String newName) {
         var body = with("subject", newName.getBytes(StandardCharsets.UTF_8));
         return socket.sendQuery(group.toJid(), "set", "w:g2", body)
                 .thenApplyAsync(ignored -> group);
@@ -1179,15 +1232,16 @@ public class Whatsapp {
      * @param description the new name for the group, can be null if you want to remove it
      * @return a CompletableFuture
      */
-    public <T extends ContactJidProvider> CompletableFuture<T> changeDescription(@NonNull T group, String description) {
+    public <T extends ContactJidProvider> CompletableFuture<T> changeGroupDescription(@NonNull T group,
+                                                                                      String description) {
         return socket.queryGroupMetadata(group.toJid())
                 .thenApplyAsync(GroupMetadata::descriptionId)
-                .thenComposeAsync(descriptionId -> changeDescription(group, description, descriptionId))
+                .thenComposeAsync(descriptionId -> changeGroupDescription(group, description, descriptionId))
                 .thenApplyAsync(ignored -> group);
     }
 
-    private CompletableFuture<Node> changeDescription(ContactJidProvider group, String description,
-                                                      String descriptionId) {
+    private CompletableFuture<Node> changeGroupDescription(ContactJidProvider group, String description,
+                                                           String descriptionId) {
         var descriptionNode = Optional.ofNullable(description)
                 .map(content -> with("body", content.getBytes(StandardCharsets.UTF_8)))
                 .orElse(null);
@@ -1238,8 +1292,8 @@ public class Whatsapp {
      * @param image the new image, can be null if you want to remove it
      * @return a CompletableFuture
      */
-    public CompletableFuture<ContactJid> changePicture(byte[] image) {
-        return changePicture(keys().companion(), image);
+    public CompletableFuture<ContactJid> changeProfilePicture(byte[] image) {
+        return changeGroupPicture(keys().companion(), image);
     }
 
     /**
@@ -1249,7 +1303,7 @@ public class Whatsapp {
      * @param image the new image, can be null if you want to remove it
      * @return a CompletableFuture
      */
-    public <T extends ContactJidProvider> CompletableFuture<T> changePicture(@NonNull T group, byte[] image) {
+    public <T extends ContactJidProvider> CompletableFuture<T> changeGroupPicture(@NonNull T group, byte[] image) {
         var profilePic = image != null ?
                 Medias.getProfilePic(image) :
                 null;
@@ -1266,7 +1320,8 @@ public class Whatsapp {
      * @param contacts at least one contact to add to the group
      * @return a CompletableFuture
      */
-    public CompletableFuture<GroupMetadata> create(@NonNull String subject, @NonNull ContactJidProvider... contacts) {
+    public CompletableFuture<GroupMetadata> createGroup(@NonNull String subject,
+                                                        @NonNull ContactJidProvider... contacts) {
         var participants = Arrays.stream(contacts)
                 .map(contact -> withAttributes("participant", of("jid", contact.toJid())))
                 .toArray(Node[]::new);
@@ -1276,11 +1331,7 @@ public class Whatsapp {
                 .thenApplyAsync(response -> Optional.ofNullable(response)
                         .flatMap(node -> node.findNode("group"))
                         .orElseThrow(() -> new NoSuchElementException(
-                                "Missing group response, something went wrong: %s".formatted(
-                                        Optional.ofNullable(response)
-                                                .flatMap(node -> node.findNode("error"))
-                                                .map(Node::toString)
-                                                .orElse("unknown")))))
+                                "Missing group response, something went wrong: %s".formatted(findErrorNode(response)))))
                 .thenApplyAsync(GroupMetadata::of);
     }
 
@@ -1290,7 +1341,7 @@ public class Whatsapp {
      * @param group the target group
      * @throws IllegalArgumentException if the provided chat is not a group
      */
-    public <T extends ContactJidProvider> CompletableFuture<T> leave(@NonNull T group) {
+    public <T extends ContactJidProvider> CompletableFuture<T> leaveGroup(@NonNull T group) {
         var body = withChildren("leave", withAttributes("group", of("id", group.toJid())));
         return socket.sendQuery(ContactJid.GROUP, "set", "w:g2", body)
                 .thenApplyAsync(ignored -> group);
@@ -1362,7 +1413,6 @@ public class Whatsapp {
         return socket.sendQuery("set", "blocklist", body)
                 .thenApplyAsync(ignored -> chat);
     }
-
 
     /**
      * Enables ephemeral messages in a chat, this means that messages will be automatically cancelled in said chat after a week
@@ -1576,6 +1626,221 @@ public class Whatsapp {
                 .toString(), booleanToInt(keepStarredMessages), "0");
         return socket.pushPatch(request)
                 .thenApplyAsync(ignored -> chat);
+    }
+
+    /**
+     * Change the description of this business profile
+     *
+     * @param description the new description, can be null
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<String> changeBusinessDescription(String description) {
+        return changeBusinessAttribute("description", description);
+    }
+
+    /**
+     * Change the address of this business profile
+     *
+     * @param address the new address, can be null
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<String> changeBusinessAddress(String address) {
+        return changeBusinessAttribute("address", address);
+    }
+
+    /**
+     * Change the email of this business profile
+     *
+     * @param email the new email, can be null. If a value is provided, it must be RFC822 compliant
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<String> changeBusinessEmail(String email) {
+        Validate.isTrue(email == null || EmailChecker.isValid(email), "Invalid email: %s", email);
+        return changeBusinessAttribute("email", email);
+    }
+
+    // Sent Binary Message: Node[description=iq, attributes={xmlns=w:biz, to=s.whatsapp.net, id=23672.14686-594, type=set}, content=[Node[description=business_profile, attributes={v=3, mutation_type=delta}, content=[Node[description=website, content=[104, 116, 116, 112, 115, 58, 47, 47, 103, 111, 111, 103, 108, 101, 46, 99, 111, 109]], Node[description=website, content=[104, 116, 116, 112, 115, 58, 47, 47, 103, 111, 111, 103, 108, 101, 49, 46, 99, 111, 109]]]]]]
+
+    /**
+     * Change the categories of this business profile
+     *
+     * @param categories the new categories, can be null
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<List<BusinessCategory>> changeBusinessCategories(List<BusinessCategory> categories) {
+        return socket.sendQuery("set", "w:biz", withChildren("business_profile", of("v", "3", "mutation_type", "delta"),
+                        withChildren("categories", createCategories(categories))))
+                .thenApplyAsync(ignored -> categories);
+    }
+
+    private Collection<Node> createCategories(List<BusinessCategory> categories) {
+        if (categories == null) {
+            return List.of();
+        }
+
+        return categories.stream()
+                .map(entry -> withAttributes("category", of("id", entry.id())))
+                .toList();
+    }
+
+    /**
+     * Change the websites of this business profile
+     *
+     * @param websites the new websites, can be null
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<List<URI>> changeBusinessWebsites(List<URI> websites) {
+        return socket.sendQuery("set", "w:biz",
+                        withChildren("business_profile", of("v", "3", "mutation_type", "delta"), createWebsites(websites)))
+                .thenApplyAsync(ignored -> websites);
+    }
+
+    /**
+     * Query the catalog of this business
+     *
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<List<BusinessCatalogEntry>> queryBusinessCatalog() {
+        return queryBusinessCatalog(10);
+    }
+
+    /**
+     * Query the catalog of this business
+     *
+     * @param productsLimit the maximum number of products to query
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<List<BusinessCatalogEntry>> queryBusinessCatalog(int productsLimit) {
+        return queryBusinessCatalog(keys().companion()
+                .toUserJid(), productsLimit);
+    }
+
+    /**
+     * Query the catalog of a business
+     *
+     * @param contact the business
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<List<BusinessCatalogEntry>> queryBusinessCatalog(@NonNull ContactJidProvider contact) {
+        return queryBusinessCatalog(contact, 10);
+    }
+
+    /**
+     * Query the catalog of a business
+     *
+     * @param contact       the business
+     * @param productsLimit the maximum number of products to query
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<List<BusinessCatalogEntry>> queryBusinessCatalog(@NonNull ContactJidProvider contact,
+                                                                              int productsLimit) {
+        return socket.sendQuery("get", "w:biz:catalog",
+                        withChildren("product_catalog", of("jid", contact, "allow_shop_source", "true"), with("limit",
+                                        String.valueOf(productsLimit)
+                                                .getBytes(StandardCharsets.UTF_8)),
+                                with("width", "100".getBytes(StandardCharsets.UTF_8)),
+                                with("height", "100".getBytes(StandardCharsets.UTF_8))))
+                .thenApplyAsync(this::parseCatalog);
+    }
+
+    private List<BusinessCatalogEntry> parseCatalog(Node result) {
+        return Objects.requireNonNull(result, "Cannot query business catalog, missing response node")
+                .findNode("product_catalog")
+                .map(entry -> entry.findNodes("product"))
+                .stream()
+                .flatMap(Collection::stream)
+                .map(BusinessCatalogEntry::of)
+                .toList();
+    }
+
+    /**
+     * Query the collections of this business
+     *
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<?> queryBusinessCollections() {
+        return queryBusinessCollections(50);
+    }
+
+    /**
+     * Query the collections of this business
+     *
+     * @param collectionsLimit the maximum number of collections to query
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<?> queryBusinessCollections(int collectionsLimit) {
+        return queryBusinessCollections(keys().companion()
+                .toUserJid(), collectionsLimit);
+    }
+
+    /**
+     * Query the collections of a business
+     *
+     * @param contact the business
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<?> queryBusinessCollections(@NonNull ContactJidProvider contact) {
+        return queryBusinessCollections(contact, 50);
+    }
+
+    /**
+     * Query the collections of a business
+     *
+     * @param contact          the business
+     * @param collectionsLimit the maximum number of collections to query
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<List<BusinessCollectionEntry>> queryBusinessCollections(
+            @NonNull ContactJidProvider contact, int collectionsLimit) {
+        return socket.sendQuery("get", "w:biz:catalog", of("smax_id", "35"), // Just why
+                        withChildren("collections", of("biz_jid", contact), with("collection_limit",
+                                        String.valueOf(collectionsLimit)
+                                                .getBytes(StandardCharsets.UTF_8)), with("item_limit", String.valueOf(collectionsLimit)
+                                        .getBytes(StandardCharsets.UTF_8)), with("width", "100".getBytes(StandardCharsets.UTF_8)),
+                                with("height", "100".getBytes(StandardCharsets.UTF_8))))
+                .thenApplyAsync(this::parseCollections);
+    }
+
+    private List<BusinessCollectionEntry> parseCollections(Node result) {
+        return Objects.requireNonNull(result, "Cannot query business collections, missing response node")
+                .findNode("collections")
+                .stream()
+                .map(entry -> entry.findNodes("collection"))
+                .flatMap(Collection::stream)
+                .map(BusinessCollectionEntry::of)
+                .toList();
+    }
+
+    private CompletableFuture<String> changeBusinessAttribute(String key, String value) {
+        return socket.sendQuery("set", "w:biz", withChildren("business_profile", of("v", "3", "mutation_type", "delta"),
+                        with(key, requireNonNullElse(value, "").getBytes(StandardCharsets.UTF_8))))
+                .thenAcceptAsync(result -> checkBusinessAttributeConflict(key, value, result))
+                .thenApplyAsync(ignored -> value);
+    }
+
+    private void checkBusinessAttributeConflict(String key, String value, Node result) {
+        var keyNode = result.findNode("profile")
+                .flatMap(entry -> entry.findNode(key));
+        if (keyNode.isEmpty()) {
+            return;
+        }
+
+        var actual = keyNode.get()
+                .contentAsString();
+        if (actual.isEmpty()) {
+            throw new NoSuchElementException(
+                    "Missing business %s response, something went wrong: %s".formatted(key, findErrorNode(result)));
+        }
+
+        Validate.isTrue(value == null || value.equals(actual.get()),
+                "Cannot change business %s: conflict(expected %s, got %s)", key, value, actual);
+    }
+
+    private String findErrorNode(Node result) {
+        return Optional.ofNullable(result)
+                .flatMap(node -> node.findNode("error"))
+                .map(Node::toString)
+                .orElse("unknown");
     }
 
     private ActionMessageRangeSync createRange(ContactJidProvider chat, boolean allMessages) {

@@ -290,7 +290,8 @@ class AppStateHandler implements JacksonProvider {
             return null;
         }
 
-        var blob = PROTOBUF.readMessage(snapshot.contentAsBytes(), ExternalBlobReference.class);
+        var blob = PROTOBUF.readMessage(snapshot.contentAsBytes()
+                .orElseThrow(), ExternalBlobReference.class);
         var syncedData = Medias.download(blob, socket.store()
                 .mediaConnection());
         return PROTOBUF.readMessage(syncedData, SnapshotSync.class);
@@ -302,7 +303,8 @@ class AppStateHandler implements JacksonProvider {
             return Optional.empty();
         }
 
-        var patchSync = PROTOBUF.readMessage(patch.contentAsBytes(), PatchSync.class);
+        var patchSync = PROTOBUF.readMessage(patch.contentAsBytes()
+                .orElseThrow(), PatchSync.class);
         if (!patchSync.hasVersion()) {
             var version = new VersionSync(versionCode + 1);
             patchSync.version(version);

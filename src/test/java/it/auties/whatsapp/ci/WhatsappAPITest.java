@@ -142,7 +142,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Order(4)
     public void testPictureQuery() {
         log("Loading picture...");
-        var picResponse = api.queryPic(contact)
+        var picResponse = api.queryPicture(contact)
                 .join();
         log("Loaded picture at: %s", picResponse);
     }
@@ -181,7 +181,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Order(9)
     public void testGroupCreation() {
         log("Creating group...");
-        var response = api.create(Bytes.ofRandom(5)
+        var response = api.createGroup(Bytes.ofRandom(5)
                         .toHex(), contact)
                 .join();
         group = response.jid();
@@ -211,7 +211,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
         }
 
         log("Changing group name...");
-        var changeGroupResponse = api.changeSubject(group, "omega")
+        var changeGroupResponse = api.changeGroupSubject(group, "omega")
                 .join();
         log("Changed group name: %s", changeGroupResponse);
     }
@@ -224,7 +224,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
         }
 
         log("Changing group description...");
-        var changeGroupResponse = api.changeDescription(group, Bytes.ofRandom(12)
+        var changeGroupResponse = api.changeGroupDescription(group, Bytes.ofRandom(12)
                         .toHex())
                 .join();
         log("Changed group description: %s", changeGroupResponse);
@@ -238,7 +238,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
         }
 
         log("Removing %s...", contact);
-        var changeGroupResponse = api.remove(group, contact)
+        var changeGroupResponse = api.removeGroupParticipant(group, contact)
                 .join();
         log("Removed: %s", changeGroupResponse);
     }
@@ -251,7 +251,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
         }
 
         log("Adding %s...", contact);
-        var changeGroupResponse = api.add(group, contact)
+        var changeGroupResponse = api.addGroupParticipant(group, contact)
                 .join();
         log("Added: %s", changeGroupResponse);
     }
@@ -612,7 +612,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
         }
 
         log("Querying group invite code");
-        var code = api.queryInviteCode(group)
+        var code = api.queryGroupInviteCode(group)
                 .join();
         log("Queried %s", code);
 
@@ -664,7 +664,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
         }
 
         log("Leaving group...");
-        var ephemeralResponse = api.leave(group)
+        var ephemeralResponse = api.leaveGroup(group)
                 .join();
         log("Left group: %s", ephemeralResponse);
     }

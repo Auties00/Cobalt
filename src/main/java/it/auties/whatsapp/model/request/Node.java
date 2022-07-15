@@ -4,6 +4,7 @@ import it.auties.whatsapp.util.Attributes;
 import it.auties.whatsapp.util.Nodes;
 import lombok.NonNull;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static java.util.Objects.requireNonNull;
@@ -120,54 +121,49 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
     }
 
     /**
+     * Returns the content of this object as string
+     *
+     * @return an optional
+     */
+    public Optional<String> contentAsString() {
+        return Optional.ofNullable(switch (content) {
+            case String string -> string;
+            case byte[] bytes -> new String(bytes, StandardCharsets.UTF_8);
+            case null, default -> null;
+        });
+    }
+
+    /**
      * Returns the content of this object as bytes
      *
-     * @return a non-null array of bytes
-     * @throws UnsupportedOperationException if this node doesn't wrap an array of bytes
+     * @return an optional
      */
-    public byte[] contentAsBytes() {
-        if (!(content instanceof byte[] bytes)) {
-            throw new UnsupportedOperationException("Unsupported content type: %s".formatted(content == null ?
-                    null :
-                    content.getClass()
-                            .getName()));
-        }
-
-        return bytes;
+    public Optional<byte[]> contentAsBytes() {
+        return content instanceof byte[] bytes ?
+                Optional.of(bytes) :
+                Optional.empty();
     }
 
     /**
      * Returns the content of this object as a long
      *
-     * @return a long
-     * @throws UnsupportedOperationException if this node doesn't wrap a long
+     * @return an optional
      */
-    public long contentAsLong() {
-        if (!(content instanceof Number number)) {
-            throw new UnsupportedOperationException("Unsupported content type: %s".formatted(content == null ?
-                    null :
-                    content.getClass()
-                            .getName()));
-        }
-
-        return number.longValue();
+    public Optional<Long> contentAsLong() {
+        return content instanceof Number number ?
+                Optional.of(number.longValue()) :
+                Optional.empty();
     }
 
     /**
      * Returns the content of this object as a double
      *
-     * @return a double
-     * @throws UnsupportedOperationException if this node doesn't wrap a double
+     * @return an optional
      */
-    public double contentAsDouble() {
-        if (!(content instanceof Number number)) {
-            throw new UnsupportedOperationException("Unsupported content type: %s".formatted(content == null ?
-                    null :
-                    content.getClass()
-                            .getName()));
-        }
-
-        return number.doubleValue();
+    public Optional<Double> contentAsDouble() {
+        return content instanceof Number number ?
+                Optional.of(number.doubleValue()) :
+                Optional.empty();
     }
 
     /**

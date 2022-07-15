@@ -21,15 +21,15 @@ public record SignalSignedKeyPair(int id, @NonNull SignalKeyPair keyPair, byte[]
         }
 
         var id = node.findNode("id")
-                .map(Node::contentAsBytes)
+                .flatMap(Node::contentAsBytes)
                 .map(bytes -> BytesHelper.bytesToInt(bytes, 3))
                 .orElseThrow(() -> new NoSuchElementException("Missing id in SignalSignedKeyPair"));
         var publicKey = node.findNode("value")
-                .map(Node::contentAsBytes)
+                .flatMap(Node::contentAsBytes)
                 .orElseThrow(() -> new NoSuchElementException("Missing publicKey in SignalSignedKeyPair"));
         var keyPair = new SignalKeyPair(publicKey, null);
         var signature = node.findNode("signature")
-                .map(Node::contentAsBytes)
+                .flatMap(Node::contentAsBytes)
                 .orElse(null);
         return Optional.of(new SignalSignedKeyPair(id, keyPair, signature));
     }

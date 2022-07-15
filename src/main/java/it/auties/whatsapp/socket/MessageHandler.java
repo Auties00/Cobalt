@@ -347,10 +347,11 @@ class MessageHandler implements JacksonProvider {
                 .getJid("jid")
                 .orElseThrow(() -> new NoSuchElementException("Missing jid for session"));
         var registrationId = node.findNode("registration")
-                .map(id -> BytesHelper.bytesToInt(id.contentAsBytes(), 4))
+                .map(id -> BytesHelper.bytesToInt(id.contentAsBytes()
+                        .orElseThrow(), 4))
                 .orElseThrow(() -> new NoSuchElementException("Missing id"));
         var identity = node.findNode("identity")
-                .map(Node::contentAsBytes)
+                .flatMap(Node::contentAsBytes)
                 .map(KeyHelper::withHeader)
                 .orElseThrow(() -> new NoSuchElementException("Missing identity"));
         var signedKey = node.findNode("skey")
@@ -413,7 +414,8 @@ class MessageHandler implements JacksonProvider {
                     .build();
 
             socket.sendMessageAck(infoNode, of("class", "receipt"));
-            var encodedMessage = messageNode.contentAsBytes();
+            var encodedMessage = messageNode.contentAsBytes()
+                    .orElseThrow();
             var type = messageNode.attributes()
                     .getString("type");
             var buffer = decode(info, encodedMessage, type);

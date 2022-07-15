@@ -23,7 +23,6 @@ import it.auties.whatsapp.util.*;
 import lombok.*;
 import lombok.experimental.Accessors;
 
-import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -229,7 +228,7 @@ class StreamHandler implements JacksonProvider {
             }
 
             var keysSize = node.findNode("count")
-                    .map(Node::contentAsLong)
+                    .flatMap(Node::contentAsLong)
                     .orElse(0L);
             if (keysSize >= REQUIRED_PRE_KEYS_SIZE) {
                 return;
@@ -450,10 +449,9 @@ class StreamHandler implements JacksonProvider {
     private void printQrCode(Node container) {
         var ref = container.findNode("ref")
                 .orElseThrow(() -> new NoSuchElementException("Missing ref"));
-        var qr = "%s,%s,%s,%s".formatted(new String(ref.contentAsBytes(), StandardCharsets.UTF_8), Bytes.of(
-                        socket.keys()
-                                .noiseKeyPair()
-                                .publicKey())
+        var qr = "%s,%s,%s,%s".formatted(ref.contentAsString(), Bytes.of(socket.keys()
+                        .noiseKeyPair()
+                        .publicKey())
                 .toBase64(), Bytes.of(socket.keys()
                         .identityKeyPair()
                         .publicKey())
@@ -471,7 +469,8 @@ class StreamHandler implements JacksonProvider {
 
         var deviceIdentity = container.findNode("device-identity")
                 .orElseThrow(() -> new NoSuchElementException("Missing device identity"));
-        var advIdentity = PROTOBUF.readMessage(deviceIdentity.contentAsBytes(), SignedDeviceIdentityHMAC.class);
+        var advIdentity = PROTOBUF.readMessage(deviceIdentity.contentAsBytes()
+                .orElseThrow(), SignedDeviceIdentityHMAC.class);
         var advSign = Hmac.calculateSha256(advIdentity.details(), socket.keys()
                 .companionKey());
         if (!Arrays.equals(advIdentity.hmac(), advSign)) {
