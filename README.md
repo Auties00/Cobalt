@@ -91,7 +91,7 @@ There are numerous named constructors that can be used to initiate a connection:
            .url("wss://web.whatsapp.com/ws") // The URL of WhatsappWeb's Socket
            .description("WhatsappWeb4j") // The name of the service that is displayed in Whatsapp's devices tab
            .historyLength(HistoryLength.THREE_MONTHS) // The amount of chat history that Whatsapp sends to the client on the first scan
-           .errorHandler(ErrorHandler.toFile()) // Socket errrors handler
+           .errorHandler(ErrorHandler.toTerminal()) // Socket errrors handler
            .qrHandler(QrHandler.toTerminal()) // Qr code handler
            .build(); // Creates an instance of WhatsappOptions
    var api = Whatsapp.newConnection(options);
@@ -248,35 +248,46 @@ In the original version of WhatsappWeb, chats, contacts and messages could be qu
 The multi-device implementation, instead, sends all of this information progressively when the connection is initialized for the first time and doesn't allow any subsequent queries to access the latter.
 In practice, this means that this data needs to be serialized somewhere.
 
-By default, this library serializes data regarding a session at `$HOME/.whatsappweb4j/<session_id>` in two different files, 
-respectively for the store(chats, contacts and message) and keys(cryptographic data) as plain JSON only when the connection is closed.
+By default, this library serializes data regarding a session at `$HOME/.whatsappweb4j/<session_id>` in two different files, respectively for the store(chats, contacts and messages) and keys(cryptographic data).
+The latter is serialized every time a modification occurs to the model, while the store is serialized everytime a ping is sent by the socket to the server.
+Both are serialized when the socket is closed.
 Here is the default implementation:
 
 ```java
-import it.auties.whatsapp.api.SocketEvent;
-import it.auties.whatsapp.listener.Listener;
-
-private class BlockingDefaultSerializer implements Listener {
+public class DefaultControllerSerializer implements ControllerSerializer {
     @Override
-    public void onSocketEvent(SocketEvent event) {
-        if (event != SocketEvent.CLOSE) {
-            return;
-        }
-
-        // Syncronously as having async operations while the the application is shutting down is not a good idea
-        keys().save(false);
-        store().save(false);
+    public void serialize(Controller<?> controller) {
+        controller.preferences()
+                .writeJson(controller, true);
     }
 }
 ```
-If your application needs to serialize data in a different way, for example in a database or when a different event is fired,
-the same event can be implemented inside any of your listeners.
-The default serializer can then be disabled using the Options config:
-```java
-var options = Options.defaultOptions() // Use the default options
-        .withDefaultSerialization(false); // Disables default serialization
-var api = Whatsapp.newConnection(options); // Any named constructor can be used
-```
+If your application needs to serialize data in a different way, for example in a database:
+1. Disable the default serialization mechanism (optional)
+
+    ```java
+    var options = Options.defaultOptions() // Use the default options
+            .withDefaultSerialization(false); // Disables default serialization
+    var api = Whatsapp.newConnection(options); // Any named constructor can be used
+    ```
+
+2. Create a custom serializer 
+
+    ```java
+    public class CustomSerializer implements ControllerSerializer {
+        @Override
+        public void serialize(Controller<?> controller) {
+            // Your logic
+        }
+    }
+    ```
+
+3. Register the custom serializer in the manifest
+
+   - Create a directory called services inside the META-INF. 
+   - Inside the folder that was just created, create a file called `it.auties.whatsapp.controller.ControllerSerializer`.
+   - Finally, inside the file that was just created write the fully qualified name of your implementation, for example `com.example.CustomSerializer`.
+
 
 ### How to delete a session
 

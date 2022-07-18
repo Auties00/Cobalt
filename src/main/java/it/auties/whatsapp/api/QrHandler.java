@@ -8,15 +8,16 @@ import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import lombok.NonNull;
 
+import java.awt.*;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 
 import static com.google.zxing.client.j2se.MatrixToImageWriter.writeToPath;
-import static java.awt.Desktop.getDesktop;
-import static java.awt.Desktop.isDesktopSupported;
+import static java.lang.System.Logger.Level.INFO;
 import static java.nio.file.Files.createTempFile;
 
 /**
@@ -77,33 +78,92 @@ public interface QrHandler extends Consumer<String> {
     }
 
     /**
-     * Saves the QR code to a file and opens it if a Desktop environment is available
+     * Saves the QR code to a temp file
+     *
+     * @param fileConsumer the consumer to digest the created file
      */
-    static QrHandler toFile() {
+    static QrHandler toFile(@NonNull ToFileConsumer fileConsumer) {
+        try {
+            var file = createTempFile(UUID.randomUUID()
+                    .toString(), ".jpg");
+            return toFile(file, fileConsumer);
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Cannot create temp file for qr handler", exception);
+        }
+    }
+
+    /**
+     * Saves the QR code to a specified file
+     *
+     * @param path         the location where the qr will be written
+     * @param fileConsumer the consumer to digest the created file
+     */
+    static QrHandler toFile(@NonNull Path path, @NonNull ToFileConsumer fileConsumer) {
         return qr -> {
             try {
                 var matrix = createMatrix(qr, 500, 5);
-                var path = createTempFile(UUID.randomUUID()
-                        .toString(), ".jpg");
                 writeToPath(matrix, "jpg", path);
-                if (!isDesktopSupported()) {
-                    return;
-                }
-
-                getDesktop().open(path.toFile());
+                fileConsumer.accept(path);
             } catch (IOException exception) {
                 throw new UncheckedIOException("Cannot save qr to file", exception);
             }
         };
     }
 
-    private static BitMatrix createMatrix(String qr, int size, int margin) {
+    /**
+     * Utility method to create a matrix from a qr code
+     *
+     * @param qr     the non-null source
+     * @param size   the size of the qr code
+     * @param margin the margin for the qr code
+     * @return a non-null matrix
+     */
+    static BitMatrix createMatrix(@NonNull String qr, int size, int margin) {
         try {
             var writer = new MultiFormatWriter();
             return writer.encode(qr, BarcodeFormat.QR_CODE, size, size,
                     Map.of(EncodeHintType.MARGIN, margin, EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.L));
         } catch (WriterException exception) {
             throw new UnsupportedOperationException("Cannot create qr code", exception);
+        }
+    }
+
+    /**
+     * This interface allows to consume a file created by {@link QrHandler#toFile(Path, ToFileConsumer)} easily
+     */
+    interface ToFileConsumer extends Consumer<Path> {
+        /**
+         * Discard the newly created file
+         */
+        static ToFileConsumer discarding() {
+            return ignored -> {
+            };
+        }
+
+        /**
+         * Prints the location of the file on the terminal using the system logger
+         */
+        static ToFileConsumer toTerminal() {
+            return path -> System.getLogger(QrHandler.class.getName())
+                    .log(INFO, "Saved qr code at %s".formatted(path));
+        }
+
+        /**
+         * Opens the file if a Desktop environment is available
+         */
+        static ToFileConsumer toDesktop() {
+            return path -> {
+                try {
+                    if (!Desktop.isDesktopSupported()) {
+                        return;
+                    }
+
+                    Desktop.getDesktop()
+                            .open(path.toFile());
+                } catch (IOException exception) {
+                    throw new UncheckedIOException("Cannot open file with destkop", exception);
+                }
+            };
         }
     }
 }
