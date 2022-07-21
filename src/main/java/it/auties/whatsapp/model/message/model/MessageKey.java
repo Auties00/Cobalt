@@ -28,7 +28,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Data
 @Accessors(fluent = true)
 @Jacksonized
-@Builder(builderMethodName = "newMessageKey")
+@Builder(builderMethodName = "newMessageKeyBuilder")
 public class MessageKey implements ProtobufMessage {
     /**
      * The jid of the chat where the message was sent
@@ -77,15 +77,6 @@ public class MessageKey implements ProtobufMessage {
         return Bytes.ofRandom(8)
                 .toHex()
                 .toUpperCase(Locale.ROOT);
-    }
-
-    /**
-     * Returns the chat where the message was sent
-     *
-     * @return an optional
-     */
-    public Optional<Chat> chat() {
-        return Optional.ofNullable(chat);
     }
 
     /**

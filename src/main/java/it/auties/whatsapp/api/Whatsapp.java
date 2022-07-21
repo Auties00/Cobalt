@@ -13,11 +13,9 @@ import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.message.model.ContextualMessage;
-import it.auties.whatsapp.model.message.model.Message;
-import it.auties.whatsapp.model.message.model.MessageContainer;
-import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
+import it.auties.whatsapp.model.message.standard.ReactionMessage;
 import it.auties.whatsapp.model.message.standard.TextMessage;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.response.ContactStatusResponse;
@@ -37,6 +35,7 @@ import lombok.experimental.Accessors;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
@@ -771,6 +770,38 @@ public class Whatsapp {
     }
 
     /**
+     * Remove a reaction from a message
+     *
+     * @param message the non-null message
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<MessageInfo> removeReaction(@NonNull MessageMetadataProvider message) {
+        return sendReaction(message, null);
+    }
+
+    /**
+     * Send a reaction to a message
+     *
+     * @param message  the non-null message
+     * @param reaction the reaction to send, null if you want to remove the reaction
+     * @return a CompletableFuture
+     */
+    public CompletableFuture<MessageInfo> sendReaction(@NonNull MessageMetadataProvider message, String reaction) {
+        var key = MessageKey.newMessageKeyBuilder()
+                .chatJid(message.chat()
+                        .jid())
+                .id(message.id())
+                .build();
+        var reactionMessage = ReactionMessage.newReactionMessageBuilder()
+                .key(key)
+                .content(reaction)
+                .timestamp(Instant.now()
+                        .toEpochMilli())
+                .build();
+        return sendMessage(message.chat(), reactionMessage);
+    }
+
+    /**
      * Builds and sends a message from a chat and a message
      *
      * @param chat    the chat where the message should be sent
@@ -790,7 +821,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJidProvider chat, @NonNull String message,
-                                                      @NonNull MessageInfo quotedMessage) {
+                                                      @NonNull MessageMetadataProvider quotedMessage) {
         return sendMessage(chat, TextMessage.of(message), quotedMessage);
     }
 
@@ -804,7 +835,7 @@ public class Whatsapp {
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJidProvider chat,
                                                       @NonNull ContextualMessage message,
-                                                      @NonNull MessageInfo quotedMessage) {
+                                                      @NonNull MessageMetadataProvider quotedMessage) {
         Validate.isTrue(!quotedMessage.message()
                 .isEmpty(), "Cannot quote an empty message");
         Validate.isTrue(!quotedMessage.message()
@@ -847,7 +878,7 @@ public class Whatsapp {
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJidProvider chat,
                                                       @NonNull MessageContainer message) {
-        var key = MessageKey.newMessageKey()
+        var key = MessageKey.newMessageKeyBuilder()
                 .chatJid(chat.toJid())
                 .fromMe(true)
                 .senderJid(chat.toJid()
@@ -930,16 +961,19 @@ public class Whatsapp {
             return;
         }
 
-        info.chat()
-                .filter(Chat::isEphemeral)
-                .ifPresent(chat -> createEphemeralMessage(info, chat));
+        if (!info.chat()
+                .isEphemeral()) {
+            return;
+        }
+
+        createEphemeralMessage(info);
     }
 
-    private void createEphemeralMessage(MessageInfo info, Chat chat) {
+    private void createEphemeralMessage(MessageInfo info) {
         info.message()
                 .contentWithContext()
                 .map(ContextualMessage::contextInfo)
-                .ifPresent(contextInfo -> createEphemeralContext(chat, contextInfo));
+                .ifPresent(contextInfo -> createEphemeralContext(info.chat(), contextInfo));
         info.message(info.message()
                 .toEphemeral());
     }
@@ -1826,13 +1860,11 @@ public class Whatsapp {
         }
 
         var actual = keyNode.get()
-                .contentAsString();
-        if (actual.isEmpty()) {
-            throw new NoSuchElementException(
-                    "Missing business %s response, something went wrong: %s".formatted(key, findErrorNode(result)));
-        }
-
-        Validate.isTrue(value == null || value.equals(actual.get()),
+                .contentAsString()
+                .orElseThrow(() -> new NoSuchElementException(
+                        "Missing business %s response, something went wrong: %s".formatted(key,
+                                findErrorNode(result))));
+        Validate.isTrue(value == null || value.equals(actual),
                 "Cannot change business %s: conflict(expected %s, got %s)", key, value, actual);
     }
 

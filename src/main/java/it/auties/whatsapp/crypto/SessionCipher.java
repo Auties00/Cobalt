@@ -123,7 +123,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
     private Session createSession(SignalPreKeyMessage message) {
         Validate.isTrue(message.registrationId() != 0, "Missing registration jid");
         var newSession = new Session();
-        keys.putKey(address, newSession);
+        keys.putSession(address, newSession);
         return newSession;
     }
 

@@ -40,25 +40,12 @@ public final class Preferences implements JacksonProvider {
             return;
         }
 
-        var futures = ASYNC_WRITES.values()
+        ASYNC_WRITES.values()
                 .stream()
-                .peek(Preferences::cancelOutdatedOperations)
-                .map(ConcurrentSkipListMap::lastEntry)
-                .filter(Objects::nonNull)
-                .map(Map.Entry::getValue)
-                .toArray(CompletableFuture[]::new);
-        CompletableFuture.allOf(futures)
-                .join();
-    }
-
-    private static void cancelOutdatedOperations(ConcurrentSkipListMap<Long, CompletableFuture<Void>> data) {
-        var lastEntry = data.lastEntry();
-        if (lastEntry == null) {
-            return;
-        }
-
-        data.headMap(lastEntry.getKey())
-                .forEach((id, future) -> future.cancel(true));
+                .map(longCompletableFutureConcurrentSkipListMap -> CompletableFuture.allOf(
+                        longCompletableFutureConcurrentSkipListMap.values()
+                                .toArray(CompletableFuture[]::new)))
+                .forEach(CompletableFuture::join);
     }
 
     public static Path home() {

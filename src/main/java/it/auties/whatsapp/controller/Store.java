@@ -6,26 +6,23 @@ import it.auties.bytes.Bytes;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
+import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
+import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.Request;
-import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.util.ConcurrentSet;
-import it.auties.whatsapp.util.InitializationLock;
-import it.auties.whatsapp.util.Preferences;
+import it.auties.whatsapp.util.*;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -58,11 +55,18 @@ public final class Store implements Controller<Store> {
     private int id;
 
     /**
-     * The non-null list of chats
+     * The non-null map of chats
      */
     @NonNull
     @Default
-    private ConcurrentSet<Chat> chats = new ConcurrentSet<>();
+    private ConcurrentMap<ContactJid, Chat> chats = new ConcurrentHashMap<>();
+
+    /**
+     * The non-null map of contacts
+     */
+    @NonNull
+    @Default
+    private ConcurrentMap<ContactJid, Contact> contacts = new ConcurrentHashMap<>();
 
     /**
      * The non-null list of status messages
@@ -70,13 +74,6 @@ public final class Store implements Controller<Store> {
     @NonNull
     @Default
     private ConcurrentSet<MessageInfo> status = new ConcurrentSet<>();
-
-    /**
-     * The non-null list of contacts
-     */
-    @NonNull
-    @Default
-    private ConcurrentSet<Contact> contacts = new ConcurrentSet<>();
 
     /**
      * Whether this store has already received the snapshot from
@@ -350,37 +347,13 @@ public final class Store implements Controller<Store> {
      * @param chat the chat to add
      * @return the input chat
      */
-    public Chat addChat(Chat chat) {
+    public Chat addChat(@NonNull Chat chat) {
         chat.messages()
                 .forEach(this::attribute);
-        chats.add(chat);
+        var oldChat = chats.get(chat.jid());
+        chat.messages().addAll(oldChat.messages());
+        chats.put(chat.jid(), chat);
         return chat;
-    }
-
-    public void attribute(MessageInfo info) {
-        info.key()
-                .chat(findChatByJid(info.key()
-                        .chatJid()).orElse(null));
-        info.key()
-                .senderJid()
-                .ifPresent(senderJid -> info.key()
-                        .sender(findContactByJid(senderJid).orElse(null)));
-        info.sender(findContactByJid(info.senderJid()).orElse(null));
-        info.message()
-                .contentWithContext()
-                .map(ContextualMessage::contextInfo)
-                .ifPresent(this::attribute);
-    }
-
-    private void attribute(ContextInfo contextInfo) {
-        contextInfo.quotedMessageSender(findContactByJid(contextInfo.quotedMessageSenderJid()).orElse(null));
-        var chat = findChatByJid(contextInfo.quotedMessageChatJid()).orElse(null);
-        if (chat == null) {
-            return;
-        }
-
-        contextInfo.quotedMessageChat(chat);
-        contextInfo.quotedMessage(findMessageById(chat, contextInfo.quotedMessageId()).orElse(null));
     }
 
     /**
@@ -389,9 +362,56 @@ public final class Store implements Controller<Store> {
      * @param contact the contact to add
      * @return the input contact
      */
-    public Contact addContact(Contact contact) {
-        contacts.add(contact);
+    public Contact addContact(@NonNull Contact contact) {
+        var oldContact = contacts.get(contact.jid());
+        // TODO: 21/07/2022 merging logic
+        contacts.put(contact.jid(), contact);
         return contact;
+    }
+
+    public void attribute(MessageInfo info) {
+        var chat = findChatByJid(info.chatJid())
+                .orElseGet(() -> addChat(Chat.ofJid(info.chatJid())));
+        info.key().chat(chat);
+        info.key()
+                .senderJid()
+                .ifPresent(senderJid -> attributeSender(info, senderJid));
+        info.message()
+                .contentWithContext()
+                .map(ContextualMessage::contextInfo)
+                .ifPresent(this::attributeContext);
+    }
+
+    private MessageKey attributeSender(MessageInfo info, ContactJid senderJid) {
+        var contact = findContactByJid(senderJid)
+                .orElseGet(() -> addContact(Contact.ofJid(senderJid)));
+        return info.sender(contact)
+                .key()
+                .sender(contact);
+    }
+
+    private void attributeContext(ContextInfo contextInfo) {
+        if(!contextInfo.hasQuotedMessage()){
+            return;
+        }
+
+
+        contextInfo.quotedMessageSenderJid()
+                .ifPresent(senderJid -> attributeContextSender(contextInfo, senderJid));
+        contextInfo.quotedMessageChatJid()
+                .ifPresent(chatJid -> attributeContextChat(contextInfo, chatJid));
+    }
+
+    private void attributeContextChat(ContextInfo contextInfo, ContactJid chatJid) {
+        var chat = findChatByJid(chatJid)
+                .orElseGet(() -> addChat(Chat.ofJid(chatJid)));
+        contextInfo.quotedMessageChat(chat);
+    }
+
+    private void attributeContextSender(ContextInfo contextInfo, ContactJid senderJid) {
+        var contact = findContactByJid(senderJid)
+                .orElseGet(() -> addContact(Contact.ofJid(senderJid)));
+        contextInfo.quotedMessageSender(contact);
     }
 
     /**
@@ -511,19 +531,10 @@ public final class Store implements Controller<Store> {
     /**
      * Returns all the chats
      *
-     * @return an immutable set
+     * @return an immutable collection
      */
-    public Set<Chat> chats() {
-        return Collections.unmodifiableSet(chats);
-    }
-
-    /**
-     * Returns all the status
-     *
-     * @return an immutable set
-     */
-    public Set<MessageInfo> status() {
-        return Collections.unmodifiableSet(status);
+    public Collection<Chat> chats() {
+        return Collections.unmodifiableCollection(chats.values());
     }
 
     /**
@@ -531,8 +542,17 @@ public final class Store implements Controller<Store> {
      *
      * @return an immutable set
      */
-    public Set<Contact> contacts() {
-        return Collections.unmodifiableSet(contacts);
+    public Collection<Contact> contacts() {
+        return Collections.unmodifiableCollection(contacts.values());
+    }
+
+    /**
+     * Returns all the status
+     *
+     * @return an immutable set
+     */
+    public Collection<MessageInfo> status() {
+        return Collections.unmodifiableSet(status);
     }
 
     /**

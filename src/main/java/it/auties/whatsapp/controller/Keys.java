@@ -319,7 +319,7 @@ public final class Keys implements Controller<Keys> {
      * @param record  the non-null record
      * @return this
      */
-    public Keys putKey(@NonNull SessionAddress address, @NonNull Session record) {
+    public Keys putSession(@NonNull SessionAddress address, @NonNull Session record) {
         sessions.put(address, record);
         serialize();
         return this;
@@ -409,7 +409,7 @@ public final class Keys implements Controller<Keys> {
 
     @Override
     public void dispose() {
-        serialize();
+        // Nothing to do
     }
 
     @JsonSetter

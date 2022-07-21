@@ -160,15 +160,13 @@ class StreamHandler implements JacksonProvider {
     }
 
     private void updateMessageStatus(MessageStatus status, Contact participant, MessageInfo message) {
-        var chat = message.chat()
-                .orElseGet(() -> socket.createChat(message.chatJid()));
         message.status(status);
         if (participant != null) {
             message.individualStatus()
                     .put(participant, status);
         }
 
-        socket.onMessageStatus(status, participant, message, chat);
+        socket.onMessageStatus(status, participant, message, message.chat());
     }
 
     private void digestCall(Node node) {
@@ -247,7 +245,7 @@ class StreamHandler implements JacksonProvider {
         var chat = node.attributes()
                 .getJid("from")
                 .orElseThrow(() -> new NoSuchElementException("Missing chat in notification"));
-        var key = MessageKey.newMessageKey()
+        var key = MessageKey.newMessageKeyBuilder()
                 .chatJid(chat)
                 .build();
         var message = MessageInfo.newMessageInfo()
@@ -448,8 +446,9 @@ class StreamHandler implements JacksonProvider {
 
     private void printQrCode(Node container) {
         var ref = container.findNode("ref")
+                .flatMap(Node::contentAsString)
                 .orElseThrow(() -> new NoSuchElementException("Missing ref"));
-        var qr = "%s,%s,%s,%s".formatted(ref.contentAsString(), Bytes.of(socket.keys()
+        var qr = "%s,%s,%s,%s".formatted(ref, Bytes.of(socket.keys()
                         .noiseKeyPair()
                         .publicKey())
                 .toBase64(), Bytes.of(socket.keys()

@@ -6,10 +6,7 @@ import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatDisappear;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.message.model.ActionLink;
-import it.auties.whatsapp.model.message.model.ContextualMessage;
-import it.auties.whatsapp.model.message.model.MessageContainer;
-import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.payment.PaymentOrderMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -34,6 +31,7 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
      * The jid of the message that this ContextualMessage quotes
      */
     @ProtobufProperty(index = 1, type = STRING)
+    @Setter(AccessLevel.NONE)
     private String quotedMessageId;
 
     /**
@@ -53,12 +51,7 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
      */
     @ProtobufProperty(index = 3, type = MESSAGE, concreteType = MessageContainer.class)
     @Setter(AccessLevel.NONE)
-    private MessageContainer quotedMessageContainer;
-
-    /**
-     * The message that this ContextualMessage quotes
-     */
-    private MessageInfo quotedMessage;
+    private MessageContainer quotedMessage;
 
     /**
      * The jid of the contact that sent the message that this ContextualMessage quotes
@@ -189,17 +182,17 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
     @ProtobufProperty(index = 35, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
     private ContactJid parentGroup;
 
-    private ContextInfo(@NonNull MessageInfo quotedMessage) {
-        this.quotedMessageId = quotedMessage.key()
-                .id();
-        this.quotedMessageSenderJid = quotedMessage.senderJid();
+    private ContextInfo(@NonNull MessageMetadataProvider quotedMessage) {
+        this.quotedMessageId = quotedMessage.id();
+        this.quotedMessageSenderJid = quotedMessage.sender()
+                .map(Contact::jid)
+                .orElse(null);
         this.quotedMessageSender = quotedMessage.sender()
                 .orElse(null);
-        this.quotedMessageChatJid = quotedMessage.chatJid();
-        this.quotedMessageChat = quotedMessage.chat()
-                .orElse(null);
-        this.quotedMessage = quotedMessage;
-        this.quotedMessageContainer = quotedMessage.message();
+        this.quotedMessageChatJid = quotedMessage.chat()
+                .jid();
+        this.quotedMessageChat = quotedMessage.chat();
+        this.quotedMessage = quotedMessage.message();
     }
 
     /**
@@ -208,17 +201,35 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
      * @param quotedMessage the message to quote
      * @return a non-null context info
      */
-    public static ContextInfo of(@NonNull MessageInfo quotedMessage) {
+    public static ContextInfo of(@NonNull MessageMetadataProvider quotedMessage) {
         return new ContextInfo(quotedMessage);
     }
 
     /**
-     * Returns the quoted message info
+     * Returns the id of the quoted message
      *
      * @return an optional
      */
-    public Optional<MessageInfo> quotedMessage() {
-        return Optional.ofNullable(quotedMessage);
+    public Optional<String> quotedMessageId() {
+        return Optional.ofNullable(quotedMessageId);
+    }
+
+    /**
+     * Returns the jid of the sender of the quoted message
+     *
+     * @return an optional
+     */
+    public Optional<ContactJid> quotedMessageSenderJid() {
+        return Optional.ofNullable(quotedMessageSenderJid);
+    }
+
+    /**
+     * Returns the sender of the quoted message
+     *
+     * @return an optional
+     */
+    public Optional<Contact> quotedMessageSender() {
+        return Optional.ofNullable(quotedMessageSender);
     }
 
     /**
@@ -226,9 +237,35 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
      *
      * @return an optional
      */
-    public Optional<MessageContainer> quotedMessageContainer() {
-        return Optional.ofNullable(quotedMessage != null ?
-                quotedMessage.message() :
-                quotedMessageContainer);
+    public Optional<MessageContainer> quotedMessage() {
+        return Optional.ofNullable(quotedMessage);
+    }
+
+    /**
+     * Returns the chat jid of the quoted message
+     *
+     * @return an optional
+     */
+    public Optional<ContactJid> quotedMessageChatJid() {
+        return Optional.ofNullable(quotedMessageChatJid)
+                .or(this::quotedMessageSenderJid);
+    }
+
+    /**
+     * Returns the chat of the quoted message
+     *
+     * @return an optional
+     */
+    public Optional<Chat> quotedMessageChat() {
+        return Optional.ofNullable(quotedMessageChat);
+    }
+
+    /**
+     * Returns whether this context info has information about a quoted message
+     *
+     * @return a boolean
+     */
+    public boolean hasQuotedMessage() {
+        return quotedMessageId().isPresent() && quotedMessage().isPresent() && quotedMessageChat().isPresent();
     }
 }

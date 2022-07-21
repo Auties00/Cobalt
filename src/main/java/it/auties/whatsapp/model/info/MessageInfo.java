@@ -33,7 +33,7 @@ import static java.util.Objects.requireNonNullElseGet;
 @Builder(builderMethodName = "newMessageInfo")
 @Jacksonized
 @Accessors(fluent = true)
-public final class MessageInfo implements Info {
+public final class MessageInfo implements Info, MessageMetadataProvider {
     /**
      * The MessageKey of this message
      */
@@ -324,8 +324,7 @@ public final class MessageInfo implements Info {
      * @return a non-null String
      */
     public String chatName() {
-        return chat().map(Chat::name)
-                .orElseGet(chatJid()::user);
+        return chat().name();
     }
 
     /**
@@ -341,9 +340,9 @@ public final class MessageInfo implements Info {
     /**
      * Returns the chat where the message was sent
      *
-     * @return an optional
+     * @return a chat
      */
-    public Optional<Chat> chat() {
+    public Chat chat() {
         return key.chat();
     }
 
@@ -358,15 +357,15 @@ public final class MessageInfo implements Info {
     }
 
     /**
-     * Returns an optional {@link MessageInfo} representing the message quoted by this message if said message is in memory
+     * Returns the message quoted by this message
      *
      * @return a non-empty optional {@link MessageInfo} if this message quotes a message in memory
      */
-    public Optional<MessageInfo> quotedMessage() {
+    public Optional<QuotedMessage> quotedMessage() {
         return Optional.of(message)
                 .flatMap(MessageContainer::contentWithContext)
                 .map(ContextualMessage::contextInfo)
-                .flatMap(ContextInfo::quotedMessage);
+                .flatMap(QuotedMessage::of);
     }
 
     /**

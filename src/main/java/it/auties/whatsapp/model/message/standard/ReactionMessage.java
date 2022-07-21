@@ -16,7 +16,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
  */
 @AllArgsConstructor
 @Data
-@Builder
+@Builder(builderMethodName = "newReactionMessageBuilder")
 @Jacksonized
 @Accessors(fluent = true)
 public final class ReactionMessage implements Message {
@@ -30,7 +30,7 @@ public final class ReactionMessage implements Message {
      * The operation as text
      */
     @ProtobufProperty(index = 2, type = STRING)
-    private String text;
+    private String content;
 
     /**
      * The grouping key
@@ -42,11 +42,5 @@ public final class ReactionMessage implements Message {
      * The timestamp of this message in milliseconds
      */
     @ProtobufProperty(index = 4, type = INT64)
-    private long timestamp;
-
-    /**
-     * Whether this message is marked as read or not
-     */
-    @ProtobufProperty(index = 5, type = BOOLEAN)
-    private boolean unread;
+    private Long timestamp;
 }

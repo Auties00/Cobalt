@@ -51,13 +51,13 @@ public final class PaymentOrderMessage extends ContextInfo implements PaymentMes
     /**
      * The surface of this order
      */
-    @ProtobufProperty(index = 5, type = MESSAGE, concreteType = OrderMessageOrderSurface.class)
-    private OrderMessageOrderSurface surface;
+    @ProtobufProperty(index = 5, type = MESSAGE, concreteType = OrderSurface.class)
+    private OrderSurface surface;
 
     /**
      * The message of this order
      */
-    @ProtobufProperty(index = 4, type = STRING)
+    @ProtobufProperty(index = 6, type = STRING)
     private String message;
 
     /**
@@ -120,7 +120,7 @@ public final class PaymentOrderMessage extends ContextInfo implements PaymentMes
      */
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum OrderMessageOrderSurface {
+    public enum OrderSurface {
         /**
          * Catalog
          */
@@ -129,7 +129,8 @@ public final class PaymentOrderMessage extends ContextInfo implements PaymentMes
         @Getter
         private final int index;
 
-        public static OrderMessageOrderSurface forIndex(int index) {
+        @JsonCreator
+        public static OrderSurface forIndex(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()
