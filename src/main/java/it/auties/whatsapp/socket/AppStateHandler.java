@@ -54,7 +54,7 @@ class AppStateHandler implements JacksonProvider {
 
     private CompletableFuture<Void> doPush(PatchRequest patch, Boolean success) {
         try {
-            if (!success) {
+            if (success == null || !success) {
                 return CompletableFuture.failedFuture(
                         new RuntimeException("Cannot push patch %s as preliminary pull failed".formatted(patch)));
             }
@@ -182,8 +182,11 @@ class AppStateHandler implements JacksonProvider {
                         completedFuture(null) :
                         pullPatches(remaining, versions, attempts))
                 .thenApplyAsync(ignored -> true)
-                .exceptionallyAsync(throwable -> socket.errorHandler()
-                        .handleFailure(APP_STATE_SYNC, throwable));
+                .exceptionallyAsync(throwable -> {
+                    socket.errorHandler()
+                            .handleFailure(APP_STATE_SYNC, throwable);
+                    return false;
+                });
     }
 
     private List<PatchType> decodeSyncs(Map<PatchType, Long> versions, Map<PatchType, Integer> attempts,

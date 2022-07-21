@@ -45,6 +45,7 @@ import static it.auties.whatsapp.api.Whatsapp.Options.defaultOptions;
 import static it.auties.whatsapp.binary.PatchType.REGULAR_HIGH;
 import static it.auties.whatsapp.binary.PatchType.REGULAR_LOW;
 import static it.auties.whatsapp.controller.Controller.knownIds;
+import static it.auties.whatsapp.model.contact.ContactJid.Server.GROUP;
 import static it.auties.whatsapp.model.request.Node.*;
 import static it.auties.whatsapp.model.sync.RecordSync.Operation.SET;
 import static java.util.Map.of;
@@ -882,13 +883,13 @@ public class Whatsapp {
                 .chatJid(chat.toJid())
                 .fromMe(true)
                 .senderJid(chat.toJid()
-                        .isGroup() ?
+                        .hasServer(GROUP) ?
                         keys().companion() :
                         null)
                 .build();
         var info = MessageInfo.newMessageInfo()
                 .senderJid(chat.toJid()
-                        .isGroup() ?
+                        .hasServer(GROUP) ?
                         keys().companion() :
                         null)
                 .key(key)
@@ -1883,7 +1884,7 @@ public class Whatsapp {
 
     private String participantToFlag(MessageInfo info) {
         return info.chatJid()
-                .isGroup() && !info.fromMe() ?
+                .hasServer(GROUP) && !info.fromMe() ?
                 info.senderJid()
                         .toString() :
                 "0";

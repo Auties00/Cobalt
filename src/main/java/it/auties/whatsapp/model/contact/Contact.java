@@ -8,6 +8,7 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.time.ZonedDateTime;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -25,6 +26,7 @@ public final class Contact implements ProtobufMessage, ContactJidProvider {
     /**
      * The non-null unique jid used to identify this contact
      */
+    @NonNull
     private final ContactJid jid;
 
     /**
@@ -106,6 +108,17 @@ public final class Contact implements ProtobufMessage, ContactJidProvider {
      */
     public Optional<ZonedDateTime> lastSeen() {
         return Optional.ofNullable(lastSeen);
+    }
+
+    /**
+     * Checks if this contact is equal to another contact
+     *
+     * @param other the contact
+     * @return a boolean
+     */
+    public boolean equals(Object other){
+        return other instanceof Contact that
+                && Objects.equals(this.jid(), that.jid());
     }
 
     /**

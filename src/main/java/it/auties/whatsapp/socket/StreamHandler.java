@@ -93,9 +93,9 @@ class StreamHandler implements JacksonProvider {
                 .orElse(chatJid);
         var updateType = node.attributes()
                 .getOptionalString("type")
-                .orElseGet(() -> node.children()
-                        .getFirst()
-                        .description());
+                .or(() -> node.findNode()
+                        .map(Node::description))
+                .orElseThrow(() -> new NoSuchElementException("Missing type from %s".formatted(node)));
         var status = ContactStatus.forValue(updateType);
         socket.store()
                 .findContactByJid(participantJid)
@@ -221,7 +221,7 @@ class StreamHandler implements JacksonProvider {
             var chat = node.attributes()
                     .getJid("from")
                     .orElseThrow(() -> new NoSuchElementException("Missing chat in notification"));
-            if (!chat.isServer(ContactJid.Server.WHATSAPP)) {
+            if (!chat.isServerJid(ContactJid.Server.WHATSAPP)) {
                 return;
             }
 

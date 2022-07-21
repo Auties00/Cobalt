@@ -15,7 +15,10 @@ import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.Request;
-import it.auties.whatsapp.util.*;
+import it.auties.whatsapp.util.Clock;
+import it.auties.whatsapp.util.ConcurrentSet;
+import it.auties.whatsapp.util.InitializationLock;
+import it.auties.whatsapp.util.Preferences;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
@@ -351,7 +354,11 @@ public final class Store implements Controller<Store> {
         chat.messages()
                 .forEach(this::attribute);
         var oldChat = chats.get(chat.jid());
-        chat.messages().addAll(oldChat.messages());
+        if(oldChat != null) {
+            chat.messages()
+                    .addAll(oldChat.messages());
+        }
+
         chats.put(chat.jid(), chat);
         return chat;
     }
@@ -391,11 +398,6 @@ public final class Store implements Controller<Store> {
     }
 
     private void attributeContext(ContextInfo contextInfo) {
-        if(!contextInfo.hasQuotedMessage()){
-            return;
-        }
-
-
         contextInfo.quotedMessageSenderJid()
                 .ifPresent(senderJid -> attributeContextSender(contextInfo, senderJid));
         contextInfo.quotedMessageChatJid()

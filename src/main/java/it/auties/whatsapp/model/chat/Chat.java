@@ -453,6 +453,17 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     }
 
     /**
+     * Checks if this chat is equal to another chat
+     *
+     * @param other the chat
+     * @return a boolean
+     */
+    public boolean equals(Object other){
+        return other instanceof Chat that
+                && Objects.equals(this.jid(), that.jid());
+    }
+
+    /**
      * Returns this object as a jid
      *
      * @return a non-null jid

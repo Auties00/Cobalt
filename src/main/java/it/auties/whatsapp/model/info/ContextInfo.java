@@ -266,6 +266,8 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
      * @return a boolean
      */
     public boolean hasQuotedMessage() {
-        return quotedMessageId().isPresent() && quotedMessage().isPresent() && quotedMessageChat().isPresent();
+        return quotedMessageId().isPresent()
+                && quotedMessage().isPresent()
+                && quotedMessageChat().isPresent();
     }
 }

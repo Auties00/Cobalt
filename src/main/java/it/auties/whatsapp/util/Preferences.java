@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 @RequiredArgsConstructor(staticName = "of")
 public final class Preferences implements JacksonProvider {
     private static final Path DEFAULT_DIRECTORY;
-    private static final Map<Path, ConcurrentSkipListMap<Long, CompletableFuture<Void>>> ASYNC_WRITES;
+    private static final ConcurrentHashMap<Path, ConcurrentSkipListMap<Long, CompletableFuture<Void>>> ASYNC_WRITES;
 
     static {
         try {
@@ -40,12 +40,25 @@ public final class Preferences implements JacksonProvider {
             return;
         }
 
-        ASYNC_WRITES.values()
+        var futures = ASYNC_WRITES.values()
                 .stream()
-                .map(longCompletableFutureConcurrentSkipListMap -> CompletableFuture.allOf(
-                        longCompletableFutureConcurrentSkipListMap.values()
-                                .toArray(CompletableFuture[]::new)))
-                .forEach(CompletableFuture::join);
+                .peek(Preferences::cancelOutdatedOperations)
+                .map(ConcurrentSkipListMap::lastEntry)
+                .filter(Objects::nonNull)
+                .map(Map.Entry::getValue)
+                .toArray(CompletableFuture[]::new);
+        CompletableFuture.allOf(futures)
+                .join();
+    }
+
+    private static void cancelOutdatedOperations(ConcurrentSkipListMap<Long, CompletableFuture<Void>> data) {
+        var lastEntry = data.lastEntry();
+        if (lastEntry == null) {
+            return;
+        }
+
+        data.headMap(lastEntry.getKey())
+                .forEach((id, future) -> future.cancel(true));
     }
 
     public static Path home() {
@@ -56,12 +69,6 @@ public final class Preferences implements JacksonProvider {
     public static Preferences of(String path, Object... args) {
         var location = Path.of("%s/%s".formatted(DEFAULT_DIRECTORY, path.formatted(args)));
         return new Preferences(location.toAbsolutePath());
-    }
-
-    private static Void onError(long id, Map<Long, ?> writes, Throwable throwable) {
-        writes.remove(id);
-        throwable.printStackTrace();
-        return null;
     }
 
     @SneakyThrows
@@ -109,10 +116,16 @@ public final class Preferences implements JacksonProvider {
         ASYNC_WRITES.put(file, writes);
     }
 
+    private Void onError(long id, Map<Long, CompletableFuture<Void>> writes, Throwable throwable) {
+        writes.remove(id);
+        throwable.printStackTrace();
+        return null;
+    }
+
     private void writeObject(Object input) {
         try {
             Files.createDirectories(file.getParent());
-            Files.writeString(file, JSON.writeValueAsString(input), StandardOpenOption.CREATE,
+            Files.writeString(file, JSON.writerWithDefaultPrettyPrinter().writeValueAsString(input), StandardOpenOption.CREATE,
                     StandardOpenOption.TRUNCATE_EXISTING);
         } catch (IOException exception) {
             throw new RuntimeException("Cannot write object", exception);

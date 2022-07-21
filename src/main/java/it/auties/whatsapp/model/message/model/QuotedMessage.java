@@ -44,7 +44,7 @@ public class QuotedMessage implements MessageMetadataProvider {
      * @return an optional quoted message
      */
     public static Optional<QuotedMessage> of(@NonNull ContextInfo contextInfo) {
-        if (contextInfo.hasQuotedMessage()) {
+        if (!contextInfo.hasQuotedMessage()) {
             return Optional.empty();
         }
 
