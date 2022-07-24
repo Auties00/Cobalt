@@ -15,7 +15,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class MutationSync implements ProtobufMessage {
+public final class MutationSync implements ProtobufMessage, Syncable {
     @ProtobufProperty(index = 1, type = MESSAGE, concreteType = RecordSync.Operation.class)
     private RecordSync.Operation operation;
 

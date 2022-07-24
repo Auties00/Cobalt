@@ -34,6 +34,7 @@ import lombok.SneakyThrows;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
 import java.util.stream.Stream;
@@ -84,50 +85,60 @@ class MessageHandler implements JacksonProvider {
     }
 
     @SafeVarargs
-    protected final CompletableFuture<Void> encode(MessageInfo info, Map.Entry<String, Object>... attributes) {
+    protected final CompletableFuture<Void> encode(MessageInfo info, Entry<String, Object>... attributes) {
+        return CompletableFuture.runAsync(this::tryLock)
+                .thenComposeAsync(ignored -> isConversation(info) ?
+                        encodeConversation(info, attributes) :
+                        encodeGroup(info, attributes))
+                .thenRunAsync(lock::release)
+                .exceptionallyAsync(this::handleMessageFailure);
+    }
+
+    @SafeVarargs
+    private CompletableFuture<Void> encodeGroup(MessageInfo info, Entry<String, Object>... attributes) {
+        var encodedMessage = BytesHelper.messageToBytes(info.message());
+        var senderName = new SenderKeyName(info.chatJid()
+                .toString(), socket.keys()
+                .companion()
+                .toSignalAddress());
+        var groupBuilder = new GroupBuilder(socket.keys());
+        var signalMessage = groupBuilder.createOutgoing(senderName);
+        var groupCipher = new GroupCipher(senderName, socket.keys());
+        var groupMessage = groupCipher.encrypt(encodedMessage);
+        return Optional.ofNullable(groupsCache.getIfPresent(info.chatJid()))
+                .map(CompletableFuture::completedFuture)
+                .orElseGet(() -> socket.queryGroupMetadata(info.chatJid()))
+                .thenComposeAsync(this::getDevices)
+                .thenComposeAsync(allDevices -> createGroupNodes(info, signalMessage, allDevices))
+                .thenApplyAsync(preKeys -> createEncodedMessageNode(info, preKeys, groupMessage, attributes))
+                .thenComposeAsync(socket::send)
+                .thenRunAsync(() -> info.chat()
+                        .addMessage(info));
+    }
+
+    @SafeVarargs
+    private CompletableFuture<Void> encodeConversation(MessageInfo info, Entry<String, Object>... attributes) {
+        var encodedMessage = BytesHelper.messageToBytes(info.message());
+        var deviceMessage = DeviceSentMessage.newDeviceSentMessage(info.chatJid()
+                .toString(), info.message(), null);
+        var encodedDeviceMessage = BytesHelper.messageToBytes(deviceMessage);
+        var knownDevices = List.of(socket.keys()
+                .companion()
+                .toUserJid(), info.chatJid());
+        return getDevices(knownDevices, true).thenComposeAsync(
+                        allDevices -> createConversationNodes(allDevices, encodedMessage, encodedDeviceMessage))
+                .thenApplyAsync(sessions -> createEncodedMessageNode(info, sessions, null, attributes))
+                .thenComposeAsync(socket::send)
+                .thenRunAsync(() -> info.chat()
+                        .addMessage(info));
+    }
+
+    private void tryLock() {
         try {
             socket.awaitReadyState();
             lock.acquire();
-            var encodedMessage = BytesHelper.messageToBytes(info.message());
-            if (isConversation(info)) {
-                var deviceMessage = DeviceSentMessage.newDeviceSentMessage(info.chatJid()
-                        .toString(), info.message(), null);
-                var encodedDeviceMessage = BytesHelper.messageToBytes(deviceMessage);
-                var knownDevices = List.of(socket.keys()
-                        .companion()
-                        .toUserJid(), info.chatJid());
-                return getDevices(knownDevices, true).thenComposeAsync(
-                                allDevices -> createConversationNodes(allDevices, encodedMessage, encodedDeviceMessage))
-                        .thenApplyAsync(sessions -> createEncodedMessageNode(info, sessions, null, attributes))
-                        .thenComposeAsync(socket::send)
-                        .thenRunAsync(() -> info.chat()
-                                .addMessage(info))
-                        .thenRunAsync(lock::release)
-                        .exceptionallyAsync(this::handleMessageFailure);
-            }
-
-            var senderName = new SenderKeyName(info.chatJid()
-                    .toString(), socket.keys()
-                    .companion()
-                    .toSignalAddress());
-            var groupBuilder = new GroupBuilder(socket.keys());
-            var signalMessage = groupBuilder.createOutgoing(senderName);
-            var groupCipher = new GroupCipher(senderName, socket.keys());
-            var groupMessage = groupCipher.encrypt(encodedMessage);
-            return Optional.ofNullable(groupsCache.getIfPresent(info.chatJid()))
-                    .map(CompletableFuture::completedFuture)
-                    .orElseGet(() -> socket.queryGroupMetadata(info.chatJid()))
-                    .thenComposeAsync(this::getDevices)
-                    .thenComposeAsync(allDevices -> createGroupNodes(info, signalMessage, allDevices))
-                    .thenApplyAsync(preKeys -> createEncodedMessageNode(info, preKeys, groupMessage, attributes))
-                    .thenComposeAsync(socket::send)
-                    .thenRunAsync(() -> info.chat()
-                            .addMessage(info))
-                    .thenRunAsync(lock::release)
-                    .exceptionallyAsync(this::handleMessageFailure);
-        } catch (Throwable throwable) {
-            lock.release();
-            throw new RuntimeException("Cannot send message", throwable);
+        }catch (InterruptedException exception){
+            throw new RuntimeException("Cannot lock", exception);
         }
     }
 
@@ -145,7 +156,7 @@ class MessageHandler implements JacksonProvider {
     @SafeVarargs
     @SneakyThrows
     private Node createEncodedMessageNode(MessageInfo info, List<Node> preKeys, Node descriptor,
-                                          Map.Entry<String, Object>... metadata) {
+                                          Entry<String, Object>... metadata) {
         var body = new ArrayList<Node>();
         if (!preKeys.isEmpty()) {
             body.add(withChildren("participants", preKeys));
@@ -593,7 +604,7 @@ class MessageHandler implements JacksonProvider {
                 socket.keys()
                         .addAppKeys(protocolMessage.appStateSyncKeyShare()
                                 .keys());
-                socket.pullPatches();
+                socket.pullInitialPatches();
             }
 
             case REVOKE -> socket.store()

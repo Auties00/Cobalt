@@ -30,6 +30,7 @@ import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.net.URI;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
@@ -52,21 +53,29 @@ public class Socket implements JacksonProvider, SignalSpecification {
 
     @NonNull
     private final Whatsapp whatsapp;
+
     @NonNull
     private final AuthHandler authHandler;
+
     @NonNull
     private final StreamHandler streamHandler;
+
     @NonNull
     private final MessageHandler messageHandler;
+
     @NonNull
     private final AppStateHandler appStateHandler;
+
     @NonNull
     @Getter
     private final Whatsapp.Options options;
+
     @NonNull
     @Getter(AccessLevel.PROTECTED)
     private final FailureHandler errorHandler;
+
     private Session session;
+
     @NonNull
     @Getter(AccessLevel.PROTECTED)
     @Setter(AccessLevel.PROTECTED)
@@ -80,25 +89,31 @@ public class Socket implements JacksonProvider, SignalSpecification {
     @NonNull
     private Store store;
 
-    @SneakyThrows
     public Socket(@NonNull Whatsapp whatsapp, @NonNull Whatsapp.Options options, @NonNull Store store,
                   @NonNull Keys keys) {
         this.whatsapp = whatsapp;
         this.options = options;
-        this.store = store.useDefaultSerializer(options.defaultSerialization());
-        this.keys = keys.useDefaultSerializer(options.defaultSerialization());
+        this.store = store;
+        this.keys = keys;
         this.state = SocketState.WAITING;
         this.authHandler = new AuthHandler(this);
         this.streamHandler = new StreamHandler(this);
         this.messageHandler = new MessageHandler(this);
         this.appStateHandler = new AppStateHandler(this);
         this.errorHandler = new FailureHandler(this);
-        getRuntime().addShutdownHook(new Thread(() -> {
-            keys.dispose();
-            store.dispose();
-            Preferences.waitAsyncOperations();
-            onSocketEvent(SocketEvent.CLOSE);
-        }));
+        getRuntime().addShutdownHook(new Thread(this::onShutdown));
+    }
+
+    private void onShutdown() {
+        if (errorHandler.failure()
+                .get()) {
+            return;
+        }
+
+        keys.dispose();
+        store.dispose();
+        Preferences.waitAsyncOperations();
+        onSocketEvent(SocketEvent.CLOSE);
     }
 
     public Contact createContact(ContactJid jid) {
@@ -116,12 +131,12 @@ public class Socket implements JacksonProvider, SignalSpecification {
     public void changeKeys() {
         var oldListeners = new ArrayList<>(store.listeners());
         deleteAndClearKeys();
+
         var newId = KeyHelper.registrationId();
-        this.keys = Keys.random(newId);
-        var newStore = Store.random(newId);
-        newStore.listeners()
+        this.keys = Keys.random(newId, options.defaultSerialization());
+        this.store = Store.random(newId, options.defaultSerialization());
+        store.listeners()
                 .addAll(oldListeners);
-        this.store = newStore;
         store.invokeListeners(listener -> {
             listener.onDisconnected(whatsapp, DisconnectReason.LOGGED_OUT);
             listener.onDisconnected(DisconnectReason.LOGGED_OUT);
@@ -137,10 +152,12 @@ public class Socket implements JacksonProvider, SignalSpecification {
     @SneakyThrows
     public void onOpen(@NonNull Session session) {
         this.session = session;
-        if (state.isConnected()) {
+        if (state == SocketState.CONNECTED) {
             return;
         }
 
+        errorHandler.failure()
+                .set(false);
         onSocketEvent(SocketEvent.OPEN);
         authHandler.createHandshake();
         var clientHello = new ClientHello(keys.ephemeralKeyPair()
@@ -160,7 +177,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
 
         var header = message.decoded()
                 .getFirst();
-        if (!state.isConnected()) {
+        if (state != SocketState.CONNECTED) {
             authHandler.login(session(), header.toByteArray())
                     .thenRunAsync(() -> state(SocketState.CONNECTED));
             return;
@@ -205,20 +222,12 @@ public class Socket implements JacksonProvider, SignalSpecification {
                 .awaitTermination(Integer.MAX_VALUE, TimeUnit.DAYS);
     }
 
-    public CompletableFuture<Void> reconnect() {
-        state(SocketState.RECONNECTING);
-        return disconnect().thenComposeAsync(ignored -> connect());
-    }
-
     @SneakyThrows
-    public CompletableFuture<Void> disconnect() {
-        if (state.isConnected()) {
-            state(SocketState.DISCONNECTED);
-        }
-
+    public CompletableFuture<Void> disconnect(boolean reconnect) {
+        state(reconnect ? SocketState.RECONNECTING : SocketState.DISCONNECTED);
         keys.clear();
         session.close();
-        return completedFuture(null); // session#close is a synchronous operation
+        return reconnect ? connect() : completedFuture(null);
     }
 
     @OnClose
@@ -229,15 +238,19 @@ public class Socket implements JacksonProvider, SignalSpecification {
                     .complete(null);
         }
 
-        if (state.isConnected()) {
+        if (state == SocketState.CONNECTED) {
             store.invokeListeners(listener -> listener.onDisconnected(DisconnectReason.RECONNECTING));
-            reconnect();
+            disconnect(true);
             return;
         }
 
         store.invokeListeners(listener -> listener.onDisconnected(DisconnectReason.DISCONNECTED));
-        store.dispose();
-        keys.dispose();
+        if (!errorHandler.failure()
+                .get()) {
+            store.dispose();
+            keys.dispose();
+        }
+
         onSocketEvent(SocketEvent.CLOSE);
         if (streamHandler.pingService() == null) {
             return;
@@ -255,11 +268,15 @@ public class Socket implements JacksonProvider, SignalSpecification {
 
     public CompletableFuture<Node> send(Node node) {
         onNodeSent(node);
-        return node.toRequest(node.id() == null ?
-                        store.nextTag() :
-                        null)
-                .send(session, keys, store)
-                .exceptionallyAsync(errorHandler::handleNodeFailure);
+        return errorHandler.failure()
+                .get() ?
+                CompletableFuture.failedFuture(new IllegalStateException("Socket is in fail safe state")) :
+                node.toRequest(node.id() == null ?
+                                store.nextTag() :
+                                null)
+                        .send(session, keys, store)
+                        .exceptionallyAsync(errorHandler::handleNodeFailure);
+
     }
 
     private void onNodeSent(Node node) {
@@ -271,23 +288,26 @@ public class Socket implements JacksonProvider, SignalSpecification {
 
     public CompletableFuture<Void> sendWithNoResponse(Node node) {
         onNodeSent(node);
-        return node.toRequest(node.id() == null ?
-                        store.nextTag() :
-                        null)
-                .sendWithNoResponse(session, keys, store)
-                .exceptionallyAsync(throwable -> errorHandler.handleFailure(UNKNOWN, throwable));
+        return errorHandler.failure()
+                .get() ?
+                CompletableFuture.failedFuture(new IllegalStateException("Socket is in fail safe state")) :
+                node.toRequest(node.id() == null ?
+                                store.nextTag() :
+                                null)
+                        .sendWithNoResponse(session, keys, store)
+                        .exceptionallyAsync(throwable -> errorHandler.handleFailure(UNKNOWN, throwable));
     }
 
     public CompletableFuture<Void> pushPatch(PatchRequest request) {
         return appStateHandler.push(request);
     }
 
-    public void pullPatches() {
-        appStateHandler.pull();
+    public void pullInitialPatches() {
+        appStateHandler.pull(true, PatchType.values());
     }
 
     public void pullPatch(PatchType... patchTypes) {
-        appStateHandler.pull(patchTypes);
+        appStateHandler.pull(false, patchTypes);
     }
 
     public void readMessage(Node node) {
@@ -401,8 +421,17 @@ public class Socket implements JacksonProvider, SignalSpecification {
     private void deleteAndClearKeys() {
         keys.delete();
         store.delete();
+        deleteDirectory();
         keys.clear();
         store.clear();
+    }
+
+    @SneakyThrows
+    private void deleteDirectory() {
+        var path = keys.preferences()
+                .file()
+                .getParent();
+        Files.deleteIfExists(path);
     }
 
     protected void onMetadata(Map<String, String> properties) {

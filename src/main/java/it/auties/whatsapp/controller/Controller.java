@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -25,12 +27,21 @@ public sealed interface Controller<T extends Controller<T>> extends JacksonProvi
      * @return a non-null list
      */
     static LinkedList<Integer> knownIds() {
-        try (var walker = Files.walk(Preferences.home(), 1)) {
+        try (var walker = Files.walk(Preferences.home(), 1)
+                .sorted(Comparator.comparing(Controller::getLastModifiedTime))) {
             return walker.map(Controller::parsePathAsId)
                     .flatMap(Optional::stream)
                     .collect(Collectors.toCollection(LinkedList::new));
         } catch (IOException exception) {
             throw new UncheckedIOException("Cannot list known ids", exception);
+        }
+    }
+
+    private static FileTime getLastModifiedTime(Path path) {
+        try {
+            return Files.getLastModifiedTime(path);
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Cannot get last modification date", exception);
         }
     }
 

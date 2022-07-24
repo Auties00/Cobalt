@@ -287,7 +287,7 @@ class StreamHandler implements JacksonProvider {
         var statusCode = node.attributes()
                 .getInt("code");
         switch (statusCode) {
-            case 515 -> socket.reconnect();
+            case 515 -> socket.disconnect(true);
             case 401 -> handleStreamError(node);
             default -> node.children()
                     .forEach(error -> socket.store()
@@ -328,7 +328,7 @@ class StreamHandler implements JacksonProvider {
                 .invokeListeners(Listener::onChats);
         socket.store()
                 .invokeListeners(Listener::onContacts);
-        socket.pullPatches();
+        socket.pullInitialPatches();
     }
 
     private void createPingTask() {
@@ -363,8 +363,7 @@ class StreamHandler implements JacksonProvider {
     }
 
     private void sendPing() {
-        if (!socket.state()
-                .isConnected()) {
+        if (socket.state() != SocketState.CONNECTED) {
             pingService.shutdownNow();
             return;
         }
@@ -377,8 +376,7 @@ class StreamHandler implements JacksonProvider {
 
     @SneakyThrows
     private void createMediaConnection() {
-        if (!socket.state()
-                .isConnected()) {
+        if (socket.state() != SocketState.CONNECTED) {
             return;
         }
 

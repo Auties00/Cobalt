@@ -19,7 +19,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class RecordSync implements ProtobufMessage {
+public final class RecordSync implements ProtobufMessage, Syncable {
     @ProtobufProperty(index = 1, type = MESSAGE, concreteType = IndexSync.class)
     private IndexSync index;
 
@@ -48,5 +48,15 @@ public class RecordSync implements ProtobufMessage {
                     .findFirst()
                     .orElse(null);
         }
+    }
+
+    @Override
+    public Operation operation() {
+        return Operation.SET;
+    }
+
+    @Override
+    public RecordSync record() {
+        return this;
     }
 }

@@ -181,9 +181,19 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, Boolean> {
         LOGIN,
 
         /**
-         * Called when an error is thrown while pulling or pushing app data
+         * Called when an error is thrown while pulling app data
          */
-        APP_STATE_SYNC,
+        PULL_APP_STATE,
+
+        /**
+         * Called when an error is thrown while pushing app data
+         */
+        PUSH_APP_STATE,
+
+        /**
+         * Called when an error is thrown while pulling initial app data
+         */
+        INITIAL_APP_STATE_SYNC,
 
         /**
          * Called when an error occurs when serializing or deserializing a Whatsapp message

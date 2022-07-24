@@ -1,7 +1,6 @@
 package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.chat.Chat;
@@ -31,7 +30,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.util.Objects.requireNonNullElseGet;
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.concurrent.Executors.newScheduledThreadPool;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
@@ -161,11 +159,13 @@ public final class Store implements Controller<Store> {
      * Constructs a new default instance of WhatsappStore
      *
      * @param id the unsigned jid of this store
+     * @param useDefaultSerializer whether the default serializer should be used
      * @return a non-null instance of WhatsappStore
      */
-    public static Store random(int id) {
+    public static Store random(int id, boolean useDefaultSerializer) {
         var result = Store.builder()
                 .id(id)
+                .useDefaultSerializer(useDefaultSerializer)
                 .build();
         stores.add(result);
         return result;
@@ -175,14 +175,14 @@ public final class Store implements Controller<Store> {
      * Returns the store saved in memory or constructs a new clean instance
      *
      * @param id the jid of this session
+     * @param useDefaultSerializer whether the default serializer should be used
      * @return a non-null instance of WhatsappStore
      */
-    public static Store of(int id) {
+    public static Store of(int id, boolean useDefaultSerializer) {
         var preferences = Preferences.of("%s/store.json", id);
-        var result = requireNonNullElseGet(preferences.readJson(new TypeReference<>() {
-        }), () -> random(id));
-        stores.add(result);
-        return result;
+        return Optional.ofNullable(preferences.readJson(Store.class))
+                .map(store -> store.useDefaultSerializer(useDefaultSerializer))
+                .orElseGet(() -> random(id, useDefaultSerializer));
     }
 
     /**
@@ -447,6 +447,7 @@ public final class Store implements Controller<Store> {
         chats.clear();
         contacts.clear();
         status.clear();
+        listeners.clear();
         pendingRequests.forEach(request -> request.complete(null, false));
         pendingRequests.clear();
     }

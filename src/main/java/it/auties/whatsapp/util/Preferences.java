@@ -1,9 +1,10 @@
 package it.auties.whatsapp.util;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.experimental.Accessors;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 @RequiredArgsConstructor(staticName = "of")
+@Accessors(fluent = true)
 public final class Preferences implements JacksonProvider {
     private static final Path DEFAULT_DIRECTORY;
     private static final ConcurrentHashMap<Path, ConcurrentSkipListMap<Long, CompletableFuture<Void>>> ASYNC_WRITES;
@@ -32,6 +34,7 @@ public final class Preferences implements JacksonProvider {
     }
 
     @NonNull
+    @Getter
     private final Path file;
     private String cache;
 
@@ -81,16 +84,11 @@ public final class Preferences implements JacksonProvider {
     }
 
     @SneakyThrows
-    public <T> T readJson(TypeReference<T> reference) {
+    public <T> T readJson(Class<T> clazz) {
         var json = read();
         return json.isEmpty() ?
                 null :
-                readAsInternal(json.get(), reference);
-    }
-
-    @SneakyThrows
-    private <T> T readAsInternal(String value, TypeReference<T> reference) {
-        return JSON.readValue(value, reference);
+                JSON.readValue(json.get(), clazz);
     }
 
     @SneakyThrows
@@ -134,6 +132,12 @@ public final class Preferences implements JacksonProvider {
 
     @SneakyThrows
     public void delete() {
+        var operations = ASYNC_WRITES.get(file);
+        if(operations != null){
+            operations.forEach((id, future) -> future.cancel(true));
+        }
+
+        ASYNC_WRITES.remove(file);
         Files.deleteIfExists(file);
     }
 }

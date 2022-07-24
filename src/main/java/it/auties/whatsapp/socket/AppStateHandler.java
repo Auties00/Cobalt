@@ -23,10 +23,9 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static it.auties.whatsapp.api.ErrorHandler.Location.APP_STATE_SYNC;
+import static it.auties.whatsapp.api.ErrorHandler.Location.*;
 import static it.auties.whatsapp.model.request.Node.with;
 import static it.auties.whatsapp.model.request.Node.withChildren;
 import static java.util.Map.of;
@@ -34,7 +33,7 @@ import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 class AppStateHandler implements JacksonProvider {
-    private static final int PULL_ATTEMPTS = 5;
+    private static final int PULL_ATTEMPTS = 1;
 
     private final Socket socket;
     private final Semaphore lock;
@@ -48,18 +47,26 @@ class AppStateHandler implements JacksonProvider {
     }
 
     protected CompletableFuture<Void> push(@NonNull PatchRequest patch) {
-        return pull(patch.type()).thenComposeAsync(success -> doPush(patch, success))
-                .thenRunAsync(lock::release);
+        return CompletableFuture.runAsync(() -> tryLock(true))
+                .thenComposeAsync(result -> sendPullRequest(patch.type()))
+                .thenApplyAsync(result -> createPushRequest(patch, result))
+                .thenComposeAsync(this::sendPush)
+                .thenRunAsync(lock::release)
+                .exceptionallyAsync(this::handlePushError);
     }
 
-    private CompletableFuture<Void> doPush(PatchRequest patch, Boolean success) {
+    private Void handlePushError(Throwable throwable) {
+        lock.release();
+        return socket.errorHandler()
+                .handleFailure(PUSH_APP_STATE, throwable);
+    }
+
+    private PushRequest createPushRequest(PatchRequest patch, Boolean success) {
         try {
             if (success == null || !success) {
-                return CompletableFuture.failedFuture(
-                        new RuntimeException("Cannot push patch %s as preliminary pull failed".formatted(patch)));
+                throw new RuntimeException("Cannot push patch %s as preliminary pull failed"
+                        .formatted(patch));
             }
-
-            lock.acquire();
 
             var oldState = socket.keys()
                     .findHashStateByName(patch.type())
@@ -120,19 +127,24 @@ class AppStateHandler implements JacksonProvider {
                     .put(Bytes.of(indexMac)
                             .toBase64(), valueMac);
 
+            return new PushRequest(patch, oldState, newState, sync);
+        } catch (Throwable throwable) {
+            throw new RuntimeException("Cannot push patch %s as preliminary pull failed");
+        }
+    }
+
+    private CompletableFuture<Void> sendPush(PushRequest request) {
+        try {
             var body = withChildren("collection",
-                    of("name", patch.type(), "version", newState.version() - 1, "return_snapshot", false),
-                    with("patch", PROTOBUF.writeValueAsBytes(sync)));
+                    of("name", request.patch().type(), "version", request.newState().version() - 1, "return_snapshot", false),
+                    with("patch", PROTOBUF.writeValueAsBytes(request.sync())));
             return socket.sendQuery("set", "w:sync:app:state", withChildren("sync", body))
                     .thenAcceptAsync(this::parseSyncRequest)
                     .thenRunAsync(() -> socket.keys()
-                            .putState(patch.type(), newState))
-                    .thenRunAsync(() -> handleSyncRequest(patch.type(), sync, oldState, newState.version()))
-                    .exceptionallyAsync(throwable -> socket.errorHandler()
-                            .handleFailure(APP_STATE_SYNC, throwable));
-        } catch (Throwable throwable) {
-            lock.release();
-            throw new RuntimeException("Cannot push patch", throwable);
+                            .putState(request.patch().type(), request.newState()))
+                    .thenRunAsync(() -> handleSyncRequest(request.patch().type(), request.sync(), request.oldState(), request.newState().version()));
+        }catch (Throwable throwable) {
+            throw new RuntimeException("Cannot send push request", throwable);
         }
     }
 
@@ -141,34 +153,41 @@ class AppStateHandler implements JacksonProvider {
                 .forEach(this::processActions);
     }
 
-    protected void pull() {
-        pull(Arrays.asList(PatchType.values())).thenRunAsync(latch::countDown);
+    @SuppressWarnings("UnusedReturnValue")
+    protected CompletableFuture<Boolean> pull(boolean initial, PatchType... patchTypes) {
+        return CompletableFuture.runAsync(() -> tryLock(!initial))
+                .thenComposeAsync(ignored -> sendPullRequest(patchTypes))
+                .thenApplyAsync(this::onPull)
+                .exceptionallyAsync(exception -> handlePullError(initial, exception));
     }
 
-    @SneakyThrows
-    protected CompletableFuture<Boolean> pull(PatchType... patchTypes) {
-        latch.await();
-        Validate.isTrue(patchTypes.length != 0, "Cannot pull no patches", IllegalArgumentException.class);
-        return pull(Arrays.asList(patchTypes));
+    private Boolean onPull(Boolean result) {
+        latch.countDown();
+        lock.release();
+        return result;
     }
 
-    private CompletableFuture<Boolean> pull(List<PatchType> patchTypes) {
-        try {
-            lock.acquire();
-            var versions = new HashMap<PatchType, Long>();
-            var attempts = new HashMap<PatchType, Integer>();
-            return pullPatches(patchTypes, versions, attempts).thenApplyAsync(result -> {
-                lock.release();
-                return result;
-            });
-        } catch (InterruptedException exception) {
-            lock.release();
-            throw new RuntimeException("Cannot lock to pull patches", exception);
+    private boolean handlePullError(boolean initial, Throwable exception) {
+        if(initial) {
+            latch.countDown();
+            socket.errorHandler().handleFailure(INITIAL_APP_STATE_SYNC, exception);
+            return false;
         }
+
+        socket.errorHandler().handleFailure(PULL_APP_STATE, exception);
+        return false;
     }
 
-    private CompletableFuture<Boolean> pullPatches(List<PatchType> patchTypes, Map<PatchType, Long> versions,
-                                                   Map<PatchType, Integer> attempts) {
+    private CompletableFuture<Boolean> sendPullRequest(PatchType... patchTypes) {
+        Validate.isTrue(patchTypes.length != 0,
+                "Cannot pull no patches", IllegalArgumentException.class);
+        var versions = new HashMap<PatchType, Long>();
+        var attempts = new HashMap<PatchType, Integer>();
+        return pull(Arrays.asList(patchTypes), versions, attempts);
+    }
+
+    private CompletableFuture<Boolean> pull(List<PatchType> patchTypes, Map<PatchType, Long> versions,
+                                            Map<PatchType, Integer> attempts) {
         var tempStates = new HashMap<PatchType, LTHashState>();
         var nodes = patchTypes.stream()
                 .map(patchType -> createStateWithVersion(patchType, versions))
@@ -180,13 +199,8 @@ class AppStateHandler implements JacksonProvider {
                 .thenApplyAsync(records -> decodeSyncs(versions, attempts, tempStates, records))
                 .thenComposeAsync(remaining -> remaining.isEmpty() ?
                         completedFuture(null) :
-                        pullPatches(remaining, versions, attempts))
-                .thenApplyAsync(ignored -> true)
-                .exceptionallyAsync(throwable -> {
-                    socket.errorHandler()
-                            .handleFailure(APP_STATE_SYNC, throwable);
-                    return false;
-                });
+                        pull(remaining, versions, attempts))
+                .thenApplyAsync(ignored -> true);
     }
 
     private List<PatchType> decodeSyncs(Map<PatchType, Long> versions, Map<PatchType, Integer> attempts,
@@ -429,17 +443,14 @@ class AppStateHandler implements JacksonProvider {
             var blob = Medias.download(patch.externalMutations(), socket.store()
                     .mediaConnection());
             var mutationsSync = PROTOBUF.readMessage(blob, MutationsSync.class);
-            Validate.isTrue(patch.mutations()
-                    .addAll(mutationsSync.mutations()), "Cannot add patches to known patches");
+            patch.mutations()
+                    .addAll(mutationsSync.mutations());
         }
 
         newState.version(patch.version());
         Validate.isTrue(Arrays.equals(calculateSyncMac(patch, patchType), patch.patchMac()), "sync_mac",
                 HmacValidationException.class);
-        var records = patch.mutations()
-                .stream()
-                .collect(Collectors.toMap(MutationSync::record, MutationSync::operation));
-        var mutations = decodeMutations(records, newState);
+        var mutations = decodeMutations(patch.mutations(), newState);
         newState.hash(mutations.result()
                 .hash());
         newState.indexValueMap(mutations.result()
@@ -474,10 +485,7 @@ class AppStateHandler implements JacksonProvider {
     private SyncRecord decodeSnapshot(PatchType name, long minimumVersion, SnapshotSync snapshot) {
         var newState = new LTHashState(name, snapshot.version()
                 .version());
-        var records = snapshot.records()
-                .stream()
-                .collect(Collectors.toMap(Function.identity(), ignored -> RecordSync.Operation.SET));
-        var mutations = decodeMutations(records, newState);
+        var mutations = decodeMutations(snapshot.records(), newState);
         newState.hash(mutations.result()
                 .hash());
         newState.indexValueMap(mutations.result()
@@ -503,11 +511,10 @@ class AppStateHandler implements JacksonProvider {
                 .keyData());
     }
 
-    private MutationsRecord decodeMutations(Map<RecordSync, RecordSync.Operation> syncs, LTHashState state) {
+    private MutationsRecord decodeMutations(List<? extends Syncable> syncs, LTHashState state) {
         var generator = new LTHash(state);
-        var mutations = syncs.entrySet()
-                .stream()
-                .map(mutation -> decodeMutation(mutation.getValue(), mutation.getKey(), generator))
+        var mutations = syncs.stream()
+                .map(mutation -> decodeMutation(mutation.operation(), mutation.record(), generator))
                 .collect(Collectors.toList());
         return new MutationsRecord(generator.finish(), mutations);
     }
@@ -571,6 +578,18 @@ class AppStateHandler implements JacksonProvider {
         return Hmac.calculateSha256(total, key);
     }
 
+    private void tryLock(boolean necessary) {
+        try {
+            if(!necessary){
+                return;
+            }
+
+            lock.acquire();
+        }catch (InterruptedException exception){
+            throw new RuntimeException("Cannot lock", exception);
+        }
+    }
+
     public CountDownLatch latch() {
         return latch;
     }
@@ -594,6 +613,10 @@ class AppStateHandler implements JacksonProvider {
     }
 
     record PatchChunk(PatchType patchType, List<ActionDataSync> records, boolean hasMore) {
+
+    }
+
+    record PushRequest(PatchRequest patch, LTHashState oldState, LTHashState newState, PatchSync sync){
 
     }
 }

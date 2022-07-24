@@ -4,11 +4,16 @@ import it.auties.whatsapp.api.ErrorHandler;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.ErroneousNodeException;
 import it.auties.whatsapp.util.JacksonProvider;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
+import java.util.concurrent.atomic.AtomicBoolean;
+
 class FailureHandler implements JacksonProvider {
     private final Socket socket;
+    private final AtomicBoolean failure;
+    public FailureHandler(Socket socket){
+        this.socket = socket;
+        this.failure = new AtomicBoolean();
+    }
 
     protected Node handleNodeFailure(Throwable throwable) {
         handleFailure(ErrorHandler.Location.ERRONEOUS_NODE, throwable);
@@ -18,7 +23,7 @@ class FailureHandler implements JacksonProvider {
     }
 
     protected <T> T handleFailure(ErrorHandler.Location location, Throwable throwable) {
-        if (socket.state() == SocketState.RESTORING_FAILURE) {
+        if (failure.get()) {
             return null;
         }
 
@@ -28,11 +33,13 @@ class FailureHandler implements JacksonProvider {
             return null;
         }
 
-        socket.state(SocketState.RESTORING_FAILURE);
-        socket.store()
-                .clear();
+        failure.set(true);
         socket.changeKeys();
-        socket.reconnect();
+        socket.disconnect(true);
         return null;
+    }
+
+    public AtomicBoolean failure() {
+        return failure;
     }
 }

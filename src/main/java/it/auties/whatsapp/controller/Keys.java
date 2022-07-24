@@ -2,7 +2,6 @@ package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
-import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.model.contact.ContactJid;
@@ -164,11 +163,13 @@ public final class Keys implements Controller<Keys> {
      * Returns a new instance of random keys
      *
      * @param id the unsigned id of these keys
+     * @param useDefaultSerializer whether the default serializer should be used
      * @return a non-null instance of WhatsappKeys
      */
-    public static Keys random(int id) {
+    public static Keys random(int id, boolean useDefaultSerializer) {
         var result = Keys.builder()
                 .id(id)
+                .useDefaultSerializer(useDefaultSerializer)
                 .build();
         result.signedKeyPair(SignalSignedKeyPair.of(result.id(), result.identityKeyPair()));
         result.serialize();
@@ -179,12 +180,14 @@ public final class Keys implements Controller<Keys> {
      * Returns the keys saved in memory or constructs a new clean instance
      *
      * @param id the id of this session
+     * @param useDefaultSerializer whether the default serializer should be used
      * @return a non-null instance of WhatsappKeys
      */
-    public static Keys of(int id) {
+    public static Keys of(int id, boolean useDefaultSerializer) {
         var preferences = Preferences.of("%s/keys.json", id);
-        return requireNonNullElseGet(preferences.readJson(new TypeReference<>() {
-        }), () -> random(id));
+        return Optional.ofNullable(preferences.readJson(Keys.class))
+                .map(store -> store.useDefaultSerializer(useDefaultSerializer))
+                .orElseGet(() -> random(id, useDefaultSerializer));
     }
 
     /**

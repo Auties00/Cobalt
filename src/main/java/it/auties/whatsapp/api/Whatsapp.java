@@ -66,7 +66,8 @@ public class Whatsapp {
     private final Socket socket;
 
     private Whatsapp(Options options) {
-        this(options, Store.of(options.id()), Keys.of(options.id()));
+        this(options, Store.of(options.id(), options.defaultSerialization()),
+                Keys.of(options.id(), options.defaultSerialization()));
     }
 
     private Whatsapp(Options options, Store store, Keys keys) {
@@ -713,7 +714,7 @@ public class Whatsapp {
      * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Whatsapp> disconnect() {
-        return socket.disconnect()
+        return socket.disconnect(false)
                 .thenApplyAsync(ignored -> this);
     }
 
@@ -734,7 +735,7 @@ public class Whatsapp {
      * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Whatsapp> reconnect() {
-        return socket.reconnect()
+        return socket.disconnect(true)
                 .thenApplyAsync(ignored -> this);
     }
 
