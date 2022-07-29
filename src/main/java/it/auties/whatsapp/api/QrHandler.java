@@ -6,6 +6,7 @@ import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+import it.auties.qr.QrTerminal;
 import lombok.NonNull;
 
 import java.awt.*;
@@ -41,39 +42,7 @@ public interface QrHandler extends Consumer<String> {
     static QrHandler toString(@NonNull Consumer<String> smallQrConsumer) {
         return qr -> {
             var matrix = createMatrix(qr, 10, 0);
-            var writer = new StringBuilder();
-
-            var ww = "█";
-            var bb = " ";
-            var wb = "▀";
-            var bw = "▄";
-            var qz = 2;
-
-            var header = ww.repeat(matrix.getWidth() + qz * 2);
-            writer.append((header + "\n").repeat(qz / 2));
-            for (var i = 0; i <= matrix.getWidth(); i += 2) {
-                writer.append(ww.repeat(qz));
-                for (var j = 0; j <= matrix.getWidth(); j++) {
-                    var nextBlack = i + 1 < matrix.getWidth() && matrix.get(j, i + 1);
-                    var currentBlack = matrix.get(j, i);
-                    if (currentBlack && nextBlack) {
-                        writer.append(bb);
-                    } else if (currentBlack) {
-                        writer.append(bw);
-                    } else if (!nextBlack) {
-                        writer.append(ww);
-                    } else {
-                        writer.append(wb);
-                    }
-                }
-
-                writer.append(ww.repeat(qz - 1));
-                writer.append("\n");
-            }
-
-            writer.append(wb.repeat(matrix.getWidth() + qz * 2));
-            writer.append("\n");
-            smallQrConsumer.accept(writer.toString());
+            smallQrConsumer.accept(QrTerminal.toString(matrix, true));
         };
     }
 

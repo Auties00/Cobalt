@@ -14,12 +14,24 @@ import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_SINGL
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_EMPTY_BEANS;
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_ENUMS_USING_INDEX;
+import static java.lang.System.Logger.Level.ERROR;
 
 public interface JacksonProvider {
-    ProtobufMapper PROTOBUF = (ProtobufMapper) new ProtobufMapper().enable(FAIL_ON_EMPTY_BEANS)
-            .disable(FAIL_ON_UNKNOWN_PROPERTIES)
-            .registerModule(new Jdk8Module())
-            .registerModule(new SimpleMapModule());
+    ProtobufMapper PROTOBUF = createProtobuf();
+
+    private static ProtobufMapper createProtobuf() {
+        try {
+            return (ProtobufMapper) new ProtobufMapper().enable(FAIL_ON_EMPTY_BEANS)
+                    .disable(FAIL_ON_UNKNOWN_PROPERTIES)
+                    .registerModule(new Jdk8Module())
+                    .registerModule(new SimpleMapModule());
+        }catch (Throwable throwable){
+            var logger = System.getLogger("JacksonProvider");
+            logger.log(ERROR, "An exception occurred while initializing protobuf");
+            logger.log(ERROR, "Message: %s".formatted(throwable.getMessage()));
+            throw new RuntimeException("Cannot initialize protobuf", throwable);
+        }
+    }
 
     ObjectMapper JSON = new ObjectMapper().registerModule(new Jdk8Module())
             .registerModule(new SimpleMapModule())

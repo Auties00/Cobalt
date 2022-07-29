@@ -17,6 +17,7 @@ open module it.auties.whatsappweb4j {
 
     requires com.google.zxing;
     requires com.google.zxing.javase;
+    requires it.auties.qr;
 
     requires io.github.classgraph;
 
