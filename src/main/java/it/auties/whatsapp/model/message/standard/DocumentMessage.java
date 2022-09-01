@@ -141,7 +141,7 @@ public final class DocumentMessage extends MediaMessage {
                 .title(title)
                 .thumbnail(thumbnail != null ?
                         thumbnail :
-                        Medias.getThumbnail(media, FILE))
+                        Medias.getThumbnail(media, FILE).orElse(null))
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .build();
     }

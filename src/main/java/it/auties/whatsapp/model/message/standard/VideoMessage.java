@@ -171,7 +171,7 @@ public final class VideoMessage extends MediaMessage {
                 .mimetype(requireNonNullElse(mimeType, VIDEO.defaultMimeType()))
                 .thumbnail(thumbnail != null ?
                         thumbnail :
-                        Medias.getThumbnail(media, Medias.Format.VIDEO))
+                        Medias.getThumbnail(media, Medias.Format.VIDEO).orElse(null))
                 .caption(caption)
                 .width(dimensions.width())
                 .height(dimensions.height())
@@ -215,7 +215,7 @@ public final class VideoMessage extends MediaMessage {
                 .mimetype(requireNonNullElse(mimeType, VIDEO.defaultMimeType()))
                 .thumbnail(thumbnail != null ?
                         thumbnail :
-                        Medias.getThumbnail(media, Medias.Format.VIDEO))
+                        Medias.getThumbnail(media, Medias.Format.VIDEO).orElse(null))
                 .caption(caption)
                 .width(dimensions.width())
                 .height(dimensions.height())

@@ -1,19 +1,9 @@
 package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import it.auties.whatsapp.util.ControllerSerializerLoader;
+import it.auties.whatsapp.util.ControllerProviderLoader;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.Preferences;
-
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * This interface represents is implemented by all WhatsappWeb4J's controllers.
@@ -21,39 +11,6 @@ import java.util.stream.Collectors;
  */
 @SuppressWarnings("unused")
 public sealed interface Controller<T extends Controller<T>> extends JacksonProvider permits Store, Keys {
-    /**
-     * Returns all the known IDs
-     *
-     * @return a non-null list
-     */
-    static LinkedList<Integer> knownIds() {
-        try (var walker = Files.walk(Preferences.home(), 1)
-                .sorted(Comparator.comparing(Controller::getLastModifiedTime))) {
-            return walker.map(Controller::parsePathAsId)
-                    .flatMap(Optional::stream)
-                    .collect(Collectors.toCollection(LinkedList::new));
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Cannot list known ids", exception);
-        }
-    }
-
-    private static FileTime getLastModifiedTime(Path path) {
-        try {
-            return Files.getLastModifiedTime(path);
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Cannot get last modification date", exception);
-        }
-    }
-
-    private static Optional<Integer> parsePathAsId(Path file) {
-        try {
-            return Optional.of(Integer.parseInt(file.getFileName()
-                    .toString()));
-        } catch (NumberFormatException ignored) {
-            return Optional.empty();
-        }
-    }
-
     /**
      * Converts this object to JSON
      *
@@ -67,7 +24,7 @@ public sealed interface Controller<T extends Controller<T>> extends JacksonProvi
      * Serializes this object
      */
     default void serialize() {
-        ControllerSerializerLoader.providers(useDefaultSerializer())
+        ControllerProviderLoader.providers(useDefaultSerializer())
                 .forEach(serializer -> serializer.serialize(this));
     }
 

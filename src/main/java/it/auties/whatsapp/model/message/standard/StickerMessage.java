@@ -145,7 +145,7 @@ public final class StickerMessage extends MediaMessage {
                 .mimetype(requireNonNullElse(mimeType, STICKER.defaultMimeType()))
                 .thumbnail(thumbnail != null ?
                         thumbnail :
-                        Medias.getThumbnail(media, PNG))
+                        Medias.getThumbnail(media, PNG).orElse(null))
                 .animated(animated)
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .build();

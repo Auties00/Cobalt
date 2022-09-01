@@ -22,7 +22,7 @@ If, for whatever reason, you'd like to use a version that supports the legacy ve
 <dependency>
     <groupId>com.github.auties00</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>3.0-RC18</version>
+    <version>3.0-RC19</version>
 </dependency>
 ```
 
@@ -30,12 +30,12 @@ If, for whatever reason, you'd like to use a version that supports the legacy ve
 
 1. Groovy DSL
    ```groovy
-   implementation 'com.github.auties00:whatsappweb4j:3.0-RC18'
+   implementation 'com.github.auties00:whatsappweb4j:3.0-RC19'
    ```
 
 2. Kotlin DSL
    ```kotlin
-   implementation("com.github.auties00:whatsappweb4j:3.0-RC18")
+   implementation("com.github.auties00:whatsappweb4j:3.0-RC19")
    ```
 
 ### Examples
@@ -254,7 +254,37 @@ Both are serialized when the socket is closed.
 Here is the default implementation:
 
 ```java
-public class DefaultControllerSerializer implements ControllerSerializer {
+public class DefaultControllerProvider implements ControllerProvider {
+    @Override
+    public LinkedList<Integer> ids() {
+        try (var walker = Files.walk(Preferences.home(), 1)
+                .sorted(Comparator.comparing(this::getLastModifiedTime))) {
+            return walker.map(this::parsePathAsId)
+                    .flatMap(Optional::stream)
+                    .collect(Collectors.toCollection(LinkedList::new));
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Cannot list known ids", exception);
+        }
+    }
+
+    private FileTime getLastModifiedTime(Path path) {
+        try {
+            return Files.getLastModifiedTime(path);
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Cannot get last modification date", exception);
+        }
+    }
+
+    private Optional<Integer> parsePathAsId(Path file) {
+        try {
+            return Optional.of(Integer.parseInt(file.getFileName()
+                    .toString()));
+        } catch (NumberFormatException ignored) {
+            return Optional.empty();
+        }
+    }
+
+
     @Override
     public void serialize(Controller<?> controller) {
         controller.preferences()
@@ -274,7 +304,12 @@ If your application needs to serialize data in a different way, for example in a
 2. Create a custom serializer 
 
     ```java
-    public class CustomSerializer implements ControllerSerializer {
+    public class CustomProvider implements ControllerProvider {
+        @Override
+        public LinkedList<Integer> ids() {
+           // List all the ids that your serializer has created
+        }
+   
         @Override
         public void serialize(Controller<?> controller) {
             // Your logic
@@ -285,8 +320,8 @@ If your application needs to serialize data in a different way, for example in a
 3. Register the custom serializer in the manifest
 
    - Create a directory called services inside the META-INF. 
-   - Inside the folder that was just created, create a file called `it.auties.whatsapp.controller.ControllerSerializer`.
-   - Finally, inside the file that was just created write the fully qualified name of your implementation, for example `com.example.CustomSerializer`.
+   - Inside the folder that was just created, create a file called `it.auties.whatsapp.controller.ControllerProvider`.
+   - Finally, inside the file that was just created write the fully qualified name of your implementation, for example `com.example.CustomProvider`.
 
 
 ### How to delete a session
@@ -723,6 +758,19 @@ All types of messages supported by Whatsapp are supported by this library:
      api.sendMessage(chat,  document);
      ```
 
+### How to delete messages
+
+``` java
+var result = api.delete(someMessage, everyone).join(); // Deletes a message for yourself or everyone
+```
+
+### How to send or remove reactions
+
+``` java
+var sendResult = api.sendReaction(someMessage, "💖").join(); // Send a reaction to a message
+var removeResult = api.removeReaction(someMessage).join(); // Removes your reaction from a message
+```
+
 ### How to change your status
 
 To change the status of the client:
@@ -873,6 +921,24 @@ var response = future.join(); // Wait for the future to complete
 var future = api.unpin(chat);  // A future for the request
 var response = future.join(); // Wait for the future to complete
 ```
+
+##### Clear a chat
+
+``` java
+var future = api.clear(chat);  // A future for the request
+var response = future.join(); // Wait for the future to complete
+```
+
+> **_IMPORTANT:_** This method is experimental and may not work
+
+##### Delete a chat
+
+``` java
+var future = api.delete(chat);  // A future for the request
+var response = future.join(); // Wait for the future to complete
+```
+
+> **_IMPORTANT:_** This method is experimental and may not work
 
 ### Change the state of a participant of a group
 

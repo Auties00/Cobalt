@@ -44,7 +44,6 @@ import static it.auties.bytes.Bytes.ofRandom;
 import static it.auties.whatsapp.api.Whatsapp.Options.defaultOptions;
 import static it.auties.whatsapp.binary.PatchType.REGULAR_HIGH;
 import static it.auties.whatsapp.binary.PatchType.REGULAR_LOW;
-import static it.auties.whatsapp.controller.Controller.knownIds;
 import static it.auties.whatsapp.model.contact.ContactJid.Server.GROUP;
 import static it.auties.whatsapp.model.request.Node.*;
 import static it.auties.whatsapp.model.sync.RecordSync.Operation.SET;
@@ -131,7 +130,7 @@ public class Whatsapp {
      * @return a non-null Whatsapp instance
      */
     public static Whatsapp firstConnection() {
-        return newConnection(requireNonNullElseGet(knownIds().peekFirst(), KeyHelper::registrationId));
+        return firstConnection(defaultOptions());
     }
 
     /**
@@ -142,7 +141,9 @@ public class Whatsapp {
      * @return a non-null Whatsapp instance
      */
     public static Whatsapp firstConnection(@NonNull Options options) {
-        return newConnection(options.withId(requireNonNullElseGet(knownIds().peekFirst(), KeyHelper::registrationId)));
+        return newConnection(options.withId(requireNonNullElseGet(
+                ControllerProviderLoader.allIds(options.defaultSerialization())
+                        .peekFirst(), KeyHelper::registrationId)));
     }
 
     /**
@@ -152,7 +153,7 @@ public class Whatsapp {
      * @return a non-null Whatsapp instance
      */
     public static Whatsapp lastConnection() {
-        return newConnection(requireNonNullElseGet(knownIds().peekLast(), KeyHelper::registrationId));
+        return lastConnection(defaultOptions());
     }
 
     /**
@@ -163,7 +164,9 @@ public class Whatsapp {
      * @return a non-null Whatsapp instance
      */
     public static Whatsapp lastConnection(@NonNull Options options) {
-        return newConnection(options.withId(requireNonNullElseGet(knownIds().peekLast(), KeyHelper::registrationId)));
+        return newConnection(options.withId(requireNonNullElseGet(
+                ControllerProviderLoader.allIds(options.defaultSerialization())
+                        .peekLast(), KeyHelper::registrationId)));
     }
 
     /**
@@ -172,7 +175,17 @@ public class Whatsapp {
      * @return a non-null List
      */
     public static List<Whatsapp> listConnections() {
-        return streamConnections().toList();
+        return listConnections(defaultOptions());
+    }
+
+    /**
+     * Returns a list of all known connections
+     *
+     * @param options the non-null options
+     * @return a non-null List
+     */
+    public static List<Whatsapp> listConnections(@NonNull Options options) {
+        return streamConnections(options).toList();
     }
 
     /**
@@ -181,9 +194,21 @@ public class Whatsapp {
      * @return a non-null Stream
      */
     public static Stream<Whatsapp> streamConnections() {
-        return knownIds().stream()
-                .map(Whatsapp::newConnection);
+        return streamConnections(defaultOptions());
     }
+
+    /**
+     * Returns a stream of all known connections
+     *
+     * @param options the non-null options
+     * @return a non-null Stream
+     */
+    public static Stream<Whatsapp> streamConnections(@NonNull Options options) {
+        return ControllerProviderLoader.allIds(options.defaultSerialization())
+                .stream()
+                .map(id -> Whatsapp.newConnection(options.withId(id)));
+    }
+
 
     /**
      * Deletes all the known connections from memory
@@ -1632,6 +1657,7 @@ public class Whatsapp {
 
     /**
      * Deletes a chat for this client and its companions using a modern version of Whatsapp
+     * Important: this message doesn't seem to work always as of now
      *
      * @param chat the non-null chat to delete
      * @return a CompletableFuture
@@ -1648,6 +1674,7 @@ public class Whatsapp {
 
     /**
      * Clears the content of a chat for this client and its companions using a modern version of Whatsapp
+     * Important: this message doesn't seem to work always as of now
      *
      * @param chat                the non-null chat to clear
      * @param keepStarredMessages whether starred messages in this chat should be kept

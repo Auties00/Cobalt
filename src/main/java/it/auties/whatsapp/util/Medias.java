@@ -19,6 +19,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
@@ -34,7 +35,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static java.net.http.HttpRequest.BodyPublishers.ofByteArray;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
-import static java.util.Objects.requireNonNullElse;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 
@@ -48,17 +48,23 @@ public class Medias implements JacksonProvider {
 
     public Optional<byte[]> getPreview(URI imageUri, URI videoUri) {
         try {
-            if (imageUri == null && videoUri == null) {
-                return Optional.empty();
+            if (videoUri != null) {
+                var bytes = videoUri.toURL()
+                        .openConnection()
+                        .getInputStream()
+                        .readAllBytes();
+                return getVideo(bytes, PREVIEW_SIZE);
             }
 
-            var bytes = requireNonNullElse(imageUri, videoUri).toURL()
-                    .openConnection()
-                    .getInputStream()
-                    .readAllBytes();
-            return Optional.ofNullable(imageUri != null ?
-                    getImage(bytes, Format.JPG, PREVIEW_SIZE) :
-                    getVideo(bytes, PREVIEW_SIZE));
+            if(imageUri != null){
+                var bytes = imageUri.toURL()
+                        .openConnection()
+                        .getInputStream()
+                        .readAllBytes();
+                return getImage(bytes, Format.JPG, PREVIEW_SIZE);
+            }
+
+            return Optional.empty();
         } catch (IOException exception) {
             return Optional.empty();
         }
@@ -274,16 +280,15 @@ public class Medias implements JacksonProvider {
         }
     }
 
-    @SneakyThrows
-    public byte[] getThumbnail(byte[] file, Format format) {
+    public Optional<byte[]> getThumbnail(byte[] file, Format format) {
         return switch (format) {
             case JPG, PNG -> getImage(file, format, THUMBNAIL_SIZE);
             case VIDEO -> getVideo(file, THUMBNAIL_SIZE);
-            case FILE -> null; // TODO: 04/06/2022 Implement a file thumbnail
+            case FILE -> Optional.empty(); // TODO: 04/06/2022 Implement a file thumbnail
         };
     }
 
-    private static byte[] getVideo(byte[] file, int dimensions) throws IOException {
+    private Optional<byte[]> getVideo(byte[] file, int dimensions) {
         var input = createTempFile(file, true);
         var output = createTempFile(file, false);
         try {
@@ -291,46 +296,61 @@ public class Medias implements JacksonProvider {
                     .exec("ffmpeg -ss 00:00:00 -i %s -y -vf scale=%s:-1 -vframes 1 -f image2 %s".formatted(input,
                             dimensions, output));
             if (process.waitFor() != 0) {
-                return null;
+                return Optional.empty();
             }
 
-            return Files.readAllBytes(output);
+            return Optional.of(Files.readAllBytes(output));
         } catch (Throwable throwable) {
-            return null;
+            return Optional.empty();
         } finally {
-            Files.delete(output);
+            try {
+                Files.delete(output);
+            }catch (IOException ignored) {
+
+            }
         }
     }
 
-    private static byte[] getImage(byte[] file, Format format, int dimensions) throws IOException {
-        var image = ImageIO.read(new ByteArrayInputStream(file));
-        var resizedImage = getResizedImage(image, dimensions);
-        var outputStream = new ByteArrayOutputStream();
-        ImageIO.write(resizedImage, format.name()
-                .toLowerCase(), outputStream);
-        return outputStream.toByteArray();
+    private Optional<byte[]> getImage(byte[] file, Format format, int dimensions) {
+        try {
+            var image = ImageIO.read(new ByteArrayInputStream(file));
+            if(image == null){
+                return Optional.empty();
+            }
+
+            var resizedImage = getResizedImage(image, dimensions);
+            var outputStream = new ByteArrayOutputStream();
+            ImageIO.write(resizedImage, format.name()
+                    .toLowerCase(), outputStream);
+            return Optional.of(outputStream.toByteArray());
+        }catch (IOException exception){
+            return Optional.empty();
+        }
     }
 
-    @SneakyThrows
     public byte[] getProfilePic(byte[] file) {
-        var originalImage = ImageIO.read(new ByteArrayInputStream(file));
-        var size = Math.min(originalImage.getWidth(), originalImage.getHeight());
-        var subImage = originalImage.getSubimage(0, 0, size, size);
-        var actual = getResizedImage(subImage, PROFILE_PIC_SIZE);
-        var outputStream = new ByteArrayOutputStream();
-        var writer = (ImageWriter) ImageIO.getImageWritersByFormatName("jpeg")
-                .next();
-        writer.getDefaultWriteParam()
-                .setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-        writer.getDefaultWriteParam()
-                .setCompressionQuality(0.5F);
-        writer.setOutput(outputStream);
-        writer.write(actual);
-        writer.dispose();
-        return outputStream.toByteArray();
+        try {
+            var originalImage = ImageIO.read(new ByteArrayInputStream(file));
+            var size = Math.min(originalImage.getWidth(), originalImage.getHeight());
+            var subImage = originalImage.getSubimage(0, 0, size, size);
+            var actual = getResizedImage(subImage, PROFILE_PIC_SIZE);
+            var outputStream = new ByteArrayOutputStream();
+            var writer = (ImageWriter) ImageIO.getImageWritersByFormatName("jpeg")
+                    .next();
+            writer.getDefaultWriteParam()
+                    .setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+            writer.getDefaultWriteParam()
+                    .setCompressionQuality(0.5F);
+            writer.setOutput(outputStream);
+            writer.write(actual);
+            writer.dispose();
+            return outputStream.toByteArray();
+        }catch (IOException exception){
+            throw new UncheckedIOException("Cannot generate profile pic", exception);
+        }
     }
 
-    private static BufferedImage getResizedImage(BufferedImage originalImage, int size) {
+    private BufferedImage getResizedImage(BufferedImage originalImage, int size) {
         var type = originalImage.getType() == 0 ?
                 BufferedImage.TYPE_INT_ARGB :
                 originalImage.getType();

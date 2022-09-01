@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.auties00</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>3.0-RC18</version>
+    <version>3.0-RC19</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Standalone fully-featured Whatsapp Web API for Java and Kotlin</description>
     <url>https://github.com/Auties00/WhatsappWeb4j</url>
@@ -86,17 +86,17 @@
         <bouncy.castle.version>1.70</bouncy.castle.version>
         <zxing.version>3.5.0</zxing.version>
         <protoc.version>1.16</protoc.version>
-        <tyrus.version>2.0.2</tyrus.version>
+        <tyrus.version>2.1.0</tyrus.version>
         <lombok.version>1.18.24</lombok.version>
-        <junit.version>5.8.2</junit.version>
-        <jna.version>5.11.0</jna.version>
+        <junit.version>5.9.0</junit.version>
+        <jna.version>5.12.1</jna.version>
         <jackson.version>2.13.3</jackson.version>
         <jackson.modules.version>2.13.3</jackson.modules.version>
         <jackson.map.version>1.3</jackson.map.version>
         <curve25519.version>1.1</curve25519.version>
         <bytes.version>1.2</bytes.version>
         <ffmpeg.version>0.7.0</ffmpeg.version>
-        <classgraph.version>4.8.147</classgraph.version>
+        <classgraph.version>4.8.149</classgraph.version>
         <reflection.version>1.2</reflection.version>
         <caffeine.version>3.1.1</caffeine.version>
         <lazysodium.version>5.1.1</lazysodium.version>

@@ -399,22 +399,16 @@ class MessageHandler implements JacksonProvider {
                     .orElse(null);
             var messageBuilder = MessageInfo.newMessageInfo();
             var keyBuilder = MessageKey.newMessageKeyBuilder();
-            switch (from.type()) {
-                case USER, OFFICIAL_BUSINESS_ACCOUNT, STATUS, ANNOUNCEMENT, COMPANION -> {
-                    keyBuilder.chatJid(recipient);
-                    keyBuilder.senderJid(from);
-                    messageBuilder.senderJid(from);
-                }
-
-                case GROUP, GROUP_CALL, BROADCAST -> {
-                    keyBuilder.chatJid(from);
-                    keyBuilder.senderJid(requireNonNull(participant, "Missing participant in group message"));
-                    messageBuilder.senderJid(requireNonNull(participant, "Missing participant in group message"));
-                }
-
-                default -> throw new IllegalArgumentException("Cannot decode message, unsupported type: %s".formatted(
-                        from.type()
-                                .name()));
+            if(from.hasServer(ContactJid.Server.WHATSAPP) || from.hasServer(ContactJid.Server.USER)){
+                keyBuilder.chatJid(recipient);
+                keyBuilder.senderJid(from);
+                keyBuilder.fromMe(Objects.equals(from, socket.keys().companion().toUserJid()));
+                messageBuilder.senderJid(from);
+            }else {
+                keyBuilder.chatJid(from);
+                keyBuilder.senderJid(requireNonNull(participant, "Missing participant in group message"));
+                keyBuilder.fromMe(Objects.equals(participant.toUserJid(), socket.keys().companion().toUserJid()));
+                messageBuilder.senderJid(requireNonNull(participant, "Missing participant in group message"));
             }
 
             var key = keyBuilder.id(id)

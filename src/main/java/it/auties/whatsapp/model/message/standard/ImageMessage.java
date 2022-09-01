@@ -187,7 +187,7 @@ public final class ImageMessage extends MediaMessage {
                 .height(dimensions.height())
                 .thumbnail(thumbnail != null ?
                         thumbnail :
-                        Medias.getThumbnail(media, JPG))
+                        Medias.getThumbnail(media, JPG).orElse(null))
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .build();
     }

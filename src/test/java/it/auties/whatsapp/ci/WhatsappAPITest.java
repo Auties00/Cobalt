@@ -26,6 +26,7 @@ import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.utils.ConfigUtils;
 import it.auties.whatsapp.utils.MediaUtils;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 
@@ -414,7 +415,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
         log("Sending complex text...");
         var context = api.sendMessage(contact, "Hello: https://www.youtube.com/watch?v=4boXExbbGCk")
                 .join();
-        log("Sent coxmplex text: %s", context);
+        log("Sent complex text: %s", context);
     }
 
     @Test
@@ -674,7 +675,6 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
 
     @Test
     @Order(39)
-    @Disabled
     public void testClearChat() {
         log("Clearing chat...");
         var ephemeralResponse = api.clear(contact, false)
@@ -684,7 +684,6 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
 
     @Test
     @Order(40)
-    @Disabled
     public void testDeleteChat() {
         log("Deleting chat...");
         var ephemeralResponse = api.delete(contact)
@@ -775,6 +774,26 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
         api.sendMessage(contact, listMessage)
                 .join();
         log("Sent list message");
+    }
+
+    @SneakyThrows
+    @Test
+    @Order(43)
+    public void testReaction() {
+        var example = api.sendMessage(contact, "Hello")
+                .join();
+
+        log("Sending heart reaction...");
+        var simple = api.sendReaction(example, "💖")
+                .join();
+        log("Sent heart reaction: %s", simple);
+
+        Thread.sleep(2000L);
+
+        log("Removing reaction...");
+        var context = api.removeReaction(example)
+                .join();
+        log("Removed reaction: %s", context);
     }
 
 
