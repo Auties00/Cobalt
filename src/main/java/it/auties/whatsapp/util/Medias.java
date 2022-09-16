@@ -16,10 +16,7 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.io.*;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
@@ -82,6 +79,12 @@ public class Medias implements JacksonProvider {
                         "Cannot upload media: no suitable host found: %s".formatted(hosts)));
     }
 
+    private List<String> getHosts(MediaConnection mediaConnection) {
+        return Optional.ofNullable(mediaConnection)
+                .map(MediaConnection::hosts)
+                .orElse(List.of("mmg.whatsapp.net"));
+    }
+
     private Optional<MediaFile> upload(byte[] file, MediaMessageType type, HttpClient client, String auth,
                                        String host) {
         try {
@@ -114,16 +117,13 @@ public class Medias implements JacksonProvider {
         }
     }
 
-    public byte[] download(AttachmentProvider provider, MediaConnection mediaConnection) {
-        return getDownloadUrls(provider, mediaConnection).stream()
-                .map(url -> download(provider, url))
-                .flatMap(Optional::stream)
-                .findFirst()
-                .orElseThrow(
-                        () -> new IllegalStateException("Cannot download encrypted media: no suitable host found"));
+    public Optional<byte[]> download(AttachmentProvider provider) {
+        return download(provider, false);
     }
 
-    private Optional<byte[]> download(AttachmentProvider provider, String url) {
+    private Optional<byte[]> download(AttachmentProvider provider, boolean fallback) {
+        var url = provider.url() != null && !fallback ? provider.url()
+                : "https://mmg.whatsapp.net%s".formatted(provider.directPath());
         try (var connection = new URL(url).openStream()) {
             var stream = Bytes.of(connection.readAllBytes());
 
@@ -144,9 +144,10 @@ public class Medias implements JacksonProvider {
             Validate.isTrue(provider.fileLength() <= 0 || provider.fileLength() == decrypted.length,
                     "Cannot decode media: invalid size");
 
-            return Optional.ofNullable(decrypted);
-        } catch (Throwable ignored) {
-            return empty();
+            return Optional.of(decrypted);
+        } catch (Throwable error) {
+            return fallback ? Optional.empty()
+                    : download(provider, true);
         }
     }
 
@@ -159,27 +160,9 @@ public class Medias implements JacksonProvider {
                 .toByteArray();
     }
 
-    private List<String> getDownloadUrls(AttachmentProvider provider, MediaConnection mediaConnection) {
-        if (provider.url() != null) {
-            return List.of(provider.url());
-        }
-
-        var fileEncSha256 = Base64.getEncoder()
-                .encode(provider.fileEncSha256());
-        return getHosts(mediaConnection).stream()
-                .map(host -> "https://%s%s&hash=%s&mms-type=%s&__wa-mms=".formatted(host, provider.directPath(),
-                        fileEncSha256, provider.name()))
-                .toList();
-    }
-
-    private List<String> getHosts(MediaConnection mediaConnection) {
-        return Optional.ofNullable(mediaConnection)
-                .map(MediaConnection::hosts)
-                .orElse(List.of("mmg.whatsapp.net"));
-    }
-
     public Optional<String> getMimeType(String name) {
-        return getExtension(name).map(extension -> Path.of("bogus%s".formatted(extension)))
+        return getExtension(name)
+                .map(extension -> Path.of("bogus%s".formatted(extension)))
                 .flatMap(Medias::getMimeType);
     }
 

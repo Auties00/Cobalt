@@ -549,11 +549,10 @@ class MessageHandler implements JacksonProvider {
     private void handleProtocolMessage(MessageInfo info, ProtocolMessage protocolMessage, boolean peer) {
         switch (protocolMessage.type()) {
             case HISTORY_SYNC_NOTIFICATION -> {
-                var compressed = Medias.download(protocolMessage.historySyncNotification(), socket.store()
-                        .mediaConnection());
+                var compressed = Medias.download(protocolMessage.historySyncNotification())
+                        .orElseThrow(() -> new IllegalArgumentException("Cannot download history sync"));
                 var decompressed = BytesHelper.deflate(compressed);
                 var history = PROTOBUF.readMessage(decompressed, HistorySync.class);
-
                 switch (history.syncType()) {
                     case INITIAL_BOOTSTRAP -> {
                         history.conversations()
@@ -583,6 +582,8 @@ class MessageHandler implements JacksonProvider {
                         socket.store()
                                 .invokeListeners(Listener::onContacts);
                     }
+
+                    case null -> {}
                 }
 
                 socket.sendSyncReceipt(info, "hist_sync");
@@ -619,6 +620,8 @@ class MessageHandler implements JacksonProvider {
             }
         }
 
+        // Save data to prevent session termination from messing up the cypher
+        socket.store().serialize();
         if (!peer) {
             return;
         }

@@ -359,6 +359,14 @@ public final class Store implements Controller<Store> {
                     .addAll(oldChat.messages());
         }
 
+        if(chat.hasName() && findContactByJid(chat.jid()).isEmpty()){
+            var contact = Contact.builder()
+                    .jid(chat.jid())
+                    .fullName(chat.name())
+                    .build();
+            addContact(contact);
+        }
+
         chats.put(chat.jid(), chat);
         return chat;
     }
@@ -371,7 +379,6 @@ public final class Store implements Controller<Store> {
      */
     public Contact addContact(@NonNull Contact contact) {
         var oldContact = contacts.get(contact.jid());
-        // TODO: 21/07/2022 merging logic
         contacts.put(contact.jid(), contact);
         return contact;
     }

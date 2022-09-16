@@ -22,11 +22,14 @@ import it.auties.whatsapp.model.message.business.ButtonsMessage;
 import it.auties.whatsapp.model.message.business.InteractiveMessage;
 import it.auties.whatsapp.model.message.business.ListMessage;
 import it.auties.whatsapp.model.message.business.TemplateMessage;
+import it.auties.whatsapp.model.message.model.MediaMessage;
+import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.standard.*;
+import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.JacksonProvider;
+import it.auties.whatsapp.util.SortedMessageList;
 import it.auties.whatsapp.utils.ConfigUtils;
 import it.auties.whatsapp.utils.MediaUtils;
-import lombok.SneakyThrows;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 
@@ -40,6 +43,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -674,7 +678,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(39)
+    @Order(40)
     public void testClearChat() {
         log("Clearing chat...");
         var ephemeralResponse = api.clear(contact, false)
@@ -683,7 +687,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(40)
+    @Order(41)
     public void testDeleteChat() {
         log("Deleting chat...");
         var ephemeralResponse = api.delete(contact)
@@ -692,7 +696,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(41)
+    @Order(42)
     public void testInteractiveMessage() { // These are not even supported as far as I can tell, though we have a test lol
         log("Sending interactive messages..");
 
@@ -734,7 +738,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(42)
+    @Order(43)
     public void testTemplateMessage() {
         log("Sending template message...");
         var quickReplyButton = HydratedButtonTemplate.of(1, HydratedQuickReplyButton.of("Click me!", "random"));
@@ -753,7 +757,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(42)
+    @Order(44)
     public void testListMessage() {
         var buttons = List.of(ButtonRow.of("First option", "A nice description"),
                 ButtonRow.of("Second option", "A nice description"),
@@ -776,10 +780,9 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
         log("Sent list message");
     }
 
-    @SneakyThrows
     @Test
-    @Order(43)
-    public void testReaction() {
+    @Order(45)
+    public void testReaction() throws InterruptedException {
         var example = api.sendMessage(contact, "Hello")
                 .join();
 
@@ -796,6 +799,27 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
         log("Removed reaction: %s", context);
     }
 
+    @Test
+    @Order(46)
+    public void testMediaDownload(){
+        log("Trying to decode some medias...");
+        var success = new AtomicInteger();
+        var fail = new AtomicInteger();
+        api.store()
+                .chats()
+                .stream()
+                .map(Chat::messages)
+                .flatMap(SortedMessageList::stream)
+                .filter(info -> !info.fromMe() && info.message().isMedia())
+                .limit(10)
+                .peek(e -> System.out.println(e.id()))
+                .map(MessageInfo::message)
+                .map(MessageContainer::content)
+                .map(message -> (MediaMessage) message)
+                .map(MediaMessage::decodedMedia)
+                .forEach(result -> result.ifPresentOrElse(ignored -> success.incrementAndGet(), fail::incrementAndGet));
+        log("Decoded %s/%s medias!", success.get(), success.get() + fail.get());
+    }
 
     @SuppressWarnings("JUnit3StyleTestMethodInJUnit4Class")
     @AfterAll
@@ -803,12 +827,6 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
         log("Logging off...");
         CompletableFuture.delayedExecutor(5, TimeUnit.MINUTES)
                 .execute(api::disconnect);
-        api.addNewMessageListener(message -> {
-            if(message.chat().equals(message.chat())){
-                log("New message");
-                api.sendMessage(message.chat(), "Hello");
-            }
-        });
         api.await();
         log("Logged off");
     }
@@ -816,6 +834,16 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Override
     public void onNewMessage(MessageInfo info) {
         System.out.printf("New message: %s%n", info);
+    }
+
+    @Override
+    public void onNodeSent(Node outgoing) {
+        System.out.printf("Sent node %s%n", outgoing);
+    }
+
+    @Override
+    public void onNodeReceived(Node incoming) {
+        System.out.printf("Received node %s%n", incoming);
     }
 
     @Override

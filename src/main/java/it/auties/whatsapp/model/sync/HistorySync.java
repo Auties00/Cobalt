@@ -23,7 +23,6 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @Accessors(fluent = true)
 public class HistorySync implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, concreteType = HistorySyncHistorySyncType.class)
-    @NonNull
     private HistorySyncHistorySyncType syncType;
 
     @ProtobufProperty(index = 2, type = MESSAGE, concreteType = Chat.class, repeated = true)

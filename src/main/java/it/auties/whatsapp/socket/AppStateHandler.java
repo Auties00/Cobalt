@@ -309,8 +309,8 @@ class AppStateHandler implements JacksonProvider {
 
         var blob = PROTOBUF.readMessage(snapshot.contentAsBytes()
                 .orElseThrow(), ExternalBlobReference.class);
-        var syncedData = Medias.download(blob, socket.store()
-                .mediaConnection());
+        var syncedData = Medias.download(blob)
+                .orElseThrow(() -> new IllegalArgumentException("Cannot download snapshot sync"));
         return PROTOBUF.readMessage(syncedData, SnapshotSync.class);
     }
 
@@ -440,8 +440,8 @@ class AppStateHandler implements JacksonProvider {
     private Optional<MutationsRecord> decodePatch(PatchType patchType, long minimumVersion, LTHashState newState,
                                                   PatchSync patch) {
         if (patch.hasExternalMutations()) {
-            var blob = Medias.download(patch.externalMutations(), socket.store()
-                    .mediaConnection());
+            var blob = Medias.download(patch.externalMutations())
+                    .orElseThrow(() -> new IllegalArgumentException("Cannot download external mutations"));
             var mutationsSync = PROTOBUF.readMessage(blob, MutationsSync.class);
             patch.mutations()
                     .addAll(mutationsSync.mutations());

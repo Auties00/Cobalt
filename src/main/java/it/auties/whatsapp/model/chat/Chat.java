@@ -224,6 +224,16 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     }
 
     /**
+     * Returns whether this chat has a name.
+     * If this method returns false, it doesn't imply that {@link Chat#name()} will return null.
+     *
+     * @return a boolean
+     */
+    public boolean hasName(){
+        return name != null;
+    }
+
+    /**
      * Returns a boolean to represent whether this chat is a group or not
      *
      * @return true if this chat is a group

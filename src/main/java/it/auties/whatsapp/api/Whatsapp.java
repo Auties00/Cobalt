@@ -972,14 +972,15 @@ public class Whatsapp {
                 .stream()
                 .findFirst()
                 .orElse(null);
-        textMessage.canonicalUrl(requireNonNullElse(videoUri, preview.uri()).toString());
-        textMessage.matchedText(preview.uri()
-                .toString());
+        textMessage.canonicalUrl(preview.uri().toString());
+        textMessage.matchedText(preview.uri().toString());
         textMessage.thumbnail(Medias.getPreview(imageUri, videoUri)
                 .orElse(null));
         textMessage.description(preview.siteDescription());
         textMessage.title(preview.title());
-        textMessage.previewType(TextMessage.TextMessagePreviewType.VIDEO);
+        if(videoUri != null) {
+            textMessage.previewType(TextMessage.TextMessagePreviewType.VIDEO);
+        }
     }
 
     private void parseEphemeralMessage(MessageInfo info) {

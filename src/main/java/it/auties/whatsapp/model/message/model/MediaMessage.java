@@ -13,14 +13,14 @@ import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 
 import java.util.Locale;
-import java.util.Objects;
+import java.util.Optional;
 
 /**
  * A model class that represents a message holding media inside
  * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
  * Even though the same instance is in the wrapping message info(MessageInfo -> MessageContainer -> MediaMessage),
  * there is currently no way to navigate the tree upwards or any reason to do so considering that this is a special use case.
- * Considering that passing the same instance to {@link MediaMessage#decodedMedia(MediaConnection)} is verbose and unnecessary, there is a copy here.
+ * Considering that passing the same instance to {@link MediaMessage#decodedMedia()} is verbose and unnecessary, there is a copy here.
  */
 @AllArgsConstructor
 @SuperBuilder
@@ -37,24 +37,28 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
     /**
      * Returns the cached decoded media wrapped by this object if available.
      * Otherwise, the encoded media that this object wraps is decoded, cached and returned.
+     * If the media is no longer available on Whatsapp's servers, an empty optional is returned.
      *
-     * @param mediaConnection the non-null media connection to use to decode this media
-     * @return a non-null array of bytes
+     * @return a non-null optional
      */
-    public byte[] decodedMedia(@NonNull MediaConnection mediaConnection) {
-        return Objects.requireNonNullElseGet(decodedMedia,
-                () -> (this.decodedMedia = Medias.download(this, mediaConnection)));
+    public Optional<byte[]> decodedMedia() {
+        if(decodedMedia == null){
+            this.decodedMedia = Medias.download(this)
+                    .orElse(null);
+        }
+
+        return Optional.ofNullable(decodedMedia);
     }
 
     /**
      * Decodes the encoded media that this object wraps, caches it and returns the decoded media.
+     * If the media is no longer available on Whatsapp's servers, an empty optional is returned.
      *
-     * @param mediaConnection the non-null media connection to use to decode this media
-     * @return a non-null array of bytes
+     * @return a non-null optional
      */
-    public byte[] refreshMedia(@NonNull MediaConnection mediaConnection) {
+    public Optional<byte[]> refreshedMedia() {
         this.decodedMedia = null;
-        return decodedMedia(mediaConnection);
+        return decodedMedia();
     }
 
     /**

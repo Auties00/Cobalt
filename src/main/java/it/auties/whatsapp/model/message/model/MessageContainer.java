@@ -44,6 +44,8 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Jacksonized
 @Accessors(fluent = true)
 public class MessageContainer implements ProtobufMessage {
+    private static final EmptyMessage EMPTY_MESSAGE = new EmptyMessage();
+
     @ProtobufProperty(index = 1, type = STRING)
     private String textWithNoContext;
 
@@ -364,9 +366,10 @@ public class MessageContainer implements ProtobufMessage {
     }
 
     /**
-     * Returns the first populated message inside this container
+     * Returns the first populated message inside this container.
+     * If no message is found, {@link EmptyMessage} is returned
      *
-     * @return a nullable Message
+     * @return a non-null message
      */
     public Message content() {
         if (this.textWithNoContext != null)
@@ -441,7 +444,7 @@ public class MessageContainer implements ProtobufMessage {
             return reaction;
         if (stickerSync != null)
             return stickerSync;
-        return null;
+        return EMPTY_MESSAGE;
     }
 
     /**
@@ -543,6 +546,15 @@ public class MessageContainer implements ProtobufMessage {
      */
     public boolean isDevice() {
         return type() == ContentType.DEVICE;
+    }
+
+    /**
+     * Returns whether this container contains a media message
+     *
+     * @return true if this container contains a media message
+     */
+    public boolean isMedia() {
+        return type() == ContentType.STANDARD && content() instanceof MediaMessage;
     }
 
     /**
