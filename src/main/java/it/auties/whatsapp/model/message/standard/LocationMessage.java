@@ -2,6 +2,8 @@ package it.auties.whatsapp.model.message.standard;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
+import it.auties.whatsapp.model.message.model.MessageCategory;
+import it.auties.whatsapp.model.message.model.MessageType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -88,4 +90,14 @@ public final class LocationMessage extends ContextualMessage {
      */
     @ProtobufProperty(index = 16, type = BYTES)
     private byte[] thumbnail;
+
+    @Override
+    public MessageType type() {
+        return MessageType.LOCATION;
+    }
+
+    @Override
+    public MessageCategory category() {
+        return MessageCategory.STANDARD;
+    }
 }

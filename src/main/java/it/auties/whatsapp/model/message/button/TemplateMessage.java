@@ -1,12 +1,13 @@
-package it.auties.whatsapp.model.message.business;
+package it.auties.whatsapp.model.message.button;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.button.FourRowTemplate;
 import it.auties.whatsapp.model.button.HydratedFourRowTemplate;
 import it.auties.whatsapp.model.info.ContextInfo;
-import it.auties.whatsapp.model.message.model.BusinessMessage;
+import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
+import it.auties.whatsapp.model.message.model.MessageType;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
@@ -26,7 +27,7 @@ import static java.util.Objects.requireNonNullElseGet;
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(builderMethodName = "newRawTemplateMessageBuilder")
 @Accessors(fluent = true)
-public final class TemplateMessage extends ContextualMessage implements BusinessMessage {
+public final class TemplateMessage extends ContextualMessage implements ButtonMessage {
     /**
      * Four row template.
      * This property is defined only if {@link TemplateMessage#formatType()} == {@link Format#FOUR_ROW_TEMPLATE}.
@@ -141,6 +142,11 @@ public final class TemplateMessage extends ContextualMessage implements Business
         if (hydratedFourRowTemplate != null)
             return Format.HYDRATED_FOUR_ROW_TEMPLATE;
         return Format.NONE;
+    }
+
+    @Override
+    public MessageType type() {
+        return MessageType.TEMPLATE;
     }
 
     /**

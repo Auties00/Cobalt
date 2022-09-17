@@ -9,4 +9,8 @@ import it.auties.whatsapp.model.message.server.StickerSyncRMRMessage;
  */
 public sealed interface ServerMessage extends Message
         permits ProtocolMessage, SenderKeyDistributionMessage, StickerSyncRMRMessage {
+    @Override
+    default MessageCategory category() {
+        return MessageCategory.SERVER;
+    }
 }

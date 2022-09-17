@@ -2,7 +2,7 @@ package it.auties.whatsapp.model.message.model;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.info.ContextInfo;
-import it.auties.whatsapp.model.message.business.*;
+import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.standard.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder.Default;

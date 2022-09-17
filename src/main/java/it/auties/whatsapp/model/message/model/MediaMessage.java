@@ -1,14 +1,12 @@
 package it.auties.whatsapp.model.message.model;
 
 import it.auties.whatsapp.model.media.AttachmentProvider;
-import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.payment.PaymentInvoiceMessage;
 import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.util.Medias;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 
@@ -33,6 +31,16 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
      * The cached decoded media, by default null
      */
     private byte[] decodedMedia;
+
+    @Override
+    public MessageType type() {
+        return mediaType().messageType();
+    }
+
+    @Override
+    public MessageCategory category() {
+        return MessageCategory.STANDARD;
+    }
 
     /**
      * Returns the cached decoded media wrapped by this object if available.
@@ -66,7 +74,7 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
      *
      * @return a non-null {@link MediaMessageType}
      */
-    public abstract MediaMessageType type();
+    public abstract MediaMessageType mediaType();
 
     /**
      * Returns the timestamp, that is the endTimeStamp elapsed since {@link java.time.Instant#EPOCH}, for {@link MediaMessage#key()}
@@ -77,12 +85,12 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
 
     @Override
     public String name() {
-        return type().name()
+        return mediaType().name()
                 .toLowerCase(Locale.ROOT);
     }
 
     @Override
     public String keyName() {
-        return type().keyName();
+        return mediaType().keyName();
     }
 }

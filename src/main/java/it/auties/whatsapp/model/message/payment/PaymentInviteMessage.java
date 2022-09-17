@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.message.payment;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -34,6 +35,11 @@ public final class PaymentInviteMessage implements PaymentMessage {
      */
     @ProtobufProperty(index = 2, type = UINT64)
     private long expiryTimestamp;
+
+    @Override
+    public MessageType type() {
+        return MessageType.PAYMENT_INVITE;
+    }
 
     @AllArgsConstructor
     @Accessors(fluent = true)

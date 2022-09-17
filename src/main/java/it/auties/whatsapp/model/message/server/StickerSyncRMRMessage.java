@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.message.server;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.ServerMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,6 +29,11 @@ public final class StickerSyncRMRMessage implements ServerMessage {
 
     @ProtobufProperty(index = 3, type = INT64)
     private long requestTimestamp;
+
+    @Override
+    public MessageType type() {
+        return MessageType.STICKER_SYNC;
+    }
 
     public static class StickerSyncRMRMessageBuilder {
         public StickerSyncRMRMessageBuilder hash(List<String> hash) {

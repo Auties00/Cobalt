@@ -3,6 +3,7 @@ package it.auties.whatsapp.model.message.device;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.DeviceMessage;
 import it.auties.whatsapp.model.message.model.MessageContainer;
+import it.auties.whatsapp.model.message.model.MessageType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -40,4 +41,9 @@ public final class DeviceSentMessage implements DeviceMessage {
      */
     @ProtobufProperty(index = 3, type = STRING)
     private String phash;
+
+    @Override
+    public MessageType type() {
+        return MessageType.DEVICE_SENT;
+    }
 }

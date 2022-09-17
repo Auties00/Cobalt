@@ -1,12 +1,13 @@
-package it.auties.whatsapp.model.message.business;
+package it.auties.whatsapp.model.message.button;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.button.ButtonSection;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.ProductListInfo;
-import it.auties.whatsapp.model.message.model.BusinessMessage;
+import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
+import it.auties.whatsapp.model.message.model.MessageType;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
@@ -29,7 +30,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Jacksonized
 @Builder(builderMethodName = "newListMessageBuilder")
 @Accessors(fluent = true)
-public final class ListMessage extends ContextualMessage implements BusinessMessage {
+public final class ListMessage extends ContextualMessage implements ButtonMessage {
     /**
      * The title of this message
      */
@@ -78,6 +79,11 @@ public final class ListMessage extends ContextualMessage implements BusinessMess
     @ProtobufProperty(index = 8, type = MESSAGE, concreteType = ContextInfo.class)
     @Default
     private ContextInfo contextInfo = new ContextInfo();  // Overrides ContextualMessage's context info
+
+    @Override
+    public MessageType type() {
+        return MessageType.LIST;
+    }
 
     /**
      * The constants of this enumerated type describe the various types of {@link ListMessage}

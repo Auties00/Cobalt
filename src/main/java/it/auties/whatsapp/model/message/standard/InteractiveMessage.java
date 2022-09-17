@@ -1,4 +1,4 @@
-package it.auties.whatsapp.model.message.business;
+package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.api.model.ProtobufMessage;
@@ -7,8 +7,10 @@ import it.auties.whatsapp.model.business.BusinessCollection;
 import it.auties.whatsapp.model.business.BusinessNativeFlow;
 import it.auties.whatsapp.model.business.BusinessShop;
 import it.auties.whatsapp.model.info.ContextInfo;
-import it.auties.whatsapp.model.message.model.BusinessMessage;
+import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
+import it.auties.whatsapp.model.message.model.MessageCategory;
+import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.product.ProductBody;
 import it.auties.whatsapp.model.product.ProductFooter;
 import it.auties.whatsapp.model.product.ProductHeader;
@@ -32,7 +34,7 @@ import static java.util.Objects.requireNonNullElseGet;
 @Jacksonized
 @EqualsAndHashCode(callSuper = true)
 @Accessors(fluent = true)
-public final class InteractiveMessage extends ContextualMessage implements BusinessMessage {
+public final class InteractiveMessage extends ContextualMessage implements ButtonMessage {
     /**
      * Product header
      */
@@ -155,6 +157,16 @@ public final class InteractiveMessage extends ContextualMessage implements Busin
         if (nativeFlowContent != null)
             return ContentType.NATIVE_FLOW_MESSAGE;
         return ContentType.NONE;
+    }
+
+    @Override
+    public MessageType type() {
+        return MessageType.INTERACTIVE;
+    }
+
+    @Override
+    public MessageCategory category() {
+        return MessageCategory.STANDARD;
     }
 
     /**

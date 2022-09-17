@@ -18,10 +18,10 @@ import it.auties.whatsapp.model.contact.ContactCard;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.message.business.ButtonsMessage;
-import it.auties.whatsapp.model.message.business.InteractiveMessage;
-import it.auties.whatsapp.model.message.business.ListMessage;
-import it.auties.whatsapp.model.message.business.TemplateMessage;
+import it.auties.whatsapp.model.message.button.ButtonsMessage;
+import it.auties.whatsapp.model.message.standard.InteractiveMessage;
+import it.auties.whatsapp.model.message.button.ListMessage;
+import it.auties.whatsapp.model.message.button.TemplateMessage;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.standard.*;
@@ -443,13 +443,17 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(28)
     public void testButtonsMessage() {
+        if(group == null){
+            testGroupCreation();
+        }
+
         log("Sending buttons...");
         var emptyButtons = ButtonsMessage.newButtonsWithoutHeaderMessageBuilder()
                 .body("A nice body")
                 .footer("A nice footer")
                 .buttons(createButtons())
                 .build();
-        api.sendMessage(contact, emptyButtons)
+        api.sendMessage(group, emptyButtons)
                 .join();
 
         var textButtons = ButtonsMessage.newButtonsWithTextHeaderMessageBuilder()
@@ -458,7 +462,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
                 .footer("A nice footer")
                 .buttons(createButtons())
                 .build();
-        api.sendMessage(contact, textButtons)
+        api.sendMessage(group, textButtons)
                 .join();
 
         var document = DocumentMessage.newDocumentMessageBuilder()
@@ -475,7 +479,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
                 .footer("A nice footer")
                 .buttons(createButtons())
                 .build();
-        api.sendMessage(contact, documentButtons)
+        api.sendMessage(group, documentButtons)
                 .join();
 
         var image = ImageMessage.newImageMessageBuilder()
@@ -491,7 +495,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
                 .footer("A nice footer")
                 .buttons(createButtons())
                 .build();
-        api.sendMessage(contact, imageButtons)
+        api.sendMessage(group, imageButtons)
                 .join();
 
         log("Sent buttons");
@@ -810,7 +814,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
                 .stream()
                 .map(Chat::messages)
                 .flatMap(SortedMessageList::stream)
-                .filter(info -> !info.fromMe() && info.message().isMedia())
+                .filter(info -> !info.fromMe() && info.message().content() instanceof MediaMessage)
                 .limit(10)
                 .peek(e -> System.out.println(e.id()))
                 .map(MessageInfo::message)

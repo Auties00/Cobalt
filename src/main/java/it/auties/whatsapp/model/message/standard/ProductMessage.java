@@ -1,9 +1,11 @@
-package it.auties.whatsapp.model.message.business;
+package it.auties.whatsapp.model.message.standard;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.message.model.BusinessMessage;
+import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
+import it.auties.whatsapp.model.message.model.MessageCategory;
+import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.product.ProductCatalog;
 import it.auties.whatsapp.model.product.ProductSnapshot;
 import lombok.AllArgsConstructor;
@@ -27,7 +29,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @SuperBuilder(builderMethodName = "newProductMessageBuilder")
 @Jacksonized
 @Accessors(fluent = true)
-public final class ProductMessage extends ContextualMessage implements BusinessMessage {
+public final class ProductMessage extends ContextualMessage implements ButtonMessage {
     /**
      * The product that this message wraps
      */
@@ -57,4 +59,14 @@ public final class ProductMessage extends ContextualMessage implements BusinessM
      */
     @ProtobufProperty(index = 6, type = STRING)
     private String footer;
+
+    @Override
+    public MessageType type() {
+        return MessageType.PRODUCT;
+    }
+
+    @Override
+    public MessageCategory category() {
+        return MessageCategory.STANDARD;
+    }
 }

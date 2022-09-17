@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.ContextInfo;
+import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -91,6 +92,11 @@ public final class PaymentOrderMessage extends ContextInfo implements PaymentMes
      */
     @ProtobufProperty(index = 11, type = STRING)
     private String currency;
+
+    @Override
+    public MessageType type() {
+        return MessageType.PAYMENT_ORDER;
+    }
 
     /**
      * Unsupported, doesn't make much sense

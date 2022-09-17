@@ -16,6 +16,7 @@ import it.auties.whatsapp.model.chat.GroupMetadata;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.device.DeviceSentMessage;
+import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
@@ -521,7 +522,7 @@ class MessageHandler implements JacksonProvider {
         }
 
         if (info.message()
-                .isServer()) {
+                .hasCategory(MessageCategory.SERVER)) {
             return;
         }
 
@@ -547,7 +548,7 @@ class MessageHandler implements JacksonProvider {
 
     @SneakyThrows
     private void handleProtocolMessage(MessageInfo info, ProtocolMessage protocolMessage, boolean peer) {
-        switch (protocolMessage.type()) {
+        switch (protocolMessage.protocolType()) {
             case HISTORY_SYNC_NOTIFICATION -> {
                 var compressed = Medias.download(protocolMessage.historySyncNotification())
                         .orElseThrow(() -> new IllegalArgumentException("Cannot download history sync"));

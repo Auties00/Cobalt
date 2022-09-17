@@ -1,4 +1,4 @@
-package it.auties.whatsapp.model.message.business;
+package it.auties.whatsapp.model.message.button;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.api.model.ProtobufMessage;
@@ -7,8 +7,9 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.button.Button;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.message.model.BusinessMessage;
+import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
+import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import it.auties.whatsapp.model.message.standard.LocationMessage;
@@ -35,7 +36,7 @@ import static java.util.Objects.requireNonNullElseGet;
 @Jacksonized
 @Builder(builderMethodName = "newRawButtonsMessageBuilder")
 @Accessors(fluent = true)
-public final class ButtonsMessage extends ContextualMessage implements BusinessMessage {
+public final class ButtonsMessage extends ContextualMessage implements ButtonMessage {
     /**
      * The text attached to this message
      */
@@ -210,6 +211,11 @@ public final class ButtonsMessage extends ContextualMessage implements BusinessM
                 .footer(footer)
                 .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .buttons(requireNonNullElseGet(buttons, List::of));
+    }
+
+    @Override
+    public MessageType type() {
+        return MessageType.BUTTONS;
     }
 
     /**

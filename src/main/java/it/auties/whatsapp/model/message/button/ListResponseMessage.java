@@ -1,9 +1,10 @@
-package it.auties.whatsapp.model.message.business;
+package it.auties.whatsapp.model.message.button;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.button.SingleSelectReplyButton;
 import it.auties.whatsapp.model.info.ContextInfo;
-import it.auties.whatsapp.model.message.model.BusinessMessage;
+import it.auties.whatsapp.model.message.model.ButtonMessage;
+import it.auties.whatsapp.model.message.model.MessageType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,7 +22,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Builder(builderMethodName = "newListResponseMessageBuilder")
 @Jacksonized
 @Accessors(fluent = true)
-public final class ListResponseMessage implements BusinessMessage {
+public final class ListResponseMessage implements ButtonMessage {
     /**
      * The title of this message
      */
@@ -46,4 +47,9 @@ public final class ListResponseMessage implements BusinessMessage {
      */
     @ProtobufProperty(index = 5, type = STRING)
     private String description;
+
+    @Override
+    public MessageType type() {
+        return MessageType.LIST_RESPONSE;
+    }
 }

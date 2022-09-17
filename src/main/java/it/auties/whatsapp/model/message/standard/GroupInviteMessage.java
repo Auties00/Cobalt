@@ -6,6 +6,8 @@ import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
+import it.auties.whatsapp.model.message.model.MessageCategory;
+import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.util.Clock;
 import lombok.*;
 import lombok.Builder.Default;
@@ -79,7 +81,17 @@ public final class GroupInviteMessage extends ContextualMessage {
      */
     @ProtobufProperty(index = 8, type = MESSAGE, concreteType = Type.class)
     @Default
-    private Type type = Type.DEFAULT;
+    private Type groupType = Type.DEFAULT;
+
+    @Override
+    public MessageType type() {
+        return MessageType.GROUP_INVITE;
+    }
+
+    @Override
+    public MessageCategory category() {
+        return MessageCategory.STANDARD;
+    }
 
     /**
      * Returns the expiration of this invite

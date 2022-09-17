@@ -3,7 +3,7 @@ package it.auties.whatsapp.model.button;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
-import it.auties.whatsapp.model.message.business.HighlyStructuredMessage;
+import it.auties.whatsapp.model.message.button.HighlyStructuredMessage;
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import it.auties.whatsapp.model.message.standard.LocationMessage;

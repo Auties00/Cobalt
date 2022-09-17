@@ -152,7 +152,7 @@ public final class DocumentMessage extends MediaMessage {
      * @return {@link MediaMessageType#DOCUMENT}
      */
     @Override
-    public MediaMessageType type() {
+    public MediaMessageType mediaType() {
         return MediaMessageType.DOCUMENT;
     }
 }

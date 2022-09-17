@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.message.payment;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,4 +28,9 @@ public final class CancelPaymentRequestMessage implements PaymentMessage {
      */
     @ProtobufProperty(index = 1, type = MESSAGE, concreteType = MessageKey.class)
     private MessageKey key;
+
+    @Override
+    public MessageType type() {
+        return MessageType.CANCEL_PAYMENT_REQUEST;
+    }
 }

@@ -12,7 +12,10 @@ import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.ContextInfo;
+import it.auties.whatsapp.model.info.MessageContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.message.button.ButtonsMessage;
+import it.auties.whatsapp.model.message.button.ListMessage;
 import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.standard.ReactionMessage;
@@ -23,6 +26,7 @@ import it.auties.whatsapp.model.response.HasWhatsappResponse;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.model.sync.ActionMessageRangeSync;
 import it.auties.whatsapp.model.sync.ActionValueSync;
+import it.auties.whatsapp.model.sync.DeviceListMetadata;
 import it.auties.whatsapp.model.sync.PatchRequest;
 import it.auties.whatsapp.socket.Socket;
 import it.auties.whatsapp.util.*;
@@ -866,7 +870,7 @@ public class Whatsapp {
         Validate.isTrue(!quotedMessage.message()
                 .isEmpty(), "Cannot quote an empty message");
         Validate.isTrue(!quotedMessage.message()
-                .isServer(), "Cannot quote a server message");
+                .hasCategory(MessageCategory.SERVER), "Cannot quote a server message");
         return sendMessage(chat, message, ContextInfo.of(quotedMessage));
     }
 
@@ -943,8 +947,24 @@ public class Whatsapp {
                                 .toUserJid());
         createTextPreview(info);
         parseEphemeralMessage(info);
+        fixButtons(info);
         return socket.sendMessage(info)
                 .thenApplyAsync(ignored -> info);
+    }
+
+    // Credit to Baileys
+    // https://github.com/adiwajshing/Baileys/blob/f0bdb12e56cea8b0bfbb0dff37c01690274e3e31/src/Utils/messages.ts#L781
+    private void fixButtons(MessageInfo info){
+        if(!(info.message().content() instanceof ButtonsMessage) && !(info.message().content() instanceof ListMessage)){
+            return;
+        }
+        
+        var context = MessageContextInfo.builder()
+                .deviceListMetadataVersion(2)
+                .deviceListMetadata(DeviceListMetadata.of())
+                .build();
+        info.message(info.message().toViewOnce());
+        info.message().deviceInfo(context);
     }
 
     private void createTextPreview(MessageInfo info) {
@@ -984,8 +1004,7 @@ public class Whatsapp {
     }
 
     private void parseEphemeralMessage(MessageInfo info) {
-        if (info.message()
-                .isServer()) {
+        if (info.message().hasCategory(MessageCategory.SERVER)) {
             return;
         }
 
@@ -1488,7 +1507,7 @@ public class Whatsapp {
                 .server()) {
             case USER, WHATSAPP -> {
                 var message = ProtocolMessage.newProtocolMessageBuilder()
-                        .type(ProtocolMessage.ProtocolMessageType.EPHEMERAL_SETTING)
+                        .protocolType(ProtocolMessage.ProtocolMessageType.EPHEMERAL_SETTING)
                         .ephemeralExpiration(timer.period()
                                 .toSeconds())
                         .build();
@@ -1641,7 +1660,7 @@ public class Whatsapp {
     public CompletableFuture<MessageInfo> delete(@NonNull MessageInfo info, boolean everyone) {
         if (everyone) {
             var message = ProtocolMessage.newProtocolMessageBuilder()
-                    .type(ProtocolMessage.ProtocolMessageType.REVOKE)
+                    .protocolType(ProtocolMessage.ProtocolMessageType.REVOKE)
                     .key(info.key())
                     .build();
             return sendMessage(info.chatJid(), message);

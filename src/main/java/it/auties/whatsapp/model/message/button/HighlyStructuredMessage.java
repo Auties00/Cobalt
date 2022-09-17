@@ -1,8 +1,9 @@
-package it.auties.whatsapp.model.message.business;
+package it.auties.whatsapp.model.message.button;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.business.BusinessLocalizableParameter;
-import it.auties.whatsapp.model.message.model.BusinessMessage;
+import it.auties.whatsapp.model.message.model.ButtonMessage;
+import it.auties.whatsapp.model.message.model.MessageType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -26,7 +27,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Jacksonized
 @Builder(builderMethodName = "newHighlyStructuredMessageBuilder")
 @Accessors(fluent = true)
-public final class HighlyStructuredMessage implements BusinessMessage {
+public final class HighlyStructuredMessage implements ButtonMessage {
     /**
      * Namespace
      */
@@ -80,6 +81,11 @@ public final class HighlyStructuredMessage implements BusinessMessage {
      */
     @ProtobufProperty(index = 9, type = MESSAGE, concreteType = TemplateMessage.class)
     private TemplateMessage templateMessage;
+
+    @Override
+    public MessageType type() {
+        return MessageType.HIGHLY_STRUCTURED;
+    }
 
     public static class HighlyStructuredMessageBuilder {
         public HighlyStructuredMessageBuilder params(List<String> params) {

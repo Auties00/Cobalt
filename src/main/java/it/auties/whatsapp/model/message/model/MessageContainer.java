@@ -4,7 +4,7 @@ import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.info.CallInfo;
 import it.auties.whatsapp.model.info.MessageContextInfo;
-import it.auties.whatsapp.model.message.business.*;
+import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.device.DeviceSentMessage;
 import it.auties.whatsapp.model.message.device.DeviceSyncMessage;
 import it.auties.whatsapp.model.message.payment.*;
@@ -31,7 +31,6 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
  * There are several categories of messages:
  * <ul>
  *     <li>Server messages</li>
- *     <li>Device messages</li>
  *     <li>Button messages</li>
  *     <li>Product messages</li>
  *     <li>Payment messages</li>
@@ -40,7 +39,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
  */
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder(builderMethodName = "newMessageContainer")
+@Builder(builderMethodName = "newMessageContainerBuilder")
 @Jacksonized
 @Accessors(fluent = true)
 public class MessageContainer implements ProtobufMessage {
@@ -173,7 +172,7 @@ public class MessageContainer implements ProtobufMessage {
      * Template button reply message
      */
     @ProtobufProperty(index = 29, type = MESSAGE, concreteType = TemplateReplyMessage.class)
-    private TemplateReplyMessage templateButtonReply;
+    private TemplateReplyMessage templateReply;
 
     /**
      * Product message
@@ -197,7 +196,7 @@ public class MessageContainer implements ProtobufMessage {
      * List message
      */
     @ProtobufProperty(index = 36, type = MESSAGE, concreteType = ListMessage.class)
-    private ListMessage buttonList;
+    private ListMessage list;
 
     /**
      * View once message
@@ -215,7 +214,7 @@ public class MessageContainer implements ProtobufMessage {
      * List response message
      */
     @ProtobufProperty(index = 39, type = MESSAGE, concreteType = ListResponseMessage.class)
-    private ListResponseMessage buttonListResponse;
+    private ListResponseMessage listResponse;
 
     /**
      * Ephemeral message
@@ -269,65 +268,71 @@ public class MessageContainer implements ProtobufMessage {
      * Message context info
      */
     @ProtobufProperty(index = 35, type = MESSAGE, concreteType = MessageContextInfo.class)
-    @Getter
+    @Setter
     private MessageContextInfo deviceInfo;
 
     /**
-     * Constructs a new MessageContainer from a message of any type
+     * Constructs a new MessageContainerBuilder from a message of any type
      *
      * @param message the message that the new container should wrap
      * @param <T>     the type of the message
+     * @return a non-null builder
      */
-    @SuppressWarnings("PatternVariableHidesField")
-    public <T extends Message> MessageContainer(@NonNull T message) {
+    public static <T extends Message> MessageContainerBuilder newMessageContainerBuilder(@NonNull T message) {
+        if(message instanceof DeviceSentMessage deviceSent) {
+            return newMessageContainerBuilder(deviceSent.message().content());
+        }
+
+        var builder = MessageContainer.newMessageContainerBuilder();
         switch (message) {
+            case EmptyMessage ignored -> {}
             case SenderKeyDistributionMessage senderKeyDistribution ->
-                    this.senderKeyDistribution = senderKeyDistribution;
-            case ImageMessage image -> this.image = image;
-            case ContactMessage contact -> this.contact = contact;
-            case LocationMessage location -> this.location = location;
-            case TextMessage text -> this.text = text;
-            case DocumentMessage document -> this.document = document;
-            case AudioMessage audio -> this.audio = audio;
-            case VideoMessage video -> this.video = video;
-            case ProtocolMessage protocol -> this.protocol = protocol;
-            case ContactsArrayMessage contactsArray -> this.contactsArray = contactsArray;
-            case HighlyStructuredMessage highlyStructured -> this.highlyStructured = highlyStructured;
-            case SendPaymentMessage sendPayment -> this.sendPayment = sendPayment;
-            case LiveLocationMessage liveLocation -> this.liveLocation = liveLocation;
-            case RequestPaymentMessage requestPayment -> this.requestPayment = requestPayment;
+                    builder.senderKeyDistribution(senderKeyDistribution);
+            case ImageMessage image -> builder.image(image);
+            case ContactMessage contact -> builder.contact(contact);
+            case LocationMessage location -> builder.location(location);
+            case TextMessage text -> builder.text(text);
+            case DocumentMessage document -> builder.document(document);
+            case AudioMessage audio -> builder.audio(audio);
+            case VideoMessage video -> builder.video(video);
+            case ProtocolMessage protocol -> builder.protocol(protocol);
+            case ContactsArrayMessage contactsArray -> builder.contactsArray(contactsArray);
+            case HighlyStructuredMessage highlyStructured -> builder.highlyStructured(highlyStructured);
+            case SendPaymentMessage sendPayment -> builder.sendPayment(sendPayment);
+            case LiveLocationMessage liveLocation -> builder.liveLocation(liveLocation);
+            case RequestPaymentMessage requestPayment -> builder.requestPayment(requestPayment);
             case DeclinePaymentRequestMessage declinePaymentRequest ->
-                    this.declinePaymentRequest = declinePaymentRequest;
-            case CancelPaymentRequestMessage cancelPaymentRequest -> this.cancelPaymentRequest = cancelPaymentRequest;
-            case TemplateMessage template -> this.template = template;
-            case StickerMessage sticker -> this.sticker = sticker;
-            case GroupInviteMessage groupInvite -> this.groupInvite = groupInvite;
-            case TemplateReplyMessage templateButtonReply -> this.templateButtonReply = templateButtonReply;
-            case ProductMessage product -> this.product = product;
-            case DeviceSentMessage deviceSent -> this.deviceSent = deviceSent;
-            case DeviceSyncMessage deviceSync -> this.deviceSync = deviceSync;
-            case ListMessage buttonsList -> this.buttonList = buttonsList;
-            case PaymentOrderMessage order -> this.order = order;
-            case ListResponseMessage listResponse -> this.buttonListResponse = listResponse;
-            case PaymentInvoiceMessage invoice -> this.invoice = invoice;
-            case ButtonsMessage buttons -> this.buttons = buttons;
-            case ButtonsResponseMessage buttonsResponse -> this.buttonsResponse = buttonsResponse;
-            case PaymentInviteMessage paymentInvite -> this.paymentInvite = paymentInvite;
-            case InteractiveMessage interactive -> this.interactive = interactive;
-            case ReactionMessage reaction -> this.reaction = reaction;
-            case StickerSyncRMRMessage stickerSync -> this.stickerSync = stickerSync;
+                    builder.declinePaymentRequest(declinePaymentRequest);
+            case CancelPaymentRequestMessage cancelPaymentRequest -> builder.cancelPaymentRequest(cancelPaymentRequest);
+            case TemplateMessage template -> builder.template(template);
+            case StickerMessage sticker -> builder.sticker(sticker);
+            case GroupInviteMessage groupInvite -> builder.groupInvite(groupInvite);
+            case TemplateReplyMessage templateButtonReply -> builder.templateReply(templateButtonReply);
+            case ProductMessage product -> builder.product(product);
+            case DeviceSyncMessage deviceSync -> builder.deviceSync(deviceSync);
+            case ListMessage buttonsList -> builder.list(buttonsList);
+            case PaymentOrderMessage order -> builder.order(order);
+            case ListResponseMessage listResponse -> builder.listResponse(listResponse);
+            case PaymentInvoiceMessage invoice -> builder.invoice(invoice);
+            case ButtonsMessage buttons -> builder.buttons(buttons);
+            case ButtonsResponseMessage buttonsResponse -> builder.buttonsResponse(buttonsResponse);
+            case PaymentInviteMessage paymentInvite -> builder.paymentInvite(paymentInvite);
+            case InteractiveMessage interactive -> builder.interactive(interactive);
+            case ReactionMessage reaction -> builder.reaction(reaction);
+            case StickerSyncRMRMessage stickerSync -> builder.stickerSync(stickerSync);
             default -> throw new IllegalStateException("Unsupported message: " + message);
         }
+
+        return builder;
     }
 
     /**
-     * Constructs a new MessageContainer from a message of any type
+     * Constructs a new MessageContainerBuilder
      *
-     * @param message the message that the new container should wrap
-     * @param <T>     the type of the message
+     * @return a non-null builder
      */
-    public static <T extends Message> MessageContainer of(@NonNull T message) {
-        return new MessageContainer(message);
+    public static MessageContainerBuilder newMessageContainerBuilder(){
+        return new MessageContainerBuilder();
     }
 
     /**
@@ -336,8 +341,20 @@ public class MessageContainer implements ProtobufMessage {
      * @param message the text message with no context
      */
     public static MessageContainer of(@NonNull String message) {
-        return MessageContainer.newMessageContainer()
+        return MessageContainer.newMessageContainerBuilder()
                 .text(TextMessage.of(message))
+                .build();
+    }
+
+    /**
+     * Constructs a new MessageContainer from a message of any type
+     *
+     * @param message the message that the new container should wrap
+     * @param <T>     the type of the message
+     * @return a non-null container
+     */
+    public static <T extends Message> MessageContainer of(@NonNull T message) {
+        return newMessageContainerBuilder(message)
                 .build();
     }
 
@@ -348,8 +365,8 @@ public class MessageContainer implements ProtobufMessage {
      * @param <T>     the type of the message
      */
     public static <T extends Message> MessageContainer ofViewOnce(@NonNull T message) {
-        return MessageContainer.newMessageContainer()
-                .viewOnce(FutureMessageContainer.of(MessageContainer.of(message)))
+        return MessageContainer.newMessageContainerBuilder()
+                .viewOnce(FutureMessageContainer.of(message))
                 .build();
     }
 
@@ -360,8 +377,20 @@ public class MessageContainer implements ProtobufMessage {
      * @param <T>     the type of the message
      */
     public static <T extends Message> MessageContainer ofEphemeral(@NonNull T message) {
-        return MessageContainer.newMessageContainer()
-                .ephemeral(FutureMessageContainer.of(MessageContainer.of(message)))
+        return MessageContainer.newMessageContainerBuilder()
+                .ephemeral(FutureMessageContainer.of(message))
+                .build();
+    }
+
+    /**
+     * Constructs a new MessageContainer from a device message.
+     * Unlike {@link MessageContainer#of(Message)} and {@link MessageContainer#newMessageContainerBuilder(Message)} it doesn't unwrap it.
+     *
+     * @param message the text message with no context
+     */
+    public static MessageContainer ofDeviceMessage(@NonNull DeviceSentMessage message) {
+        return MessageContainer.newMessageContainerBuilder()
+                .deviceSent(message)
                 .build();
     }
 
@@ -412,22 +441,22 @@ public class MessageContainer implements ProtobufMessage {
             return sticker;
         if (this.groupInvite != null)
             return groupInvite;
-        if (this.templateButtonReply != null)
-            return templateButtonReply;
+        if (this.templateReply != null)
+            return templateReply;
         if (this.product != null)
             return product;
         if (this.deviceSent != null)
             return deviceSent;
         if (this.deviceSync != null)
             return deviceSync;
-        if (this.buttonList != null)
-            return buttonList;
+        if (this.list != null)
+            return list;
         if (this.viewOnce != null)
             return viewOnce.unbox();
         if (this.order != null)
             return order;
-        if (this.buttonListResponse != null)
-            return buttonListResponse;
+        if (this.listResponse != null)
+            return listResponse;
         if (this.ephemeral != null)
             return ephemeral.unbox();
         if (this.invoice != null)
@@ -477,12 +506,12 @@ public class MessageContainer implements ProtobufMessage {
             return Optional.of(sticker);
         if (this.groupInvite != null)
             return Optional.of(groupInvite);
-        if (this.templateButtonReply != null)
-            return Optional.of(templateButtonReply);
+        if (this.templateReply != null)
+            return Optional.of(templateReply);
         if (this.product != null)
             return Optional.of(product);
-        if (this.buttonList != null)
-            return Optional.of(buttonList);
+        if (this.list != null)
+            return Optional.of(list);
         if (this.invoice != null)
             return Optional.of(invoice);
         if (this.buttons != null)
@@ -497,64 +526,50 @@ public class MessageContainer implements ProtobufMessage {
     }
 
     /**
-     * Returns the type of message that this object wraps
+     * Checks whether the message that this container wraps matches the provided type
      *
-     * @return a non-null enumerated type
+     * @param type the non-null type to check against
+     * @return a boolean
      */
-    public MessageContainer.ContentType type() {
-        return switch (content()) {
-            case null -> ContentType.EMPTY;
-            case DeviceMessage ignored -> ContentType.DEVICE;
-            case PaymentMessage ignored -> ContentType.PAYMENT;
-            case ServerMessage ignored -> ContentType.SERVER;
-            case BusinessMessage ignored -> ContentType.BUSINESS;
-            default -> ContentType.STANDARD;
-        };
+    public boolean hasType(@NonNull MessageType type){
+        return content().type() == type;
     }
 
     /**
-     * Returns whether this container is empty
+     * Checks whether the message that this container wraps matches the provided category
      *
-     * @return true if this container contains no message
+     * @param category the non-null category to check against
+     * @return a boolean
      */
-    public boolean isEmpty() {
-        return type() == ContentType.EMPTY;
+    public boolean hasCategory(@NonNull MessageCategory category){
+        return content().category() == category;
     }
 
     /**
-     * Returns whether this container contains a standard message
+     * Returns the type of the message
      *
-     * @return true if this container contains a standard message
+     * @return a non-null type
      */
-    public boolean isStandard() {
-        return type() == ContentType.STANDARD;
+    public MessageType type() {
+        return ephemeral != null ? MessageType.EPHEMERAL : viewOnce != null ? MessageType.VIEW_ONCE : content().type();
     }
 
     /**
-     * Returns whether this container contains a sever message
+     * Returns the deep type of the message unwrapping ephemeral and view once messages
      *
-     * @return true if this container contains a sever message
+     * @return a non-null type
      */
-    public boolean isServer() {
-        return type() == ContentType.SERVER;
+    public MessageType deepType() {
+        return content().type();
     }
 
     /**
-     * Returns whether this container contains a device message
+     * Returns the category of the message
      *
-     * @return true if this container contains a device message
+     * @return a non-null category
      */
-    public boolean isDevice() {
-        return type() == ContentType.DEVICE;
-    }
-
-    /**
-     * Returns whether this container contains a media message
-     *
-     * @return true if this container contains a media message
-     */
-    public boolean isMedia() {
-        return type() == ContentType.STANDARD && content() instanceof MediaMessage;
+    public MessageCategory category(){
+        return content().category();
     }
 
     /**
@@ -567,12 +582,25 @@ public class MessageContainer implements ProtobufMessage {
     }
 
     /**
+     * Returns the device info, if any is present
+     *
+     * @return a non-null optional
+     */
+    public Optional<MessageContextInfo> deviceInfo() {
+        return Optional.ofNullable(deviceInfo);
+    }
+
+    /**
      * Converts this message to an ephemeral message
      *
      * @return a non-null message container
      */
     public MessageContainer toEphemeral() {
-        return MessageContainer.ofEphemeral(content());
+        return newMessageContainerBuilder()
+                .ephemeral(FutureMessageContainer.of(content()))
+                .call(call)
+                .deviceInfo(deviceInfo)
+                .build();
     }
 
     /**
@@ -581,7 +609,20 @@ public class MessageContainer implements ProtobufMessage {
      * @return a non-null message container
      */
     public MessageContainer toViewOnce() {
-        return MessageContainer.ofViewOnce(content());
+        return newMessageContainerBuilder()
+                .viewOnce(FutureMessageContainer.of(content()))
+                .call(call)
+                .deviceInfo(deviceInfo)
+                .build();
+    }
+
+    /**
+     * Returns whether this container is empty
+     *
+     * @return a boolean
+     */
+    public boolean isEmpty() {
+        return hasCategory(MessageCategory.EMPTY);
     }
 
     /**
@@ -592,40 +633,5 @@ public class MessageContainer implements ProtobufMessage {
     @Override
     public String toString() {
         return Objects.toString(content());
-    }
-
-    /**
-     * The constants of this enumerated type describe the various types of messages that a {@link MessageContainer} can wrap
-     */
-    public enum ContentType {
-        /**
-         * Server message
-         */
-        EMPTY,
-
-        /**
-         * Business message
-         */
-        BUSINESS,
-
-        /**
-         * Device message
-         */
-        DEVICE,
-
-        /**
-         * PAYMENT message
-         */
-        PAYMENT,
-
-        /**
-         * Server message
-         */
-        SERVER,
-
-        /**
-         * Standard message
-         */
-        STANDARD
     }
 }

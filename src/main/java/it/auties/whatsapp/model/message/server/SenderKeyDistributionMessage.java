@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.message.server;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.ServerMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -34,4 +35,9 @@ public final class SenderKeyDistributionMessage implements ServerMessage {
      */
     @ProtobufProperty(index = 2, type = BYTES)
     private byte[] data;
+
+    @Override
+    public MessageType type() {
+        return MessageType.SENDER_KEY_DISTRIBUTION;
+    }
 }

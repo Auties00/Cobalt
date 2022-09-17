@@ -3,6 +3,8 @@ package it.auties.whatsapp.model.message.standard;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
+import it.auties.whatsapp.model.message.model.MessageCategory;
+import it.auties.whatsapp.model.message.model.MessageType;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
@@ -109,6 +111,16 @@ public final class TextMessage extends ContextualMessage {
     @JsonCreator
     public static TextMessage of(String text) {
         return new TextMessage(text);
+    }
+
+    @Override
+    public MessageType type() {
+        return MessageType.TEXT;
+    }
+
+    @Override
+    public MessageCategory category() {
+        return MessageCategory.STANDARD;
     }
 
     /**

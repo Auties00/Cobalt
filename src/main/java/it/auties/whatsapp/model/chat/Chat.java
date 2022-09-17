@@ -10,6 +10,7 @@ import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.SortedMessageList;
@@ -360,7 +361,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     public Optional<MessageInfo> lastStandardMessage() {
         return messages.stream()
                 .filter(info -> !info.message()
-                        .isServer())
+                        .hasCategory(MessageCategory.SERVER))
                 .reduce((first, second) -> second);
     }
 
@@ -383,7 +384,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     public Optional<MessageInfo> lastServerMessage() {
         return messages.stream()
                 .filter(info -> info.message()
-                        .isServer())
+                        .hasCategory(MessageCategory.SERVER))
                 .reduce((first, second) -> second);
     }
 
@@ -417,7 +418,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     public Optional<MessageInfo> firstStandardMessage() {
         return messages.stream()
                 .filter(info -> !info.message()
-                        .isServer())
+                        .hasCategory(MessageCategory.SERVER))
                 .findFirst();
     }
 
@@ -429,7 +430,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     public Optional<MessageInfo> firstServerMessage() {
         return messages.stream()
                 .filter(info -> info.message()
-                        .isServer())
+                        .hasCategory(MessageCategory.SERVER))
                 .findFirst();
     }
 

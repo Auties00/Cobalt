@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.ServerMessage;
 import it.auties.whatsapp.model.sync.*;
 import lombok.*;
@@ -35,7 +36,7 @@ public final class ProtocolMessage implements ServerMessage {
      * The type of this server message
      */
     @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ProtocolMessageType.class)
-    private ProtocolMessageType type;
+    private ProtocolMessageType protocolType;
 
     /**
      * The expiration, that is the endTimeStamp in endTimeStamp after which a message is automatically deleted, of messages in an ephemeral chat.
@@ -81,6 +82,11 @@ public final class ProtocolMessage implements ServerMessage {
      */
     @ProtobufProperty(index = 10, type = MESSAGE, concreteType = AppStateFatalExceptionNotification.class)
     private AppStateFatalExceptionNotification appStateFatalExceptionNotification;
+
+    @Override
+    public MessageType type() {
+        return MessageType.PROTOCOL;
+    }
 
     /**
      * The constants of this enumerated type describe the various type of data that a {@link ProtocolMessage} can wrap

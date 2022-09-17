@@ -5,6 +5,7 @@ import it.auties.protobuf.api.model.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
@@ -14,6 +15,7 @@ import java.util.List;
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
 @AllArgsConstructor
+@NoArgsConstructor(staticName = "of")
 @Data
 @Builder
 @Jacksonized

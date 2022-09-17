@@ -2,7 +2,7 @@ package it.auties.whatsapp.model.button;
 
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
-import it.auties.whatsapp.model.message.business.HighlyStructuredMessage;
+import it.auties.whatsapp.model.message.button.HighlyStructuredMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

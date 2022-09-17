@@ -3,6 +3,7 @@ package it.auties.whatsapp.model.message.payment;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -34,4 +35,9 @@ public final class SendPaymentMessage implements PaymentMessage {
      */
     @ProtobufProperty(index = 3, type = MESSAGE, concreteType = MessageKey.class)
     private MessageKey requestMessageKey;
+
+    @Override
+    public MessageType type() {
+        return MessageType.SEND_PAYMENT;
+    }
 }

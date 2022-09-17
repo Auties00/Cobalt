@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
+import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -113,10 +114,15 @@ public final class PaymentInvoiceMessage extends MediaMessage implements Payment
      * @return a non-null {@link MediaMessageType}
      */
     @Override
-    public MediaMessageType type() {
+    public MediaMessageType mediaType() {
         return type == AttachmentType.IMAGE ?
                 MediaMessageType.IMAGE :
                 MediaMessageType.DOCUMENT;
+    }
+
+    @Override
+    public MessageType type() {
+        return MessageType.PAYMENT_INVOICE;
     }
 
     /**

@@ -238,7 +238,7 @@ public final class VideoMessage extends MediaMessage {
      * @return {@link MediaMessageType#VIDEO}
      */
     @Override
-    public MediaMessageType type() {
+    public MediaMessageType mediaType() {
         return MediaMessageType.VIDEO;
     }
 

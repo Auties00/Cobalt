@@ -14,27 +14,27 @@ public enum MediaMessageType implements ProtobufMessage {
     /**
      * The message is an image
      */
-    IMAGE("image/jpeg"),
+    IMAGE("image/jpeg", MessageType.IMAGE),
 
     /**
      * The message is a document
      */
-    DOCUMENT("application/octet-stream"),
+    DOCUMENT("application/octet-stream", MessageType.DOCUMENT),
 
     /**
      * The message is an audio
      */
-    AUDIO("audio/mpeg"),
+    AUDIO("audio/mpeg", MessageType.AUDIO),
 
     /**
      * The message is a video
      */
-    VIDEO("video/mp4"),
+    VIDEO("video/mp4", MessageType.VIDEO),
 
     /**
      * The message is a sticker
      */
-    STICKER("image/webp");
+    STICKER("image/webp", MessageType.STICKER);
 
     /**
      * The default mime type for this enumerated type.
@@ -42,6 +42,12 @@ public enum MediaMessageType implements ProtobufMessage {
      */
     @Getter
     private final String defaultMimeType;
+
+    /**
+     * The message type for this media
+     */
+    @Getter
+    private final MessageType messageType;
 
     /**
      * Returns the path for an encrypted url

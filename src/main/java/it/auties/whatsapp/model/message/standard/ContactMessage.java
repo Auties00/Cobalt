@@ -3,6 +3,8 @@ package it.auties.whatsapp.model.message.standard;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.contact.ContactCard;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
+import it.auties.whatsapp.model.message.model.MessageCategory;
+import it.auties.whatsapp.model.message.model.MessageType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -35,4 +37,14 @@ public final class ContactMessage extends ContextualMessage {
      */
     @ProtobufProperty(index = 16, type = STRING, concreteType = ContactCard.class, requiresConversion = true)
     private ContactCard vcard;
+
+    @Override
+    public MessageType type() {
+        return MessageType.CONTACT;
+    }
+
+    @Override
+    public MessageCategory category() {
+        return MessageCategory.STANDARD;
+    }
 }

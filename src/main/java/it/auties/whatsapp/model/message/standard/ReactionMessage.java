@@ -2,7 +2,9 @@ package it.auties.whatsapp.model.message.standard;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.Message;
+import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.message.model.MessageType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -43,4 +45,14 @@ public final class ReactionMessage implements Message {
      */
     @ProtobufProperty(index = 4, type = INT64)
     private Long timestamp;
+
+    @Override
+    public MessageType type() {
+        return MessageType.REACTION;
+    }
+
+    @Override
+    public MessageCategory category() {
+        return MessageCategory.STANDARD;
+    }
 }

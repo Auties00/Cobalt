@@ -15,6 +15,10 @@ class FutureMessageContainer implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, concreteType = MessageContainer.class)
     private MessageContainer content;
 
+    protected static FutureMessageContainer of(Message message) {
+        return new FutureMessageContainer(MessageContainer.of(message));
+    }
+
     protected static FutureMessageContainer of(MessageContainer container) {
         return new FutureMessageContainer(container);
     }

@@ -48,7 +48,7 @@ public class QuotedMessage implements MessageMetadataProvider {
             return Optional.empty();
         }
 
-        var id =contextInfo.quotedMessageId()
+        var id = contextInfo.quotedMessageId()
                 .get();
         var chat = contextInfo.quotedMessageChat()
                 .get();

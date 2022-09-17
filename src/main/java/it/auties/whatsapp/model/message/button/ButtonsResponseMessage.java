@@ -1,11 +1,12 @@
-package it.auties.whatsapp.model.message.business;
+package it.auties.whatsapp.model.message.button;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.button.Button;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.message.model.BusinessMessage;
+import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
+import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.util.Validate;
 import lombok.*;
 import lombok.Builder.Default;
@@ -25,7 +26,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Jacksonized
 @Builder(builderMethodName = "newRawButtonsResponseMessageBuilder")
 @Accessors(fluent = true)
-public final class ButtonsResponseMessage extends ContextualMessage implements BusinessMessage {
+public final class ButtonsResponseMessage extends ContextualMessage implements ButtonMessage {
     /**
      * The id of the button that was selected
      */
@@ -63,5 +64,10 @@ public final class ButtonsResponseMessage extends ContextualMessage implements B
                         .content())
                 .contextInfo(ContextInfo.of(quoted))
                 .build();
+    }
+
+    @Override
+    public MessageType type() {
+        return MessageType.BUTTONS_RESPONSE;
     }
 }

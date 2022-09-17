@@ -21,5 +21,5 @@ public final class MessageContextInfo implements Info {
     private DeviceListMetadata deviceListMetadata;
 
     @ProtobufProperty(index = 2, type = INT32)
-    private int deviceListMetadataVersion;
+    private Integer deviceListMetadataVersion;
 }

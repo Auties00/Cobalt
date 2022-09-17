@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.message.payment;
 
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.MessageContainer;
+import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
 import it.auties.whatsapp.model.payment.PaymentBackground;
 import it.auties.whatsapp.model.payment.PaymentMoney;
@@ -67,4 +68,9 @@ public final class RequestPaymentMessage implements PaymentMessage {
      */
     @ProtobufProperty(index = 7, type = MESSAGE, concreteType = PaymentBackground.class)
     private PaymentBackground background;
+
+    @Override
+    public MessageType type() {
+        return MessageType.REQUEST_PAYMENT;
+    }
 }
