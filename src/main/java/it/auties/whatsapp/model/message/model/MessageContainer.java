@@ -316,6 +316,7 @@ public class MessageContainer implements ProtobufMessage {
             case InteractiveMessage interactive -> builder.interactive(interactive);
             case ReactionMessage reaction -> builder.reaction(reaction);
             case StickerSyncRMRMessage stickerSync -> builder.stickerSync(stickerSync);
+            case DeviceSentMessage deviceSent -> builder.deviceSent(deviceSent);
             default -> throw new IllegalStateException("Unsupported message: " + message);
         }
 
