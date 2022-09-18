@@ -111,7 +111,7 @@ class MessageHandler implements JacksonProvider {
         var encodedMessage = BytesHelper.messageToBytes(info.message());
         var deviceMessage = DeviceSentMessage.newDeviceSentMessage(info.chatJid()
                 .toString(), info.message(), null);
-        var encodedDeviceMessage = BytesHelper.messageToBytes(deviceMessage);
+        var encodedDeviceMessage = BytesHelper.messageToBytes(MessageContainer.ofDeviceMessage(deviceMessage));
         var knownDevices = List.of(socket.keys()
                 .companion()
                 .toUserJid(), info.chatJid());
