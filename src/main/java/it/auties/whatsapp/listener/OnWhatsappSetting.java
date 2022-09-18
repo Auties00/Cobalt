@@ -8,6 +8,7 @@ public interface OnWhatsappSetting extends Listener {
     /**
      * Called when {@link Socket} receives a setting change from Whatsapp.
      *
+     * @param whatsapp an instance to the calling api
      * @param setting the setting that was toggled
      */
     @Override

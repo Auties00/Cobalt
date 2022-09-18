@@ -13,6 +13,7 @@ public interface OnWhatsappMessageStatus extends Listener {
      * Otherwise, it should be considered valid only for {@code contact}.
      * If you only need updates regarding conversation, implement {@link Listener ,OnConversationMessageStatus#onMessageStatus(MessageInfo, MessageStatus)}.
      *
+     * @param whatsapp an instance to the calling api
      * @param chat    the chat that triggered a status change
      * @param contact the contact that triggered a status change
      * @param info    the message whose status changed

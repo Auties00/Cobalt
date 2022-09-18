@@ -1,6 +1,19 @@
 package it.auties.whatsapp.model.chat;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.POJONode;
+import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
+import com.fasterxml.jackson.databind.util.TokenBuffer;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
@@ -11,9 +24,11 @@ import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MessageCategory;
+import it.auties.whatsapp.model.sync.ActionMessageRangeSync;
+import it.auties.whatsapp.model.sync.HistorySync;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
+import it.auties.whatsapp.model.sync.SyncActionMessage;
 import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.util.SortedMessageList;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -22,9 +37,12 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
@@ -54,7 +72,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     @Default
     @NonNull
     @JsonManagedReference
-    private SortedMessageList messages = new SortedMessageList();
+    private ArrayList<MessageInfo> messages = new ArrayList<>();
 
     /**
      * The nullable new unique jid for this Chat.
@@ -486,15 +504,35 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     }
 
     public static class ChatBuilder {
-        public ChatBuilder messages(List<HistorySyncMessage> messages) {
-            var value = new SortedMessageList(messages);
-            if (!messages$set) {
-                this.messages$value = value;
+        public ChatBuilder messages(List<MessageInfo> messages) {
+            if (!this.messages$set){
+                this.messages$value = new ArrayList<>();
                 this.messages$set = true;
-                return this;
             }
 
-            this.messages$value.addAll(value);
+            // Kind of abusing the type system of java
+            // If the chat was received from Whatsapp, the actual type of the list is HistorySyncMessage, and it needs to be unwrapped
+            // Though if the message was stored locally it's actually a MessageInfo(unwrapped HistorySyncMessage)
+            // If the type of the messages parameter were to be Object though, Jackson wouldn't be able to deserialize it correctly(would be assumed as a map)
+            // So we need to specify the MessageInfo type so that jackson can use a base type if it's not sure of the content of the list
+            // And loop through the messages as if they were Objects because accessing it in any other way would yield a ClassCastException
+            // I could switch to using a HistorySyncMessage List instead and return a List of MessageInfo through an accessor, but this is very costly as this list might be huge
+            // This looks to be the best approach
+            messages.forEach((Object entry) -> {
+                if (entry instanceof HistorySyncMessage historySyncMessage) {
+                    this.messages$value.add(historySyncMessage.message());
+                    return;
+                }
+
+                if (entry instanceof MessageInfo messageInfo) {
+                    this.messages$value.add(messageInfo);
+                    return;
+                }
+
+                throw new IllegalArgumentException("Unexpected value: " + entry.getClass()
+                        .getName());
+            });
+
             return this;
         }
     }

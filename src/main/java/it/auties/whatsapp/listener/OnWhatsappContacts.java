@@ -9,6 +9,8 @@ public interface OnWhatsappContacts extends Listener {
     /**
      * Called when {@link Socket} receives all the contacts from WhatsappWeb's WebSocket.
      * To access this data use {@link Store#contacts()}.
+     *
+     * @param whatsapp an instance to the calling api
      */
     @Override
     void onContacts(Whatsapp whatsapp);

@@ -3,9 +3,14 @@ package it.auties.whatsapp.ci;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import it.auties.whatsapp.api.ErrorHandler;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.message.standard.TextMessage;
 import it.auties.whatsapp.util.JacksonProvider;
 import org.junit.jupiter.api.Test;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.stream.Collectors;
 
 public class WaitTest {
     @Test
@@ -14,15 +19,11 @@ public class WaitTest {
                 .withErrorHandler(ErrorHandler.toTerminal());
         var whatsapp = Whatsapp.lastConnection(options)
                 .addLoggedInListener(() -> System.out.println("Connected"))
-                .addNodeReceivedListener(incoming -> System.out.printf("Received node %s%n", incoming))
-                .addNewMessageListener(message -> {
-                    try {
-                        System.out.println(JacksonProvider.JSON.writeValueAsString(message));
-                    } catch (JsonProcessingException e) {
-                        throw new RuntimeException(e);
-                    }
+                .addChatsListener((api) -> System.out.println("Received " +  api.store().chats().size() + " chats"))
+                .addContactsListener((api) -> System.out.println("Received " +  api.store().contacts().size() + " contacts"))
+                .addChatMessagesListener((chat, complete) -> {
+                        System.out.println(chat.name() + " > " +  chat.messages().size());
                 })
-                .addNodeSentListener(outgoing -> System.out.printf("Sent node %s%n", outgoing))
                 .connect()
                 .join();
 

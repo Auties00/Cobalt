@@ -179,7 +179,7 @@ public final class Store implements Controller<Store> {
      * @return a non-null instance of WhatsappStore
      */
     public static Store of(int id, boolean useDefaultSerializer) {
-        var preferences = Preferences.of("%s/store.json", id);
+        var preferences = Preferences.of("%s/store.gzip", id);
         return Optional.ofNullable(preferences.readJson(Store.class))
                 .map(store -> store.useDefaultSerializer(useDefaultSerializer))
                 .orElseGet(() -> random(id, useDefaultSerializer));
@@ -354,12 +354,12 @@ public final class Store implements Controller<Store> {
         chat.messages()
                 .forEach(this::attribute);
         var oldChat = chats.get(chat.jid());
-        if(oldChat != null) {
+        if(oldChat != null && !oldChat.messages().isEmpty()){
             chat.messages()
                     .addAll(oldChat.messages());
         }
 
-        if(chat.hasName() && findContactByJid(chat.jid()).isEmpty()){
+        if(chat.hasName() && chat.jid().hasServer(ContactJid.Server.WHATSAPP) && findContactByJid(chat.jid()).isEmpty()){
             var contact = Contact.builder()
                     .jid(chat.jid())
                     .fullName(chat.name())
@@ -590,6 +590,6 @@ public final class Store implements Controller<Store> {
 
     @Override
     public Preferences preferences() {
-        return Preferences.of("%s/store.json", id);
+        return Preferences.of("%s/store.gzip", id);
     }
 }

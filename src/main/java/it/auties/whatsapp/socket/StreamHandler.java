@@ -5,7 +5,8 @@ import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.api.SocketEvent;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.crypto.Hmac;
-import it.auties.whatsapp.listener.Listener;
+import it.auties.whatsapp.exception.ErroneousNodeException;
+import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
@@ -324,10 +325,8 @@ class StreamHandler implements JacksonProvider {
             return;
         }
 
-        socket.store()
-                .invokeListeners(Listener::onChats);
-        socket.store()
-                .invokeListeners(Listener::onContacts);
+        socket.onChats();
+        socket.onContacts();
         socket.pullInitialPatches();
     }
 
@@ -528,5 +527,13 @@ class StreamHandler implements JacksonProvider {
                 .orElseThrow(() -> new NoSuchElementException("Missing companion"));
         socket.keys()
                 .companion(companion);
+    }
+
+    public void dispose() {
+        if (pingService == null) {
+            return;
+        }
+
+        pingService.shutdownNow();
     }
 }

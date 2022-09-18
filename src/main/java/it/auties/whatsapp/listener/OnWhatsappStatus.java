@@ -8,6 +8,8 @@ public interface OnWhatsappStatus extends Listener {
     /**
      * Called when {@link Socket} receives all the status updated from WhatsappWeb's Socket.
      * To access this data use {@link Store#status()}.
+     *
+     * @param whatsapp an instance to the calling api
      */
     @Override
     void onStatus(Whatsapp whatsapp);

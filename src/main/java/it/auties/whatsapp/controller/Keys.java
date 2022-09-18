@@ -184,7 +184,7 @@ public final class Keys implements Controller<Keys> {
      * @return a non-null instance of WhatsappKeys
      */
     public static Keys of(int id, boolean useDefaultSerializer) {
-        var preferences = Preferences.of("%s/keys.json", id);
+        var preferences = Preferences.of("%s/keys.gzip", id);
         return Optional.ofNullable(preferences.readJson(Keys.class))
                 .map(store -> store.useDefaultSerializer(useDefaultSerializer))
                 .orElseGet(() -> random(id, useDefaultSerializer));
@@ -422,7 +422,7 @@ public final class Keys implements Controller<Keys> {
 
     @Override
     public Preferences preferences() {
-        return Preferences.of("%s/keys.json", id);
+        return Preferences.of("%s/keys.gzip", id);
     }
 
     /**

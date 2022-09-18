@@ -2,7 +2,6 @@ package it.auties.whatsapp.socket;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 import it.auties.whatsapp.crypto.GroupBuilder;
 import it.auties.whatsapp.crypto.GroupCipher;
@@ -56,33 +55,23 @@ class MessageHandler implements JacksonProvider {
     private final Socket socket;
     private final Cache<ContactJid, GroupMetadata> groupsCache;
     private final Cache<String, List<ContactJid>> devicesCache;
-    private final Cache<Chat, Chat> historyCache;
+    private final Set<Chat> historyCache;
+    private boolean isReadyForContacts;
     private final Semaphore lock;
 
     protected MessageHandler(Socket socket) {
         this.socket = socket;
-        this.groupsCache = createCache(Duration.ofMinutes(5), null);
-        this.devicesCache = createCache(Duration.ofMinutes(5), null);
-        this.historyCache = createCache(Duration.ofMinutes(1), this::onChatReady);
+        this.groupsCache = createCache(Duration.ofMinutes(5));
+        this.devicesCache = createCache(Duration.ofMinutes(5));
+        this.historyCache = new HashSet<>();
         this.lock = new Semaphore(1);
     }
 
-    private void onChatReady(Chat key, Chat value, RemovalCause cause) {
-        if (cause != RemovalCause.EXPIRED) {
-            return;
-        }
 
-        socket.onChatRecentMessages(key, true);
-    }
-
-    private <K, V> Cache<K, V> createCache(Duration duration, RemovalListener<K, V> removalListener) {
-        var builder = Caffeine.newBuilder()
-                .expireAfterWrite(duration);
-        if (removalListener != null) {
-            builder.removalListener(removalListener);
-        }
-
-        return builder.build();
+    private <K, V> Cache<K, V> createCache(Duration duration) {
+        return Caffeine.newBuilder()
+                .expireAfterWrite(duration)
+                .build();
     }
 
     @SafeVarargs
@@ -555,34 +544,37 @@ class MessageHandler implements JacksonProvider {
                 var decompressed = BytesHelper.deflate(compressed);
                 var history = PROTOBUF.readMessage(decompressed, HistorySync.class);
                 switch (history.syncType()) {
-                    case INITIAL_BOOTSTRAP -> {
-                        history.conversations()
-                                .forEach(this::addChatToHistory);
-                        socket.store()
-                                .hasSnapshot(true);
-                        socket.store()
-                                .invokeListeners(Listener::onChats);
-                    }
-
-                    case FULL -> history.conversations()
-                            .forEach(this::addChatToHistory);
-
                     case INITIAL_STATUS_V3 -> {
                         history.statusV3Messages()
                                 .forEach(socket.store()::addStatus);
-                        socket.store()
-                                .invokeListeners(Listener::onStatus);
+                        socket.onStatus();
                     }
 
-                    case RECENT -> history.conversations()
-                            .forEach(this::handleRecentMessage);
+                   case INITIAL_BOOTSTRAP -> {
+                       historyCache.addAll(history.conversations());
+                       history.conversations()
+                               .forEach(socket.store()::addChat);
+                       socket.store()
+                               .hasSnapshot(true);
+                       socket.onChats();
+                       if(isReadyForContacts){
+                           socket.onContacts();
+                       }
+
+                       this.isReadyForContacts = true;
+                    }
 
                     case PUSH_NAME -> {
                         history.pushNames()
                                 .forEach(this::handNewPushName);
-                        socket.store()
-                                .invokeListeners(Listener::onContacts);
+                        if(isReadyForContacts){
+                            socket.onContacts();
+                        }
+
+                        this.isReadyForContacts = true;
                     }
+
+                    case RECENT, FULL ->  handleRecentMessagesListener(history);
 
                     case null -> {}
                 }
@@ -630,10 +622,13 @@ class MessageHandler implements JacksonProvider {
         socket.sendSyncReceipt(info, "peer_msg");
     }
 
-    private void addChatToHistory(Chat chat) {
-        socket.store()
-                .addChat(chat);
-        historyCache.put(chat, chat);
+    private void handleRecentMessagesListener(HistorySync history) {
+        history.conversations()
+                .forEach(socket.store()::addChat);
+        historyCache.stream()
+                .filter(cached -> !history.conversations().contains(cached))
+                .forEach(chat -> socket.onChatRecentMessages(chat, true));
+        historyCache.removeIf(entry -> !history.conversations().contains(entry));
     }
 
     private void handNewPushName(PushName pushName) {
@@ -647,18 +642,10 @@ class MessageHandler implements JacksonProvider {
     }
 
     private void handleRecentMessage(Chat recent) {
-        socket.store()
+        var serializedChat = socket.store()
                 .findChatByJid(recent.jid())
-                .ifPresentOrElse(knownChat -> {
-                    // TODO: 30/06/2022 merge chats if needed
-                    socket.onChatRecentMessages(knownChat, false);
-                    historyCache.put(knownChat, knownChat);
-                }, () -> {
-                    socket.store()
-                            .addChat(recent);
-                    socket.onChatRecentMessages(recent, false);
-                    historyCache.put(recent, recent);
-                });
+                .orElseGet(() -> socket.store().addChat(recent));
+        socket.onChatRecentMessages(serializedChat, false);
     }
 
     @SafeVarargs

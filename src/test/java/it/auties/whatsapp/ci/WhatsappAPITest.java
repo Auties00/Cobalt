@@ -27,7 +27,6 @@ import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.JacksonProvider;
-import it.auties.whatsapp.util.SortedMessageList;
 import it.auties.whatsapp.utils.ConfigUtils;
 import it.auties.whatsapp.utils.MediaUtils;
 import org.junit.jupiter.api.*;
@@ -813,7 +812,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
                 .chats()
                 .stream()
                 .map(Chat::messages)
-                .flatMap(SortedMessageList::stream)
+                .flatMap(List::stream)
                 .filter(info -> !info.fromMe() && info.message().content() instanceof MediaMessage)
                 .limit(10)
                 .peek(e -> System.out.println(e.id()))

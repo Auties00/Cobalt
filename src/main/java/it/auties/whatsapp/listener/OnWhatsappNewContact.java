@@ -8,6 +8,7 @@ public interface OnWhatsappNewContact extends Listener {
     /**
      * Called when {@link Socket} receives a new contact
      *
+     * @param whatsapp an instance to the calling api
      * @param contact the new contact
      */
     @Override

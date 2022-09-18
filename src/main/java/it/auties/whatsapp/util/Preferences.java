@@ -6,7 +6,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -16,6 +19,8 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 @RequiredArgsConstructor(staticName = "of")
 @Accessors(fluent = true)
@@ -80,7 +85,13 @@ public final class Preferences implements JacksonProvider {
             return Optional.empty();
         }
 
-        return Optional.of(Objects.requireNonNullElseGet(cache, this::readInternal));
+        if(cache == null){
+            var input = Files.readAllBytes(file);
+            var stream = new GZIPInputStream(new ByteArrayInputStream(input));
+            this.cache = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+        }
+
+        return Optional.of(cache);
     }
 
     @SneakyThrows
@@ -91,12 +102,7 @@ public final class Preferences implements JacksonProvider {
                 JSON.readValue(json.get(), clazz);
     }
 
-    @SneakyThrows
-    private String readInternal() {
-        return this.cache = Files.readString(file);
-    }
-
-    public synchronized void writeJson(Object input, boolean async) {
+    public void writeJson(Object input, boolean async) {
         if (!async) {
             writeObject(input);
             return;
@@ -123,7 +129,11 @@ public final class Preferences implements JacksonProvider {
     private void writeObject(Object input) {
         try {
             Files.createDirectories(file.getParent());
-            Files.writeString(file, JSON.writerWithDefaultPrettyPrinter().writeValueAsString(input), StandardOpenOption.CREATE,
+            var out = new ByteArrayOutputStream();
+            GZIPOutputStream gzip = new GZIPOutputStream(out);
+            gzip.write(JSON.writeValueAsBytes(input));
+            gzip.close();
+            Files.write(file, out.toByteArray(), StandardOpenOption.CREATE,
                     StandardOpenOption.TRUNCATE_EXISTING);
         } catch (IOException exception) {
             throw new RuntimeException("Cannot write object", exception);

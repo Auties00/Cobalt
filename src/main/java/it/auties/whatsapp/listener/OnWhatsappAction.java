@@ -8,6 +8,7 @@ public interface OnWhatsappAction extends Listener {
     /**
      * Called when {@link Socket} receives an sync from Whatsapp.
      *
+     * @param whatsapp an instance to the calling api
      * @param action the sync that was executed
      */
     @Override

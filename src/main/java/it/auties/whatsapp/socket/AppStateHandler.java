@@ -5,6 +5,7 @@ import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.crypto.AesCbc;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.LTHash;
+import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatMute;
@@ -352,7 +353,7 @@ class AppStateHandler implements JacksonProvider {
                 case ContactAction contactAction -> updateName(targetContact.orElseGet(() -> socket.createContact(jid)),
                         targetChat.orElseGet(() -> socket.createChat(jid)), contactAction);
                 case DeleteChatAction ignored -> targetChat.map(Chat::messages)
-                        .ifPresent(SortedMessageList::clear);
+                        .ifPresent(List::clear);
                 case DeleteMessageForMeAction ignored ->
                         targetMessage.ifPresent(message -> targetChat.ifPresent(chat -> deleteMessage(message, chat)));
                 case MarkChatAsReadAction markAction -> targetChat.ifPresent(chat -> chat.unreadMessages(

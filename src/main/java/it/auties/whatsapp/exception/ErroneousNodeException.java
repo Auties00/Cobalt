@@ -1,4 +1,4 @@
-package it.auties.whatsapp.util;
+package it.auties.whatsapp.exception;
 
 import it.auties.whatsapp.model.request.Node;
 import lombok.AllArgsConstructor;

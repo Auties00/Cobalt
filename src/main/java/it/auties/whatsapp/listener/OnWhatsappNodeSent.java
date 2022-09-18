@@ -8,6 +8,7 @@ public interface OnWhatsappNodeSent extends Listener {
     /**
      * Called when {@link Socket} sends a node to Whatsapp
      *
+     * @param whatsapp an instance to the calling api
      * @param outgoing the non-null node that was just sent
      */
     @Override

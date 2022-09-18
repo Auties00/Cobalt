@@ -1,8 +1,8 @@
 package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.api.ErrorHandler.Location;
-import it.auties.whatsapp.util.Exceptions;
-import it.auties.whatsapp.util.HmacValidationException;
+import it.auties.whatsapp.exception.Exceptions;
+import it.auties.whatsapp.exception.HmacValidationException;
 
 import java.lang.System.Logger.Level;
 import java.util.function.BiConsumer;

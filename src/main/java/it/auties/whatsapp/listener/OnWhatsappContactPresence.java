@@ -10,6 +10,7 @@ public interface OnWhatsappContactPresence extends Listener {
     /**
      * Called when {@link Socket} receives an update regarding the presence of a contact
      *
+     * @param whatsapp an instance to the calling api
      * @param chat    the chat that this update regards
      * @param contact the contact that this update regards
      * @param status  the new status of the contact

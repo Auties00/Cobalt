@@ -1786,8 +1786,6 @@ public class Whatsapp {
         return changeBusinessAttribute("email", email);
     }
 
-    // Sent Binary Message: Node[description=iq, attributes={xmlns=w:biz, to=s.whatsapp.net, id=23672.14686-594, type=set}, content=[Node[description=business_profile, attributes={v=3, mutation_type=delta}, content=[Node[description=website, content=[104, 116, 116, 112, 115, 58, 47, 47, 103, 111, 111, 103, 108, 101, 46, 99, 111, 109]], Node[description=website, content=[104, 116, 116, 112, 115, 58, 47, 47, 103, 111, 111, 103, 108, 101, 49, 46, 99, 111, 109]]]]]]
-
     /**
      * Change the categories of this business profile
      *

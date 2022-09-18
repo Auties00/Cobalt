@@ -1,5 +1,6 @@
-package it.auties.whatsapp.util;
+package it.auties.whatsapp.exception;
 
+import it.auties.whatsapp.util.Preferences;
 import lombok.experimental.UtilityClass;
 
 import java.io.PrintWriter;

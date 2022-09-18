@@ -7,7 +7,7 @@ import it.auties.whatsapp.binary.MessageWrapper;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.listener.Listener;
+import it.auties.whatsapp.exception.ErroneousNodeException;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.GroupMetadata;
@@ -43,6 +43,7 @@ import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
 import static java.lang.Runtime.getRuntime;
 import static java.util.Map.of;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 @Accessors(fluent = true)
 @ClientEndpoint(configurator = Socket.OriginPatcher.class)
@@ -105,13 +106,9 @@ public class Socket implements JacksonProvider, SignalSpecification {
     }
 
     private void onShutdown() {
-        if (errorHandler.failure()
-                .get()) {
-            return;
-        }
-
         keys.dispose();
         store.dispose();
+        streamHandler.dispose();
         Preferences.waitAsyncOperations();
         onSocketEvent(SocketEvent.CLOSE);
     }
@@ -137,12 +134,9 @@ public class Socket implements JacksonProvider, SignalSpecification {
         this.store = Store.random(newId, options.defaultSerialization());
         store.listeners()
                 .addAll(oldListeners);
-        store.invokeListeners(listener -> {
-            listener.onDisconnected(whatsapp, DisconnectReason.LOGGED_OUT);
-            listener.onDisconnected(DisconnectReason.LOGGED_OUT);
-        });
+        onDisconnected(DisconnectReason.LOGGED_OUT);
     }
-
+    
     @NonNull
     public Session session() {
         return session;
@@ -239,25 +233,13 @@ public class Socket implements JacksonProvider, SignalSpecification {
         }
 
         if (state == SocketState.CONNECTED) {
-            store.invokeListeners(listener -> listener.onDisconnected(DisconnectReason.RECONNECTING));
+            onDisconnected(DisconnectReason.RECONNECTING);
             disconnect(true);
             return;
         }
 
-        store.invokeListeners(listener -> listener.onDisconnected(DisconnectReason.DISCONNECTED));
-        if (!errorHandler.failure()
-                .get()) {
-            store.dispose();
-            keys.dispose();
-        }
-
-        onSocketEvent(SocketEvent.CLOSE);
-        if (streamHandler.pingService() == null) {
-            return;
-        }
-
-        streamHandler.pingService()
-                .shutdownNow();
+        onDisconnected(DisconnectReason.DISCONNECTED);
+        onShutdown();
     }
 
     @OnError
@@ -522,12 +504,42 @@ public class Socket implements JacksonProvider, SignalSpecification {
         });
     }
 
-    protected void onLoggedIn() {
-        store.invokeListeners(Listener::onLoggedIn);
-        authHandler.future()
-                .complete(null);
+    protected void onDisconnected(DisconnectReason loggedOut) {
+        store.invokeListeners(listener -> {
+            listener.onDisconnected(whatsapp, loggedOut);
+            listener.onDisconnected(loggedOut);
+        });
     }
 
+    protected void onLoggedIn() {
+        store.invokeListeners(listener -> {
+            listener.onLoggedIn(whatsapp);
+            listener.onLoggedIn();
+        });
+        authHandler.future().complete(null);
+    }
+    
+    protected void onChats(){
+        store.invokeListeners(listener -> {
+            listener.onChats(whatsapp);
+            listener.onChats();
+        });
+    }
+
+    protected void onStatus(){
+        store.invokeListeners(listener -> {
+            listener.onStatus(whatsapp);
+            listener.onStatus();
+        });
+    }
+
+    protected void onContacts(){
+        store.invokeListeners(listener -> {
+            listener.onContacts(whatsapp);
+            listener.onContacts();
+        });
+    }
+    
     @SneakyThrows
     protected void awaitReadyState() {
         appStateHandler.latch()
