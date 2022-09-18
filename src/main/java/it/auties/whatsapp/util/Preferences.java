@@ -102,7 +102,7 @@ public final class Preferences implements JacksonProvider {
                 JSON.readValue(json.get(), clazz);
     }
 
-    public void writeJson(Object input, boolean async) {
+    public synchronized void writeJson(Object input, boolean async) {
         if (!async) {
             writeObject(input);
             return;

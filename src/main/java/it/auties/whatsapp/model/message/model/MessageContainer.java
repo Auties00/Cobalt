@@ -279,10 +279,6 @@ public class MessageContainer implements ProtobufMessage {
      * @return a non-null builder
      */
     public static <T extends Message> MessageContainerBuilder newMessageContainerBuilder(@NonNull T message) {
-        if(message instanceof DeviceSentMessage deviceSent) {
-            return newMessageContainerBuilder(deviceSent.message().content());
-        }
-
         var builder = MessageContainer.newMessageContainerBuilder();
         switch (message) {
             case EmptyMessage ignored -> {}
@@ -379,18 +375,6 @@ public class MessageContainer implements ProtobufMessage {
     public static <T extends Message> MessageContainer ofEphemeral(@NonNull T message) {
         return MessageContainer.newMessageContainerBuilder()
                 .ephemeral(FutureMessageContainer.of(message))
-                .build();
-    }
-
-    /**
-     * Constructs a new MessageContainer from a device message.
-     * Unlike {@link MessageContainer#of(Message)} and {@link MessageContainer#newMessageContainerBuilder(Message)} it doesn't unwrap it.
-     *
-     * @param message the text message with no context
-     */
-    public static MessageContainer ofDeviceMessage(@NonNull DeviceSentMessage message) {
-        return MessageContainer.newMessageContainerBuilder()
-                .deviceSent(message)
                 .build();
     }
 
