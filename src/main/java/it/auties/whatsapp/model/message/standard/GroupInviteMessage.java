@@ -55,7 +55,7 @@ public final class GroupInviteMessage extends ContextualMessage {
      * The name of the group that this invite regards
      */
     @ProtobufProperty(index = 4, type = STRING)
-    private String name;
+    private String groupName;
 
     /**
      * The thumbnail of the group that this invite regards encoded as jpeg in an array of bytes

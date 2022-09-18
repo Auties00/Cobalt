@@ -1,6 +1,7 @@
 package it.auties.whatsapp.api;
 
 import it.auties.linkpreview.LinkPreview;
+import it.auties.linkpreview.LinkPreviewResult;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.listener.*;
@@ -18,6 +19,7 @@ import it.auties.whatsapp.model.message.button.ButtonsMessage;
 import it.auties.whatsapp.model.message.button.ListMessage;
 import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
+import it.auties.whatsapp.model.message.standard.GroupInviteMessage;
 import it.auties.whatsapp.model.message.standard.ReactionMessage;
 import it.auties.whatsapp.model.message.standard.TextMessage;
 import it.auties.whatsapp.model.request.Node;
@@ -40,6 +42,7 @@ import lombok.experimental.Accessors;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
@@ -945,7 +948,7 @@ public class Whatsapp {
                         null :
                         info.senderJid()
                                 .toUserJid());
-        createTextPreview(info);
+        createPreview(info);
         parseEphemeralMessage(info);
         fixButtons(info);
         return socket.sendMessage(info)
@@ -967,39 +970,79 @@ public class Whatsapp {
         info.message().deviceInfo(context);
     }
 
-    private void createTextPreview(MessageInfo info) {
-        if (!(info.message()
-                .content() instanceof TextMessage textMessage)) {
-            return;
-        }
+    private void createPreview(MessageInfo info) {
+        switch (info.message().content()){
+            case TextMessage textMessage -> {
+                if (!socket.options()
+                        .automaticTextPreview()) {
+                    return;
+                }
 
-        if (!socket.options()
-                .automaticTextPreview()) {
-            return;
-        }
+                var preview = LinkPreview.createPreview(textMessage.text())
+                        .orElse(null);
+                if (preview == null) {
+                    return;
+                }
 
-        var preview = LinkPreview.createPreview(textMessage.text())
-                .orElse(null);
-        if (preview == null) {
-            return;
-        }
+                var imageUri = preview.images()
+                        .stream()
+                        .findFirst()
+                        .orElse(null);
+                var videoUri = preview.videos()
+                        .stream()
+                        .findFirst()
+                        .orElse(null);
+                textMessage.canonicalUrl(preview.uri().toString());
+                textMessage.matchedText(preview.uri().toString());
+                textMessage.thumbnail(Medias.getPreview(imageUri, videoUri)
+                        .orElse(null));
+                textMessage.description(preview.siteDescription());
+                textMessage.title(preview.title());
+                if(videoUri != null) {
+                    textMessage.previewType(TextMessage.TextMessagePreviewType.VIDEO);
+                }
+            }
 
-        var imageUri = preview.images()
-                .stream()
-                .findFirst()
-                .orElse(null);
-        var videoUri = preview.videos()
-                .stream()
-                .findFirst()
-                .orElse(null);
-        textMessage.canonicalUrl(preview.uri().toString());
-        textMessage.matchedText(preview.uri().toString());
-        textMessage.thumbnail(Medias.getPreview(imageUri, videoUri)
-                .orElse(null));
-        textMessage.description(preview.siteDescription());
-        textMessage.title(preview.title());
-        if(videoUri != null) {
-            textMessage.previewType(TextMessage.TextMessagePreviewType.VIDEO);
+            case GroupInviteMessage inviteMessage -> {
+                if(!(info.message().content() instanceof GroupInviteMessage invite)){
+                    return;
+                }
+
+                Validate.isTrue(invite.code() != null, "Invalid message code");
+                var url = "https://chat.whatsapp.com/%s".formatted(invite.code());
+                var preview = LinkPreview.createPreview(URI.create(url))
+                        .stream()
+                        .map(LinkPreviewResult::images)
+                        .map(Collection::stream)
+                        .map(Stream::findFirst)
+                        .flatMap(Optional::stream)
+                        .findFirst()
+                        .orElse(null);
+                var replacement = TextMessage.newTextMessageBuilder()
+                        .text(invite.caption() != null ? "%s: %s".formatted(invite.caption(), url) : url)
+                        .description("WhatsApp Group Invite")
+                        .title(invite.groupName())
+                        .previewType(TextMessage.TextMessagePreviewType.NONE)
+                        .thumbnail(readGroupThumbnail(preview))
+                        .matchedText(url)
+                        .canonicalUrl(url)
+                        .build();
+                info.message(MessageContainer.of(replacement));
+            }
+
+            default -> {}
+        }
+    }
+
+    public byte[] readGroupThumbnail(URI preview){
+        try {
+            if(preview == null){
+                return null;
+            }
+
+            return preview.toURL().openConnection().getInputStream().readAllBytes();
+        }catch (Throwable throwable){
+            return null;
         }
     }
 
@@ -1159,7 +1202,7 @@ public class Whatsapp {
      * @param chat the target group
      * @return a CompletableFuture
      */
-    public <T extends ContactJidProvider> CompletableFuture<T> revokeInviteCode(@NonNull T chat) {
+    public <T extends ContactJidProvider> CompletableFuture<T> revokeGroupInvite(@NonNull T chat) {
         return socket.sendQuery(chat.toJid(), "set", "w:g2", with("invite"))
                 .thenApplyAsync(ignored -> chat);
     }
@@ -1170,8 +1213,9 @@ public class Whatsapp {
      * @param inviteCode the invite code
      * @return a CompletableFuture
      */
-    public CompletableFuture<Optional<Chat>> acceptInvite(@NonNull String inviteCode) {
-        return socket.sendQuery(ContactJid.GROUP, "set", "w:g2", withAttributes("invite", of("code", inviteCode)))
+    public CompletableFuture<Optional<Chat>> acceptGroupInvite(@NonNull String inviteCode) {
+        return socket.sendQuery(ContactJid.GROUP, "set", "w:g2", withAttributes("invite",
+                        of("code", inviteCode)))
                 .thenApplyAsync(this::parseAcceptInvite);
     }
 

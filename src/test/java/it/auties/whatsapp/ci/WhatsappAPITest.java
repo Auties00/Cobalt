@@ -635,7 +635,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
                 .expiration(ZonedDateTime.now()
                         .plusDays(3)
                         .toEpochSecond())
-                .name(group.user())
+                .groupName(group.user())
                 .build();
         var textResponse = api.sendMessage(contact, invite)
                 .join();
