@@ -86,7 +86,7 @@ There are numerous named constructors that can be used to initiate a connection:
            .id(ThreadLocalRandom.current().nextInt()) // A random unique ID associated with the session
            .autodetectListeners(true) // Marks whether listeners marked with @RegisterListener should be automatically registered
            .defaultSerialization(true) // Whether the default serialization mechanism should be used
-           .automaticTextPreview(true) // Whether link previews should automatically be generated for texts containing links
+           .automaticTextPreview(TextPreviewSetting.ENABLED_WITH_INFERENCE) // Whether link previews should automatically be generated for texts containing links
            .version(new Version(2,2212,7)) // The default version of this client
            .url("wss://web.whatsapp.com/ws") // The URL of WhatsappWeb's Socket
            .description("WhatsappWeb4j") // The name of the service that is displayed in Whatsapp's devices tab

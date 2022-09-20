@@ -50,7 +50,7 @@ public record SignalSignedKeyPair(int id, @NonNull SignalKeyPair keyPair, byte[]
     }
 
     public Node toNode() {
-        return Node.withChildren("skey", Node.with("id", encodedId()), Node.with("value", publicKey()),
-                Node.with("signature", signature()));
+        return Node.ofChildren("skey", Node.of("id", encodedId()), Node.of("value", publicKey()),
+                Node.of("signature", signature()));
     }
 }

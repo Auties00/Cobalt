@@ -34,8 +34,7 @@ public class Handshake {
 
     @SneakyThrows
     public byte[] cipher(byte @NonNull [] bytes, boolean encrypt) {
-        var cyphered = AesGmc.of(cryptoKey, hash.toByteArray(), counter++, encrypt)
-                .encrypt(bytes);
+        var cyphered = AesGmc.cipher(counter++, bytes, cryptoKey.toByteArray(), hash.toByteArray(), encrypt);
         if (!encrypt) {
             updateHash(bytes);
             return cyphered;

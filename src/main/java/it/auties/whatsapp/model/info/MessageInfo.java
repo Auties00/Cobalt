@@ -13,11 +13,14 @@ import it.auties.whatsapp.model.message.standard.LiveLocationMessage;
 import it.auties.whatsapp.model.message.standard.ReactionMessage;
 import it.auties.whatsapp.model.sync.PhotoChange;
 import it.auties.whatsapp.util.Clock;
+import it.auties.whatsapp.util.JacksonProvider;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -33,7 +36,7 @@ import static java.util.Objects.requireNonNullElseGet;
 @Builder(builderMethodName = "newMessageInfo")
 @Jacksonized
 @Accessors(fluent = true)
-public final class MessageInfo implements Info, MessageMetadataProvider {
+public final class MessageInfo implements Info, MessageMetadataProvider, JacksonProvider {
     /**
      * The MessageKey of this message
      */
@@ -366,6 +369,21 @@ public final class MessageInfo implements Info, MessageMetadataProvider {
                 .flatMap(MessageContainer::contentWithContext)
                 .map(ContextualMessage::contextInfo)
                 .flatMap(QuotedMessage::of);
+    }
+
+    /**
+     * Converts this message to a json.
+     * Useful when debugging.
+     *
+     * @return a non-null string
+     */
+    public String toJson(){
+        try {
+            return JSON.writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(this);
+        }catch (IOException exception){
+            throw new UncheckedIOException("Cannot convert message to json", exception);
+        }
     }
 
     /**

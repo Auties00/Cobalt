@@ -18,35 +18,35 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @Accessors(fluent = true)
 public final class ExternalBlobReference implements ProtobufMessage, AttachmentProvider {
     @ProtobufProperty(index = 1, type = BYTES)
-    private byte[] key;
+    private byte[] mediaKey;
 
     @ProtobufProperty(index = 2, type = STRING)
-    private String directPath;
+    private String mediaDirectPath;
 
     @ProtobufProperty(index = 3, type = STRING)
     private String handle;
 
     @ProtobufProperty(index = 4, type = UINT64)
-    private long fileLength;
+    private long mediaSize;
 
     @ProtobufProperty(index = 5, type = BYTES)
-    private byte[] fileSha256;
+    private byte[] mediaSha256;
 
     @ProtobufProperty(index = 6, type = BYTES)
-    private byte[] fileEncSha256;
+    private byte[] mediaEncryptedSha256;
 
     @Override
-    public String url() {
+    public String mediaUrl() {
         return null;
     }
 
     @Override
-    public String name() {
-        return "md-app-state";
+    public AttachmentProvider mediaUrl(String mediaUrl) {
+        return this;
     }
 
     @Override
-    public String keyName() {
+    public String mediaName() {
         return "WhatsApp App State Keys";
     }
 }

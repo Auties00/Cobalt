@@ -1,17 +1,26 @@
 package it.auties.whatsapp.model.message.model;
 
+import it.auties.bytes.Bytes;
+import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.AttachmentProvider;
+import it.auties.whatsapp.model.media.DownloadResult;
 import it.auties.whatsapp.model.message.payment.PaymentInvoiceMessage;
 import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.util.Medias;
+import it.auties.whatsapp.util.Preferences;
+import it.auties.whatsapp.util.Validate;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 
-import java.util.Locale;
-import java.util.Optional;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 /**
  * A model class that represents a message holding media inside
@@ -30,7 +39,7 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
     /**
      * The cached decoded media, by default null
      */
-    private byte[] decodedMedia;
+    private DownloadResult decodedMedia;
 
     @Override
     public MessageType type() {
@@ -39,34 +48,55 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
 
     @Override
     public MessageCategory category() {
-        return MessageCategory.STANDARD;
+        return MessageCategory.MEDIA;
     }
 
     /**
      * Returns the cached decoded media wrapped by this object if available.
      * Otherwise, the encoded media that this object wraps is decoded, cached and returned.
-     * If the media is no longer available on Whatsapp's servers, an empty optional is returned.
+     * The difference between this method and {@link it.auties.whatsapp.api.Whatsapp#downloadMedia(MessageInfo)} is that this method doesn't try to issue a reupload.
      *
-     * @return a non-null optional
+     * @return a non-null result
      */
-    public Optional<byte[]> decodedMedia() {
-        if(decodedMedia == null){
-            this.decodedMedia = Medias.download(this)
-                    .orElse(null);
+    public DownloadResult decodedMedia() {
+        if(decodedMedia == null || decodedMedia.status() != DownloadResult.Status.SUCCESS){
+            this.decodedMedia = Medias.download(this);
         }
 
-        return Optional.ofNullable(decodedMedia);
+        return decodedMedia;
     }
 
     /**
-     * Decodes the encoded media that this object wraps, caches it and returns the decoded media.
-     * If the media is no longer available on Whatsapp's servers, an empty optional is returned.
+     * Saves this media to the internal memory of the host.
+     * Throws an error if the media cannot be downloaded successfully.
      *
-     * @return a non-null optional
+     * @return the non-null path where the file was downloaded
      */
-    public Optional<byte[]> refreshedMedia() {
-        this.decodedMedia = null;
-        return decodedMedia();
+    public Path save(){
+        return Preferences.home()
+                .resolve(".media")
+                .resolve("%s.%s".formatted(Bytes.ofRandom(5).toHex(), mediaType().fileExtension()));
+    }
+
+    /**
+     * Saves this media to the provided path.
+     * Throws an error if the media cannot be downloaded successfully.
+     *
+     * @param path the non-null path where the media should be written.
+     * @return the non-null path where the file was downloaded
+     */
+    public Path save(@NonNull Path path){
+        var result = decodedMedia();
+        Validate.isTrue(result.status() == DownloadResult.Status.SUCCESS,
+                "Cannot save media: %s".formatted(result.status()));
+        try {
+            Files.createDirectories(path.getParent());
+            Files.write(path, result.media().get(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        }catch (IOException exception){
+            throw new UncheckedIOException("Cannot write media to file", exception);
+        }
+
+        return path;
     }
 
     /**
@@ -77,20 +107,14 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
     public abstract MediaMessageType mediaType();
 
     /**
-     * Returns the timestamp, that is the endTimeStamp elapsed since {@link java.time.Instant#EPOCH}, for {@link MediaMessage#key()}
+     * Returns the timestamp, that is the endTimeStamp elapsed since {@link java.time.Instant#EPOCH}, for {@link MediaMessage#mediaKey()}
      *
      * @return an unsigned long
      */
     public abstract long mediaKeyTimestamp();
 
     @Override
-    public String name() {
-        return mediaType().name()
-                .toLowerCase(Locale.ROOT);
-    }
-
-    @Override
-    public String keyName() {
+    public String mediaName() {
         return mediaType().keyName();
     }
 }

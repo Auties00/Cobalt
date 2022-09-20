@@ -18,7 +18,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Accessors(fluent = true)
 public class RecentStickerMetadata implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = STRING)
-    private String directPath;
+    private String mediaDirectPath;
 
     @ProtobufProperty(index = 2, type = STRING)
     private String encodedFileHash;

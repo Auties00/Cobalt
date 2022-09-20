@@ -50,8 +50,7 @@ public class MessageWrapper {
     }
 
     private Node toNode(Bytes encoded, Keys keys) {
-        var plainText = AesGmc.of(keys.readKey(), keys.readCounter(true), false)
-                .encrypt(encoded.toByteArray());
+        var plainText = AesGmc.cipher(keys.readCounter(true), encoded.toByteArray(), keys.readKey().toByteArray(), false);
         return DECODER.decode(plainText);
     }
 }

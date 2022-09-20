@@ -23,7 +23,7 @@ public class PaymentBackground implements ProtobufMessage {
     private String id;
 
     @ProtobufProperty(index = 2, type = UINT64)
-    private long fileLength;
+    private long mediaSize;
 
     @ProtobufProperty(index = 3, type = UINT32)
     private int width;

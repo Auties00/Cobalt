@@ -39,7 +39,7 @@ public final class ImageMessage extends MediaMessage {
      * The upload url of the encoded image that this object wraps
      */
     @ProtobufProperty(index = 1, type = STRING)
-    private String url;
+    private String mediaUrl;
 
     /**
      * The mime type of the image that this object wraps.
@@ -58,13 +58,13 @@ public final class ImageMessage extends MediaMessage {
      * The sha256 of the decoded image that this object wraps
      */
     @ProtobufProperty(index = 4, type = BYTES)
-    private byte[] fileSha256;
+    private byte[] mediaSha256;
 
     /**
      * The unsigned size of the decoded image that this object wraps
      */
     @ProtobufProperty(index = 5, type = UINT64)
-    private long fileLength;
+    private long mediaSize;
 
     /**
      * The unsigned height of the decoded image that this object wraps
@@ -82,13 +82,13 @@ public final class ImageMessage extends MediaMessage {
      * The media key of the image that this object wraps
      */
     @ProtobufProperty(index = 8, type = BYTES)
-    private byte[] key;
+    private byte[] mediaKey;
 
     /**
      * The sha256 of the encoded image that this object wraps
      */
     @ProtobufProperty(index = 9, type = BYTES)
-    private byte[] fileEncSha256;
+    private byte[] mediaEncryptedSha256;
 
     /**
      * Interactive annotations
@@ -100,10 +100,10 @@ public final class ImageMessage extends MediaMessage {
      * The direct path to the encoded image that this object wraps
      */
     @ProtobufProperty(index = 11, type = STRING)
-    private String directPath;
+    private String mediaDirectPath;
 
     /**
-     * The timestamp, that is the endTimeStamp elapsed since {@link java.time.Instant#EPOCH}, for {@link ImageMessage#key()}
+     * The timestamp, that is the endTimeStamp elapsed since {@link java.time.Instant#EPOCH}, for {@link ImageMessage#mediaKey()}
      */
     @ProtobufProperty(index = 12, type = UINT64)
     private long mediaKeyTimestamp;
@@ -174,13 +174,13 @@ public final class ImageMessage extends MediaMessage {
         var dimensions = Medias.getDimensions(media, false);
         var upload = Medias.upload(media, IMAGE, mediaConnection);
         return ImageMessage.newRawImageMessageBuilder()
-                .fileSha256(upload.fileSha256())
-                .fileEncSha256(upload.fileEncSha256())
-                .key(upload.mediaKey())
+                .mediaSha256(upload.fileSha256())
+                .mediaEncryptedSha256(upload.fileEncSha256())
+                .mediaKey(upload.mediaKey())
                 .mediaKeyTimestamp(Clock.now())
-                .url(upload.url())
-                .directPath(upload.directPath())
-                .fileLength(upload.fileLength())
+                .mediaUrl(upload.url())
+                .mediaDirectPath(upload.directPath())
+                .mediaSize(upload.fileLength())
                 .mimetype(requireNonNullElse(mimeType, IMAGE.defaultMimeType()))
                 .caption(caption)
                 .width(dimensions.width())

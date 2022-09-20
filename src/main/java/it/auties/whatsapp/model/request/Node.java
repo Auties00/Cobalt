@@ -23,7 +23,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @param description a non-null String that describes the data that this object holds
      * @return a new node with the above characteristics
      */
-    public static Node with(@NonNull String description) {
+    public static Node of(@NonNull String description) {
         return new Node(description, Attributes.empty(), null);
     }
 
@@ -34,7 +34,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @param content     a nullable object, usually a List of {@link Node}, a {@link String} or a {@link Number}
      * @return a new node with the above characteristics
      */
-    public static Node with(@NonNull String description, Object content) {
+    public static Node of(@NonNull String description, Object content) {
         return new Node(description, Attributes.empty(), content);
     }
 
@@ -46,7 +46,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @param content     a nullable object, usually a List of {@link Node}, a {@link String} or a {@link Number}
      * @return a new node with the above characteristics
      */
-    public static Node with(@NonNull String description, @NonNull Map<String, Object> attributes, Object content) {
+    public static Node of(@NonNull String description, @NonNull Map<String, Object> attributes, Object content) {
         return new Node(description, Attributes.of(attributes), content);
     }
 
@@ -57,7 +57,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @param attributes  a non-null Map that describes the metadata of this object
      * @return a new node with the above characteristics
      */
-    public static Node withAttributes(@NonNull String description, @NonNull Map<String, Object> attributes) {
+    public static Node ofAttributes(@NonNull String description, @NonNull Map<String, Object> attributes) {
         return new Node(description, Attributes.of(attributes), null);
     }
 
@@ -69,8 +69,8 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @param children    the nullable children of this node
      * @return a new node with the above characteristics
      */
-    public static Node withChildren(@NonNull String description, Node... children) {
-        return withChildren(description, Arrays.asList(children));
+    public static Node ofChildren(@NonNull String description, Node... children) {
+        return ofChildren(description, Arrays.asList(children));
     }
 
     /**
@@ -80,7 +80,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @param children    the nullable children of this node
      * @return a new node with the above characteristics
      */
-    public static Node withChildren(@NonNull String description, Collection<Node> children) {
+    public static Node ofChildren(@NonNull String description, Collection<Node> children) {
         return new Node(description, Attributes.empty(), Nodes.orNull(children));
     }
 
@@ -93,8 +93,8 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @param children    the nullable children of this node
      * @return a new node with the above characteristics
      */
-    public static Node withChildren(@NonNull String description, @NonNull Map<String, Object> attributes,
-                                    Collection<Node> children) {
+    public static Node ofChildren(@NonNull String description, @NonNull Map<String, Object> attributes,
+                                  Collection<Node> children) {
         return new Node(description, Attributes.of(attributes), Nodes.orNull(children));
     }
 
@@ -106,9 +106,9 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @param children    the nullable children of this node
      * @return a new node with the above characteristics
      */
-    public static Node withChildren(@NonNull String description, @NonNull Map<String, Object> attributes,
-                                    Node... children) {
-        return withChildren(description, attributes, Arrays.asList(children));
+    public static Node ofChildren(@NonNull String description, @NonNull Map<String, Object> attributes,
+                                  Node... children) {
+        return ofChildren(description, attributes, Arrays.asList(children));
     }
 
     /**
@@ -183,6 +183,16 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
     public boolean hasNode(String description) {
         return children().stream()
                 .anyMatch(node -> Objects.equals(node.description(), description));
+    }
+
+    /**
+     * Checks whether this node's description is equal to the one provided
+     *
+     * @param description the non-null description to check against
+     * @return a boolean
+     */
+    public boolean hasDescription(@NonNull String description){
+        return Objects.equals(description(), description);
     }
 
     /**

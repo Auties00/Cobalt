@@ -13,6 +13,7 @@ import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.request.Node;
+import it.auties.whatsapp.model.request.NodeHandler;
 import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.ConcurrentSet;
@@ -100,6 +101,14 @@ public final class Store implements Controller<Store> {
     private ConcurrentLinkedDeque<Request> pendingRequests = new ConcurrentLinkedDeque<>();
 
     /**
+     * The non-null list of all the predicates awaiting a result
+     */
+    @NonNull
+    @JsonIgnore
+    @Default
+    private ConcurrentLinkedDeque<NodeHandler> pendingHandlers = new ConcurrentLinkedDeque<>();
+
+    /**
      * The non-null list of listeners
      */
     @NonNull
@@ -160,7 +169,7 @@ public final class Store implements Controller<Store> {
      *
      * @param id the unsigned jid of this store
      * @param useDefaultSerializer whether the default serializer should be used
-     * @return a non-null instance of WhatsappStore
+     * @return a non-null store
      */
     public static Store random(int id, boolean useDefaultSerializer) {
         var result = Store.builder()
@@ -176,7 +185,7 @@ public final class Store implements Controller<Store> {
      *
      * @param id the jid of this session
      * @param useDefaultSerializer whether the default serializer should be used
-     * @return a non-null instance of WhatsappStore
+     * @return a non-null store
      */
     public static Store of(int id, boolean useDefaultSerializer) {
         var preferences = Preferences.of("%s/store.gzip", id);
@@ -189,7 +198,7 @@ public final class Store implements Controller<Store> {
      * Queries the first store whose id is equal to {@code id}
      *
      * @param id the id to search
-     * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional
+     * @return a non-null optional
      */
     public static Optional<Store> findStoreById(int id) {
         return Collections.synchronizedSet(stores)
@@ -202,7 +211,7 @@ public final class Store implements Controller<Store> {
      * Queries the first contact whose jid is equal to {@code jid}
      *
      * @param jid the jid to search
-     * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional
+     * @return a non-null optional
      */
     public Optional<Contact> findContactByJid(ContactJidProvider jid) {
         return jid == null ?
@@ -219,7 +228,7 @@ public final class Store implements Controller<Store> {
      * Queries the first contact whose name is equal to {@code name}
      *
      * @param name the name to search
-     * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional
+     * @return a non-null optional
      */
     public Optional<Contact> findContactByName(String name) {
         return findContactsStream(name).findAny();
@@ -229,7 +238,7 @@ public final class Store implements Controller<Store> {
      * Queries every contact whose name is equal to {@code name}
      *
      * @param name the name to search
-     * @return a Set containing every result
+     * @return a non-null immutable set
      */
     public Set<Contact> findContactsByName(String name) {
         return findContactsStream(name).collect(Collectors.toUnmodifiableSet());
@@ -247,7 +256,7 @@ public final class Store implements Controller<Store> {
      * Queries the first chat whose jid is equal to {@code jid}
      *
      * @param jid the jid to search
-     * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional
+     * @return a non-null optional
      */
     public Optional<Chat> findChatByJid(ContactJidProvider jid) {
         return jid == null ?
@@ -265,7 +274,7 @@ public final class Store implements Controller<Store> {
      *
      * @param chat the chat to search in
      * @param id   the jid to search
-     * @return a non-empty Optional containing the result if it is found otherwise an empty Optional
+     * @return a non-null optional
      */
     public Optional<MessageInfo> findMessageById(Chat chat, String id) {
         return chat == null || id == null ?
@@ -281,7 +290,7 @@ public final class Store implements Controller<Store> {
      * Queries the first chat whose name is equal to {@code name}
      *
      * @param name the name to search
-     * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional
+     * @return a non-null optional
      */
     public Optional<Chat> findChatByName(String name) {
         return findChatsStream(name).findAny();
@@ -291,7 +300,7 @@ public final class Store implements Controller<Store> {
      * Queries every chat whose name is equal to {@code name}
      *
      * @param name the name to search
-     * @return a Set containing every result
+     * @return a non-null immutable set
      */
     public Set<Chat> findChatsByName(String name) {
         return findChatsStream(name).collect(Collectors.toUnmodifiableSet());
@@ -309,7 +318,7 @@ public final class Store implements Controller<Store> {
      * Queries all the status of a contact
      *
      * @param jid the sender of the status
-     * @return a List containing every result
+     * @return a non-null immutable list
      */
     public List<MessageInfo> findStatusBySender(ContactJidProvider jid) {
         return jid == null ?
@@ -320,10 +329,10 @@ public final class Store implements Controller<Store> {
     }
 
     /**
-     * Queries the first request whose jid is equal to {@code jid}
+     * Queries the first request whose id is equal to {@code id}
      *
-     * @param id the jid to search, can be null
-     * @return a non-empty Optional containing the first result if any is found otherwise an empty Optional
+     * @param id the id to search, can be null
+     * @return a non-null optional
      */
     public Optional<Request> findPendingRequest(String id) {
         return id == null ?
@@ -334,14 +343,33 @@ public final class Store implements Controller<Store> {
     }
 
     /**
-     * Queries the first request whose jid equals the one stored by the response and, if any is found, it completes it
+     * Queries the first request whose id equals the one stored by the response and, if any is found, it completes it
      *
      * @param response the response to complete the request with
-     * @return true if any request matching {@code response} is found
+     * @param exceptionally whether the response is erroneous
+     * @return a boolean
      */
-    public boolean resolvePendingRequest(Node response, boolean exceptionally) {
-        return findPendingRequest(response.id()).map(request -> deleteAndComplete(response, request, exceptionally))
+    public boolean resolvePendingRequest(@NonNull Node response, boolean exceptionally) {
+        return findPendingRequest(response.id())
+                .map(request -> deleteAndComplete(response, request, exceptionally))
                 .isPresent();
+    }
+
+    /**
+     * Queries the first handler that matches a handler in memory and uses its consumer
+     *
+     * @param response the response to test the handler with
+     * @return a boolean
+     */
+    public boolean resolvePendingHandler(@NonNull Node response){
+        var result = pendingHandlers.stream()
+                .filter(predicate -> predicate.predicate().test(response))
+                .findFirst();
+        result.ifPresent(nodeHandler -> {
+            pendingHandlers.remove(nodeHandler);
+            nodeHandler.future().complete(response);
+        });
+        return result.isPresent();
     }
 
     /**
@@ -359,12 +387,10 @@ public final class Store implements Controller<Store> {
                     .addAll(oldChat.messages());
         }
 
-        if(chat.hasName() && chat.jid().hasServer(ContactJid.Server.WHATSAPP) && findContactByJid(chat.jid()).isEmpty()){
-            var contact = Contact.builder()
-                    .jid(chat.jid())
-                    .fullName(chat.name())
-                    .build();
-            addContact(contact);
+        if(chat.hasName() && chat.jid().hasServer(ContactJid.Server.WHATSAPP)){
+            var contact = findContactByJid(chat.jid())
+                    .orElseGet(() -> addContact(Contact.ofJid(chat.jid())));
+            contact.fullName(chat.name());
         }
 
         chats.put(chat.jid(), chat);
@@ -581,11 +607,22 @@ public final class Store implements Controller<Store> {
      * Add a pending request to this store
      *
      * @param request the non-null status to add
-     * @return the same instance
+     * @return the non-null completable future of the request
      */
-    public Store addPendingRequest(@NonNull Request request) {
+    public CompletableFuture<Node> addPendingRequest(@NonNull Request request) {
         pendingRequests.add(request);
-        return this;
+        return request.future();
+    }
+
+    /**
+     * Add a pending request to this store
+     *
+     * @param handler the non-null handler to add
+     * @return the non-null completable future of the handler
+     */
+    public CompletableFuture<Node> addNodeHandler(@NonNull NodeHandler handler) {
+        pendingHandlers.add(handler);
+        return handler.future();
     }
 
     @Override

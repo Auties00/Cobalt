@@ -2,18 +2,17 @@ package it.auties.whatsapp.socket;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.RemovalListener;
 import it.auties.whatsapp.crypto.GroupBuilder;
 import it.auties.whatsapp.crypto.GroupCipher;
 import it.auties.whatsapp.crypto.SessionBuilder;
 import it.auties.whatsapp.crypto.SessionCipher;
-import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.action.ContactAction;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.chat.GroupMetadata;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.media.DownloadResult;
 import it.auties.whatsapp.model.message.device.DeviceSentMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageContainer;
@@ -149,7 +148,7 @@ class MessageHandler implements JacksonProvider {
                                           Entry<String, Object>... metadata) {
         var body = new ArrayList<Node>();
         if (!preKeys.isEmpty()) {
-            body.add(withChildren("participants", preKeys));
+            body.add(ofChildren("participants", preKeys));
         }
 
         if (descriptor != null) {
@@ -159,7 +158,7 @@ class MessageHandler implements JacksonProvider {
         if (hasPreKeyMessage(preKeys)) {
             var identity = PROTOBUF.writeValueAsBytes(socket.keys()
                     .companionIdentity());
-            body.add(with("device-identity", identity));
+            body.add(Node.of("device-identity", identity));
         }
 
         var attributes = Attributes.of(metadata)
@@ -167,7 +166,7 @@ class MessageHandler implements JacksonProvider {
                 .put("type", "text")
                 .put("to", info.chatJid())
                 .map();
-        return withChildren("message", attributes, body);
+        return ofChildren("message", attributes, body);
     }
 
     private boolean hasPreKeyMessage(List<Node> participants) {
@@ -226,13 +225,13 @@ class MessageHandler implements JacksonProvider {
         var missingSessions = contacts.stream()
                 .filter(contact -> !socket.keys()
                         .hasSession(contact.toSignalAddress()))
-                .map(contact -> withAttributes("user", of("jid", contact, "reason", "identity")))
+                .map(contact -> ofAttributes("user", of("jid", contact, "reason", "identity")))
                 .toList();
         if (missingSessions.isEmpty()) {
             return completedFuture(null);
         }
 
-        return socket.sendQuery("get", "encrypt", withChildren("key", missingSessions))
+        return socket.sendQuery("get", "encrypt", ofChildren("key", missingSessions))
                 .thenAcceptAsync(this::parseSessions);
     }
 
@@ -245,7 +244,7 @@ class MessageHandler implements JacksonProvider {
     private Node createMessageNode(ContactJid contact, byte[] message) {
         var cipher = new SessionCipher(contact.toSignalAddress(), socket.keys());
         var encrypted = cipher.encrypt(message);
-        return withChildren("to", of("jid", contact), encrypted);
+        return ofChildren("to", of("jid", contact), encrypted);
     }
 
     private CompletableFuture<List<ContactJid>> getDevices(GroupMetadata metadata) {
@@ -279,12 +278,12 @@ class MessageHandler implements JacksonProvider {
     @SneakyThrows
     private CompletableFuture<List<ContactJid>> queryDevices(List<ContactJid> contacts, boolean excludeSelf) {
         var contactNodes = contacts.stream()
-                .map(contact -> withAttributes("user", of("jid", contact)))
+                .map(contact -> ofAttributes("user", of("jid", contact)))
                 .toList();
-        var body = Node.withChildren("usync", of("sid", socket.store()
+        var body = Node.ofChildren("usync", of("sid", socket.store()
                         .nextTag(), "mode", "query", "last", "true", "index", "0", "context", "message"),
-                withChildren("query", withAttributes("devices", of("version", "2"))),
-                withChildren("list", contactNodes));
+                ofChildren("query", ofAttributes("devices", of("version", "2"))),
+                ofChildren("list", contactNodes));
         return socket.sendQuery("get", "usync", body)
                 .thenApplyAsync(result -> parseDevices(result, excludeSelf));
     }
@@ -539,9 +538,10 @@ class MessageHandler implements JacksonProvider {
     private void handleProtocolMessage(MessageInfo info, ProtocolMessage protocolMessage, boolean peer) {
         switch (protocolMessage.protocolType()) {
             case HISTORY_SYNC_NOTIFICATION -> {
-                var compressed = Medias.download(protocolMessage.historySyncNotification())
-                        .orElseThrow(() -> new IllegalArgumentException("Cannot download history sync"));
-                var decompressed = BytesHelper.deflate(compressed);
+                var compressed = Medias.download(protocolMessage.historySyncNotification());
+                Validate.isTrue(compressed.status() == DownloadResult.Status.SUCCESS,
+                        "Cannot download history sync");
+                var decompressed = BytesHelper.deflate(compressed.media().get());
                 var history = PROTOBUF.readMessage(decompressed, HistorySync.class);
                 switch (history.syncType()) {
                     case INITIAL_STATUS_V3 -> {
@@ -574,7 +574,7 @@ class MessageHandler implements JacksonProvider {
                         this.isReadyForContacts = true;
                     }
 
-                    case RECENT, FULL ->  handleRecentMessagesListener(history);
+                    case RECENT, FULL -> handleRecentMessagesListener(history);
 
                     case null -> {}
                 }
@@ -592,7 +592,6 @@ class MessageHandler implements JacksonProvider {
                 socket.keys()
                         .addAppKeys(protocolMessage.appStateSyncKeyShare()
                                 .keys());
-                socket.pullInitialPatches();
             }
 
             case REVOKE -> socket.store()
@@ -625,9 +624,8 @@ class MessageHandler implements JacksonProvider {
     private void handleRecentMessagesListener(HistorySync history) {
         history.conversations()
                 .forEach(socket.store()::addChat);
-        historyCache.stream()
-                .filter(cached -> !history.conversations().contains(cached))
-                .forEach(chat -> socket.onChatRecentMessages(chat, true));
+        historyCache.forEach(cached ->
+                socket.onChatRecentMessages(cached, !history.conversations().contains(cached)));
         historyCache.removeIf(entry -> !history.conversations().contains(entry));
     }
 
@@ -639,13 +637,6 @@ class MessageHandler implements JacksonProvider {
                 .chosenName(pushName.name());
         var action = ContactAction.of(pushName.name(), null);
         socket.onAction(action);
-    }
-
-    private void handleRecentMessage(Chat recent) {
-        var serializedChat = socket.store()
-                .findChatByJid(recent.jid())
-                .orElseGet(() -> socket.store().addChat(recent));
-        socket.onChatRecentMessages(serializedChat, false);
     }
 
     @SafeVarargs

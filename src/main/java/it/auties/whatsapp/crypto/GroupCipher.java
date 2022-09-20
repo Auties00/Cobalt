@@ -10,7 +10,7 @@ import it.auties.whatsapp.util.SignalSpecification;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 
-import static it.auties.whatsapp.model.request.Node.with;
+import static it.auties.whatsapp.model.request.Node.of;
 import static java.util.Map.of;
 
 public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) implements SignalSpecification {
@@ -29,7 +29,7 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) imple
         var next = currentState.chainKey()
                 .next();
         currentState.chainKey(next);
-        return with("enc", of("v", "2", "type", "skmsg"), senderKeyMessage.serialized());
+        return Node.of("enc", of("v", "2", "type", "skmsg"), senderKeyMessage.serialized());
     }
 
     public byte[] decrypt(byte[] data) {

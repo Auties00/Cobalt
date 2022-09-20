@@ -23,7 +23,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import static it.auties.curve25519.Curve25519.sharedKey;
-import static it.auties.whatsapp.model.request.Node.with;
+import static it.auties.whatsapp.model.request.Node.of;
 import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 
@@ -51,7 +51,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
 
         var encryptedMessageType = getMessageType(currentState);
         var encryptedMessage = encrypt(currentState, chain, secrets[1], encrypted);
-        return with("enc", of("v", "2", "type", encryptedMessageType), encryptedMessage);
+        return Node.of("enc", of("v", "2", "type", encryptedMessageType), encryptedMessage);
     }
 
     private String getMessageType(SessionState currentState) {

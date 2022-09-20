@@ -37,8 +37,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.UNKNOWN;
-import static it.auties.whatsapp.model.request.Node.withAttributes;
-import static it.auties.whatsapp.model.request.Node.withChildren;
+import static it.auties.whatsapp.model.request.Node.ofAttributes;
+import static it.auties.whatsapp.model.request.Node.ofChildren;
 import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
 import static java.lang.Runtime.getRuntime;
 import static java.util.Map.of;
@@ -322,13 +322,13 @@ public class Socket implements JacksonProvider, SignalSpecification {
                 .put("to", to)
                 .put("xmlns", category, Objects::nonNull)
                 .map();
-        return send(withChildren("iq", attributes, body));
+        return send(ofChildren("iq", attributes, body));
     }
 
     public CompletableFuture<List<Node>> sendInteractiveQuery(Node queryNode, Node... queryBody) {
-        var query = withChildren("query", queryNode);
-        var list = withChildren("list", queryBody);
-        var sync = withChildren("usync",
+        var query = Node.ofChildren("query", queryNode);
+        var list = Node.ofChildren("list", queryBody);
+        var sync = ofChildren("usync",
                 of("sid", store.nextTag(), "mode", "query", "last", "true", "index", "0", "context", "interactive"),
                 query, list);
         return sendQuery("get", "usync", sync).thenApplyAsync(this::parseQueryResult);
@@ -346,7 +346,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
 
     @SneakyThrows
     public CompletableFuture<GroupMetadata> queryGroupMetadata(ContactJid group) {
-        var body = withAttributes("query", of("request", "interactive"));
+        var body = ofAttributes("query", of("request", "interactive"));
         return sendQuery(group, "get", "w:g2", body).thenApplyAsync(node -> node.findNode("group")
                         .orElseThrow(() -> new ErroneousNodeException("Missing group node", node)))
                 .exceptionallyAsync(errorHandler::handleNodeFailure)
@@ -354,7 +354,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
     }
 
     protected void sendSyncReceipt(MessageInfo info, String type) {
-        var receipt = withAttributes("receipt", of("to", ContactJid.of(keys.companion()
+        var receipt = ofAttributes("receipt", of("to", ContactJid.of(keys.companion()
                 .user(), ContactJid.Server.USER), "type", type, "id", info.key()
                 .id()));
         sendWithNoResponse(receipt);
@@ -370,7 +370,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
                 .put("t", Clock.now() / 1000)
                 .put("to", jid)
                 .put("participant", participant, Objects::nonNull, value -> !Objects.equals(jid, value));
-        var receipt = withChildren("receipt", attributes.map(), toMessagesNode(messages));
+        var receipt = Node.ofChildren("receipt", attributes.map(), toMessagesNode(messages));
         sendWithNoResponse(receipt);
     }
 
@@ -381,7 +381,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
 
         return messages.subList(1, messages.size())
                 .stream()
-                .map(id -> withAttributes("item", of("id", id)))
+                .map(id -> ofAttributes("item", of("id", id)))
                 .toList();
     }
 
@@ -396,7 +396,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
                 .put("to", to)
                 .put("participant", participant, Objects::nonNull)
                 .map();
-        var receipt = withAttributes("ack", attributes);
+        var receipt = ofAttributes("ack", attributes);
         sendWithNoResponse(receipt);
     }
 

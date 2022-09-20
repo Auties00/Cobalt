@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.message.payment;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.whatsapp.model.media.AttachmentProvider;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.model.message.model.MessageType;
@@ -54,7 +55,7 @@ public final class PaymentInvoiceMessage extends MediaMessage implements Payment
      * The media key of the attachment that this invoice provides
      */
     @ProtobufProperty(index = 5, type = BYTES)
-    private byte[] key;
+    private byte[] mediaKey;
 
     /**
      * The media key timestamp of the attachment that this invoice provides
@@ -66,19 +67,19 @@ public final class PaymentInvoiceMessage extends MediaMessage implements Payment
      * The sha256 of the attachment that this invoice provides
      */
     @ProtobufProperty(index = 7, type = BYTES)
-    private byte[] fileSha256;
+    private byte[] mediaSha256;
 
     /**
      * The sha256 of the encrypted attachment that this invoice provides
      */
     @ProtobufProperty(index = 8, type = BYTES)
-    private byte[] fileEncSha256;
+    private byte[] mediaEncryptedSha256;
 
     /**
      * The direct path to the attachment that this invoice provides
      */
     @ProtobufProperty(index = 9, type = STRING)
-    private String directPath;
+    private String mediaDirectPath;
 
     /**
      * The thumbnail of the attachment that this invoice provides
@@ -86,15 +87,15 @@ public final class PaymentInvoiceMessage extends MediaMessage implements Payment
     @ProtobufProperty(index = 10, type = BYTES)
     private byte[] thumbnail;
 
-    /**
-     * This method is not supported
-     *
-     * @return an exception
-     * @throws UnsupportedOperationException always
-     */
+
     @Override
-    public String url() {
-        throw new UnsupportedOperationException("Invoices don't provide an upload url");
+    public String mediaUrl() {
+        return null;
+    }
+
+    @Override
+    public AttachmentProvider mediaUrl(String mediaUrl) {
+        return this;
     }
 
     /**
@@ -104,7 +105,7 @@ public final class PaymentInvoiceMessage extends MediaMessage implements Payment
      * @throws UnsupportedOperationException always
      */
     @Override
-    public long fileLength() {
+    public long mediaSize() {
         throw new UnsupportedOperationException("Invoices don't provide a file size");
     }
 

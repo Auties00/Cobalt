@@ -22,7 +22,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Accessors(fluent = true)
 public class MediaRetryNotification implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = STRING)
-    private String stanzaId;
+    private String messageId;
 
     @ProtobufProperty(index = 2, type = STRING)
     private String directPath;

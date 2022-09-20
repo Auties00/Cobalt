@@ -3,6 +3,7 @@ package it.auties.whatsapp.ci;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.JacksonProvider;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,9 @@ public class WaitTest implements JacksonProvider {
         Whatsapp.lastConnection()
                 .addLoggedInListener(() -> System.out.println("Connected"))
                 .addNewMessageListener(WaitTest::logMessage)
+                .addContactsListener((whatsapp) -> System.out.println(whatsapp.store().contacts().size()))
+                .addNodeReceivedListener(incoming -> System.out.printf("Received node %s%n", incoming))
+                .addNodeSentListener(outgoing -> System.out.printf("Sent node %s%n", outgoing))
                 .connect()
                 .join()
                 .await();

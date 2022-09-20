@@ -190,7 +190,7 @@ class StreamHandler implements JacksonProvider {
         var from = node.attributes()
                 .getJid("from")
                 .orElseThrow(() -> new NoSuchElementException("Cannot digest ack: missing from"));
-        var receipt = withAttributes("ack", of("class", "receipt", "id", node.id(), "from", from));
+        var receipt = ofAttributes("ack", of("class", "receipt", "id", node.id(), "from", from));
         socket.sendWithNoResponse(receipt);
     }
 
@@ -281,7 +281,7 @@ class StreamHandler implements JacksonProvider {
                 .attributes()
                 .getString("timestamp");
         socket.sendQuery("set", "urn:xmpp:whatsapp:dirty",
-                withAttributes("clean", of("type", type, "timestamp", timestamp)));
+                ofAttributes("clean", of("type", type, "timestamp", timestamp)));
     }
 
     private void digestError(Node node) {
@@ -340,12 +340,12 @@ class StreamHandler implements JacksonProvider {
     }
 
     private void sendStatusUpdate() {
-        var presence = withAttributes("presence", of("type", "available"));
+        var presence = ofAttributes("presence", of("type", "available"));
         socket.sendWithNoResponse(presence);
         socket.sendQuery("get", "blocklist");
-        socket.sendQuery("get", "privacy", with("privacy"));
-        socket.sendQuery("get", "abt", withAttributes("props", of("protocol", "1")));
-        socket.sendQuery("get", "w", with("props"))
+        socket.sendQuery("get", "privacy", Node.of("privacy"));
+        socket.sendQuery("get", "abt", ofAttributes("props", of("protocol", "1")));
+        socket.sendQuery("get", "w", Node.of("props"))
                 .thenAcceptAsync(this::parseProps);
     }
 
@@ -369,7 +369,7 @@ class StreamHandler implements JacksonProvider {
 
         socket.store()
                 .serialize();
-        socket.sendQuery("get", "w:p", with("ping"));
+        socket.sendQuery("get", "w:p", Node.of("ping"));
         socket.onSocketEvent(SocketEvent.PING);
     }
 
@@ -379,7 +379,7 @@ class StreamHandler implements JacksonProvider {
             return;
         }
 
-        socket.sendQuery("set", "w:m", with("media_conn"))
+        socket.sendQuery("set", "w:m", Node.of("media_conn"))
                 .thenApplyAsync(MediaConnection::of)
                 .thenApplyAsync(result -> socket.store()
                         .mediaConnection(result))
@@ -417,7 +417,7 @@ class StreamHandler implements JacksonProvider {
     }
 
     private void confirmConnection() {
-        socket.sendQuery("set", "passive", with("active"));
+        socket.sendQuery("set", "passive", Node.of("active"));
     }
 
     private void sendPreKeys() {
@@ -428,10 +428,10 @@ class StreamHandler implements JacksonProvider {
                 .peek(socket.keys()::addPreKey)
                 .map(SignalPreKeyPair::toNode)
                 .toList();
-        socket.sendQuery("set", "encrypt", with("registration", BytesHelper.intToBytes(socket.keys()
-                .id(), 4)), with("type", SignalSpecification.KEY_BUNDLE_TYPE), with("identity", socket.keys()
+        socket.sendQuery("set", "encrypt", Node.of("registration", BytesHelper.intToBytes(socket.keys()
+                .id(), 4)), Node.of("type", SignalSpecification.KEY_BUNDLE_TYPE), Node.of("identity", socket.keys()
                 .identityKeyPair()
-                .publicKey()), withChildren("list", preKeys), socket.keys()
+                .publicKey()), ofChildren("list", preKeys), socket.keys()
                 .signedKeyPair()
                 .toNode());
     }
@@ -501,8 +501,8 @@ class StreamHandler implements JacksonProvider {
 
         var keyIndex = PROTOBUF.readMessage(account.details(), DeviceIdentity.class)
                 .keyIndex();
-        var devicePairNode = withChildren("pair-device-sign",
-                with("device-identity", of("key-index", keyIndex), PROTOBUF.writeValueAsBytes(account.withoutKey())));
+        var devicePairNode = ofChildren("pair-device-sign",
+                Node.of("device-identity", of("key-index", keyIndex), PROTOBUF.writeValueAsBytes(account.withoutKey())));
 
         socket.keys()
                 .companionIdentity(account);
@@ -515,7 +515,7 @@ class StreamHandler implements JacksonProvider {
                 .put("type", "result")
                 .put("to", ContactJid.WHATSAPP)
                 .map();
-        var request = withChildren("iq", attributes, content);
+        var request = ofChildren("iq", attributes, content);
         socket.sendWithNoResponse(request);
     }
 

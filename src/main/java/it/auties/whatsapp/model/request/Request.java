@@ -135,7 +135,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      */
     public void complete(Node response, boolean exceptionally) {
         if (response == null) {
-            future.complete(Node.with("xmlstreamend"));
+            future.complete(Node.of("xmlstreamend"));
             return;
         }
 
@@ -185,7 +185,6 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
             return body;
         }
 
-        return AesGmc.of(keys.writeKey(), keys.writeCounter(true), true)
-                .encrypt(body);
+        return AesGmc.cipher(keys.writeCounter(true), body, keys.writeKey().toByteArray(), true);
     }
 }

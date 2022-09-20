@@ -12,6 +12,7 @@ import it.auties.whatsapp.model.chat.ChatMute;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.media.DownloadResult;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.setting.UnarchiveChatsSetting;
 import it.auties.whatsapp.model.sync.*;
@@ -27,8 +28,7 @@ import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.*;
-import static it.auties.whatsapp.model.request.Node.with;
-import static it.auties.whatsapp.model.request.Node.withChildren;
+import static it.auties.whatsapp.model.request.Node.ofChildren;
 import static java.util.Map.of;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -136,10 +136,10 @@ class AppStateHandler implements JacksonProvider {
 
     private CompletableFuture<Void> sendPush(PushRequest request) {
         try {
-            var body = withChildren("collection",
+            var body = ofChildren("collection",
                     of("name", request.patch().type(), "version", request.newState().version() - 1, "return_snapshot", false),
-                    with("patch", PROTOBUF.writeValueAsBytes(request.sync())));
-            return socket.sendQuery("set", "w:sync:app:state", withChildren("sync", body))
+                    Node.of("patch", PROTOBUF.writeValueAsBytes(request.sync())));
+            return socket.sendQuery("set", "w:sync:app:state", Node.ofChildren("sync", body))
                     .thenAcceptAsync(this::parseSyncRequest)
                     .thenRunAsync(() -> socket.keys()
                             .putState(request.patch().type(), request.newState()))
@@ -195,7 +195,7 @@ class AppStateHandler implements JacksonProvider {
                 .peek(state -> tempStates.put(state.name(), state))
                 .map(LTHashState::toNode)
                 .toList();
-        return socket.sendQuery("set", "w:sync:app:state", withChildren("sync", nodes))
+        return socket.sendQuery("set", "w:sync:app:state", Node.ofChildren("sync", nodes))
                 .thenApplyAsync(this::parseSyncRequest)
                 .thenApplyAsync(records -> decodeSyncs(versions, attempts, tempStates, records))
                 .thenComposeAsync(remaining -> remaining.isEmpty() ?
@@ -310,9 +310,10 @@ class AppStateHandler implements JacksonProvider {
 
         var blob = PROTOBUF.readMessage(snapshot.contentAsBytes()
                 .orElseThrow(), ExternalBlobReference.class);
-        var syncedData = Medias.download(blob)
-                .orElseThrow(() -> new IllegalArgumentException("Cannot download snapshot sync"));
-        return PROTOBUF.readMessage(syncedData, SnapshotSync.class);
+        var syncedData = Medias.download(blob);
+        Validate.isTrue(syncedData.status() == DownloadResult.Status.SUCCESS,
+                "Cannot download snapshot");
+        return PROTOBUF.readMessage(syncedData.media().get(), SnapshotSync.class);
     }
 
     @SneakyThrows
@@ -441,9 +442,10 @@ class AppStateHandler implements JacksonProvider {
     private Optional<MutationsRecord> decodePatch(PatchType patchType, long minimumVersion, LTHashState newState,
                                                   PatchSync patch) {
         if (patch.hasExternalMutations()) {
-            var blob = Medias.download(patch.externalMutations())
-                    .orElseThrow(() -> new IllegalArgumentException("Cannot download external mutations"));
-            var mutationsSync = PROTOBUF.readMessage(blob, MutationsSync.class);
+            var blob = Medias.download(patch.externalMutations());
+            Validate.isTrue(blob.status() == DownloadResult.Status.SUCCESS,
+                    "Cannot download mutations");
+            var mutationsSync = PROTOBUF.readMessage(blob.media().get(), MutationsSync.class);
             patch.mutations()
                     .addAll(mutationsSync.mutations());
         }

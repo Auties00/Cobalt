@@ -15,8 +15,8 @@ import java.util.stream.IntStream;
 
 import static it.auties.whatsapp.binary.Tag.*;
 import static it.auties.whatsapp.model.contact.ContactJid.Server.forAddress;
-import static it.auties.whatsapp.model.request.Node.with;
-import static it.auties.whatsapp.model.request.Node.withAttributes;
+import static it.auties.whatsapp.model.request.Node.of;
+import static it.auties.whatsapp.model.request.Node.ofAttributes;
 
 public class Decoder {
     private Bytes buffer;
@@ -39,8 +39,8 @@ public class Decoder {
         var description = readString();
         var attrs = readAttributes(size);
         return size % 2 != 0 ?
-                withAttributes(description, attrs) :
-                with(description, attrs, read(false));
+                ofAttributes(description, attrs) :
+                of(description, attrs, read(false));
     }
 
     public String readString() {

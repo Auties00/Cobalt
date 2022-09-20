@@ -7,6 +7,7 @@ import it.auties.whatsapp.crypto.Sha256;
 import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.model.media.*;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
+import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
@@ -18,12 +19,10 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.net.URI;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLEncoder;
+import java.net.*;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,28 +40,20 @@ public class Medias implements JacksonProvider {
     public static final int PROFILE_PIC_SIZE = 640;
     private static final int THUMBNAIL_SIZE = 32;
     private static final int RANDOM_FILE_NAME_LENGTH = 8;
-    private static final int PREVIEW_SIZE = 192;
     private static final Map<String, Path> CACHE = new ConcurrentHashMap<>();
+    public static final String DEFAULT_HOST = "https://mmg.whatsapp.net";
 
-    public Optional<byte[]> getPreview(URI imageUri, URI videoUri) {
+    public Optional<byte[]> getPreview(URI imageUri) {
         try {
-            if (videoUri != null) {
-                var bytes = videoUri.toURL()
-                        .openConnection()
-                        .getInputStream()
-                        .readAllBytes();
-                return getVideo(bytes, PREVIEW_SIZE);
+            if(imageUri == null){
+                return Optional.empty();
             }
 
-            if(imageUri != null){
-                var bytes = imageUri.toURL()
-                        .openConnection()
-                        .getInputStream()
-                        .readAllBytes();
-                return getImage(bytes, Format.JPG, PREVIEW_SIZE);
-            }
-
-            return Optional.empty();
+            var bytes = imageUri.toURL()
+                    .openConnection()
+                    .getInputStream()
+                    .readAllBytes();
+            return getImage(bytes, Format.JPG, -1);
         } catch (IOException exception) {
             return Optional.empty();
         }
@@ -83,7 +74,7 @@ public class Medias implements JacksonProvider {
     private List<String> getHosts(MediaConnection mediaConnection) {
         return Optional.ofNullable(mediaConnection)
                 .map(MediaConnection::hosts)
-                .orElse(List.of("mmg.whatsapp.net"));
+                .orElse(List.of(DEFAULT_HOST));
     }
 
     private Optional<MediaFile> upload(byte[] file, MediaMessageType type, HttpClient client, String auth,
@@ -118,18 +109,25 @@ public class Medias implements JacksonProvider {
         }
     }
 
-    public Optional<byte[]> download(AttachmentProvider provider) {
-        return download(provider, false);
-    }
+    public DownloadResult download(AttachmentProvider provider) {
+        try {
+            Validate.isTrue(provider.mediaUrl() != null || provider.mediaDirectPath() != null,
+                    "Missing url and path from media");
+            var url = Objects.requireNonNullElseGet(provider.mediaUrl(),
+                    () -> createMediaUrl(provider.mediaDirectPath()));
+            var client = HttpClient.newHttpClient();
+            var request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .GET()
+                    .build();
+            var response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            if(response.statusCode() == HttpURLConnection.HTTP_NOT_FOUND || response.statusCode() == HttpURLConnection.HTTP_GONE){
+                return DownloadResult.missing();
+            }
 
-    private Optional<byte[]> download(AttachmentProvider provider, boolean fallback) {
-        var url = provider.url() != null && !fallback ? provider.url()
-                : "https://mmg.whatsapp.net%s".formatted(provider.directPath());
-        try (var connection = new URL(url).openStream()) {
-            var stream = Bytes.of(connection.readAllBytes());
-
+            var stream = Bytes.of(response.body());
             var sha256 = Sha256.calculate(stream.toByteArray());
-            Validate.isTrue(Arrays.equals(sha256, provider.fileEncSha256()),
+            Validate.isTrue(Arrays.equals(sha256, provider.mediaEncryptedSha256()),
                     "Cannot decode media: Invalid sha256 signature", SecurityException.class);
 
             var encryptedMedia = stream.cut(-10)
@@ -137,18 +135,17 @@ public class Medias implements JacksonProvider {
             var mediaMac = stream.slice(-10)
                     .toByteArray();
 
-            var keys = MediaKeys.of(provider.key(), provider.keyName());
+            var keys = MediaKeys.of(provider.mediaKey(), provider.mediaName());
             var hmac = calculateMac(encryptedMedia, keys);
             Validate.isTrue(Arrays.equals(hmac, mediaMac), "media_decryption", HmacValidationException.class);
 
             var decrypted = AesCbc.decrypt(keys.iv(), encryptedMedia, keys.cipherKey());
-            Validate.isTrue(provider.fileLength() <= 0 || provider.fileLength() == decrypted.length,
+            Validate.isTrue(provider.mediaSize() <= 0 || provider.mediaSize() == decrypted.length,
                     "Cannot decode media: invalid size");
 
-            return Optional.of(decrypted);
+            return DownloadResult.success(decrypted);
         } catch (Throwable error) {
-            return fallback ? Optional.empty()
-                    : download(provider, true);
+            return DownloadResult.error(error);
         }
     }
 
@@ -297,6 +294,10 @@ public class Medias implements JacksonProvider {
 
     private Optional<byte[]> getImage(byte[] file, Format format, int dimensions) {
         try {
+            if(dimensions <= 0){
+                return Optional.of(file);
+            }
+
             var image = ImageIO.read(new ByteArrayInputStream(file));
             if(image == null){
                 return Optional.empty();
@@ -374,5 +375,9 @@ public class Medias implements JacksonProvider {
         JPG,
         FILE,
         VIDEO
+    }
+
+    public String createMediaUrl(@NonNull String directPath){
+        return DEFAULT_HOST + directPath;
     }
 }

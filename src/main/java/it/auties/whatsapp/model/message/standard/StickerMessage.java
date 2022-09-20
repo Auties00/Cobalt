@@ -36,25 +36,25 @@ public final class StickerMessage extends MediaMessage {
      * The upload url of the encoded sticker that this object wraps
      */
     @ProtobufProperty(index = 1, type = STRING)
-    private String url;
+    private String mediaUrl;
 
     /**
      * The sha256 of the decoded sticker that this object wraps
      */
     @ProtobufProperty(index = 2, type = BYTES)
-    private byte[] fileSha256;
+    private byte[] mediaSha256;
 
     /**
      * The sha256 of the encoded sticker that this object wraps
      */
     @ProtobufProperty(index = 3, type = BYTES)
-    private byte[] fileEncSha256;
+    private byte[] mediaEncryptedSha256;
 
     /**
      * The media key of the sticker that this object wraps
      */
     @ProtobufProperty(index = 4, type = BYTES)
-    private byte[] key;
+    private byte[] mediaKey;
 
     /**
      * The mime type of the sticker that this object wraps.
@@ -79,16 +79,16 @@ public final class StickerMessage extends MediaMessage {
      * The direct path to the encoded sticker that this object wraps
      */
     @ProtobufProperty(index = 8, type = STRING)
-    private String directPath;
+    private String mediaDirectPath;
 
     /**
      * The unsigned size of the decoded sticker that this object wraps
      */
     @ProtobufProperty(index = 9, type = UINT64)
-    private long fileLength;
+    private long mediaSize;
 
     /**
-     * The timestamp, that is the endTimeStamp elapsed since {@link java.time.Instant#EPOCH}, for {@link StickerMessage#key()}
+     * The timestamp, that is the endTimeStamp elapsed since {@link java.time.Instant#EPOCH}, for {@link StickerMessage#mediaKey()}
      */
     @ProtobufProperty(index = 10, type = UINT64)
     private long mediaKeyTimestamp;
@@ -135,13 +135,13 @@ public final class StickerMessage extends MediaMessage {
                                           ContextInfo contextInfo) {
         var upload = Medias.upload(media, STICKER, mediaConnection);
         return StickerMessage.newRawStickerMessageBuilder()
-                .fileSha256(upload.fileSha256())
-                .fileEncSha256(upload.fileEncSha256())
-                .key(upload.mediaKey())
+                .mediaSha256(upload.fileSha256())
+                .mediaEncryptedSha256(upload.fileEncSha256())
+                .mediaKey(upload.mediaKey())
                 .mediaKeyTimestamp(Clock.now())
-                .url(upload.url())
-                .directPath(upload.directPath())
-                .fileLength(upload.fileLength())
+                .mediaUrl(upload.url())
+                .mediaDirectPath(upload.directPath())
+                .mediaSize(upload.fileLength())
                 .mimetype(requireNonNullElse(mimeType, STICKER.defaultMimeType()))
                 .thumbnail(thumbnail != null ?
                         thumbnail :

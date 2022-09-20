@@ -23,6 +23,6 @@ public record SignalPreKeyPair(int id, byte @NonNull [] publicKey, byte[] privat
 
     @Override
     public Node toNode() {
-        return Node.withChildren("key", Node.with("id", encodedId()), Node.with("value", publicKey()));
+        return Node.ofChildren("key", Node.of("id", encodedId()), Node.of("value", publicKey()));
     }
 }

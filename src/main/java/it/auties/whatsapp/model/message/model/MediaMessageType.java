@@ -62,6 +62,21 @@ public enum MediaMessageType implements ProtobufMessage {
     }
 
     /**
+     * Returns the default extension of this media type
+     *
+     * @return a non-null string
+     */
+    public String fileExtension(){
+        return switch (this){
+            case IMAGE -> "jpg";
+            case DOCUMENT -> "";
+            case AUDIO -> "mpeg";
+            case VIDEO -> "mp4";
+            case STICKER -> "webp";
+        };
+    }
+
+    /**
      * Returns the path for an encrypted url
      *
      * @return a non-null string

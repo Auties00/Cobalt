@@ -18,7 +18,9 @@ import it.auties.whatsapp.model.contact.ContactCard;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.media.DownloadResult;
 import it.auties.whatsapp.model.message.button.ButtonsMessage;
+import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.standard.InteractiveMessage;
 import it.auties.whatsapp.model.message.button.ListMessage;
 import it.auties.whatsapp.model.message.button.TemplateMessage;
@@ -29,6 +31,7 @@ import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.utils.ConfigUtils;
 import it.auties.whatsapp.utils.MediaUtils;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 
@@ -415,10 +418,15 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
                 .join();
         log("Sent simple text: %s", simple);
 
-        log("Sending complex text...");
+        log("Sending youtube video...");
         var context = api.sendMessage(contact, "Hello: https://www.youtube.com/watch?v=4boXExbbGCk")
                 .join();
-        log("Sent complex text: %s", context);
+        log("Sent youtube video: %s", context);
+
+        log("Sending article...");
+        var another = api.sendMessage(contact, "Hello: it.wikipedia.org/wiki/Vulcano") // Missing schema by design
+                .join();
+        log("Sent article: %s", another);
     }
 
     @Test
@@ -813,14 +821,17 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
                 .stream()
                 .map(Chat::messages)
                 .flatMap(List::stream)
-                .filter(info -> !info.fromMe() && info.message().content() instanceof MediaMessage)
-                .limit(10)
-                .peek(e -> System.out.println(e.id()))
-                .map(MessageInfo::message)
-                .map(MessageContainer::content)
-                .map(message -> (MediaMessage) message)
-                .map(MediaMessage::decodedMedia)
-                .forEach(result -> result.ifPresentOrElse(ignored -> success.incrementAndGet(), fail::incrementAndGet));
+                .filter(info -> !info.fromMe() && info.message().category() == MessageCategory.MEDIA)
+                .limit(30)
+                .forEach(info -> {
+                    try {
+                        api.downloadMedia(info).join();
+                        success.incrementAndGet();
+                    }catch (Throwable throwable){
+                        Assertions.fail(throwable);
+                        fail.incrementAndGet();
+                    }
+                });
         log("Decoded %s/%s medias!", success.get(), success.get() + fail.get());
     }
 
@@ -857,6 +868,12 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
 
         System.out.printf("%s is ready with %s messages%n", chat.name(), chat.messages()
                 .size());
+    }
+
+    @Override
+    @SneakyThrows
+    public void onNewMessage(Whatsapp whatsapp, MessageInfo info) {
+        System.out.println(info.toJson());
     }
 
     private void log(String message, Object... params) {

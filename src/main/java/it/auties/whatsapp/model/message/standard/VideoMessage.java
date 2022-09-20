@@ -41,7 +41,7 @@ public final class VideoMessage extends MediaMessage {
      * The upload url of the encoded video that this object wraps
      */
     @ProtobufProperty(index = 1, type = STRING)
-    private String url;
+    private String mediaUrl;
 
     /**
      * The mime type of the video that this object wraps.
@@ -54,13 +54,13 @@ public final class VideoMessage extends MediaMessage {
      * The sha256 of the decoded video that this object wraps
      */
     @ProtobufProperty(index = 3, type = BYTES)
-    private byte[] fileSha256;
+    private byte[] mediaSha256;
 
     /**
      * The unsigned size of the decoded video that this object wraps
      */
     @ProtobufProperty(index = 4, type = UINT64)
-    private long fileLength;
+    private long mediaSize;
 
     /**
      * The length in endTimeStamp of the video that this message wraps
@@ -72,7 +72,7 @@ public final class VideoMessage extends MediaMessage {
      * The media key of the video that this object wraps.
      */
     @ProtobufProperty(index = 6, type = BYTES)
-    private byte[] key;
+    private byte[] mediaKey;
 
     /**
      * The caption, that is the text below the video, of this video message
@@ -102,7 +102,7 @@ public final class VideoMessage extends MediaMessage {
      * The sha256 of the encoded video that this object wraps
      */
     @ProtobufProperty(index = 11, type = BYTES)
-    private byte[] fileEncSha256;
+    private byte[] mediaEncryptedSha256;
 
     /**
      * Interactive annotations
@@ -114,10 +114,10 @@ public final class VideoMessage extends MediaMessage {
      * The direct path to the encoded image that this object wraps
      */
     @ProtobufProperty(index = 13, type = STRING)
-    private String directPath;
+    private String mediaDirectPath;
 
     /**
-     * The timestamp, that is the endTimeStamp elapsed since {@link java.time.Instant#EPOCH}, for {@link VideoMessage#key()}
+     * The timestamp, that is the endTimeStamp elapsed since {@link java.time.Instant#EPOCH}, for {@link VideoMessage#mediaKey()}
      */
     @ProtobufProperty(index = 14, type = INT64)
     private long mediaKeyTimestamp;
@@ -161,13 +161,13 @@ public final class VideoMessage extends MediaMessage {
         var duration = Medias.getDuration(media, true);
         var upload = Medias.upload(media, VIDEO, mediaConnection);
         return VideoMessage.newRawVideoMessageBuilder()
-                .fileSha256(upload.fileSha256())
-                .fileEncSha256(upload.fileEncSha256())
-                .key(upload.mediaKey())
+                .mediaSha256(upload.fileSha256())
+                .mediaEncryptedSha256(upload.fileEncSha256())
+                .mediaKey(upload.mediaKey())
                 .mediaKeyTimestamp(Clock.now())
-                .url(upload.url())
-                .directPath(upload.directPath())
-                .fileLength(upload.fileLength())
+                .mediaUrl(upload.url())
+                .mediaDirectPath(upload.directPath())
+                .mediaSize(upload.fileLength())
                 .mimetype(requireNonNullElse(mimeType, VIDEO.defaultMimeType()))
                 .thumbnail(thumbnail != null ?
                         thumbnail :
@@ -205,13 +205,13 @@ public final class VideoMessage extends MediaMessage {
         var duration = Medias.getDuration(media, true);
         var upload = Medias.upload(media, VIDEO, mediaConnection);
         return VideoMessage.newRawVideoMessageBuilder()
-                .fileSha256(upload.fileSha256())
-                .fileEncSha256(upload.fileEncSha256())
-                .key(upload.mediaKey())
+                .mediaSha256(upload.fileSha256())
+                .mediaEncryptedSha256(upload.fileEncSha256())
+                .mediaKey(upload.mediaKey())
                 .mediaKeyTimestamp(Clock.now())
-                .url(upload.url())
-                .directPath(upload.directPath())
-                .fileLength(upload.fileLength())
+                .mediaUrl(upload.url())
+                .mediaDirectPath(upload.directPath())
+                .mediaSize(upload.fileLength())
                 .mimetype(requireNonNullElse(mimeType, VIDEO.defaultMimeType()))
                 .thumbnail(thumbnail != null ?
                         thumbnail :

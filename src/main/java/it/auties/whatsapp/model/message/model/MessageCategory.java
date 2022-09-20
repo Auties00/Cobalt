@@ -15,9 +15,14 @@ public enum MessageCategory {
     BUTTON,
 
     /**
-     * PAYMENT message
+     * Payment message
      */
     PAYMENT,
+
+    /**
+     * Payment message
+     */
+    MEDIA,
 
     /**
      * Server message

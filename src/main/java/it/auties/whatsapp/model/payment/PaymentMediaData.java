@@ -23,11 +23,11 @@ public class PaymentMediaData implements ProtobufMessage {
     private long mediaKeyTimestamp;
 
     @ProtobufProperty(index = 3, type = BYTES)
-    private byte[] fileSha256;
+    private byte[] mediaSha256;
 
     @ProtobufProperty(index = 4, type = BYTES)
-    private byte[] fileEncSha256;
+    private byte[] mediaEncryptedSha256;
 
     @ProtobufProperty(index = 5, type = STRING)
-    private String directPath;
+    private String mediaDirectPath;
 }
