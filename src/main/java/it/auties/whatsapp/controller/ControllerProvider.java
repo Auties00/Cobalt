@@ -1,5 +1,6 @@
 package it.auties.whatsapp.controller;
 
+import java.security.Key;
 import java.util.LinkedList;
 
 /**
@@ -15,9 +16,16 @@ public interface ControllerProvider {
     LinkedList<Integer> ids();
 
     /**
-     * Serializes a controller
+     * Serializes the keys
      *
-     * @param controller the non-null controller to serialize
+     * @param keys the non-null keys to serialize
      */
-    void serialize(Controller<?> controller);
+    void serializeKeys(Keys keys);
+
+    /**
+     * Serializes the store
+     *
+     * @param store the non-null store to serialize
+     */
+    void serializeStore(Store store);
 }

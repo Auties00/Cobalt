@@ -1,9 +1,7 @@
 package it.auties.whatsapp.ci;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.JacksonProvider;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;

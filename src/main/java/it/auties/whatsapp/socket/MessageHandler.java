@@ -21,6 +21,7 @@ import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.setting.EphemeralSetting;
+import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalDistributionMessage;
 import it.auties.whatsapp.model.signal.message.SignalMessage;
@@ -31,11 +32,14 @@ import it.auties.whatsapp.model.sync.PushName;
 import it.auties.whatsapp.util.*;
 import lombok.SneakyThrows;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.MESSAGE;
@@ -50,8 +54,10 @@ class MessageHandler implements JacksonProvider {
     private static final String SKMSG = "skmsg";
     private static final String PKMSG = "pkmsg";
     private static final String MSG = "msg";
+    private static final int MAX_ATTEMPTS = 3;
 
     private final Socket socket;
+    private final Map<String, Integer> retries;
     private final Cache<ContactJid, GroupMetadata> groupsCache;
     private final Cache<String, List<ContactJid>> devicesCache;
     private final Set<Chat> historyCache;
@@ -60,6 +66,7 @@ class MessageHandler implements JacksonProvider {
 
     protected MessageHandler(Socket socket) {
         this.socket = socket;
+        this.retries = new HashMap<>();
         this.groupsCache = createCache(Duration.ofMinutes(5));
         this.devicesCache = createCache(Duration.ofMinutes(5));
         this.historyCache = new HashSet<>();
@@ -409,15 +416,40 @@ class MessageHandler implements JacksonProvider {
 
             socket.sendMessageAck(infoNode, of("class", "receipt"));
             var encodedMessage = messageNode.contentAsBytes()
-                    .orElseThrow();
+                    .orElse(null);
             var type = messageNode.attributes()
                     .getRequiredString("type");
-            var decodedMessage = decodeMessageBytes(from, participant, encodedMessage, type);
-            if(decodedMessage.isEmpty()){
+            var decodedMessage = decodeMessageBytes(type, encodedMessage, from, participant);
+            if(decodedMessage.hasError()){
+                var attempts = retries.getOrDefault(id, 0);
+                if(attempts >= MAX_ATTEMPTS){
+                    socket.errorHandler()
+                            .handleFailure(MESSAGE, new RuntimeException(
+                                    "Cannot decrypt message with type %s inside %s from %s".formatted(type, from,
+                                            requireNonNullElse(participant, from)), decodedMessage.error()));
+                }
+
+                var retryAttributes = Attributes.empty()
+                        .put("id", id)
+                        .put("type", "retry")
+                        .put("to", from)
+                        .put("recipient", recipient, () -> !Objects.equals(recipient, from))
+                        .put("participant", participant , Objects::nonNull)
+                        .map();
+                var retryNode = Node.ofChildren("receipt",
+                        retryAttributes,
+                        Node.ofAttributes("retry",
+                                Map.of("count", attempts, "id", id, "t", timestamp, "v", 1)),
+                        Node.of("registration",
+                                BytesHelper.intToBytes(socket.keys().id(), 4)),
+                        attempts <= 1 && encodedMessage != null ? null : createPreKeyNode()
+                );
+                socket.send(retryNode);
+                retries.put(id, attempts + 1);
                 return;
             }
 
-            var messageContainer = BytesHelper.bytesToMessage(decodedMessage.get());
+            var messageContainer = BytesHelper.bytesToMessage(decodedMessage.message());
             var message = messageContainer.content() instanceof DeviceSentMessage deviceSentMessage ?
                     MessageContainer.of(deviceSentMessage.message()
                             .content()) :
@@ -443,11 +475,31 @@ class MessageHandler implements JacksonProvider {
         }
     }
 
-    private Optional<byte[]> decodeMessageBytes(ContactJid from, ContactJid participant, byte[] encodedMessage,
-                                                String type) {
+    private Node createPreKeyNode(){
         try {
+            var preKey = SignalPreKeyPair.random(socket.keys().lastPreKeyId() + 1);
+            var identity = PROTOBUF.writeValueAsBytes(socket.keys()
+                    .companionIdentity());
+            return Node.ofChildren("keys",
+                    Node.of("type", SignalSpecification.KEY_BUNDLE_TYPE),
+                    Node.of("identity", socket.keys().identityKeyPair().publicKey()),
+                    preKey.toNode(),
+                    socket.keys().signedKeyPair().toNode(),
+                    Node.of("device-identity", identity)
+            );
+        }catch (IOException exception){
+            throw new UncheckedIOException("Cannot create pre key for message retry", exception);
+        }
+    }
+
+    private MessageDecodeResult decodeMessageBytes(String type, byte[] encodedMessage, ContactJid from, ContactJid participant) {
+        try {
+            if(encodedMessage == null){
+                return new MessageDecodeResult(null, new IllegalArgumentException("Missing encoded message"));
+            }
+
             lock.acquire();
-            return Optional.ofNullable(switch (type) {
+            var result = switch (type) {
                 case SKMSG -> {
                     Objects.requireNonNull(participant, "Cannot decipher skmsg without participant");
                     var senderName = new SenderKeyName(from.toString(), participant.toSignalAddress());
@@ -479,15 +531,18 @@ class MessageHandler implements JacksonProvider {
                 }
 
                 default -> throw new IllegalArgumentException("Unsupported encoded message type: %s".formatted(type));
-            });
+            };
+            return new MessageDecodeResult(result, null);
         } catch (Throwable throwable) {
-            socket.errorHandler()
-                    .handleFailure(MESSAGE, new RuntimeException(
-                            "Cannot decrypt message with type %s inside %s from %s".formatted(type, from,
-                                    requireNonNullElse(participant, from)), throwable));
-            return Optional.empty();
+            return new MessageDecodeResult(null, throwable);
         }finally {
             lock.release();
+        }
+    }
+
+    private record MessageDecodeResult(byte[] message, Throwable error){
+        public boolean hasError(){
+            return error != null;
         }
     }
 

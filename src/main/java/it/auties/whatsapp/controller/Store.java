@@ -15,10 +15,7 @@ import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.NodeHandler;
 import it.auties.whatsapp.model.request.Request;
-import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.util.ConcurrentSet;
-import it.auties.whatsapp.util.InitializationLock;
-import it.auties.whatsapp.util.Preferences;
+import it.auties.whatsapp.util.*;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
@@ -61,6 +58,7 @@ public final class Store implements Controller<Store> {
      */
     @NonNull
     @Default
+    @JsonIgnore
     private ConcurrentMap<ContactJid, Chat> chats = new ConcurrentHashMap<>();
 
     /**
@@ -188,8 +186,8 @@ public final class Store implements Controller<Store> {
      * @return a non-null store
      */
     public static Store of(int id, boolean useDefaultSerializer) {
-        var preferences = Preferences.of("%s/store.gzip", id);
-        return Optional.ofNullable(preferences.readJson(Store.class))
+        var preferences = Preferences.of("%s/store.cbor", id);
+        return Optional.ofNullable(preferences.read(Store.class))
                 .map(store -> store.useDefaultSerializer(useDefaultSerializer))
                 .orElseGet(() -> random(id, useDefaultSerializer));
     }
@@ -485,11 +483,6 @@ public final class Store implements Controller<Store> {
         pendingRequests.clear();
     }
 
-    public void dispose() {
-        requestsService.shutdownNow();
-        serialize();
-    }
-
     /**
      * Executes an operation on every registered listener on the listener thread
      * This should be used to be sure that when a listener should be called it's called on a thread that is not the WebSocket's.
@@ -625,8 +618,24 @@ public final class Store implements Controller<Store> {
         return handler.future();
     }
 
+    /**
+     * Returns the preferences for a specific chat in the store
+     *
+     * @param chat a non-null chat
+     * @return a non-null preferences
+     */
+    public Preferences chatPreferences(@NonNull Chat chat) {
+        return Preferences.of("%s/%s.cbor", id, chat.jid().toSignalAddress().name());
+    }
+
+    public void dispose() {
+        requestsService.shutdownNow();
+        serialize();
+    }
+
     @Override
-    public Preferences preferences() {
-        return Preferences.of("%s/store.gzip", id);
+    public void serialize() {
+        ControllerProviderLoader.providers(useDefaultSerializer())
+                .forEach(serializer -> serializer.serializeStore(this));
     }
 }

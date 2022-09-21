@@ -9,11 +9,19 @@ import java.util.stream.Collectors;
 
 @UtilityClass
 public class Nodes {
-    public static List<Node> orNull(Collection<Node> nodes) {
-        return nodes == null || nodes.stream()
-                .allMatch(Objects::isNull) ?
-                null :
-                new ArrayList<>(nodes);
+    public static List<Node> filter(Collection<Node> nodes) {
+        if(nodes == null){
+            return null;
+        }
+
+        var results = nodes.stream()
+                .filter(Objects::nonNull)
+                .toList();
+        if(results.isEmpty()){
+            return null;
+        }
+
+        return results;
     }
 
     public static LinkedList<Node> findAll(Object list) {

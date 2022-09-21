@@ -16,6 +16,7 @@ import it.auties.whatsapp.model.signal.session.Session;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 import it.auties.whatsapp.model.sync.AppStateSyncKey;
 import it.auties.whatsapp.model.sync.LTHashState;
+import it.auties.whatsapp.util.ControllerProviderLoader;
 import it.auties.whatsapp.util.Preferences;
 import lombok.*;
 import lombok.Builder.Default;
@@ -184,8 +185,8 @@ public final class Keys implements Controller<Keys> {
      * @return a non-null instance of WhatsappKeys
      */
     public static Keys of(int id, boolean useDefaultSerializer) {
-        var preferences = Preferences.of("%s/keys.gzip", id);
-        return Optional.ofNullable(preferences.readJson(Keys.class))
+        var preferences = Preferences.of("%s/keys.cbor", id);
+        return Optional.ofNullable(preferences.read(Keys.class))
                 .map(store -> store.useDefaultSerializer(useDefaultSerializer))
                 .orElseGet(() -> random(id, useDefaultSerializer));
     }
@@ -410,19 +411,9 @@ public final class Keys implements Controller<Keys> {
         return Objects.requireNonNull(appStateKeys.peekLast(), "No keys available");
     }
 
-    @Override
-    public void dispose() {
-        serialize();
-    }
-
     @JsonSetter
     private void defaultSignedKey() {
         this.signedKeyPair = SignalSignedKeyPair.of(id, identityKeyPair);
-    }
-
-    @Override
-    public Preferences preferences() {
-        return Preferences.of("%s/keys.gzip", id);
     }
 
     /**
@@ -449,5 +440,16 @@ public final class Keys implements Controller<Keys> {
         this.companionIdentity = companionIdentity;
         serialize();
         return this;
+    }
+
+    @Override
+    public void dispose() {
+        serialize();
+    }
+
+    @Override
+    public void serialize() {
+        ControllerProviderLoader.providers(useDefaultSerializer())
+                .forEach(serializer -> serializer.serializeKeys(this));
     }
 }

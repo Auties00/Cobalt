@@ -1,7 +1,9 @@
 package it.auties.whatsapp.util;
 
-import it.auties.whatsapp.controller.Controller;
 import it.auties.whatsapp.controller.ControllerProvider;
+import it.auties.whatsapp.controller.Keys;
+import it.auties.whatsapp.controller.Store;
+import it.auties.whatsapp.model.chat.Chat;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -43,10 +45,24 @@ public class DefaultControllerProvider implements ControllerProvider {
         }
     }
 
+    @Override
+    public void serializeKeys(Keys keys) {
+        var preferences = Preferences.of("%s/keys.cbor", keys.id());
+        preferences.write(keys, true);
+    }
 
     @Override
-    public void serialize(Controller<?> controller) {
-        controller.preferences()
-                .writeJson(controller, true);
+    public void serializeStore(Store store) {
+        var preferences = Preferences.of("%s/store.cbor", store.id());
+        preferences.write(store, true);
+        store.chats()
+                .stream()
+                .filter(Chat::needsSerialization)
+                .forEach(chat -> serializeChat(store, chat));
+    }
+
+    private void serializeChat(Store store, Chat chat) {
+        var preferences = store.chatPreferences(chat);
+        preferences.write(chat, true);
     }
 }

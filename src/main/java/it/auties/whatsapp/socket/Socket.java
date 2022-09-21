@@ -5,6 +5,7 @@ import it.auties.whatsapp.api.SocketEvent;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.binary.MessageWrapper;
 import it.auties.whatsapp.binary.PatchType;
+import it.auties.whatsapp.controller.Controller;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.exception.ErroneousNodeException;
@@ -109,7 +110,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
         keys.dispose();
         store.dispose();
         streamHandler.dispose();
-        Preferences.waitAsyncOperations();
+        // Preferences.waitAsyncOperations();
         onSocketEvent(SocketEvent.CLOSE);
     }
 
@@ -401,19 +402,9 @@ public class Socket implements JacksonProvider, SignalSpecification {
     }
 
     private void deleteAndClearKeys() {
-        keys.delete();
-        store.delete();
-        deleteDirectory();
+        Controller.deleteFolder(keys().id());
         keys.clear();
         store.clear();
-    }
-
-    @SneakyThrows
-    private void deleteDirectory() {
-        var path = keys.preferences()
-                .file()
-                .getParent();
-        Files.deleteIfExists(path);
     }
 
     protected void onMetadata(Map<String, String> properties) {

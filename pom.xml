@@ -271,6 +271,11 @@
             <version>${jackson.modules.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-smile</artifactId>
+            <version>${jackson.modules.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.github.auties00</groupId>
             <artifactId>map-module</artifactId>
             <version>${jackson.map.version}</version>

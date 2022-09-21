@@ -1,6 +1,7 @@
 package it.auties.whatsapp.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.smile.databind.SmileMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import it.auties.map.SimpleMapModule;
@@ -33,7 +34,21 @@ public interface JacksonProvider {
         }
     }
 
-    ObjectMapper JSON = new ObjectMapper().registerModule(new Jdk8Module())
+    ObjectMapper JSON = new ObjectMapper()
+            .registerModule(new Jdk8Module())
+            .registerModule(new SimpleMapModule())
+            .registerModule(new JavaTimeModule())
+            .setSerializationInclusion(NON_DEFAULT)
+            .enable(WRITE_ENUMS_USING_INDEX)
+            .enable(FAIL_ON_EMPTY_BEANS)
+            .enable(ACCEPT_SINGLE_VALUE_AS_ARRAY)
+            .disable(FAIL_ON_UNKNOWN_PROPERTIES)
+            .setVisibility(ALL, ANY)
+            .setVisibility(GETTER, NONE)
+            .setVisibility(IS_GETTER, NONE);
+
+    SmileMapper SMILE = (SmileMapper) new SmileMapper()
+            .registerModule(new Jdk8Module())
             .registerModule(new SimpleMapModule())
             .registerModule(new JavaTimeModule())
             .setSerializationInclusion(NON_DEFAULT)
