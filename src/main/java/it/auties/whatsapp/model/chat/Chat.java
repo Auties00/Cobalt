@@ -51,8 +51,9 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      */
     @ProtobufProperty(index = 2, type = MESSAGE, concreteType = HistorySyncMessage.class, repeated = true)
     @NonNull
+    @Default
     @JsonManagedReference
-    private List<MessageInfo> messages;
+    private ArrayList<MessageInfo> messages = new ArrayList<>();
 
     /**
      * The nullable new unique jid for this Chat.
@@ -80,7 +81,8 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * If ephemeral messages aren't enabled, this field has a value of 0
      */
     @ProtobufProperty(index = 9, type = UINT32, requiresConversion = true)
-    private ChatEphemeralTimer ephemeralMessageDuration;
+    @Default
+    private ChatEphemeralTimer ephemeralMessageDuration = ChatEphemeralTimer.OFF;
 
     /**
      * The endTimeStamp in endTimeStamp since {@link java.time.Instant#EPOCH} when ephemeral messages were turned on.
@@ -149,7 +151,8 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      */
     @ProtobufProperty(index = 25, type = UINT64)
     @NonNull
-    private ChatMute mute;
+    @Default
+    private ChatMute mute = ChatMute.notMuted();
 
     /**
      * The wallpaper of this chat
@@ -162,7 +165,8 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      */
     @ProtobufProperty(index = 27, type = MESSAGE, concreteType = ChatMediaVisibility.class)
     @NonNull
-    private ChatMediaVisibility mediaVisibility;
+    @Default
+    private ChatMediaVisibility mediaVisibility = ChatMediaVisibility.OFF;
 
     /**
      * The timestamp of the sender of the token of this chat
@@ -187,21 +191,24 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * The presence that this map indicates might not line up with {@link Contact#lastKnownPresence()} if the contact is composing, recording or paused.
      * This is because a contact can be online on Whatsapp and composing, recording or paused in a specific chat.
      */
-    private Map<Contact, ContactStatus> presences;
+    @Default
+    @NonNull
+    private Map<Contact, ContactStatus> presences = new ConcurrentHashMap<>();
 
     /**
      * A set that hold all the jids of the participants in this chat that have received pre keys.
      * This set is only used if the chat is a group chat.
      * It's not important for anything other than message ciphering.
      */
-    private Set<ContactJid> participantsPreKeys;
+    @Default
+    @NonNull
+    private Set<ContactJid> participantsPreKeys = new HashSet<>();
 
     /**
-     * Marks whether this chat needs to be serialized because there is unsaved data
+     * The last hash code of the object that was serialized
      */
-    @JsonIgnore
     @Default
-    private boolean needsSerialization = true;
+    private long lastHashCode = -1;
 
     /**
      * Constructs a chat from a jid
@@ -485,106 +492,11 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
         return jid();
     }
 
-    public Chat unreadMessages(int unreadMessages){
-        this.unreadMessages = unreadMessages;
-        this.needsSerialization = true;
-        return this;
-    }
-
-    public Chat ephemeralMessageDuration(ChatEphemeralTimer ephemeralMessageDuration){
-        this.ephemeralMessageDuration = ephemeralMessageDuration;
-        this.needsSerialization = true;
-        return this;
-    }
-
-    public Chat ephemeralMessagesToggleTime(long ephemeralMessagesToggleTime){
-        this.ephemeralMessagesToggleTime = ephemeralMessagesToggleTime;
-        this.needsSerialization = true;
-        return this;
-    }
-
-    public Chat name(String name){
-        this.name = name;
-        this.needsSerialization = true;
-        return this;
-    }
-
-    public Chat notSpam(boolean notSpam){
-        this.notSpam = notSpam;
-        this.needsSerialization = true;
-        return this;
-    }
-
-    public Chat archived(boolean archived){
-        this.archived = archived;
-        this.needsSerialization = true;
-        return this;
-    }
-
-    public Chat notSpam(ChatDisappear disappearInitiator){
-        this.disappearInitiator = disappearInitiator;
-        this.needsSerialization = true;
-        return this;
-    }
-
-    public Chat token(byte[] token){
-        this.token = token;
-        this.needsSerialization = true;
-        return this;
-    }
-
-    public Chat tokenTimestamp(long tokenTimestamp){
-        this.tokenTimestamp = tokenTimestamp;
-        this.needsSerialization = true;
-        return this;
-    }
-
-    public Chat identityKey(byte[] identityKey){
-        this.identityKey = identityKey;
-        this.needsSerialization = true;
-        return this;
-    }
-
-    public Chat pinned(long pinned){
-        this.pinned = pinned;
-        this.needsSerialization = true;
-        return this;
-    }
-
-    public Chat mute(ChatMute mute){
-        this.mute = mute;
-        this.needsSerialization = true;
-        return this;
-    }
-
-    public Chat wallpaper(ChatWallpaper wallpaper){
-        this.wallpaper = wallpaper;
-        this.needsSerialization = true;
-        return this;
-    }
-
-    public Chat mediaVisibility(ChatMediaVisibility mediaVisibility){
-        this.mediaVisibility = mediaVisibility;
-        this.needsSerialization = true;
-        return this;
-    }
-
-    public Chat tokenSenderTimestamp(long tokenSenderTimestamp){
-        this.tokenSenderTimestamp = tokenSenderTimestamp;
-        this.needsSerialization = true;
-        return this;
-    }
-
-    public Chat suspended(boolean suspended){
-        this.suspended = suspended;
-        this.needsSerialization = true;
-        return this;
-    }
-
     public static class ChatBuilder {
         public ChatBuilder messages(List<MessageInfo> messages) {
-            if (this.messages == null){
-                this.messages = new ArrayList<>();
+            if (this.messages$value == null) {
+                this.messages$value = new ArrayList<>();
+                this.messages$set = true;
             }
 
             // Kind of abusing the type system of java
@@ -597,12 +509,12 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
             // This looks to be the best approach
             messages.forEach((Object entry) -> {
                 if (entry instanceof HistorySyncMessage historySyncMessage) {
-                    this.messages.add(historySyncMessage.message());
+                    messages$value.add(historySyncMessage.message());
                     return;
                 }
 
                 if (entry instanceof MessageInfo messageInfo) {
-                    this.messages.add(messageInfo);
+                    messages$value.add(messageInfo);
                     return;
                 }
 
@@ -611,252 +523,6 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
             });
 
             return this;
-        }
-
-        public Chat build() {
-            if (messages == null) {
-                this.messages = new ListenableList<>();
-            }else {
-                var oldList = messages;
-                this.messages = new ListenableList<>();
-                messages.addAll(oldList);
-            }
-
-            if (ephemeralMessageDuration == null) {
-                this.ephemeralMessageDuration = ChatEphemeralTimer.OFF;
-            }
-
-            if (mute == null) {
-                this.mute = ChatMute.notMuted();
-            }
-
-            if (mediaVisibility == null) {
-                this.mediaVisibility = ChatMediaVisibility.DEFAULT;
-            }
-
-            if (presences == null) {
-                this.presences = new ListenableMap<>();
-            }else {
-                var oldMap = presences;
-                this.presences = new ListenableMap<>();
-                presences.putAll(oldMap);
-            }
-
-            if (participantsPreKeys == null) {
-                this.participantsPreKeys = new ListenableSet<>();
-            }else {
-                var oldSet = participantsPreKeys;
-                this.participantsPreKeys = new ListenableSet<>();
-                participantsPreKeys.addAll(oldSet);
-            }
-
-            if (!this.needsSerialization$set) {
-                needsSerialization$value = true;
-            }
-
-            var result = new Chat(jid, messages, newJid, oldJid, unreadMessages, ephemeralMessageDuration,
-                    ephemeralMessagesToggleTime, timestamp, name, notSpam, archived, disappearInitiator, token,
-                    tokenTimestamp, identityKey, pinned, mute, wallpaper, mediaVisibility,
-                    tokenSenderTimestamp, suspended, presences, participantsPreKeys,
-                    needsSerialization$value);
-            ((ListenableList<?>) result.messages()).runnable(() -> result.needsSerialization(true));
-            ((ListenableMap<?, ?>) result.presences()).runnable(() -> result.needsSerialization(true));
-            ((ListenableSet<?>) result.participantsPreKeys()).runnable(() -> result.needsSerialization(true));
-            return result;
-        }
-    }
-
-    private static class ListenableList<T> extends ArrayList<T> {
-        private Runnable runnable;
-
-        @Override
-        public boolean add(T t) {
-            var result = super.add(t);
-            if(result){
-                if(runnable != null) runnable.run();
-            }
-
-            return result;
-        }
-
-        @Override
-        public void add(int index, T element) {
-            if(runnable != null) runnable.run();
-            super.add(index, element);
-        }
-
-        @Override
-        public boolean addAll(Collection<? extends T> c) {
-            var result = super.addAll(c);
-            if(result){
-                if(runnable != null) runnable.run();
-            }
-
-            return result;
-        }
-
-        @Override
-        public boolean addAll(int index, Collection<? extends T> c) {
-            var result = super.addAll(index, c);
-            if(result){
-                if(runnable != null) runnable.run();
-            }
-
-            return result;
-        }
-
-        @Override
-        public boolean remove(Object o) {
-            var result = super.remove(o);
-            if(result){
-                if(runnable != null) runnable.run();
-            }
-
-            return result;
-        }
-
-        @Override
-        public T remove(int index) {
-            var result = super.remove(index);
-            if(result != null){
-                if(runnable != null) runnable.run();
-            }
-
-            return result;
-        }
-
-        @Override
-        protected void removeRange(int fromIndex, int toIndex) {
-            if(runnable != null) runnable.run();
-            super.removeRange(fromIndex, toIndex);
-        }
-
-        @Override
-        public boolean removeAll(Collection<?> c) {
-            var result = super.removeAll(c);
-            if(result) {
-                if(runnable != null) runnable.run();
-            }
-
-            return result;
-        }
-
-        @Override
-        public boolean removeIf(Predicate<? super T> filter) {
-            var result = super.removeIf(filter);
-            if(result){
-                if(runnable != null) runnable.run();
-            }
-
-            return result;
-        }
-
-        public void runnable(Runnable runnable) {
-            this.runnable = runnable;
-        }
-    }
-
-    private static class ListenableSet<T> extends HashSet<T> {
-        private Runnable runnable;
-
-        @Override
-        public boolean add(T t) {
-            var result = super.add(t);
-            if(result){
-                if(runnable != null) runnable.run();
-            }
-
-            return result;
-        }
-
-        @Override
-        public boolean addAll(@NonNull Collection<? extends T> collection) {
-            var result = super.addAll(collection);
-            if(result){
-                if(runnable != null) runnable.run();
-            }
-
-            return result;
-        }
-
-        @Override
-        public boolean remove(Object o) {
-            var result = super.remove(o);
-            if(result){
-                if(runnable != null) runnable.run();
-            }
-
-            return result;
-        }
-
-        @Override
-        public boolean removeAll(Collection<?> c) {
-            var result = super.removeAll(c);
-            if(result){
-                if(runnable != null) runnable.run();
-            }
-
-            return result;
-        }
-
-        @Override
-        public boolean removeIf(Predicate<? super T> filter) {
-            var result = super.removeIf(filter);
-            if(result){
-                if(runnable != null) runnable.run();
-            }
-
-            return result;
-        }
-
-        public void runnable(Runnable runnable) {
-            this.runnable = runnable;
-        }
-    }
-
-    private static class ListenableMap<K, V> extends ConcurrentHashMap<K, V> {
-        private Runnable runnable;
-
-        @Override
-        public V put(@NonNull K key, @NonNull V value) {
-            if(runnable != null) runnable.run();
-            return super.put(key, value);
-        }
-
-        @Override
-        public V putIfAbsent(K key, V value) {
-            if(runnable != null) runnable.run();
-            return super.putIfAbsent(key, value);
-        }
-
-        @Override
-        public void putAll(Map<? extends K, ? extends V> m) {
-            if(runnable != null) runnable.run();
-            super.putAll(m);
-        }
-
-        @Override
-        public V remove(@NonNull Object key) {
-            var result = super.remove(key);
-            if(result != null){
-                if(runnable != null) runnable.run();
-            }
-
-            return result;
-        }
-
-        @Override
-        public boolean remove(Object key, Object value) {
-            var result = super.remove(key, value);
-            if(result){
-                if(runnable != null) runnable.run();
-            }
-
-            return result;
-        }
-
-        public void runnable(Runnable runnable) {
-            this.runnable = runnable;
         }
     }
 }

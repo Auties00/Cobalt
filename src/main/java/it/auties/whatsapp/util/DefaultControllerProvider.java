@@ -57,8 +57,22 @@ public class DefaultControllerProvider implements ControllerProvider {
         preferences.write(store, true);
         store.chats()
                 .stream()
-                .filter(Chat::needsSerialization)
+                .filter(this::updateHash)
                 .forEach(chat -> serializeChat(store, chat));
+    }
+
+    private boolean updateHash(Chat entry) {
+        if(entry.lastHashCode() == -1){
+            return true;
+        }
+
+        var newHashCode = entry.hashCode();
+        if (newHashCode == entry.lastHashCode()) {
+            return false;
+        }
+
+        entry.lastHashCode(newHashCode);
+        return true;
     }
 
     private void serializeChat(Store store, Chat chat) {

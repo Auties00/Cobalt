@@ -74,7 +74,7 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
      */
     public Path save(){
         return Preferences.home()
-                .resolve(".media")
+                .resolve("medias")
                 .resolve("%s.%s".formatted(Bytes.ofRandom(5).toHex(), mediaType().fileExtension()));
     }
 
