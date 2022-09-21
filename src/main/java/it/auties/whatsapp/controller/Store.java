@@ -186,7 +186,7 @@ public final class Store implements Controller<Store> {
      * @return a non-null store
      */
     public static Store of(int id, boolean useDefaultSerializer) {
-        var preferences = Preferences.of("%s/store.cbor", id);
+        var preferences = Preferences.of("%s/store.smile", id);
         return Optional.ofNullable(preferences.read(Store.class))
                 .map(store -> store.useDefaultSerializer(useDefaultSerializer))
                 .orElseGet(() -> random(id, useDefaultSerializer));
@@ -625,17 +625,17 @@ public final class Store implements Controller<Store> {
      * @return a non-null preferences
      */
     public Preferences chatPreferences(@NonNull Chat chat) {
-        return Preferences.of("%s/%s.cbor", id, chat.jid().toSignalAddress().name());
+        return Preferences.of("%s/%s.smile", id, chat.jid().toSignalAddress().name());
     }
 
     public void dispose() {
         requestsService.shutdownNow();
-        serialize();
+        serialize(false);
     }
 
     @Override
-    public void serialize() {
+    public void serialize(boolean async) {
         ControllerProviderLoader.providers(useDefaultSerializer())
-                .forEach(serializer -> serializer.serializeStore(this));
+                .forEach(serializer -> serializer.serializeStore(this, async));
     }
 }

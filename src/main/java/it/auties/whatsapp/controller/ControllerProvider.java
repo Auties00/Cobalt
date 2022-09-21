@@ -19,13 +19,15 @@ public interface ControllerProvider {
      * Serializes the keys
      *
      * @param keys the non-null keys to serialize
+     * @param async whether the operation should be executed asynchronously
      */
-    void serializeKeys(Keys keys);
+    void serializeKeys(Keys keys, boolean async);
 
     /**
      * Serializes the store
      *
      * @param store the non-null store to serialize
+     * @param async whether the operation should be executed asynchronously
      */
-    void serializeStore(Store store);
+    void serializeStore(Store store, boolean async);
 }

@@ -173,7 +173,7 @@ public final class Keys implements Controller<Keys> {
                 .useDefaultSerializer(useDefaultSerializer)
                 .build();
         result.signedKeyPair(SignalSignedKeyPair.of(result.id(), result.identityKeyPair()));
-        result.serialize();
+        result.serialize(true);
         return result;
     }
 
@@ -185,7 +185,7 @@ public final class Keys implements Controller<Keys> {
      * @return a non-null instance of WhatsappKeys
      */
     public static Keys of(int id, boolean useDefaultSerializer) {
-        var preferences = Preferences.of("%s/keys.cbor", id);
+        var preferences = Preferences.of("%s/keys.smile", id);
         return Optional.ofNullable(preferences.read(Keys.class))
                 .map(store -> store.useDefaultSerializer(useDefaultSerializer))
                 .orElseGet(() -> random(id, useDefaultSerializer));
@@ -325,7 +325,7 @@ public final class Keys implements Controller<Keys> {
      */
     public Keys putSession(@NonNull SessionAddress address, @NonNull Session record) {
         sessions.put(address, record);
-        serialize();
+        serialize(true);
         return this;
     }
 
@@ -338,7 +338,7 @@ public final class Keys implements Controller<Keys> {
      */
     public Keys putState(@NonNull PatchType patchType, @NonNull LTHashState state) {
         hashStates.put(patchType, state);
-        serialize();
+        serialize(true);
         return this;
     }
 
@@ -350,7 +350,7 @@ public final class Keys implements Controller<Keys> {
      */
     public Keys addAppKeys(@NonNull Collection<AppStateSyncKey> keys) {
         appStateKeys.addAll(keys);
-        serialize();
+        serialize(true);
         return this;
     }
 
@@ -362,7 +362,7 @@ public final class Keys implements Controller<Keys> {
      */
     public Keys addPreKey(SignalPreKeyPair preKey) {
         preKeys.add(preKey);
-        serialize();
+        serialize(true);
         return this;
     }
 
@@ -425,7 +425,7 @@ public final class Keys implements Controller<Keys> {
      */
     public Keys companion(ContactJid companion) {
         this.companion = companion;
-        serialize();
+        serialize(true);
         return this;
     }
 
@@ -438,18 +438,18 @@ public final class Keys implements Controller<Keys> {
      */
     public Keys companionIdentity(SignedDeviceIdentity companionIdentity) {
         this.companionIdentity = companionIdentity;
-        serialize();
+        serialize(true);
         return this;
     }
 
     @Override
     public void dispose() {
-        serialize();
+        serialize(false);
     }
 
     @Override
-    public void serialize() {
+    public void serialize(boolean async) {
         ControllerProviderLoader.providers(useDefaultSerializer())
-                .forEach(serializer -> serializer.serializeKeys(this));
+                .forEach(serializer -> serializer.serializeKeys(this, async));
     }
 }

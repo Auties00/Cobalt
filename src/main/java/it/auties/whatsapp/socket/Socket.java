@@ -110,7 +110,6 @@ public class Socket implements JacksonProvider, SignalSpecification {
         keys.dispose();
         store.dispose();
         streamHandler.dispose();
-        // Preferences.waitAsyncOperations();
         onSocketEvent(SocketEvent.CLOSE);
     }
 

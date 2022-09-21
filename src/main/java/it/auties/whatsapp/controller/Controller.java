@@ -51,8 +51,10 @@ public sealed interface Controller<T extends Controller<T>> extends JacksonProvi
 
     /**
      * Serializes this object
+     *
+     * @param async whether the operation should be executed asynchronously
      */
-    void serialize();
+    void serialize(boolean async);
 
     /**
      * Set whether the default serializer should be used

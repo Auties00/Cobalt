@@ -46,15 +46,15 @@ public class DefaultControllerProvider implements ControllerProvider {
     }
 
     @Override
-    public void serializeKeys(Keys keys) {
-        var preferences = Preferences.of("%s/keys.cbor", keys.id());
-        preferences.write(keys, true);
+    public void serializeKeys(Keys keys, boolean async) {
+        var preferences = Preferences.of("%s/keys.smile", keys.id());
+        preferences.write(keys, async);
     }
 
     @Override
-    public void serializeStore(Store store) {
-        var preferences = Preferences.of("%s/store.cbor", store.id());
-        preferences.write(store, true);
+    public void serializeStore(Store store, boolean async) {
+        var preferences = Preferences.of("%s/store.smile", store.id());
+        preferences.write(store, async);
         store.chats()
                 .stream()
                 .filter(this::updateHash)

@@ -546,6 +546,7 @@ class MessageHandler implements JacksonProvider {
         }
     }
 
+    // TODO: Decrement unread messages count
     private void saveMessage(MessageInfo info) {
         socket.store()
                 .attribute(info);
@@ -589,6 +590,7 @@ class MessageHandler implements JacksonProvider {
         builder.createIncoming(groupName, message);
     }
 
+    // TODO: Find a way to resume history sync if session is terminated before the sync ends
     @SneakyThrows
     private void handleProtocolMessage(MessageInfo info, ProtocolMessage protocolMessage, boolean peer) {
         switch (protocolMessage.protocolType()) {
@@ -668,7 +670,8 @@ class MessageHandler implements JacksonProvider {
         }
 
         // Save data to prevent session termination from messing up the cypher
-        socket.store().serialize();
+        socket.store()
+                .serialize(true);
         if (!peer) {
             return;
         }

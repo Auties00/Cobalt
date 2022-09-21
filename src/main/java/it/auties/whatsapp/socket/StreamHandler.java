@@ -368,7 +368,7 @@ class StreamHandler implements JacksonProvider {
         }
 
         socket.store()
-                .serialize();
+                .serialize(true);
         socket.sendQuery("get", "w:p", Node.of("ping"));
         socket.onSocketEvent(SocketEvent.PING);
     }
