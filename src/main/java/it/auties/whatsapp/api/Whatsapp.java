@@ -46,7 +46,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -513,12 +512,22 @@ public class Whatsapp {
     }
 
     /**
+     * Registers a sync progress listener
+     *
+     * @param onSyncProgress the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addHistorySyncProgressListener(OnHistorySyncProgress onSyncProgress) {
+        return addListener(onSyncProgress);
+    }
+
+    /**
      * Registers a chat recent messages listener
      *
      * @param onChatRecentMessages the listener to register
      * @return the same instance
      */
-    public Whatsapp addChatMessagesListener(OnWhatsappChatMessages onChatRecentMessages) {
+    public Whatsapp addChatMessagesListener(OnWhatsappChatMessagesSync onChatRecentMessages) {
         return addListener(onChatRecentMessages);
     }
 
@@ -528,7 +537,7 @@ public class Whatsapp {
      * @param onChats the listener to register
      * @return the same instance
      */
-    public Whatsapp addChatsListener(OnWhatsappChats onChats) {
+    public Whatsapp addChatsListener(OnChatMessagesSync onChats) {
         return addListener(onChats);
     }
 
@@ -703,13 +712,13 @@ public class Whatsapp {
     }
 
     /**
-     * Registers an event listener
+     * Registers a sync progress listener
      *
-     * @param onSocketEvent the listener to register
+     * @param onSyncProgress the listener to register
      * @return the same instance
      */
-    public Whatsapp addSerialization(OnWhatsappSocketEvent onSocketEvent) {
-        return addListener(onSocketEvent);
+    public Whatsapp addHistorySyncProgressListener(OnWhatsappHistorySyncProgress onSyncProgress) {
+        return addListener(onSyncProgress);
     }
 
     /**
@@ -797,7 +806,7 @@ public class Whatsapp {
 
     /**
      * Sends a request to Whatsapp in order to receive updates when the status of a contact changes.
-     * These changes include the last known presence and the endTimeStamp the contact was last seen.
+     * These changes include the last known presence and the seconds the contact was last seen.
      *
      * @param jid the contact whose status the api should receive updates on
      * @return a CompletableFuture
@@ -956,8 +965,11 @@ public class Whatsapp {
         createPreview(info);
         parseEphemeralMessage(info);
         fixButtons(info);
-        return socket.sendMessage(info)
-                .thenApplyAsync(ignored -> info);
+
+        var future = info.chat().hasUnreadMessages() ?
+                markRead(info.chat()).thenComposeAsync(ignored -> socket.sendMessage(info)) :
+                socket.sendMessage(info);
+        return future.thenApplyAsync(ignored -> info);
     }
 
     // Credit to Baileys

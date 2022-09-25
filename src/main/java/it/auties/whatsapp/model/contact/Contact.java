@@ -58,7 +58,7 @@ public final class Contact implements ProtobufMessage, ContactJidProvider {
     private ContactStatus lastKnownPresence;
 
     /**
-     * The nullable last endTimeStamp this contact was seen available.
+     * The nullable last seconds this contact was seen available.
      * Any contact can decide to hide this information in their privacy settings.
      */
     private ZonedDateTime lastSeen;
@@ -101,10 +101,10 @@ public final class Contact implements ProtobufMessage, ContactJidProvider {
     }
 
     /**
-     * Returns an optional object wrapping the last endTimeStamp this contact was seen.
+     * Returns an optional object wrapping the last seconds this contact was seen.
      * If this information isn't available, an empty optional is returned.
      *
-     * @return an optional object wrapping the last endTimeStamp this contact was seen available
+     * @return an optional object wrapping the last seconds this contact was seen available
      */
     public Optional<ZonedDateTime> lastSeen() {
         return Optional.ofNullable(lastSeen);

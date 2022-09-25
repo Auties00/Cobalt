@@ -38,13 +38,13 @@ class AppStateHandler implements JacksonProvider {
 
     private final Socket socket;
     private final Semaphore lock;
-    private final CountDownLatch latch;
+    private final CountDownLatch ready;
 
     @SneakyThrows
     protected AppStateHandler(Socket socket) {
         this.socket = socket;
         this.lock = new Semaphore(1);
-        this.latch = new CountDownLatch(1);
+        this.ready = new CountDownLatch(1);
     }
 
     protected CompletableFuture<Void> push(@NonNull PatchRequest patch) {
@@ -163,14 +163,14 @@ class AppStateHandler implements JacksonProvider {
     }
 
     private Boolean onPull(Boolean result) {
-        latch.countDown();
+        ready.countDown();
         lock.release();
         return result;
     }
 
     private boolean handlePullError(boolean initial, Throwable exception) {
         if(initial) {
-            latch.countDown();
+            ready.countDown();
             socket.errorHandler().handleFailure(INITIAL_APP_STATE_SYNC, exception);
             return false;
         }
@@ -411,15 +411,10 @@ class AppStateHandler implements JacksonProvider {
     }
 
     private void updateName(Contact contact, Chat chat, ContactAction contactAction) {
-        if (contact != null) {
-            contact.fullName(contactAction.fullName());
-            contact.shortName(contactAction.firstName());
-        }
-
-        if (chat != null) {
-            var name = requireNonNullElse(contactAction.firstName(), contactAction.fullName());
-            chat.name(name);
-        }
+        contact.fullName(contactAction.fullName());
+        contact.shortName(contactAction.firstName());
+        var name = requireNonNullElse(contactAction.firstName(), contactAction.fullName());
+        chat.name(name);
     }
 
     private void deleteMessage(MessageInfo message, Chat chat) {
@@ -593,15 +588,11 @@ class AppStateHandler implements JacksonProvider {
         }
     }
 
-    public CountDownLatch latch() {
-        return latch;
-    }
-
-    record SyncRecord(LTHashState state, List<ActionDataSync> records) {
+    private record SyncRecord(LTHashState state, List<ActionDataSync> records) {
 
     }
 
-    record SnapshotSyncRecord(PatchType patchType, SnapshotSync snapshot, List<PatchSync> patches, boolean hasMore) {
+    private record SnapshotSyncRecord(PatchType patchType, SnapshotSync snapshot, List<PatchSync> patches, boolean hasMore) {
         public boolean hasSnapshot() {
             return snapshot != null;
         }
@@ -611,15 +602,23 @@ class AppStateHandler implements JacksonProvider {
         }
     }
 
-    record MutationsRecord(LTHash.Result result, List<ActionDataSync> records) {
+    private record MutationsRecord(LTHash.Result result, List<ActionDataSync> records) {
 
     }
 
-    record PatchChunk(PatchType patchType, List<ActionDataSync> records, boolean hasMore) {
+    private record PatchChunk(PatchType patchType, List<ActionDataSync> records, boolean hasMore) {
 
     }
 
-    record PushRequest(PatchRequest patch, LTHashState oldState, LTHashState newState, PatchSync sync){
+    private record PushRequest(PatchRequest patch, LTHashState oldState, LTHashState newState, PatchSync sync){
 
+    }
+
+    public void await() {
+        try {
+           ready.await();
+        }catch (InterruptedException exception){
+            throw new RuntimeException("Cannot await app state", exception);
+        }
     }
 }

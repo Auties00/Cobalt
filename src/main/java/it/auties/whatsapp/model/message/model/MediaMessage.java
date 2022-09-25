@@ -107,7 +107,7 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
     public abstract MediaMessageType mediaType();
 
     /**
-     * Returns the timestamp, that is the endTimeStamp elapsed since {@link java.time.Instant#EPOCH}, for {@link MediaMessage#mediaKey()}
+     * Returns the timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link MediaMessage#mediaKey()}
      *
      * @return an unsigned long
      */

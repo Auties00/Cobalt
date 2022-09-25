@@ -411,6 +411,15 @@ public final class Keys implements Controller<Keys> {
         return Objects.requireNonNull(appStateKeys.peekLast(), "No keys available");
     }
 
+    /**
+     * Returns whether any app key is available
+     *
+     * @return a boolean
+     */
+    public boolean hasAppKeys(){
+        return !appStateKeys.isEmpty();
+    }
+
     @JsonSetter
     private void defaultSignedKey() {
         this.signedKeyPair = SignalSignedKeyPair.of(id, identityKeyPair);

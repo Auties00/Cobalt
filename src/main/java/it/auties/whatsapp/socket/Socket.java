@@ -31,7 +31,6 @@ import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.net.URI;
-import java.nio.file.Files;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
@@ -292,7 +291,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
         appStateHandler.pull(false, patchTypes);
     }
 
-    public void readMessage(Node node) {
+    public void decodeMessage(Node node) {
         messageHandler.decode(node);
     }
 
@@ -454,8 +453,8 @@ public class Socket implements JacksonProvider, SignalSpecification {
 
     protected void onChatRecentMessages(Chat chat, boolean last) {
         store.callListeners(listener -> {
-            listener.onChatMessages(whatsapp, chat, last);
-            listener.onChatMessages(chat, last);
+            listener.onChatMessagesSync(whatsapp, chat, last);
+            listener.onChatMessagesSync(chat, last);
         });
     }
 
@@ -529,11 +528,16 @@ public class Socket implements JacksonProvider, SignalSpecification {
             listener.onContacts();
         });
     }
-    
-    @SneakyThrows
-    protected void awaitReadyState() {
-        appStateHandler.latch()
-                .await();
+
+    protected void onHistorySyncProgress(Integer progress, boolean recent) {
+        store.invokeListeners(listener -> {
+            listener.onHistorySyncProgress(whatsapp, progress, recent);
+            listener.onHistorySyncProgress(progress, recent);
+        });
+    }
+
+    protected void awaitAppReady() {
+        appStateHandler.await();
     }
 
     public static class OriginPatcher extends Configurator {

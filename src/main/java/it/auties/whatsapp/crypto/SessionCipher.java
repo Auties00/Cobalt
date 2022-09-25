@@ -111,7 +111,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
         fillMessageKeys(chain, counter);
     }
 
-    public Optional<byte[]> decrypt(SignalPreKeyMessage message) {
+    public byte[] decrypt(SignalPreKeyMessage message) {
         var session = loadSession(() -> createSession(message));
         var builder = new SessionBuilder(address, keys);
         builder.createIncoming(session, message);
@@ -140,22 +140,20 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
     private Optional<byte[]> tryDecrypt(SignalMessage message, SessionState state) {
         try {
             Validate.isTrue(keys.hasTrust(address, state.remoteIdentityKey()), "Untrusted key");
-            return decrypt(message, state);
+            return Optional.of(decrypt(message, state));
         } catch (Throwable throwable) {
             return Optional.empty();
         }
     }
 
-    private Optional<byte[]> decrypt(SignalMessage message, SessionState state) {
+    private byte[] decrypt(SignalMessage message, SessionState state) {
         maybeStepRatchet(message, state);
 
         var chain = state.findChain(message.ephemeralPublicKey())
                 .orElseThrow(() -> new NoSuchElementException("Invalid chain"));
         fillMessageKeys(chain, message.counter());
-        if(!chain.hasMessageKey(message.counter())){
-            return Optional.empty();
-        }
 
+        Validate.isTrue(chain.hasMessageKey(message.counter()), "Key used already or never filled");
         var messageKey = chain.messageKeys()
                 .get(message.counter());
         chain.messageKeys()
@@ -179,7 +177,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
                 .toByteArray();
         var plaintext = AesCbc.decrypt(iv, message.ciphertext(), secrets[0]);
         state.pendingPreKey(null);
-        return Optional.of(plaintext);
+        return plaintext;
     }
 
     private void maybeStepRatchet(SignalMessage message, SessionState state) {

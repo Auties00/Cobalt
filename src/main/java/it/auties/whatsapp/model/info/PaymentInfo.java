@@ -51,7 +51,7 @@ public final class PaymentInfo implements Info {
     private PaymentInfoStatus status;
 
     /**
-     * The timestamp, that is the endTimeStamp since {@link java.time.Instant#EPOCH}, when the {@link RequestPaymentMessage} that originated this transaction was sent
+     * The timestamp, that is the seconds since {@link java.time.Instant#EPOCH}, when the {@link RequestPaymentMessage} that originated this transaction was sent
      */
     @ProtobufProperty(index = 5, type = UINT64)
     private long transactionTimestamp;

@@ -39,11 +39,13 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
-import java.util.stream.IntStream;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.MESSAGE;
-import static it.auties.whatsapp.model.request.Node.*;
+import static it.auties.whatsapp.model.request.Node.ofAttributes;
+import static it.auties.whatsapp.model.request.Node.ofChildren;
+import static it.auties.whatsapp.model.sync.HistorySync.HistorySyncHistorySyncType.RECENT;
 import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
@@ -61,8 +63,9 @@ class MessageHandler implements JacksonProvider {
     private final Cache<ContactJid, GroupMetadata> groupsCache;
     private final Cache<String, List<ContactJid>> devicesCache;
     private final Set<Chat> historyCache;
-    private boolean isReadyForContacts;
-    private final Semaphore lock;
+    private final Semaphore semaphore;
+    private final AtomicBoolean receivedAppKeys;
+    private final AtomicBoolean receivedPushNames;
 
     protected MessageHandler(Socket socket) {
         this.socket = socket;
@@ -70,9 +73,10 @@ class MessageHandler implements JacksonProvider {
         this.groupsCache = createCache(Duration.ofMinutes(5));
         this.devicesCache = createCache(Duration.ofMinutes(5));
         this.historyCache = new HashSet<>();
-        this.lock = new Semaphore(1);
+        this.semaphore = new Semaphore(1);
+        this.receivedAppKeys = new AtomicBoolean(false);
+        this.receivedPushNames = new AtomicBoolean(false);
     }
-
 
     private <K, V> Cache<K, V> createCache(Duration duration) {
         return Caffeine.newBuilder()
@@ -82,11 +86,11 @@ class MessageHandler implements JacksonProvider {
 
     @SafeVarargs
     protected final CompletableFuture<Void> encode(MessageInfo info, Entry<String, Object>... attributes) {
-        return CompletableFuture.runAsync(this::tryLock)
+        return CompletableFuture.runAsync(() -> tryLock(false))
                 .thenComposeAsync(ignored -> isConversation(info) ?
                         encodeConversation(info, attributes) :
                         encodeGroup(info, attributes))
-                .thenRunAsync(lock::release)
+                .thenRunAsync(semaphore::release)
                 .exceptionallyAsync(this::handleMessageFailure);
     }
 
@@ -129,17 +133,26 @@ class MessageHandler implements JacksonProvider {
                         .addMessage(info));
     }
 
-    private void tryLock() {
+    private void tryLock(boolean read) {
         try {
-            socket.awaitReadyState();
-            lock.acquire();
+            if(read){
+                if(receivedAppKeys.get()){
+                    socket.awaitAppReady();
+                }
+
+                semaphore.acquire();
+                return;
+            }
+
+            socket.awaitAppReady();
+            semaphore.acquire();
         }catch (InterruptedException exception){
-            throw new RuntimeException("Cannot lock", exception);
+            throw new RuntimeException("Cannot acquire lock", exception);
         }
     }
 
     private <T> T handleMessageFailure(Throwable throwable) {
-        lock.release();
+        semaphore.release();
         return socket.errorHandler()
                 .handleFailure(MESSAGE, throwable);
     }
@@ -372,8 +385,10 @@ class MessageHandler implements JacksonProvider {
     }
 
     protected void decode(Node node) {
-        var encrypted = node.findNodes("enc");
-        encrypted.forEach(message -> decode(node, message));
+        CompletableFuture.runAsync(() -> {
+            var encrypted = node.findNodes("enc");
+            encrypted.forEach(message -> decode(node, message));
+        });
     }
 
     private void decode(Node infoNode, Node messageNode) {
@@ -415,10 +430,10 @@ class MessageHandler implements JacksonProvider {
                     .build();
 
             socket.sendMessageAck(infoNode, of("class", "receipt"));
-            var encodedMessage = messageNode.contentAsBytes()
-                    .orElse(null);
             var type = messageNode.attributes()
                     .getRequiredString("type");
+            var encodedMessage = messageNode.contentAsBytes()
+                    .orElse(null);
             var decodedMessage = decodeMessageBytes(type, encodedMessage, from, participant);
             if(decodedMessage.hasError()){
                 var attempts = retries.getOrDefault(id, 0);
@@ -427,6 +442,7 @@ class MessageHandler implements JacksonProvider {
                             .handleFailure(MESSAGE, new RuntimeException(
                                     "Cannot decrypt message with type %s inside %s from %s".formatted(type, from,
                                             requireNonNullElse(participant, from)), decodedMessage.error()));
+                    return;
                 }
 
                 var retryAttributes = Attributes.empty()
@@ -438,13 +454,17 @@ class MessageHandler implements JacksonProvider {
                         .map();
                 var retryNode = Node.ofChildren("receipt",
                         retryAttributes,
-                        Node.ofAttributes("retry",
-                                Map.of("count", attempts, "id", id, "t", timestamp, "v", 1)),
-                        Node.of("registration",
-                                BytesHelper.intToBytes(socket.keys().id(), 4)),
+                        Node.ofAttributes(
+                                "retry",
+                                Map.of("count", attempts, "id", id, "t", timestamp, "v", 1)
+                        ),
+                        Node.of(
+                                "registration",
+                                BytesHelper.intToBytes(socket.keys().id(), 4)
+                        ),
                         attempts <= 1 && encodedMessage != null ? null : createPreKeyNode()
                 );
-                socket.send(retryNode);
+                socket.sendWithNoResponse(retryNode);
                 retries.put(id, attempts + 1);
                 return;
             }
@@ -480,9 +500,16 @@ class MessageHandler implements JacksonProvider {
             var preKey = SignalPreKeyPair.random(socket.keys().lastPreKeyId() + 1);
             var identity = PROTOBUF.writeValueAsBytes(socket.keys()
                     .companionIdentity());
-            return Node.ofChildren("keys",
-                    Node.of("type", SignalSpecification.KEY_BUNDLE_TYPE),
-                    Node.of("identity", socket.keys().identityKeyPair().publicKey()),
+            return Node.ofChildren(
+                    "keys",
+                    Node.of(
+                            "type",
+                            SignalSpecification.KEY_BUNDLE_TYPE
+                    ),
+                    Node.of(
+                            "identity",
+                            socket.keys().identityKeyPair().publicKey()
+                    ),
                     preKey.toNode(),
                     socket.keys().signedKeyPair().toNode(),
                     Node.of("device-identity", identity)
@@ -498,7 +525,7 @@ class MessageHandler implements JacksonProvider {
                 return new MessageDecodeResult(null, new IllegalArgumentException("Missing encoded message"));
             }
 
-            lock.acquire();
+            tryLock(true);
             var result = switch (type) {
                 case SKMSG -> {
                     Objects.requireNonNull(participant, "Cannot decipher skmsg without participant");
@@ -515,8 +542,7 @@ class MessageHandler implements JacksonProvider {
 
                     var session = new SessionCipher(user.toSignalAddress(), socket.keys());
                     var preKey = SignalPreKeyMessage.ofSerialized(encodedMessage);
-                    yield session.decrypt(preKey)
-                            .orElse(null);
+                    yield session.decrypt(preKey);
                 }
 
                 case MSG -> {
@@ -536,7 +562,7 @@ class MessageHandler implements JacksonProvider {
         } catch (Throwable throwable) {
             return new MessageDecodeResult(null, throwable);
         }finally {
-            lock.release();
+            semaphore.release();
         }
     }
 
@@ -590,50 +616,13 @@ class MessageHandler implements JacksonProvider {
         builder.createIncoming(groupName, message);
     }
 
-    // TODO: Find a way to resume history sync if session is terminated before the sync ends
-    @SneakyThrows
     private void handleProtocolMessage(MessageInfo info, ProtocolMessage protocolMessage, boolean peer) {
         switch (protocolMessage.protocolType()) {
             case HISTORY_SYNC_NOTIFICATION -> {
-                var compressed = Medias.download(protocolMessage.historySyncNotification());
-                Validate.isTrue(compressed.status() == DownloadResult.Status.SUCCESS,
-                        "Cannot download history sync");
-                var decompressed = BytesHelper.deflate(compressed.media().get());
-                var history = PROTOBUF.readMessage(decompressed, HistorySync.class);
-                switch (history.syncType()) {
-                    case INITIAL_STATUS_V3 -> {
-                        history.statusV3Messages()
-                                .forEach(socket.store()::addStatus);
-                        socket.onStatus();
-                    }
-
-                   case INITIAL_BOOTSTRAP -> {
-                       historyCache.addAll(history.conversations());
-                       history.conversations()
-                               .forEach(socket.store()::addChat);
-                       socket.store()
-                               .hasSnapshot(true);
-                       socket.onChats();
-                       if(isReadyForContacts){
-                           socket.onContacts();
-                       }
-
-                       this.isReadyForContacts = true;
-                    }
-
-                    case PUSH_NAME -> {
-                        history.pushNames()
-                                .forEach(this::handNewPushName);
-                        if(isReadyForContacts){
-                            socket.onContacts();
-                        }
-
-                        this.isReadyForContacts = true;
-                    }
-
-                    case RECENT, FULL -> handleRecentMessagesListener(history);
-
-                    case null -> {}
+                var history = downloadHistorySync(protocolMessage);
+                handleHistorySync(history);
+                if(history.progress() != null){
+                    socket.onHistorySyncProgress(history.progress(), history.syncType() == RECENT);
                 }
 
                 socket.sendSyncReceipt(info, "hist_sync");
@@ -649,6 +638,8 @@ class MessageHandler implements JacksonProvider {
                 socket.keys()
                         .addAppKeys(protocolMessage.appStateSyncKeyShare()
                                 .keys());
+                receivedAppKeys.set(true);
+                socket.pullInitialPatches();
             }
 
             case REVOKE -> socket.store()
@@ -679,12 +670,63 @@ class MessageHandler implements JacksonProvider {
         socket.sendSyncReceipt(info, "peer_msg");
     }
 
+    private HistorySync downloadHistorySync(ProtocolMessage protocolMessage) {
+       try {
+           var compressed = Medias.download(protocolMessage.historySyncNotification());
+           Validate.isTrue(compressed.status() == DownloadResult.Status.SUCCESS,
+                   "Cannot download history sync");
+           var decompressed = BytesHelper.deflate(compressed.media().get());
+           return PROTOBUF.readMessage(decompressed, HistorySync.class);
+       }catch (IOException exception){
+           throw new UncheckedIOException("Cannot read history sync", exception);
+       }
+    }
+
+    private void handleHistorySync(HistorySync history) {
+        switch (history.syncType()) {
+            case INITIAL_STATUS_V3 -> {
+                history.statusV3Messages()
+                        .forEach(socket.store()::addStatus);
+                socket.onStatus();
+            }
+
+           case INITIAL_BOOTSTRAP -> {
+               historyCache.addAll(history.conversations());
+               history.conversations()
+                       .forEach(this::updateChatMessages);
+               socket.store()
+                       .hasSnapshot(true);
+               socket.onChats();
+               if(receivedPushNames.get()){
+                   socket.onContacts();
+               }
+            }
+
+            case PUSH_NAME -> {
+                history.pushNames()
+                        .forEach(this::handNewPushName);
+                receivedPushNames.set(true);
+            }
+
+            case RECENT, FULL -> handleRecentMessagesListener(history);
+
+            case null -> {}
+        }
+    }
+
     private void handleRecentMessagesListener(HistorySync history) {
         history.conversations()
-                .forEach(socket.store()::addChat);
+                .forEach(this::updateChatMessages);
         historyCache.forEach(cached ->
                 socket.onChatRecentMessages(cached, !history.conversations().contains(cached)));
         historyCache.removeIf(entry -> !history.conversations().contains(entry));
+    }
+
+    private void updateChatMessages(Chat carrier){
+        socket.store()
+                .findChatByJid(carrier.jid())
+                .ifPresentOrElse(chat -> chat.messages().addAll(carrier.messages()),
+                        () -> socket.store().addChat(carrier));
     }
 
     private void handNewPushName(PushName pushName) {

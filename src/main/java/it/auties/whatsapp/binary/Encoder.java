@@ -188,6 +188,7 @@ public class Encoder {
         if (size < UNSIGNED_SHORT_MAX_VALUE) {
             this.buffer = buffer.append(LIST_16.data());
             buffer.appendShort(size);
+            return;
         }
 
         throw new IllegalArgumentException("Cannot write int %s: overflow".formatted(size));

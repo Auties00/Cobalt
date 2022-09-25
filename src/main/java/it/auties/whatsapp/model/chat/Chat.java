@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.chat;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import it.auties.protobuf.api.model.ProtobufMessage;
 import it.auties.protobuf.api.model.ProtobufProperty;
@@ -22,7 +21,6 @@ import lombok.extern.jackson.Jacksonized;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Predicate;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
@@ -77,7 +75,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     private int unreadMessages;
 
     /**
-     * The endTimeStamp in endTimeStamp before a message is automatically deleted from this chat both locally and from WhatsappWeb's servers.
+     * The seconds in seconds before a message is automatically deleted from this chat both locally and from WhatsappWeb's servers.
      * If ephemeral messages aren't enabled, this field has a value of 0
      */
     @ProtobufProperty(index = 9, type = UINT32, requiresConversion = true)
@@ -85,7 +83,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     private ChatEphemeralTimer ephemeralMessageDuration = ChatEphemeralTimer.OFF;
 
     /**
-     * The endTimeStamp in endTimeStamp since {@link java.time.Instant#EPOCH} when ephemeral messages were turned on.
+     * The seconds in seconds since {@link java.time.Instant#EPOCH} when ephemeral messages were turned on.
      * If ephemeral messages aren't enabled, this field has a value of 0.
      */
     @ProtobufProperty(index = 10, type = INT64)
@@ -140,7 +138,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     private byte[] identityKey;
 
     /**
-     * The endTimeStamp in endTimeStamp since {@link java.time.Instant#EPOCH} when this chat was pinned to the top.
+     * The seconds in seconds since {@link java.time.Instant#EPOCH} when this chat was pinned to the top.
      * If the chat isn't pinned, this field has a value of 0.
      */
     @ProtobufProperty(index = 24, type = UINT32)
@@ -323,7 +321,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     }
 
     /**
-     * Returns an optional value containing the endTimeStamp this chat was pinned
+     * Returns an optional value containing the seconds this chat was pinned
      *
      * @return a non-empty optional if the chat is pinned
      */
@@ -332,7 +330,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     }
 
     /**
-     * Returns the timestamp for the creation of this chat in endTimeStamp since {@link java.time.Instant#EPOCH}
+     * Returns the timestamp for the creation of this chat in seconds since {@link java.time.Instant#EPOCH}
      *
      * @return a non-empty optional if this field is populated
      */
@@ -341,7 +339,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     }
 
     /**
-     * Returns an optional value containing the endTimeStamp in endTimeStamp since {@link java.time.Instant#EPOCH} when ephemeral messages were turned on
+     * Returns an optional value containing the seconds in seconds since {@link java.time.Instant#EPOCH} when ephemeral messages were turned on
      *
      * @return a non-empty optional if ephemeral messages are enabled for this chat
      */

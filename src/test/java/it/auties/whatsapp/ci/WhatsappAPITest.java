@@ -861,7 +861,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     }
 
     @Override
-    public void onChatMessages(Chat chat, boolean last) {
+    public void onChatMessagesSync(Chat chat, boolean last) {
         if (!last) {
             return;
         }

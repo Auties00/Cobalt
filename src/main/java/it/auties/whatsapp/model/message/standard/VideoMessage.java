@@ -45,7 +45,7 @@ public final class VideoMessage extends MediaMessage {
 
     /**
      * The mime type of the video that this object wraps.
-     * Most of the endTimeStamp this is {@link MediaMessageType#defaultMimeType()}
+     * Most of the seconds this is {@link MediaMessageType#defaultMimeType()}
      */
     @ProtobufProperty(index = 2, type = STRING)
     private String mimetype;
@@ -63,7 +63,7 @@ public final class VideoMessage extends MediaMessage {
     private long mediaSize;
 
     /**
-     * The length in endTimeStamp of the video that this message wraps
+     * The length in seconds of the video that this message wraps
      */
     @ProtobufProperty(index = 5, type = UINT32)
     private Integer duration;
@@ -117,7 +117,7 @@ public final class VideoMessage extends MediaMessage {
     private String mediaDirectPath;
 
     /**
-     * The timestamp, that is the endTimeStamp elapsed since {@link java.time.Instant#EPOCH}, for {@link VideoMessage#mediaKey()}
+     * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link VideoMessage#mediaKey()}
      */
     @ProtobufProperty(index = 14, type = INT64)
     private long mediaKeyTimestamp;
@@ -190,7 +190,7 @@ public final class VideoMessage extends MediaMessage {
      * @param media           the non-null video that the new message wraps
      * @param mimeType        the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
      * @param caption         the caption of the new message
-     * @param gifAttribution  the length in endTimeStamp of the video that the new message wraps
+     * @param gifAttribution  the length in seconds of the video that the new message wraps
      * @param thumbnail       the thumbnail of the sticker that the new message wraps as a jpg
      * @param contextInfo     the context info that the new message wraps
      * @return a non-null new message

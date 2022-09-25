@@ -134,9 +134,8 @@ public final class Store implements Controller<Store> {
             .toLowerCase(Locale.ROOT);
 
     /**
-     * The timestamp in endTimeStamp for the initialization of this object
+     * The timestamp in seconds for the initialization of this object
      */
-    @JsonIgnore
     @Default
     @Getter
     private long initializationTimeStamp = Clock.now();
@@ -371,7 +370,8 @@ public final class Store implements Controller<Store> {
     }
 
     /**
-     * Adds a chat in memory
+     * Adds a chat in memory.
+     * If a chat already exists an exception will be thrown
      *
      * @param chat the chat to add
      * @return the input chat
@@ -379,12 +379,6 @@ public final class Store implements Controller<Store> {
     public Chat addChat(@NonNull Chat chat) {
         chat.messages()
                 .forEach(this::attribute);
-        var oldChat = chats.get(chat.jid());
-        if(oldChat != null && !oldChat.messages().isEmpty()){
-            chat.messages()
-                    .addAll(oldChat.messages());
-        }
-
         if(chat.hasName() && chat.jid().hasServer(ContactJid.Server.WHATSAPP)){
             var contact = findContactByJid(chat.jid())
                     .orElseGet(() -> addContact(Contact.ofJid(chat.jid())));

@@ -58,7 +58,7 @@ public final class StickerMessage extends MediaMessage {
 
     /**
      * The mime type of the sticker that this object wraps.
-     * Most of the endTimeStamp this is {@link MediaMessageType#defaultMimeType()}
+     * Most of the seconds this is {@link MediaMessageType#defaultMimeType()}
      */
     @ProtobufProperty(index = 5, type = STRING)
     private String mimetype;
@@ -88,7 +88,7 @@ public final class StickerMessage extends MediaMessage {
     private long mediaSize;
 
     /**
-     * The timestamp, that is the endTimeStamp elapsed since {@link java.time.Instant#EPOCH}, for {@link StickerMessage#mediaKey()}
+     * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link StickerMessage#mediaKey()}
      */
     @ProtobufProperty(index = 10, type = UINT64)
     private long mediaKeyTimestamp;

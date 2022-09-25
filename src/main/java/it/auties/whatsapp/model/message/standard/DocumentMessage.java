@@ -40,7 +40,7 @@ public final class DocumentMessage extends MediaMessage {
 
     /**
      * The mime type of the audio that this object wraps.
-     * Most of the endTimeStamp this is {@link MediaMessageType#defaultMimeType()}
+     * Most of the seconds this is {@link MediaMessageType#defaultMimeType()}
      */
     @ProtobufProperty(index = 2, type = STRING)
     private String mimetype;
@@ -94,7 +94,7 @@ public final class DocumentMessage extends MediaMessage {
     private String mediaDirectPath;
 
     /**
-     * The timestamp, that is the endTimeStamp elapsed since {@link java.time.Instant#EPOCH}, for {@link DocumentMessage#mediaKey()}
+     * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link DocumentMessage#mediaKey()}
      */
     @ProtobufProperty(index = 11, type = UINT64)
     private long mediaKeyTimestamp;

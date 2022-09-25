@@ -43,7 +43,7 @@ public final class ImageMessage extends MediaMessage {
 
     /**
      * The mime type of the image that this object wraps.
-     * Most of the endTimeStamp this is {@link MediaMessageType#defaultMimeType()}
+     * Most of the seconds this is {@link MediaMessageType#defaultMimeType()}
      */
     @ProtobufProperty(index = 2, type = STRING)
     private String mimetype;
@@ -103,7 +103,7 @@ public final class ImageMessage extends MediaMessage {
     private String mediaDirectPath;
 
     /**
-     * The timestamp, that is the endTimeStamp elapsed since {@link java.time.Instant#EPOCH}, for {@link ImageMessage#mediaKey()}
+     * The timestamp, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for {@link ImageMessage#mediaKey()}
      */
     @ProtobufProperty(index = 12, type = UINT64)
     private long mediaKeyTimestamp;

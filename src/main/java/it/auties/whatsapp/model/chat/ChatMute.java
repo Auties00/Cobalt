@@ -136,19 +136,19 @@ public record ChatMute(long endTimeStamp) implements ProtobufMessage {
      */
     public enum Type implements ProtobufMessage {
         /**
-         * This constant describes a {@link ChatMute} that holds a endTimeStamp greater than 0
+         * This constant describes a {@link ChatMute} that holds a seconds greater than 0
          * Simply put, {@link ChatMute#endTimeStamp()} > 0
          */
         MUTED_FOR_TIMEFRAME,
 
         /**
-         * This constant describes a {@link ChatMute} that holds a endTimeStamp equal to -1
+         * This constant describes a {@link ChatMute} that holds a seconds equal to -1
          * Simply put, {@link ChatMute#endTimeStamp()} == -1
          */
         MUTED_INDEFINITELY,
 
         /**
-         * This constant describes a {@link ChatMute} that holds a endTimeStamp equal to 0
+         * This constant describes a {@link ChatMute} that holds a seconds equal to 0
          * Simply put, {@link ChatMute#endTimeStamp()} == 0
          */
         NOT_MUTED

@@ -53,7 +53,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
     private MessageContainer message = new MessageContainer();
 
     /**
-     * The timestamp, that is the endTimeStamp since {@link java.time.Instant#EPOCH}, when this message was sent
+     * The timestamp, that is the seconds since {@link java.time.Instant#EPOCH}, when this message was sent
      */
     @ProtobufProperty(index = 3, type = UINT64)
     private long timestamp;

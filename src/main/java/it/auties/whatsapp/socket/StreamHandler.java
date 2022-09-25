@@ -62,7 +62,7 @@ class StreamHandler implements JacksonProvider {
             case "receipt" -> digestReceipt(node);
             case "stream:error" -> digestError(node);
             case "success" -> digestSuccess();
-            case "message" -> socket.readMessage(node);
+            case "message" -> socket.decodeMessage(node);
             case "notification" -> digestNotification(node);
             case "presence", "chatstate" -> digestChatState(node);
         }

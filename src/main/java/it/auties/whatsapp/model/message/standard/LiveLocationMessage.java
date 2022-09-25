@@ -68,8 +68,8 @@ public final class LiveLocationMessage extends ContextualMessage {
     private Long sequenceNumber;
 
     /**
-     * This offset probably refers to the endTimeStamp since the last update to this live location message.
-     * In addition, it is measured in endTimeStamp since {@link java.time.Instant#EPOCH}.
+     * This offset probably refers to the seconds since the last update to this live location message.
+     * In addition, it is measured in seconds since {@link java.time.Instant#EPOCH}.
      */
     @ProtobufProperty(index = 8, type = UINT32)
     private Integer timeOffset;

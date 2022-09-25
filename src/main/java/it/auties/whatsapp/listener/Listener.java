@@ -245,8 +245,8 @@ public interface Listener {
      * Called when the socket receives all the chats from WhatsappWeb's WebSocket.
      * When this event is fired, it is guaranteed that all metadata excluding messages will be present.
      * To access this data use {@link Store#chats()}.
-     * If you also need the messages to be loaded, please refer to {@link Listener#onChatMessages(Chat, boolean)}.
-     * Particularly old chats may come later through {@link Listener#onChatMessages(Chat, boolean)}
+     * If you also need the messages to be loaded, please refer to {@link Listener#onChatMessagesSync(Chat, boolean)}.
+     * Particularly old chats may come later through {@link Listener#onChatMessagesSync(Chat, boolean)}
      *
      * @param whatsapp an instance to the calling api
      */
@@ -258,34 +258,60 @@ public interface Listener {
      * Called when the socket receives all the chats from WhatsappWeb's WebSocket.
      * When this event is fired, it is guaranteed that all metadata excluding messages will be present.
      * To access this data use {@link Store#chats()}.
-     * If you also need the messages to be loaded, please refer to {@link Listener#onChatMessages(Chat, boolean)}.
-     * Particularly old chats may come later through {@link Listener#onChatMessages(Chat, boolean)}
+     * If you also need the messages to be loaded, please refer to {@link Listener#onChatMessagesSync(Chat, boolean)}.
+     * Particularly old chats may come later through {@link Listener#onChatMessagesSync(Chat, boolean)}
      */
     default void onChats() {
 
     }
 
     /**
-     * Called when the socket receives the recent message for a chat
+     * Called when the socket receives the messages for a chat.
+     * This method is only called when the QR is first scanned and history is being synced.
+     * From all subsequent runs, the messages will already in the chat on startup.
      *
      * @param whatsapp an instance to the calling api
      * @param chat     the chat
      * @param last     whether the messages in this chat are complete or there are more coming
      */
-    default void onChatMessages(Whatsapp whatsapp, Chat chat, boolean last) {
+    default void onChatMessagesSync(Whatsapp whatsapp, Chat chat, boolean last) {
 
     }
 
     /**
-     * Called when the socket receives the recent message for a chat
+     * Called when the socket receives the message for a chat
+     * This method is only called when the QR is first scanned and history is being synced.
+     * From all subsequent runs, the messages will already in the chat on startup.
      *
      * @param chat the chat
      * @param last whether the messages in this chat are complete or there are more coming
      */
-    default void onChatMessages(Chat chat, boolean last) {
+    default void onChatMessagesSync(Chat chat, boolean last) {
 
     }
 
+    /**
+     * Called when the socket receives the sync percentage for the full or recent chunk of messages.
+     * This method is only called when the QR is first scanned and history is being synced.
+     *
+     * @param percentage the percentage synced up to now
+     * @param recent whether the sync is about the recent messages or older messages
+     */
+    default void onHistorySyncProgress(int percentage, boolean recent){
+
+    }
+
+    /**
+     * Called when the socket receives the sync percentage for the full or recent chunk of messages.
+     * This method is only called when the QR is first scanned and history is being synced.
+     *
+     * @param whatsapp an instance to the calling api
+     * @param percentage the percentage synced up to now
+     * @param recent whether the sync is about the recent messages or older messages
+     */
+    default void onHistorySyncProgress(Whatsapp whatsapp, int percentage, boolean recent){
+
+    }
 
     /**
      * Called when a new message is received in a chat

@@ -10,5 +10,5 @@ public interface OnChatMessages extends Listener {
      * @param last whether the messages in this chat are complete or there are more coming
      */
     @Override
-    void onChatMessages(Chat chat, boolean last);
+    void onChatMessagesSync(Chat chat, boolean last);
 }
