@@ -2,6 +2,7 @@ package it.auties.whatsapp.crypto;
 
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.controller.Keys;
+import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalMessage;
@@ -10,7 +11,6 @@ import it.auties.whatsapp.model.signal.session.Session;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 import it.auties.whatsapp.model.signal.session.SessionChain;
 import it.auties.whatsapp.model.signal.session.SessionState;
-import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.SignalSpecification;
 import it.auties.whatsapp.util.Validate;
@@ -23,7 +23,6 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import static it.auties.curve25519.Curve25519.sharedKey;
-import static it.auties.whatsapp.model.request.Node.of;
 import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 

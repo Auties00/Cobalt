@@ -163,14 +163,15 @@ class AppStateHandler implements JacksonProvider {
     }
 
     private Boolean onPull(Boolean result) {
-        ready.countDown();
+        markReady();
+        socket.store().initialAppSync(true);
         lock.release();
         return result;
     }
 
     private boolean handlePullError(boolean initial, Throwable exception) {
         if(initial) {
-            ready.countDown();
+            markReady();
             socket.errorHandler().handleFailure(INITIAL_APP_STATE_SYNC, exception);
             return false;
         }
@@ -614,7 +615,11 @@ class AppStateHandler implements JacksonProvider {
 
     }
 
-    public void await() {
+    public void markReady() {
+        ready.countDown();
+    }
+
+    public void awaitReady() {
         try {
            ready.await();
         }catch (InterruptedException exception){

@@ -15,6 +15,7 @@ import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.NodeHandler;
 import it.auties.whatsapp.model.request.Request;
+import it.auties.whatsapp.serialization.ControllerProviderLoader;
 import it.auties.whatsapp.util.*;
 import lombok.*;
 import lombok.Builder.Default;
@@ -81,7 +82,14 @@ public final class Store implements Controller<Store> {
      */
     @Getter
     @Setter
-    private boolean hasSnapshot;
+    private boolean initialSnapshot;
+
+    /**
+     * Whether the initial app sync has already been sent
+     */
+    @Getter
+    @Setter
+    private boolean initialAppSync;
 
     /**
      * Whether chats should be unarchived if a new message arrives
@@ -185,10 +193,12 @@ public final class Store implements Controller<Store> {
      * @return a non-null store
      */
     public static Store of(int id, boolean useDefaultSerializer) {
-        var preferences = Preferences.of("%s/store.smile", id);
-        return Optional.ofNullable(preferences.read(Store.class))
+        var deserializer = ControllerProviderLoader.findOnlyDeserializer(useDefaultSerializer);
+        var result = deserializer.deserializeStore(id)
                 .map(store -> store.useDefaultSerializer(useDefaultSerializer))
                 .orElseGet(() -> random(id, useDefaultSerializer));
+        deserializer.attributeStore(result); // Run async
+        return result;
     }
 
     /**
@@ -370,8 +380,7 @@ public final class Store implements Controller<Store> {
     }
 
     /**
-     * Adds a chat in memory.
-     * If a chat already exists an exception will be thrown
+     * Adds a chat in memory
      *
      * @param chat the chat to add
      * @return the input chat
@@ -385,6 +394,16 @@ public final class Store implements Controller<Store> {
             contact.fullName(chat.name());
         }
 
+        return addChatDirect(chat);
+    }
+
+    /**
+     * Adds a chat in memory without executing any check
+     *
+     * @param chat the chat to add
+     * @return the input chat
+     */
+    public Chat addChatDirect(Chat chat) {
         chats.put(chat.jid(), chat);
         return chat;
     }
@@ -612,16 +631,6 @@ public final class Store implements Controller<Store> {
         return handler.future();
     }
 
-    /**
-     * Returns the preferences for a specific chat in the store
-     *
-     * @param chat a non-null chat
-     * @return a non-null preferences
-     */
-    public Preferences chatPreferences(@NonNull Chat chat) {
-        return Preferences.of("%s/%s.smile", id, chat.jid().toSignalAddress().name());
-    }
-
     public void dispose() {
         requestsService.shutdownNow();
         serialize(false);
@@ -629,7 +638,7 @@ public final class Store implements Controller<Store> {
 
     @Override
     public void serialize(boolean async) {
-        ControllerProviderLoader.providers(useDefaultSerializer())
+        ControllerProviderLoader.findAllSerializers(useDefaultSerializer())
                 .forEach(serializer -> serializer.serializeStore(this, async));
     }
 }

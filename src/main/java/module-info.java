@@ -1,4 +1,4 @@
-import it.auties.whatsapp.controller.ControllerProvider;
+import it.auties.whatsapp.serialization.ControllerProvider;
 
 open module it.auties.whatsappweb4j {
     requires static lombok;
@@ -52,6 +52,8 @@ open module it.auties.whatsappweb4j {
     exports it.auties.whatsapp.model.payment;
     exports it.auties.whatsapp.model.message.button;
     exports it.auties.whatsapp.listener;
+    exports it.auties.whatsapp.serialization;
+    exports it.auties.whatsapp.util;
 
     uses ControllerProvider;
 }

@@ -20,6 +20,7 @@ import it.auties.whatsapp.model.signal.auth.DeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
+import it.auties.whatsapp.serialization.ControllerProviderLoader;
 import it.auties.whatsapp.util.*;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -34,7 +35,8 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.*;
-import static it.auties.whatsapp.model.request.Node.*;
+import static it.auties.whatsapp.model.request.Node.ofAttributes;
+import static it.auties.whatsapp.model.request.Node.ofChildren;
 import static java.util.Map.of;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
@@ -321,11 +323,13 @@ class StreamHandler implements JacksonProvider {
         sendStatusUpdate();
         socket.onLoggedIn();
         if (!socket.store()
-                .hasSnapshot()) {
+                .initialSnapshot()) {
             return;
         }
 
-        socket.onChats();
+        ControllerProviderLoader.findOnlyDeserializer(socket.options().defaultSerialization())
+                .attributeStore(socket.store())
+                .thenRun(socket::onChats);
         socket.onContacts();
         socket.pullInitialPatches();
     }

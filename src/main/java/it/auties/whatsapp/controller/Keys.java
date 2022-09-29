@@ -16,8 +16,7 @@ import it.auties.whatsapp.model.signal.session.Session;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 import it.auties.whatsapp.model.sync.AppStateSyncKey;
 import it.auties.whatsapp.model.sync.LTHashState;
-import it.auties.whatsapp.util.ControllerProviderLoader;
-import it.auties.whatsapp.util.Preferences;
+import it.auties.whatsapp.serialization.ControllerProviderLoader;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
@@ -185,8 +184,8 @@ public final class Keys implements Controller<Keys> {
      * @return a non-null instance of WhatsappKeys
      */
     public static Keys of(int id, boolean useDefaultSerializer) {
-        var preferences = Preferences.of("%s/keys.smile", id);
-        return Optional.ofNullable(preferences.read(Keys.class))
+        var deserializer = ControllerProviderLoader.findOnlyDeserializer(useDefaultSerializer);
+        return deserializer.deserializeKeys(id)
                 .map(store -> store.useDefaultSerializer(useDefaultSerializer))
                 .orElseGet(() -> random(id, useDefaultSerializer));
     }
@@ -458,7 +457,7 @@ public final class Keys implements Controller<Keys> {
 
     @Override
     public void serialize(boolean async) {
-        ControllerProviderLoader.providers(useDefaultSerializer())
+        ControllerProviderLoader.findAllSerializers(useDefaultSerializer())
                 .forEach(serializer -> serializer.serializeKeys(this, async));
     }
 }

@@ -695,7 +695,7 @@ class MessageHandler implements JacksonProvider {
                history.conversations()
                        .forEach(this::updateChatMessages);
                socket.store()
-                       .hasSnapshot(true);
+                       .initialSnapshot(true);
                socket.onChats();
                if(receivedPushNames.get()){
                    socket.onContacts();

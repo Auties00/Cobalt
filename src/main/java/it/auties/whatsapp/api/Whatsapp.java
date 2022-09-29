@@ -4,7 +4,6 @@ import it.auties.bytes.Bytes;
 import it.auties.linkpreview.LinkPreview;
 import it.auties.linkpreview.LinkPreviewMedia;
 import it.auties.linkpreview.LinkPreviewResult;
-import it.auties.whatsapp.controller.Controller;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGmc;
@@ -33,6 +32,7 @@ import it.auties.whatsapp.model.response.ContactStatusResponse;
 import it.auties.whatsapp.model.response.HasWhatsappResponse;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.model.sync.*;
+import it.auties.whatsapp.serialization.ControllerProviderLoader;
 import it.auties.whatsapp.socket.Socket;
 import it.auties.whatsapp.util.*;
 import lombok.Builder;
@@ -154,7 +154,7 @@ public class Whatsapp {
      */
     public static Whatsapp firstConnection(@NonNull Options options) {
         return newConnection(options.withId(requireNonNullElseGet(
-                ControllerProviderLoader.allIds(options.defaultSerialization())
+                ControllerProviderLoader.findAllIds(options.defaultSerialization())
                         .peekFirst(), KeyHelper::registrationId)));
     }
 
@@ -177,7 +177,7 @@ public class Whatsapp {
      */
     public static Whatsapp lastConnection(@NonNull Options options) {
         return newConnection(options.withId(requireNonNullElseGet(
-                ControllerProviderLoader.allIds(options.defaultSerialization())
+                ControllerProviderLoader.findAllIds(options.defaultSerialization())
                         .peekLast(), KeyHelper::registrationId)));
     }
 
@@ -216,7 +216,7 @@ public class Whatsapp {
      * @return a non-null Stream
      */
     public static Stream<Whatsapp> streamConnections(@NonNull Options options) {
-        return ControllerProviderLoader.allIds(options.defaultSerialization())
+        return ControllerProviderLoader.findAllIds(options.defaultSerialization())
                 .stream()
                 .map(id -> Whatsapp.newConnection(options.withId(id)));
     }
@@ -771,7 +771,7 @@ public class Whatsapp {
      * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Whatsapp> delete() {
-        Controller.deleteFolder(keys().id());
+        LocalSystem.delete(String.valueOf(keys().id()));
         return disconnect();
     }
 
@@ -2183,13 +2183,6 @@ public class Whatsapp {
          */
         @Default
         private final Version version = Version.latest(WHATSAPP_VERSION);
-
-        /**
-         * The url of the socket
-         */
-        @Default
-        @NonNull
-        private final String url = "wss://web.whatsapp.com/ws/chat";
 
         /**
          * The description provided to Whatsapp during the authentication process.

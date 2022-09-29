@@ -13,6 +13,7 @@ public class WaitTest implements JacksonProvider {
                 .addLoggedInListener(() -> System.out.println("Connected"))
                 .addNewMessageListener(WaitTest::logMessage)
                 .addContactsListener((whatsapp) -> System.out.println(whatsapp.store().contacts().size()))
+                .addChatsListener((whatsapp) -> System.out.println(whatsapp.store().chats().size()))
                 .addNodeReceivedListener(incoming -> System.out.printf("Received node %s%n", incoming))
                 .addNodeSentListener(outgoing -> System.out.printf("Sent node %s%n", outgoing))
                 .connect()

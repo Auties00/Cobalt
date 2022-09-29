@@ -1,8 +1,8 @@
 package it.auties.whatsapp.socket;
 
 import it.auties.whatsapp.api.ErrorHandler;
-import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.exception.ErroneousNodeException;
+import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.JacksonProvider;
 
 import java.util.concurrent.atomic.AtomicBoolean;

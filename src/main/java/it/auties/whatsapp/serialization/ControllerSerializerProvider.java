@@ -1,20 +1,13 @@
-package it.auties.whatsapp.controller;
+package it.auties.whatsapp.serialization;
 
-import java.security.Key;
-import java.util.LinkedList;
+import it.auties.whatsapp.controller.Keys;
+import it.auties.whatsapp.controller.Store;
 
 /**
  * This interface provides a standardized way to serialize a session.
  * Implement this interface and <a href="https://www.baeldung.com/java-spi#3-service-provider">register it in your manifest</a>
  */
-public interface ControllerProvider {
-    /**
-     * Returns all the known IDs
-     *
-     * @return a non-null list
-     */
-    LinkedList<Integer> ids();
-
+public non-sealed interface ControllerSerializerProvider extends ControllerProvider {
     /**
      * Serializes the keys
      *

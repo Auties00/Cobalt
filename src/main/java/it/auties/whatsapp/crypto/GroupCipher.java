@@ -10,7 +10,6 @@ import it.auties.whatsapp.util.SignalSpecification;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 
-import static it.auties.whatsapp.model.request.Node.of;
 import static java.util.Map.of;
 
 public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) implements SignalSpecification {

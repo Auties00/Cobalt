@@ -5,7 +5,6 @@ import it.auties.whatsapp.api.SocketEvent;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.binary.MessageWrapper;
 import it.auties.whatsapp.binary.PatchType;
-import it.auties.whatsapp.controller.Controller;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.exception.ErroneousNodeException;
@@ -43,11 +42,12 @@ import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
 import static java.lang.Runtime.getRuntime;
 import static java.util.Map.of;
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 @Accessors(fluent = true)
 @ClientEndpoint(configurator = Socket.OriginPatcher.class)
 public class Socket implements JacksonProvider, SignalSpecification {
+    private static final String WHATSAPP_URL = "wss://web.whatsapp.com/ws/chat";
+
     static {
         getWebSocketContainer().setDefaultMaxSessionIdleTimeout(0);
     }
@@ -200,7 +200,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
             authHandler.createFuture();
         }
 
-        getWebSocketContainer().connectToServer(this, URI.create(options.url()));
+        getWebSocketContainer().connectToServer(this, URI.create(WHATSAPP_URL));
         return authHandler.future();
     }
 
@@ -284,6 +284,11 @@ public class Socket implements JacksonProvider, SignalSpecification {
     }
 
     public void pullInitialPatches() {
+        if(store.initialAppSync()){
+            appStateHandler.markReady();
+            return;
+        }
+
         appStateHandler.pull(true, PatchType.values());
     }
 
@@ -400,7 +405,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
     }
 
     private void deleteAndClearKeys() {
-        Controller.deleteFolder(keys().id());
+        LocalSystem.delete(String.valueOf(keys().id()));
         keys.clear();
         store.clear();
     }
@@ -537,7 +542,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
     }
 
     protected void awaitAppReady() {
-        appStateHandler.await();
+        appStateHandler.awaitReady();
     }
 
     public static class OriginPatcher extends Configurator {
