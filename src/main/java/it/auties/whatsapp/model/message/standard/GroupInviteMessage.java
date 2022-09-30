@@ -36,7 +36,7 @@ public final class GroupInviteMessage extends ContextualMessage {
      * The jid of the group that this invite regards
      */
     @ProtobufProperty(index = 1, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
-    private ContactJid groupId;
+    private ContactJid group;
 
     /**
      * The invite code of this message

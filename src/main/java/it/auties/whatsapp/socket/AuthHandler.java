@@ -57,7 +57,7 @@ class AuthHandler implements JacksonProvider {
         var encodedPayload = handshake.cipher(createUserPayload(), true);
         var clientFinish = new ClientFinish(encodedKey, encodedPayload);
         var handshakeMessage = new HandshakeMessage(clientFinish);
-        return Request.with(handshakeMessage)
+        return Request.of(handshakeMessage)
                 .sendWithNoResponse(session, socket.keys(), socket.store())
                 .thenRunAsync(socket.keys()::clear)
                 .thenRunAsync(handshake::finish);

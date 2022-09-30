@@ -78,10 +78,9 @@ class StreamHandler implements JacksonProvider {
                 .getInt("reason");
         if (reason == 401) {
             socket.errorHandler()
-                    .handleFailure(LOGGED_OUT, new RuntimeException(location));
+                    .handleFailure(LOGGED_OUT, new RuntimeException("The socket was closed from Whatsapp because of a failure at %s with status code %s".formatted(location, reason)));
             return;
         }
-
 
         socket.errorHandler()
                 .handleNodeFailure(new ErroneousNodeException("Stream error", node));

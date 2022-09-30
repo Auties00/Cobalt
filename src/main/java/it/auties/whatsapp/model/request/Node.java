@@ -265,7 +265,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
                     .put("id", requireNonNull(id, "No valid jid can be used to create a request"));
         }
 
-        return Request.with(this);
+        return Request.of(this);
     }
 
     /**

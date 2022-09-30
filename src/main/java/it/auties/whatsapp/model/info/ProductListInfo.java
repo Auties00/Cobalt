@@ -40,5 +40,5 @@ public final class ProductListInfo implements Info {
      * The jid of the seller of the products that this message wraps
      */
     @ProtobufProperty(index = 3, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
-    private ContactJid sellerId;
+    private ContactJid seller;
 }

@@ -2,10 +2,15 @@ package it.auties.whatsapp.util;
 
 import lombok.experimental.UtilityClass;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Comparator;
 
 @UtilityClass
 public class LocalSystem {
@@ -26,9 +31,14 @@ public class LocalSystem {
         return DEFAULT_DIRECTORY.resolve(file);
     }
     
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     public void delete(String folder){
         try {
-            Files.deleteIfExists(of(folder));
+            try(var walker = Files.walk(of(folder))) {
+                walker.sorted(Comparator.reverseOrder())
+                        .map(Path::toFile)
+                        .forEach(File::delete);
+            }
         }catch (IOException exception){
             throw new UncheckedIOException("Cannot delete folder", exception);
         }

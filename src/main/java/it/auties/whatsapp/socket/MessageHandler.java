@@ -386,8 +386,10 @@ class MessageHandler implements JacksonProvider {
 
     protected void decode(Node node) {
         CompletableFuture.runAsync(() -> {
+            tryLock(true);
             var encrypted = node.findNodes("enc");
             encrypted.forEach(message -> decode(node, message));
+            semaphore.release();
         });
     }
 
@@ -450,13 +452,18 @@ class MessageHandler implements JacksonProvider {
                         .put("type", "retry")
                         .put("to", from)
                         .put("recipient", recipient, () -> !Objects.equals(recipient, from))
-                        .put("participant", participant , Objects::nonNull)
+                        .put("participant", participant, Objects::nonNull)
                         .map();
                 var retryNode = Node.ofChildren("receipt",
                         retryAttributes,
                         Node.ofAttributes(
                                 "retry",
-                                Map.of("count", attempts, "id", id, "t", timestamp, "v", 1)
+                                Map.of(
+                                        "count", attempts,
+                                        "id", id,
+                                        "t", timestamp,
+                                        "v", "1"
+                                )
                         ),
                         Node.of(
                                 "registration",
@@ -464,7 +471,8 @@ class MessageHandler implements JacksonProvider {
                         ),
                         attempts <= 1 && encodedMessage != null ? null : createPreKeyNode()
                 );
-                socket.sendWithNoResponse(retryNode);
+                socket.send(retryNode)
+                        .join();
                 retries.put(id, attempts + 1);
                 return;
             }
@@ -525,7 +533,6 @@ class MessageHandler implements JacksonProvider {
                 return new MessageDecodeResult(null, new IllegalArgumentException("Missing encoded message"));
             }
 
-            tryLock(true);
             var result = switch (type) {
                 case SKMSG -> {
                     Objects.requireNonNull(participant, "Cannot decipher skmsg without participant");
@@ -561,8 +568,6 @@ class MessageHandler implements JacksonProvider {
             return new MessageDecodeResult(result, null);
         } catch (Throwable throwable) {
             return new MessageDecodeResult(null, throwable);
-        }finally {
-            semaphore.release();
         }
     }
 

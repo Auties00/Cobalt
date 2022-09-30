@@ -7,16 +7,21 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Objects;
 
 @UtilityClass
 public class Exceptions {
     public Throwable current() {
-        var trace = Thread.currentThread()
-                .getStackTrace();
         var result = new RuntimeException();
-        result.setStackTrace(trace);
+        result.setStackTrace(currentStackTrace());
         return result;
+    }
+
+    private StackTraceElement[] currentStackTrace() {
+        var stackTrace = Thread.currentThread()
+                .getStackTrace();
+        return Arrays.copyOfRange(stackTrace, 3, stackTrace.length);
     }
 
     public Path save(Throwable throwable) {

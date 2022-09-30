@@ -286,7 +286,7 @@ public final class Store implements Controller<Store> {
     public Optional<MessageInfo> findMessageById(Chat chat, String id) {
         return chat == null || id == null ?
                 Optional.empty() :
-                chat.messages()
+                Collections.synchronizedList(chat.messages())
                         .parallelStream()
                         .filter(message -> Objects.equals(message.key()
                                 .id(), id))

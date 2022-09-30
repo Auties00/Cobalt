@@ -1,6 +1,7 @@
 package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.api.ErrorHandler.Location;
+import it.auties.whatsapp.exception.ErroneousNodeException;
 import it.auties.whatsapp.exception.Exceptions;
 import it.auties.whatsapp.exception.HmacValidationException;
 
@@ -9,8 +10,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
-import static it.auties.whatsapp.api.ErrorHandler.Location.LOGGED_OUT;
-import static it.auties.whatsapp.api.ErrorHandler.Location.MESSAGE;
+import static it.auties.whatsapp.api.ErrorHandler.Location.*;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
 
@@ -108,7 +108,7 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, Boolean> {
                                             BiConsumer<Location, Throwable> onRestore,
                                             BiConsumer<Location, Throwable> onIgnored, Level loggingLevel) {
         return (location, throwable) -> {
-            if (location == LOGGED_OUT) {
+            if (location == AUTH || location == LOGGED_OUT) {
                 return true;
             }
 
@@ -120,7 +120,7 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, Boolean> {
                 exceptionPrinter.accept(throwable);
             }
 
-            if (location != MESSAGE || !(throwable instanceof HmacValidationException)) {
+            if (!isPingError(location, throwable) && !isHmacError(location, throwable)) {
                 if (loggingLevel != null) {
                     LOGGER.log(loggingLevel, "Ignored failure");
                 }
@@ -146,6 +146,20 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, Boolean> {
         };
     }
 
+    private static boolean isHmacError(Location location, Throwable throwable) {
+        return location == MESSAGE
+                && throwable instanceof HmacValidationException;
+    }
+
+    private static boolean isPingError(Location location, Throwable throwable) {
+        return location == ERRONEOUS_NODE
+                && throwable instanceof ErroneousNodeException erroneousNodeException
+                && erroneousNodeException.error()
+                .description()
+                .equals("iq") && erroneousNodeException.error()
+                .hasNode("ping");
+    }
+
     /**
      * The constants of this enumerated type describe the various locations where an error can occur in the socket
      */
@@ -154,6 +168,11 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, Boolean> {
          * Unknown
          */
         UNKNOWN,
+
+        /**
+         * Authentication
+         */
+        AUTH,
 
         /**
          * Called when a malformed node is sent

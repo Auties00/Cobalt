@@ -77,7 +77,7 @@ public class Version implements ProtobufMessage, JacksonProvider {
         this.tertiary = tertiary;
     }
 
-    public static Version latest(@NonNull Version defaultValue) {
+    public static Version ofLatest(@NonNull Version defaultValue) {
         try {
             var client = HttpClient.newHttpClient();
             var request = HttpRequest.newBuilder()

@@ -54,6 +54,7 @@ open module it.auties.whatsappweb4j {
     exports it.auties.whatsapp.listener;
     exports it.auties.whatsapp.serialization;
     exports it.auties.whatsapp.util;
+    exports it.auties.whatsapp.exception;
 
     uses ControllerProvider;
 }

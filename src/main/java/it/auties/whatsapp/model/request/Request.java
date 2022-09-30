@@ -5,6 +5,7 @@ import it.auties.whatsapp.binary.Encoder;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGmc;
+import it.auties.whatsapp.exception.ErroneousBinaryRequest;
 import it.auties.whatsapp.exception.ErroneousNodeException;
 import it.auties.whatsapp.exception.Exceptions;
 import it.auties.whatsapp.util.JacksonProvider;
@@ -13,6 +14,7 @@ import jakarta.websocket.Session;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 import static it.auties.whatsapp.crypto.Handshake.PROLOGUE;
@@ -43,7 +45,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     /**
      * Constructs a new request with the provided body expecting a response
      */
-    public static Request with(@NonNull Node body) {
+    public static Request of(@NonNull Node body) {
         return new Request(body.id(), body);
     }
 
@@ -51,7 +53,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * Constructs a new request with the provided body expecting a response
      */
     @SneakyThrows
-    public static Request with(@NonNull Object body) {
+    public static Request of(@NonNull Object body) {
         return new Request(null, PROTOBUF.writeValueAsBytes(body));
     }
 
@@ -60,8 +62,9 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
             return;
         }
 
-        future.completeExceptionally(
-                new RequestException("%s timed out: no response from WhatsApp".formatted(body), caller));
+        var exception = body instanceof Node node ? new ErroneousNodeException("Node timed out, no response from WhatsApp", node, caller)
+                : new ErroneousBinaryRequest("Binary timed out, no response from WhatsApp", body, caller);
+        future.completeExceptionally(exception);
     }
 
     /**
@@ -122,7 +125,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
             session.getAsyncRemote()
                     .sendBinary(buffer, result -> handleSendResult(store, result, response));
         } catch (Exception exception) {
-            future.completeExceptionally(new RequestException("Cannot send %s".formatted(this), exception));
+            future.completeExceptionally(new IOException("Cannot send %s, an unknown exception occured".formatted(this), exception));
         }
 
         return future;
@@ -159,7 +162,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     private void handleSendResult(Store store, SendResult result, boolean response) {
         if (!result.isOK()) {
             future.completeExceptionally(
-                    new RequestException(("Cannot send request %s, erroneous send result: %s".formatted(this, result)),
+                    new IOException("Cannot send request %s, erroneous send result: %s".formatted(this, result),
                             result.getException()));
             return;
         }

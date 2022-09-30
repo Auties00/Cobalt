@@ -25,7 +25,7 @@ public final class BusinessCollection implements ProtobufMessage {
      * The business jid of the message
      */
     @ProtobufProperty(index = 1, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
-    private ContactJid businessJid;
+    private ContactJid business;
 
     /**
      * The id of the message

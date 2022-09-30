@@ -2141,7 +2141,7 @@ public class Whatsapp {
         /**
          * Last known version of Whatsapp
          */
-        private static final Version WHATSAPP_VERSION = new Version(2, 2212, 7);
+        private static final Version WHATSAPP_VERSION = new Version(2, 2236, 10);
 
         /**
          * Constant for unlimited listeners size
@@ -2182,7 +2182,7 @@ public class Whatsapp {
          * If the version is too outdated, the server will refuse to connect.
          */
         @Default
-        private final Version version = Version.latest(WHATSAPP_VERSION);
+        private final Version version = Version.ofLatest(WHATSAPP_VERSION);
 
         /**
          * The description provided to Whatsapp during the authentication process.

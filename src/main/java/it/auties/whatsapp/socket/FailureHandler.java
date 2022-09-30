@@ -23,13 +23,17 @@ class FailureHandler implements JacksonProvider {
     }
 
     protected <T> T handleFailure(ErrorHandler.Location location, Throwable throwable) {
-        if (failure.get()) {
+        if(location == ErrorHandler.Location.ERRONEOUS_NODE && failure.get()){
             return null;
         }
 
         if (!socket.options()
                 .errorHandler()
                 .apply(location, throwable)) {
+            return null;
+        }
+
+        if (failure.get()) {
             return null;
         }
 

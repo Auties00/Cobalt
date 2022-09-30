@@ -7,6 +7,7 @@ import it.auties.whatsapp.binary.MessageWrapper;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
+import it.auties.whatsapp.exception.AesException;
 import it.auties.whatsapp.exception.ErroneousNodeException;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.chat.Chat;
@@ -29,13 +30,14 @@ import jakarta.websocket.ClientEndpointConfig.Configurator;
 import lombok.*;
 import lombok.experimental.Accessors;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CountDownLatch;
 
-import static it.auties.whatsapp.api.ErrorHandler.Location.UNKNOWN;
+import static it.auties.whatsapp.api.ErrorHandler.Location.*;
 import static it.auties.whatsapp.model.request.Node.ofAttributes;
 import static it.auties.whatsapp.model.request.Node.ofChildren;
 import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
@@ -75,6 +77,8 @@ public class Socket implements JacksonProvider, SignalSpecification {
     @Getter(AccessLevel.PROTECTED)
     private final FailureHandler errorHandler;
 
+    private final CountDownLatch latch;
+
     private Session session;
 
     @NonNull
@@ -97,19 +101,25 @@ public class Socket implements JacksonProvider, SignalSpecification {
         this.store = store;
         this.keys = keys;
         this.state = SocketState.WAITING;
+        this.latch = new CountDownLatch(1);
         this.authHandler = new AuthHandler(this);
         this.streamHandler = new StreamHandler(this);
         this.messageHandler = new MessageHandler(this);
         this.appStateHandler = new AppStateHandler(this);
         this.errorHandler = new FailureHandler(this);
-        getRuntime().addShutdownHook(new Thread(this::onShutdown));
+        getRuntime().addShutdownHook(new Thread(() -> onShutdown(false)));
     }
 
-    private void onShutdown() {
+    private void onShutdown(boolean reconnect) {
         keys.dispose();
         store.dispose();
         streamHandler.dispose();
+        if(reconnect){
+            return;
+        }
+
         onSocketEvent(SocketEvent.CLOSE);
+        latch.countDown();
     }
 
     public Contact createContact(ContactJid jid) {
@@ -156,8 +166,9 @@ public class Socket implements JacksonProvider, SignalSpecification {
         var clientHello = new ClientHello(keys.ephemeralKeyPair()
                 .publicKey());
         var handshakeMessage = new HandshakeMessage(clientHello);
-        Request.with(handshakeMessage)
-                .sendWithPrologue(session, keys, store);
+        Request.of(handshakeMessage)
+                .sendWithPrologue(session, keys, store)
+                .exceptionallyAsync(throwable -> errorHandler.handleFailure(AUTH, throwable));
     }
 
     @OnMessage
@@ -168,10 +179,11 @@ public class Socket implements JacksonProvider, SignalSpecification {
             return;
         }
 
-        var header = message.decoded()
-                .getFirst();
         if (state != SocketState.CONNECTED) {
-            authHandler.login(session(), header.toByteArray())
+            var header = message.decoded()
+                    .getFirst()
+                    .toByteArray();
+            authHandler.login(session(), header)
                     .thenRunAsync(() -> state(SocketState.CONNECTED));
             return;
         }
@@ -181,9 +193,9 @@ public class Socket implements JacksonProvider, SignalSpecification {
     }
 
     private void handleNode(Node deciphered) {
+        onNodeReceived(deciphered);
         store.resolvePendingRequest(deciphered, false);
         streamHandler.digest(deciphered);
-        onNodeReceived(deciphered);
     }
 
     private void onNodeReceived(Node deciphered) {
@@ -193,34 +205,37 @@ public class Socket implements JacksonProvider, SignalSpecification {
         });
     }
 
-    @SneakyThrows
     public CompletableFuture<Void> connect() {
-        if (authHandler.future() == null || authHandler.future()
-                .isDone()) {
-            authHandler.createFuture();
-        }
+        try {
+            if (authHandler.future() == null || authHandler.future()
+                    .isDone()) {
+                authHandler.createFuture();
+            }
 
-        getWebSocketContainer().connectToServer(this, URI.create(WHATSAPP_URL));
-        return authHandler.future();
+            getWebSocketContainer().connectToServer(this, URI.create(WHATSAPP_URL));
+            return authHandler.future();
+        }catch (IOException | DeploymentException exception){
+            throw new RuntimeException("Cannot connect to socket", exception);
+        }
     }
 
-    @SneakyThrows
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     public void await() {
-        if (streamHandler.pingService() == null) {
-            return;
+        try {
+            latch.await();
+        }catch (InterruptedException exception){
+            throw new RuntimeException("Cannot await socket", exception);
         }
-
-        streamHandler.pingService()
-                .awaitTermination(Integer.MAX_VALUE, TimeUnit.DAYS);
     }
 
-    @SneakyThrows
     public CompletableFuture<Void> disconnect(boolean reconnect) {
-        state(reconnect ? SocketState.RECONNECTING : SocketState.DISCONNECTED);
-        keys.clear();
-        session.close();
-        return reconnect ? connect() : completedFuture(null);
+        try {
+            state(reconnect ? SocketState.RECONNECTING : SocketState.DISCONNECTED);
+            keys.clear();
+            session.close();
+            return reconnect ? connect() : completedFuture(null);
+        }catch (IOException exception){
+            throw new RuntimeException("Cannot disconnect socket", exception);
+        }
     }
 
     @OnClose
@@ -231,6 +246,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
                     .complete(null);
         }
 
+
         if (state == SocketState.CONNECTED) {
             onDisconnected(DisconnectReason.RECONNECTING);
             disconnect(true);
@@ -238,7 +254,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
         }
 
         onDisconnected(DisconnectReason.DISCONNECTED);
-        onShutdown();
+        onShutdown(state == SocketState.RECONNECTING);
     }
 
     @OnError
@@ -358,6 +374,10 @@ public class Socket implements JacksonProvider, SignalSpecification {
     }
 
     protected void sendSyncReceipt(MessageInfo info, String type) {
+        if(!keys.hasCompanion()){
+            return;
+        }
+
         var receipt = ofAttributes("receipt", of("to", ContactJid.of(keys.companion()
                 .user(), ContactJid.Server.USER), "type", type, "id", info.key()
                 .id()));

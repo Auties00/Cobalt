@@ -18,14 +18,11 @@ import it.auties.whatsapp.model.contact.ContactCard;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.media.DownloadResult;
 import it.auties.whatsapp.model.message.button.ButtonsMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.standard.InteractiveMessage;
 import it.auties.whatsapp.model.message.button.ListMessage;
 import it.auties.whatsapp.model.message.button.TemplateMessage;
-import it.auties.whatsapp.model.message.model.MediaMessage;
-import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.JacksonProvider;
@@ -637,7 +634,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
 
         log("Sending group invite message...");
         var invite = GroupInviteMessage.newGroupInviteMessageBuilder()
-                .groupId(group)
+                .group(group)
                 .code(code)
                 .expiration(ZonedDateTime.now()
                         .plusDays(3)
@@ -712,7 +709,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
         log("Sending interactive messages..");
 
         var collectionMessage = BusinessCollection.builder()
-                .businessJid(ContactJid.of("15086146312@s.whatsapp.net"))
+                .business(ContactJid.of("15086146312@s.whatsapp.net"))
                 .id("15086146312")
                 .version(3)
                 .build();
