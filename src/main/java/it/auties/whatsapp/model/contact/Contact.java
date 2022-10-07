@@ -22,6 +22,7 @@ import java.util.Optional;
 @Jacksonized
 @Accessors(fluent = true)
 @ToString
+@SuppressWarnings("unused")
 public final class Contact implements ProtobufMessage, ContactJidProvider {
     /**
      * The non-null unique jid used to identify this contact
@@ -119,6 +120,11 @@ public final class Contact implements ProtobufMessage, ContactJidProvider {
     public boolean equals(Object other){
         return other instanceof Contact that
                 && Objects.equals(this.jid(), that.jid());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(this.jid());
     }
 
     /**

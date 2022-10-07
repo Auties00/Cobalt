@@ -494,6 +494,7 @@ class MessageHandler implements JacksonProvider {
             }
 
             saveMessage(info);
+            socket.onReply(info);
             socket.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.key()
                     .id()));
         } catch (Throwable throwable) {

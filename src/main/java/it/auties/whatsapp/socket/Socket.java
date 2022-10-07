@@ -46,6 +46,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 
 @Accessors(fluent = true)
 @ClientEndpoint(configurator = Socket.OriginPatcher.class)
+@SuppressWarnings("unused")
 public class Socket implements JacksonProvider, SignalSpecification {
     private static final String WHATSAPP_URL = "wss://web.whatsapp.com/ws/chat";
 
@@ -562,6 +563,14 @@ public class Socket implements JacksonProvider, SignalSpecification {
 
     protected void awaitAppReady() {
         appStateHandler.awaitReady();
+    }
+
+    protected void onReply(MessageInfo info) {
+        store.resolvePendingReply(info);
+        store.callListeners(listener -> {
+            listener.onMessageReply(whatsapp, info, info.quotedMessage().get());
+            listener.onMessageReply(info, info.quotedMessage().get());
+        });
     }
 
     public static class OriginPatcher extends Configurator {

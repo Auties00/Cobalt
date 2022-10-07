@@ -3,12 +3,14 @@ package it.auties.whatsapp.model.message.button;
 import it.auties.protobuf.api.model.ProtobufProperty;
 import it.auties.whatsapp.model.button.SingleSelectReplyButton;
 import it.auties.whatsapp.model.info.ContextInfo;
-import it.auties.whatsapp.model.message.model.ButtonMessage;
+import it.auties.whatsapp.model.message.model.ButtonReplyMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
@@ -19,10 +21,11 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
  */
 @AllArgsConstructor
 @Data
-@Builder(builderMethodName = "newListResponseMessageBuilder")
+@SuperBuilder(builderMethodName = "newListResponseMessageBuilder")
 @Jacksonized
 @Accessors(fluent = true)
-public final class ListResponseMessage implements ButtonMessage {
+@EqualsAndHashCode(callSuper = true)
+public final class ListResponseMessage extends ButtonReplyMessage {
     /**
      * The title of this message
      */

@@ -757,6 +757,21 @@ All types of messages supported by Whatsapp are supported by this library:
            .build(); // Create the message
      api.sendMessage(chat,  document);
      ```
+     
+### How to wait for replies
+
+If you want to wait for a single reply, use:
+``` java
+var response = api.awaitReply(info)
+    .join(); 
+```
+
+If you want to wait for any number of replies, use:
+``` java
+api.awaitReplies(info, (reply) -> doSomething(reply));
+```
+
+or register a OnMessageReply.
 
 ### How to delete messages
 

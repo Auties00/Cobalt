@@ -60,6 +60,12 @@ public class SenderKeyRecord implements ProtobufMessage {
         return object instanceof SenderKeyRecord that && Objects.equals(this.states(), that.states());
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(this.states());
+    }
+
+    @SuppressWarnings("unused")
     public static class SenderKeyRecordBuilder {
         public SenderKeyRecordBuilder states(ConcurrentLinkedDeque<SenderKeyState> states) {
             if (!this.states$set) {

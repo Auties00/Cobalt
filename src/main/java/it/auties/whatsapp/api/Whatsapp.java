@@ -28,6 +28,7 @@ import it.auties.whatsapp.model.message.standard.ReactionMessage;
 import it.auties.whatsapp.model.message.standard.TextMessage;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.NodeHandler;
+import it.auties.whatsapp.model.request.Reply;
 import it.auties.whatsapp.model.response.ContactStatusResponse;
 import it.auties.whatsapp.model.response.HasWhatsappResponse;
 import it.auties.whatsapp.model.signal.auth.Version;
@@ -49,6 +50,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static it.auties.bytes.Bytes.ofRandom;
@@ -722,6 +724,26 @@ public class Whatsapp {
     }
 
     /**
+     * Registers a message reply listener
+     *
+     * @param onMessageReply the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addMessageReplyListener(OnMessageReply onMessageReply) {
+        return addListener(onMessageReply);
+    }
+
+    /**
+     * Registers a message reply listener
+     *
+     * @param onMessageReply the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addMessageReplyListener(OnWhatsappMessageReply onMessageReply) {
+        return addListener(onMessageReply);
+    }
+
+    /**
      * Removes a listener
      *
      * @param listener the listener to remove
@@ -970,6 +992,46 @@ public class Whatsapp {
                 markRead(info.chat()).thenComposeAsync(ignored -> socket.sendMessage(info)) :
                 socket.sendMessage(info);
         return future.thenApplyAsync(ignored -> info);
+    }
+
+    /**
+     * Awaits for a single response to a message
+     *
+     * @param info the non-null message whose response is pending
+     * @return a non-null future
+     */
+    public CompletableFuture<MessageInfo> awaitReply(@NonNull MessageInfo info){
+        return awaitReply(info.id());
+    }
+
+    /**
+     * Awaits for a single response to a message
+     *
+     * @param id the non-null id of message whose response is pending
+     * @return a non-null future
+     */
+    public CompletableFuture<MessageInfo> awaitReply(@NonNull String id){
+        return store().addPendingReply(Reply.Single.of(id));
+    }
+
+    /**
+     * Awaits for a multiple responses to a message
+     *
+     * @param info the non-null message whose response is pending
+     * @param consumer the non-null reply consumer
+     */
+    public void awaitReplies(@NonNull MessageInfo info, @NonNull Consumer<MessageInfo> consumer){
+        awaitReplies(info.id(), consumer);
+    }
+
+    /**
+     * Awaits for a multiple responses to a message
+     *
+     * @param id the non-null id of the message whose response is pending
+     * @param consumer the non-null reply consumer
+     */
+    public void awaitReplies(@NonNull String id, @NonNull Consumer<MessageInfo> consumer){
+        store().addPendingReply(Reply.Multi.of(id, consumer));
     }
 
     // Credit to Baileys

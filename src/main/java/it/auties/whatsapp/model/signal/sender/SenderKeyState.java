@@ -65,14 +65,16 @@ public class SenderKeyState implements ProtobufMessage {
                 .orElse(null);
     }
 
-    public void nextChainKey() {
-        this.chainKey = chainKey.next();
-    }
-
     public boolean equals(Object other) {
         return other instanceof SenderKeyState that && Objects.equals(this.id(), that.id());
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(this.id());
+    }
+
+    @SuppressWarnings("unused")
     public static class SenderKeyStateBuilder {
         public SenderKeyStateBuilder messageKeys(CopyOnWriteArrayList<SenderMessageKey> messageKeys) {
             if (!messageKeys$set) {

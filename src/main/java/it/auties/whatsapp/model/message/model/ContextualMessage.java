@@ -24,9 +24,9 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @Data
 @Accessors(fluent = true)
 public sealed abstract class ContextualMessage implements Message
-        permits ButtonsMessage, ButtonsResponseMessage, ListMessage, TemplateReplyMessage, TemplateMessage,
-        MediaMessage, ContactMessage, ContactsArrayMessage, GroupInviteMessage, LiveLocationMessage, LocationMessage,
-        ProductMessage, TextMessage, InteractiveMessage {
+        permits ButtonsMessage, ListMessage, TemplateMessage,
+        ButtonReplyMessage, MediaMessage, ContactMessage, ContactsArrayMessage, GroupInviteMessage, InteractiveMessage,
+        LiveLocationMessage, LocationMessage, ProductMessage, TextMessage {
     /**
      * The context info of this message
      */

@@ -14,6 +14,7 @@ import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.NodeHandler;
+import it.auties.whatsapp.model.request.Reply;
 import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.serialization.ControllerProviderLoader;
 import it.auties.whatsapp.util.*;
@@ -113,6 +114,14 @@ public final class Store implements Controller<Store> {
     @JsonIgnore
     @Default
     private ConcurrentLinkedDeque<NodeHandler> pendingHandlers = new ConcurrentLinkedDeque<>();
+
+    /**
+     * The non-null list of replies waiting to be fulfilled
+     */
+    @NonNull
+    @JsonIgnore
+    @Default
+    private ConcurrentLinkedDeque<Reply> pendingReplies = new ConcurrentLinkedDeque<>();
 
     /**
      * The non-null list of listeners
@@ -360,6 +369,39 @@ public final class Store implements Controller<Store> {
         return findPendingRequest(response.id())
                 .map(request -> deleteAndComplete(response, request, exceptionally))
                 .isPresent();
+    }
+
+    /**
+     * Queries the first reply waiting and completes it with the input message
+     *
+     * @param response the response to complete the reply with
+     * @return a boolean
+     */
+    public boolean resolvePendingReply(@NonNull MessageInfo response) {
+        var contextualMessage = response.message().contentWithContext();
+        if(contextualMessage.isEmpty()){
+            return false;
+        }
+
+        var contextualMessageId = contextualMessage.get()
+                .contextInfo()
+                .quotedMessageId()
+                .orElse(null);
+        if(contextualMessageId == null){
+            return false;
+        }
+
+        var result = pendingReplies.stream()
+                .filter(entry -> entry.id().equals(contextualMessageId))
+                .findFirst();
+        result.ifPresent(reply -> {
+            pendingReplies.remove(reply);
+            switch (reply){
+                case Reply.Single single -> single.future().complete(response);
+                case Reply.Multi multi -> multi.onReply().accept(response);
+            }
+        });
+        return result.isPresent();
     }
 
     /**
@@ -629,6 +671,26 @@ public final class Store implements Controller<Store> {
     public CompletableFuture<Node> addNodeHandler(@NonNull NodeHandler handler) {
         pendingHandlers.add(handler);
         return handler.future();
+    }
+
+    /**
+     * Add a pending reply to this store
+     *
+     * @param reply the non-null reply to add
+     * @return the non-null completable future of the reply
+     */
+    public CompletableFuture<MessageInfo> addPendingReply(@NonNull Reply.Single reply) {
+        pendingReplies.add(reply);
+        return reply.future();
+    }
+
+    /**
+     * Add a pending reply to this store
+     *
+     * @param reply the non-null reply to add
+     */
+    public void addPendingReply(@NonNull Reply.Multi reply) {
+        pendingReplies.add(reply);
     }
 
     public void dispose() {

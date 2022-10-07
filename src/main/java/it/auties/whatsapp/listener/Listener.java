@@ -10,6 +10,7 @@ import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MessageStatus;
+import it.auties.whatsapp.model.message.model.QuotedMessage;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.setting.Setting;
 
@@ -463,6 +464,27 @@ public interface Listener {
      * @param event the event
      */
     default void onSocketEvent(SocketEvent event) {
+
+    }
+
+    /**
+     * Called when a message answers a previous message
+     *
+     * @param info   the answer message
+     * @param quoted the quoted message
+     */
+    default void onMessageReply(MessageInfo info, QuotedMessage quoted){
+
+    }
+
+    /**
+     * Called when a message answers a previous message
+     *
+     * @param whatsapp an instance to the calling api
+     * @param info   the answer message
+     * @param quoted the quoted message
+     */
+    default void onMessageReply(Whatsapp whatsapp, MessageInfo info, QuotedMessage quoted){
 
     }
 }

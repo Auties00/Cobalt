@@ -22,7 +22,6 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
@@ -479,6 +478,11 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     public boolean equals(Object other){
         return other instanceof Chat that
                 && Objects.equals(this.jid(), that.jid());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(jid);
     }
 
     /**
