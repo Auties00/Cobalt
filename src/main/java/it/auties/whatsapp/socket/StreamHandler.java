@@ -67,7 +67,16 @@ class StreamHandler implements JacksonProvider {
             case "message" -> socket.decodeMessage(node);
             case "notification" -> digestNotification(node);
             case "presence", "chatstate" -> digestChatState(node);
+            case "xmlstreamend" -> digestStreamEnd();
         }
+    }
+
+    private void digestStreamEnd() {
+        if (socket.state() != SocketState.CONNECTED) {
+            return;
+        }
+
+        socket.disconnect(false);
     }
 
     private void digestFailure(Node node) {
@@ -289,6 +298,8 @@ class StreamHandler implements JacksonProvider {
         var statusCode = node.attributes()
                 .getInt("code");
         switch (statusCode) {
+            case 0 -> node.findNode("bad-mac")
+                    .ifPresent(ignored -> socket.errorHandler().handleFailure(CRYPTOGRAPHY, new RuntimeException("Received bad mac status")));
             case 515 -> socket.disconnect(true);
             case 401 -> handleStreamError(node);
             default -> node.children()

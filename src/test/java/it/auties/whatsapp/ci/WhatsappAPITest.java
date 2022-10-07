@@ -35,10 +35,7 @@ import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -817,7 +814,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
                 .chats()
                 .stream()
                 .map(Chat::messages)
-                .flatMap(List::stream)
+                .flatMap(Collection::stream)
                 .filter(info -> !info.fromMe() && info.message().category() == MessageCategory.MEDIA)
                 .limit(30)
                 .forEach(info -> {

@@ -7,7 +7,6 @@ import it.auties.whatsapp.binary.MessageWrapper;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.exception.AesException;
 import it.auties.whatsapp.exception.ErroneousNodeException;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.chat.Chat;
@@ -168,7 +167,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
         var handshakeMessage = new HandshakeMessage(clientHello);
         Request.of(handshakeMessage)
                 .sendWithPrologue(session, keys, store)
-                .exceptionallyAsync(throwable -> errorHandler.handleFailure(AUTH, throwable));
+                .exceptionallyAsync(throwable -> errorHandler.handleFailure(CRYPTOGRAPHY, throwable));
     }
 
     @OnMessage

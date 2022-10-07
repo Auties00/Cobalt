@@ -62,7 +62,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
             return;
         }
 
-        var exception = body instanceof Node node ? new ErroneousNodeException("Node timed out, no response from WhatsApp", node, caller)
+        var exception = body instanceof Node node ? new ErroneousNodeException("Node timed out(%s), no response from WhatsApp".formatted(node), node, caller)
                 : new ErroneousBinaryRequest("Binary timed out, no response from WhatsApp", body, caller);
         future.completeExceptionally(exception);
     }

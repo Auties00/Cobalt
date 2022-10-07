@@ -21,6 +21,8 @@ import lombok.extern.jackson.Jacksonized;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 
@@ -51,7 +53,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     @NonNull
     @Default
     @JsonManagedReference
-    private ArrayList<MessageInfo> messages = new ArrayList<>();
+    private ConcurrentLinkedDeque<MessageInfo> messages = new ConcurrentLinkedDeque<>();
 
     /**
      * The nullable new unique jid for this Chat.
@@ -355,7 +357,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     public Optional<MessageInfo> lastMessage() {
         return messages.isEmpty() ?
                 Optional.empty() :
-                Optional.of(messages.get(messages.size() - 1));
+                Optional.of(messages.getLast());
     }
 
     /**
@@ -401,7 +403,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     public Optional<MessageInfo> firstMessage() {
         return messages.isEmpty() ?
                 Optional.empty() :
-                Optional.of(messages.get(0));
+                Optional.of(messages.getFirst());
     }
 
     /**
@@ -493,7 +495,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     public static class ChatBuilder {
         public ChatBuilder messages(List<MessageInfo> messages) {
             if (this.messages$value == null) {
-                this.messages$value = new ArrayList<>();
+                this.messages$value = new ConcurrentLinkedDeque<>();
                 this.messages$set = true;
             }
 

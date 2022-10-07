@@ -108,7 +108,7 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, Boolean> {
                                             BiConsumer<Location, Throwable> onRestore,
                                             BiConsumer<Location, Throwable> onIgnored, Level loggingLevel) {
         return (location, throwable) -> {
-            if (location == AUTH || location == LOGGED_OUT) {
+            if (location == CRYPTOGRAPHY || location == LOGGED_OUT) {
                 return true;
             }
 
@@ -170,9 +170,9 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, Boolean> {
         UNKNOWN,
 
         /**
-         * Authentication
+         * Cryptographic error
          */
-        AUTH,
+        CRYPTOGRAPHY,
 
         /**
          * Called when a malformed node is sent

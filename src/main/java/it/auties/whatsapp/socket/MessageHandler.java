@@ -471,8 +471,7 @@ class MessageHandler implements JacksonProvider {
                         ),
                         attempts <= 1 && encodedMessage != null ? null : createPreKeyNode()
                 );
-                socket.send(retryNode)
-                        .join();
+                socket.send(retryNode);
                 retries.put(id, attempts + 1);
                 return;
             }
