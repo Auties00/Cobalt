@@ -27,19 +27,27 @@ class FailureHandler implements JacksonProvider {
             return null;
         }
 
-        if (!socket.options()
+        var result = socket.options()
                 .errorHandler()
-                .apply(location, throwable)) {
-            return null;
-        }
-
-        if (failure.get()) {
+                .apply(location, throwable);
+        if(failure.get()){
             return null;
         }
 
         failure.set(true);
-        socket.changeKeys();
-        socket.disconnect(true);
+        switch (result) {
+            case RESTORE -> {
+                socket.changeKeys();
+                socket.disconnect(true);
+            }
+            case LOG_OUT -> {
+                socket.changeKeys();
+                socket.disconnect(false);
+            }
+            case DISCONNECT -> socket.disconnect(false);
+            case RECONNECT -> socket.disconnect(true);
+        }
+
         return null;
     }
 

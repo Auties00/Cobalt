@@ -7,6 +7,7 @@ import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.exception.ErroneousNodeException;
 import it.auties.whatsapp.exception.HmacValidationException;
+import it.auties.whatsapp.exception.UnknownStreamException;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
@@ -298,14 +299,20 @@ class StreamHandler implements JacksonProvider {
         var statusCode = node.attributes()
                 .getInt("code");
         switch (statusCode) {
-            case 0 -> node.findNode("bad-mac")
-                    .ifPresent(ignored -> socket.errorHandler().handleFailure(CRYPTOGRAPHY, new RuntimeException("Received bad mac status")));
+            case 0 -> handleUnknownStreamError(node);
             case 515 -> socket.disconnect(true);
             case 401 -> handleStreamError(node);
             default -> node.children()
                     .forEach(error -> socket.store()
                             .resolvePendingRequest(error, true));
         }
+    }
+
+    private void handleUnknownStreamError(Node node){
+        var child = node.findNode()
+                .orElse(node);
+        socket.errorHandler()
+                .handleFailure(CRYPTOGRAPHY, new UnknownStreamException(child.description()));
     }
 
     private void handleStreamError(Node node) {

@@ -98,8 +98,8 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      */
     public CompletableFuture<Void> sendWithNoResponse(@NonNull Session session, @NonNull Keys keys,
                                                       @NonNull Store store) {
-        return send(session, keys, store, false, false).thenRunAsync(() -> {
-        });
+        return send(session, keys, store, false, false)
+                .thenRunAsync(() -> {});
     }
 
     /**
@@ -125,7 +125,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
             session.getAsyncRemote()
                     .sendBinary(buffer, result -> handleSendResult(store, result, response));
         } catch (Exception exception) {
-            future.completeExceptionally(new IOException("Cannot send %s, an unknown exception occured".formatted(this), exception));
+            future.completeExceptionally(new IOException("Cannot send %s, an unknown exception occurred".formatted(this), exception));
         }
 
         return future;
@@ -162,7 +162,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     private void handleSendResult(Store store, SendResult result, boolean response) {
         if (!result.isOK()) {
             future.completeExceptionally(
-                    new IOException("Cannot send request %s, erroneous send result: %s".formatted(this, result),
+                    new IOException("Cannot send request %s, erroneous send result".formatted(this),
                             result.getException()));
             return;
         }

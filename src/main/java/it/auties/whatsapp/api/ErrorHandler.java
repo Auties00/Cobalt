@@ -18,7 +18,7 @@ import static java.lang.System.Logger.Level.INFO;
  * This interface allows to handle a socket error and provides a default way to do so
  */
 @SuppressWarnings("unused")
-public interface ErrorHandler extends BiFunction<Location, Throwable, Boolean> {
+public interface ErrorHandler extends BiFunction<Location, Throwable, ErrorHandler.Result> {
     /**
      * System logger.
      * A nice feature from Java 9.
@@ -108,8 +108,12 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, Boolean> {
                                             BiConsumer<Location, Throwable> onRestore,
                                             BiConsumer<Location, Throwable> onIgnored, Level loggingLevel) {
         return (location, throwable) -> {
-            if (location == CRYPTOGRAPHY || location == LOGGED_OUT) {
-                return true;
+            if(location == CRYPTOGRAPHY){
+                return Result.RECONNECT;
+            }
+
+            if (location == LOGGED_OUT) {
+                return Result.RESTORE;
             }
 
             if (loggingLevel != null) {
@@ -126,11 +130,11 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, Boolean> {
                 }
 
                 if (onIgnored == null) {
-                    return false;
+                    return Result.DISCARD;
                 }
 
                 onIgnored.accept(location, throwable);
-                return false;
+                return Result.DISCARD;
             }
 
             if (loggingLevel != null) {
@@ -138,11 +142,11 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, Boolean> {
             }
 
             if (onRestore == null) {
-                return true;
+                return Result.RESTORE;
             }
 
             onRestore.accept(location, throwable);
-            return true;
+            return Result.RESTORE;
         };
     }
 
@@ -218,5 +222,35 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, Boolean> {
          * Called when an error occurs when serializing or deserializing a Whatsapp message
          */
         MESSAGE
+    }
+
+    /**
+     * The constants of this enumerated type describe the various types of actions that can be performed by an error handler in response to a throwable
+     */
+    enum Result {
+        /**
+         * Ignores an error that was thrown by the socket
+         */
+        DISCARD,
+
+        /**
+         * Deletes the current session and creates a new one instantly
+         */
+        RESTORE,
+
+        /**
+         * Disconnects from the current session without deleting it
+         */
+        DISCONNECT,
+
+        /**
+         * Disconnects from the current session without deleting it and reconnects to it
+         */
+        RECONNECT,
+
+        /**
+         * Deletes the current session
+         */
+        LOG_OUT
     }
 }

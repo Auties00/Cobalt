@@ -42,7 +42,7 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) imple
     private SenderMessageKey getSenderKey(SenderKeyState senderKeyState, int iteration) {
         if (senderKeyState.chainKey()
                 .iteration() > iteration) {
-            Validate.isTrue(senderKeyState.hasSenderMessageKey(iteration), "Received message with old counter: %s, %s",
+            Validate.isTrue(senderKeyState.hasSenderMessageKey(iteration), "Received message with old counter(%s), the latest is %s",
                     senderKeyState.chainKey()
                             .iteration(), iteration);
             return senderKeyState.removeSenderMessageKey(iteration);
