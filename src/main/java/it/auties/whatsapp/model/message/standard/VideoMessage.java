@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -22,7 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 import static it.auties.whatsapp.model.message.model.MediaMessageType.VIDEO;
 import static java.util.Objects.requireNonNullElse;
 
@@ -83,7 +83,7 @@ public final class VideoMessage extends MediaMessage {
     /**
      * Determines whether this object wraps a video that must be played as a gif
      */
-    @ProtobufProperty(index = 8, type = BOOLEAN)
+    @ProtobufProperty(index = 8, type = BOOL)
     private boolean gifPlayback;
 
     /**
@@ -107,7 +107,7 @@ public final class VideoMessage extends MediaMessage {
     /**
      * Interactive annotations
      */
-    @ProtobufProperty(index = 12, type = MESSAGE, concreteType = InteractiveAnnotation.class, repeated = true)
+    @ProtobufProperty(index = 12, type = MESSAGE, implementation = InteractiveAnnotation.class, repeated = true)
     private List<InteractiveAnnotation> interactiveAnnotations;
 
     /**
@@ -138,7 +138,7 @@ public final class VideoMessage extends MediaMessage {
      * The source from where the gif that this message wraps comes from.
      * This property is defined only if {@link VideoMessage#gifPlayback}.
      */
-    @ProtobufProperty(index = 19, type = MESSAGE, concreteType = VideoMessageAttribution.class)
+    @ProtobufProperty(index = 19, type = MESSAGE, implementation = VideoMessageAttribution.class)
     private VideoMessageAttribution gifAttribution;
 
     /**

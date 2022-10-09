@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.business;
 
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.util.Clock;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -13,7 +13,7 @@ import lombok.extern.jackson.Jacksonized;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.INT64;
+import static it.auties.protobuf.base.ProtobufType.INT64;
 
 /**
  * A model class that represents a time as a unix epoch

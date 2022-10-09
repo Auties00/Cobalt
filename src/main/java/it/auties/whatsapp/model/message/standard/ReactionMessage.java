@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageKey;
@@ -11,7 +11,7 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that represents a message holding an emoji reaction inside
@@ -25,7 +25,7 @@ public final class ReactionMessage implements Message {
     /**
      * The key of the quoted message
      */
-    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = MessageKey.class)
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = MessageKey.class)
     private MessageKey key;
 
     /**

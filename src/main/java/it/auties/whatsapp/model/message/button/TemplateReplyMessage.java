@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.button;
 
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonReplyMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that represents a message that contains a response to a previous {@link HighlyStructuredMessage}
@@ -39,7 +39,7 @@ public final class TemplateReplyMessage extends ButtonReplyMessage {
     /**
      * The context info of this message
      */
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ContextInfo.class)
+    @ProtobufProperty(index = 3, type = MESSAGE, implementation = ContextInfo.class)
     @Default
     private ContextInfo contextInfo = new ContextInfo();  // Overrides ContextualMessage's context info
 

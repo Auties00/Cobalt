@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.signal.auth;
 
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.response.AppVersionResponse;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.Validate;
@@ -18,7 +18,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT32;
+import static it.auties.protobuf.base.ProtobufType.UINT32;
 import static java.lang.Integer.parseInt;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
 

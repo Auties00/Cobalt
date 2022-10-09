@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.message.model;
 
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.info.CallInfo;
 import it.auties.whatsapp.model.info.MessageContextInfo;
 import it.auties.whatsapp.model.message.button.*;
@@ -19,8 +19,8 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.Objects;
 import java.util.Optional;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.STRING;
 
 /**
  * A container for all types of messages known currently to WhatsappWeb.
@@ -51,223 +51,223 @@ public class MessageContainer implements ProtobufMessage {
     /**
      * Sender key distribution message
      */
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = SenderKeyDistributionMessage.class)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = SenderKeyDistributionMessage.class)
     private SenderKeyDistributionMessage senderKeyDistribution;
 
     /**
      * Image message
      */
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ImageMessage.class)
+    @ProtobufProperty(index = 3, type = MESSAGE, implementation = ImageMessage.class)
     private ImageMessage image;
 
     /**
      * Contact message
      */
-    @ProtobufProperty(index = 4, type = MESSAGE, concreteType = ContactMessage.class)
+    @ProtobufProperty(index = 4, type = MESSAGE, implementation = ContactMessage.class)
     private ContactMessage contact;
 
     /**
      * Location message
      */
-    @ProtobufProperty(index = 5, type = MESSAGE, concreteType = LocationMessage.class)
+    @ProtobufProperty(index = 5, type = MESSAGE, implementation = LocationMessage.class)
     private LocationMessage location;
 
     /**
      * Text message
      */
-    @ProtobufProperty(index = 6, type = MESSAGE, concreteType = TextMessage.class)
+    @ProtobufProperty(index = 6, type = MESSAGE, implementation = TextMessage.class)
     private TextMessage text;
 
     /**
      * Document message
      */
-    @ProtobufProperty(index = 7, type = MESSAGE, concreteType = DocumentMessage.class)
+    @ProtobufProperty(index = 7, type = MESSAGE, implementation = DocumentMessage.class)
     private DocumentMessage document;
 
     /**
      * Audio message
      */
-    @ProtobufProperty(index = 8, type = MESSAGE, concreteType = AudioMessage.class)
+    @ProtobufProperty(index = 8, type = MESSAGE, implementation = AudioMessage.class)
     private AudioMessage audio;
 
     /**
      * Video message
      */
-    @ProtobufProperty(index = 9, type = MESSAGE, concreteType = VideoMessage.class)
+    @ProtobufProperty(index = 9, type = MESSAGE, implementation = VideoMessage.class)
     private VideoMessage video;
 
     /**
      * Call message
      */
-    @ProtobufProperty(index = 10, type = MESSAGE, concreteType = CallInfo.class)
+    @ProtobufProperty(index = 10, type = MESSAGE, implementation = CallInfo.class)
     private CallInfo call;
 
     /**
      * Sever message
      */
-    @ProtobufProperty(index = 12, type = MESSAGE, concreteType = ProtocolMessage.class)
+    @ProtobufProperty(index = 12, type = MESSAGE, implementation = ProtocolMessage.class)
     private ProtocolMessage protocol;
 
     /**
      * Contact array message
      */
-    @ProtobufProperty(index = 13, type = MESSAGE, concreteType = ContactsArrayMessage.class)
+    @ProtobufProperty(index = 13, type = MESSAGE, implementation = ContactsArrayMessage.class)
     private ContactsArrayMessage contactsArray;
 
     /**
      * Highly structured message
      */
-    @ProtobufProperty(index = 14, type = MESSAGE, concreteType = HighlyStructuredMessage.class)
+    @ProtobufProperty(index = 14, type = MESSAGE, implementation = HighlyStructuredMessage.class)
     private HighlyStructuredMessage highlyStructured;
 
     /**
      * Send payment message
      */
-    @ProtobufProperty(index = 16, type = MESSAGE, concreteType = SendPaymentMessage.class)
+    @ProtobufProperty(index = 16, type = MESSAGE, implementation = SendPaymentMessage.class)
     private SendPaymentMessage sendPayment;
 
     /**
      * Live location message
      */
-    @ProtobufProperty(index = 18, type = MESSAGE, concreteType = LiveLocationMessage.class)
+    @ProtobufProperty(index = 18, type = MESSAGE, implementation = LiveLocationMessage.class)
     private LiveLocationMessage liveLocation;
 
     /**
      * Request payment message
      */
-    @ProtobufProperty(index = 22, type = MESSAGE, concreteType = RequestPaymentMessage.class)
+    @ProtobufProperty(index = 22, type = MESSAGE, implementation = RequestPaymentMessage.class)
     private RequestPaymentMessage requestPayment;
 
     /**
      * Decline payment request message
      */
-    @ProtobufProperty(index = 23, type = MESSAGE, concreteType = DeclinePaymentRequestMessage.class)
+    @ProtobufProperty(index = 23, type = MESSAGE, implementation = DeclinePaymentRequestMessage.class)
     private DeclinePaymentRequestMessage declinePaymentRequest;
 
     /**
      * Cancel payment request message
      */
-    @ProtobufProperty(index = 24, type = MESSAGE, concreteType = CancelPaymentRequestMessage.class)
+    @ProtobufProperty(index = 24, type = MESSAGE, implementation = CancelPaymentRequestMessage.class)
     private CancelPaymentRequestMessage cancelPaymentRequest;
 
     /**
      * Template message
      */
-    @ProtobufProperty(index = 25, type = MESSAGE, concreteType = TemplateMessage.class)
+    @ProtobufProperty(index = 25, type = MESSAGE, implementation = TemplateMessage.class)
     private TemplateMessage template;
 
     /**
      * Sticker message
      */
-    @ProtobufProperty(index = 26, type = MESSAGE, concreteType = StickerMessage.class)
+    @ProtobufProperty(index = 26, type = MESSAGE, implementation = StickerMessage.class)
     private StickerMessage sticker;
 
     /**
      * Group invite message
      */
-    @ProtobufProperty(index = 28, type = MESSAGE, concreteType = GroupInviteMessage.class)
+    @ProtobufProperty(index = 28, type = MESSAGE, implementation = GroupInviteMessage.class)
     private GroupInviteMessage groupInvite;
 
     /**
      * Template button reply message
      */
-    @ProtobufProperty(index = 29, type = MESSAGE, concreteType = TemplateReplyMessage.class)
+    @ProtobufProperty(index = 29, type = MESSAGE, implementation = TemplateReplyMessage.class)
     private TemplateReplyMessage templateReply;
 
     /**
      * Product message
      */
-    @ProtobufProperty(index = 30, type = MESSAGE, concreteType = ProductMessage.class)
+    @ProtobufProperty(index = 30, type = MESSAGE, implementation = ProductMessage.class)
     private ProductMessage product;
 
     /**
      * Device sent message
      */
-    @ProtobufProperty(index = 31, type = MESSAGE, concreteType = DeviceSentMessage.class)
+    @ProtobufProperty(index = 31, type = MESSAGE, implementation = DeviceSentMessage.class)
     private DeviceSentMessage deviceSent;
 
     /**
      * Device dataSync message
      */
-    @ProtobufProperty(index = 32, type = MESSAGE, concreteType = DeviceSyncMessage.class)
+    @ProtobufProperty(index = 32, type = MESSAGE, implementation = DeviceSyncMessage.class)
     private DeviceSyncMessage deviceSync;
 
     /**
      * List message
      */
-    @ProtobufProperty(index = 36, type = MESSAGE, concreteType = ListMessage.class)
+    @ProtobufProperty(index = 36, type = MESSAGE, implementation = ListMessage.class)
     private ListMessage list;
 
     /**
      * View once message
      */
-    @ProtobufProperty(index = 37, type = MESSAGE, concreteType = FutureMessageContainer.class)
+    @ProtobufProperty(index = 37, type = MESSAGE, implementation = FutureMessageContainer.class)
     private FutureMessageContainer viewOnce;
 
     /**
      * Order message
      */
-    @ProtobufProperty(index = 38, type = MESSAGE, concreteType = PaymentOrderMessage.class)
+    @ProtobufProperty(index = 38, type = MESSAGE, implementation = PaymentOrderMessage.class)
     private PaymentOrderMessage order;
 
     /**
      * List response message
      */
-    @ProtobufProperty(index = 39, type = MESSAGE, concreteType = ListResponseMessage.class)
+    @ProtobufProperty(index = 39, type = MESSAGE, implementation = ListResponseMessage.class)
     private ListResponseMessage listResponse;
 
     /**
      * Ephemeral message
      */
-    @ProtobufProperty(index = 40, type = MESSAGE, concreteType = FutureMessageContainer.class)
+    @ProtobufProperty(index = 40, type = MESSAGE, implementation = FutureMessageContainer.class)
     private FutureMessageContainer ephemeral;
 
     /**
      * Invoice message
      */
-    @ProtobufProperty(index = 41, type = MESSAGE, concreteType = PaymentInvoiceMessage.class)
+    @ProtobufProperty(index = 41, type = MESSAGE, implementation = PaymentInvoiceMessage.class)
     private PaymentInvoiceMessage invoice;
 
     /**
      * Buttons message
      */
-    @ProtobufProperty(index = 42, type = MESSAGE, concreteType = ButtonsMessage.class)
+    @ProtobufProperty(index = 42, type = MESSAGE, implementation = ButtonsMessage.class)
     private ButtonsMessage buttons;
 
     /**
      * Buttons response message
      */
-    @ProtobufProperty(index = 43, type = MESSAGE, concreteType = ButtonsResponseMessage.class)
+    @ProtobufProperty(index = 43, type = MESSAGE, implementation = ButtonsResponseMessage.class)
     private ButtonsResponseMessage buttonsResponse;
 
     /**
      * Payment invite message
      */
-    @ProtobufProperty(index = 44, type = MESSAGE, concreteType = PaymentInviteMessage.class)
+    @ProtobufProperty(index = 44, type = MESSAGE, implementation = PaymentInviteMessage.class)
     private PaymentInviteMessage paymentInvite;
 
     /**
      * Interactive message
      */
-    @ProtobufProperty(index = 45, type = MESSAGE, concreteType = InteractiveMessage.class)
+    @ProtobufProperty(index = 45, type = MESSAGE, implementation = InteractiveMessage.class)
     private InteractiveMessage interactive;
 
     /**
      * Reaction message
      */
-    @ProtobufProperty(index = 46, type = MESSAGE, concreteType = ReactionMessage.class)
+    @ProtobufProperty(index = 46, type = MESSAGE, implementation = ReactionMessage.class)
     private ReactionMessage reaction;
 
     /**
      * Sticker sync message
      */
-    @ProtobufProperty(index = 47, type = MESSAGE, concreteType = StickerSyncRMRMessage.class)
+    @ProtobufProperty(index = 47, type = MESSAGE, implementation = StickerSyncRMRMessage.class)
     private StickerSyncRMRMessage stickerSync;
 
     /**
      * Message context info
      */
-    @ProtobufProperty(index = 35, type = MESSAGE, concreteType = MessageContextInfo.class)
+    @ProtobufProperty(index = 35, type = MESSAGE, implementation = MessageContextInfo.class)
     @Setter
     private MessageContextInfo deviceInfo;
 

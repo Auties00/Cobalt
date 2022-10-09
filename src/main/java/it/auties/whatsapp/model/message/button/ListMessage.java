@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.message.button;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.button.ButtonSection;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.ProductListInfo;
@@ -17,8 +17,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.STRING;
 
 /**
  * A model class that represents a message that contains a list of buttons or a list of products
@@ -52,19 +52,19 @@ public final class ListMessage extends ContextualMessage implements ButtonMessag
     /**
      * The type of this message
      */
-    @ProtobufProperty(index = 4, type = MESSAGE, concreteType = Type.class)
+    @ProtobufProperty(index = 4, type = MESSAGE, implementation = Type.class)
     private Type type;
 
     /**
      * The button sections of this message
      */
-    @ProtobufProperty(index = 5, type = MESSAGE, concreteType = ButtonSection.class, repeated = true)
+    @ProtobufProperty(index = 5, type = MESSAGE, implementation = ButtonSection.class, repeated = true)
     private List<ButtonSection> sections;
 
     /**
      * The product info of this message
      */
-    @ProtobufProperty(index = 6, type = MESSAGE, concreteType = ProductListInfo.class)
+    @ProtobufProperty(index = 6, type = MESSAGE, implementation = ProductListInfo.class)
     private ProductListInfo productListInfo;
 
     /**
@@ -76,7 +76,7 @@ public final class ListMessage extends ContextualMessage implements ButtonMessag
     /**
      * The context info of this message
      */
-    @ProtobufProperty(index = 8, type = MESSAGE, concreteType = ContextInfo.class)
+    @ProtobufProperty(index = 8, type = MESSAGE, implementation = ContextInfo.class)
     @Default
     private ContextInfo contextInfo = new ContextInfo();  // Overrides ContextualMessage's context info
 

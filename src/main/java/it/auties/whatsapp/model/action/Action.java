@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.action;
 
-import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufMessage;
 
 /**
  * A model interface that represents an action

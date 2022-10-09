@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -16,7 +16,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Objects;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 import static it.auties.whatsapp.model.message.model.MediaMessageType.STICKER;
 import static it.auties.whatsapp.util.Medias.Format.PNG;
 import static java.util.Objects.requireNonNullElse;
@@ -108,7 +108,7 @@ public final class StickerMessage extends MediaMessage {
     /**
      * Determines whether this sticker message is animated
      */
-    @ProtobufProperty(index = 13, type = BOOLEAN)
+    @ProtobufProperty(index = 13, type = BOOL)
     private boolean animated;
 
     /**

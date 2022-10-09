@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.sync;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.media.AttachmentProvider;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,7 +13,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 @AllArgsConstructor
 @Data
@@ -36,7 +36,7 @@ public final class HistorySyncNotification implements ProtobufMessage, Attachmen
     @ProtobufProperty(index = 5, type = STRING)
     private String mediaDirectPath;
 
-    @ProtobufProperty(index = 6, type = MESSAGE, concreteType = HistorySyncNotificationHistorySyncType.class)
+    @ProtobufProperty(index = 6, type = MESSAGE, implementation = HistorySyncNotificationHistorySyncType.class)
     private HistorySyncNotificationHistorySyncType syncType;
 
     @ProtobufProperty(index = 7, type = UINT32)

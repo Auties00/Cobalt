@@ -4,10 +4,9 @@ import ezvcard.Ezvcard;
 import ezvcard.VCard;
 import ezvcard.VCardVersion;
 import ezvcard.property.Telephone;
-import it.auties.protobuf.api.exception.ProtobufSerializationException;
-import it.auties.protobuf.api.model.ProtobufConverter;
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufValue;
+import it.auties.protobuf.base.ProtobufConverter;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.serializer.exception.ProtobufSerializationException;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NonNull;
@@ -28,7 +27,6 @@ import java.util.stream.Collectors;
 @Builder(builderMethodName = "newContactCardBuilder")
 @Jacksonized
 @Accessors(fluent = true)
-@ProtobufValue
 public class ContactCard implements ProtobufMessage {
     private static final String BUSINESS_NAME_PROPERTY = "X-WA-BIZ-NAME";
     private static final String PHONE_NUMBER_PROPERTY = "WAID";
@@ -160,8 +158,13 @@ public class ContactCard implements ProtobufMessage {
      * @return a non-null String
      */
     @Override
-    public Object value() {
+    public Object toValue() {
         return toString();
+    }
+
+    @Override
+    public boolean isValueBased() {
+        return true;
     }
 
     public static class ContactCardBuilder {

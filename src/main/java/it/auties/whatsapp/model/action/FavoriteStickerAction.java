@@ -1,13 +1,13 @@
 package it.auties.whatsapp.model.action;
 
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model clas that represents a favourite sticker
@@ -63,7 +63,7 @@ public final class FavoriteStickerAction implements Action {
     /**
      * Whether the sticker should be marked as favourite or not
      */
-    @ProtobufProperty(index = 8, type = BOOLEAN)
+    @ProtobufProperty(index = 8, type = BOOL)
     private boolean favourite;
 
     /**

@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.sync;
 
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MessageKey;
@@ -15,8 +15,8 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.ArrayList;
 import java.util.List;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.INT64;
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.INT64;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
 @AllArgsConstructor
 @Data
@@ -30,7 +30,7 @@ public class ActionMessageRangeSync implements ProtobufMessage {
     @ProtobufProperty(index = 2, type = INT64)
     private Long lastSystemMessageTimestamp;
 
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = SyncActionMessage.class, repeated = true)
+    @ProtobufProperty(index = 3, type = MESSAGE, implementation = SyncActionMessage.class, repeated = true)
     private List<SyncActionMessage> messages;
 
     public ActionMessageRangeSync(@NonNull Chat chat, boolean allMessages) {

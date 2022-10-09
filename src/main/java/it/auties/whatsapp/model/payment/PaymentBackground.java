@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.payment;
 
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,7 +11,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 @AllArgsConstructor
 @Data
@@ -43,10 +43,10 @@ public class PaymentBackground implements ProtobufMessage {
     @ProtobufProperty(index = 8, type = FIXED32)
     private int subtextArgb;
 
-    @ProtobufProperty(index = 9, type = MESSAGE, concreteType = PaymentMediaData.class)
+    @ProtobufProperty(index = 9, type = MESSAGE, implementation = PaymentMediaData.class)
     private PaymentMediaData mediaData;
 
-    @ProtobufProperty(index = 10, type = MESSAGE, concreteType = PaymentBackgroundType.class)
+    @ProtobufProperty(index = 10, type = MESSAGE, implementation = PaymentBackgroundType.class)
     private PaymentBackgroundType type;
 
     @AllArgsConstructor

@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.business.BusinessCollection;
 import it.auties.whatsapp.model.business.BusinessNativeFlow;
 import it.auties.whatsapp.model.business.BusinessShop;
@@ -21,7 +21,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static java.util.Objects.requireNonNullElseGet;
 
 /**
@@ -38,43 +38,43 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
     /**
      * Product header
      */
-    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = ProductHeader.class)
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = ProductHeader.class)
     private ProductHeader header;
 
     /**
      * Product body
      */
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ProductBody.class)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = ProductBody.class)
     private ProductBody body;
 
     /**
      * Product footer
      */
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ProductFooter.class)
+    @ProtobufProperty(index = 3, type = MESSAGE, implementation = ProductFooter.class)
     private ProductFooter footer;
 
     /**
      * Shop store message
      */
-    @ProtobufProperty(index = 4, type = MESSAGE, concreteType = BusinessShop.class)
+    @ProtobufProperty(index = 4, type = MESSAGE, implementation = BusinessShop.class)
     private BusinessShop shopContent;
 
     /**
      * Collection message
      */
-    @ProtobufProperty(index = 5, type = MESSAGE, concreteType = BusinessCollection.class)
+    @ProtobufProperty(index = 5, type = MESSAGE, implementation = BusinessCollection.class)
     private BusinessCollection collectionContent;
 
     /**
      * Native flow message
      */
-    @ProtobufProperty(index = 6, type = MESSAGE, concreteType = BusinessNativeFlow.class)
+    @ProtobufProperty(index = 6, type = MESSAGE, implementation = BusinessNativeFlow.class)
     private BusinessNativeFlow nativeFlowContent;
 
     /**
      * The context info of this message
      */
-    @ProtobufProperty(index = 15, type = MESSAGE, concreteType = ContextInfo.class)
+    @ProtobufProperty(index = 15, type = MESSAGE, implementation = ContextInfo.class)
     @Default
     private ContextInfo contextInfo = new ContextInfo();  // Overrides ContextualMessage's context info
 

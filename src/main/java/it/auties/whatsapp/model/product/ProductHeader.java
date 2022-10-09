@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.product;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import it.auties.whatsapp.model.message.standard.VideoMessage;
@@ -15,7 +15,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that represents the header of a product
@@ -41,19 +41,19 @@ public class ProductHeader implements ProtobufMessage {
     /**
      * Whether this message had a media attachment
      */
-    @ProtobufProperty(index = 5, type = BOOLEAN)
+    @ProtobufProperty(index = 5, type = BOOL)
     private boolean hasMediaAttachment;
 
     /**
      * The document attachment
      */
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = DocumentMessage.class)
+    @ProtobufProperty(index = 3, type = MESSAGE, implementation = DocumentMessage.class)
     private DocumentMessage documentAttachment;
 
     /**
      * The image attachment
      */
-    @ProtobufProperty(index = 4, type = MESSAGE, concreteType = ImageMessage.class)
+    @ProtobufProperty(index = 4, type = MESSAGE, implementation = ImageMessage.class)
     private ImageMessage imageAttachment;
 
     /**
@@ -65,7 +65,7 @@ public class ProductHeader implements ProtobufMessage {
     /**
      * The video attachment
      */
-    @ProtobufProperty(index = 7, type = MESSAGE, concreteType = VideoMessage.class)
+    @ProtobufProperty(index = 7, type = MESSAGE, implementation = VideoMessage.class)
     private VideoMessage videoAttachment;
 
     /**

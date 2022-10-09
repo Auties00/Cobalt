@@ -1,13 +1,13 @@
 package it.auties.whatsapp.model.setting;
 
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.BOOLEAN;
+import static it.auties.protobuf.base.ProtobufType.BOOL;
 
 @AllArgsConstructor
 @Data
@@ -15,7 +15,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.BOOLEAN;
 @Jacksonized
 @Accessors(fluent = true)
 public final class UnarchiveChatsSetting implements Setting {
-    @ProtobufProperty(index = 1, type = BOOLEAN)
+    @ProtobufProperty(index = 1, type = BOOL)
     private boolean unarchiveChats;
 
     @Override

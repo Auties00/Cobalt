@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 import static it.auties.whatsapp.model.message.model.MediaMessageType.IMAGE;
 import static it.auties.whatsapp.util.Medias.Format.JPG;
 import static java.util.Objects.requireNonNullElse;
@@ -93,7 +93,7 @@ public final class ImageMessage extends MediaMessage {
     /**
      * Interactive annotations
      */
-    @ProtobufProperty(index = 10, type = MESSAGE, concreteType = InteractiveAnnotation.class, repeated = true)
+    @ProtobufProperty(index = 10, type = MESSAGE, implementation = InteractiveAnnotation.class, repeated = true)
     private List<InteractiveAnnotation> interactiveAnnotations;
 
     /**

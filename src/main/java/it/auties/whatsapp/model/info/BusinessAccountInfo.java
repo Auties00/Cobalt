@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.info;
 
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.business.BusinessAccountType;
 import it.auties.whatsapp.model.business.BusinessStorageType;
 import lombok.AllArgsConstructor;
@@ -9,7 +9,7 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that holds the information related to a business account.
@@ -41,12 +41,12 @@ public final class BusinessAccountInfo implements Info {
     /**
      * Indicates here this account is hosted
      */
-    @ProtobufProperty(index = 4, type = MESSAGE, concreteType = BusinessStorageType.class)
+    @ProtobufProperty(index = 4, type = MESSAGE, implementation = BusinessStorageType.class)
     private BusinessStorageType hostStorage;
 
     /**
      * The type of this account
      */
-    @ProtobufProperty(index = 5, type = MESSAGE, concreteType = BusinessAccountType.class)
+    @ProtobufProperty(index = 5, type = MESSAGE, implementation = BusinessAccountType.class)
     private BusinessAccountType accountType;
 }

@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.contact.ContactCard;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
@@ -13,7 +13,7 @@ import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+import static it.auties.protobuf.base.ProtobufType.STRING;
 
 /**
  * A model class that represents a message holding a contact inside
@@ -35,7 +35,7 @@ public final class ContactMessage extends ContextualMessage {
     /**
      * The info about the contact that this message wraps encoded as a vcard
      */
-    @ProtobufProperty(index = 16, type = STRING, concreteType = ContactCard.class, requiresConversion = true)
+    @ProtobufProperty(index = 16, type = STRING, implementation = ContactCard.class)
     private ContactCard vcard;
 
     @Override

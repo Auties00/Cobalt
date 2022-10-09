@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.sync;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.info.MessageInfo;
 import lombok.AllArgsConstructor;
@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 @AllArgsConstructor
 @Data
@@ -25,14 +25,14 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
 @Jacksonized
 @Accessors(fluent = true)
 public class HistorySync implements ProtobufMessage {
-    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = HistorySyncHistorySyncType.class)
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = HistorySyncHistorySyncType.class)
     private HistorySyncHistorySyncType syncType;
 
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = Chat.class, repeated = true)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = Chat.class, repeated = true)
     @Default
     private List<Chat> conversations = new ArrayList<>();
 
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = MessageInfo.class, repeated = true)
+    @ProtobufProperty(index = 3, type = MESSAGE, implementation = MessageInfo.class, repeated = true)
     @Default
     private List<MessageInfo> statusV3Messages = new ArrayList<>();
 
@@ -42,11 +42,11 @@ public class HistorySync implements ProtobufMessage {
     @ProtobufProperty(index = 6, type = UINT32)
     private Integer progress;
 
-    @ProtobufProperty(index = 7, type = MESSAGE, concreteType = PushName.class, repeated = true)
+    @ProtobufProperty(index = 7, type = MESSAGE, implementation = PushName.class, repeated = true)
     @Default
     private List<PushName> pushNames = new ArrayList<>();
 
-    @ProtobufProperty(index = 8, type = MESSAGE, concreteType = GlobalSettings.class)
+    @ProtobufProperty(index = 8, type = MESSAGE, implementation = GlobalSettings.class)
     private GlobalSettings globalSettings;
 
     @ProtobufProperty(index = 9, type = BYTES)

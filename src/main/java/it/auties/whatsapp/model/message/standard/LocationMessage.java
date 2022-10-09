@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
@@ -12,7 +12,7 @@ import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that represents a message holding a location inside
@@ -58,7 +58,7 @@ public final class LocationMessage extends ContextualMessage {
     /**
      * Determines whether this message is a {@link LiveLocationMessage}
      */
-    @ProtobufProperty(index = 6, type = BOOLEAN)
+    @ProtobufProperty(index = 6, type = BOOL)
     private boolean live;
 
     /**

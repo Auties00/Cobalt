@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.action;
 
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,7 +8,7 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.BOOLEAN;
+import static it.auties.protobuf.base.ProtobufType.BOOL;
 
 /**
  * A model clas that represents unsupported actions for android
@@ -22,7 +22,7 @@ public final class AndroidUnsupportedActions implements Action {
     /**
      * Whether unsupported actions are allowed
      */
-    @ProtobufProperty(index = 1, type = BOOLEAN)
+    @ProtobufProperty(index = 1, type = BOOL)
     private boolean allowed;
 
     /**

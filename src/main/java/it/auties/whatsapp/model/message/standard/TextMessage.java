@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
@@ -12,7 +12,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that represents a message holding text inside
@@ -70,7 +70,7 @@ public final class TextMessage extends ContextualMessage {
     /**
      * The type of font used for the text message.
      */
-    @ProtobufProperty(index = 9, type = MESSAGE, concreteType = TextMessageFontType.class)
+    @ProtobufProperty(index = 9, type = MESSAGE, implementation = TextMessageFontType.class)
     private TextMessageFontType font;
 
     /**
@@ -78,7 +78,7 @@ public final class TextMessage extends ContextualMessage {
      * If said message contains a link, this value will probably be {@link TextMessagePreviewType#VIDEO}.
      * Not all links, though, produce a preview.
      */
-    @ProtobufProperty(index = 10, type = MESSAGE, concreteType = TextMessagePreviewType.class)
+    @ProtobufProperty(index = 10, type = MESSAGE, implementation = TextMessagePreviewType.class)
     private TextMessagePreviewType previewType;
 
     /**
@@ -90,7 +90,7 @@ public final class TextMessage extends ContextualMessage {
     /**
      * Determines whether the preview can be played inline
      */
-    @ProtobufProperty(index = 18, type = BOOLEAN)
+    @ProtobufProperty(index = 18, type = BOOL)
     private boolean doNotPlayInline;
 
     /**

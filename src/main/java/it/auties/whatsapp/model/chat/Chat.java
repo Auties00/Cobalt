@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.chat;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.contact.Contact;
@@ -23,7 +23,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that represents a Chat.
@@ -41,14 +41,14 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     /**
      * The non-null unique jid used to identify this chat
      */
-    @ProtobufProperty(index = 1, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
+    @ProtobufProperty(index = 1, type = STRING, implementation = ContactJid.class)
     @NonNull
     private final ContactJid jid;
 
     /**
      * A non-null arrayList of messages in this chat sorted chronologically
      */
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = HistorySyncMessage.class, repeated = true)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = HistorySyncMessage.class, repeated = true)
     @NonNull
     @Default
     @JsonManagedReference
@@ -58,14 +58,14 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * The nullable new unique jid for this Chat.
      * This field is not null when a contact changes phone number and connects their new phone number with Whatsapp.
      */
-    @ProtobufProperty(index = 3, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
+    @ProtobufProperty(index = 3, type = STRING, implementation = ContactJid.class)
     private final ContactJid newJid;
 
     /**
      * The nullable old jid for this Chat.
      * This field is not null when a contact changes phone number and connects their new phone number with Whatsapp.
      */
-    @ProtobufProperty(index = 4, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
+    @ProtobufProperty(index = 4, type = STRING, implementation = ContactJid.class)
     private final ContactJid oldJid;
 
     /**
@@ -79,7 +79,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * The seconds in seconds before a message is automatically deleted from this chat both locally and from WhatsappWeb's servers.
      * If ephemeral messages aren't enabled, this field has a value of 0
      */
-    @ProtobufProperty(index = 9, type = UINT32, requiresConversion = true)
+    @ProtobufProperty(index = 9, type = UINT32)
     @Default
     private ChatEphemeralTimer ephemeralMessageDuration = ChatEphemeralTimer.OFF;
 
@@ -105,19 +105,19 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     /**
      * This field is used to determine whether a chat was marked as being spam or not.
      */
-    @ProtobufProperty(index = 15, type = BOOLEAN)
+    @ProtobufProperty(index = 15, type = BOOL)
     private boolean notSpam;
 
     /**
      * This field is used to determine whether a chat is archived or not.
      */
-    @ProtobufProperty(index = 16, type = BOOLEAN)
+    @ProtobufProperty(index = 16, type = BOOL)
     private boolean archived;
 
     /**
      * The initiator of disappearing chats
      */
-    @ProtobufProperty(index = 17, type = MESSAGE, concreteType = ChatDisappear.class)
+    @ProtobufProperty(index = 17, type = MESSAGE, implementation = ChatDisappear.class)
     private ChatDisappear disappearInitiator;
 
     /**
@@ -156,13 +156,13 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     /**
      * The wallpaper of this chat
      */
-    @ProtobufProperty(index = 26, type = MESSAGE, concreteType = ChatWallpaper.class)
+    @ProtobufProperty(index = 26, type = MESSAGE, implementation = ChatWallpaper.class)
     private ChatWallpaper wallpaper;
 
     /**
      * The type of this media visibility set for this chat
      */
-    @ProtobufProperty(index = 27, type = MESSAGE, concreteType = ChatMediaVisibility.class)
+    @ProtobufProperty(index = 27, type = MESSAGE, implementation = ChatMediaVisibility.class)
     @NonNull
     @Default
     private ChatMediaVisibility mediaVisibility = ChatMediaVisibility.OFF;
@@ -176,7 +176,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     /**
      * Whether this chat was suspended and therefore cannot be accessed anymore
      */
-    @ProtobufProperty(index = 29, type = BOOLEAN)
+    @ProtobufProperty(index = 29, type = BOOL)
     private boolean suspended;
 
     /**

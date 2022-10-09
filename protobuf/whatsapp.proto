@@ -1,4 +1,5 @@
 syntax = "proto2";
+package it.auties.whatsapp.model.unsupported;
 
 message AppVersion {
   optional uint32 primary = 1;

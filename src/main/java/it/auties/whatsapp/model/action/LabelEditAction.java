@@ -1,13 +1,13 @@
 package it.auties.whatsapp.model.action;
 
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model clas that represents an edit to a label
@@ -39,7 +39,7 @@ public final class LabelEditAction implements Action {
     /**
      * Whether this label was deleted
      */
-    @ProtobufProperty(index = 4, type = BOOLEAN)
+    @ProtobufProperty(index = 4, type = BOOL)
     private boolean deleted;
 
     /**

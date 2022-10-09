@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.message.server;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.ServerMessage;
@@ -13,8 +13,8 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT64;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.UINT64;
 
 /**
  * A model class that represents a message sent by a WhatsappWeb.
@@ -29,13 +29,13 @@ public final class ProtocolMessage implements ServerMessage {
     /**
      * The key of message that this server message regards
      */
-    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = MessageKey.class)
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = MessageKey.class)
     private MessageKey key;
 
     /**
      * The type of this server message
      */
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ProtocolMessageType.class)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = ProtocolMessageType.class)
     private ProtocolMessageType protocolType;
 
     /**
@@ -56,31 +56,31 @@ public final class ProtocolMessage implements ServerMessage {
      * History dataSync notification.
      * This property is defined only if {@link ProtocolMessage#type} == {@link ProtocolMessageType#HISTORY_SYNC_NOTIFICATION}.
      */
-    @ProtobufProperty(index = 6, type = MESSAGE, concreteType = HistorySyncNotification.class)
+    @ProtobufProperty(index = 6, type = MESSAGE, implementation = HistorySyncNotification.class)
     private HistorySyncNotification historySyncNotification;
 
     /**
      * The app state keys
      */
-    @ProtobufProperty(index = 7, type = MESSAGE, concreteType = AppStateSyncKeyShare.class)
+    @ProtobufProperty(index = 7, type = MESSAGE, implementation = AppStateSyncKeyShare.class)
     private AppStateSyncKeyShare appStateSyncKeyShare;
 
     /**
      * An app state sync key
      */
-    @ProtobufProperty(index = 8, type = MESSAGE, concreteType = AppStateSyncKeyRequest.class)
+    @ProtobufProperty(index = 8, type = MESSAGE, implementation = AppStateSyncKeyRequest.class)
     private AppStateSyncKeyRequest appStateSyncKeyRequest;
 
     /**
      * Initial security settings sent by Whatsapp
      */
-    @ProtobufProperty(index = 9, type = MESSAGE, concreteType = InitialSecurityNotificationSettingSync.class)
+    @ProtobufProperty(index = 9, type = MESSAGE, implementation = InitialSecurityNotificationSettingSync.class)
     private InitialSecurityNotificationSettingSync initialSecurityNotificationSettingSync;
 
     /**
      * App state exception notification
      */
-    @ProtobufProperty(index = 10, type = MESSAGE, concreteType = AppStateFatalExceptionNotification.class)
+    @ProtobufProperty(index = 10, type = MESSAGE, implementation = AppStateFatalExceptionNotification.class)
     private AppStateFatalExceptionNotification appStateFatalExceptionNotification;
 
     @Override

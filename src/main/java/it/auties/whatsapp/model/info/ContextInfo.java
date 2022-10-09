@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatDisappear;
 import it.auties.whatsapp.model.contact.Contact;
@@ -15,7 +15,7 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.List;
 import java.util.Optional;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that holds the information related to a {@link ContextualMessage}.
@@ -37,7 +37,7 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
     /**
      * The jid of the contact that sent the message that this ContextualMessage quotes
      */
-    @ProtobufProperty(index = 2, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
+    @ProtobufProperty(index = 2, type = STRING, implementation = ContactJid.class)
     @Setter(AccessLevel.NONE)
     private ContactJid quotedMessageSenderJid;
 
@@ -49,14 +49,14 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
     /**
      * The message container that this ContextualMessage quotes
      */
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = MessageContainer.class)
+    @ProtobufProperty(index = 3, type = MESSAGE, implementation = MessageContainer.class)
     @Setter(AccessLevel.NONE)
     private MessageContainer quotedMessage;
 
     /**
      * The jid of the contact that sent the message that this ContextualMessage quotes
      */
-    @ProtobufProperty(index = 4, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
+    @ProtobufProperty(index = 4, type = STRING, implementation = ContactJid.class)
     @Setter(AccessLevel.NONE)
     private ContactJid quotedMessageChatJid;
 
@@ -69,7 +69,7 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
     /**
      * A list of the contacts' jids mentioned in this ContextualMessage
      */
-    @ProtobufProperty(index = 15, type = STRING, repeated = true, concreteType = ContactJid.class, requiresConversion = true)
+    @ProtobufProperty(index = 15, type = STRING, repeated = true, implementation = ContactJid.class)
     private List<ContactJid> mentions;
 
     /**
@@ -99,19 +99,19 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
     /**
      * Whether this ContextualMessage is forwarded
      */
-    @ProtobufProperty(index = 22, type = BOOLEAN)
+    @ProtobufProperty(index = 22, type = BOOL)
     private boolean forwarded;
 
     /**
      * The ad that this ContextualMessage quotes
      */
-    @ProtobufProperty(index = 23, type = MESSAGE, concreteType = AdReplyInfo.class)
+    @ProtobufProperty(index = 23, type = MESSAGE, implementation = AdReplyInfo.class)
     private AdReplyInfo quotedAd;
 
     /**
      * Placeholder key
      */
-    @ProtobufProperty(index = 24, type = MESSAGE, concreteType = MessageKey.class)
+    @ProtobufProperty(index = 24, type = MESSAGE, implementation = MessageKey.class)
     private MessageKey placeholderKey;
 
     /**
@@ -137,7 +137,7 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
     /**
      * External ad reply
      */
-    @ProtobufProperty(index = 28, type = MESSAGE, concreteType = ExternalAdReplyInfo.class)
+    @ProtobufProperty(index = 28, type = MESSAGE, implementation = ExternalAdReplyInfo.class)
     private ExternalAdReplyInfo externalAdReply;
 
     /**
@@ -161,7 +161,7 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
     /**
      * Disappearing mode
      */
-    @ProtobufProperty(index = 32, type = MESSAGE, concreteType = ChatDisappear.class)
+    @ProtobufProperty(index = 32, type = MESSAGE, implementation = ChatDisappear.class)
     private ChatDisappear disappearingMode;
 
     /**
@@ -179,7 +179,7 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
     /**
      * Parent group
      */
-    @ProtobufProperty(index = 35, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
+    @ProtobufProperty(index = 35, type = STRING, implementation = ContactJid.class)
     private ContactJid parentGroup;
 
     private ContextInfo(@NonNull MessageMetadataProvider quotedMessage) {

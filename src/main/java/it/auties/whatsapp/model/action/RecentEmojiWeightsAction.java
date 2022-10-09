@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.action;
 
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.sync.RecentEmojiWeight;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -12,7 +12,7 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.ArrayList;
 import java.util.List;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
 /**
  * A model clas that represents a change in the weight of recent emojis
@@ -26,7 +26,7 @@ public final class RecentEmojiWeightsAction implements Action {
     /**
      * The weight of the emojis
      */
-    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = RecentEmojiWeight.class, repeated = true)
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = RecentEmojiWeight.class, repeated = true)
     private List<RecentEmojiWeight> weights;
 
     /**

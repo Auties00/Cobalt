@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.signal.auth;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,8 +12,8 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.STRING;
 
 @AllArgsConstructor
 @Data
@@ -21,10 +21,10 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Jacksonized
 @Accessors(fluent = true)
 public class UserAgent implements ProtobufMessage {
-    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = UserAgentPlatform.class)
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = UserAgentPlatform.class)
     private UserAgentPlatform platform;
 
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = Version.class)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = Version.class)
     private Version appVersion;
 
     @ProtobufProperty(index = 3, type = STRING)
@@ -48,7 +48,7 @@ public class UserAgent implements ProtobufMessage {
     @ProtobufProperty(index = 9, type = STRING)
     private String phoneId;
 
-    @ProtobufProperty(index = 10, type = MESSAGE, concreteType = UserAgentReleaseChannel.class)
+    @ProtobufProperty(index = 10, type = MESSAGE, implementation = UserAgentReleaseChannel.class)
     private UserAgentReleaseChannel releaseChannel;
 
     @ProtobufProperty(index = 11, type = STRING)

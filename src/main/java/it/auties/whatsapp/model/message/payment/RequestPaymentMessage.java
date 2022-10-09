@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.payment;
 
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that represents a message to try to place a {@link PaymentMessage}.
@@ -48,7 +48,7 @@ public final class RequestPaymentMessage implements PaymentMessage {
     /**
      * The caption message, that is the message below the payment request
      */
-    @ProtobufProperty(index = 4, type = MESSAGE, concreteType = MessageContainer.class)
+    @ProtobufProperty(index = 4, type = MESSAGE, implementation = MessageContainer.class)
     private MessageContainer noteMessage;
 
     /**
@@ -60,13 +60,13 @@ public final class RequestPaymentMessage implements PaymentMessage {
     /**
      * The amount being paid
      */
-    @ProtobufProperty(index = 6, type = MESSAGE, concreteType = PaymentMoney.class)
+    @ProtobufProperty(index = 6, type = MESSAGE, implementation = PaymentMoney.class)
     private PaymentMoney amount;
 
     /**
      * The background of the payment
      */
-    @ProtobufProperty(index = 7, type = MESSAGE, concreteType = PaymentBackground.class)
+    @ProtobufProperty(index = 7, type = MESSAGE, implementation = PaymentBackground.class)
     private PaymentBackground background;
 
     @Override

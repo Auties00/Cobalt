@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.info;
 
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.business.BusinessActorsType;
 import it.auties.whatsapp.model.business.BusinessCertificate;
 import it.auties.whatsapp.model.business.BusinessStorageType;
@@ -11,7 +11,7 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that holds the information related to the identity of a business account.
@@ -25,37 +25,37 @@ public final class BusinessIdentityInfo implements Info {
     /**
      * The level of verification of this account
      */
-    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = BusinessVerifiedLevel.class)
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = BusinessVerifiedLevel.class)
     private BusinessVerifiedLevel level;
 
     /**
      * The certificate of this account
      */
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = BusinessCertificate.class)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = BusinessCertificate.class)
     private BusinessCertificate certificate;
 
     /**
      * Indicates whether this account has a signed certificate
      */
-    @ProtobufProperty(index = 3, type = BOOLEAN)
+    @ProtobufProperty(index = 3, type = BOOL)
     private boolean signed;
 
     /**
      * Indicates whether the signed certificate of this account has been revoked
      */
-    @ProtobufProperty(index = 4, type = BOOLEAN)
+    @ProtobufProperty(index = 4, type = BOOL)
     private boolean revoked;
 
     /**
      * Indicates where this account is hosted
      */
-    @ProtobufProperty(index = 5, type = MESSAGE, concreteType = BusinessStorageType.class)
+    @ProtobufProperty(index = 5, type = MESSAGE, implementation = BusinessStorageType.class)
     private BusinessStorageType hostStorage;
 
     /**
      * The actual actors of this account
      */
-    @ProtobufProperty(index = 6, type = MESSAGE, concreteType = BusinessActorsType.class)
+    @ProtobufProperty(index = 6, type = MESSAGE, implementation = BusinessActorsType.class)
     private BusinessActorsType actualActors;
 
     /**

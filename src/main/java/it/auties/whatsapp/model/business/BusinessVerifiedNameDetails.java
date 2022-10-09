@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.business;
 
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,7 +11,7 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.ArrayList;
 import java.util.List;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that represents a verified name
@@ -43,7 +43,7 @@ public class BusinessVerifiedNameDetails implements ProtobufMessage {
     /**
      * The localizable names
      */
-    @ProtobufProperty(index = 8, type = MESSAGE, concreteType = BusinessLocalizedName.class, repeated = true)
+    @ProtobufProperty(index = 8, type = MESSAGE, implementation = BusinessLocalizedName.class, repeated = true)
     private List<BusinessLocalizedName> localizedNames;
 
     /**

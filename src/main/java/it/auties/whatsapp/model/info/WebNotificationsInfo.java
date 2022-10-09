@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.info;
 
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,7 +9,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 @AllArgsConstructor
 @Data
@@ -26,6 +26,6 @@ public final class WebNotificationsInfo implements Info {
     @ProtobufProperty(index = 4, type = UINT32)
     private int notifyMessageCount;
 
-    @ProtobufProperty(index = 5, type = MESSAGE, concreteType = MessageInfo.class, repeated = true)
+    @ProtobufProperty(index = 5, type = MESSAGE, implementation = MessageInfo.class, repeated = true)
     private List<MessageInfo> notifyMessages;
 }

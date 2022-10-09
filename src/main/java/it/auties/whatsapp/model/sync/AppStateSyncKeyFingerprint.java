@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.sync;
 
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,7 +11,7 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.ArrayList;
 import java.util.List;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT32;
+import static it.auties.protobuf.base.ProtobufType.UINT32;
 
 @AllArgsConstructor
 @Data

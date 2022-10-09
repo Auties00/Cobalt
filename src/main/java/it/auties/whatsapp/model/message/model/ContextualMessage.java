@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.model;
 
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.standard.*;
@@ -12,7 +12,7 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
 /**
  * A model interface that represents a message sent by a contact that provides a context.
@@ -30,7 +30,7 @@ public sealed abstract class ContextualMessage implements Message
     /**
      * The context info of this message
      */
-    @ProtobufProperty(index = 17, type = MESSAGE, concreteType = ContextInfo.class)
+    @ProtobufProperty(index = 17, type = MESSAGE, implementation = ContextInfo.class)
     @NonNull
     @Default
     private ContextInfo contextInfo = new ContextInfo();

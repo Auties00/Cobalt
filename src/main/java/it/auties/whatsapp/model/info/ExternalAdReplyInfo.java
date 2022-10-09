@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,7 +11,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that holds the information related to an advertisement.
@@ -37,7 +37,7 @@ public final class ExternalAdReplyInfo implements Info {
     /**
      * The media type of this ad, if any is specified
      */
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ExternalAdReplyInfoMediaType.class)
+    @ProtobufProperty(index = 3, type = MESSAGE, implementation = ExternalAdReplyInfoMediaType.class)
     private ExternalAdReplyInfoMediaType mediaType;
 
     /**

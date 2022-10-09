@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.business;
 
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.button.NativeFlowButton;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,7 +12,7 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.ArrayList;
 import java.util.List;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that represents a native flow
@@ -26,7 +26,7 @@ public final class BusinessNativeFlow implements ProtobufMessage {
     /**
      * The buttons of this flow
      */
-    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = NativeFlowButton.class, repeated = true)
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = NativeFlowButton.class, repeated = true)
     private List<NativeFlowButton> buttons;
 
     /**

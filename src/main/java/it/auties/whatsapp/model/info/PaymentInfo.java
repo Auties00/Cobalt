@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.payment.RequestPaymentMessage;
 import it.auties.whatsapp.model.payment.PaymentMoney;
@@ -14,7 +14,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that holds the information related to a payment.
@@ -29,7 +29,7 @@ public final class PaymentInfo implements Info {
      * The currency of this transaction
      */
     @Deprecated
-    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = PaymentInfoCurrency.class)
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = PaymentInfoCurrency.class)
     private PaymentInfoCurrency currencyDeprecated;
 
     /**
@@ -47,7 +47,7 @@ public final class PaymentInfo implements Info {
     /**
      * The status of this payment
      */
-    @ProtobufProperty(index = 4, type = MESSAGE, concreteType = PaymentInfoStatus.class)
+    @ProtobufProperty(index = 4, type = MESSAGE, implementation = PaymentInfoStatus.class)
     private PaymentInfoStatus status;
 
     /**
@@ -59,7 +59,7 @@ public final class PaymentInfo implements Info {
     /**
      * The MessageKey of the {@link RequestPaymentMessage} that originated this transaction
      */
-    @ProtobufProperty(index = 6, type = MESSAGE, concreteType = MessageKey.class)
+    @ProtobufProperty(index = 6, type = MESSAGE, implementation = MessageKey.class)
     private MessageKey requestMessageKey;
 
     /**
@@ -71,7 +71,7 @@ public final class PaymentInfo implements Info {
     /**
      * Future proofed
      */
-    @ProtobufProperty(index = 8, type = BOOLEAN)
+    @ProtobufProperty(index = 8, type = BOOL)
     private boolean futureProofed;
 
     /**
@@ -83,25 +83,25 @@ public final class PaymentInfo implements Info {
     /**
      * The status of this transaction
      */
-    @ProtobufProperty(index = 10, type = MESSAGE, concreteType = PaymentInfoTxnStatus.class)
+    @ProtobufProperty(index = 10, type = MESSAGE, implementation = PaymentInfoTxnStatus.class)
     private PaymentInfoTxnStatus transactionStatus;
 
     /**
      * Whether the novi format should be used
      */
-    @ProtobufProperty(index = 11, type = BOOLEAN)
+    @ProtobufProperty(index = 11, type = BOOL)
     private boolean useNoviFormat;
 
     /**
      * The primary amount
      */
-    @ProtobufProperty(index = 12, type = MESSAGE, concreteType = PaymentMoney.class)
+    @ProtobufProperty(index = 12, type = MESSAGE, implementation = PaymentMoney.class)
     private PaymentMoney primaryAmount;
 
     /**
      * The exchange amount
      */
-    @ProtobufProperty(index = 13, type = MESSAGE, concreteType = PaymentMoney.class)
+    @ProtobufProperty(index = 13, type = MESSAGE, implementation = PaymentMoney.class)
     private PaymentMoney exchangeAmount;
 
     /**

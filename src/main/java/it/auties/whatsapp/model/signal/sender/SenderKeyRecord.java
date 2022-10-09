@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.signal.sender;
 
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.util.Validate;
 import lombok.AllArgsConstructor;
@@ -16,7 +16,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -27,7 +27,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 public class SenderKeyRecord implements ProtobufMessage {
     private static final int MAX_STATES = 5;
 
-    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = SenderKeyState.class, repeated = true)
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = SenderKeyState.class, repeated = true)
     @Default
     private ConcurrentLinkedDeque<SenderKeyState> states = new ConcurrentLinkedDeque<>();
 

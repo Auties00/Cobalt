@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.business;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,8 +12,8 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT32;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.UINT32;
 
 /**
  * A model class that represents a time component
@@ -27,7 +27,7 @@ public class BusinessDateTimeComponent implements ProtobufMessage {
     /**
      * The day of the week
      */
-    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = DayOfWeek.class)
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = DayOfWeek.class)
     private DayOfWeek dayOfWeek;
 
     /**
@@ -63,7 +63,7 @@ public class BusinessDateTimeComponent implements ProtobufMessage {
     /**
      * The type of calendar
      */
-    @ProtobufProperty(index = 7, type = MESSAGE, concreteType = CalendarType.class)
+    @ProtobufProperty(index = 7, type = MESSAGE, implementation = CalendarType.class)
     private CalendarType calendar;
 
     /**

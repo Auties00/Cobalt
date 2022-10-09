@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.button;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import it.auties.whatsapp.model.message.standard.LocationMessage;
@@ -18,8 +18,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.STRING;
 
 /**
  * A model class that represents a hydrated four row template
@@ -30,19 +30,19 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
 @Jacksonized
 @Accessors(fluent = true)
 public class HydratedFourRowTemplate implements ProtobufMessage {
-    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = DocumentMessage.class)
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = DocumentMessage.class)
     private DocumentMessage documentTitle;
 
     @ProtobufProperty(index = 2, type = STRING)
     private String textTitle;
 
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ImageMessage.class)
+    @ProtobufProperty(index = 3, type = MESSAGE, implementation = ImageMessage.class)
     private ImageMessage imageTitle;
 
-    @ProtobufProperty(index = 4, type = MESSAGE, concreteType = VideoMessage.class)
+    @ProtobufProperty(index = 4, type = MESSAGE, implementation = VideoMessage.class)
     private VideoMessage videoTitle;
 
-    @ProtobufProperty(index = 5, type = MESSAGE, concreteType = LocationMessage.class)
+    @ProtobufProperty(index = 5, type = MESSAGE, implementation = LocationMessage.class)
     private LocationMessage locationTitle;
 
     @ProtobufProperty(index = 6, type = STRING)
@@ -51,7 +51,7 @@ public class HydratedFourRowTemplate implements ProtobufMessage {
     @ProtobufProperty(index = 7, type = STRING)
     private String footer;
 
-    @ProtobufProperty(index = 8, type = MESSAGE, concreteType = HydratedButtonTemplate.class, repeated = true)
+    @ProtobufProperty(index = 8, type = MESSAGE, implementation = HydratedButtonTemplate.class, repeated = true)
     private List<HydratedButtonTemplate> buttons;
 
     @ProtobufProperty(index = 9, type = STRING)

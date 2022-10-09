@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.setting;
 
-import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufMessage;
 
 public sealed interface Setting extends ProtobufMessage
         permits EphemeralSetting, LocaleSetting, PushNameSetting, SecurityNotificationSetting, UnarchiveChatsSetting {

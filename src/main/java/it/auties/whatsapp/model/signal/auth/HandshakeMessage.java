@@ -1,14 +1,14 @@
 package it.auties.whatsapp.model.signal.auth;
 
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
 @AllArgsConstructor
 @Data
@@ -16,13 +16,13 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @Jacksonized
 @Accessors(fluent = true)
 public class HandshakeMessage implements ProtobufMessage {
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ClientHello.class)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = ClientHello.class)
     private ClientHello clientHello;
 
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ServerHello.class)
+    @ProtobufProperty(index = 3, type = MESSAGE, implementation = ServerHello.class)
     private ServerHello serverHello;
 
-    @ProtobufProperty(index = 4, type = MESSAGE, concreteType = ClientFinish.class)
+    @ProtobufProperty(index = 4, type = MESSAGE, implementation = ClientFinish.class)
     private ClientFinish clientFinish;
 
     public HandshakeMessage(ClientHello clientHello) {

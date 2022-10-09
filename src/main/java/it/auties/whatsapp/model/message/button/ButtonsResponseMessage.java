@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.button;
 
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.button.Button;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -13,8 +13,8 @@ import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.STRING;
 
 /**
  * A model class that represents a message that contains a response to a previous {@link ButtonsMessage}
@@ -42,7 +42,7 @@ public final class ButtonsResponseMessage extends ButtonReplyMessage {
     /**
      * The context info of this message
      */
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ContextInfo.class)
+    @ProtobufProperty(index = 3, type = MESSAGE, implementation = ContextInfo.class)
     @Default
     private ContextInfo contextInfo = new ContextInfo();  // Overrides ContextualMessage's context info
 

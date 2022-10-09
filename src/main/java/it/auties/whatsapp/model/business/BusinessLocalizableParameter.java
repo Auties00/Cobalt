@@ -1,16 +1,16 @@
 package it.auties.whatsapp.model.business;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.STRING;
 
 /**
  * A model class that represents a time a localizable parameter
@@ -30,13 +30,13 @@ public class BusinessLocalizableParameter implements ProtobufMessage {
     /**
      * The currency parameter
      */
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = BusinessCurrency.class)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = BusinessCurrency.class)
     private BusinessCurrency currencyParameter;
 
     /**
      * The time parameter
      */
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = BusinessDateTime.class)
+    @ProtobufProperty(index = 3, type = MESSAGE, implementation = BusinessDateTime.class)
     private BusinessDateTime dateTimeParameter;
 
     /**

@@ -2,10 +2,9 @@ package it.auties.whatsapp.model.contact;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import it.auties.protobuf.api.exception.ProtobufSerializationException;
-import it.auties.protobuf.api.model.ProtobufConverter;
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufValue;
+import it.auties.protobuf.base.ProtobufConverter;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.serializer.exception.ProtobufSerializationException;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,7 +21,6 @@ import java.util.Objects;
  * This class also offers a builder, accessible using {@link ContactJid#builder()}.
  */
 @Builder
-@ProtobufValue
 public record ContactJid(String user, @NonNull Server server, int device, int agent)
         implements ProtobufMessage, ContactJidProvider {
     /**
@@ -244,8 +242,13 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
     }
 
     @Override
-    public String value() {
+    public Object toValue() {
         return toString();
+    }
+
+    @Override
+    public boolean isValueBased() {
+        return true;
     }
 
     /**

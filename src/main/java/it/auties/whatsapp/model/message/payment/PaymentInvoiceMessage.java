@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.message.payment;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.media.AttachmentProvider;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
@@ -14,7 +14,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that represents a message to notify the invoice about a successful payment.
@@ -42,7 +42,7 @@ public final class PaymentInvoiceMessage extends MediaMessage implements Payment
     /**
      * The type of attachment that this invoice provides
      */
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = AttachmentType.class)
+    @ProtobufProperty(index = 3, type = MESSAGE, implementation = AttachmentType.class)
     private AttachmentType type;
 
     /**

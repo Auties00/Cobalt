@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
@@ -15,8 +15,8 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.ArrayList;
 import java.util.List;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.STRING;
 
 /**
  * A model class that represents a message holding a list of contacts inside
@@ -38,7 +38,7 @@ public final class ContactsArrayMessage extends ContextualMessage {
     /**
      * A list of {@link ContactMessage} that this message wraps
      */
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ContactMessage.class, repeated = true)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = ContactMessage.class, repeated = true)
     private List<ContactMessage> contacts;
 
     @Override

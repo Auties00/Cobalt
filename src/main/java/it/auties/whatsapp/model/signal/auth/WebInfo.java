@@ -1,16 +1,16 @@
 package it.auties.whatsapp.model.signal.auth;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.STRING;
 
 @AllArgsConstructor
 @Data
@@ -24,10 +24,10 @@ public class WebInfo implements ProtobufMessage {
     @ProtobufProperty(index = 2, type = STRING)
     private String version;
 
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = WebPayload.class)
+    @ProtobufProperty(index = 3, type = MESSAGE, implementation = WebPayload.class)
     private WebPayload payload;
 
-    @ProtobufProperty(index = 4, type = MESSAGE, concreteType = WebInfoWebSubPlatform.class)
+    @ProtobufProperty(index = 4, type = MESSAGE, implementation = WebInfoWebSubPlatform.class)
     private WebInfoWebSubPlatform platform;
 
     public WebInfo(@NonNull WebInfoWebSubPlatform platform) {

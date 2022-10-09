@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.message.button;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.button.Button;
 import it.auties.whatsapp.model.info.ContextInfo;
@@ -22,8 +22,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.STRING;
 import static java.util.Objects.requireNonNullElseGet;
 
 /**
@@ -46,25 +46,25 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
     /**
      * The document message attached to this message
      */
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = DocumentMessage.class)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = DocumentMessage.class)
     private DocumentMessage headerDocument;
 
     /**
      * The image message attached to this message
      */
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ImageMessage.class)
+    @ProtobufProperty(index = 3, type = MESSAGE, implementation = ImageMessage.class)
     private ImageMessage headerImage;
 
     /**
      * The video message attached to this message
      */
-    @ProtobufProperty(index = 4, type = MESSAGE, concreteType = VideoMessage.class)
+    @ProtobufProperty(index = 4, type = MESSAGE, implementation = VideoMessage.class)
     private VideoMessage headerVideo;
 
     /**
      * The location message attached to this message
      */
-    @ProtobufProperty(index = 5, type = MESSAGE, concreteType = LocationMessage.class)
+    @ProtobufProperty(index = 5, type = MESSAGE, implementation = LocationMessage.class)
     private LocationMessage headerLocation;
 
     /**
@@ -82,19 +82,19 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
     /**
      * The context info of this message
      */
-    @ProtobufProperty(index = 8, type = MESSAGE, concreteType = ContextInfo.class)
+    @ProtobufProperty(index = 8, type = MESSAGE, implementation = ContextInfo.class)
     private ContextInfo contextInfo; // Overrides ContextualMessage's context info
 
     /**
      * The buttons that this message wraps
      */
-    @ProtobufProperty(index = 9, type = MESSAGE, concreteType = Button.class, repeated = true)
+    @ProtobufProperty(index = 9, type = MESSAGE, implementation = Button.class, repeated = true)
     private List<Button> buttons;
 
     /**
      * The type of header
      */
-    @ProtobufProperty(index = 10, type = MESSAGE, concreteType = HeaderType.class)
+    @ProtobufProperty(index = 10, type = MESSAGE, implementation = HeaderType.class)
     private HeaderType headerType;
 
     /**

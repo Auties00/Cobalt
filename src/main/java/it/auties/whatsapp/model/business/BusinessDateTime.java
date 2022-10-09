@@ -1,15 +1,15 @@
 package it.auties.whatsapp.model.business;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
 /**
  * A model class that represents a time
@@ -23,13 +23,13 @@ public class BusinessDateTime implements ProtobufMessage {
     /**
      * The date as a component
      */
-    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = BusinessDateTimeComponent.class)
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = BusinessDateTimeComponent.class)
     private BusinessDateTimeComponent componentDate;
 
     /**
      * The date as a unix epoch
      */
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = BusinessDateTimeUnixEpoch.class)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = BusinessDateTimeUnixEpoch.class)
     private BusinessDateTimeUnixEpoch unixEpochDate;
 
     /**

@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.message.button;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.button.FourRowTemplate;
 import it.auties.whatsapp.model.button.HydratedFourRowTemplate;
 import it.auties.whatsapp.model.info.ContextInfo;
@@ -15,7 +15,7 @@ import lombok.experimental.SuperBuilder;
 
 import java.util.Arrays;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static java.util.Objects.requireNonNullElseGet;
 
 /**
@@ -32,27 +32,27 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
      * Four row template.
      * This property is defined only if {@link TemplateMessage#formatType()} == {@link Format#FOUR_ROW_TEMPLATE}.
      */
-    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = FourRowTemplate.class)
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = FourRowTemplate.class)
     private FourRowTemplate fourRowTemplate;
 
     /**
      * Hydrated four row template.
      * This property is defined only if {@link TemplateMessage#formatType()} == {@link Format#HYDRATED_FOUR_ROW_TEMPLATE}.
      */
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = HydratedFourRowTemplate.class)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = HydratedFourRowTemplate.class)
     private HydratedFourRowTemplate hydratedFourRowTemplate;
 
     /**
      * The context info of this message
      */
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ContextInfo.class)
+    @ProtobufProperty(index = 3, type = MESSAGE, implementation = ContextInfo.class)
     @Default
     private ContextInfo contextInfo = new ContextInfo();  // Overrides ContextualMessage's context info
 
     /**
      * Hydrated template
      */
-    @ProtobufProperty(index = 4, type = MESSAGE, concreteType = HydratedFourRowTemplate.class)
+    @ProtobufProperty(index = 4, type = MESSAGE, implementation = HydratedFourRowTemplate.class)
     private HydratedFourRowTemplate hydratedTemplate;
 
 

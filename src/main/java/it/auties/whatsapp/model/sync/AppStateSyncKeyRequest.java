@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.sync;
 
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,7 +11,7 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.ArrayList;
 import java.util.List;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
 @AllArgsConstructor
 @Data
@@ -19,7 +19,7 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @Jacksonized
 @Accessors(fluent = true)
 public class AppStateSyncKeyRequest implements ProtobufMessage {
-    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = AppStateSyncKeyId.class, repeated = true)
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = AppStateSyncKeyId.class, repeated = true)
     private List<AppStateSyncKeyId> keyIds;
 
     public static class AppStateSyncKeyRequestBuilder {

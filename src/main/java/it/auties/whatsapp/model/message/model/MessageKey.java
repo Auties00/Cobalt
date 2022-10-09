@@ -2,8 +2,8 @@ package it.auties.whatsapp.model.message.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import it.auties.bytes.Bytes;
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
@@ -16,8 +16,8 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.Locale;
 import java.util.Optional;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.BOOLEAN;
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+import static it.auties.protobuf.base.ProtobufType.BOOL;
+import static it.auties.protobuf.base.ProtobufType.STRING;
 
 /**
  * A container for unique identifiers and metadata linked to a {@link Message} and contained in {@link MessageInfo}.
@@ -34,7 +34,7 @@ public class MessageKey implements ProtobufMessage {
     /**
      * The jid of the chat where the message was sent
      */
-    @ProtobufProperty(index = 1, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
+    @ProtobufProperty(index = 1, type = STRING, implementation = ContactJid.class)
     @NonNull
     private ContactJid chatJid;
 
@@ -47,7 +47,7 @@ public class MessageKey implements ProtobufMessage {
     /**
      * Determines whether the message was sent by you or by someone else
      */
-    @ProtobufProperty(index = 2, type = BOOLEAN)
+    @ProtobufProperty(index = 2, type = BOOL)
     private boolean fromMe;
 
     /**
@@ -61,7 +61,7 @@ public class MessageKey implements ProtobufMessage {
     /**
      * The jid of the sender
      */
-    @ProtobufProperty(index = 4, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
+    @ProtobufProperty(index = 4, type = STRING, implementation = ContactJid.class)
     private ContactJid senderJid;
 
     /**

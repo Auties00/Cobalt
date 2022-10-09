@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.chat;
 
-import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.whatsapp.util.Clock;
 
 import java.time.Instant;
@@ -127,8 +127,13 @@ public record ChatMute(long endTimeStamp) implements ProtobufMessage {
     }
 
     @Override
-    public Long value() {
+    public Object toValue() {
         return endTimeStamp;
+    }
+
+    @Override
+    public boolean isValueBased() {
+        return true;
     }
 
     /**

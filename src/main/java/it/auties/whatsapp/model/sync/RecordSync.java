@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.sync;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,7 +12,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
 @AllArgsConstructor
 @Data
@@ -20,13 +20,13 @@ import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
 @Jacksonized
 @Accessors(fluent = true)
 public final class RecordSync implements ProtobufMessage, Syncable {
-    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = IndexSync.class)
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = IndexSync.class)
     private IndexSync index;
 
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ValueSync.class)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = ValueSync.class)
     private ValueSync value;
 
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = KeyId.class)
+    @ProtobufProperty(index = 3, type = MESSAGE, implementation = KeyId.class)
     private KeyId keyId;
 
     @AllArgsConstructor

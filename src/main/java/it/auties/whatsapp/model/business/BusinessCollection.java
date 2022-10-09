@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.business;
 
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.contact.ContactJid;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,8 +9,8 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.INT32;
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+import static it.auties.protobuf.base.ProtobufType.INT32;
+import static it.auties.protobuf.base.ProtobufType.STRING;
 
 /**
  * A model class that represents a business collection
@@ -24,7 +24,7 @@ public final class BusinessCollection implements ProtobufMessage {
     /**
      * The business jid of the message
      */
-    @ProtobufProperty(index = 1, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
+    @ProtobufProperty(index = 1, type = STRING, implementation = ContactJid.class)
     private ContactJid business;
 
     /**

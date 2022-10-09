@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.sync;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,8 +12,8 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.STRING;
 
 @AllArgsConstructor
 @Data
@@ -27,7 +27,7 @@ public class MediaRetryNotification implements ProtobufMessage {
     @ProtobufProperty(index = 2, type = STRING)
     private String directPath;
 
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = Result.class)
+    @ProtobufProperty(index = 3, type = MESSAGE, implementation = Result.class)
     private Result result;
 
     @AllArgsConstructor

@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.signal.message;
 
-import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.SignalSpecification;

@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.button;
 
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.business.BusinessLocalizableParameter;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
@@ -14,8 +14,8 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.ArrayList;
 import java.util.List;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.STRING;
 
 /**
  * A model class that represents a message that contains a highly structured message inside.
@@ -61,7 +61,7 @@ public final class HighlyStructuredMessage implements ButtonMessage {
     /**
      * Localizable Params
      */
-    @ProtobufProperty(index = 6, type = MESSAGE, concreteType = BusinessLocalizableParameter.class, repeated = true)
+    @ProtobufProperty(index = 6, type = MESSAGE, implementation = BusinessLocalizableParameter.class, repeated = true)
     private List<BusinessLocalizableParameter> localizableParameters;
 
     /**
@@ -79,7 +79,7 @@ public final class HighlyStructuredMessage implements ButtonMessage {
     /**
      * Hydrated message
      */
-    @ProtobufProperty(index = 9, type = MESSAGE, concreteType = TemplateMessage.class)
+    @ProtobufProperty(index = 9, type = MESSAGE, implementation = TemplateMessage.class)
     private TemplateMessage templateMessage;
 
     @Override

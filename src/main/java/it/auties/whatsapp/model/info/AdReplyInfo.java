@@ -1,14 +1,14 @@
 package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that holds the information related to an companion reply.
@@ -29,7 +29,7 @@ public final class AdReplyInfo implements Info {
     /**
      * The type of original companion
      */
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = AdReplyInfoMediaType.class)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = AdReplyInfoMediaType.class)
     private AdReplyInfoMediaType mediaType;
 
     /**

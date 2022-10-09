@@ -1,14 +1,14 @@
 package it.auties.whatsapp.model.setting;
 
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.SFIXED32;
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.SFIXED64;
+import static it.auties.protobuf.base.ProtobufType.SFIXED32;
+import static it.auties.protobuf.base.ProtobufType.SFIXED64;
 
 @AllArgsConstructor
 @Data

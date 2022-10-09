@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.model;
 
-import it.auties.protobuf.api.model.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufMessage;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;

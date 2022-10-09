@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.button;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.button.HighlyStructuredMessage;
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
 /**
  * A model class that represents a four row template
@@ -33,49 +33,49 @@ public class FourRowTemplate implements ProtobufMessage {
     /**
      * The document title of this row
      */
-    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = DocumentMessage.class)
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = DocumentMessage.class)
     private DocumentMessage documentTitle;
 
     /**
      * The highly structured title of this row
      */
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = HighlyStructuredMessage.class)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = HighlyStructuredMessage.class)
     private HighlyStructuredMessage highlyStructuredTitle;
 
     /**
      * The image title of this row
      */
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ImageMessage.class)
+    @ProtobufProperty(index = 3, type = MESSAGE, implementation = ImageMessage.class)
     private ImageMessage imageTitle;
 
     /**
      * The video title of this row
      */
-    @ProtobufProperty(index = 4, type = MESSAGE, concreteType = VideoMessage.class)
+    @ProtobufProperty(index = 4, type = MESSAGE, implementation = VideoMessage.class)
     private VideoMessage videoTitle;
 
     /**
      * The location title of this row
      */
-    @ProtobufProperty(index = 5, type = MESSAGE, concreteType = LocationMessage.class)
+    @ProtobufProperty(index = 5, type = MESSAGE, implementation = LocationMessage.class)
     private LocationMessage locationTitle;
 
     /**
      * The content of this template
      */
-    @ProtobufProperty(index = 6, type = MESSAGE, concreteType = HighlyStructuredMessage.class)
+    @ProtobufProperty(index = 6, type = MESSAGE, implementation = HighlyStructuredMessage.class)
     private HighlyStructuredMessage content;
 
     /**
      * The footer of this template
      */
-    @ProtobufProperty(index = 7, type = MESSAGE, concreteType = HighlyStructuredMessage.class)
+    @ProtobufProperty(index = 7, type = MESSAGE, implementation = HighlyStructuredMessage.class)
     private HighlyStructuredMessage footer;
 
     /**
      * The buttons of this template
      */
-    @ProtobufProperty(index = 8, type = MESSAGE, concreteType = ButtonTemplate.class, repeated = true)
+    @ProtobufProperty(index = 8, type = MESSAGE, implementation = ButtonTemplate.class, repeated = true)
     private List<ButtonTemplate> buttons;
 
     /**

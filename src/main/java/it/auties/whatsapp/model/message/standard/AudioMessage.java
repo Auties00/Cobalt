@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -16,7 +16,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Objects;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 import static it.auties.whatsapp.model.message.model.MediaMessageType.AUDIO;
 
 /**
@@ -64,7 +64,7 @@ public final class AudioMessage extends MediaMessage {
     /**
      * Determines whether this object is a normal audio message, which might contain for example music, or a voice message
      */
-    @ProtobufProperty(index = 6, type = BOOLEAN)
+    @ProtobufProperty(index = 6, type = BOOL)
     private boolean voiceMessage;
 
     /**

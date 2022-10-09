@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.button;
 
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,8 +11,8 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.ArrayList;
 import java.util.List;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.STRING;
 
 /**
  * A model class that represents a section of buttons
@@ -32,7 +32,7 @@ public class ButtonSection implements ProtobufMessage {
     /**
      * The rows in this section
      */
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ButtonRow.class, repeated = true)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = ButtonRow.class, repeated = true)
     private List<ButtonRow> rows;
 
     public static class ButtonSectionBuilder {

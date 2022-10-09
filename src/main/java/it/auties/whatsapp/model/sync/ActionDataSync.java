@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.sync;
 
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,7 +10,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.nio.charset.StandardCharsets;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 @AllArgsConstructor
 @Data
@@ -21,7 +21,7 @@ public class ActionDataSync implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = BYTES)
     private byte[] index;
 
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ActionValueSync.class)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = ActionValueSync.class)
     private ActionValueSync value;
 
     @ProtobufProperty(index = 3, type = BYTES)

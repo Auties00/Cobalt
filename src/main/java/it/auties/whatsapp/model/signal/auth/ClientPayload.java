@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.signal.auth;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 @AllArgsConstructor
 @Data
@@ -25,16 +25,16 @@ public class ClientPayload implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = UINT64)
     private Long username;
 
-    @ProtobufProperty(index = 3, type = BOOLEAN)
+    @ProtobufProperty(index = 3, type = BOOL)
     private boolean passive;
 
-    @ProtobufProperty(index = 4, type = MESSAGE, concreteType = ClientPayloadClientFeature.class, repeated = true)
+    @ProtobufProperty(index = 4, type = MESSAGE, implementation = ClientPayloadClientFeature.class, repeated = true)
     private List<ClientPayloadClientFeature> clientFeatures;
 
-    @ProtobufProperty(index = 5, type = MESSAGE, concreteType = UserAgent.class)
+    @ProtobufProperty(index = 5, type = MESSAGE, implementation = UserAgent.class)
     private UserAgent userAgent;
 
-    @ProtobufProperty(index = 6, type = MESSAGE, concreteType = WebInfo.class)
+    @ProtobufProperty(index = 6, type = MESSAGE, implementation = WebInfo.class)
     private WebInfo webInfo;
 
     @ProtobufProperty(index = 7, type = STRING)
@@ -43,19 +43,19 @@ public class ClientPayload implements ProtobufMessage {
     @ProtobufProperty(index = 9, type = SFIXED32)
     private Integer sessionId;
 
-    @ProtobufProperty(index = 10, type = BOOLEAN)
+    @ProtobufProperty(index = 10, type = BOOL)
     private boolean shortConnect;
 
-    @ProtobufProperty(index = 12, type = MESSAGE, concreteType = ClientPayloadConnectType.class)
+    @ProtobufProperty(index = 12, type = MESSAGE, implementation = ClientPayloadConnectType.class)
     private ClientPayloadConnectType connectType;
 
-    @ProtobufProperty(index = 13, type = MESSAGE, concreteType = ClientPayloadConnectReason.class)
+    @ProtobufProperty(index = 13, type = MESSAGE, implementation = ClientPayloadConnectReason.class)
     private ClientPayloadConnectReason connectReason;
 
     @ProtobufProperty(index = 14, type = INT32, repeated = true)
     private List<Integer> shards;
 
-    @ProtobufProperty(index = 15, type = MESSAGE, concreteType = DNSSource.class)
+    @ProtobufProperty(index = 15, type = MESSAGE, implementation = DNSSource.class)
     private DNSSource dnsSource;
 
     @ProtobufProperty(index = 16, type = UINT32)
@@ -67,10 +67,10 @@ public class ClientPayload implements ProtobufMessage {
     @ProtobufProperty(index = 18, type = UINT32)
     private Integer device;
 
-    @ProtobufProperty(index = 19, type = MESSAGE, concreteType = CompanionData.class)
+    @ProtobufProperty(index = 19, type = MESSAGE, implementation = CompanionData.class)
     private CompanionData regData;
 
-    @ProtobufProperty(index = 20, type = MESSAGE, concreteType = ClientPayloadProduct.class)
+    @ProtobufProperty(index = 20, type = MESSAGE, implementation = ClientPayloadProduct.class)
     private ClientPayloadProduct product;
 
     @ProtobufProperty(index = 21, type = BYTES)
@@ -79,10 +79,10 @@ public class ClientPayload implements ProtobufMessage {
     @ProtobufProperty(index = 22, type = BYTES)
     private byte[] fbUserAgent;
 
-    @ProtobufProperty(index = 23, type = BOOLEAN)
+    @ProtobufProperty(index = 23, type = BOOL)
     private boolean oc;
 
-    @ProtobufProperty(index = 30, type = MESSAGE, concreteType = ClientPayloadIOSAppExtension.class)
+    @ProtobufProperty(index = 30, type = MESSAGE, implementation = ClientPayloadIOSAppExtension.class)
     private ClientPayloadIOSAppExtension iosAppExtension;
 
     @AllArgsConstructor

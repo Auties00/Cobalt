@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.message.payment;
 
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.MessageType;
@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
 /**
  * A model class that represents a message to confirm a {@link RequestPaymentMessage}.
@@ -27,13 +27,13 @@ public final class SendPaymentMessage implements PaymentMessage {
     /**
      * The caption message, that is the message below the payment confirmation
      */
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = MessageContainer.class)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = MessageContainer.class)
     private MessageContainer noteMessage;
 
     /**
      * The key of the original {@link RequestPaymentMessage} that this message confirms
      */
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = MessageKey.class)
+    @ProtobufProperty(index = 3, type = MESSAGE, implementation = MessageKey.class)
     private MessageKey requestMessageKey;
 
     @Override

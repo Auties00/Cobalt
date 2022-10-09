@@ -1,15 +1,15 @@
 package it.auties.whatsapp.model.sync;
 
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.BOOLEAN;
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+import static it.auties.protobuf.base.ProtobufType.BOOL;
+import static it.auties.protobuf.base.ProtobufType.STRING;
 
 @AllArgsConstructor
 @Data
@@ -35,6 +35,6 @@ public class RecentStickerMetadata implements ProtobufMessage {
     @ProtobufProperty(index = 6, type = STRING)
     private String participant;
 
-    @ProtobufProperty(index = 7, type = BOOLEAN)
+    @ProtobufProperty(index = 7, type = BOOL)
     private boolean sentByMe;
 }

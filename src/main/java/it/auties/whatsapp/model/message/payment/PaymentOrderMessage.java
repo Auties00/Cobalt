@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.message.payment;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.MessageType;
@@ -12,7 +12,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that represents a message to pay an order.
@@ -46,13 +46,13 @@ public final class PaymentOrderMessage extends ContextInfo implements PaymentMes
     /**
      * The status of this order
      */
-    @ProtobufProperty(index = 4, type = MESSAGE, concreteType = OrderMessageOrderStatus.class)
+    @ProtobufProperty(index = 4, type = MESSAGE, implementation = OrderMessageOrderStatus.class)
     private OrderMessageOrderStatus status;
 
     /**
      * The surface of this order
      */
-    @ProtobufProperty(index = 5, type = MESSAGE, concreteType = OrderSurface.class)
+    @ProtobufProperty(index = 5, type = MESSAGE, implementation = OrderSurface.class)
     private OrderSurface surface;
 
     /**
@@ -70,7 +70,7 @@ public final class PaymentOrderMessage extends ContextInfo implements PaymentMes
     /**
      * The jid of the seller associated with this order
      */
-    @ProtobufProperty(index = 8, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
+    @ProtobufProperty(index = 8, type = STRING, implementation = ContactJid.class)
     private ContactJid sellerId;
 
     /**

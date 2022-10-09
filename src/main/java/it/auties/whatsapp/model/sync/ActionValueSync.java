@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.sync;
 
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.setting.*;
 import it.auties.whatsapp.util.Clock;
@@ -12,7 +12,7 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.ArrayList;
 import java.util.List;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 @AllArgsConstructor
 @Builder
@@ -27,79 +27,79 @@ public class ActionValueSync implements ProtobufMessage {
     //</editor-fold>
 
     //<editor-fold desc="Actions">
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = StarAction.class)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = StarAction.class)
     private StarAction starAction;
 
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ContactAction.class)
+    @ProtobufProperty(index = 3, type = MESSAGE, implementation = ContactAction.class)
     private ContactAction contactAction;
 
-    @ProtobufProperty(index = 4, type = MESSAGE, concreteType = MuteAction.class)
+    @ProtobufProperty(index = 4, type = MESSAGE, implementation = MuteAction.class)
     private MuteAction muteAction;
 
-    @ProtobufProperty(index = 5, type = MESSAGE, concreteType = PinAction.class)
+    @ProtobufProperty(index = 5, type = MESSAGE, implementation = PinAction.class)
     private PinAction pinAction;
 
-    @ProtobufProperty(index = 8, type = MESSAGE, concreteType = QuickReplyAction.class)
+    @ProtobufProperty(index = 8, type = MESSAGE, implementation = QuickReplyAction.class)
     private QuickReplyAction quickReplyAction;
 
-    @ProtobufProperty(index = 9, type = MESSAGE, concreteType = RecentStickerWeightsAction.class)
+    @ProtobufProperty(index = 9, type = MESSAGE, implementation = RecentStickerWeightsAction.class)
     private RecentStickerWeightsAction recentStickerWeightsAction;
 
-    @ProtobufProperty(index = 11, type = MESSAGE, concreteType = RecentEmojiWeightsAction.class)
+    @ProtobufProperty(index = 11, type = MESSAGE, implementation = RecentEmojiWeightsAction.class)
     private RecentEmojiWeightsAction recentEmojiWeightsAction;
 
-    @ProtobufProperty(index = 14, type = MESSAGE, concreteType = LabelEditAction.class)
+    @ProtobufProperty(index = 14, type = MESSAGE, implementation = LabelEditAction.class)
     private LabelEditAction labelEditAction;
 
-    @ProtobufProperty(index = 15, type = MESSAGE, concreteType = LabelAssociationAction.class)
+    @ProtobufProperty(index = 15, type = MESSAGE, implementation = LabelAssociationAction.class)
     private LabelAssociationAction labelAssociationAction;
 
-    @ProtobufProperty(index = 17, type = MESSAGE, concreteType = ArchiveChatAction.class)
+    @ProtobufProperty(index = 17, type = MESSAGE, implementation = ArchiveChatAction.class)
     private ArchiveChatAction archiveChatAction;
 
-    @ProtobufProperty(index = 18, type = MESSAGE, concreteType = DeleteMessageForMeAction.class)
+    @ProtobufProperty(index = 18, type = MESSAGE, implementation = DeleteMessageForMeAction.class)
     private DeleteMessageForMeAction deleteMessageForMeAction;
 
-    @ProtobufProperty(index = 20, type = MESSAGE, concreteType = MarkChatAsReadAction.class)
+    @ProtobufProperty(index = 20, type = MESSAGE, implementation = MarkChatAsReadAction.class)
     private MarkChatAsReadAction markChatAsReadAction;
 
-    @ProtobufProperty(index = 21, type = MESSAGE, concreteType = ClearChatAction.class)
+    @ProtobufProperty(index = 21, type = MESSAGE, implementation = ClearChatAction.class)
     private ClearChatAction clearChatAction;
 
-    @ProtobufProperty(index = 22, type = MESSAGE, concreteType = DeleteChatAction.class)
+    @ProtobufProperty(index = 22, type = MESSAGE, implementation = DeleteChatAction.class)
     private DeleteChatAction deleteChatAction;
 
-    @ProtobufProperty(index = 25, type = MESSAGE, concreteType = FavoriteStickerAction.class)
+    @ProtobufProperty(index = 25, type = MESSAGE, implementation = FavoriteStickerAction.class)
     private FavoriteStickerAction favoriteStickerAction;
 
-    @ProtobufProperty(index = 26, type = MESSAGE, concreteType = AndroidUnsupportedActions.class)
+    @ProtobufProperty(index = 26, type = MESSAGE, implementation = AndroidUnsupportedActions.class)
     private AndroidUnsupportedActions androidUnsupportedActions;
     //</editor-fold>
 
     //<editor-fold desc="Settings">
-    @ProtobufProperty(index = 6, type = MESSAGE, concreteType = SecurityNotificationSetting.class)
+    @ProtobufProperty(index = 6, type = MESSAGE, implementation = SecurityNotificationSetting.class)
     private SecurityNotificationSetting securityNotificationSetting;
 
-    @ProtobufProperty(index = 7, type = MESSAGE, concreteType = PushNameSetting.class)
+    @ProtobufProperty(index = 7, type = MESSAGE, implementation = PushNameSetting.class)
     private PushNameSetting pushNameSetting;
 
-    @ProtobufProperty(index = 16, type = MESSAGE, concreteType = LocaleSetting.class)
+    @ProtobufProperty(index = 16, type = MESSAGE, implementation = LocaleSetting.class)
     private LocaleSetting localeSetting;
 
-    @ProtobufProperty(index = 23, type = MESSAGE, concreteType = UnarchiveChatsSetting.class)
+    @ProtobufProperty(index = 23, type = MESSAGE, implementation = UnarchiveChatsSetting.class)
     private UnarchiveChatsSetting unarchiveChatsSetting;
     //</editor-fold>
 
     //<editor-fold desc="Misc">
-    @ProtobufProperty(index = 10, type = MESSAGE, concreteType = RecentStickerMetadata.class)
+    @ProtobufProperty(index = 10, type = MESSAGE, implementation = RecentStickerMetadata.class)
     @Getter
     private RecentStickerMetadata recentStickerMetadata;
 
-    @ProtobufProperty(index = 19, type = MESSAGE, concreteType = KeyExpiration.class)
+    @ProtobufProperty(index = 19, type = MESSAGE, implementation = KeyExpiration.class)
     @Getter
     private KeyExpiration keyExpiration;
 
-    @ProtobufProperty(index = 24, type = MESSAGE, concreteType = PrimaryFeature.class)
+    @ProtobufProperty(index = 24, type = MESSAGE, implementation = PrimaryFeature.class)
     @Getter
     private PrimaryFeature primaryFeature;
 

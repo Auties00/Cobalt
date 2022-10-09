@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.message.payment;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
 import lombok.*;
@@ -10,8 +10,8 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT64;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.UINT64;
 
 
 /**
@@ -27,7 +27,7 @@ public final class PaymentInviteMessage implements PaymentMessage {
     /**
      * The type of service used for this payment
      */
-    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = PaymentInviteMessageServiceType.class)
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = PaymentInviteMessageServiceType.class)
     private PaymentInviteMessageServiceType serviceType;
 
     /**

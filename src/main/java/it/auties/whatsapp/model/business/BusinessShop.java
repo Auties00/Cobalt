@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.business;
 
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,7 +11,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that represents a shop
@@ -31,7 +31,7 @@ public final class BusinessShop implements ProtobufMessage {
     /**
      * The surface of the shop
      */
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = SurfaceType.class)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = SurfaceType.class)
     private SurfaceType surfaceType;
 
     /**

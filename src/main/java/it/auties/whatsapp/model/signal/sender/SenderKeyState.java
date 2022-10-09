@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.signal.sender;
 
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,8 +13,8 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.UINT32;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.UINT32;
 
 @AllArgsConstructor
 @Data
@@ -25,13 +25,13 @@ public class SenderKeyState implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = UINT32)
     private Integer id;
 
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = SenderChainKey.class)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = SenderChainKey.class)
     private SenderChainKey chainKey;
 
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = SenderSigningKey.class)
+    @ProtobufProperty(index = 3, type = MESSAGE, implementation = SenderSigningKey.class)
     private SenderSigningKey signingKey;
 
-    @ProtobufProperty(index = 4, type = MESSAGE, concreteType = SenderMessageKey.class, repeated = true)
+    @ProtobufProperty(index = 4, type = MESSAGE, implementation = SenderMessageKey.class, repeated = true)
     @Default
     private CopyOnWriteArrayList<SenderMessageKey> messageKeys = new CopyOnWriteArrayList<>(); // A map would be better but the proto says otherwise
 

@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.message.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that describes an interactive annotation linked to a message
@@ -25,13 +25,13 @@ public class InteractiveAnnotation implements ProtobufMessage {
     /**
      * Polygon vertices
      */
-    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = Point.class, repeated = true)
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = Point.class, repeated = true)
     private List<Point> polygonVertices;
 
     /**
      * Location
      */
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = Location.class)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = Location.class)
     private Location location;
 
     /**

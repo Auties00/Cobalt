@@ -2,8 +2,8 @@ package it.auties.whatsapp.model.button;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.bytes.Bytes;
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.info.NativeFlowInfo;
@@ -13,8 +13,8 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.MESSAGE;
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.STRING;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.STRING;
 
 /**
  * A model class that represents a button
@@ -28,13 +28,13 @@ public class Button implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = STRING)
     private String id;
 
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = ButtonText.class)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = ButtonText.class)
     private ButtonText text;
 
-    @ProtobufProperty(index = 3, type = MESSAGE, concreteType = ButtonType.class)
+    @ProtobufProperty(index = 3, type = MESSAGE, implementation = ButtonType.class)
     private ButtonType type;
 
-    @ProtobufProperty(index = 4, type = MESSAGE, concreteType = NativeFlowInfo.class)
+    @ProtobufProperty(index = 4, type = MESSAGE, implementation = NativeFlowInfo.class)
     private NativeFlowInfo nativeFlowInfo;
 
     /**

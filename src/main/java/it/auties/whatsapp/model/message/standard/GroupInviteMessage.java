@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufMessage;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
@@ -19,7 +19,7 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Optional;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 
 /**
  * A model class that represents a message holding a whatsapp group invite inside
@@ -35,7 +35,7 @@ public final class GroupInviteMessage extends ContextualMessage {
     /**
      * The jid of the group that this invite regards
      */
-    @ProtobufProperty(index = 1, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
+    @ProtobufProperty(index = 1, type = STRING, implementation = ContactJid.class)
     private ContactJid group;
 
     /**
@@ -72,14 +72,14 @@ public final class GroupInviteMessage extends ContextualMessage {
     /**
      * The context info of this message
      */
-    @ProtobufProperty(index = 7, type = MESSAGE, concreteType = ContextInfo.class)
+    @ProtobufProperty(index = 7, type = MESSAGE, implementation = ContextInfo.class)
     @Default
     private ContextInfo contextInfo = new ContextInfo();  // Overrides ContextualMessage's context info
 
     /**
      * The type of this invite
      */
-    @ProtobufProperty(index = 8, type = MESSAGE, concreteType = Type.class)
+    @ProtobufProperty(index = 8, type = MESSAGE, implementation = Type.class)
     @Default
     private Type groupType = Type.DEFAULT;
 

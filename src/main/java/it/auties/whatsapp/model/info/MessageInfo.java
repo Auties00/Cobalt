@@ -1,7 +1,7 @@
 package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.api.model.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.business.BusinessPrivacyStatus;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
@@ -24,7 +24,7 @@ import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static it.auties.protobuf.api.model.ProtobufProperty.Type.*;
+import static it.auties.protobuf.base.ProtobufType.*;
 import static java.util.Objects.requireNonNullElseGet;
 
 /**
@@ -40,14 +40,14 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
     /**
      * The MessageKey of this message
      */
-    @ProtobufProperty(index = 1, type = MESSAGE, concreteType = MessageKey.class)
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = MessageKey.class)
     @NonNull
     private MessageKey key;
 
     /**
      * The container of this message
      */
-    @ProtobufProperty(index = 2, type = MESSAGE, concreteType = MessageContainer.class)
+    @ProtobufProperty(index = 2, type = MESSAGE, implementation = MessageContainer.class)
     @NonNull
     @Default
     private MessageContainer message = new MessageContainer();
@@ -63,7 +63,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * If the chat associated with this message is a group it is guaranteed that this field is equal or lower hierarchically then every value stored by {@link MessageInfo#individualStatus()}.
      * Otherwise, this field is guaranteed to be equal to the single value stored by {@link MessageInfo#individualStatus()} for the contact associated with the chat associated with this message.
      */
-    @ProtobufProperty(index = 4, type = MESSAGE, concreteType = MessageStatus.class)
+    @ProtobufProperty(index = 4, type = MESSAGE, implementation = MessageStatus.class)
     @NonNull
     @Default
     private MessageStatus status = MessageStatus.PENDING;
@@ -83,7 +83,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
     /**
      * The jid of the sender
      */
-    @ProtobufProperty(index = 5, type = STRING, concreteType = ContactJid.class, requiresConversion = true)
+    @ProtobufProperty(index = 5, type = STRING, implementation = ContactJid.class)
     @Setter(AccessLevel.NONE)
     private ContactJid senderJid;
 
@@ -98,19 +98,19 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
     /**
      * Whether this message should be ignored or counted as an unread message
      */
-    @ProtobufProperty(index = 16, type = BOOLEAN)
+    @ProtobufProperty(index = 16, type = BOOL)
     private boolean ignore;
 
     /**
      * Whether this message is starred
      */
-    @ProtobufProperty(index = 17, type = BOOLEAN)
+    @ProtobufProperty(index = 17, type = BOOL)
     private boolean starred;
 
     /**
      * Whether this message was sent using a broadcast list
      */
-    @ProtobufProperty(index = 18, type = BOOLEAN)
+    @ProtobufProperty(index = 18, type = BOOL)
     private boolean broadcast;
 
     /**
@@ -128,32 +128,32 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
     /**
      * Multicast
      */
-    @ProtobufProperty(index = 21, type = BOOLEAN)
+    @ProtobufProperty(index = 21, type = BOOL)
     private boolean multicast;
 
     /**
      * Url text
      */
-    @ProtobufProperty(index = 22, type = BOOLEAN)
+    @ProtobufProperty(index = 22, type = BOOL)
     private boolean urlText;
 
     /**
      * Url number
      */
-    @ProtobufProperty(index = 23, type = BOOLEAN)
+    @ProtobufProperty(index = 23, type = BOOL)
     private boolean urlNumber;
 
     /**
      * The stub type of this message.
      * This property is populated only if the message that {@link MessageInfo#message} wraps is a {@link ProtocolMessage}.
      */
-    @ProtobufProperty(index = 24, type = MESSAGE, concreteType = StubType.class)
+    @ProtobufProperty(index = 24, type = MESSAGE, implementation = StubType.class)
     private StubType stubType;
 
     /**
      * Clear media
      */
-    @ProtobufProperty(index = 25, type = BOOLEAN)
+    @ProtobufProperty(index = 25, type = BOOL)
     private boolean clearMedia;
 
     /**
@@ -177,19 +177,19 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
     /**
      * PaymentInfo
      */
-    @ProtobufProperty(index = 29, type = MESSAGE, concreteType = PaymentInfo.class)
+    @ProtobufProperty(index = 29, type = MESSAGE, implementation = PaymentInfo.class)
     private PaymentInfo paymentInfo;
 
     /**
      * Final live location
      */
-    @ProtobufProperty(index = 30, type = MESSAGE, concreteType = LiveLocationMessage.class)
+    @ProtobufProperty(index = 30, type = MESSAGE, implementation = LiveLocationMessage.class)
     private LiveLocationMessage finalLiveLocation;
 
     /**
      * Quoted payment info
      */
-    @ProtobufProperty(index = 31, type = MESSAGE, concreteType = PaymentInfo.class)
+    @ProtobufProperty(index = 31, type = MESSAGE, implementation = PaymentInfo.class)
     private PaymentInfo quotedPaymentInfo;
 
     /**
@@ -207,19 +207,19 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
     /**
      * Enable ephemeral
      */
-    @ProtobufProperty(index = 34, type = BOOLEAN)
+    @ProtobufProperty(index = 34, type = BOOL)
     private boolean enableEphemeral;
 
     /**
      * Ephemeral out of sync
      */
-    @ProtobufProperty(index = 35, type = BOOLEAN)
+    @ProtobufProperty(index = 35, type = BOOL)
     private boolean ephemeralOutOfSync;
 
     /**
      * Business privacy status
      */
-    @ProtobufProperty(index = 36, type = MESSAGE, concreteType = BusinessPrivacyStatus.class)
+    @ProtobufProperty(index = 36, type = MESSAGE, implementation = BusinessPrivacyStatus.class)
     private BusinessPrivacyStatus businessPrivacyStatus;
 
     /**
@@ -231,31 +231,31 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
     /**
      * Media data
      */
-    @ProtobufProperty(index = 38, type = MESSAGE, concreteType = MediaData.class)
+    @ProtobufProperty(index = 38, type = MESSAGE, implementation = MediaData.class)
     private MediaData mediaData;
 
     /**
      * Photo change
      */
-    @ProtobufProperty(index = 39, type = MESSAGE, concreteType = PhotoChange.class)
+    @ProtobufProperty(index = 39, type = MESSAGE, implementation = PhotoChange.class)
     private PhotoChange photoChange;
 
     /**
      * Message receipt
      */
-    @ProtobufProperty(index = 40, type = MESSAGE, concreteType = MessageReceipt.class)
+    @ProtobufProperty(index = 40, type = MESSAGE, implementation = MessageReceipt.class)
     private MessageReceipt receipt;
 
     /**
      * Reactions
      */
-    @ProtobufProperty(index = 41, type = MESSAGE, concreteType = ReactionMessage.class, repeated = true)
+    @ProtobufProperty(index = 41, type = MESSAGE, implementation = ReactionMessage.class, repeated = true)
     private List<ReactionMessage> reactions;
 
     /**
      * Media data
      */
-    @ProtobufProperty(index = 42, type = MESSAGE, concreteType = MediaData.class)
+    @ProtobufProperty(index = 42, type = MESSAGE, implementation = MediaData.class)
     private MediaData quotedStickerData;
 
     /**
@@ -267,7 +267,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
     /**
      * Public service announcement status
      */
-    @ProtobufProperty(index = 44, type = MESSAGE, concreteType = PublicServiceAnnouncementStatus.class)
+    @ProtobufProperty(index = 44, type = MESSAGE, implementation = PublicServiceAnnouncementStatus.class)
     private PublicServiceAnnouncementStatus psaStatus;
 
     /**
