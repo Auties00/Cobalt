@@ -34,7 +34,10 @@ class FailureHandler implements JacksonProvider {
             return null;
         }
 
-        failure.set(true);
+        if(result != ErrorHandler.Result.DISCARD){
+            failure.set(true);
+        }
+
         switch (result) {
             case RESTORE -> {
                 socket.changeKeys();

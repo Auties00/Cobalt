@@ -83,7 +83,7 @@ public class ContactCard implements ProtobufMessage {
 
     @ProtobufConverter
     @SuppressWarnings("unused")
-    public static Object convert(Object input) {
+    public static ContactCard convert(Object input) {
         if (input == null) {
             return null;
         }

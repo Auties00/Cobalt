@@ -141,7 +141,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
 
     @ProtobufConverter
     @SuppressWarnings("unused")
-    public static Object convert(Object input) {
+    public static ContactJid convert(Object input) {
         if (input == null) {
             return null;
         }

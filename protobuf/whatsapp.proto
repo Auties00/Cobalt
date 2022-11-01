@@ -1,5 +1,5 @@
 syntax = "proto2";
-package it.auties.whatsapp.model.unsupported;
+package testing;
 
 message AppVersion {
   optional uint32 primary = 1;
@@ -696,6 +696,7 @@ message ExternalAdReplyInfo {
 }
 
 message ContextInfo {
+  optional string stanzaId = 100;
   optional string stanzaId = 1;
   optional string participant = 2;
   optional Message quotedMessage = 3;
