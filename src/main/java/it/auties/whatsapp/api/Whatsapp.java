@@ -2080,14 +2080,11 @@ public class Whatsapp {
         return switch (result.status()) {
             case SUCCESS -> CompletableFuture.completedFuture(result.media().get());
             case MISSING -> {
-                if(retried){
-                    throw new IllegalArgumentException("Media reupload failed");
-                }
-
+                Validate.isTrue(!retried, "Media reupload failed");
                 yield requireMediaReupload(info)
                         .thenComposeAsync(entry -> downloadMedia(entry, true));
             }
-            case ERROR -> throw new IllegalArgumentException("Cannot download media");
+            case ERROR -> throw new IllegalArgumentException("Cannot download media", result.error().get());
         };
     }
 
@@ -2119,7 +2116,8 @@ public class Whatsapp {
                         Node.of("enc_p", ciphertext),
                         Node.of("enc_iv", retryIv)),
                 Node.ofAttributes("rmr", rmrAttributes));
-        var handler = NodeHandler.of(entry -> entry.hasDescription("notification") && entry.attributes().getString("type").equals("mediaretry"));
+        var handler = NodeHandler.of(entry -> entry.hasDescription("notification")
+                && entry.attributes().getString("type").equals("mediaretry"));
         return socket.send(node)
                 .thenApplyAsync(ignored -> this.store().addNodeHandler(handler))
                 .thenApplyAsync(result -> parseMediaReupload(info, mediaMessage, retryKey, retryIdData, node));
@@ -2152,9 +2150,9 @@ public class Whatsapp {
                 .flatMap(Node::contentAsBytes)
                 .orElseThrow(() -> new NoSuchElementException("Missing encrypted iv node in media reupload"));
         var mediaRetryNotificationData = AesGmc.cipher(mediaIv, mediaPayload, retryKey, retryIdData, false);
-        var mediaRetryNotification = readRetryNotification(mediaRetryNotificationData);
+        var mediaRetryNotification = readRetryNotification(mediaRetryNotificationData);;
         Validate.isTrue(mediaRetryNotification.directPath() != null,
-                "Media retry upload failed: %s", mediaRetryNotification.result());
+                "Media retry upload failed: %s", mediaRetryNotification);
         mediaMessage.mediaUrl(Medias.createMediaUrl(mediaRetryNotification.directPath()));
         mediaMessage.mediaDirectPath(mediaRetryNotification.directPath());
         return info;

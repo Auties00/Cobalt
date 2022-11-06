@@ -711,6 +711,9 @@ class MessageHandler implements JacksonProvider {
                 history.pushNames()
                         .forEach(this::handNewPushName);
                 receivedPushNames.set(true);
+                if(socket.store().initialSnapshot()){
+                    socket.onContacts();
+                }
             }
 
             case RECENT, FULL -> handleRecentMessagesListener(history);

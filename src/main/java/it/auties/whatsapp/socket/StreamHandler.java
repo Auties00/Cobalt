@@ -346,7 +346,8 @@ class StreamHandler implements JacksonProvider {
 
         ControllerProviderLoader.findOnlyDeserializer(socket.options().defaultSerialization())
                 .attributeStore(socket.store())
-                .thenRun(socket::onChats);
+                .thenRun(socket::onChats)
+                .exceptionallyAsync(exception -> socket.errorHandler().handleFailure(MESSAGE, exception));
         socket.onContacts();
         socket.pullInitialPatches();
     }
