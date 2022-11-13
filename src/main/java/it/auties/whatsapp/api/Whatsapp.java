@@ -1795,33 +1795,41 @@ public class Whatsapp {
     }
 
     /**
-     * Marks a message's chat as read
+     * Marks a message as read
      *
-     * @param chat the target chat
+     * @param info the target message
      * @return a CompletableFuture
      */
-    public CompletableFuture<Chat> markRead(@NonNull MessageInfo chat) {
-        return mark(chat.chat(), true);
+    public CompletableFuture<MessageInfo> markRead(@NonNull MessageInfo info) {
+        var readReceipts = store().privacySettings()
+                .getOrDefault(PrivacySettingType.READ_RECEIPTS, PrivacySettingValue.EVERYONE);
+        var type = readReceipts == PrivacySettingValue.EVERYONE ? "read" : "read-self";
+        socketHandler.sendReceipt(info.chatJid(), info.senderJid(),
+                List.of(info.id()), type);
+        return CompletableFuture.completedFuture(info);
     }
 
     /**
-     * Marks a chat as read
+     * Marks a chat as read.
      *
      * @param chat the target chat
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> markRead(@NonNull T chat) {
-        return mark(chat, true);
+        return mark(chat, true)
+                .thenComposeAsync(ignored -> markAllAsRead(chat))
+                .thenApplyAsync(ignored -> chat);
     }
 
-    /**
-     * Marks a message's chat as unread
-     *
-     * @param chat the target chat
-     * @return a CompletableFuture
-     */
-    public CompletableFuture<Chat> markUnread(@NonNull MessageInfo chat) {
-        return mark(chat.chat(), false);
+    private CompletableFuture<Void> markAllAsRead(ContactJidProvider chat) {
+        var all = socketHandler.store()
+                .findChatByJid(chat.toJid())
+                .stream()
+                .map(Chat::unreadMessages)
+                .flatMap(Collection::stream)
+                .map(this::markRead)
+                .toArray(CompletableFuture[]::new);
+        return CompletableFuture.allOf(all);
     }
 
     /**

@@ -499,7 +499,7 @@ class MessageHandler implements JacksonProvider {
 
             saveMessage(info);
             socketHandler.onReply(info);
-            socketHandler.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.key().id()));
+            socketHandler.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.key().id()), null);
         } catch (Throwable throwable) {
             socketHandler.errorHandler()
                     .handleFailure(MESSAGE, throwable);
@@ -608,8 +608,8 @@ class MessageHandler implements JacksonProvider {
         }
 
         info.chat()
-                .unreadMessages(info.chat()
-                        .unreadMessages() + 1);
+                .unreadMessagesCount(info.chat()
+                        .unreadMessagesCount() + 1);
         socketHandler.onNewMessage(info);
     }
 

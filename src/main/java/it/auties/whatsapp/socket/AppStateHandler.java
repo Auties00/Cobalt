@@ -365,7 +365,7 @@ class AppStateHandler implements JacksonProvider {
                 case DeleteMessageForMeAction ignored ->
                         targetMessage.ifPresent(message -> targetChat.ifPresent(chat -> deleteMessage(message, chat)));
                 case MarkChatAsReadAction markAction ->
-                        targetChat.ifPresent(chat -> chat.unreadMessages(markAction.read() ? 0 : -1));
+                        targetChat.ifPresent(chat -> chat.unreadMessagesCount(markAction.read() ? 0 : -1));
                 case MuteAction muteAction ->
                         targetChat.ifPresent(chat -> chat.mute(ChatMute.muted(muteAction.muteEndTimestamp())));
                 case PinAction pinAction ->

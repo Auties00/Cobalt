@@ -73,7 +73,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * If this field is negative, this chat is marked as unread.
      */
     @ProtobufProperty(index = 6, type = UINT32)
-    private int unreadMessages;
+    private int unreadMessagesCount;
 
     /**
      * The seconds in seconds before a message is automatically deleted from this chat both locally and from WhatsappWeb's servers.
@@ -282,7 +282,21 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return true if this chat has unread messages
      */
     public boolean hasUnreadMessages() {
-        return unreadMessages > 0;
+        return unreadMessagesCount > 0;
+    }
+
+    /**
+     * Returns all the unread messages in this chat
+     *
+     * @return a non-null collection
+     */
+    public Collection<MessageInfo> unreadMessages(){
+        if(!hasUnreadMessages()){
+            return List.of();
+        }
+
+        var list = new ArrayList<>(messages);
+        return list.subList(list.size() - unreadMessagesCount(), list.size());
     }
 
     /**

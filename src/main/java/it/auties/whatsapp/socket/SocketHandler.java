@@ -385,7 +385,7 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
         sendWithNoResponse(receipt);
     }
 
-    protected void sendReceipt(ContactJid jid, ContactJid participant, List<String> messages) {
+    public void sendReceipt(ContactJid jid, ContactJid participant, List<String> messages, String type) {
         if (messages.isEmpty()) {
             return;
         }
@@ -394,6 +394,7 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
                 .put("id", messages.get(0))
                 .put("t", Clock.now() / 1000)
                 .put("to", jid)
+                .put("type", type, Objects::nonNull)
                 .put("participant", participant, Objects::nonNull, value -> !Objects.equals(jid, value));
         var receipt = Node.ofChildren("receipt", attributes.map(), toMessagesNode(messages));
         sendWithNoResponse(receipt);
