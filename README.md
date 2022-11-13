@@ -45,11 +45,11 @@ the [examples' directory](https://github.com/Auties00/WhatsappWeb4j/tree/master/
 There are several easy and documented projects and more will come.
 Any contribution is welcomed!
 
-### Javadocs
+### Javadocs & Documentation
 
-Javadocs for WhatsappWeb4j are
-available [here](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/index.html).
-Any contribution is welcomed!
+Javadocs for WhatsappWeb4j are available [here](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/index.html).
+The documentation for this project reaches most of the publicly available APIs(i.e. public members in exported packages), but sometimes the Javadoc may be incomplete 
+or some methods could be absent from the project's README. If you find any of the latter, know that even small contributions are welcomed!
 
 ### How to contribute
 
@@ -766,12 +766,7 @@ var response = api.awaitReply(info)
     .join(); 
 ```
 
-If you want to wait for any number of replies, use:
-``` java
-api.awaitReplies(info, (reply) -> doSomething(reply));
-```
-
-or register a OnMessageReply.
+You can also register a listener, but in many cases the async/await paradigm is easier to use then callback based listeners.
 
 ### How to delete messages
 
@@ -1058,4 +1053,3 @@ var response = future.join(); // Wait for the future to complete
 var future = api.acceptInvite(inviteCode);  // A future for the request
 var response = future.join(); // Wait for the future to complete
 ```
-

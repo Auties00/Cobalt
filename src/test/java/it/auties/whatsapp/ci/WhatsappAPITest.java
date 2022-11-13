@@ -32,6 +32,8 @@ import lombok.SneakyThrows;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
@@ -41,6 +43,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
+import java.util.zip.GZIPInputStream;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation.class)
@@ -76,9 +79,15 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     }
 
     private <T> T loadGithubParameter(String parameter, Class<T> type) throws IOException {
-        var keysJson = Base64.getDecoder()
-                .decode(System.getenv(parameter));
-        return JSON.readValue(keysJson, type);
+        var chunks = Integer.parseInt(System.getenv("%s_CHUNKS".formatted(parameter)));
+        var result = new ByteArrayOutputStream();
+        for(var chunk = 0; chunk < chunks; chunks++){
+            result.write(System.getenv(parameter).getBytes(StandardCharsets.UTF_8));
+        }
+
+        var input = new ByteArrayInputStream(Base64.getDecoder().decode(result.toByteArray()));
+        var gzip = new GZIPInputStream(input, 65536);
+        return SMILE.readValue(gzip, type);
     }
 
     private void loadConfig() throws IOException {

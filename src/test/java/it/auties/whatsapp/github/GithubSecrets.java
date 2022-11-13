@@ -1,28 +1,30 @@
 package it.auties.whatsapp.github;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.goterl.lazysodium.LazySodiumJava;
 import com.goterl.lazysodium.SodiumJava;
 import com.goterl.lazysodium.utils.LibraryLoader;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.util.JacksonProvider;
+import it.auties.whatsapp.utils.Chunks;
 import it.auties.whatsapp.utils.ConfigUtils;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.Map;
 import java.util.Objects;
+import java.util.zip.GZIPOutputStream;
 
 import static java.net.URI.create;
 import static java.net.http.HttpRequest.BodyPublishers.ofString;
 
 @UtilityClass
-public class GithubSecrets {
-    private final ObjectMapper JSON = new ObjectMapper();
+public class GithubSecrets implements JacksonProvider {
     private final LazySodiumJava SODIUM = new LazySodiumJava(new SodiumJava(LibraryLoader.Mode.BUNDLED_ONLY));
     private final String REQUEST_PATH = "https://api.github.com/repos/Auties00/WhatsappWeb4j";
     private final String PUBLIC_KEY_PATH = "actions/secrets/public-key";
@@ -42,41 +44,46 @@ public class GithubSecrets {
         updateSecret(publicKey.keyId(), cypheredStore, GithubActions.STORE_NAME);
 
         var contactName = loadContactName();
-        var cypheredContactName = encrypt(publicKey, contactName);
+        var cypheredContactName = encrypt(publicKey, contactName.getBytes(StandardCharsets.UTF_8));
         updateSecret(publicKey.keyId(), cypheredContactName, GithubActions.CONTACT_NAME);
     }
 
     @SneakyThrows
-    private String getStoreAsJson() {
-        return JSON.writeValueAsString(Whatsapp.lastConnection()
-                .store());
+    private byte[] getStoreAsJson() {
+        return SMILE.writeValueAsBytes(Whatsapp.lastConnection().store());
     }
 
     @SneakyThrows
-    private String getCredentialsAsJson() {
-        return JSON.writeValueAsString(Whatsapp.lastConnection()
-                .keys());
+    private byte[] getCredentialsAsJson() {
+        return SMILE.writeValueAsBytes(Whatsapp.lastConnection().keys());
     }
 
-    private byte[] encrypt(GithubKey publicKey, String data) {
+    private byte[] encrypt(GithubKey publicKey, byte[] data) throws IOException {
         var publicKeyBytes = Base64.getDecoder()
                 .decode(publicKey.key());
-        var messageBytes = Base64.getEncoder()
-                .encode(data.getBytes());
-        var cypher = new byte[messageBytes.length + 48];
-
-        var result = SODIUM.cryptoBoxSeal(cypher, messageBytes, messageBytes.length, publicKeyBytes);
+        var compressedStream = new ByteArrayOutputStream();
+        var gzip = new GZIPOutputStream(compressedStream);
+        gzip.write(Base64.getEncoder().encode(data));
+        gzip.close();
+        var compressed = compressedStream.toByteArray();
+        var cypher = new byte[compressed.length + 48];
+        var result = SODIUM.cryptoBoxSeal(cypher, compressed, compressed.length, publicKeyBytes);
         if (!result) {
             throw new IllegalStateException("crypto_box_seal failed");
         }
 
-        return cypher;
+        return Base64.getEncoder().encode(data);
     }
 
     private GithubKey getPublicKey() throws IOException, InterruptedException {
         var request = createPublicKeyRequest();
         var response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-        return JSON.readValue(response.body(), GithubKey.class);
+        var result = JSON.readValue(response.body(), GithubKey.class);
+        if(result.message() != null){
+            throw new IllegalArgumentException("Cannot get public key: %s".formatted(response.body()));
+        }
+
+        return result;
     }
 
     private HttpRequest createPublicKeyRequest() throws IOException {
@@ -90,30 +97,38 @@ public class GithubSecrets {
 
     private void updateSecret(String keyId, byte[] cypheredCredentials, String name)
             throws IOException, InterruptedException {
-        var request = createUpdateSecretRequest(keyId, cypheredCredentials, name);
-        var response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() != 201 && response.statusCode() != 204) {
-            throw new IllegalStateException(
-                    "Cannot update credentials with status code %s".formatted(response.statusCode()));
-        }
+        var parts = Chunks.partition(cypheredCredentials);
 
-        System.out.println("Sent credentials");
-        System.out.printf("Status code: %s%n", response.statusCode());
-        System.out.printf("Response: %s%n", response.body());
+        var sizeRequest = createUpdateSecretRequest(keyId, new byte[]{(byte) parts.length}, "%s_CHUNKS".formatted(name));
+        var sizeResponse = HTTP_CLIENT.send(sizeRequest, HttpResponse.BodyHandlers.ofString());
+        if (sizeResponse.statusCode() != 201 && sizeResponse.statusCode() != 204) {
+            throw new IllegalStateException(
+                    "Cannot update credentials size: %s(status code %s)".formatted(sizeResponse.body(), sizeResponse.statusCode()));
+        }
+        System.out.printf("Sent %s chunk size(chunks: %s, status code %s)%n", name, parts.length, sizeResponse.statusCode());
+
+        for(var index = 0; index < parts.length; index++){
+            var part = parts[index];
+            var request = createUpdateSecretRequest(keyId, part, "%s_%s".formatted(name, index));
+            var response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() != 201 && response.statusCode() != 204) {
+                throw new IllegalStateException(
+                        "Cannot update %s: %s(status code %s, size: %s)".formatted(name, response.body(), response.statusCode(), part.length));
+            }
+
+            System.out.printf("Sent %s(chunk: %s, status code %s)%n", name, index, response.statusCode());
+        }
     }
 
     private HttpRequest createUpdateSecretRequest(String keyId, byte[] cypheredCredentials, String name)
             throws IOException {
+        var upload = new GithubUpload(keyId, cypheredCredentials);
         return HttpRequest.newBuilder()
-                .PUT(ofString(JSON.writeValueAsString(createUpdateSecretParams(keyId, cypheredCredentials))))
+                .PUT(ofString(JSON.writeValueAsString(upload)))
                 .uri(create("%s/%s".formatted(REQUEST_PATH, UPDATE_SECRET_PATH.formatted(name))))
                 .header("Accept", "application/vnd.github.v3+json")
                 .header("Authorization", "Bearer %s".formatted(loadGithubToken()))
                 .build();
-    }
-
-    private Map<String, ?> createUpdateSecretParams(String keyId, byte[] cypheredCredentials) {
-        return Map.of("encrypted_value", cypheredCredentials, "key_id", keyId);
     }
 
     private String loadGithubToken() throws IOException {
