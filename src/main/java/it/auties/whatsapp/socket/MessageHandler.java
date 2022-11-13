@@ -581,8 +581,6 @@ class MessageHandler implements JacksonProvider {
     }
 
     private void saveMessage(MessageInfo info) {
-        socketHandler.store()
-                .attribute(info);
         if (info.chatJid()
                 .equals(ContactJid.STATUS_ACCOUNT)) {
             socketHandler.store()
@@ -591,6 +589,7 @@ class MessageHandler implements JacksonProvider {
             return;
         }
 
+        socketHandler.store().attribute(info);
         var result = info.chat().addMessage(info);
         if (!result || info.timestamp() <= socketHandler.store().initializationTimeStamp()) {
             return;

@@ -343,6 +343,20 @@ public final class Store implements Controller<Store> {
     }
 
     /**
+     * Queries the first status whose id matches the one provided
+     *
+     * @param id the id of the status
+     * @return a non-null optional
+     */
+    public Optional<MessageInfo> findStatusById(String id) {
+        return id == null ?
+                Optional.empty() :
+                status().stream()
+                        .filter(status -> Objects.equals(status.id(), id))
+                        .findFirst();
+    }
+
+    /**
      * Queries all the status of a contact
      *
      * @param jid the sender of the status

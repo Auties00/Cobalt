@@ -146,9 +146,18 @@ class StreamHandler implements JacksonProvider {
     }
 
     private void updateMessageStatus(Node node, MessageStatus status) {
-        node.attributes()
-                .getJid("from")
-                .flatMap(socketHandler.store()::findChatByJid)
+        var from = node.attributes().getJid("from");
+        if(from.isEmpty()){
+            return;
+        }
+
+        if(from.get().equals(ContactJid.STATUS_ACCOUNT)){
+            updateMessageStatus(node, status, null);
+            return;
+        }
+
+        socketHandler.store()
+                .findChatByJid(from.get())
                 .ifPresent(chat -> updateMessageStatus(node, status, chat));
     }
 
@@ -168,8 +177,8 @@ class StreamHandler implements JacksonProvider {
         messageIds.add(node.attributes()
                 .getRequiredString("id"));
         messageIds.stream()
-                .map(messageId -> socketHandler.store()
-                        .findMessageById(chat, messageId))
+                .map(messageId -> chat == null ? socketHandler.store().findStatusById(messageId)
+                        : socketHandler.store().findMessageById(chat, messageId))
                 .flatMap(Optional::stream)
                 .forEach(message -> updateMessageStatus(status, participant, message));
     }
