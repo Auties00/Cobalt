@@ -82,7 +82,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
         var chunks = Integer.parseInt(System.getenv("%s_CHUNKS".formatted(parameter)));
         var result = new ByteArrayOutputStream();
         for(var chunk = 0; chunk < chunks; chunks++){
-            result.write(System.getenv(parameter).getBytes(StandardCharsets.UTF_8));
+            result.write(Base64.getDecoder().decode(System.getenv("%s_%s".formatted(parameter, chunk))));
         }
 
         var input = new ByteArrayInputStream(Base64.getDecoder().decode(result.toByteArray()));

@@ -99,7 +99,7 @@ public class GithubSecrets implements JacksonProvider {
             throws IOException, InterruptedException {
         var parts = Chunks.partition(cypheredCredentials);
 
-        var sizeRequest = createUpdateSecretRequest(keyId, new byte[]{(byte) parts.length}, "%s_CHUNKS".formatted(name));
+        var sizeRequest = createUpdateSecretRequest(keyId, String.valueOf(parts.length), "%s_CHUNKS".formatted(name));
         var sizeResponse = HTTP_CLIENT.send(sizeRequest, HttpResponse.BodyHandlers.ofString());
         if (sizeResponse.statusCode() != 201 && sizeResponse.statusCode() != 204) {
             throw new IllegalStateException(
@@ -109,7 +109,7 @@ public class GithubSecrets implements JacksonProvider {
 
         for(var index = 0; index < parts.length; index++){
             var part = parts[index];
-            var request = createUpdateSecretRequest(keyId, part, "%s_%s".formatted(name, index));
+            var request = createUpdateSecretRequest(keyId, Base64.getEncoder().encodeToString(part), "%s_%s".formatted(name, index));
             var response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() != 201 && response.statusCode() != 204) {
                 throw new IllegalStateException(
@@ -120,7 +120,7 @@ public class GithubSecrets implements JacksonProvider {
         }
     }
 
-    private HttpRequest createUpdateSecretRequest(String keyId, byte[] cypheredCredentials, String name)
+    private HttpRequest createUpdateSecretRequest(String keyId, String cypheredCredentials, String name)
             throws IOException {
         var upload = new GithubUpload(keyId, cypheredCredentials);
         return HttpRequest.newBuilder()
