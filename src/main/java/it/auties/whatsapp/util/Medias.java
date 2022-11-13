@@ -270,18 +270,18 @@ public class Medias implements JacksonProvider {
     public Optional<byte[]> getThumbnail(byte[] file, Format format) {
         return switch (format) {
             case JPG, PNG -> getImage(file, format, THUMBNAIL_SIZE);
-            case VIDEO -> getVideo(file, THUMBNAIL_SIZE);
+            case VIDEO -> getVideo(file);
             case FILE -> Optional.empty(); // TODO: 04/06/2022 Implement a file thumbnail
         };
     }
 
-    private Optional<byte[]> getVideo(byte[] file, int dimensions) {
+    private Optional<byte[]> getVideo(byte[] file) {
         var input = createTempFile(file, true);
         var output = createTempFile(file, false);
         try {
             var process = Runtime.getRuntime()
                     .exec("ffmpeg -ss 00:00:00 -i %s -y -vf scale=%s:-1 -vframes 1 -f image2 %s".formatted(input,
-                            dimensions, output));
+                            Medias.THUMBNAIL_SIZE, output));
             if (process.waitFor() != 0) {
                 return Optional.empty();
             }

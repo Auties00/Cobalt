@@ -11,7 +11,7 @@ public enum PatchType {
     REGULAR_LOW,
     REGULAR;
 
-    public static PatchType forName(String name) {
+    public static PatchType of(String name) {
         return Arrays.stream(values())
                 .filter(entry -> entry.toString()
                         .equals(name))

@@ -27,7 +27,7 @@ public enum BusinessActorsType implements ProtobufMessage {
     private final int index;
 
     @JsonCreator
-    public static BusinessActorsType forIndex(int index) {
+    public static BusinessActorsType of(int index) {
         return Arrays.stream(values())
                 .filter(entry -> entry.index() == index)
                 .findFirst()

@@ -30,7 +30,6 @@ import it.auties.whatsapp.model.signal.sender.SenderKeyName;
 import it.auties.whatsapp.model.sync.HistorySync;
 import it.auties.whatsapp.model.sync.PushName;
 import it.auties.whatsapp.util.*;
-import lombok.SneakyThrows;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -58,7 +57,7 @@ class MessageHandler implements JacksonProvider {
     private static final String MSG = "msg";
     private static final int MAX_ATTEMPTS = 3;
 
-    private final Socket socket;
+    private final SocketHandler socketHandler;
     private final Map<String, Integer> retries;
     private final Cache<ContactJid, GroupMetadata> groupsCache;
     private final Cache<String, List<ContactJid>> devicesCache;
@@ -67,8 +66,8 @@ class MessageHandler implements JacksonProvider {
     private final AtomicBoolean receivedAppKeys;
     private final AtomicBoolean receivedPushNames;
 
-    protected MessageHandler(Socket socket) {
-        this.socket = socket;
+    protected MessageHandler(SocketHandler socketHandler) {
+        this.socketHandler = socketHandler;
         this.retries = new HashMap<>();
         this.groupsCache = createCache(Duration.ofMinutes(5));
         this.devicesCache = createCache(Duration.ofMinutes(5));
@@ -98,20 +97,20 @@ class MessageHandler implements JacksonProvider {
     private CompletableFuture<Void> encodeGroup(MessageInfo info, Entry<String, Object>... attributes) {
         var encodedMessage = BytesHelper.messageToBytes(info.message());
         var senderName = new SenderKeyName(info.chatJid()
-                .toString(), socket.keys()
+                .toString(), socketHandler.keys()
                 .companion()
                 .toSignalAddress());
-        var groupBuilder = new GroupBuilder(socket.keys());
+        var groupBuilder = new GroupBuilder(socketHandler.keys());
         var signalMessage = groupBuilder.createOutgoing(senderName);
-        var groupCipher = new GroupCipher(senderName, socket.keys());
+        var groupCipher = new GroupCipher(senderName, socketHandler.keys());
         var groupMessage = groupCipher.encrypt(encodedMessage);
         return Optional.ofNullable(groupsCache.getIfPresent(info.chatJid()))
                 .map(CompletableFuture::completedFuture)
-                .orElseGet(() -> socket.queryGroupMetadata(info.chatJid()))
+                .orElseGet(() -> socketHandler.queryGroupMetadata(info.chatJid()))
                 .thenComposeAsync(this::getDevices)
                 .thenComposeAsync(allDevices -> createGroupNodes(info, signalMessage, allDevices))
                 .thenApplyAsync(preKeys -> createEncodedMessageNode(info, preKeys, groupMessage, attributes))
-                .thenComposeAsync(socket::send)
+                .thenComposeAsync(socketHandler::send)
                 .thenRunAsync(() -> info.chat()
                         .addMessage(info));
     }
@@ -122,13 +121,13 @@ class MessageHandler implements JacksonProvider {
         var deviceMessage = DeviceSentMessage.newDeviceSentMessage(info.chatJid()
                 .toString(), info.message(), null);
         var encodedDeviceMessage = BytesHelper.messageToBytes(deviceMessage);
-        var knownDevices = List.of(socket.keys()
+        var knownDevices = List.of(socketHandler.keys()
                 .companion()
                 .toUserJid(), info.chatJid());
         return getDevices(knownDevices, true).thenComposeAsync(
                         allDevices -> createConversationNodes(allDevices, encodedMessage, encodedDeviceMessage))
                 .thenApplyAsync(sessions -> createEncodedMessageNode(info, sessions, null, attributes))
-                .thenComposeAsync(socket::send)
+                .thenComposeAsync(socketHandler::send)
                 .thenRunAsync(() -> info.chat()
                         .addMessage(info));
     }
@@ -137,14 +136,14 @@ class MessageHandler implements JacksonProvider {
         try {
             if(read){
                 if(receivedAppKeys.get()){
-                    socket.awaitAppReady();
+                    socketHandler.awaitAppReady();
                 }
 
                 semaphore.acquire();
                 return;
             }
 
-            socket.awaitAppReady();
+            socketHandler.awaitAppReady();
             semaphore.acquire();
         }catch (InterruptedException exception){
             throw new RuntimeException("Cannot acquire lock", exception);
@@ -153,7 +152,7 @@ class MessageHandler implements JacksonProvider {
 
     private <T> T handleMessageFailure(Throwable throwable) {
         semaphore.release();
-        return socket.errorHandler()
+        return socketHandler.errorHandler()
                 .handleFailure(MESSAGE, throwable);
     }
 
@@ -163,30 +162,33 @@ class MessageHandler implements JacksonProvider {
     }
 
     @SafeVarargs
-    @SneakyThrows
     private Node createEncodedMessageNode(MessageInfo info, List<Node> preKeys, Node descriptor,
                                           Entry<String, Object>... metadata) {
-        var body = new ArrayList<Node>();
-        if (!preKeys.isEmpty()) {
-            body.add(ofChildren("participants", preKeys));
-        }
+       try{
+           var body = new ArrayList<Node>();
+           if (!preKeys.isEmpty()) {
+               body.add(ofChildren("participants", preKeys));
+           }
 
-        if (descriptor != null) {
-            body.add(descriptor);
-        }
+           if (descriptor != null) {
+               body.add(descriptor);
+           }
 
-        if (hasPreKeyMessage(preKeys)) {
-            var identity = PROTOBUF.writeValueAsBytes(socket.keys()
-                    .companionIdentity());
-            body.add(Node.of("device-identity", identity));
-        }
+           if (hasPreKeyMessage(preKeys)) {
+               var identity = PROTOBUF.writeValueAsBytes(socketHandler.keys()
+                       .companionIdentity());
+               body.add(Node.of("device-identity", identity));
+           }
 
-        var attributes = Attributes.of(metadata)
-                .put("id", info.id())
-                .put("type", "text")
-                .put("to", info.chatJid())
-                .map();
-        return ofChildren("message", attributes, body);
+           var attributes = Attributes.of(metadata)
+                   .put("id", info.id())
+                   .put("type", "text")
+                   .put("to", info.chatJid())
+                   .map();
+           return ofChildren("message", attributes, body);
+       }catch (IOException exception){
+           throw new UncheckedIOException("Cannot create encoded message node", exception);
+       }
     }
 
     private boolean hasPreKeyMessage(List<Node> participants) {
@@ -202,7 +204,7 @@ class MessageHandler implements JacksonProvider {
     private CompletableFuture<List<Node>> createConversationNodes(List<ContactJid> contacts, byte[] message,
                                                                   byte[] deviceMessage) {
         var partitioned = contacts.stream()
-                .collect(partitioningBy(contact -> Objects.equals(contact.user(), socket.keys()
+                .collect(partitioningBy(contact -> Objects.equals(contact.user(), socketHandler.keys()
                         .companion()
                         .user())));
         var companions = querySessions(partitioned.get(true)).thenApplyAsync(
@@ -212,7 +214,6 @@ class MessageHandler implements JacksonProvider {
         return companions.thenCombineAsync(others, (first, second) -> append(first, second));
     }
 
-    @SneakyThrows
     private CompletableFuture<List<Node>> createGroupNodes(MessageInfo info, byte[] distributionMessage,
                                                            List<ContactJid> participants) {
         Validate.isTrue(info.chat()
@@ -243,7 +244,7 @@ class MessageHandler implements JacksonProvider {
 
     private CompletableFuture<Void> querySessions(List<ContactJid> contacts) {
         var missingSessions = contacts.stream()
-                .filter(contact -> !socket.keys()
+                .filter(contact -> !socketHandler.keys()
                         .hasSession(contact.toSignalAddress()))
                 .map(contact -> ofAttributes("user", of("jid", contact, "reason", "identity")))
                 .toList();
@@ -251,7 +252,7 @@ class MessageHandler implements JacksonProvider {
             return completedFuture(null);
         }
 
-        return socket.sendQuery("get", "encrypt", ofChildren("key", missingSessions))
+        return socketHandler.sendQuery("get", "encrypt", ofChildren("key", missingSessions))
                 .thenAcceptAsync(this::parseSessions);
     }
 
@@ -262,7 +263,7 @@ class MessageHandler implements JacksonProvider {
     }
 
     private Node createMessageNode(ContactJid contact, byte[] message) {
-        var cipher = new SessionCipher(contact.toSignalAddress(), socket.keys());
+        var cipher = new SessionCipher(contact.toSignalAddress(), socketHandler.keys());
         var encrypted = cipher.encrypt(message);
         return ofChildren("to", of("jid", contact), encrypted);
     }
@@ -295,16 +296,15 @@ class MessageHandler implements JacksonProvider {
                 append(cached, missingDevices));
     }
 
-    @SneakyThrows
     private CompletableFuture<List<ContactJid>> queryDevices(List<ContactJid> contacts, boolean excludeSelf) {
         var contactNodes = contacts.stream()
                 .map(contact -> ofAttributes("user", of("jid", contact)))
                 .toList();
-        var body = Node.ofChildren("usync", of("sid", socket.store()
+        var body = Node.ofChildren("usync", of("sid", socketHandler.store()
                         .nextTag(), "mode", "query", "last", "true", "index", "0", "context", "message"),
                 ofChildren("query", ofAttributes("devices", of("version", "2"))),
                 ofChildren("list", contactNodes));
-        return socket.sendQuery("get", "usync", body)
+        return socketHandler.sendQuery("get", "usync", body)
                 .thenApplyAsync(result -> parseDevices(result, excludeSelf));
     }
 
@@ -344,9 +344,9 @@ class MessageHandler implements JacksonProvider {
                 .getInt("id");
         return child.description()
                 .equals("device") && (!excludeSelf || deviceId != 0) && (!jid.user()
-                .equals(socket.keys()
+                .equals(socketHandler.keys()
                         .companion()
-                        .user()) || socket.keys()
+                        .user()) || socketHandler.keys()
                 .companion()
                 .device() != deviceId) && (deviceId == 0 || child.attributes()
                 .hasKey("key-index")) ?
@@ -380,17 +380,20 @@ class MessageHandler implements JacksonProvider {
         var key = node.findNode("key")
                 .flatMap(SignalSignedKeyPair::of)
                 .orElse(null);
-        var builder = new SessionBuilder(jid.toSignalAddress(), socket.keys());
+        var builder = new SessionBuilder(jid.toSignalAddress(), socketHandler.keys());
         builder.createOutgoing(registrationId, identity, signedKey, key);
     }
 
-    protected void decode(Node node) {
-        CompletableFuture.runAsync(() -> {
-            tryLock(true);
-            var encrypted = node.findNodes("enc");
-            encrypted.forEach(message -> decode(node, message));
-            semaphore.release();
-        });
+    protected void decodeAsync(Node node) {
+        CompletableFuture.runAsync(() -> decodeLocked(node))
+                .exceptionallyAsync(throwable -> socketHandler.errorHandler().handleFailure(MESSAGE, throwable));
+    }
+
+    private void decodeLocked(Node node) {
+        tryLock(true);
+        var encrypted = node.findNodes("enc");
+        encrypted.forEach(message -> decode(node, message));
+        semaphore.release();
     }
 
     private void decode(Node infoNode, Node messageNode) {
@@ -415,12 +418,12 @@ class MessageHandler implements JacksonProvider {
             if(from.hasServer(ContactJid.Server.WHATSAPP) || from.hasServer(ContactJid.Server.USER)){
                 keyBuilder.chatJid(recipient);
                 keyBuilder.senderJid(from);
-                keyBuilder.fromMe(Objects.equals(from, socket.keys().companion().toUserJid()));
+                keyBuilder.fromMe(Objects.equals(from, socketHandler.keys().companion().toUserJid()));
                 messageBuilder.senderJid(from);
             }else {
                 keyBuilder.chatJid(from);
                 keyBuilder.senderJid(requireNonNull(participant, "Missing participant in group message"));
-                keyBuilder.fromMe(Objects.equals(participant.toUserJid(), socket.keys().companion().toUserJid()));
+                keyBuilder.fromMe(Objects.equals(participant.toUserJid(), socketHandler.keys().companion().toUserJid()));
                 messageBuilder.senderJid(requireNonNull(participant, "Missing participant in group message"));
             }
 
@@ -431,7 +434,7 @@ class MessageHandler implements JacksonProvider {
                     .timestamp(timestamp)
                     .build();
 
-            socket.sendMessageAck(infoNode, of("class", "receipt"));
+            socketHandler.sendMessageAck(infoNode, of("class", "receipt"));
             var type = messageNode.attributes()
                     .getRequiredString("type");
             var encodedMessage = messageNode.contentAsBytes()
@@ -440,7 +443,7 @@ class MessageHandler implements JacksonProvider {
             if(decodedMessage.hasError()){
                 var attempts = retries.getOrDefault(id, 0);
                 if(attempts >= MAX_ATTEMPTS){
-                    socket.errorHandler()
+                    socketHandler.errorHandler()
                             .handleFailure(MESSAGE, new RuntimeException(
                                     "Cannot decrypt message with type %s inside %s from %s".formatted(type, from,
                                             requireNonNullElse(participant, from)), decodedMessage.error()));
@@ -454,7 +457,8 @@ class MessageHandler implements JacksonProvider {
                         .put("recipient", recipient, () -> !Objects.equals(recipient, from))
                         .put("participant", participant, Objects::nonNull)
                         .map();
-                var retryNode = Node.ofChildren("receipt",
+                var retryNode = Node.ofChildren(
+                        "receipt",
                         retryAttributes,
                         Node.ofAttributes(
                                 "retry",
@@ -467,11 +471,11 @@ class MessageHandler implements JacksonProvider {
                         ),
                         Node.of(
                                 "registration",
-                                BytesHelper.intToBytes(socket.keys().id(), 4)
+                                BytesHelper.intToBytes(socketHandler.keys().id(), 4)
                         ),
                         attempts <= 1 && encodedMessage != null ? null : createPreKeyNode()
                 );
-                socket.send(retryNode);
+                socketHandler.send(retryNode);
                 retries.put(id, attempts + 1);
                 return;
             }
@@ -494,19 +498,18 @@ class MessageHandler implements JacksonProvider {
             }
 
             saveMessage(info);
-            socket.onReply(info);
-            socket.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.key()
-                    .id()));
+            socketHandler.onReply(info);
+            socketHandler.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.key().id()));
         } catch (Throwable throwable) {
-            socket.errorHandler()
+            socketHandler.errorHandler()
                     .handleFailure(MESSAGE, throwable);
         }
     }
 
     private Node createPreKeyNode(){
         try {
-            var preKey = SignalPreKeyPair.random(socket.keys().lastPreKeyId() + 1);
-            var identity = PROTOBUF.writeValueAsBytes(socket.keys()
+            var preKey = SignalPreKeyPair.random(socketHandler.keys().lastPreKeyId() + 1);
+            var identity = PROTOBUF.writeValueAsBytes(socketHandler.keys()
                     .companionIdentity());
             return Node.ofChildren(
                     "keys",
@@ -516,10 +519,10 @@ class MessageHandler implements JacksonProvider {
                     ),
                     Node.of(
                             "identity",
-                            socket.keys().identityKeyPair().publicKey()
+                            socketHandler.keys().identityKeyPair().publicKey()
                     ),
                     preKey.toNode(),
-                    socket.keys().signedKeyPair().toNode(),
+                    socketHandler.keys().signedKeyPair().toNode(),
                     Node.of("device-identity", identity)
             );
         }catch (IOException exception){
@@ -537,7 +540,7 @@ class MessageHandler implements JacksonProvider {
                 case SKMSG -> {
                     Objects.requireNonNull(participant, "Cannot decipher skmsg without participant");
                     var senderName = new SenderKeyName(from.toString(), participant.toSignalAddress());
-                    var signalGroup = new GroupCipher(senderName, socket.keys());
+                    var signalGroup = new GroupCipher(senderName, socketHandler.keys());
                     yield signalGroup.decrypt(encodedMessage);
                 }
 
@@ -547,7 +550,7 @@ class MessageHandler implements JacksonProvider {
                             participant;
                     Objects.requireNonNull(user, "Cannot decipher pkmsg without user");
 
-                    var session = new SessionCipher(user.toSignalAddress(), socket.keys());
+                    var session = new SessionCipher(user.toSignalAddress(), socketHandler.keys());
                     var preKey = SignalPreKeyMessage.ofSerialized(encodedMessage);
                     yield session.decrypt(preKey);
                 }
@@ -558,7 +561,7 @@ class MessageHandler implements JacksonProvider {
                             participant;
                     Objects.requireNonNull(user, "Cannot decipher msg without user");
 
-                    var session = new SessionCipher(user.toSignalAddress(), socket.keys());
+                    var session = new SessionCipher(user.toSignalAddress(), socketHandler.keys());
                     var signalMessage = SignalMessage.ofSerialized(encodedMessage);
                     yield session.decrypt(signalMessage);
                 }
@@ -577,22 +580,19 @@ class MessageHandler implements JacksonProvider {
         }
     }
 
-    // TODO: Decrement unread messages count
     private void saveMessage(MessageInfo info) {
-        socket.store()
+        socketHandler.store()
                 .attribute(info);
         if (info.chatJid()
                 .equals(ContactJid.STATUS_ACCOUNT)) {
-            socket.store()
+            socketHandler.store()
                     .addStatus(info);
-            socket.onNewStatus(info);
+            socketHandler.onNewStatus(info);
             return;
         }
 
-        info.chat()
-                .addMessage(info);
-        if (info.timestamp() <= socket.store()
-                .initializationTimeStamp()) {
+        var result = info.chat().addMessage(info);
+        if (!result || info.timestamp() <= socketHandler.store().initializationTimeStamp()) {
             return;
         }
 
@@ -602,7 +602,7 @@ class MessageHandler implements JacksonProvider {
         }
 
         if (info.chat()
-                .archived() && socket.store()
+                .archived() && socketHandler.store()
                 .unarchiveChats()) {
             info.chat()
                     .archived(false);
@@ -611,12 +611,12 @@ class MessageHandler implements JacksonProvider {
         info.chat()
                 .unreadMessages(info.chat()
                         .unreadMessages() + 1);
-        socket.onNewMessage(info);
+        socketHandler.onNewMessage(info);
     }
 
     private void handleDistributionMessage(SenderKeyDistributionMessage distributionMessage, ContactJid from) {
         var groupName = new SenderKeyName(distributionMessage.groupId(), from.toSignalAddress());
-        var builder = new GroupBuilder(socket.keys());
+        var builder = new GroupBuilder(socketHandler.keys());
         var message = SignalDistributionMessage.ofSerialized(distributionMessage.data());
         builder.createIncoming(groupName, message);
     }
@@ -627,10 +627,10 @@ class MessageHandler implements JacksonProvider {
                 var history = downloadHistorySync(protocolMessage);
                 handleHistorySync(history);
                 if(history.progress() != null){
-                    socket.onHistorySyncProgress(history.progress(), history.syncType() == RECENT);
+                    socketHandler.onHistorySyncProgress(history.progress(), history.syncType() == RECENT);
                 }
 
-                socket.sendSyncReceipt(info, "hist_sync");
+                socketHandler.sendSyncReceipt(info, "hist_sync");
             }
 
             case APP_STATE_SYNC_KEY_SHARE -> {
@@ -640,39 +640,39 @@ class MessageHandler implements JacksonProvider {
                     return;
                 }
 
-                socket.keys()
+                socketHandler.keys()
                         .addAppKeys(protocolMessage.appStateSyncKeyShare()
                                 .keys());
                 receivedAppKeys.set(true);
-                socket.pullInitialPatches();
+                socketHandler.pullInitialPatches();
             }
 
-            case REVOKE -> socket.store()
+            case REVOKE -> socketHandler.store()
                     .findMessageById(info.chat(), protocolMessage.key()
                             .id())
                     .ifPresent(message -> {
                         info.chat()
                                 .removeMessage(message);
-                        socket.onMessageDeleted(message, true);
+                        socketHandler.onMessageDeleted(message, true);
                     });
 
             case EPHEMERAL_SETTING -> {
                 info.chat()
                         .ephemeralMessagesToggleTime(info.timestamp())
-                        .ephemeralMessageDuration(ChatEphemeralTimer.forValue(protocolMessage.ephemeralExpiration()));
+                        .ephemeralMessageDuration(ChatEphemeralTimer.of(protocolMessage.ephemeralExpiration()));
                 var setting = new EphemeralSetting(info.ephemeralDuration(), info.timestamp());
-                socket.onSetting(setting);
+                socketHandler.onSetting(setting);
             }
         }
 
         // Save data to prevent session termination from messing up the cypher
-        socket.store()
+        socketHandler.store()
                 .serialize(true);
         if (!peer) {
             return;
         }
 
-        socket.sendSyncReceipt(info, "peer_msg");
+        socketHandler.sendSyncReceipt(info, "peer_msg");
     }
 
     private HistorySync downloadHistorySync(ProtocolMessage protocolMessage) {
@@ -691,19 +691,19 @@ class MessageHandler implements JacksonProvider {
         switch (history.syncType()) {
             case INITIAL_STATUS_V3 -> {
                 history.statusV3Messages()
-                        .forEach(socket.store()::addStatus);
-                socket.onStatus();
+                        .forEach(socketHandler.store()::addStatus);
+                socketHandler.onStatus();
             }
 
            case INITIAL_BOOTSTRAP -> {
                historyCache.addAll(history.conversations());
                history.conversations()
                        .forEach(this::updateChatMessages);
-               socket.store()
+               socketHandler.store()
                        .initialSnapshot(true);
-               socket.onChats();
+               socketHandler.onChats();
                if(receivedPushNames.get()){
-                   socket.onContacts();
+                   socketHandler.onContacts();
                }
             }
 
@@ -711,8 +711,8 @@ class MessageHandler implements JacksonProvider {
                 history.pushNames()
                         .forEach(this::handNewPushName);
                 receivedPushNames.set(true);
-                if(socket.store().initialSnapshot()){
-                    socket.onContacts();
+                if(socketHandler.store().initialSnapshot()){
+                    socketHandler.onContacts();
                 }
             }
 
@@ -726,25 +726,25 @@ class MessageHandler implements JacksonProvider {
         history.conversations()
                 .forEach(this::updateChatMessages);
         historyCache.forEach(cached ->
-                socket.onChatRecentMessages(cached, !history.conversations().contains(cached)));
+                socketHandler.onChatRecentMessages(cached, !history.conversations().contains(cached)));
         historyCache.removeIf(entry -> !history.conversations().contains(entry));
     }
 
     private void updateChatMessages(Chat carrier){
-        socket.store()
+        socketHandler.store()
                 .findChatByJid(carrier.jid())
                 .ifPresentOrElse(chat -> chat.messages().addAll(carrier.messages()),
-                        () -> socket.store().addChat(carrier));
+                        () -> socketHandler.store().addChat(carrier));
     }
 
     private void handNewPushName(PushName pushName) {
         var jid = ContactJid.of(pushName.id());
-        socket.store()
+        socketHandler.store()
                 .findContactByJid(jid)
-                .orElseGet(() -> socket.createContact(jid))
+                .orElseGet(() -> socketHandler.createContact(jid))
                 .chosenName(pushName.name());
         var action = ContactAction.of(pushName.name(), null);
-        socket.onAction(action);
+        socketHandler.onAction(action);
     }
 
     @SafeVarargs

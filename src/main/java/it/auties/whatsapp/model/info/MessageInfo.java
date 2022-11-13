@@ -582,7 +582,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
         private final List<String> symbols;
 
         @JsonCreator
-        public static StubType forIndex(int index) {
+        public static StubType of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

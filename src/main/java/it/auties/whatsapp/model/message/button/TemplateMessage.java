@@ -47,7 +47,7 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
      */
     @ProtobufProperty(index = 3, type = MESSAGE, implementation = ContextInfo.class)
     @Default
-    private ContextInfo contextInfo = new ContextInfo();  // Overrides ContextualMessage's context info
+    private ContextInfo contextInfo = new ContextInfo();  
 
     /**
      * Hydrated template
@@ -174,7 +174,7 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
         private final int index;
 
         @JsonCreator
-        public static Format forIndex(int index) {
+        public static Format of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

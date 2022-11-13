@@ -15,6 +15,7 @@ public class WhatsappBot {
 
         // Create a new instance of WhatsappAPI
         Whatsapp.lastConnection()
+                .addLoggedInListener(() -> System.out.println("Connected!"))
                 .connect()
                 .get();
     }

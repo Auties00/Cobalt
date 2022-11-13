@@ -69,7 +69,7 @@ public final class BusinessShop implements ProtobufMessage {
         @Getter
         private final int index;
 
-        public static SurfaceType forIndex(int index) {
+        public static SurfaceType of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

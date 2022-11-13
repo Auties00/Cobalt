@@ -120,7 +120,7 @@ public class HydratedButtonTemplate implements ProtobufMessage {
         private final int index;
 
         @JsonCreator
-        public static ButtonType forIndex(int index) {
+        public static ButtonType of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

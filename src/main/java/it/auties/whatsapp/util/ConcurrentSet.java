@@ -18,12 +18,13 @@ public class ConcurrentSet<T> extends HashSet<T> {
         this.internal = ConcurrentHashMap.newKeySet();
     }
 
-    public ConcurrentSet(Collection<? extends T> c) {
+    @SuppressWarnings("unused")
+    public ConcurrentSet(Collection<? extends T> collection) {
         this();
-        internal.addAll(c);
+        internal.addAll(collection);
     }
 
-    @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
+    @SuppressWarnings("EqualsWhichDoesntCheckParameterClass") // Equality contract is broken on purpose
     @Override
     public boolean equals(Object o) {
         return Objects.equals(internal, o);

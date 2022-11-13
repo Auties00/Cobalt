@@ -14,15 +14,15 @@ import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.chat.ChatMute;
 import it.auties.whatsapp.model.chat.GroupPolicy;
+import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactCard;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.button.ButtonsMessage;
-import it.auties.whatsapp.model.message.model.MessageCategory;
-import it.auties.whatsapp.model.message.standard.InteractiveMessage;
 import it.auties.whatsapp.model.message.button.ListMessage;
 import it.auties.whatsapp.model.message.button.TemplateMessage;
+import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.JacksonProvider;
@@ -109,13 +109,13 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     }
 
     @Override
-    public void onChats() {
+    public void onChats(Collection<Chat> chats) {
         latch.countDown();
         log("Got chats: -%s", latch.getCount());
     }
 
     @Override
-    public void onContacts() {
+    public void onContacts(Collection<Contact> contacts) {
         latch.countDown();
         log("Got contacts: -%s", latch.getCount());
     }

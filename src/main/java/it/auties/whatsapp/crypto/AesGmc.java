@@ -3,7 +3,6 @@ package it.auties.whatsapp.crypto;
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.exception.AesException;
 import lombok.NonNull;
-import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.engines.AESEngine;

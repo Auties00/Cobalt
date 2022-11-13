@@ -111,7 +111,7 @@ public class BusinessDateTimeComponent implements ProtobufMessage {
         private final int index;
 
         @JsonCreator
-        public static DayOfWeek forIndex(int index) {
+        public static DayOfWeek of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()
@@ -138,7 +138,7 @@ public class BusinessDateTimeComponent implements ProtobufMessage {
         @Getter
         private final int index;
 
-        public static CalendarType forIndex(int index) {
+        public static CalendarType of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

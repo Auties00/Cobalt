@@ -41,7 +41,7 @@ public final class TemplateReplyMessage extends ButtonReplyMessage {
      */
     @ProtobufProperty(index = 3, type = MESSAGE, implementation = ContextInfo.class)
     @Default
-    private ContextInfo contextInfo = new ContextInfo();  // Overrides ContextualMessage's context info
+    private ContextInfo contextInfo = new ContextInfo();  
 
     /**
      * The index of the button that was selected from the previous template message
@@ -53,6 +53,4 @@ public final class TemplateReplyMessage extends ButtonReplyMessage {
     public MessageType type() {
         return MessageType.TEMPLATE_REPLY;
     }
-
-    // TODO: 13/07/2022 of method
 }

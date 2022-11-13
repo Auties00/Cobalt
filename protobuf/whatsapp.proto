@@ -696,7 +696,6 @@ message ExternalAdReplyInfo {
 }
 
 message ContextInfo {
-  optional string stanzaId = 100;
   optional string stanzaId = 1;
   optional string participant = 2;
   optional Message quotedMessage = 3;

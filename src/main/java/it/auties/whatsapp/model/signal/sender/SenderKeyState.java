@@ -3,6 +3,7 @@ package it.auties.whatsapp.model.signal.sender;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
+import it.auties.whatsapp.util.SignalSpecification;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -21,7 +22,7 @@ import static it.auties.protobuf.base.ProtobufType.UINT32;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class SenderKeyState implements ProtobufMessage {
+public class SenderKeyState implements ProtobufMessage, SignalSpecification {
     @ProtobufProperty(index = 1, type = UINT32)
     private Integer id;
 
@@ -49,7 +50,7 @@ public class SenderKeyState implements ProtobufMessage {
 
     public void addSenderMessageKey(SenderMessageKey senderMessageKey) {
         messageKeys.add(senderMessageKey);
-        if (messageKeys.size() <= 2000) {
+        if (messageKeys.size() <= MAX_MESSAGES) {
             return;
         }
 
@@ -59,8 +60,6 @@ public class SenderKeyState implements ProtobufMessage {
     public SenderMessageKey removeSenderMessageKey(int iteration) {
         return messageKeys.stream()
                 .filter(key -> key.iteration() == iteration)
-                .mapToInt(messageKeys::indexOf)
-                .mapToObj(messageKeys::remove)
                 .findFirst()
                 .orElse(null);
     }

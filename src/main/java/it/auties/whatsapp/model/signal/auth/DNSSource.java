@@ -40,7 +40,7 @@ public class DNSSource implements ProtobufMessage {
         private final int index;
 
         @JsonCreator
-        public static DNSSourceDNSResolutionMethod forIndex(int index) {
+        public static DNSSourceDNSResolutionMethod of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

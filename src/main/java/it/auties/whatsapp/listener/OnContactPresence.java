@@ -3,11 +3,11 @@ package it.auties.whatsapp.listener;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactStatus;
-import it.auties.whatsapp.socket.Socket;
+import it.auties.whatsapp.socket.SocketHandler;
 
 public interface OnContactPresence extends Listener {
     /**
-     * Called when {@link Socket} receives an update regarding the presence of a contact
+     * Called when {@link SocketHandler} receives an update regarding the presence of a contact
      *
      * @param chat    the chat that this update regards
      * @param contact the contact that this update regards

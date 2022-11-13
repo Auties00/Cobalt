@@ -3,7 +3,6 @@ package it.auties.whatsapp.crypto;
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.controller.Keys;
 import lombok.NonNull;
-import lombok.SneakyThrows;
 
 import static it.auties.bytes.Bytes.of;
 
@@ -26,13 +25,11 @@ public class Handshake {
         updateHash(PROLOGUE);
     }
 
-    @SneakyThrows
     public void updateHash(byte @NonNull [] data) {
         var input = hash.append(data);
         this.hash = of(Sha256.calculate(input.toByteArray()));
     }
 
-    @SneakyThrows
     public byte[] cipher(byte @NonNull [] bytes, boolean encrypt) {
         var cyphered = AesGmc.cipher(counter++, bytes, cryptoKey.toByteArray(), hash.toByteArray(), encrypt);
         if (!encrypt) {

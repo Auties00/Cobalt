@@ -101,7 +101,7 @@ public final class ExternalAdReplyInfo implements Info {
         private final int index;
 
         @JsonCreator
-        public static ExternalAdReplyInfoMediaType forIndex(int index) {
+        public static ExternalAdReplyInfoMediaType of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

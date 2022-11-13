@@ -11,14 +11,12 @@ import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.SignalSpecification;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
-import lombok.SneakyThrows;
 
 import java.nio.charset.StandardCharsets;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
 public record SessionBuilder(@NonNull SessionAddress address, @NonNull Keys keys) implements SignalSpecification {
-    @SneakyThrows
     public void createOutgoing(int id, byte[] identityKey, SignalSignedKeyPair signedPreKey,
                                SignalSignedKeyPair preKey) {
         Validate.isTrue(keys.hasTrust(address, identityKey), "Untrusted key", SecurityException.class);
@@ -72,7 +70,6 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull Keys keys
         session.addState(nextState);
     }
 
-    @SneakyThrows
     public SessionState createState(boolean isInitiator, SignalKeyPair ourEphemeralKey, SignalKeyPair ourSignedKey,
                                     byte[] theirIdentityPubKey, byte[] theirEphemeralPubKey, byte[] theirSignedPubKey,
                                     int registrationId, int version) {

@@ -11,5 +11,6 @@ public interface OnWhatsappHistorySyncProgress extends Listener {
      * @param percentage the percentage synced up to now
      * @param recent whether the sync is about the recent messages or older messages
      */
+    @Override
     void onHistorySyncProgress(Whatsapp whatsapp, int percentage, boolean recent);
 }

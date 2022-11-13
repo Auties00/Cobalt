@@ -267,7 +267,7 @@ public final class VideoMessage extends MediaMessage {
         private final int index;
 
         @JsonCreator
-        public static VideoMessageAttribution forIndex(int index) {
+        public static VideoMessageAttribution of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

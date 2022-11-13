@@ -58,7 +58,7 @@ public class PaymentBackground implements ProtobufMessage {
         @Getter
         private final int index;
 
-        public static PaymentBackgroundType forIndex(int index) {
+        public static PaymentBackgroundType of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

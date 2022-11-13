@@ -2,11 +2,11 @@ package it.auties.whatsapp.listener;
 
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.request.Node;
-import it.auties.whatsapp.socket.Socket;
+import it.auties.whatsapp.socket.SocketHandler;
 
 public interface OnWhatsappNodeSent extends Listener {
     /**
-     * Called when {@link Socket} sends a node to Whatsapp
+     * Called when {@link SocketHandler} sends a node to Whatsapp
      *
      * @param whatsapp an instance to the calling api
      * @param outgoing the non-null node that was just sent

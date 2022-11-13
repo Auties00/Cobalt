@@ -163,7 +163,7 @@ public final class TextMessage extends ContextualMessage {
         @Getter
         private final int index;
 
-        public static TextMessageFontType forIndex(int index) {
+        public static TextMessageFontType of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()
@@ -190,7 +190,7 @@ public final class TextMessage extends ContextualMessage {
         @Getter
         private final int index;
 
-        public static TextMessagePreviewType forIndex(int index) {
+        public static TextMessagePreviewType of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

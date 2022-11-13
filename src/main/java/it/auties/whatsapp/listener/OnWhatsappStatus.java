@@ -1,16 +1,16 @@
 package it.auties.whatsapp.listener;
 
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.socket.Socket;
+import it.auties.whatsapp.model.info.MessageInfo;
+
+import java.util.Collection;
 
 public interface OnWhatsappStatus extends Listener {
     /**
-     * Called when {@link Socket} receives all the status updated from WhatsappWeb's Socket.
-     * To access this data use {@link Store#status()}.
+     * Called when the socket receives all the status updated from WhatsappWeb's Socket.
      *
      * @param whatsapp an instance to the calling api
+     * @param status the status
      */
-    @Override
-    void onStatus(Whatsapp whatsapp);
+    void onStatus(Whatsapp whatsapp, Collection<MessageInfo> status);
 }

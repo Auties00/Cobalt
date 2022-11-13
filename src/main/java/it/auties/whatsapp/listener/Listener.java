@@ -11,9 +11,13 @@ import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.message.model.QuotedMessage;
+import it.auties.whatsapp.model.privacy.PrivacySettingType;
+import it.auties.whatsapp.model.privacy.PrivacySettingValue;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.setting.Setting;
+import it.auties.whatsapp.socket.SocketHandler;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -64,9 +68,11 @@ public interface Listener {
     }
 
     /**
-     * Called when the socket successfully establishes a connection and logs in into an account.
+     * Called when {@link SocketHandler} successfully establishes a connection and logs in into an account.
      * When this event is called, any data, including chats and contact, is not guaranteed to be already in memory.
-     * Instead, {@link Listener#onChats()} and {@link Listener#onContacts()} should be used.
+     * Instead, {@link OnChats#onChats(Whatsapp, Collection)} ()} and {@link OnContacts#onContacts(Whatsapp, Collection)} ()} should be used.
+     *
+     * @param whatsapp an instance to the calling api
      */
     default void onLoggedIn(Whatsapp whatsapp) {
 
@@ -75,7 +81,7 @@ public interface Listener {
     /**
      * Called when the socket successfully establishes a connection and logs in into an account.
      * When this event is called, any data, including chats and contact, is not guaranteed to be already in memory.
-     * Instead, {@link Listener#onChats()} and {@link Listener#onContacts()} should be used.
+     * Instead, {@link Listener#onChats(Collection)} and {@link Listener#onContacts(Collection)} should be used.
      */
     default void onLoggedIn() {
 
@@ -183,20 +189,40 @@ public interface Listener {
     }
 
     /**
-     * Called when the socket receives all the contacts from WhatsappWeb's WebSocket.
-     * To access this data use {@link Store#contacts()}.
+     * Called when the socket receives all the contacts from WhatsappWeb's WebSocket
      *
      * @param whatsapp an instance to the calling api
+     * @param contacts the contacts
      */
-    default void onContacts(Whatsapp whatsapp) {
+    default void onContacts(Whatsapp whatsapp, Collection<Contact> contacts) {
 
     }
 
     /**
-     * Called when the socket receives all the contacts from WhatsappWeb's WebSocket.
-     * To access this data use {@link Store#contacts()}.
+     * Called when the socket receives all the contacts from WhatsappWeb's WebSocket
+     *
+     * @param contacts the contacts
      */
-    default void onContacts() {
+    default void onContacts(Collection<Contact> contacts) {
+
+    }
+
+    /**
+     * Called when {@link SocketHandler} receives the privacy settings from Whatsapp
+     *
+     * @param whatsapp        an instance to the calling api
+     * @param privacySettings the settings
+     */
+    default void onPrivacySettings(Whatsapp whatsapp, Map<PrivacySettingType, PrivacySettingValue> privacySettings) {
+
+    }
+
+    /**
+     * Called when {@link SocketHandler} receives the privacy settings from Whatsapp
+     *
+     * @param privacySettings the settings
+     */
+    default void onPrivacySettings(Map<PrivacySettingType, PrivacySettingValue> privacySettings) {
 
     }
 
@@ -245,13 +271,13 @@ public interface Listener {
     /**
      * Called when the socket receives all the chats from WhatsappWeb's WebSocket.
      * When this event is fired, it is guaranteed that all metadata excluding messages will be present.
-     * To access this data use {@link Store#chats()}.
      * If you also need the messages to be loaded, please refer to {@link Listener#onChatMessagesSync(Chat, boolean)}.
      * Particularly old chats may come later through {@link Listener#onChatMessagesSync(Chat, boolean)}
      *
      * @param whatsapp an instance to the calling api
+     * @param chats the chats
      */
-    default void onChats(Whatsapp whatsapp) {
+    default void onChats(Whatsapp whatsapp, Collection<Chat> chats) {
 
     }
 
@@ -260,9 +286,11 @@ public interface Listener {
      * When this event is fired, it is guaranteed that all metadata excluding messages will be present.
      * To access this data use {@link Store#chats()}.
      * If you also need the messages to be loaded, please refer to {@link Listener#onChatMessagesSync(Chat, boolean)}.
-     * Particularly old chats may come later through {@link Listener#onChatMessagesSync(Chat, boolean)}
+     * Particularly old chats may come later through {@link Listener#onChatMessagesSync(Chat, boolean)}.
+     *
+     * @param chats the chats
      */
-    default void onChats() {
+    default void onChats(Collection<Chat> chats) {
 
     }
 
@@ -413,19 +441,20 @@ public interface Listener {
 
     /**
      * Called when the socket receives all the status updated from WhatsappWeb's Socket.
-     * To access this data use {@link Store#status()}.
      *
      * @param whatsapp an instance to the calling api
+     * @param status the status
      */
-    default void onStatus(Whatsapp whatsapp) {
+    default void onStatus(Whatsapp whatsapp, Collection<MessageInfo> status) {
 
     }
 
     /**
      * Called when the socket receives all the status updated from WhatsappWeb's Socket.
-     * To access this data use {@link Store#status()}.
+     *
+     * @param status the status
      */
-    default void onStatus() {
+    default void onStatus(Collection<MessageInfo> status) {
 
     }
 

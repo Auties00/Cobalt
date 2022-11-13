@@ -6,7 +6,7 @@ import it.auties.whatsapp.model.media.AttachmentProvider;
 import it.auties.whatsapp.model.media.DownloadResult;
 import it.auties.whatsapp.model.message.payment.PaymentInvoiceMessage;
 import it.auties.whatsapp.model.message.standard.*;
-import it.auties.whatsapp.util.LocalSystem;
+import it.auties.whatsapp.util.LocalFileSystem;
 import it.auties.whatsapp.util.Medias;
 import it.auties.whatsapp.util.Validate;
 import lombok.AllArgsConstructor;
@@ -73,7 +73,7 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
      * @return the non-null path where the file was downloaded
      */
     public Path save(){
-        return LocalSystem.of("medias")
+        return LocalFileSystem.of("medias")
                 .resolve("%s.%s".formatted(Bytes.ofRandom(5).toHex(), mediaType().fileExtension()));
     }
 

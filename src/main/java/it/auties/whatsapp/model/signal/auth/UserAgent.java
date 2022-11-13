@@ -94,7 +94,7 @@ public class UserAgent implements ProtobufMessage {
         private final int index;
 
         @JsonCreator
-        public static UserAgentPlatform forIndex(int index) {
+        public static UserAgentPlatform of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()
@@ -113,7 +113,7 @@ public class UserAgent implements ProtobufMessage {
         @Getter
         private final int index;
 
-        public static UserAgentReleaseChannel forIndex(int index) {
+        public static UserAgentReleaseChannel of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

@@ -1,4 +1,4 @@
-package it.auties.whatsapp.api;
+package it.auties.whatsapp.model.message.model;
 
 /**
  * The constants of this enumerated type describe the various types of text preview that can be used

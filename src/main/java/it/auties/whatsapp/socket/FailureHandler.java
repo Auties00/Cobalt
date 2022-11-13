@@ -1,23 +1,23 @@
 package it.auties.whatsapp.socket;
 
 import it.auties.whatsapp.api.ErrorHandler;
-import it.auties.whatsapp.exception.ErroneousNodeException;
+import it.auties.whatsapp.exception.ErroneousNodeRequestException;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.JacksonProvider;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
 class FailureHandler implements JacksonProvider {
-    private final Socket socket;
+    private final SocketHandler socketHandler;
     private final AtomicBoolean failure;
-    public FailureHandler(Socket socket){
-        this.socket = socket;
+    public FailureHandler(SocketHandler socketHandler){
+        this.socketHandler = socketHandler;
         this.failure = new AtomicBoolean();
     }
 
     protected Node handleNodeFailure(Throwable throwable) {
         handleFailure(ErrorHandler.Location.ERRONEOUS_NODE, throwable);
-        return throwable instanceof ErroneousNodeException erroneousNodeException ?
+        return throwable instanceof ErroneousNodeRequestException erroneousNodeException ?
                 erroneousNodeException.error() :
                 null;
     }
@@ -27,7 +27,7 @@ class FailureHandler implements JacksonProvider {
             return null;
         }
 
-        var result = socket.options()
+        var result = socketHandler.options()
                 .errorHandler()
                 .apply(location, throwable);
         if(failure.get()){
@@ -40,15 +40,15 @@ class FailureHandler implements JacksonProvider {
 
         switch (result) {
             case RESTORE -> {
-                socket.changeKeys();
-                socket.disconnect(true);
+                socketHandler.changeKeys();
+                socketHandler.disconnect(true);
             }
             case LOG_OUT -> {
-                socket.changeKeys();
-                socket.disconnect(false);
+                socketHandler.changeKeys();
+                socketHandler.disconnect(false);
             }
-            case DISCONNECT -> socket.disconnect(false);
-            case RECONNECT -> socket.disconnect(true);
+            case DISCONNECT -> socketHandler.disconnect(false);
+            case RECONNECT -> socketHandler.disconnect(true);
         }
 
         return null;

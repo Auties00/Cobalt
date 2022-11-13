@@ -42,7 +42,7 @@ public class MediaRetryNotification implements ProtobufMessage {
         private final int index;
 
         @JsonCreator
-        public static Result forIndex(int index) {
+        public static Result of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

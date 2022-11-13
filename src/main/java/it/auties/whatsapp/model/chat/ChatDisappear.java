@@ -51,7 +51,7 @@ public class ChatDisappear implements ProtobufMessage {
         private final int index;
 
         @JsonCreator
-        public static Type forIndex(int index) {
+        public static Type of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

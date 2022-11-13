@@ -68,7 +68,7 @@ public final class PaymentInviteMessage implements PaymentMessage {
         private final int index;
 
         @JsonCreator
-        public static PaymentInviteMessageServiceType forIndex(int index) {
+        public static PaymentInviteMessageServiceType of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

@@ -18,13 +18,13 @@ import static java.lang.Long.parseLong;
 
 @RequiredArgsConstructor
 class AuthHandler implements JacksonProvider {
-    private final Socket socket;
+    private final SocketHandler socketHandler;
     private Handshake handshake;
     private CompletableFuture<Void> future;
 
     protected void createHandshake() {
-        this.handshake = new Handshake(socket.keys());
-        handshake.updateHash(socket.keys()
+        this.handshake = new Handshake(socketHandler.keys());
+        handshake.updateHash(socketHandler.keys()
                 .ephemeralKeyPair()
                 .publicKey());
     }
@@ -34,22 +34,22 @@ class AuthHandler implements JacksonProvider {
         var serverHello = PROTOBUF.readMessage(message, HandshakeMessage.class)
                 .serverHello();
         handshake.updateHash(serverHello.ephemeral());
-        var sharedEphemeral = Curve25519.sharedKey(serverHello.ephemeral(), socket.keys()
+        var sharedEphemeral = Curve25519.sharedKey(serverHello.ephemeral(), socketHandler.keys()
                 .ephemeralKeyPair()
                 .privateKey());
         handshake.mixIntoKey(sharedEphemeral);
 
         var decodedStaticText = handshake.cipher(serverHello.staticText(), false);
-        var sharedStatic = Curve25519.sharedKey(decodedStaticText, socket.keys()
+        var sharedStatic = Curve25519.sharedKey(decodedStaticText, socketHandler.keys()
                 .ephemeralKeyPair()
                 .privateKey());
         handshake.mixIntoKey(sharedStatic);
         handshake.cipher(serverHello.payload(), false);
 
-        var encodedKey = handshake.cipher(socket.keys()
+        var encodedKey = handshake.cipher(socketHandler.keys()
                 .noiseKeyPair()
                 .publicKey(), true);
-        var sharedPrivate = Curve25519.sharedKey(serverHello.ephemeral(), socket.keys()
+        var sharedPrivate = Curve25519.sharedKey(serverHello.ephemeral(), socketHandler.keys()
                 .noiseKeyPair()
                 .privateKey());
         handshake.mixIntoKey(sharedPrivate);
@@ -58,8 +58,8 @@ class AuthHandler implements JacksonProvider {
         var clientFinish = new ClientFinish(encodedKey, encodedPayload);
         var handshakeMessage = new HandshakeMessage(clientFinish);
         return Request.of(handshakeMessage)
-                .sendWithNoResponse(session, socket.keys(), socket.store())
-                .thenRunAsync(socket.keys()::clear)
+                .sendWithNoResponse(session, socketHandler.keys(), socketHandler.store())
+                .thenRunAsync(socketHandler.keys()::clear)
                 .thenRunAsync(handshake::finish);
     }
 
@@ -75,12 +75,12 @@ class AuthHandler implements JacksonProvider {
     }
 
     private ClientPayload finishUserPayload(ClientPayload.ClientPayloadBuilder builder) {
-        if (socket.keys()
+        if (socketHandler.keys()
                 .hasCompanion()) {
-            return builder.username(parseLong(socket.keys()
+            return builder.username(parseLong(socketHandler.keys()
                             .companion()
                             .user()))
-                    .device(socket.keys()
+                    .device(socketHandler.keys()
                             .companion()
                             .device())
                     .build();
@@ -92,7 +92,7 @@ class AuthHandler implements JacksonProvider {
 
     private UserAgent createUserAgent() {
         return UserAgent.builder()
-                .appVersion(socket.options()
+                .appVersion(socketHandler.options()
                         .version())
                 .platform(UserAgent.UserAgentPlatform.WEB)
                 .releaseChannel(UserAgent.UserAgentReleaseChannel.RELEASE)
@@ -102,24 +102,24 @@ class AuthHandler implements JacksonProvider {
     @SneakyThrows
     private CompanionData createRegisterData() {
         return CompanionData.builder()
-                .buildHash(socket.options()
+                .buildHash(socketHandler.options()
                         .version()
                         .toHash())
                 .companion(PROTOBUF.writeValueAsBytes(createCompanionProps()))
-                .id(BytesHelper.intToBytes(socket.keys()
+                .id(BytesHelper.intToBytes(socketHandler.keys()
                         .id(), 4))
                 .keyType(BytesHelper.intToBytes(SignalSpecification.KEY_TYPE, 1))
-                .identifier(socket.keys()
+                .identifier(socketHandler.keys()
                         .identityKeyPair()
                         .publicKey())
-                .signatureId(socket.keys()
+                .signatureId(socketHandler.keys()
                         .signedKeyPair()
                         .encodedId())
-                .signaturePublicKey(socket.keys()
+                .signaturePublicKey(socketHandler.keys()
                         .signedKeyPair()
                         .keyPair()
                         .publicKey())
-                .signature(socket.keys()
+                .signature(socketHandler.keys()
                         .signedKeyPair()
                         .signature())
                 .build();
@@ -127,10 +127,10 @@ class AuthHandler implements JacksonProvider {
 
     private Companion createCompanionProps() {
         return Companion.builder()
-                .os(socket.options()
+                .os(socketHandler.options()
                         .description())
                 .platformType(Companion.CompanionPropsPlatformType.DESKTOP)
-                .requireFullSync(socket.options()
+                .requireFullSync(socketHandler.options()
                         .historyLength() == HistoryLength.ONE_YEAR)
                 .build();
     }

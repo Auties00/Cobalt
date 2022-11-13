@@ -454,10 +454,11 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     /**
      * Adds a message to the chat
      *
-     * @param info The message to be added to the chat.
+     * @param info the message to add to the chat
+     * @return whether the message was added
      */
-    public void addMessage(@NonNull MessageInfo info) {
-        messages.add(info);
+    public boolean addMessage(@NonNull MessageInfo info) {
+        return !messages.contains(info) && messages.add(info);
     }
 
     /**

@@ -7,6 +7,7 @@ import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.listener.RegisterListener;
 import lombok.experimental.UtilityClass;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -41,18 +42,21 @@ public class ListenerScanner {
             }
 
             throw new NoSuchElementException(
-                    "Cannot initialize listener at %s: no applicable constructor was found. Create a public no args constructor or Whatsapp constructor".formatted(
+                    "Cannot initialize listener at %s: no applicable constructor was found. Create a public no args constructor or a Whatsapp constructor".formatted(
                             listener.getName()), noArgsConstructorException);
         } catch (IllegalAccessException accessException) {
             throw new IllegalArgumentException(
-                    "Cannot initialize listener at %s: inaccessible module. Mark %s as open in order to allow registration".formatted(
+                    "Cannot initialize listener at %s: inaccessible module. Mark module %s as open in order to allow registration".formatted(
                             listener.getName(), listener.getModule()
                                     .getName()), accessException);
-        } catch (Throwable invocationException) {
-            throw new RuntimeException(
-                    "Cannot initialize listener at %s: an unknown exception was thrown".formatted(listener.getName()),
-                    invocationException);
+        } catch (InvocationTargetException invocationException) {
+            throw new IllegalArgumentException(
+                        "Cannot initialize listener at %s: an error occurred while initializing the class(check its static initializers)".formatted(listener.getName()), invocationException);
+        } catch (InstantiationException instantiationException) {
+            throw new IllegalArgumentException(
+                    "Cannot initialize listener at %s: an error occurred while initializing the class(check its constructor)".formatted(listener.getName()), instantiationException);
         }
+
     }
 
     private Object[] createArguments(Whatsapp whatsapp) {

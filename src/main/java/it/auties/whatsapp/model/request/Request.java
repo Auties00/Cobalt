@@ -5,14 +5,13 @@ import it.auties.whatsapp.binary.Encoder;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGmc;
-import it.auties.whatsapp.exception.ErroneousBinaryRequest;
-import it.auties.whatsapp.exception.ErroneousNodeException;
-import it.auties.whatsapp.exception.Exceptions;
+import it.auties.whatsapp.exception.ErroneousBinaryRequestException;
+import it.auties.whatsapp.exception.ErroneousNodeRequestException;
+import it.auties.whatsapp.util.Exceptions;
 import it.auties.whatsapp.util.JacksonProvider;
 import jakarta.websocket.SendResult;
 import jakarta.websocket.Session;
 import lombok.NonNull;
-import lombok.SneakyThrows;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
@@ -52,9 +51,12 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     /**
      * Constructs a new request with the provided body expecting a response
      */
-    @SneakyThrows
     public static Request of(@NonNull Object body) {
-        return new Request(null, PROTOBUF.writeValueAsBytes(body));
+        try {
+            return new Request(null, PROTOBUF.writeValueAsBytes(body));
+        }catch (IOException exception){
+            throw new IllegalArgumentException("Cannot encode %s".formatted(body), exception);
+        }
     }
 
     private void cancelTimedFuture() {
@@ -62,8 +64,8 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
             return;
         }
 
-        var exception = body instanceof Node node ? new ErroneousNodeException("Node timed out(%s), no response from WhatsApp".formatted(node), node, caller)
-                : new ErroneousBinaryRequest("Binary timed out, no response from WhatsApp", body, caller);
+        var exception = body instanceof Node node ? new ErroneousNodeRequestException("Node timed out(%s), no response from WhatsApp".formatted(node), node, caller)
+                : new ErroneousBinaryRequestException("Binary timed out, no response from WhatsApp", body, caller);
         future.completeExceptionally(exception);
     }
 
@@ -144,7 +146,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
 
         if (exceptionally || isErroneousNode(response)) {
             future.completeExceptionally(
-                    new ErroneousNodeException("Cannot process request %s with %s".formatted(this, response), response,
+                    new ErroneousNodeRequestException("Cannot process request %s with %s".formatted(this, response), response,
                             caller));
             return;
         }

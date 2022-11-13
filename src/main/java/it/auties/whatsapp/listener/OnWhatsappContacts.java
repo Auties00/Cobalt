@@ -2,16 +2,17 @@ package it.auties.whatsapp.listener;
 
 
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.socket.Socket;
+import it.auties.whatsapp.model.contact.Contact;
+
+import java.util.Collection;
 
 public interface OnWhatsappContacts extends Listener {
     /**
-     * Called when {@link Socket} receives all the contacts from WhatsappWeb's WebSocket.
-     * To access this data use {@link Store#contacts()}.
+     * Called when the socket receives all the contacts from WhatsappWeb's WebSocket
      *
      * @param whatsapp an instance to the calling api
+     * @param contacts the contacts
      */
     @Override
-    void onContacts(Whatsapp whatsapp);
+    void onContacts(Whatsapp whatsapp, Collection<Contact> contacts);
 }

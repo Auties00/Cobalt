@@ -74,7 +74,7 @@ public final class GroupInviteMessage extends ContextualMessage {
      */
     @ProtobufProperty(index = 7, type = MESSAGE, implementation = ContextInfo.class)
     @Default
-    private ContextInfo contextInfo = new ContextInfo();  // Overrides ContextualMessage's context info
+    private ContextInfo contextInfo = new ContextInfo();  
 
     /**
      * The type of this invite
@@ -112,7 +112,7 @@ public final class GroupInviteMessage extends ContextualMessage {
         private final int index;
 
         @JsonCreator
-        public static Type forIndex(int index) {
+        public static Type of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

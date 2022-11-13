@@ -21,7 +21,7 @@ public enum ChatEphemeralTimer implements ProtobufMessage {
     private final Duration period;
 
     @JsonCreator
-    public static ChatEphemeralTimer forValue(long value) {
+    public static ChatEphemeralTimer of(long value) {
         return Arrays.stream(values())
                 .filter(entry -> entry.period()
                         .toSeconds() == value || entry.period()

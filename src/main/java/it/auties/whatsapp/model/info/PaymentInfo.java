@@ -128,7 +128,7 @@ public final class PaymentInfo implements Info {
         }
 
         @JsonCreator
-        public static PaymentInfoCurrency forIndex(int index) {
+        public static PaymentInfoCurrency of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()
@@ -205,7 +205,7 @@ public final class PaymentInfo implements Info {
         @Getter
         private final int index;
 
-        public static PaymentInfoStatus forIndex(int index) {
+        public static PaymentInfoStatus of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()
@@ -249,7 +249,7 @@ public final class PaymentInfo implements Info {
         @Getter
         private final int index;
 
-        public static PaymentInfoTxnStatus forIndex(int index) {
+        public static PaymentInfoTxnStatus of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

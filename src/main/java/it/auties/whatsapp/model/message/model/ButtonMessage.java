@@ -1,6 +1,9 @@
 package it.auties.whatsapp.model.message.model;
 
-import it.auties.whatsapp.model.message.button.*;
+import it.auties.whatsapp.model.message.button.ButtonsMessage;
+import it.auties.whatsapp.model.message.button.HighlyStructuredMessage;
+import it.auties.whatsapp.model.message.button.ListMessage;
+import it.auties.whatsapp.model.message.button.TemplateMessage;
 import it.auties.whatsapp.model.message.standard.InteractiveMessage;
 import it.auties.whatsapp.model.message.standard.ProductMessage;
 

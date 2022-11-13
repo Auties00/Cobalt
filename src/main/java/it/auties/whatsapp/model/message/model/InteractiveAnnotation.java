@@ -65,7 +65,7 @@ public class InteractiveAnnotation implements ProtobufMessage {
         private final int index;
 
         @JsonCreator
-        public static Action forIndex(int index) {
+        public static Action of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

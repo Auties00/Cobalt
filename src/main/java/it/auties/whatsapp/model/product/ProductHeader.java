@@ -192,7 +192,7 @@ public class ProductHeader implements ProtobufMessage {
         private final int index;
 
         @JsonCreator
-        public static AttachmentType forIndex(int index) {
+        public static AttachmentType of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

@@ -42,7 +42,7 @@ public final class RecordSync implements ProtobufMessage, Syncable {
         private final byte content;
 
         @JsonCreator
-        public static Operation forIndex(int index) {
+        public static Operation of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

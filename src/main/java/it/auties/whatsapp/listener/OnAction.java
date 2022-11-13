@@ -1,11 +1,11 @@
 package it.auties.whatsapp.listener;
 
 import it.auties.whatsapp.model.action.Action;
-import it.auties.whatsapp.socket.Socket;
+import it.auties.whatsapp.socket.SocketHandler;
 
 public interface OnAction extends Listener {
     /**
-     * Called when {@link Socket} receives an sync from Whatsapp.
+     * Called when {@link SocketHandler} receives an sync from Whatsapp.
      *
      * @param action the sync that was executed
      */

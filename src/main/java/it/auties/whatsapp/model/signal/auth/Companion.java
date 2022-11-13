@@ -53,7 +53,7 @@ public class Companion implements ProtobufMessage {
         private final int index;
 
         @JsonCreator
-        public static CompanionPropsPlatformType forIndex(int index) {
+        public static CompanionPropsPlatformType of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

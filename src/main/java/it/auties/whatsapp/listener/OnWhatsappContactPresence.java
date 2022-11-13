@@ -4,11 +4,11 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactStatus;
-import it.auties.whatsapp.socket.Socket;
+import it.auties.whatsapp.socket.SocketHandler;
 
 public interface OnWhatsappContactPresence extends Listener {
     /**
-     * Called when {@link Socket} receives an update regarding the presence of a contact
+     * Called when {@link SocketHandler} receives an update regarding the presence of a contact
      *
      * @param whatsapp an instance to the calling api
      * @param chat    the chat that this update regards

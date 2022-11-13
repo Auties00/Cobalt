@@ -143,7 +143,7 @@ public final class ProtocolMessage implements ServerMessage {
         private final int index;
 
         @JsonCreator
-        public static ProtocolMessageType forIndex(int index) {
+        public static ProtocolMessageType of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

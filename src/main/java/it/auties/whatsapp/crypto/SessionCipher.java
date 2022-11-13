@@ -95,17 +95,15 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
             return;
         }
 
-        Validate.isTrue(counter - chain.counter() <= 2000, "Message overflow: expected <= 2000, got %s",
-                counter - chain.counter());
+        Validate.isTrue(counter - chain.counter() <= MAX_MESSAGES,
+                "Message overflow: expected <= %s, got %s",
+                MAX_MESSAGES, counter - chain.counter());
         Validate.isTrue(chain.key() != null, "Closed chain");
-
         var messagesHmac = Hmac.calculateSha256(new byte[]{1}, chain.key());
         chain.messageKeys()
                 .put(chain.counter() + 1, messagesHmac);
-
         var keyHmac = Hmac.calculateSha256(new byte[]{2}, chain.key());
         chain.key(keyHmac);
-
         chain.incrementCounter();
         fillMessageKeys(chain, counter);
     }
@@ -155,8 +153,6 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
         Validate.isTrue(chain.hasMessageKey(message.counter()), "Key used already or never filled");
         var messageKey = chain.messageKeys()
                 .get(message.counter());
-        chain.messageKeys()
-                .remove(message.counter());
 
         var secrets = Hkdf.deriveSecrets(messageKey, "WhisperMessageKeys".getBytes(StandardCharsets.UTF_8));
 

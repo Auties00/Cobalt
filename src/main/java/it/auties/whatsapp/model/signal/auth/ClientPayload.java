@@ -94,7 +94,7 @@ public class ClientPayload implements ProtobufMessage {
         private final int index;
 
         @JsonCreator
-        public static ClientPayloadClientFeature forIndex(int index) {
+        public static ClientPayloadClientFeature of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()
@@ -112,7 +112,7 @@ public class ClientPayload implements ProtobufMessage {
         @Getter
         private final int index;
 
-        public static ClientPayloadIOSAppExtension forIndex(int index) {
+        public static ClientPayloadIOSAppExtension of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()
@@ -142,7 +142,7 @@ public class ClientPayload implements ProtobufMessage {
         @Getter
         private final int index;
 
-        public static ClientPayloadConnectType forIndex(int index) {
+        public static ClientPayloadConnectType of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()
@@ -163,7 +163,7 @@ public class ClientPayload implements ProtobufMessage {
         @Getter
         private final int index;
 
-        public static ClientPayloadConnectReason forIndex(int index) {
+        public static ClientPayloadConnectReason of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()
@@ -180,7 +180,7 @@ public class ClientPayload implements ProtobufMessage {
         @Getter
         private final int index;
 
-        public static ClientPayloadProduct forIndex(int index) {
+        public static ClientPayloadProduct of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

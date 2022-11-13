@@ -47,7 +47,7 @@ public enum MessageStatus implements ProtobufMessage {
     @Getter
     private final int index;
 
-    public static MessageStatus forValue(String name) {
+    public static MessageStatus of(String name) {
         return name == null ?
                 null :
                 Arrays.stream(values())
@@ -59,7 +59,7 @@ public enum MessageStatus implements ProtobufMessage {
     }
 
     @JsonCreator
-    public static MessageStatus forIndex(int index) {
+    public static MessageStatus of(int index) {
         return Arrays.stream(values())
                 .filter(entry -> entry.index() == index)
                 .findFirst()

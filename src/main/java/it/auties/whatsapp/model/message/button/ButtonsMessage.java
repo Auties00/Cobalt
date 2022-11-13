@@ -83,7 +83,7 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
      * The context info of this message
      */
     @ProtobufProperty(index = 8, type = MESSAGE, implementation = ContextInfo.class)
-    private ContextInfo contextInfo; // Overrides ContextualMessage's context info
+    private ContextInfo contextInfo; 
 
     /**
      * The buttons that this message wraps
@@ -263,7 +263,7 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
         private final int index;
 
         @JsonCreator
-        public static HeaderType forIndex(int index) {
+        public static HeaderType of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

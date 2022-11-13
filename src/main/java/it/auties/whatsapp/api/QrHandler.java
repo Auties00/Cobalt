@@ -25,6 +25,7 @@ import static java.nio.file.Files.createTempFile;
  * This interface allows to consume a qr code and provides default common implementations to do so
  */
 @FunctionalInterface
+@SuppressWarnings("unused")
 public interface QrHandler extends Consumer<String> {
     /**
      * Prints the QR code to the terminal.
@@ -130,7 +131,7 @@ public interface QrHandler extends Consumer<String> {
                     Desktop.getDesktop()
                             .open(path.toFile());
                 } catch (IOException exception) {
-                    throw new UncheckedIOException("Cannot open file with destkop", exception);
+                    throw new UncheckedIOException("Cannot open file with desktop", exception);
                 }
             };
         }

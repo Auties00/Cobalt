@@ -33,7 +33,7 @@ public enum BusinessVerifiedLevel implements ProtobufMessage {
     private final int index;
 
     @JsonCreator
-    public static BusinessVerifiedLevel forIndex(int index) {
+    public static BusinessVerifiedLevel of(int index) {
         return Arrays.stream(values())
                 .filter(entry -> entry.index() == index)
                 .findFirst()

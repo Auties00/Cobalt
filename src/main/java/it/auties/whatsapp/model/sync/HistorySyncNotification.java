@@ -73,7 +73,7 @@ public final class HistorySyncNotification implements ProtobufMessage, Attachmen
         private final int index;
 
         @JsonCreator
-        public static HistorySyncNotificationHistorySyncType forIndex(int index) {
+        public static HistorySyncNotificationHistorySyncType of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

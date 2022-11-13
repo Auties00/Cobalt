@@ -78,7 +78,7 @@ public final class ListMessage extends ContextualMessage implements ButtonMessag
      */
     @ProtobufProperty(index = 8, type = MESSAGE, implementation = ContextInfo.class)
     @Default
-    private ContextInfo contextInfo = new ContextInfo();  // Overrides ContextualMessage's context info
+    private ContextInfo contextInfo = new ContextInfo();  
 
     @Override
     public MessageType type() {
@@ -110,7 +110,7 @@ public final class ListMessage extends ContextualMessage implements ButtonMessag
         private final int index;
 
         @JsonCreator
-        public static Type forIndex(int index) {
+        public static Type of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

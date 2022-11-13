@@ -8,7 +8,6 @@ public interface OnWhatsappSocketEvent extends Listener {
      * Called when an event regarding the underlying is fired
      *
      * @param whatsapp an instance to the calling api
-     * @param whatsapp an instance to the calling api
      * @param event    the event
      */
     @Override

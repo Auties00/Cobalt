@@ -5,15 +5,12 @@ import lombok.experimental.UtilityClass;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Comparator;
 
 @UtilityClass
-public class LocalSystem {
+public class LocalFileSystem {
     private final Path DEFAULT_DIRECTORY = Path.of(System.getProperty("user.home") + "/.whatsappweb4j/");
     static {
         try {
@@ -30,7 +27,7 @@ public class LocalSystem {
     public Path of(String file){
         return DEFAULT_DIRECTORY.resolve(file);
     }
-    
+
     @SuppressWarnings("ResultOfMethodCallIgnored")
     public void delete(String folder){
         try {

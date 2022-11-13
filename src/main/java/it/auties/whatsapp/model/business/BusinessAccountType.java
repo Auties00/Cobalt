@@ -28,7 +28,7 @@ public enum BusinessAccountType implements ProtobufMessage {
     private final int index;
 
     @JsonCreator
-    public static BusinessAccountType forIndex(int index) {
+    public static BusinessAccountType of(int index) {
         return Arrays.stream(values())
                 .filter(entry -> entry.index() == index)
                 .findFirst()

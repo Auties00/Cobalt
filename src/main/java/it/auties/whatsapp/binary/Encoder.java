@@ -3,7 +3,6 @@ package it.auties.whatsapp.binary;
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.request.Node;
-import it.auties.whatsapp.util.Nodes;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -213,7 +212,9 @@ public class Encoder {
 
     private void writeList(Collection<?> collection) {
         writeInt(collection.size());
-        Nodes.findAll(collection)
+        collection.stream()
+                .filter(entry -> entry instanceof Node)
+                .map(entry -> (Node) entry)
                 .forEach(this::writeNode);
     }
 

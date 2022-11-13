@@ -65,6 +65,11 @@ public final class Contact implements ProtobufMessage, ContactJidProvider {
     private ZonedDateTime lastSeen;
 
     /**
+     * Whether this contact is blocked
+     */
+    private boolean blocked;
+
+    /**
      * Constructs a new Contact from a provided jid
      *
      * @param jid the non-null jid

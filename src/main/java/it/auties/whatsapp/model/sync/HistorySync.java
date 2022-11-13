@@ -68,7 +68,7 @@ public class HistorySync implements ProtobufMessage {
         private final int index;
 
         @JsonCreator
-        public static HistorySyncHistorySyncType forIndex(int index) {
+        public static HistorySyncHistorySyncType of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

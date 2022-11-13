@@ -1,6 +1,5 @@
-package it.auties.whatsapp.exception;
+package it.auties.whatsapp.util;
 
-import it.auties.whatsapp.util.LocalSystem;
 import lombok.experimental.UtilityClass;
 
 import java.io.PrintWriter;
@@ -27,7 +26,7 @@ public class Exceptions {
     public Path save(Throwable throwable) {
         var actual = Objects.requireNonNullElseGet(throwable, RuntimeException::new);
         try {
-            var path = LocalSystem.of("exceptions");
+            var path = LocalFileSystem.of("exceptions");
             Files.createDirectories(path);
             var file = path.resolve("%s.txt".formatted(System.currentTimeMillis()));
             var stackTraceWriter = new StringWriter();

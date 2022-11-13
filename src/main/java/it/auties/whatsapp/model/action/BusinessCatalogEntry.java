@@ -28,11 +28,11 @@ public record BusinessCatalogEntry(@NonNull String id, @NonNull URI encryptedIma
         var statusInfo = node.findNode("status_info")
                 .flatMap(entry -> entry.findNode("status"))
                 .flatMap(Node::contentAsString)
-                .map(ReviewStatus::forName)
+                .map(ReviewStatus::of)
                 .orElse(ReviewStatus.NO_REVIEW);
         var availability = node.findNode("availability")
                 .flatMap(Node::contentAsString)
-                .map(Availability::forName)
+                .map(Availability::of)
                 .orElse(Availability.UNKNOWN);
         var sellerId = node.findNode("retailer_id")
                 .flatMap(Node::contentAsString)
@@ -62,7 +62,7 @@ public record BusinessCatalogEntry(@NonNull String id, @NonNull URI encryptedIma
         APPROVED,
         OUTDATED;
 
-        public static ReviewStatus forName(String name) {
+        public static ReviewStatus of(String name) {
             return valueOf(name);
         }
     }
@@ -72,7 +72,7 @@ public record BusinessCatalogEntry(@NonNull String id, @NonNull URI encryptedIma
         IN_STOCK,
         OUT_OF_STOCK;
 
-        public static Availability forName(String name) {
+        public static Availability of(String name) {
             return Arrays.stream(values())
                     .filter(entry -> entry.name()
                             .toLowerCase(Locale.ROOT)

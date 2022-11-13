@@ -37,7 +37,7 @@ public record Attributes(Map<String, Object> map) {
     @SafeVarargs
     public final <T> Attributes put(@NonNull String key, T value, @NonNull Function<T, Boolean>... conditions) {
         var translated = Arrays.stream(conditions)
-                .<BooleanSupplier>map(condition -> () -> condition.apply(value))
+                .map(condition -> (BooleanSupplier) () -> condition.apply(value))
                 .toArray(BooleanSupplier[]::new);
         return put(key, value, translated);
     }

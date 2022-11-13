@@ -47,7 +47,7 @@ public class WebInfo implements ProtobufMessage {
         private final int index;
 
         @JsonCreator
-        public static WebInfoWebSubPlatform forIndex(int index) {
+        public static WebInfoWebSubPlatform of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

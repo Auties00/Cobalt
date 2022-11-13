@@ -76,7 +76,7 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
      */
     @ProtobufProperty(index = 15, type = MESSAGE, implementation = ContextInfo.class)
     @Default
-    private ContextInfo contextInfo = new ContextInfo();  // Overrides ContextualMessage's context info
+    private ContextInfo contextInfo = new ContextInfo();  
 
     /**
      * Constructs a new builder to create an interactive message with a shop
@@ -199,7 +199,7 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
         private final int index;
 
         @JsonCreator
-        public static ContentType forIndex(int index) {
+        public static ContentType of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

@@ -1,11 +1,11 @@
 package it.auties.whatsapp.model.request;
 
 import it.auties.whatsapp.util.Attributes;
-import it.auties.whatsapp.util.Nodes;
 import lombok.NonNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
@@ -81,9 +81,8 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @return a new node with the above characteristics
      */
     public static Node ofChildren(@NonNull String description, Collection<Node> children) {
-        return new Node(description, Attributes.empty(), Nodes.filter(children));
+        return new Node(description, Attributes.empty(), requireNonNullNodes(children));
     }
-
 
     /**
      * Constructs a Node that provides a non-null tag, a non-null map of attributes and a nullable var-args of children
@@ -95,7 +94,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      */
     public static Node ofChildren(@NonNull String description, @NonNull Map<String, Object> attributes,
                                   Collection<Node> children) {
-        return new Node(description, Attributes.of(attributes), Nodes.filter(children));
+        return new Node(description, Attributes.of(attributes), requireNonNullNodes(children));
     }
 
     /**
@@ -109,6 +108,21 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
     public static Node ofChildren(@NonNull String description, @NonNull Map<String, Object> attributes,
                                   Node... children) {
         return ofChildren(description, attributes, Arrays.asList(children));
+    }
+
+    private static List<Node> requireNonNullNodes(Collection<Node> nodes) {
+        if(nodes == null){
+            return null;
+        }
+
+        var results = nodes.stream()
+                .filter(Objects::nonNull)
+                .toList();
+        if(results.isEmpty()){
+            return null;
+        }
+
+        return results;
     }
 
     /**
@@ -160,6 +174,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      *
      * @return an optional
      */
+    @SuppressWarnings("unused")
     public Optional<Double> contentAsDouble() {
         return content instanceof Number number ?
                 Optional.of(number.doubleValue()) :
@@ -172,7 +187,18 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @return a non-null list
      */
     public LinkedList<Node> children() {
-        return Nodes.findAll(content);
+        if (content == null) {
+            return new LinkedList<>();
+        }
+
+        if (!(content instanceof Collection<?> collection)) {
+            return new LinkedList<>();
+        }
+
+        return collection.stream()
+                .filter(entry -> entry instanceof Node)
+                .map(entry -> (Node) entry)
+                .collect(Collectors.toCollection(LinkedList::new));
     }
 
     /**
@@ -237,9 +263,9 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
     }
 
     /**
-     * Returns whether this object's content is non-null
+     * Returns the size of this object
      *
-     * @return true if this object has a content
+     * @return an unsigned int
      */
     public int size() {
         var descriptionSize = 1;

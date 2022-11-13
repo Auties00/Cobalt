@@ -7,7 +7,7 @@ import it.auties.whatsapp.binary.MessageWrapper;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.exception.ErroneousNodeException;
+import it.auties.whatsapp.exception.ErroneousNodeRequestException;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.GroupMetadata;
@@ -36,7 +36,8 @@ import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 
-import static it.auties.whatsapp.api.ErrorHandler.Location.*;
+import static it.auties.whatsapp.api.ErrorHandler.Location.CRYPTOGRAPHY;
+import static it.auties.whatsapp.api.ErrorHandler.Location.UNKNOWN;
 import static it.auties.whatsapp.model.request.Node.ofAttributes;
 import static it.auties.whatsapp.model.request.Node.ofChildren;
 import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
@@ -45,9 +46,9 @@ import static java.util.Map.of;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 @Accessors(fluent = true)
-@ClientEndpoint(configurator = Socket.OriginPatcher.class)
+@ClientEndpoint(configurator = SocketHandler.OriginPatcher.class)
 @SuppressWarnings("unused")
-public class Socket implements JacksonProvider, SignalSpecification {
+public class SocketHandler implements JacksonProvider, SignalSpecification {
     private static final String WHATSAPP_URL = "wss://web.whatsapp.com/ws/chat";
 
     static {
@@ -94,8 +95,8 @@ public class Socket implements JacksonProvider, SignalSpecification {
     @NonNull
     private Store store;
 
-    public Socket(@NonNull Whatsapp whatsapp, @NonNull Whatsapp.Options options, @NonNull Store store,
-                  @NonNull Keys keys) {
+    public SocketHandler(@NonNull Whatsapp whatsapp, @NonNull Whatsapp.Options options, @NonNull Store store,
+                         @NonNull Keys keys) {
         this.whatsapp = whatsapp;
         this.options = options;
         this.store = store;
@@ -313,7 +314,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
     }
 
     public void decodeMessage(Node node) {
-        messageHandler.decode(node);
+        messageHandler.decodeAsync(node);
     }
 
     @SafeVarargs
@@ -368,7 +369,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
     public CompletableFuture<GroupMetadata> queryGroupMetadata(ContactJid group) {
         var body = ofAttributes("query", of("request", "interactive"));
         return sendQuery(group, "get", "w:g2", body).thenApplyAsync(node -> node.findNode("group")
-                        .orElseThrow(() -> new ErroneousNodeException("Missing group node", node)))
+                        .orElseThrow(() -> new ErroneousNodeRequestException("Missing group node", node)))
                 .exceptionallyAsync(errorHandler::handleNodeFailure)
                 .thenApplyAsync(GroupMetadata::of);
     }
@@ -425,7 +426,7 @@ public class Socket implements JacksonProvider, SignalSpecification {
     }
 
     private void deleteAndClearKeys() {
-        LocalSystem.delete(String.valueOf(keys().id()));
+        LocalFileSystem.delete(String.valueOf(keys().id()));
         keys.clear();
         store.clear();
     }
@@ -533,24 +534,31 @@ public class Socket implements JacksonProvider, SignalSpecification {
         authHandler.future().complete(null);
     }
     
-    protected void onChats(){
+    protected void onChats() {
         store.invokeListeners(listener -> {
-            listener.onChats(whatsapp);
-            listener.onChats();
+            listener.onChats(whatsapp, store().chats());
+            listener.onChats(store().chats());
         });
     }
 
-    protected void onStatus(){
+    protected void onStatus() {
         store.invokeListeners(listener -> {
-            listener.onStatus(whatsapp);
-            listener.onStatus();
+            listener.onStatus(whatsapp, store().status());
+            listener.onStatus(store().status());
         });
     }
 
-    protected void onContacts(){
+    protected void onContacts() {
         store.invokeListeners(listener -> {
-            listener.onContacts(whatsapp);
-            listener.onContacts();
+            listener.onContacts(whatsapp, store().contacts());
+            listener.onContacts(store().contacts());
+        });
+    }
+
+    protected void onPrivacySettings() {
+        store.invokeListeners(listener -> {
+            listener.onPrivacySettings(whatsapp, store().privacySettings());
+            listener.onPrivacySettings(store().privacySettings());
         });
     }
 

@@ -113,7 +113,7 @@ public final class PaymentOrderMessage extends ContextInfo implements PaymentMes
         private final int index;
 
         @JsonCreator
-        public static OrderMessageOrderStatus forIndex(int index) {
+        public static OrderMessageOrderStatus of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()
@@ -136,7 +136,7 @@ public final class PaymentOrderMessage extends ContextInfo implements PaymentMes
         private final int index;
 
         @JsonCreator
-        public static OrderSurface forIndex(int index) {
+        public static OrderSurface of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

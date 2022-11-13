@@ -1,7 +1,7 @@
 package it.auties.whatsapp.serialization;
 
 import it.auties.whatsapp.util.JacksonProvider;
-import it.auties.whatsapp.util.LocalSystem;
+import it.auties.whatsapp.util.LocalFileSystem;
 import lombok.NonNull;
 
 import java.io.IOException;
@@ -28,7 +28,7 @@ final class SmileFile implements JacksonProvider {
     }
 
     public static SmileFile of(@NonNull String path, @NonNull Object... args) {
-        return of(LocalSystem.of(path.formatted(args)).toAbsolutePath());
+        return of(LocalFileSystem.of(path.formatted(args)).toAbsolutePath());
     }
 
     public static SmileFile of(Path path) {

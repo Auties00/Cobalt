@@ -12,12 +12,16 @@ import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.privacy.PrivacySettingType;
+import it.auties.whatsapp.model.privacy.PrivacySettingValue;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.NodeHandler;
-import it.auties.whatsapp.model.request.Reply;
+import it.auties.whatsapp.model.request.ReplyHandler;
 import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.serialization.ControllerProviderLoader;
-import it.auties.whatsapp.util.*;
+import it.auties.whatsapp.util.Clock;
+import it.auties.whatsapp.util.ConcurrentSet;
+import it.auties.whatsapp.util.InitializationLock;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
@@ -69,13 +73,21 @@ public final class Store implements Controller<Store> {
     @NonNull
     @Default
     private ConcurrentMap<ContactJid, Contact> contacts = new ConcurrentHashMap<>();
-
+    
     /**
      * The non-null list of status messages
      */
     @NonNull
     @Default
     private ConcurrentSet<MessageInfo> status = new ConcurrentSet<>();
+
+    /**
+     * The non-null map of privacy settings
+     */
+    @NonNull
+    @Default
+    @Getter
+    private ConcurrentMap<PrivacySettingType, PrivacySettingValue> privacySettings = new ConcurrentHashMap<>();
 
     /**
      * Whether this store has already received the snapshot from
@@ -121,7 +133,7 @@ public final class Store implements Controller<Store> {
     @NonNull
     @JsonIgnore
     @Default
-    private ConcurrentLinkedDeque<Reply> pendingReplies = new ConcurrentLinkedDeque<>();
+    private ConcurrentLinkedDeque<ReplyHandler> replyHandlers = new ConcurrentLinkedDeque<>();
 
     /**
      * The non-null list of listeners
@@ -391,15 +403,12 @@ public final class Store implements Controller<Store> {
             return false;
         }
 
-        var result = pendingReplies.stream()
+        var result = replyHandlers.stream()
                 .filter(entry -> entry.id().equals(contextualMessageId))
                 .findFirst();
         result.ifPresent(reply -> {
-            pendingReplies.remove(reply);
-            switch (reply){
-                case Reply.Single single -> single.future().complete(response);
-                case Reply.Multi multi -> multi.onReply().accept(response);
-            }
+            replyHandlers.remove(reply);
+            reply.future().complete(response);
         });
         return result.isPresent();
     }
@@ -624,23 +633,34 @@ public final class Store implements Controller<Store> {
     /**
      * Returns all the contacts
      *
-     * @return an immutable set
+     * @return an immutable collection
      */
     public Collection<Contact> contacts() {
         return Collections.unmodifiableCollection(contacts.values());
     }
 
     /**
+     * Returns all the blocked contacts
+     *
+     * @return an immutable collection
+     */
+    public Collection<Contact> blockedContacts() {
+        return contacts().stream()
+                .filter(Contact::blocked)
+                .toList();
+    }
+
+    /**
      * Returns all the status
      *
-     * @return an immutable set
+     * @return an immutable collection
      */
     public Collection<MessageInfo> status() {
         return Collections.unmodifiableSet(status);
     }
 
     /**
-     * Add a status to this store
+     * Adds a status to this store
      *
      * @param info the non-null status to add
      * @return the same instance
@@ -652,7 +672,7 @@ public final class Store implements Controller<Store> {
     }
 
     /**
-     * Add a pending request to this store
+     * Adds a pending request to this store
      *
      * @param request the non-null status to add
      * @return the non-null completable future of the request
@@ -663,7 +683,7 @@ public final class Store implements Controller<Store> {
     }
 
     /**
-     * Add a pending request to this store
+     * Adds a pending request to this store
      *
      * @param handler the non-null handler to add
      * @return the non-null completable future of the handler
@@ -674,23 +694,14 @@ public final class Store implements Controller<Store> {
     }
 
     /**
-     * Add a pending reply to this store
+     * Adds a replay handler to this store
      *
-     * @param reply the non-null reply to add
-     * @return the non-null completable future of the reply
+     * @param reply the non-null reply handler to add
+     * @return the non-null completable future of the reply handler
      */
-    public CompletableFuture<MessageInfo> addPendingReply(@NonNull Reply.Single reply) {
-        pendingReplies.add(reply);
+    public CompletableFuture<MessageInfo> addPendingReply(@NonNull ReplyHandler reply) {
+        replyHandlers.add(reply);
         return reply.future();
-    }
-
-    /**
-     * Add a pending reply to this store
-     *
-     * @param reply the non-null reply to add
-     */
-    public void addPendingReply(@NonNull Reply.Multi reply) {
-        pendingReplies.add(reply);
     }
 
     public void dispose() {

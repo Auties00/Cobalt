@@ -69,7 +69,7 @@ public final class AdReplyInfo implements Info {
         private final int index;
 
         @JsonCreator
-        public static AdReplyInfoMediaType forIndex(int index) {
+        public static AdReplyInfoMediaType of(int index) {
             return Arrays.stream(values())
                     .filter(entry -> entry.index() == index)
                     .findFirst()

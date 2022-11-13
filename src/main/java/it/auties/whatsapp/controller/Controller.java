@@ -54,6 +54,7 @@ public sealed interface Controller<T extends Controller<T>> extends JacksonProvi
      *
      * @return a non-null string
      */
+    @SuppressWarnings("unused")
     default String toJson() {
         try {
             return JSON.writerWithDefaultPrettyPrinter()

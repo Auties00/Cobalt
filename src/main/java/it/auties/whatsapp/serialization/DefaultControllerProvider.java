@@ -3,7 +3,7 @@ package it.auties.whatsapp.serialization;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.chat.Chat;
-import it.auties.whatsapp.util.LocalSystem;
+import it.auties.whatsapp.util.LocalFileSystem;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -28,7 +28,7 @@ class DefaultControllerProvider implements ControllerSerializerProvider, Control
 
     @Override
     public LinkedList<Integer> findIds() {
-        try (var walker = Files.walk(LocalSystem.home(), 1)
+        try (var walker = Files.walk(LocalFileSystem.home(), 1)
                 .sorted(Comparator.comparing(this::getLastModifiedTime))) {
             return walker.map(this::parsePathAsId)
                     .flatMap(Optional::stream)
@@ -109,7 +109,7 @@ class DefaultControllerProvider implements ControllerSerializerProvider, Control
             return oldTask;
         }
 
-        var directory = LocalSystem.of(String.valueOf(store.id()));
+        var directory = LocalFileSystem.of(String.valueOf(store.id()));
         try(var walker = Files.walk(directory)){
             var futures = walker.filter(entry -> entry.getFileName().toString().startsWith(CHAT_PREFIX))
                     .map(entry -> deserializeChat(store, entry))

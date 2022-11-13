@@ -38,14 +38,14 @@ public enum ContactStatus implements ProtobufMessage {
      */
     PAUSED;
 
-    private static ContactStatus forIndex(int index) {
+    private static ContactStatus of(int index) {
         return Arrays.stream(values())
                 .filter(entry -> entry.ordinal() == index)
                 .findFirst()
                 .orElse(null);
     }
 
-    public static ContactStatus forValue(@NonNull String jsonValue) {
+    public static ContactStatus of(@NonNull String jsonValue) {
         return Arrays.stream(values())
                 .filter(entry -> entry.name()
                         .equalsIgnoreCase(jsonValue))

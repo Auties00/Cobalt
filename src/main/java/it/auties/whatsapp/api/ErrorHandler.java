@@ -1,9 +1,9 @@
 package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.api.ErrorHandler.Location;
-import it.auties.whatsapp.exception.ErroneousNodeException;
-import it.auties.whatsapp.exception.Exceptions;
+import it.auties.whatsapp.exception.ErroneousNodeRequestException;
 import it.auties.whatsapp.exception.HmacValidationException;
+import it.auties.whatsapp.util.Exceptions;
 
 import java.lang.System.Logger.Level;
 import java.util.function.BiConsumer;
@@ -23,7 +23,7 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, ErrorHandl
      * System logger.
      * A nice feature from Java 9.
      */
-    System.Logger LOGGER = System.getLogger(ErrorHandler.class.getName());
+    System.Logger LOGGER = System.getLogger("ErrorHandler");
 
     /**
      * Default error handler.
@@ -157,7 +157,7 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, ErrorHandl
 
     private static boolean isPingError(Location location, Throwable throwable) {
         return location == ERRONEOUS_NODE
-                && throwable instanceof ErroneousNodeException erroneousNodeException
+                && throwable instanceof ErroneousNodeRequestException erroneousNodeException
                 && erroneousNodeException.error()
                 .description()
                 .equals("iq") && erroneousNodeException.error()
