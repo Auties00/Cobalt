@@ -60,6 +60,7 @@ public class TokensCollectorTest {
         Files.writeString(findTokensFile(), sourceFile, StandardOpenOption.CREATE,
                 StandardOpenOption.TRUNCATE_EXISTING);
         System.out.printf("Created tokens class at %s%n", findTokensFile());
+
     }
 
     @SneakyThrows
