@@ -79,7 +79,8 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     }
 
     private <T> T loadGithubParameter(String parameter, Class<T> type) throws IOException {
-        var chunks = Integer.parseInt(System.getenv("%s_CHUNKS".formatted(parameter)));
+        var chunksSize = new String(Base64.getDecoder().decode(System.getenv("%s_CHUNKS".formatted(parameter))), StandardCharsets.UTF_8);
+        var chunks = Integer.parseInt(chunksSize);
         var result = new ByteArrayOutputStream();
         for(var chunk = 0; chunk < chunks; chunks++){
             result.write(Base64.getDecoder().decode(System.getenv("%s_%s".formatted(parameter, chunk))));
