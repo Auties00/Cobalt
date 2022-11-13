@@ -440,13 +440,10 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
 
     protected void onMessageStatus(MessageStatus status, Contact participant, MessageInfo message, Chat chat) {
         store.callListeners(listener -> {
-            if (participant == null) {
-                listener.onMessageStatus(whatsapp, message, status);
-                listener.onMessageStatus(message, status);
-            }
-
-            listener.onMessageStatus(whatsapp, chat, participant, message, status);
-            listener.onMessageStatus(chat, participant, message, status);
+            listener.onConversationMessageStatus(whatsapp, message, status);
+            listener.onConversationMessageStatus(message, status);
+            listener.onAnyMessageStatus(whatsapp, chat, participant, message, status);
+            listener.onAnyMessageStatus(chat, participant, message, status);
         });
     }
 

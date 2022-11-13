@@ -10,12 +10,12 @@ public interface OnWhatsappConversationMessageStatus extends Listener {
     /**
      * Called when the status of a message changes inside a conversation.
      * This means that the status change can be considered global as the only other participant is the contact.
-     * If you need updates regarding any chat, implement {@link OnMessageStatus#onMessageStatus(Chat, Contact, MessageInfo, MessageStatus)}
+     * If you need updates regarding any chat, implement {@link Listener#onAnyMessageStatus(Chat, Contact, MessageInfo, MessageStatus)}
      *
      * @param whatsapp an instance to the calling api
-     * @param info   the message whose status changed
-     * @param status the new status of the message
+     * @param info     the message whose status changed
+     * @param status   the new status of the message
      */
     @Override
-    void onMessageStatus(Whatsapp whatsapp, MessageInfo info, MessageStatus status);
+    void onConversationMessageStatus(Whatsapp whatsapp, MessageInfo info, MessageStatus status);
 }

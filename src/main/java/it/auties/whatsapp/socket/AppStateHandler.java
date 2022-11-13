@@ -351,24 +351,27 @@ class AppStateHandler implements JacksonProvider {
                     .findMessageById(chat, mutation.messageIndex()
                             .messageId()));
             switch (action) {
-                case ClearChatAction clearChatAction -> clearMessages(targetChat.orElse(null), clearChatAction);
-                case ContactAction contactAction -> updateName(targetContact.orElseGet(() -> socketHandler.createContact(jid)),
-                        targetChat.orElseGet(() -> socketHandler.createChat(jid)), contactAction);
-                case DeleteChatAction ignored -> targetChat.map(Chat::messages)
-                        .ifPresent(Collection::clear);
+                case ClearChatAction clearChatAction -> clearMessages(
+                        targetChat.orElse(null),
+                        clearChatAction
+                );
+                case ContactAction contactAction -> updateName(
+                        targetContact.orElseGet(() -> socketHandler.createContact(jid)),
+                        targetChat.orElseGet(() -> socketHandler.createChat(jid)),
+                        contactAction
+                );
+                case DeleteChatAction ignored ->
+                        targetChat.map(Chat::messages).ifPresent(Collection::clear);
                 case DeleteMessageForMeAction ignored ->
                         targetMessage.ifPresent(message -> targetChat.ifPresent(chat -> deleteMessage(message, chat)));
-                case MarkChatAsReadAction markAction -> targetChat.ifPresent(chat -> chat.unreadMessages(
-                        markAction.read() ?
-                                0 :
-                                -1));
+                case MarkChatAsReadAction markAction ->
+                        targetChat.ifPresent(chat -> chat.unreadMessages(markAction.read() ? 0 : -1));
                 case MuteAction muteAction ->
                         targetChat.ifPresent(chat -> chat.mute(ChatMute.muted(muteAction.muteEndTimestamp())));
-                case PinAction pinAction -> targetChat.ifPresent(chat -> chat.pinned(pinAction.pinned() ?
-                        mutation.value()
-                                .timestamp() :
-                        0));
-                case StarAction starAction -> targetMessage.ifPresent(message -> message.starred(starAction.starred()));
+                case PinAction pinAction ->
+                        targetChat.ifPresent(chat -> chat.pinned(pinAction.pinned() ? mutation.value().timestamp() : 0));
+                case StarAction starAction ->
+                        targetMessage.ifPresent(message -> message.starred(starAction.starred()));
                 case ArchiveChatAction archiveChatAction ->
                         targetChat.ifPresent(chat -> chat.archived(archiveChatAction.archived()));
                 default -> {}

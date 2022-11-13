@@ -385,25 +385,25 @@ public interface Listener {
     /**
      * Called when the status of a message changes inside a conversation.
      * This means that the status change can be considered global as the only other participant is the contact.
-     * If you need updates regarding any chat, implement {@link Listener#onMessageStatus(Chat, Contact, MessageInfo, MessageStatus)}
+     * If you need updates regarding any chat, implement {@link Listener#onAnyMessageStatus(Whatsapp, Chat, Contact, MessageInfo, MessageStatus)}
      *
      * @param whatsapp an instance to the calling api
      * @param info     the message whose status changed
      * @param status   the new status of the message
      */
-    default void onMessageStatus(Whatsapp whatsapp, MessageInfo info, MessageStatus status) {
+    default void onConversationMessageStatus(Whatsapp whatsapp, MessageInfo info, MessageStatus status) {
 
     }
 
     /**
      * Called when the status of a message changes inside a conversation.
      * This means that the status change can be considered global as the only other participant is the contact.
-     * If you need updates regarding any chat, implement {@link Listener#onMessageStatus(Chat, Contact, MessageInfo, MessageStatus)}
+     * If you need updates regarding any chat, implement {@link Listener#onAnyMessageStatus(Chat, Contact, MessageInfo, MessageStatus)}
      *
      * @param info   the message whose status changed
      * @param status the new status of the message
      */
-    default void onMessageStatus(MessageInfo info, MessageStatus status) {
+    default void onConversationMessageStatus(MessageInfo info, MessageStatus status) {
 
     }
 
@@ -411,7 +411,7 @@ public interface Listener {
      * Called when the status of a message changes inside any type of chat.
      * If {@code chat} is a conversation with {@code contact}, the new read status can be considered valid for the message itself(global status).
      * Otherwise, it should be considered valid only for {@code contact}.
-     * If you only need updates regarding conversation, implement {@link Listener#onMessageStatus(MessageInfo, MessageStatus)}.
+     * If you only need updates regarding conversation, implement {@link Listener#onConversationMessageStatus(MessageInfo, MessageStatus)}.
      *
      * @param whatsapp an instance to the calling api
      * @param chat     the chat that triggered a status change
@@ -419,8 +419,8 @@ public interface Listener {
      * @param info     the message whose status changed
      * @param status   the new status of the message
      */
-    default void onMessageStatus(Whatsapp whatsapp, Chat chat, Contact contact, MessageInfo info,
-                                 MessageStatus status) {
+    default void onAnyMessageStatus(Whatsapp whatsapp, Chat chat, Contact contact, MessageInfo info,
+                                    MessageStatus status) {
 
     }
 
@@ -428,14 +428,14 @@ public interface Listener {
      * Called when the status of a message changes inside any type of chat.
      * If {@code chat} is a conversation with {@code contact}, the new read status can be considered valid for the message itself(global status).
      * Otherwise, it should be considered valid only for {@code contact}.
-     * If you only need updates regarding conversation, implement {@link Listener#onMessageStatus(MessageInfo, MessageStatus)}.
+     * If you only need updates regarding conversation, implement {@link Listener#onConversationMessageStatus(MessageInfo, MessageStatus)}.
      *
      * @param chat    the chat that triggered a status change
      * @param contact the contact that triggered a status change
      * @param info    the message whose status changed
      * @param status  the new status of the message
      */
-    default void onMessageStatus(Chat chat, Contact contact, MessageInfo info, MessageStatus status) {
+    default void onAnyMessageStatus(Chat chat, Contact contact, MessageInfo info, MessageStatus status) {
 
     }
 

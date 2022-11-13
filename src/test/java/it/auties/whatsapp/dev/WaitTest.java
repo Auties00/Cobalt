@@ -1,6 +1,5 @@
 package it.auties.whatsapp.dev;
 
-import it.auties.whatsapp.api.ErrorHandler;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.util.JacksonProvider;
@@ -10,7 +9,7 @@ import org.junit.jupiter.api.Test;
 public class WaitTest implements JacksonProvider {
     @Test
     public void testForFiveMinutes() {
-        Whatsapp.lastConnection(Whatsapp.Options.defaultOptions().withErrorHandler(ErrorHandler.toFile()))
+        Whatsapp.lastConnection()
                 .addLoggedInListener(() -> System.out.println("Connected"))
                 .addNewMessageListener(WaitTest::logMessage)
                 .addContactsListener(contacts -> System.out.printf("Contacts: %s%n", contacts.size()))
@@ -19,7 +18,7 @@ public class WaitTest implements JacksonProvider {
                 .addNodeSentListener(outgoing -> System.out.printf("Sent node %s%n", outgoing))
                 .addActionListener(action -> System.out.printf("New action: %s%n", action))
                 .addSettingListener(setting -> System.out.printf("New setting: %s%n", setting))
-                .addMessageStatusListener((message, status) -> System.out.printf("Message %s now has status %s%n", message, status))
+                .addAnyMessageStatusListener((chat, contact, info, status) -> System.out.printf("Message %s in chat %s now has status %s for %s %n", info.id(), info.chatName(), status, contact.name()))
                 .connect()
                 .join()
                 .await();

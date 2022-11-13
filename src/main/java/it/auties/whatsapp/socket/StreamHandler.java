@@ -321,7 +321,7 @@ class StreamHandler implements JacksonProvider {
                 .getInt("code");
         switch (statusCode) {
             case 0 -> handleUnknownStreamError(node);
-            case 515 -> socketHandler.disconnect(true);
+            case 515, 503 -> socketHandler.disconnect(true);
             case 401 -> handleStreamError(node);
             default -> node.children()
                     .forEach(error -> socketHandler.store()

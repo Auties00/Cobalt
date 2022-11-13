@@ -328,18 +328,18 @@ public class Whatsapp {
      * @param onConversationMessageStatus the listener to register
      * @return the same instance
      */
-    public Whatsapp addMessageStatusListener(OnConversationMessageStatus onConversationMessageStatus) {
+    public Whatsapp addConversationMessageStatusListener(OnConversationMessageStatus onConversationMessageStatus) {
         return addListener(onConversationMessageStatus);
     }
 
     /**
      * Registers a message status listener
      *
-     * @param onMessageStatus the listener to register
+     * @param onAnyMessageStatus the listener to register
      * @return the same instance
      */
-    public Whatsapp addMessageStatusListener(OnMessageStatus onMessageStatus) {
-        return addListener(onMessageStatus);
+    public Whatsapp addAnyMessageStatusListener(OnAnyMessageStatus onAnyMessageStatus) {
+        return addListener(onAnyMessageStatus);
     }
 
     /**
@@ -535,11 +535,11 @@ public class Whatsapp {
     /**
      * Registers a message status listener
      *
-     * @param onConversationMessageStatus the listener to register
+     * @param onWhatsappConversationMessageStatus the listener to register
      * @return the same instance
      */
-    public Whatsapp addMessageStatusListener(OnWhatsappConversationMessageStatus onConversationMessageStatus) {
-        return addListener(onConversationMessageStatus);
+    public Whatsapp addConversationMessageStatusListener(OnWhatsappConversationMessageStatus onWhatsappConversationMessageStatus) {
+        return addListener(onWhatsappConversationMessageStatus);
     }
 
     /**
@@ -548,7 +548,7 @@ public class Whatsapp {
      * @param onMessageStatus the listener to register
      * @return the same instance
      */
-    public Whatsapp addMessageStatusListener(OnWhatsappMessageStatus onMessageStatus) {
+    public Whatsapp addAnyMessageStatusListener(OnWhatsappAnyMessageStatus onMessageStatus) {
         return addListener(onMessageStatus);
     }
 
