@@ -589,7 +589,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
                     .orElse(null);
         }
 
-        public static Optional<StubType> forSymbol(String symbol) {
+        public static Optional<StubType> of(String symbol) {
             return Arrays.stream(values())
                     .filter(entry -> entry.symbols()
                             .contains(symbol))

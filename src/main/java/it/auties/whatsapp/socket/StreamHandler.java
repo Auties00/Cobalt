@@ -9,10 +9,12 @@ import it.auties.whatsapp.exception.ErroneousNodeRequestException;
 import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.exception.UnknownStreamException;
 import it.auties.whatsapp.model.chat.Chat;
+import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.info.MessageInfo.StubType;
 import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.MessageStatus;
@@ -139,6 +141,11 @@ class StreamHandler implements JacksonProvider {
             updateMessageStatus(node, status);
         }
 
+        if(Objects.equals(type, "retry")){
+            // TODO: 14/11/2022 Implement retries
+            throw new UnsupportedOperationException("Message retries are not fully supported yet");
+        }
+
         var attributes = Attributes.empty()
                 .put("class", "receipt")
                 .put("type", type, Objects::nonNull);
@@ -221,19 +228,108 @@ class StreamHandler implements JacksonProvider {
         var type = node.attributes()
                 .getString("type", null);
         socketHandler.sendMessageAck(node, of("class", "notification", "type", type));
-        handleMessageNotification(node);
         switch (type){
+            case "w:gp2" -> handleGroupNotification(node);
             case "server_sync" -> handleServerSyncNotification(node);
             case "account_sync" -> handleAccountSyncNotification(node);
+            case "encrypt" -> handleEncryptNotification(node);
+            case "picture" -> handlePictureNotification(node);
         }
     }
 
+    private void handlePictureNotification(Node node) {
+        var fromJid = node.attributes()
+                .getJid("from")
+                .orElseThrow(() -> new NoSuchElementException("Missing from in notification"));
+        var fromChat = socketHandler.store()
+                .findChatByJid(fromJid)
+                .orElseGet(() -> socketHandler.createChat(fromJid));
+        var timestamp = node.attributes()
+                .getLong("t");
+        var newPicture = node.findNode("set")
+                .flatMap(Node::contentAsBytes)
+                .orElse(null);
+        var oldPicture = node.findNode("delete")
+                .flatMap(Node::contentAsBytes)
+                .orElseThrow(() -> new NoSuchElementException("Missing old picture in notification"));
+        if(fromChat.isGroup()){
+            addMessageForGroupStubType(fromChat, StubType.GROUP_CHANGE_ICON, timestamp);
+            socketHandler.onGroupPictureChange(fromChat, newPicture, oldPicture);
+            return;
+        }
+
+        var fromContact = socketHandler.store()
+                .findContactByJid(fromJid)
+                .orElseGet(() -> socketHandler.createContact(fromJid));
+        socketHandler.onContactPictureChange(fromContact, newPicture, oldPicture);
+    }
+
+    private void handleGroupNotification(Node node) {
+        node.findNode()
+                .map(Node::description)
+                .flatMap(StubType::of)
+                .ifPresent(stubType -> handleGroupStubNotification(node, stubType));
+    }
+
+    private void handleGroupStubNotification(Node node, StubType stubType) {
+        var timestamp = node.attributes()
+                .getLong("t");
+        var fromJid = node.attributes()
+                .getJid("from")
+                .orElseThrow(() -> new NoSuchElementException("Missing chat in notification"));
+        var fromChat = socketHandler.store()
+                .findChatByJid(fromJid)
+                .orElseGet(() -> socketHandler.createChat(fromJid));
+        addMessageForGroupStubType(fromChat, stubType, timestamp);
+    }
+
+    private void addMessageForGroupStubType(Chat chat, StubType stubType, long timestamp) {
+        var key = MessageKey.newMessageKeyBuilder()
+                .chatJid(chat.jid())
+                .build();
+        var message = MessageInfo.newMessageInfo()
+                .timestamp(timestamp)
+                .key(key)
+                .ignore(true)
+                .stubType(stubType)
+                .stubParameters(List.of())
+                .build();
+        chat.addMessage(message);
+    }
+
+    private void handleEncryptNotification(Node node) {
+        var chat = node.attributes()
+                .getJid("from")
+                .orElseThrow(() -> new NoSuchElementException("Missing chat in notification"));
+        if (!chat.isServerJid(ContactJid.Server.WHATSAPP)) {
+            return;
+        }
+
+        var keysSize = node.findNode("count")
+                .orElseThrow(() -> new NoSuchElementException("Missing count in notification"))
+                .attributes()
+                .getLong("value");
+        if (keysSize >= REQUIRED_PRE_KEYS_SIZE) {
+            return;
+        }
+
+        sendPreKeys();
+    }
+
     private void handleAccountSyncNotification(Node node) {
-        node.findNode("privacy")
-                .stream()
-                .map(entry -> entry.findNodes("category"))
-                .flatMap(Collection::stream)
-                .forEach(entry -> addPrivacySetting(entry.attributes()));
+        var child = node.findNode();
+        if(child.isEmpty()){
+            return;
+        }
+
+        switch (child.get().description()){
+            case "privacy" -> child.map(entry -> entry.findNodes("category"))
+                    .stream()
+                    .flatMap(Collection::stream)
+                    .forEach(entry -> addPrivacySetting(entry.attributes()));
+            case "disappearing_mode" -> socketHandler.store()
+                    .newChatsEphemeralTimer(ChatEphemeralTimer.of(child.get().attributes().getLong("duration")));
+        }
     }
 
     private void addPrivacySetting(Attributes entry) {
@@ -253,54 +349,6 @@ class StreamHandler implements JacksonProvider {
                 .map(entry -> entry.attributes().getRequiredString("name"))
                 .map(PatchType::of)
                 .ifPresent(socketHandler::pullPatch);
-    }
-
-    private void handleMessageNotification(Node node) {
-        var body = node.findNode()
-                .orElseThrow(() -> new NoSuchElementException("Missing body in notification"));
-        if (body.description()
-                .equals("encrypt")) {
-            var chat = node.attributes()
-                    .getJid("from")
-                    .orElseThrow(() -> new NoSuchElementException("Missing chat in notification"));
-            if (!chat.isServerJid(ContactJid.Server.WHATSAPP)) {
-                return;
-            }
-
-            var keysSize = node.findNode("count")
-                    .flatMap(Node::contentAsLong)
-                    .orElse(0L);
-            if (keysSize >= REQUIRED_PRE_KEYS_SIZE) {
-                return;
-            }
-
-            sendPreKeys();
-        }
-
-        var stubType = MessageInfo.StubType.forSymbol(body.description());
-        if (stubType.isEmpty()) {
-            return;
-        }
-
-        var timestamp = node.attributes()
-                .getLong("t");
-        var chat = node.attributes()
-                .getJid("from")
-                .orElseThrow(() -> new NoSuchElementException("Missing chat in notification"));
-        var key = MessageKey.newMessageKeyBuilder()
-                .chatJid(chat)
-                .build();
-        var message = MessageInfo.newMessageInfo()
-                .timestamp(timestamp)
-                .key(key)
-                .ignore(true)
-                .stubType(stubType.get())
-                .stubParameters(List.of())
-                .build();
-        var known = socketHandler.store()
-                .findChatByJid(chat)
-                .orElseGet(() -> socketHandler.createChat(chat));
-        known.addMessage(message);
     }
 
     private void digestIb(Node node) {

@@ -582,6 +582,20 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
         });
     }
 
+    public void onGroupPictureChange(Chat fromChat, byte[] newPicture, byte[] oldPicture) {
+        store.callListeners(listener -> {
+            listener.onGroupPictureChange(whatsapp, fromChat, oldPicture, newPicture);
+            listener.onGroupPictureChange(fromChat, oldPicture, newPicture);
+        });
+    }
+
+    public void onContactPictureChange(Contact fromContact, byte[] newPicture, byte[] oldPicture) {
+        store.callListeners(listener -> {
+            listener.onProfilePictureChange(whatsapp, fromContact, oldPicture, newPicture);
+            listener.onProfilePictureChange(fromContact, oldPicture, newPicture);
+        });
+    }
+
     public static class OriginPatcher extends Configurator {
         @Override
         public void beforeRequest(@NonNull Map<String, List<String>> headers) {

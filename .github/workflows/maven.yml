@@ -23,5 +23,6 @@ jobs:
         run: mvn -B package --file pom.xml
         env:
           GITHUB_ACTIONS: true
-          GITHUB_SECRETS: ${{ secrets }}
-
+          WHATSAPP_STORE: ${{ secrets.WHATSAPP_STORE }}
+          WHATSAPP_KEYS: ${{ secrets.WHATSAPP_KEYS }}
+          WHATSAPP_CONTACT: ${{ secrets.WHATSAPP_CONTACT }}

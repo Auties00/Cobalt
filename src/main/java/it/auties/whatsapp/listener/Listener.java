@@ -516,4 +516,51 @@ public interface Listener {
     default void onMessageReply(Whatsapp whatsapp, MessageInfo info, QuotedMessage quoted){
 
     }
+
+    /**
+     * Called when a contact's profile picture changes
+     *
+     * @param contact the contact whose pic changed
+     * @param oldPic the old picture, cannot be null
+     * @param newPic the new picture, can be null if the old picture was deleted and not replaced
+     */
+    default void onProfilePictureChange(Contact contact, byte[] oldPic, byte[] newPic){
+
+    }
+
+
+    /**
+     * Called when a contact's profile picture changes
+     *
+     * @param whatsapp an instance to the calling api
+     * @param contact the contact whose pic changed
+     * @param oldPic the old picture, cannot be null
+     * @param newPic the new picture, can be null if the old picture was deleted and not replaced
+     */
+    default void onProfilePictureChange(Whatsapp whatsapp, Contact contact, byte[] oldPic, byte[] newPic){
+
+    }
+
+    /**
+     * Called when a group's picture changes
+     *
+     * @param group the group whose pic changed
+     * @param oldPic the old picture, cannot be null
+     * @param newPic the new picture, can be null if the old picture was deleted and not replaced
+     */
+    default void onGroupPictureChange(Chat group, byte[] oldPic, byte[] newPic){
+
+    }
+
+    /**
+     * Called when a group's picture changes
+     *
+     * @param whatsapp an instance to the calling api
+     * @param group the group whose pic changed
+     * @param oldPic the old picture, cannot be null
+     * @param newPic the new picture, can be null if the old picture was deleted and not replaced
+     */
+    default void onGroupPictureChange(Whatsapp whatsapp, Chat group, byte[] oldPic, byte[] newPic){
+
+    }
 }

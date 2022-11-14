@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.chat.Chat;
+import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJidProvider;
@@ -189,6 +190,15 @@ public final class Store implements Controller<Store> {
     @Getter
     @Setter
     private boolean useDefaultSerializer;
+
+    /**
+     * The request tag, used to create messages
+     */
+    @NonNull
+    @Getter
+    @Setter
+    @Default
+    private ChatEphemeralTimer newChatsEphemeralTimer = ChatEphemeralTimer.OFF;
 
     /**
      * Constructs a new default instance of WhatsappStore

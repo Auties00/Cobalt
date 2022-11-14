@@ -392,6 +392,12 @@ class MessageHandler implements JacksonProvider {
     private void decodeLocked(Node node) {
         tryLock(true);
         var encrypted = node.findNodes("enc");
+        if(node.hasNode("unavailable") && !node.hasNode("enc")) {
+            decode(node, null);
+            semaphore.release();
+            return;
+        }
+
         encrypted.forEach(message -> decode(node, message));
         semaphore.release();
     }
@@ -433,6 +439,11 @@ class MessageHandler implements JacksonProvider {
                     .pushName(pushName)
                     .timestamp(timestamp)
                     .build();
+            if(messageNode == null) {
+                sendRetryReceipt(timestamp, id, from, recipient,
+                        participant, null, null, null);
+                return;
+            }
 
             socketHandler.sendMessageAck(infoNode, of("class", "receipt"));
             var type = messageNode.attributes()
@@ -441,42 +452,8 @@ class MessageHandler implements JacksonProvider {
                     .orElse(null);
             var decodedMessage = decodeMessageBytes(type, encodedMessage, from, participant);
             if(decodedMessage.hasError()){
-                var attempts = retries.getOrDefault(id, 0);
-                if(attempts >= MAX_ATTEMPTS){
-                    socketHandler.errorHandler()
-                            .handleFailure(MESSAGE, new RuntimeException(
-                                    "Cannot decrypt message with type %s inside %s from %s".formatted(type, from,
-                                            requireNonNullElse(participant, from)), decodedMessage.error()));
-                    return;
-                }
-
-                var retryAttributes = Attributes.empty()
-                        .put("id", id)
-                        .put("type", "retry")
-                        .put("to", from)
-                        .put("recipient", recipient, () -> !Objects.equals(recipient, from))
-                        .put("participant", participant, Objects::nonNull)
-                        .map();
-                var retryNode = Node.ofChildren(
-                        "receipt",
-                        retryAttributes,
-                        Node.ofAttributes(
-                                "retry",
-                                Map.of(
-                                        "count", attempts,
-                                        "id", id,
-                                        "t", timestamp,
-                                        "v", "1"
-                                )
-                        ),
-                        Node.of(
-                                "registration",
-                                BytesHelper.intToBytes(socketHandler.keys().id(), 4)
-                        ),
-                        attempts <= 1 && encodedMessage != null ? null : createPreKeyNode()
-                );
-                socketHandler.send(retryNode);
-                retries.put(id, attempts + 1);
+                sendRetryReceipt(timestamp, id, from, recipient,
+                        participant, type, encodedMessage, decodedMessage);
                 return;
             }
 
@@ -504,6 +481,57 @@ class MessageHandler implements JacksonProvider {
             socketHandler.errorHandler()
                     .handleFailure(MESSAGE, throwable);
         }
+    }
+
+    private void sendRetryReceipt(long timestamp, String id, ContactJid from, ContactJid recipient, ContactJid participant,
+                           String type, byte[] encodedMessage, MessageDecodeResult decodedMessage) {
+        var attempts = retries.getOrDefault(id, 0);
+        if(attempts >= MAX_ATTEMPTS){
+            var cause = decodedMessage != null ? decodedMessage.error()
+                    : new RuntimeException("This message is not available");
+            socketHandler.errorHandler().handleFailure(
+                    MESSAGE,
+                    new RuntimeException(
+                            "Cannot decrypt message with type %s inside %s from %s"
+                                    .formatted(
+                                            Objects.requireNonNullElse(type, "unknown"),
+                                            from,
+                                            requireNonNullElse(participant, from)
+                                    ),
+                            cause
+                    )
+            );
+            return;
+        }
+
+        var retryAttributes = Attributes.empty()
+                .put("id", id)
+                .put("type", "retry")
+                .put("to", from)
+                .put("recipient", recipient, () -> !Objects.equals(recipient, from))
+                .put("participant", participant, Objects::nonNull)
+                .map();
+        var retryNode = Node.ofChildren(
+                "receipt",
+                retryAttributes,
+                Node.ofAttributes(
+                        "retry",
+                        Map.of(
+                                "count", attempts,
+                                "id", id,
+                                "t", timestamp,
+                                "v", "1"
+                        )
+                ),
+                Node.of(
+                        "registration",
+                        BytesHelper.intToBytes(socketHandler.keys().id(), 4)
+                ),
+                attempts > 1 || encodedMessage == null ? createPreKeyNode() : null
+        );
+        socketHandler.send(retryNode)
+                .thenAcceptAsync((result) -> System.out.println("Result: " + result));
+        retries.put(id, attempts + 1);
     }
 
     private Node createPreKeyNode(){

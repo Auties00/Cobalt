@@ -51,9 +51,7 @@ public enum MessageStatus implements ProtobufMessage {
         return name == null ?
                 null :
                 Arrays.stream(values())
-                        .filter(entry -> name.toLowerCase()
-                                .contains(entry.name()
-                                        .toLowerCase()))
+                        .filter(entry -> name.toLowerCase().contains(entry.name().toLowerCase()))
                         .findFirst()
                         .orElse(null);
     }
