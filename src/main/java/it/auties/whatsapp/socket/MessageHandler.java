@@ -17,6 +17,7 @@ import it.auties.whatsapp.model.message.device.DeviceSentMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.model.request.Node;
@@ -433,7 +434,7 @@ class MessageHandler implements JacksonProvider {
             var info = messageBuilder.key(key)
                     .pushName(pushName)
                     .timestamp(timestamp)
-
+                    .status(MessageStatus.DELIVERED)
                     .build();
             if(messageNode == null) {
                 sendRetryReceipt(timestamp, id, from, recipient,
