@@ -14,7 +14,7 @@ import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.DownloadResult;
 import it.auties.whatsapp.model.request.Node;
-import it.auties.whatsapp.model.setting.UnarchiveChatsSetting;
+import it.auties.whatsapp.model.setting.*;
 import it.auties.whatsapp.model.sync.*;
 import it.auties.whatsapp.util.*;
 import lombok.NonNull;
@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.*;
 import static it.auties.whatsapp.model.request.Node.ofChildren;
+import static java.lang.System.Logger.Level.WARNING;
 import static java.util.Map.of;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -381,9 +382,13 @@ class AppStateHandler implements JacksonProvider {
         }
 
         var setting = value.setting();
-        if (setting != null) {
-            if (setting instanceof UnarchiveChatsSetting unarchiveChatsSetting) {
-                socketHandler.store()
+        if(setting != null) {
+            switch (setting) {
+                case EphemeralSetting ephemeralSetting -> showEphemeralMessageWarning(ephemeralSetting);
+                case LocaleSetting localeSetting -> socketHandler.updateLocale(localeSetting.locale(), socketHandler.store().userLocale());
+                case PushNameSetting pushNameSetting -> socketHandler.updateUserName(pushNameSetting.name(), socketHandler.store().userName());
+                case SecurityNotificationSetting ignored -> {}
+                case UnarchiveChatsSetting unarchiveChatsSetting -> socketHandler.store()
                         .unarchiveChats(unarchiveChatsSetting.unarchiveChats());
             }
 
@@ -396,6 +401,14 @@ class AppStateHandler implements JacksonProvider {
                 .isEmpty()) {
             socketHandler.onFeatures(features);
         }
+    }
+
+    private void showEphemeralMessageWarning(EphemeralSetting ephemeralSetting) {
+        var logger = System.getLogger("AppStateHandler");
+        logger.log(WARNING, "An ephemeral status update was received as a setting. " +
+                "Data: %s".formatted(ephemeralSetting) +
+                "This should not be possible." +
+                " Open an issue on Github please");
     }
 
     private void clearMessages(Chat targetChat, ClearChatAction clearChatAction) {

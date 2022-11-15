@@ -96,10 +96,7 @@ class MessageHandler implements JacksonProvider {
     @SafeVarargs
     private CompletableFuture<Void> encodeGroup(MessageInfo info, Entry<String, Object>... attributes) {
         var encodedMessage = BytesHelper.messageToBytes(info.message());
-        var senderName = new SenderKeyName(info.chatJid()
-                .toString(), socketHandler.keys()
-                .companion()
-                .toSignalAddress());
+        var senderName = new SenderKeyName(info.chatJid().toString(), socketHandler.store().userCompanionJid().toSignalAddress());
         var groupBuilder = new GroupBuilder(socketHandler.keys());
         var signalMessage = groupBuilder.createOutgoing(senderName);
         var groupCipher = new GroupCipher(senderName, socketHandler.keys());
@@ -121,9 +118,7 @@ class MessageHandler implements JacksonProvider {
         var deviceMessage = DeviceSentMessage.newDeviceSentMessage(info.chatJid()
                 .toString(), info.message(), null);
         var encodedDeviceMessage = BytesHelper.messageToBytes(deviceMessage);
-        var knownDevices = List.of(socketHandler.keys()
-                .companion()
-                .toUserJid(), info.chatJid());
+        var knownDevices = List.of(socketHandler.store().userCompanionJid().toUserJid(), info.chatJid());
         return getDevices(knownDevices, true).thenComposeAsync(
                         allDevices -> createConversationNodes(allDevices, encodedMessage, encodedDeviceMessage))
                 .thenApplyAsync(sessions -> createEncodedMessageNode(info, sessions, null, attributes))
@@ -204,8 +199,8 @@ class MessageHandler implements JacksonProvider {
     private CompletableFuture<List<Node>> createConversationNodes(List<ContactJid> contacts, byte[] message,
                                                                   byte[] deviceMessage) {
         var partitioned = contacts.stream()
-                .collect(partitioningBy(contact -> Objects.equals(contact.user(), socketHandler.keys()
-                        .companion()
+                .collect(partitioningBy(contact -> Objects.equals(contact.user(), socketHandler.store()
+                        .userCompanionJid()
                         .user())));
         var companions = querySessions(partitioned.get(true)).thenApplyAsync(
                 ignored -> createMessageNodes(partitioned.get(true), deviceMessage));
@@ -344,10 +339,10 @@ class MessageHandler implements JacksonProvider {
                 .getInt("id");
         return child.description()
                 .equals("device") && (!excludeSelf || deviceId != 0) && (!jid.user()
-                .equals(socketHandler.keys()
-                        .companion()
-                        .user()) || socketHandler.keys()
-                .companion()
+                .equals(socketHandler.store()
+                        .userCompanionJid()
+                        .user()) || socketHandler.store()
+                .userCompanionJid()
                 .device() != deviceId) && (deviceId == 0 || child.attributes()
                 .hasKey("key-index")) ?
                 Optional.of(deviceId) :
@@ -405,7 +400,7 @@ class MessageHandler implements JacksonProvider {
     private void decode(Node infoNode, Node messageNode) {
         try {
             var pushName = infoNode.attributes()
-                    .getString("notify");
+                    .getNullableString("notify");
             var timestamp = infoNode.attributes()
                     .getLong("t");
             var id = infoNode.attributes()
@@ -424,12 +419,12 @@ class MessageHandler implements JacksonProvider {
             if(from.hasServer(ContactJid.Server.WHATSAPP) || from.hasServer(ContactJid.Server.USER)){
                 keyBuilder.chatJid(recipient);
                 keyBuilder.senderJid(from);
-                keyBuilder.fromMe(Objects.equals(from, socketHandler.keys().companion().toUserJid()));
+                keyBuilder.fromMe(Objects.equals(from, socketHandler.store().userCompanionJid().toUserJid()));
                 messageBuilder.senderJid(from);
             }else {
                 keyBuilder.chatJid(from);
                 keyBuilder.senderJid(requireNonNull(participant, "Missing participant in group message"));
-                keyBuilder.fromMe(Objects.equals(participant.toUserJid(), socketHandler.keys().companion().toUserJid()));
+                keyBuilder.fromMe(Objects.equals(participant.toUserJid(), socketHandler.store().userCompanionJid().toUserJid()));
                 messageBuilder.senderJid(requireNonNull(participant, "Missing participant in group message"));
             }
 
@@ -438,6 +433,7 @@ class MessageHandler implements JacksonProvider {
             var info = messageBuilder.key(key)
                     .pushName(pushName)
                     .timestamp(timestamp)
+
                     .build();
             if(messageNode == null) {
                 sendRetryReceipt(timestamp, id, from, recipient,
@@ -463,18 +459,15 @@ class MessageHandler implements JacksonProvider {
                             .content()) :
                     messageContainer;
             info.message(message);
-            var content = info.message()
-                    .content();
+            socketHandler.store().attribute(info);
+
+            var category = infoNode.attributes().getString("category");
+            var content = info.message().content();
             if (content instanceof SenderKeyDistributionMessage distributionMessage) {
                 handleDistributionMessage(distributionMessage, info.senderJid());
             }
 
-            if (content instanceof ProtocolMessage protocolMessage) {
-                handleProtocolMessage(info, protocolMessage, Objects.equals(infoNode.attributes()
-                        .getString("category"), "peer"));
-            }
-
-            saveMessage(info);
+            saveMessage(info, category);
             socketHandler.onReply(info);
             socketHandler.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.key().id()), null);
         } catch (Throwable throwable) {
@@ -529,8 +522,7 @@ class MessageHandler implements JacksonProvider {
                 ),
                 attempts > 1 || encodedMessage == null ? createPreKeyNode() : null
         );
-        socketHandler.send(retryNode)
-                .thenAcceptAsync((result) -> System.out.println("Result: " + result));
+        socketHandler.send(retryNode);
         retries.put(id, attempts + 1);
     }
 
@@ -608,31 +600,28 @@ class MessageHandler implements JacksonProvider {
         }
     }
 
-    private void saveMessage(MessageInfo info) {
-        if (info.chatJid()
-                .equals(ContactJid.STATUS_ACCOUNT)) {
-            socketHandler.store()
-                    .addStatus(info);
+    private void saveMessage(MessageInfo info, String category) {
+        if (info.chatJid().equals(ContactJid.STATUS_ACCOUNT)) {
+            socketHandler.store().addStatus(info);
             socketHandler.onNewStatus(info);
             return;
         }
 
-        socketHandler.store().attribute(info);
         var result = info.chat().addMessage(info);
         if (!result || info.timestamp() <= socketHandler.store().initializationTimeStamp()) {
             return;
         }
 
-        if (info.message()
-                .hasCategory(MessageCategory.SERVER)) {
+        if (info.message().hasCategory(MessageCategory.SERVER)) {
+            if (info.message().content() instanceof ProtocolMessage protocolMessage) {
+                handleProtocolMessage(info, protocolMessage, Objects.equals(category, "peer"));
+            }
+
             return;
         }
 
-        if (info.chat()
-                .archived() && socketHandler.store()
-                .unarchiveChats()) {
-            info.chat()
-                    .archived(false);
+        if (info.chat().archived() && socketHandler.store().unarchiveChats()) {
+            info.chat().archived(false);
         }
 
         info.chat()
@@ -668,18 +657,15 @@ class MessageHandler implements JacksonProvider {
                 }
 
                 socketHandler.keys()
-                        .addAppKeys(protocolMessage.appStateSyncKeyShare()
-                                .keys());
+                        .addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
                 receivedAppKeys.set(true);
                 socketHandler.pullInitialPatches();
             }
 
             case REVOKE -> socketHandler.store()
-                    .findMessageById(info.chat(), protocolMessage.key()
-                            .id())
+                    .findMessageById(info.chat(), protocolMessage.key().id())
                     .ifPresent(message -> {
-                        info.chat()
-                                .removeMessage(message);
+                        info.chat().removeMessage(message);
                         socketHandler.onMessageDeleted(message, true);
                     });
 
@@ -687,7 +673,7 @@ class MessageHandler implements JacksonProvider {
                 info.chat()
                         .ephemeralMessagesToggleTime(info.timestamp())
                         .ephemeralMessageDuration(ChatEphemeralTimer.of(protocolMessage.ephemeralExpiration()));
-                var setting = new EphemeralSetting(info.ephemeralDuration(), info.timestamp());
+                var setting = new EphemeralSetting((int) protocolMessage.ephemeralExpiration(), info.timestamp());
                 socketHandler.onSetting(setting);
             }
         }
@@ -719,7 +705,7 @@ class MessageHandler implements JacksonProvider {
             case INITIAL_STATUS_V3 -> {
                 history.statusV3Messages()
                         .forEach(socketHandler.store()::addStatus);
-                socketHandler.onStatus();
+                socketHandler.onMediaStatus();
             }
 
            case INITIAL_BOOTSTRAP -> {

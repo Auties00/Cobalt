@@ -21,6 +21,7 @@ import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
 import it.auties.whatsapp.model.request.Node;
+import it.auties.whatsapp.model.response.ContactStatusResponse;
 import it.auties.whatsapp.model.signal.auth.DeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
@@ -30,6 +31,7 @@ import it.auties.whatsapp.util.*;
 import lombok.*;
 import lombok.experimental.Accessors;
 
+import java.net.URI;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.Map.Entry;
@@ -246,22 +248,16 @@ class StreamHandler implements JacksonProvider {
                 .orElseGet(() -> socketHandler.createChat(fromJid));
         var timestamp = node.attributes()
                 .getLong("t");
-        var newPicture = node.findNode("set")
-                .flatMap(Node::contentAsBytes)
-                .orElse(null);
-        var oldPicture = node.findNode("delete")
-                .flatMap(Node::contentAsBytes)
-                .orElseThrow(() -> new NoSuchElementException("Missing old picture in notification"));
         if(fromChat.isGroup()){
             addMessageForGroupStubType(fromChat, StubType.GROUP_CHANGE_ICON, timestamp);
-            socketHandler.onGroupPictureChange(fromChat, newPicture, oldPicture);
+            socketHandler.onGroupPictureChange(fromChat);
             return;
         }
 
         var fromContact = socketHandler.store()
                 .findContactByJid(fromJid)
                 .orElseGet(() -> socketHandler.createContact(fromJid));
-        socketHandler.onContactPictureChange(fromContact, newPicture, oldPicture);
+        socketHandler.onContactPictureChange(fromContact);
     }
 
     private void handleGroupNotification(Node node) {
@@ -323,14 +319,38 @@ class StreamHandler implements JacksonProvider {
         }
 
         switch (child.get().description()){
-            case "privacy" -> child.map(entry -> entry.findNodes("category"))
-                    .stream()
-                    .flatMap(Collection::stream)
-                    .forEach(entry -> addPrivacySetting(entry.attributes()));
-            case "disappearing_mode" -> socketHandler.store()
-                    .newChatsEphemeralTimer(ChatEphemeralTimer.of(child.get().attributes().getLong("duration")));
+            case "privacy" -> changeUserPrivacySetting(child.get());
+            case "disappearing_mode" -> updateUserDisappearingMode(child.get());
+            case "status" -> updateUserStatus(true);
+            case "picture" -> updateUserPicture(true);
+            case "blocklist" -> updateBlocklist(child.orElse(null));
         }
     }
+
+    private void updateBlocklist(Node child) {
+        child.findNodes("item")
+                .forEach(this::updateBlocklistEntry);
+    }
+
+    private void updateBlocklistEntry(Node entry) {
+        entry.attributes().getJid("jid")
+                .flatMap(socketHandler.store()::findContactByJid)
+                .ifPresent(contact -> {
+                    contact.blocked(Objects.equals(entry.attributes().getString("action"), "block"));
+                    socketHandler.onContactBlocked(contact);
+                });
+    }
+
+    private void changeUserPrivacySetting(Node child) {
+        child.findNodes("category")
+                .forEach(entry -> addPrivacySetting(entry.attributes()));
+    }
+
+    private void updateUserDisappearingMode(Node child) {
+        socketHandler.store()
+                .newChatsEphemeralTimer(ChatEphemeralTimer.of(child.attributes().getLong("duration")));
+    }
+
 
     private void addPrivacySetting(Attributes entry) {
         var privacyType = PrivacySettingType.of(entry.getString("name"));
@@ -441,23 +461,51 @@ class StreamHandler implements JacksonProvider {
 
     private void sendStatusUpdate() {
         socketHandler.sendWithNoResponse(ofAttributes("presence", of("type", "available")));
-        socketHandler.sendQuery("get", "blocklist")
-                .thenAcceptAsync(this::parseBlocklist);
+        socketHandler.queryBlockList()
+                .thenAcceptAsync(entry -> entry.forEach(this::markBlocked));
         socketHandler.sendQuery("get", "privacy", Node.of("privacy"))
                 .thenAcceptAsync(this::parsePrivacySettings);
         socketHandler.sendQuery("get", "abt", ofAttributes("props", of("protocol", "1"))); // Ignore this response
         socketHandler.sendQuery("get", "w", Node.of("props"))
                 .thenAcceptAsync(this::parseProps);
+        updateUserStatus(false);
+        updateUserPicture(false);
     }
 
-    private void parseBlocklist(Node result) {
-        result.findNode("list")
-                .stream()
-                .map(entry -> entry.findNodes("item"))
-                .flatMap(Collection::stream)
-                .map(entry -> entry.attributes().getJid("jid"))
-                .flatMap(Optional::stream)
-                .forEach(this::markBlocked);
+    private void updateUserStatus(boolean update) {
+        socketHandler.queryStatus(socketHandler.store().userCompanionJid().toUserJid())
+                .thenAcceptAsync(result -> parseNewStatus(result.orElse(null), update));
+    }
+
+    private void parseNewStatus(ContactStatusResponse result, boolean update) {
+        if(result == null){
+            return;
+        }
+
+        var oldStatus = socketHandler.store().userStatus();
+        socketHandler.store().userStatus(result.status());
+        if(!update){
+            return;
+        }
+
+        socketHandler.onUserStatusChange(result.status(), oldStatus);
+    }
+
+    private void updateUserPicture(boolean update) {
+        socketHandler.queryPicture(socketHandler.store().userCompanionJid().toUserJid())
+                .thenAcceptAsync(result -> handleUserPictureChange(result.orElse(null), update));
+    }
+
+    private void handleUserPictureChange(URI newPicture, boolean update) {
+        var oldStatus = socketHandler.store()
+                .userProfilePicture()
+                .orElse(null);
+        socketHandler.store().userProfilePicture(newPicture);
+        if(!update){
+            return;
+        }
+
+        socketHandler.onUserPictureChange(newPicture, oldStatus);
     }
 
     private void markBlocked(ContactJid entry) {
@@ -648,8 +696,8 @@ class StreamHandler implements JacksonProvider {
         var companion = node.attributes()
                 .getJid("jid")
                 .orElseThrow(() -> new NoSuchElementException("Missing companion"));
-        socketHandler.keys()
-                .companion(companion);
+        socketHandler.store()
+                .userCompanionJid(companion);
     }
 
     public void dispose() {

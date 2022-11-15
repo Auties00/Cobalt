@@ -6,10 +6,7 @@ import it.auties.protobuf.base.ProtobufConverter;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.serializer.exception.ProtobufSerializationException;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NonNull;
+import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.util.Arrays;
@@ -21,6 +18,7 @@ import java.util.Objects;
  * This class also offers a builder, accessible using {@link ContactJid#builder()}.
  */
 @Builder
+@With
 public record ContactJid(String user, @NonNull Server server, int device, int agent)
         implements ProtobufMessage, ContactJidProvider {
     /**

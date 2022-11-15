@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.binary.PatchType;
-import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
@@ -81,12 +80,6 @@ public final class Keys implements Controller<Keys> {
     @Default
     @NonNull
     private ConcurrentLinkedDeque<SignalPreKeyPair> preKeys = new ConcurrentLinkedDeque<>();
-
-    /**
-     * The user using these keys
-     */
-    @Getter
-    private ContactJid companion;
 
     /**
      * The companion secret key
@@ -199,15 +192,6 @@ public final class Keys implements Controller<Keys> {
         this.writeKey = null;
         this.writeCounter.set(0);
         this.readCounter.set(0);
-    }
-
-    /**
-     * Checks if the serverToken and clientToken are not null
-     *
-     * @return true if both the serverToken and clientToken are not null
-     */
-    public boolean hasCompanion() {
-        return companion != null;
     }
 
     /**
@@ -423,20 +407,7 @@ public final class Keys implements Controller<Keys> {
     private void defaultSignedKey() {
         this.signedKeyPair = SignalSignedKeyPair.of(id, identityKeyPair);
     }
-
-    /**
-     * This function sets the companion field to the value of the companion parameter, serializes the object, and returns
-     * the object.
-     *
-     * @param companion the non-null companion
-     * @return The object itself.
-     */
-    public Keys companion(ContactJid companion) {
-        this.companion = companion;
-        serialize(true);
-        return this;
-    }
-
+    
     /**
      * This function sets the companionIdentity field to the value of the companionIdentity parameter, serializes the
      * object, and returns the object.

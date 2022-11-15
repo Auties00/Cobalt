@@ -13,11 +13,13 @@ import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.GroupMetadata;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.Request;
+import it.auties.whatsapp.model.response.ContactStatusResponse;
 import it.auties.whatsapp.model.setting.Setting;
 import it.auties.whatsapp.model.signal.auth.ClientHello;
 import it.auties.whatsapp.model.signal.auth.HandshakeMessage;
@@ -352,7 +354,52 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
         var sync = ofChildren("usync",
                 of("sid", store.nextTag(), "mode", "query", "last", "true", "index", "0", "context", "interactive"),
                 query, list);
-        return sendQuery("get", "usync", sync).thenApplyAsync(this::parseQueryResult);
+        return sendQuery("get", "usync", sync)
+                .thenApplyAsync(this::parseQueryResult);
+    }
+
+    public CompletableFuture<Optional<ContactStatusResponse>> queryStatus(@NonNull ContactJidProvider chat) {
+        var query = Node.of("status");
+        var body = Node.ofAttributes("user", Map.of("jid", chat.toJid()));
+        return sendInteractiveQuery(query, body)
+                .thenApplyAsync(this::parseStatus);
+    }
+
+    private Optional<ContactStatusResponse> parseStatus(List<Node> responses) {
+        return responses.stream()
+                .map(entry -> entry.findNode("status"))
+                .flatMap(Optional::stream)
+                .findFirst()
+                .map(ContactStatusResponse::new);
+    }
+
+    public CompletableFuture<Optional<URI>> queryPicture(@NonNull ContactJidProvider chat) {
+        var body = Node.ofAttributes("picture", Map.of("query", "url"));
+        return sendQuery("get", "w:profile:picture", Map.of("target", chat.toJid()), body)
+                .thenApplyAsync(this::parseChatPicture);
+    }
+
+    private Optional<URI> parseChatPicture(Node result) {
+        return result.findNode("picture")
+                .flatMap(picture -> picture.attributes()
+                        .getOptionalString("url"))
+                .map(URI::create);
+    }
+
+    public CompletableFuture<List<ContactJid>> queryBlockList() {
+        return sendQuery("get", "blocklist", (Node) null)
+                .thenApplyAsync(this::parseBlockList);
+    }
+
+    private List<ContactJid> parseBlockList(Node result) {
+        return result.findNode("list")
+                .orElseThrow(() -> new NoSuchElementException("Missing block list in response"))
+                .findNodes("item")
+                .stream()
+                .map(item -> item.attributes()
+                        .getJid("jid"))
+                .flatMap(Optional::stream)
+                .toList();
     }
 
     private List<Node> parseQueryResult(Node result) {
@@ -375,12 +422,11 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
     }
 
     protected void sendSyncReceipt(MessageInfo info, String type) {
-        if(!keys.hasCompanion()){
+        if(store.userCompanionJid() == null){
             return;
         }
 
-        var receipt = ofAttributes("receipt", of("to", ContactJid.of(keys.companion()
-                .user(), ContactJid.Server.USER), "type", type, "id", info.key()
+        var receipt = ofAttributes("receipt", of("to", ContactJid.of(store.userCompanionJid().user(), ContactJid.Server.USER), "type", type, "id", info.key()
                 .id()));
         sendWithNoResponse(receipt);
     }
@@ -542,10 +588,10 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
         });
     }
 
-    protected void onStatus() {
+    protected void onMediaStatus() {
         store.invokeListeners(listener -> {
-            listener.onStatus(whatsapp, store().status());
-            listener.onStatus(store().status());
+            listener.onMediaStatus(whatsapp, store().status());
+            listener.onMediaStatus(store().status());
         });
     }
 
@@ -582,17 +628,70 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
         });
     }
 
-    public void onGroupPictureChange(Chat fromChat, byte[] newPicture, byte[] oldPicture) {
+    protected void onGroupPictureChange(Chat fromChat) {
         store.callListeners(listener -> {
-            listener.onGroupPictureChange(whatsapp, fromChat, oldPicture, newPicture);
-            listener.onGroupPictureChange(fromChat, oldPicture, newPicture);
+            listener.onGroupPictureChange(whatsapp, fromChat);
+            listener.onGroupPictureChange(fromChat);
         });
     }
 
-    public void onContactPictureChange(Contact fromContact, byte[] newPicture, byte[] oldPicture) {
+    protected void onContactPictureChange(Contact fromContact) {
         store.callListeners(listener -> {
-            listener.onProfilePictureChange(whatsapp, fromContact, oldPicture, newPicture);
-            listener.onProfilePictureChange(fromContact, oldPicture, newPicture);
+            listener.onContactPictureChange(whatsapp, fromContact);
+            listener.onContactPictureChange(fromContact);
+        });
+    }
+
+    protected void onUserStatusChange(String newStatus, String oldStatus) {
+        store.callListeners(listener -> {
+            listener.onUserStatusChange(whatsapp, oldStatus, newStatus);
+            listener.onUserStatusChange(oldStatus, newStatus);
+        });
+    }
+
+    public void onUserPictureChange(URI newPicture, URI oldPicture) {
+        store.callListeners(listener -> {
+            listener.onUserPictureChange(whatsapp, oldPicture, newPicture);
+            listener.onUserPictureChange(oldPicture, newPicture);
+        });
+    }
+
+    public void updateUserName(String newName, String oldName) {
+        if(newName == null || Objects.equals(newName, oldName)){
+            return;
+        }
+
+        if(oldName != null) {
+            sendWithNoResponse(Node.ofAttributes("presence", Map.of("name", oldName, "type", "unavailable")));
+            sendWithNoResponse(Node.ofAttributes("presence", Map.of("name", newName, "type", "available")));
+            store.callListeners(listener -> {
+                listener.onUserNameChange(whatsapp, oldName, newName);
+                listener.onUserStatusChange(oldName, newName);
+            });
+        }
+
+        store().userName(newName);
+    }
+
+    public void updateLocale(String newLocale, String oldLocale) {
+        if(!Objects.equals(newLocale, oldLocale)){
+            return;
+        }
+
+        if(oldLocale != null){
+            store.callListeners(listener -> {
+                listener.onUserLocaleChange(whatsapp, oldLocale, newLocale);
+                listener.onUserLocaleChange(oldLocale, newLocale);
+            });
+        }
+
+        store().userLocale(newLocale);
+    }
+
+    protected void onContactBlocked(Contact contact) {
+        store.callListeners(listener -> {
+            listener.onContactBlocked(whatsapp, contact);
+            listener.onContactBlocked(contact);
         });
     }
 

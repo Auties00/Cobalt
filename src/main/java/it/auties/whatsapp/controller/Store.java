@@ -28,6 +28,7 @@ import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import java.net.URI;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -61,6 +62,49 @@ public final class Store implements Controller<Store> {
     private int id;
 
     /**
+     * The locale of the user linked to this account.
+     * This field will be null while the user hasn't logged in yet.
+     * Assumed to be non-null otherwise.
+     */
+    @Getter
+    @Setter
+    private String userLocale;
+
+    /**
+     * The name of the user linked to this account.
+     * This field will be null while the user hasn't logged in yet.
+     * Assumed to be non-null otherwise.
+     */
+    @Getter
+    @Setter
+    private String userName;
+
+    /**
+     * The profile picture of the user linked to this account.
+     * This field will be null while the user hasn't logged in yet.
+     * This field can also be null if no image was set.
+     */
+    @Setter
+    private URI userProfilePicture;
+
+    /**
+     * The status of the user linked to this account.
+     * This field will be null while the user hasn't logged in yet.
+     * Assumed to be non-null otherwise.
+     */
+    @Getter
+    @Setter
+    private String userStatus;
+
+    /**
+     * The user linked to this account.
+     * This field will be null while the user hasn't logged in yet.
+     */
+    @Getter
+    @Setter
+    private ContactJid userCompanionJid;
+
+    /**
      * The non-null map of chats
      */
     @NonNull
@@ -80,7 +124,7 @@ public final class Store implements Controller<Store> {
      */
     @NonNull
     @Default
-    private ConcurrentSet<MessageInfo> status = new ConcurrentSet<>();
+    private ConcurrentMap<ContactJid, Set<MessageInfo>> status = new ConcurrentHashMap<>();
 
     /**
      * The non-null map of privacy settings
@@ -372,12 +416,10 @@ public final class Store implements Controller<Store> {
      * @param jid the sender of the status
      * @return a non-null immutable list
      */
-    public List<MessageInfo> findStatusBySender(ContactJidProvider jid) {
-        return jid == null ?
-                List.of() :
-                status().stream()
-                        .filter(status -> Objects.equals(status.senderJid(), jid.toJid()))
-                        .toList();
+    public Collection<MessageInfo> findStatusBySender(ContactJidProvider jid) {
+        return Optional.ofNullable(status.get(jid.toJid()))
+                .map(Collections::unmodifiableCollection)
+                .orElseGet(Set::of);
     }
 
     /**
@@ -680,7 +722,10 @@ public final class Store implements Controller<Store> {
      * @return an immutable collection
      */
     public Collection<MessageInfo> status() {
-        return Collections.unmodifiableSet(status);
+        return status.values()
+                .stream()
+                .flatMap(Collection::stream)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     /**
@@ -691,7 +736,9 @@ public final class Store implements Controller<Store> {
      */
     public Store addStatus(@NonNull MessageInfo info) {
         attribute(info);
-        status.add(info);
+        var wrapper = Objects.requireNonNullElseGet(status.get(info.senderJid()), ConcurrentSet<MessageInfo>::new);
+        wrapper.add(info);
+        status.put(info.senderJid(), wrapper);
         return this;
     }
 
@@ -727,6 +774,16 @@ public final class Store implements Controller<Store> {
         replyHandlers.add(reply);
         return reply.future();
     }
+
+    /**
+     * Returns the profile picture of this user if present
+     *
+     * @return an optional uri
+     */
+    public Optional<URI> userProfilePicture() {
+        return Optional.ofNullable(userProfilePicture);
+    }
+
 
     public void dispose() {
         requestsService.shutdownNow();

@@ -415,11 +415,11 @@ public class Whatsapp {
     /**
      * Registers a new status listener
      *
-     * @param onNewStatus the listener to register
+     * @param onNewMediaStatus the listener to register
      * @return the same instance
      */
-    public Whatsapp addNewStatusListener(OnNewStatus onNewStatus) {
-        return addListener(onNewStatus);
+    public Whatsapp addNewStatusListener(OnNewMediaStatus onNewMediaStatus) {
+        return addListener(onNewMediaStatus);
     }
 
     /**
@@ -455,11 +455,11 @@ public class Whatsapp {
     /**
      * Registers a status listener
      *
-     * @param onStatus the listener to register
+     * @param onMediaStatus the listener to register
      * @return the same instance
      */
-    public Whatsapp addStatusListener(OnStatus onStatus) {
-        return addListener(onStatus);
+    public Whatsapp addMediaStatusListener(OnMediaStatus onMediaStatus) {
+        return addListener(onMediaStatus);
     }
 
     /**
@@ -628,7 +628,7 @@ public class Whatsapp {
      * @param onNewStatus the listener to register
      * @return the same instance
      */
-    public Whatsapp addNewStatusListener(OnWhatsappNewStatus onNewStatus) {
+    public Whatsapp addNewStatusListener(OnWhatsappNewMediaStatus onNewStatus) {
         return addListener(onNewStatus);
     }
 
@@ -668,7 +668,7 @@ public class Whatsapp {
      * @param onStatus the listener to register
      * @return the same instance
      */
-    public Whatsapp addStatusListener(OnWhatsappStatus onStatus) {
+    public Whatsapp addMediaStatusListener(OnWhatsappMediaStatus onStatus) {
         return addListener(onStatus);
     }
 
@@ -765,6 +765,114 @@ public class Whatsapp {
     }
 
     /**
+     * Registers a name change listener
+     *
+     * @param onUserNameChange the non-null listener
+     */
+    public Whatsapp addUserNameChangeListener(@NonNull OnUserNameChange onUserNameChange){
+        return addListener(onUserNameChange);
+    }
+
+    /**
+     * Registers a name change listener
+     *
+     * @param onNameChange the non-null listener
+     */
+    public Whatsapp addUserNameChangeListener(@NonNull OnWhatsappUserNameChange onNameChange){
+        return addListener(onNameChange);
+    }
+
+    /**
+     * Registers a status change listener
+     *
+     * @param onUserStatusChange the non-null listener
+     */
+    public Whatsapp addUserStatusChangeListener(@NonNull OnUserStatusChange onUserStatusChange){
+        return addListener(onUserStatusChange);
+    }
+
+    /**
+     * Registers a status change listener
+     *
+     * @param onUserStatusChange the non-null listener
+     */
+    public Whatsapp addUserStatusChangeListener(@NonNull OnWhatsappUserStatusChange onUserStatusChange){
+        return addListener(onUserStatusChange);
+    }
+
+    /**
+     * Registers a picture change listener
+     *
+     * @param onUserPictureChange the non-null listener
+     */
+    public Whatsapp addUserPictureChangeListener(@NonNull OnUserPictureChange onUserPictureChange){
+        return addListener(onUserPictureChange);
+    }
+
+    /**
+     * Registers a picture change listener
+     *
+     * @param onUserPictureChange the non-null listener
+     */
+    public Whatsapp addUserPictureChangeListener(@NonNull OnWhatsappUserPictureChange onUserPictureChange){
+        return addListener(onUserPictureChange);
+    }
+
+    /**
+     * Registers a profile picture listener
+     *
+     * @param onContactPictureChange the non-null listener
+     */
+    public Whatsapp addContactPictureChangeListener(@NonNull OnContactPictureChange onContactPictureChange){
+        return addListener(onContactPictureChange);
+    }
+
+    /**
+     * Registers a profile picture listener
+     *
+     * @param onProfilePictureChange the non-null listener
+     */
+    public Whatsapp addContactPictureChangeListener(@NonNull OnWhatsappContactPictureChange onProfilePictureChange){
+        return addListener(onProfilePictureChange);
+    }
+
+    /**
+     * Registers a group picture listener
+     *
+     * @param onGroupPictureChange the non-null listener
+     */
+    public Whatsapp addGroupPictureChangeListener(@NonNull OnGroupPictureChange onGroupPictureChange){
+        return addListener(onGroupPictureChange);
+    }
+
+    /**
+     * Registers a group picture listener
+     *
+     * @param onGroupPictureChange the non-null listener
+     */
+    public Whatsapp addGroupPictureChangeListener(@NonNull OnWhatsappContactPictureChange onGroupPictureChange){
+        return addListener(onGroupPictureChange);
+    }
+
+    /**
+     * Registers a contact blocked listener
+     *
+     * @param onContactBlocked the non-null listener
+     */
+    public Whatsapp addContactBlockedListener(@NonNull OnContactBlocked onContactBlocked){
+        return addListener(onContactBlocked);
+    }
+
+    /**
+     * Registers a contact blocked listener
+     *
+     * @param onContactBlocked the non-null listener
+     */
+    public Whatsapp addContactBlockedListener(@NonNull OnWhatsappContactBlocked onContactBlocked){
+        return addListener(onContactBlocked);
+    }
+
+    /**
      * Removes a listener
      *
      * @param listener the listener to remove
@@ -835,8 +943,8 @@ public class Whatsapp {
      * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Whatsapp> logout() {
-        if (keys().hasCompanion()) {
-            var metadata = Map.of("jid", keys().companion(), "reason", "user_initiated");
+        if (store().userCompanionJid() != null) {
+            var metadata = Map.of("jid", store().userCompanionJid(), "reason", "user_initiated");
             var device = Node.ofAttributes("remove-companion-device", metadata);
             return socketHandler.sendQuery("set", "md", device)
                     .thenRunAsync(socketHandler::changeKeys)
@@ -887,6 +995,7 @@ public class Whatsapp {
         );
 
         return socketHandler.sendQuery("set", "privacy", node)
+                .thenRunAsync(() -> store().privacySettings().put(type, value))
                 .thenApplyAsync(ignored -> this);
     }
 
@@ -899,6 +1008,7 @@ public class Whatsapp {
     public CompletableFuture<Whatsapp> changeNewChatsEphemeralTimer(@NonNull ChatEphemeralTimer timer){
         return socketHandler.sendQuery("set", "disappearing_mode",
                 Node.ofAttributes("disappearing_mode", Map.of("duration", timer.period().toSeconds())))
+                .thenRunAsync(() -> store().newChatsEphemeralTimer(timer))
                 .thenApplyAsync(ignored -> this);
     }
 
@@ -935,7 +1045,9 @@ public class Whatsapp {
      * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Whatsapp> changeName(@NonNull String newName){
+        var oldName = socketHandler.store().userName();
         return socketHandler.send(Node.ofChildren("presence", Map.of("name", newName)))
+                .thenRunAsync(() -> socketHandler.updateUserName(newName, oldName))
                 .thenApplyAsync(ignored -> this);
     }
 
@@ -947,6 +1059,7 @@ public class Whatsapp {
      */
     public CompletableFuture<Whatsapp> changeStatus(@NonNull String newStatus){
         return socketHandler.sendQuery("set", "status", Node.of("status", newStatus.getBytes(StandardCharsets.UTF_8)))
+                .thenRunAsync(() -> store().userName(newStatus))
                 .thenApplyAsync(ignored -> this);
     }
 
@@ -1077,13 +1190,13 @@ public class Whatsapp {
                 .fromMe(true)
                 .senderJid(chat.toJid()
                         .hasServer(GROUP) ?
-                        keys().companion() :
+                        store().userCompanionJid() :
                         null)
                 .build();
         var info = MessageInfo.newMessageInfo()
                 .senderJid(chat.toJid()
                         .hasServer(GROUP) ?
-                        keys().companion() :
+                        store().userCompanionJid() :
                         null)
                 .key(key)
                 .message(message)
@@ -1247,8 +1360,11 @@ public class Whatsapp {
             return;
         }
 
-        if (!info.chat()
-                .isEphemeral()) {
+        if (!info.chat().isEphemeral()) {
+            if(info.message().type() == MessageType.EPHEMERAL){
+                info.message(info.message().unbox());
+            }
+
             return;
         }
 
@@ -1294,19 +1410,7 @@ public class Whatsapp {
      * @return a CompletableFuture that wraps a non-null list of ContactJid
      */
     public CompletableFuture<List<ContactJid>> queryBlockList() {
-        return socketHandler.sendQuery("get", "blocklist", (Node) null)
-                .thenApplyAsync(this::parseBlockList);
-    }
-
-    private List<ContactJid> parseBlockList(Node result) {
-        return result.findNode("list")
-                .orElseThrow(() -> new NoSuchElementException("Missing block list in response"))
-                .findNodes("item")
-                .stream()
-                .map(item -> item.attributes()
-                        .getJid("jid"))
-                .flatMap(Optional::stream)
-                .toList();
+        return socketHandler.queryBlockList();
     }
 
     /**
@@ -1316,18 +1420,7 @@ public class Whatsapp {
      * @return a CompletableFuture that wraps an optional contact status response
      */
     public CompletableFuture<Optional<ContactStatusResponse>> queryStatus(@NonNull ContactJidProvider chat) {
-        var query = Node.of("status");
-        var body = Node.ofAttributes("user", Map.of("jid", chat.toJid()));
-        return socketHandler.sendInteractiveQuery(query, body)
-                .thenApplyAsync(Whatsapp::parseStatus);
-    }
-
-    private static Optional<ContactStatusResponse> parseStatus(List<Node> responses) {
-        return responses.stream()
-                .map(entry -> entry.findNode("status"))
-                .flatMap(Optional::stream)
-                .findFirst()
-                .map(ContactStatusResponse::new);
+        return socketHandler.queryStatus(chat);
     }
 
     /**
@@ -1337,16 +1430,7 @@ public class Whatsapp {
      * @return a CompletableFuture that wraps nullable jpg url hosted on Whatsapp's servers
      */
     public CompletableFuture<Optional<URI>> queryPicture(@NonNull ContactJidProvider chat) {
-        var body = Node.ofAttributes("picture", Map.of("query", "url"));
-        return socketHandler.sendQuery("get", "w:profile:picture", Map.of("target", chat.toJid()), body)
-                .thenApplyAsync(this::parseChatPicture);
-    }
-
-    private Optional<URI> parseChatPicture(Node result) {
-        return result.findNode("picture")
-                .flatMap(picture -> picture.attributes()
-                        .getOptionalString("url"))
-                .map(URI::create);
+        return socketHandler.queryPicture(chat);
     }
 
     /**
@@ -1551,7 +1635,7 @@ public class Whatsapp {
     }
 
     private ContactJid checkGroupParticipantJid(ContactJid jid) {
-        Validate.isTrue(!Objects.equals(jid.toUserJid(), keys().companion()
+        Validate.isTrue(!Objects.equals(jid.toUserJid(), store().userCompanionJid()
                 .toUserJid()), "Cannot execute action on yourself");
         return jid;
     }
@@ -1639,7 +1723,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<ContactJid> changeProfilePicture(byte[] image) {
-        return changeGroupPicture(keys().companion(), image);
+        return changeGroupPicture(store().userCompanionJid(), image);
     }
 
     /**
@@ -2097,7 +2181,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<List<BusinessCatalogEntry>> queryBusinessCatalog(int productsLimit) {
-        return queryBusinessCatalog(keys().companion()
+        return queryBusinessCatalog(store().userCompanionJid()
                 .toUserJid(), productsLimit);
     }
 
@@ -2155,7 +2239,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<?> queryBusinessCollections(int collectionsLimit) {
-        return queryBusinessCollections(keys().companion()
+        return queryBusinessCollections(store().userCompanionJid()
                 .toUserJid(), collectionsLimit);
     }
 
@@ -2280,7 +2364,7 @@ public class Whatsapp {
                 .put("participant", info.senderJid(), () -> !Objects.equals(info.chatJid(), info.senderJid()))
                 .map();
         var node = Node.ofChildren("receipt",
-                Map.of("id", info.key().id(), "to", socketHandler.keys().companion().toUserJid(), "type", "server-error"),
+                Map.of("id", info.key().id(), "to", socketHandler.store().userCompanionJid().toUserJid(), "type", "server-error"),
                 Node.ofChildren("encrypt",
                         Node.of("enc_p", ciphertext),
                         Node.of("enc_iv", retryIv)),

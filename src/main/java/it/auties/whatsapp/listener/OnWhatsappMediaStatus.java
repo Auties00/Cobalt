@@ -5,12 +5,12 @@ import it.auties.whatsapp.model.info.MessageInfo;
 
 import java.util.Collection;
 
-public interface OnWhatsappStatus extends Listener {
+public interface OnWhatsappMediaStatus extends Listener {
     /**
      * Called when the socket receives all the status updated from WhatsappWeb's Socket.
      *
      * @param whatsapp an instance to the calling api
      * @param status the status
      */
-    void onStatus(Whatsapp whatsapp, Collection<MessageInfo> status);
+    void onMediaStatus(Whatsapp whatsapp, Collection<MessageInfo> status);
 }

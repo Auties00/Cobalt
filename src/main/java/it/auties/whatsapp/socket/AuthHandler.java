@@ -75,14 +75,9 @@ class AuthHandler implements JacksonProvider {
     }
 
     private ClientPayload finishUserPayload(ClientPayload.ClientPayloadBuilder builder) {
-        if (socketHandler.keys()
-                .hasCompanion()) {
-            return builder.username(parseLong(socketHandler.keys()
-                            .companion()
-                            .user()))
-                    .device(socketHandler.keys()
-                            .companion()
-                            .device())
+        if (socketHandler.store().userCompanionJid() != null) {
+            return builder.username(parseLong(socketHandler.store().userCompanionJid().user()))
+                    .device(socketHandler.store().userCompanionJid().device())
                     .build();
         }
 

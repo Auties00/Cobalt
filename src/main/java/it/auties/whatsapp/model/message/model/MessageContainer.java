@@ -536,7 +536,9 @@ public class MessageContainer implements ProtobufMessage {
      * @return a non-null type
      */
     public MessageType type() {
-        return ephemeral != null ? MessageType.EPHEMERAL : viewOnce != null ? MessageType.VIEW_ONCE : content().type();
+        return ephemeral != null ? MessageType.EPHEMERAL
+                : viewOnce != null ? MessageType.VIEW_ONCE
+                : content().type();
     }
 
     /**
@@ -599,6 +601,15 @@ public class MessageContainer implements ProtobufMessage {
                 .call(call)
                 .deviceInfo(deviceInfo)
                 .build();
+    }
+
+    /**
+     * Returns an unboxed message where are all future-proof messages(i.e. ephemeral and view once) have been unboxed
+     *
+     * @return a non-null message container
+     */
+    public MessageContainer unbox(){
+        return MessageContainer.of(content());
     }
 
     /**

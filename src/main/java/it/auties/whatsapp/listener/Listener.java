@@ -17,6 +17,7 @@ import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.setting.Setting;
 import it.auties.whatsapp.socket.SocketHandler;
 
+import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -445,7 +446,7 @@ public interface Listener {
      * @param whatsapp an instance to the calling api
      * @param status the status
      */
-    default void onStatus(Whatsapp whatsapp, Collection<MessageInfo> status) {
+    default void onMediaStatus(Whatsapp whatsapp, Collection<MessageInfo> status) {
 
     }
 
@@ -454,7 +455,7 @@ public interface Listener {
      *
      * @param status the status
      */
-    default void onStatus(Collection<MessageInfo> status) {
+    default void onMediaStatus(Collection<MessageInfo> status) {
 
     }
 
@@ -521,10 +522,8 @@ public interface Listener {
      * Called when a contact's profile picture changes
      *
      * @param contact the contact whose pic changed
-     * @param oldPic the old picture, cannot be null
-     * @param newPic the new picture, can be null if the old picture was deleted and not replaced
      */
-    default void onProfilePictureChange(Contact contact, byte[] oldPic, byte[] newPic){
+    default void onContactPictureChange(Contact contact){
 
     }
 
@@ -534,10 +533,8 @@ public interface Listener {
      *
      * @param whatsapp an instance to the calling api
      * @param contact the contact whose pic changed
-     * @param oldPic the old picture, cannot be null
-     * @param newPic the new picture, can be null if the old picture was deleted and not replaced
      */
-    default void onProfilePictureChange(Whatsapp whatsapp, Contact contact, byte[] oldPic, byte[] newPic){
+    default void onContactPictureChange(Whatsapp whatsapp, Contact contact){
 
     }
 
@@ -545,10 +542,8 @@ public interface Listener {
      * Called when a group's picture changes
      *
      * @param group the group whose pic changed
-     * @param oldPic the old picture, cannot be null
-     * @param newPic the new picture, can be null if the old picture was deleted and not replaced
      */
-    default void onGroupPictureChange(Chat group, byte[] oldPic, byte[] newPic){
+    default void onGroupPictureChange(Chat group){
 
     }
 
@@ -557,10 +552,111 @@ public interface Listener {
      *
      * @param whatsapp an instance to the calling api
      * @param group the group whose pic changed
-     * @param oldPic the old picture, cannot be null
-     * @param newPic the new picture, can be null if the old picture was deleted and not replaced
      */
-    default void onGroupPictureChange(Whatsapp whatsapp, Chat group, byte[] oldPic, byte[] newPic){
+    default void onGroupPictureChange(Whatsapp whatsapp, Chat group){
+
+    }
+
+    /**
+     * Called when the companion's name changes
+     *
+     * @param oldName the non-null old name
+     * @param newName the non-null new name
+     */
+    default void onUserNameChange(String oldName, String newName){
+
+    }
+
+    /**
+     * Called when the companion's name changes
+     *
+     * @param whatsapp an instance to the calling api
+     * @param oldName the non-null old name
+     * @param newName the non-null new name
+     */
+    default void onUserNameChange(Whatsapp whatsapp, String oldName, String newName){
+
+    }
+
+    /**
+     * Called when the companion's status changes
+     *
+     * @param oldStatus the non-null old status
+     * @param newStatus the non-null new status
+     */
+    default void onUserStatusChange(String oldStatus, String newStatus){
+
+    }
+
+    /**
+     * Called when the companion's status changes
+     *
+     * @param whatsapp an instance to the calling api
+     * @param oldStatus the non-null old status
+     * @param newStatus the non-null new status
+     */
+    default void onUserStatusChange(Whatsapp whatsapp, String oldStatus, String newStatus){
+
+    }
+
+    /**
+     * Called when the companion's picture changes
+     *
+     * @param oldPicture the non-null old picture
+     * @param newPicture the non-null new picture
+     */
+    default void onUserPictureChange(URI oldPicture, URI newPicture){
+
+    }
+
+    /**
+     * Called when the companion's picture changes
+     *
+     * @param whatsapp an instance to the calling api
+     * @param oldPicture the non-null old picture
+     * @param newPicture the non-null new picture
+     */
+    default void onUserPictureChange(Whatsapp whatsapp, URI oldPicture, URI newPicture){
+
+    }
+
+    /**
+     * Called when the companion's locale changes
+     *
+     * @param oldLocale the non-null old locale
+     * @param newLocale the non-null new picture
+     */
+    default void onUserLocaleChange(String oldLocale, String newLocale){
+
+    }
+
+    /**
+     * Called when the companion's locale changes
+     *
+     * @param whatsapp an instance to the calling api
+     * @param oldLocale the non-null old locale
+     * @param newLocale the non-null new picture
+     */
+    default void onUserLocaleChange(Whatsapp whatsapp, String oldLocale, String newLocale){
+
+    }
+
+    /**
+     * Called when a contact is blocked or unblocked
+     *
+     * @param contact the non-null contact
+     */
+    default void onContactBlocked(Contact contact){
+
+    }
+
+    /**
+     * Called when a contact is blocked or unblocked
+     *
+     * @param whatsapp an instance to the calling api
+     * @param contact the non-null contact
+     */
+    default void onContactBlocked(Whatsapp whatsapp, Contact contact){
 
     }
 }

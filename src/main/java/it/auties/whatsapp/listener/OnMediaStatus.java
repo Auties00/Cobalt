@@ -4,11 +4,11 @@ import it.auties.whatsapp.model.info.MessageInfo;
 
 import java.util.Collection;
 
-public interface OnStatus extends Listener {
+public interface OnMediaStatus extends Listener {
     /**
      * Called when the socket receives all the status updated from WhatsappWeb's Socket.
      *
      * @param status the status
      */
-    void onStatus(Collection<MessageInfo> status);
+    void onMediaStatus(Collection<MessageInfo> status);
 }
