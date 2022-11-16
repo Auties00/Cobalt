@@ -228,25 +228,6 @@ public interface Listener {
     }
 
     /**
-     * Called when the socket receives a new contact
-     *
-     * @param whatsapp an instance to the calling api
-     * @param contact  the new contact
-     */
-    default void onNewContact(Whatsapp whatsapp, Contact contact) {
-
-    }
-
-    /**
-     * Called when the socket receives a new contact
-     *
-     * @param contact the new contact
-     */
-    default void onNewContact(Contact contact) {
-
-    }
-
-    /**
      * Called when the socket receives an update regarding the presence of a contact
      *
      * @param whatsapp an instance to the calling api
@@ -657,6 +638,15 @@ public interface Listener {
      * @param contact the non-null contact
      */
     default void onContactBlocked(Whatsapp whatsapp, Contact contact){
+
+    }
+
+    /**
+     * Called when the socket receives a new contact
+     *
+     * @param contact the new contact
+     */
+    default void onNewContact(Contact contact) {
 
     }
 }

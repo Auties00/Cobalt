@@ -78,7 +78,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      */
     @NonNull
     @Default
-    private Map<Contact, MessageStatus> individualStatus = new ConcurrentHashMap<>();
+    private Map<ContactJid, MessageStatus> individualStatus = new ConcurrentHashMap<>();
 
     /**
      * The jid of the sender

@@ -51,6 +51,7 @@ import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
@@ -600,16 +601,6 @@ public class Whatsapp {
      */
     public Whatsapp addMetadataListener(OnWhatsappMetadata onMetadata) {
         return addListener(onMetadata);
-    }
-
-    /**
-     * Registers a new contact listener
-     *
-     * @param onNewContact the listener to register
-     * @return the same instance
-     */
-    public Whatsapp addNewContactListener(OnWhatsappNewContact onNewContact) {
-        return addListener(onNewContact);
     }
 
     /**
@@ -1529,7 +1520,7 @@ public class Whatsapp {
                 .flatMap(group -> group.attributes()
                         .getJid("jid"))
                 .map(jid -> store().findChatByJid(jid)
-                        .orElseGet(() -> socketHandler.createChat(jid)));
+                        .orElseGet(() -> socketHandler.store().addChat(jid)));
     }
 
     /**
@@ -1544,6 +1535,7 @@ public class Whatsapp {
                 ContactStatus.UNAVAILABLE;
         var node = Node.ofAttributes("presence", Map.of("type", presence.data()));
         return socketHandler.sendWithNoResponse(node)
+                .thenAcceptAsync(socketHandler -> updateSelfPresence(null, presence))
                 .thenApplyAsync(ignored -> available);
     }
 
@@ -1558,7 +1550,26 @@ public class Whatsapp {
                                                                               @NonNull ContactStatus presence) {
         var node = Node.ofAttributes("presence", Map.of("to", chat.toJid(), "type", presence.data()));
         return socketHandler.sendWithNoResponse(node)
+                .thenAcceptAsync(socketHandler -> updateSelfPresence(chat, presence))
                 .thenApplyAsync(ignored -> chat);
+    }
+
+    private void updateSelfPresence(ContactJidProvider chatJid, ContactStatus presence) {
+        var self = store().findContactByJid(store().userCompanionJid().toUserJid());
+        if(self.isEmpty()){
+            return;
+        }
+
+        if(presence == ContactStatus.AVAILABLE || presence == ContactStatus.UNAVAILABLE){
+            self.get().lastKnownPresence(presence);
+        }
+
+        if(chatJid != null) {
+            store().findChatByJid(chatJid)
+                    .ifPresent(chat -> chat.presences().put(self.get().jid(), presence));
+        }
+
+        self.get().lastSeen(ZonedDateTime.now());
     }
 
     /**
@@ -2421,7 +2432,7 @@ public class Whatsapp {
 
     private ActionMessageRangeSync createRange(ContactJidProvider chat, boolean allMessages) {
         var known = store().findChatByJid(chat.toJid())
-                .orElseGet(() -> socketHandler.createChat(chat.toJid()));
+                .orElseGet(() -> socketHandler.store().addChat(chat.toJid()));
         return new ActionMessageRangeSync(known, allMessages);
     }
 

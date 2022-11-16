@@ -30,6 +30,7 @@ public non-sealed interface ControllerDeserializerProvider extends ControllerPro
     /**
      * Attributes the store asynchronously.
      * This method is optionally used to load asynchronously heavy data such as chats while the socket is connecting.
+     * If implemented, cache the returning future because the method may be called multiple times.
      *
      * @param store the non-null store to attribute
      * @return a completable future

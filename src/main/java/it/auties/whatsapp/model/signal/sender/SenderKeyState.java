@@ -12,6 +12,7 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
@@ -43,25 +44,17 @@ public class SenderKeyState implements ProtobufMessage, SignalSpecification {
         this.messageKeys = new CopyOnWriteArrayList<>();
     }
 
-    public boolean hasSenderMessageKey(int iteration) {
-        return messageKeys.stream()
-                .anyMatch(senderMessageKey -> senderMessageKey.iteration() == iteration);
-    }
-
     public void addSenderMessageKey(SenderMessageKey senderMessageKey) {
         messageKeys.add(senderMessageKey);
-        if (messageKeys.size() <= MAX_MESSAGES) {
-            return;
-        }
-
-        messageKeys.remove(0);
     }
 
-    public SenderMessageKey removeSenderMessageKey(int iteration) {
+    // FIXME: Testing out without removing message key to prevent bug
+    // The problem is that this list will grow uncontrollably, so there has to be a way to make this work as expected without
+    // consuming too much memory
+    public Optional<SenderMessageKey> findSenderMessageKey(int iteration) {
         return messageKeys.stream()
                 .filter(key -> key.iteration() == iteration)
-                .findFirst()
-                .orElse(null);
+                .findFirst();
     }
 
     public boolean equals(Object other) {

@@ -110,21 +110,21 @@ public final class Store implements Controller<Store> {
     @NonNull
     @Default
     @JsonIgnore
-    private ConcurrentMap<ContactJid, Chat> chats = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<ContactJid, Chat> chats = new ConcurrentHashMap<>();
 
     /**
      * The non-null map of contacts
      */
     @NonNull
     @Default
-    private ConcurrentMap<ContactJid, Contact> contacts = new ConcurrentHashMap<>();
-    
+    private ConcurrentHashMap<ContactJid, Contact> contacts = new ConcurrentHashMap<>();
+
     /**
      * The non-null list of status messages
      */
     @NonNull
     @Default
-    private ConcurrentMap<ContactJid, Set<MessageInfo>> status = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<ContactJid, Set<MessageInfo>> status = new ConcurrentHashMap<>();
 
     /**
      * The non-null map of privacy settings
@@ -132,7 +132,7 @@ public final class Store implements Controller<Store> {
     @NonNull
     @Default
     @Getter
-    private ConcurrentMap<PrivacySettingType, PrivacySettingValue> privacySettings = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<PrivacySettingType, PrivacySettingValue> privacySettings = new ConcurrentHashMap<>();
 
     /**
      * Whether this store has already received the snapshot from
@@ -499,6 +499,16 @@ public final class Store implements Controller<Store> {
     /**
      * Adds a chat in memory
      *
+     * @param chatJid the chat to add
+     * @return the input chat
+     */
+    public Chat addChat(@NonNull ContactJid chatJid) {
+        return addChat(Chat.ofJid(chatJid));
+    }
+
+    /**
+     * Adds a chat in memory
+     *
      * @param chat the chat to add
      * @return the input chat
      */
@@ -506,9 +516,9 @@ public final class Store implements Controller<Store> {
         chat.messages()
                 .forEach(this::attribute);
         if(chat.hasName() && chat.jid().hasServer(ContactJid.Server.WHATSAPP)){
-            var contact = findContactByJid(chat.jid())
-                    .orElseGet(() -> addContact(Contact.ofJid(chat.jid())));
-            contact.fullName(chat.name());
+            findContactByJid(chat.jid())
+                    .orElseGet(() -> addContact(Contact.ofJid(chat.jid())))
+                    .fullName(chat.name());
         }
 
         return addChatDirect(chat);
@@ -528,12 +538,23 @@ public final class Store implements Controller<Store> {
     /**
      * Adds a contact in memory
      *
+     * @param contactJid the contact to add
+     * @return the input contact
+     */
+    public Contact addContact(@NonNull ContactJid contactJid) {
+        return addContact(Contact.ofJid(contactJid));
+    }
+
+    /**
+     * Adds a contact in memory
+     *
      * @param contact the contact to add
      * @return the input contact
      */
     public Contact addContact(@NonNull Contact contact) {
         var oldContact = contacts.get(contact.jid());
         contacts.put(contact.jid(), contact);
+        callListeners(listener -> listener.onNewContact(contact));
         return contact;
     }
 
@@ -783,7 +804,6 @@ public final class Store implements Controller<Store> {
     public Optional<URI> userProfilePicture() {
         return Optional.ofNullable(userProfilePicture);
     }
-
 
     public void dispose() {
         requestsService.shutdownNow();

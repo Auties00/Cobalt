@@ -41,14 +41,11 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) imple
 
     private SenderMessageKey getSenderKey(SenderKeyState senderKeyState, int iteration) {
         if (senderKeyState.chainKey().iteration() > iteration) {
-            Validate.isTrue(senderKeyState.hasSenderMessageKey(iteration), "Received message with old counter: got %s, expected > %s",
+            var result = senderKeyState.findSenderMessageKey(iteration);
+            Validate.isTrue(result.isPresent(), "Received message with old counter: got %s, expected > %s",
                     iteration, senderKeyState.chainKey().iteration());
-            return senderKeyState.removeSenderMessageKey(iteration);
+            return result.get();
         }
-
-        Validate.isTrue(senderKeyState.chainKey().iteration() - iteration <= MAX_MESSAGES,
-                "Message overflow: expected <= %s, got %s",
-                MAX_MESSAGES, senderKeyState.chainKey().iteration() - iteration);
 
         var lastChainKey = senderKeyState.chainKey();
         while (lastChainKey.iteration() < iteration) {

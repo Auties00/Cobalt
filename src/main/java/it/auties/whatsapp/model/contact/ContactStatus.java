@@ -6,6 +6,7 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 /**
  * The constants of this enumerated type describe the various status that a {@link Contact} can be in
@@ -31,12 +32,7 @@ public enum ContactStatus implements ProtobufMessage {
     /**
      * When the contact is recording an audio message
      */
-    RECORDING,
-
-    /**
-     * When the contact stops writing or recording
-     */
-    PAUSED;
+    RECORDING;
 
     private static ContactStatus of(int index) {
         return Arrays.stream(values())
@@ -45,12 +41,11 @@ public enum ContactStatus implements ProtobufMessage {
                 .orElse(null);
     }
 
-    public static ContactStatus of(@NonNull String jsonValue) {
+    public static Optional<ContactStatus> of(@NonNull String jsonValue) {
         return Arrays.stream(values())
                 .filter(entry -> entry.name()
                         .equalsIgnoreCase(jsonValue))
-                .findFirst()
-                .orElseThrow();
+                .findFirst();
     }
 
     /**

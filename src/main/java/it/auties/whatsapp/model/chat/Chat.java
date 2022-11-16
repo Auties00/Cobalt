@@ -192,7 +192,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      */
     @Default
     @NonNull
-    private Map<Contact, ContactStatus> presences = new ConcurrentHashMap<>();
+    private Map<ContactJid, ContactStatus> presences = new ConcurrentHashMap<>();
 
     /**
      * A set that hold all the jids of the participants in this chat that have received pre keys.

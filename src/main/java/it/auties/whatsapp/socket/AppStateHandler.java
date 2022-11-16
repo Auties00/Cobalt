@@ -357,8 +357,8 @@ class AppStateHandler implements JacksonProvider {
                         clearChatAction
                 );
                 case ContactAction contactAction -> updateName(
-                        targetContact.orElseGet(() -> socketHandler.createContact(jid)),
-                        targetChat.orElseGet(() -> socketHandler.createChat(jid)),
+                        targetContact.orElseGet(() -> socketHandler.store().addContact(jid)),
+                        targetChat.orElseGet(() -> socketHandler.store().addChat(jid)),
                         contactAction
                 );
                 case DeleteChatAction ignored ->

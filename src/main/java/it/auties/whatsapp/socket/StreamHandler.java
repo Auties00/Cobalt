@@ -104,34 +104,36 @@ class StreamHandler implements JacksonProvider {
     }
 
     private void digestChatState(Node node) {
+        var updateType = node.attributes()
+                .getOptionalString("type")
+                .or(() -> node.findNode().map(Node::description))
+                .orElse(null);
+        if(updateType == null){
+            return;
+        }
+
         var chatJid = node.attributes()
                 .getJid("from")
                 .orElseThrow(() -> new NoSuchElementException("Missing from in chat state update"));
         var participantJid = node.attributes()
                 .getJid("participant")
                 .orElse(chatJid);
-        var updateType = node.attributes()
-                .getOptionalString("type")
-                .or(() -> node.findNode()
-                        .map(Node::description))
-                .orElseThrow(() -> new NoSuchElementException("Missing type from %s".formatted(node)));
-        var status = ContactStatus.of(updateType);
         socketHandler.store()
                 .findContactByJid(participantJid)
-                .ifPresent(contact -> updateContactPresence(chatJid, status, contact));
+                .ifPresent(contact -> updateContactPresence(chatJid, updateType, contact));
     }
 
-    private void updateContactPresence(ContactJid chatJid, ContactStatus status, Contact contact) {
-        contact.lastKnownPresence(status);
+    private void updateContactPresence(ContactJid chatJid, String updateType, Contact contact) {
+        var status = ContactStatus.of(updateType);
+        contact.lastKnownPresence(status.orElse(ContactStatus.AVAILABLE));
         contact.lastSeen(ZonedDateTime.now());
         socketHandler.store()
                 .findChatByJid(chatJid)
-                .ifPresent(chat -> updateChatPresence(status, contact, chat));
+                .ifPresent(chat -> updateChatPresence(status.orElse(null), contact, chat));
     }
 
     private void updateChatPresence(ContactStatus status, Contact contact, Chat chat) {
-        chat.presences()
-                .put(contact, status);
+        chat.presences().put(contact.jid(), Objects.requireNonNullElse(status, ContactStatus.AVAILABLE));
         socketHandler.onUpdateChatPresence(status, contact, chat);
     }
 
@@ -194,11 +196,7 @@ class StreamHandler implements JacksonProvider {
 
     private void updateMessageStatus(MessageStatus status, Contact participant, MessageInfo message) {
         message.status(status);
-        if (participant != null) {
-            message.individualStatus()
-                    .put(participant, status);
-        }
-
+        message.individualStatus().put(participant != null ? participant.jid() : message.senderJid(), status);
         socketHandler.onMessageStatus(status, participant, message, message.chat());
     }
 
@@ -245,7 +243,7 @@ class StreamHandler implements JacksonProvider {
                 .orElseThrow(() -> new NoSuchElementException("Missing from in notification"));
         var fromChat = socketHandler.store()
                 .findChatByJid(fromJid)
-                .orElseGet(() -> socketHandler.createChat(fromJid));
+                .orElseGet(() -> socketHandler.store().addChat(fromJid));
         var timestamp = node.attributes()
                 .getLong("t");
         if(fromChat.isGroup()){
@@ -256,7 +254,7 @@ class StreamHandler implements JacksonProvider {
 
         var fromContact = socketHandler.store()
                 .findContactByJid(fromJid)
-                .orElseGet(() -> socketHandler.createContact(fromJid));
+                .orElseGet(() -> socketHandler.store().addContact(fromJid));
         socketHandler.onContactPictureChange(fromContact);
     }
 
@@ -275,7 +273,7 @@ class StreamHandler implements JacksonProvider {
                 .orElseThrow(() -> new NoSuchElementException("Missing chat in notification"));
         var fromChat = socketHandler.store()
                 .findChatByJid(fromJid)
-                .orElseGet(() -> socketHandler.createChat(fromJid));
+                .orElseGet(() -> socketHandler.store().addChat(fromJid));
         addMessageForGroupStubType(fromChat, stubType, timestamp);
     }
 
@@ -460,7 +458,7 @@ class StreamHandler implements JacksonProvider {
     }
 
     private void sendStatusUpdate() {
-        socketHandler.sendWithNoResponse(ofAttributes("presence", of("type", "available")));
+        updateSelfPresence();
         socketHandler.queryBlockList()
                 .thenAcceptAsync(entry -> entry.forEach(this::markBlocked));
         socketHandler.sendQuery("get", "privacy", Node.of("privacy"))
@@ -470,6 +468,15 @@ class StreamHandler implements JacksonProvider {
                 .thenAcceptAsync(this::parseProps);
         updateUserStatus(false);
         updateUserPicture(false);
+    }
+
+    private void updateSelfPresence() {
+        socketHandler.sendWithNoResponse(ofAttributes("presence", of("type", "available")));
+        socketHandler.store()
+                .findContactByJid(socketHandler.store().userCompanionJid().toUserJid())
+                .orElseGet(() -> socketHandler.store().addContact(socketHandler.store().userCompanionJid().toUserJid()))
+                .lastKnownPresence(ContactStatus.AVAILABLE)
+                .lastSeen(ZonedDateTime.now());
     }
 
     private void updateUserStatus(boolean update) {
@@ -511,7 +518,7 @@ class StreamHandler implements JacksonProvider {
     private void markBlocked(ContactJid entry) {
         socketHandler.store()
                 .findContactByJid(entry)
-                .orElseGet(() -> socketHandler.createContact(entry))
+                .orElseGet(() -> socketHandler.store().addContact(entry))
                 .blocked(true);
     }
 

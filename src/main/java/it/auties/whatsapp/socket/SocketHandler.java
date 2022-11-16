@@ -8,6 +8,8 @@ import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.exception.ErroneousNodeRequestException;
+import it.auties.whatsapp.listener.OnContacts;
+import it.auties.whatsapp.listener.OnNewContact;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.GroupMetadata;
@@ -110,6 +112,8 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
         this.messageHandler = new MessageHandler(this);
         this.appStateHandler = new AppStateHandler(this);
         this.errorHandler = new FailureHandler(this);
+        store().listeners().add((OnContacts) contacts -> contacts.forEach(whatsapp::subscribeToPresence));
+        store().listeners().add((OnNewContact) whatsapp::subscribeToPresence);
         getRuntime().addShutdownHook(new Thread(() -> onShutdown(false)));
     }
 
@@ -123,18 +127,6 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
 
         onSocketEvent(SocketEvent.CLOSE);
         latch.countDown();
-    }
-
-    public Contact createContact(ContactJid jid) {
-        var newContact = Contact.ofJid(jid);
-        store.addContact(newContact);
-        return newContact;
-    }
-
-    public Chat createChat(ContactJid jid) {
-        var newChat = Chat.ofJid(jid);
-        store.addChat(newChat);
-        return newChat;
     }
 
     public void changeKeys() {
@@ -499,14 +491,13 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
 
     protected void onUpdateChatPresence(ContactStatus status, Contact contact, Chat chat) {
         store.callListeners(listener -> {
-            listener.onContactPresence(whatsapp, chat, contact, status);
-            listener.onContactPresence(chat, contact, status);
-            if (status != ContactStatus.PAUSED) {
+            var newStatus = Objects.requireNonNullElse(status, ContactStatus.AVAILABLE);
+            if(newStatus == contact.lastKnownPresence().orElse(null)){
                 return;
             }
 
-            listener.onContactPresence(whatsapp, chat, contact, ContactStatus.AVAILABLE);
-            listener.onContactPresence(chat, contact, ContactStatus.AVAILABLE);
+            listener.onContactPresence(whatsapp, chat, contact, newStatus);
+            listener.onContactPresence(chat, contact, newStatus);
         });
     }
 
@@ -670,6 +661,10 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
             });
         }
 
+        var userJid = store().userCompanionJid().toUserJid();
+        store().findContactByJid(userJid)
+                .orElseGet(() -> store.addContact(userJid))
+                .chosenName(newName);
         store().userName(newName);
     }
 

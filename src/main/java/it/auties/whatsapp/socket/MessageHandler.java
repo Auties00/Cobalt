@@ -10,14 +10,13 @@ import it.auties.whatsapp.model.action.ContactAction;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.chat.GroupMetadata;
+import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.DownloadResult;
 import it.auties.whatsapp.model.message.device.DeviceSentMessage;
-import it.auties.whatsapp.model.message.model.MessageCategory;
-import it.auties.whatsapp.model.message.model.MessageContainer;
-import it.auties.whatsapp.model.message.model.MessageKey;
-import it.auties.whatsapp.model.message.model.MessageStatus;
+import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.model.request.Node;
@@ -35,6 +34,7 @@ import it.auties.whatsapp.util.*;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
@@ -608,8 +608,8 @@ class MessageHandler implements JacksonProvider {
             return;
         }
 
-        var result = info.chat().addMessage(info);
-        if (!result || info.timestamp() <= socketHandler.store().initializationTimeStamp()) {
+        if ((info.message().type() != MessageType.SENDER_KEY_DISTRIBUTION && !info.chat().addMessage(info))
+                || info.timestamp() <= socketHandler.store().initializationTimeStamp()) {
             return;
         }
 
@@ -625,10 +625,23 @@ class MessageHandler implements JacksonProvider {
             info.chat().archived(false);
         }
 
+        info.sender()
+                .ifPresent(sender -> sender.lastSeen(ZonedDateTime.now()));
+
+        info.sender()
+                .filter(this::isTyping)
+                .ifPresent(sender -> sender.lastKnownPresence(ContactStatus.AVAILABLE));
+
         info.chat()
-                .unreadMessagesCount(info.chat()
-                        .unreadMessagesCount() + 1);
+                .unreadMessagesCount(info.chat().unreadMessagesCount() + 1);
+
         socketHandler.onNewMessage(info);
+    }
+
+    private boolean isTyping(Contact sender) {
+        return sender.lastKnownPresence().isPresent()
+                && (sender.lastKnownPresence().get() == ContactStatus.COMPOSING
+                        || sender.lastKnownPresence().get() == ContactStatus.RECORDING);
     }
 
     private void handleDistributionMessage(SenderKeyDistributionMessage distributionMessage, ContactJid from) {
@@ -755,7 +768,7 @@ class MessageHandler implements JacksonProvider {
         var jid = ContactJid.of(pushName.id());
         socketHandler.store()
                 .findContactByJid(jid)
-                .orElseGet(() -> socketHandler.createContact(jid))
+                .orElseGet(() -> socketHandler.store().addContact(jid))
                 .chosenName(pushName.name());
         var action = ContactAction.of(pushName.name(), null);
         socketHandler.onAction(action);

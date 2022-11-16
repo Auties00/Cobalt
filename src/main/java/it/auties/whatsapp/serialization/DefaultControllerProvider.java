@@ -57,12 +57,20 @@ class DefaultControllerProvider implements ControllerSerializerProvider, Control
 
     @Override
     public void serializeKeys(Keys keys, boolean async) {
+        if(deserializer.get() == null || !deserializer.get().isDone()){
+            return;
+        }
+
         var preferences = SmileFile.of("%s/keys.smile", keys.id());
         preferences.write(keys, async);
     }
 
     @Override
     public void serializeStore(Store store, boolean async) {
+        if(deserializer.get() == null || !deserializer.get().isDone()){
+            return;
+        }
+
         var preferences = SmileFile.of("%s/store.smile", store.id());
         preferences.write(store, async);
         store.chats()
