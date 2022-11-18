@@ -8,7 +8,6 @@ import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.exception.ErroneousNodeRequestException;
-import it.auties.whatsapp.listener.OnContacts;
 import it.auties.whatsapp.listener.OnNewContact;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.chat.Chat;
@@ -112,7 +111,6 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
         this.messageHandler = new MessageHandler(this);
         this.appStateHandler = new AppStateHandler(this);
         this.errorHandler = new FailureHandler(this);
-        store().listeners().add((OnContacts) contacts -> contacts.forEach(whatsapp::subscribeToPresence));
         store().listeners().add((OnNewContact) whatsapp::subscribeToPresence);
         getRuntime().addShutdownHook(new Thread(() -> onShutdown(false)));
     }
@@ -394,6 +392,11 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
                 .toList();
     }
 
+    public CompletableFuture<Void> subscribeToPresence(ContactJidProvider jid){
+        var node = Node.ofAttributes("presence", Map.of("to", jid.toJid(), "type", "subscribe"));
+        return sendWithNoResponse(node);
+    }
+
     private List<Node> parseQueryResult(Node result) {
         return result.findNodes("usync")
                 .stream()
@@ -491,13 +494,12 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
 
     protected void onUpdateChatPresence(ContactStatus status, Contact contact, Chat chat) {
         store.callListeners(listener -> {
-            var newStatus = Objects.requireNonNullElse(status, ContactStatus.AVAILABLE);
-            if(newStatus == contact.lastKnownPresence().orElse(null)){
+            if(status == contact.lastKnownPresence()){
                 return;
             }
 
-            listener.onContactPresence(whatsapp, chat, contact, newStatus);
-            listener.onContactPresence(chat, contact, newStatus);
+            listener.onContactPresence(whatsapp, chat, contact, status);
+            listener.onContactPresence(chat, contact, status);
         });
     }
 

@@ -1,10 +1,14 @@
 package it.auties.whatsapp.model.signal.session;
 
+import lombok.Builder;
 import lombok.NonNull;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
+@Builder
+@Jacksonized
 public record Session(ConcurrentLinkedDeque<@NonNull SessionState> states) {
     public Session() {
         this(new ConcurrentLinkedDeque<>());

@@ -1,46 +1,33 @@
 package it.auties.whatsapp.model.signal.sender;
 
 import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
-import it.auties.whatsapp.util.Validate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.LinkedHashMap;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentLinkedDeque;
-
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
 @AllArgsConstructor
-@NoArgsConstructor
-@Data
 @Builder
 @Jacksonized
-@Accessors(fluent = true)
 public class SenderKeyRecord implements ProtobufMessage {
-    private static final int MAX_STATES = 5;
-
-    @ProtobufProperty(index = 1, type = MESSAGE, implementation = SenderKeyState.class, repeated = true)
-    @Default
-    private ConcurrentLinkedDeque<SenderKeyState> states = new ConcurrentLinkedDeque<>();
+    private final LinkedHashMap<Integer, SenderKeyState> states;
+    public SenderKeyRecord(){
+        this.states = new LinkedHashMap<>();
+    }
 
     public SenderKeyState headState() {
-        Validate.isTrue(!isEmpty(), "Cannot get head state for empty record", NoSuchElementException.class);
-        return states.getFirst();
+        return states.values()
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException("Cannot get head state for empty record"));
     }
 
     public SenderKeyState findStateById(int keyId) {
-        return states().stream()
-                .filter(key -> key.id() == keyId)
-                .findFirst()
-                .orElseThrow(() -> new NoSuchElementException("Cannot find state with id %s".formatted(keyId)));
+        return Objects.requireNonNull(states.get(keyId), "Cannot find state with id %s".formatted(keyId));
     }
 
     public void addState(int id, int iteration, byte[] seed, byte[] signatureKey) {
@@ -49,7 +36,12 @@ public class SenderKeyRecord implements ProtobufMessage {
 
     public void addState(int id, int iteration, byte[] seed, SignalKeyPair signingKey) {
         var state = new SenderKeyState(id, iteration, seed, signingKey);
-        states.add(state);
+        if(states.containsKey(id)){
+            System.out.println("Ignoring state");
+            return;
+        }
+
+        states.put(id, state);
     }
 
     public boolean isEmpty() {
@@ -57,25 +49,12 @@ public class SenderKeyRecord implements ProtobufMessage {
     }
 
     public boolean equals(Object object) {
-        return object instanceof SenderKeyRecord that && Objects.equals(this.states(), that.states());
+        return object instanceof SenderKeyRecord that
+                && Objects.equals(this.states, that.states);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(this.states());
-    }
-
-    @SuppressWarnings("unused")
-    public static class SenderKeyRecordBuilder {
-        public SenderKeyRecordBuilder states(ConcurrentLinkedDeque<SenderKeyState> states) {
-            if (!this.states$set) {
-                this.states$value = states;
-                this.states$set = true;
-                return this;
-            }
-
-            this.states$value.addAll(states);
-            return this;
-        }
+        return Objects.hashCode(this.states);
     }
 }

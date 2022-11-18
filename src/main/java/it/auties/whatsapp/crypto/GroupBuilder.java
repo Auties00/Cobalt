@@ -16,11 +16,8 @@ public record GroupBuilder(@NonNull Keys keys) implements SignalSpecification {
         }
 
         var state = record.headState();
-        var message = new SignalDistributionMessage(state.id(), state.chainKey()
-                .iteration(), state.chainKey()
-                .seed(), state.signingKey()
-                .encodedPublicKey());
-
+        var message = new SignalDistributionMessage(state.id(), state.chainKey().iteration(),
+                state.chainKey().seed(), state.signingKey().encodedPublicKey());
         return message.serialized();
     }
 

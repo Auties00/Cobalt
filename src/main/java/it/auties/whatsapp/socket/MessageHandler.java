@@ -639,9 +639,8 @@ class MessageHandler implements JacksonProvider {
     }
 
     private boolean isTyping(Contact sender) {
-        return sender.lastKnownPresence().isPresent()
-                && (sender.lastKnownPresence().get() == ContactStatus.COMPOSING
-                        || sender.lastKnownPresence().get() == ContactStatus.RECORDING);
+        return sender.lastKnownPresence() == ContactStatus.COMPOSING
+                || sender.lastKnownPresence() == ContactStatus.RECORDING;
     }
 
     private void handleDistributionMessage(SenderKeyDistributionMessage distributionMessage, ContactJid from) {
@@ -730,7 +729,7 @@ class MessageHandler implements JacksonProvider {
                        .initialSnapshot(true);
                socketHandler.onChats();
                if(receivedPushNames.get()){
-                   socketHandler.onContacts();
+                   onInitialContacts();
                }
             }
 
@@ -739,7 +738,7 @@ class MessageHandler implements JacksonProvider {
                         .forEach(this::handNewPushName);
                 receivedPushNames.set(true);
                 if(socketHandler.store().initialSnapshot()){
-                    socketHandler.onContacts();
+                    onInitialContacts();
                 }
             }
 
@@ -747,6 +746,13 @@ class MessageHandler implements JacksonProvider {
 
             case null -> {}
         }
+    }
+
+    private void onInitialContacts() {
+        socketHandler.onContacts();
+        socketHandler.store()
+                .contacts()
+                .forEach(socketHandler::subscribeToPresence);
     }
 
     private void handleRecentMessagesListener(HistorySync history) {

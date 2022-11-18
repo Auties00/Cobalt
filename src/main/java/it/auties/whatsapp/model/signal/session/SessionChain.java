@@ -1,36 +1,21 @@
 package it.auties.whatsapp.model.signal.session;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
 import lombok.NonNull;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
-@AllArgsConstructor
 @Builder
 @Jacksonized
-@Data
-@Accessors(fluent = true)
-public class SessionChain {
-    private int counter;
-
-    private byte[] key;
-
-    @NonNull
-    private ConcurrentHashMap<Integer, byte[]> messageKeys;
-
+public record SessionChain(AtomicInteger counter, AtomicReference<byte[]> key, ConcurrentHashMap<Integer, byte[]> messageKeys) {
     public SessionChain(int counter, byte @NonNull [] key) {
-        this(counter, key, new ConcurrentHashMap<>());
+        this(new AtomicInteger(counter), new AtomicReference<>(key), new ConcurrentHashMap<>());
     }
 
     public boolean hasMessageKey(int counter) {
         return messageKeys.containsKey(counter);
-    }
-
-    public void incrementCounter() {
-        this.counter++;
     }
 }

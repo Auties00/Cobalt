@@ -1062,8 +1062,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> subscribeToPresence(@NonNull T jid) {
-        var node = Node.ofAttributes("presence", Map.of("to", jid.toJid(), "type", "subscribe"));
-        return socketHandler.sendWithNoResponse(node)
+        return socketHandler.subscribeToPresence(jid)
                 .thenApplyAsync(ignored -> jid);
     }
 

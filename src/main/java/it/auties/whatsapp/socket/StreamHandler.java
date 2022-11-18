@@ -129,11 +129,11 @@ class StreamHandler implements JacksonProvider {
         contact.lastSeen(ZonedDateTime.now());
         socketHandler.store()
                 .findChatByJid(chatJid)
-                .ifPresent(chat -> updateChatPresence(status.orElse(null), contact, chat));
+                .ifPresent(chat -> updateChatPresence(status.orElse(ContactStatus.AVAILABLE), contact, chat));
     }
 
     private void updateChatPresence(ContactStatus status, Contact contact, Chat chat) {
-        chat.presences().put(contact.jid(), Objects.requireNonNullElse(status, ContactStatus.AVAILABLE));
+        chat.presences().put(contact.jid(), status);
         socketHandler.onUpdateChatPresence(status, contact, chat);
     }
 
@@ -445,6 +445,9 @@ class StreamHandler implements JacksonProvider {
                 .thenRun(socketHandler::onChats)
                 .exceptionallyAsync(exception -> socketHandler.errorHandler().handleFailure(MESSAGE, exception));
         socketHandler.onContacts();
+        socketHandler.store()
+                .contacts()
+                .forEach(socketHandler::subscribeToPresence);
         socketHandler.pullInitialPatches();
     }
 

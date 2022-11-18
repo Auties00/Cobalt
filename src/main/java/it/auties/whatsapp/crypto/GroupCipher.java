@@ -2,13 +2,14 @@ package it.auties.whatsapp.crypto;
 
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.model.request.Node;
-import it.auties.whatsapp.model.signal.sender.SenderKeyMessage;
+import it.auties.whatsapp.model.signal.message.SenderKeyMessage;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
 import it.auties.whatsapp.model.signal.sender.SenderKeyState;
 import it.auties.whatsapp.model.signal.sender.SenderMessageKey;
 import it.auties.whatsapp.util.SignalSpecification;
-import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
+
+import java.util.NoSuchElementException;
 
 import static java.util.Map.of;
 
@@ -41,10 +42,9 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) imple
 
     private SenderMessageKey getSenderKey(SenderKeyState senderKeyState, int iteration) {
         if (senderKeyState.chainKey().iteration() > iteration) {
-            var result = senderKeyState.findSenderMessageKey(iteration);
-            Validate.isTrue(result.isPresent(), "Received message with old counter: got %s, expected > %s",
-                    iteration, senderKeyState.chainKey().iteration());
-            return result.get();
+            return senderKeyState.removeSenderMessageKey(iteration)
+                    .orElseThrow(() -> new NoSuchElementException("Received message with old counter: got %s, expected > %s"
+                            .formatted(iteration, senderKeyState.chainKey().iteration())));
         }
 
         var lastChainKey = senderKeyState.chainKey();

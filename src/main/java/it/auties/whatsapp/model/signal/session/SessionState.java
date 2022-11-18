@@ -2,11 +2,8 @@ package it.auties.whatsapp.model.signal.session;
 
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
+import lombok.*;
 import lombok.Builder.Default;
-import lombok.Data;
-import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
@@ -16,36 +13,49 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @AllArgsConstructor
-@Data
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
 public class SessionState {
-    private static final int MAX_SESSIONS = 40;
+    @Getter
+    private final int version;
 
-    private int version;
+    @Getter
+    private final int registrationId;
 
-    private int registrationId;
+    @Getter
+    private final byte @NonNull [] baseKey;
 
-    private byte @NonNull [] rootKey;
-
-    @NonNull
-    private SignalKeyPair ephemeralKeyPair;
-
-    private byte @NonNull [] lastRemoteEphemeralKey;
-
-    private int previousCounter;
-
-    private byte @NonNull [] remoteIdentityKey;
+    @Getter
+    private final byte @NonNull [] remoteIdentityKey;
 
     @NonNull
     @Default
-    private ConcurrentHashMap<String, SessionChain> chains = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, SessionChain> chains = new ConcurrentHashMap<>();
 
+    @Getter
+    @Setter
+    private byte @NonNull [] rootKey;
+
+    @Getter
+    @Setter
     private SessionPreKey pendingPreKey;
 
-    private byte @NonNull [] baseKey;
+    @NonNull
+    @Getter
+    @Setter
+    private SignalKeyPair ephemeralKeyPair;
 
+    @Getter
+    @Setter
+    private byte @NonNull [] lastRemoteEphemeralKey;
+
+    @Getter
+    @Setter
+    private int previousCounter;
+
+    @Getter
+    @Setter
     private boolean closed;
 
     public boolean hasChain(byte[] senderEphemeral) {

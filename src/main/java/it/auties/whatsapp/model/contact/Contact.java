@@ -4,6 +4,7 @@ import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.chat.Chat;
 import lombok.*;
+import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
@@ -56,7 +57,8 @@ public final class Contact implements ProtobufMessage, ContactJidProvider {
      * By default, Whatsapp will not send updates about a contact's status unless they send a message or are in the recent contacts.
      * To force Whatsapp to send updates, use {@link Whatsapp#subscribeToPresence(ContactJidProvider)}.
      */
-    private ContactStatus lastKnownPresence;
+    @Default
+    private ContactStatus lastKnownPresence = ContactStatus.UNAVAILABLE;
 
     /**
      * The nullable last seconds this contact was seen available.
@@ -94,16 +96,6 @@ public final class Contact implements ProtobufMessage, ContactJidProvider {
                         chosenName != null ?
                                 chosenName :
                                 jid().user();
-    }
-
-    /**
-     * Returns an optional object wrapping this contact's last known presence.
-     * If this information isn't available, an empty optional is returned.
-     *
-     * @return an optional object wrapping this contact's last known presence
-     */
-    public Optional<ContactStatus> lastKnownPresence() {
-        return Optional.ofNullable(lastKnownPresence);
     }
 
     /**
