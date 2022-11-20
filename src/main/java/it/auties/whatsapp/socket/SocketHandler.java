@@ -39,8 +39,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 
-import static it.auties.whatsapp.api.ErrorHandler.Location.CRYPTOGRAPHY;
-import static it.auties.whatsapp.api.ErrorHandler.Location.UNKNOWN;
+import static it.auties.whatsapp.api.ErrorHandler.Location.*;
 import static it.auties.whatsapp.model.request.Node.ofAttributes;
 import static it.auties.whatsapp.model.request.Node.ofChildren;
 import static jakarta.websocket.ContainerProvider.getWebSocketContainer;
@@ -285,7 +284,7 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
                                 store.nextTag() :
                                 null)
                         .sendWithNoResponse(session, keys, store)
-                        .exceptionallyAsync(throwable -> errorHandler.handleFailure(UNKNOWN, throwable));
+                        .exceptionallyAsync(throwable -> errorHandler.handleFailure(SOCKET, throwable));
     }
 
     public CompletableFuture<Void> pushPatch(PatchRequest request) {
@@ -494,10 +493,6 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
 
     protected void onUpdateChatPresence(ContactStatus status, Contact contact, Chat chat) {
         store.callListeners(listener -> {
-            if(status == contact.lastKnownPresence()){
-                return;
-            }
-
             listener.onContactPresence(whatsapp, chat, contact, status);
             listener.onContactPresence(chat, contact, status);
         });

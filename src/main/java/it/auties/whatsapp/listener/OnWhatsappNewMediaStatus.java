@@ -6,7 +6,7 @@ import it.auties.whatsapp.socket.SocketHandler;
 
 public interface OnWhatsappNewMediaStatus extends Listener {
     /**
-     * Called when {@link SocketHandler} receives a new status from WhatsappWeb's Socket
+     * Called when the socket receives a new status from WhatsappWeb's Socket
      *
      * @param whatsapp an instance to the calling api
      * @param status the new status message

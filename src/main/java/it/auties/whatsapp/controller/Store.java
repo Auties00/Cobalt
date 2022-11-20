@@ -352,20 +352,36 @@ public final class Store implements Controller<Store> {
     }
 
     /**
-     * Queries the message in {@code chat} whose jid is equal to {@code jid}
+     * Queries the first message whose id matches the one provided in the specified chat
      *
-     * @param chat the chat to search in
-     * @param id   the jid to search
+     * @param key the key to search
      * @return a non-null optional
      */
-    public Optional<MessageInfo> findMessageById(Chat chat, String id) {
-        return chat == null || id == null ?
+    public Optional<MessageInfo> findMessageByKey(MessageKey key) {
+        return key == null ?
                 Optional.empty() :
-                chat.messages()
-                        .parallelStream()
-                        .filter(message -> Objects.equals(message.key()
-                                .id(), id))
-                        .findAny();
+                findMessageById(key.chatJid(), key.id());
+    }
+
+    /**
+     * Queries the first message whose id matches the one provided in the specified chat
+     *
+     * @param provider the chat to search in
+     * @param id       the jid to search
+     * @return a non-null optional
+     */
+    public Optional<MessageInfo> findMessageById(ContactJidProvider provider, String id) {
+        var chat = provider instanceof Chat value ? value
+                : findChatByJid(provider.toJid()).orElse(null);
+        if (chat == null || id == null) {
+            return Optional.empty();
+        }
+
+        return chat.messages()
+                .parallelStream()
+                .filter(message -> Objects.equals(message.key()
+                        .id(), id))
+                .findAny();
     }
 
     /**
@@ -515,10 +531,12 @@ public final class Store implements Controller<Store> {
     public Chat addChat(@NonNull Chat chat) {
         chat.messages()
                 .forEach(this::attribute);
-        if(chat.hasName() && chat.jid().hasServer(ContactJid.Server.WHATSAPP)){
-            findContactByJid(chat.jid())
-                    .orElseGet(() -> addContact(Contact.ofJid(chat.jid())))
-                    .fullName(chat.name());
+        if(chat.hasName()) {
+            if (chat.jid().hasServer(ContactJid.Server.WHATSAPP)) {
+                findContactByJid(chat.jid())
+                        .orElseGet(() -> addContact(Contact.ofJid(chat.jid())))
+                        .fullName(chat.name());
+            }
         }
 
         return addChatDirect(chat);
@@ -552,7 +570,6 @@ public final class Store implements Controller<Store> {
      * @return the input contact
      */
     public Contact addContact(@NonNull Contact contact) {
-        var oldContact = contacts.get(contact.jid());
         contacts.put(contact.jid(), contact);
         callListeners(listener -> listener.onNewContact(contact));
         return contact;

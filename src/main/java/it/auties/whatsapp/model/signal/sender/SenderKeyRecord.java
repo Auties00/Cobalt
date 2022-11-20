@@ -6,15 +6,13 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.LinkedHashMap;
-import java.util.NoSuchElementException;
-import java.util.Objects;
+import java.util.*;
 
 @AllArgsConstructor
 @Builder
 @Jacksonized
 public class SenderKeyRecord implements ProtobufMessage {
-    private final LinkedHashMap<Integer, SenderKeyState> states;
+    private final LinkedHashMap<Integer, List<SenderKeyState>> states;
     public SenderKeyRecord(){
         this.states = new LinkedHashMap<>();
     }
@@ -22,11 +20,12 @@ public class SenderKeyRecord implements ProtobufMessage {
     public SenderKeyState headState() {
         return states.values()
                 .stream()
+                .flatMap(Collection::stream)
                 .findFirst()
                 .orElseThrow(() -> new NoSuchElementException("Cannot get head state for empty record"));
     }
 
-    public SenderKeyState findStateById(int keyId) {
+    public List<SenderKeyState> findStateById(int keyId) {
         return Objects.requireNonNull(states.get(keyId), "Cannot find state with id %s".formatted(keyId));
     }
 
@@ -36,12 +35,9 @@ public class SenderKeyRecord implements ProtobufMessage {
 
     public void addState(int id, int iteration, byte[] seed, SignalKeyPair signingKey) {
         var state = new SenderKeyState(id, iteration, seed, signingKey);
-        if(states.containsKey(id)){
-            System.out.println("Ignoring state");
-            return;
-        }
-
-        states.put(id, state);
+        var oldList = states.getOrDefault(id, new ArrayList<>());
+        oldList.add(state);
+        states.put(id, oldList);
     }
 
     public boolean isEmpty() {

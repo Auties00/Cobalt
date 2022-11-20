@@ -1,11 +1,11 @@
 package it.auties.whatsapp.listener;
 
 import it.auties.whatsapp.model.contact.Contact;
-import it.auties.whatsapp.socket.SocketHandler;
 
 public interface OnNewContact extends Listener {
     /**
-     * Called when {@link SocketHandler} receives a new contact
+     * Called when the socket receives a new contact.
+     * There isn't an overloaded method with a Whatsapp parameter due to technical limitations.
      *
      * @param contact the new contact
      */

@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface OnWhatsappFeatures extends Listener {
     /**
-     * Called when {@link SocketHandler} receives new features from Whatsapp.
+     * Called when the socket receives new features from Whatsapp.
      *
      * @param whatsapp an instance to the calling api
      * @param features the non-null features that were sent

@@ -5,7 +5,7 @@ import it.auties.whatsapp.socket.SocketHandler;
 
 public interface OnAction extends Listener {
     /**
-     * Called when {@link SocketHandler} receives an sync from Whatsapp.
+     * Called when the socket receives an sync from Whatsapp.
      *
      * @param action the sync that was executed
      */

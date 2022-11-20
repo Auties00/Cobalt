@@ -19,6 +19,7 @@ import it.auties.whatsapp.model.message.device.DeviceSentMessage;
 import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
+import it.auties.whatsapp.model.message.standard.ReactionMessage;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.setting.EphemeralSetting;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
@@ -523,7 +524,7 @@ class MessageHandler implements JacksonProvider {
                 ),
                 attempts > 1 || encodedMessage == null ? createPreKeyNode() : null
         );
-        socketHandler.send(retryNode);
+        socketHandler.sendWithNoResponse(retryNode);
         retries.put(id, attempts + 1);
     }
 
@@ -632,9 +633,16 @@ class MessageHandler implements JacksonProvider {
                 .filter(this::isTyping)
                 .ifPresent(sender -> sender.lastKnownPresence(ContactStatus.AVAILABLE));
 
-        info.chat()
-                .unreadMessagesCount(info.chat().unreadMessagesCount() + 1);
+        if(info.message().type() == MessageType.REACTION){
+            info.ignore(true);
+            var reactionMessage = (ReactionMessage) info.message().content();
+            socketHandler.store().findMessageByKey(reactionMessage.key())
+                    .ifPresent(message -> message.reactions().add(reactionMessage));
+            socketHandler.onNewMessage(info);
+            return;
+        }
 
+        info.chat().unreadMessagesCount(info.chat().unreadMessagesCount() + 1);
         socketHandler.onNewMessage(info);
     }
 

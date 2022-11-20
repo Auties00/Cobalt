@@ -8,7 +8,7 @@ import it.auties.whatsapp.socket.SocketHandler;
 
 public interface OnWhatsappContactPresence extends Listener {
     /**
-     * Called when {@link SocketHandler} receives an update regarding the presence of a contact
+     * Called when the socket receives an update regarding the presence of a contact
      *
      * @param whatsapp an instance to the calling api
      * @param chat    the chat that this update regards

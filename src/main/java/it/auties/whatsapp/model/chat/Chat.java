@@ -478,10 +478,11 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     /**
      * Remove a message from the chat
      *
-     * @param info The message to remove
+     * @param info the message to remove
+     * @return whether the message was removed
      */
-    public void removeMessage(@NonNull MessageInfo info) {
-        messages.remove(info);
+    public boolean removeMessage(@NonNull MessageInfo info) {
+        return messages.remove(info);
     }
 
     /**

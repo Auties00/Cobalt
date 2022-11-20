@@ -15,7 +15,6 @@ import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.setting.Setting;
-import it.auties.whatsapp.socket.SocketHandler;
 
 import java.net.URI;
 import java.util.Collection;
@@ -69,7 +68,7 @@ public interface Listener {
     }
 
     /**
-     * Called when {@link SocketHandler} successfully establishes a connection and logs in into an account.
+     * Called when the socket successfully establishes a connection and logs in into an account.
      * When this event is called, any data, including chats and contact, is not guaranteed to be already in memory.
      * Instead, {@link OnChats#onChats(Whatsapp, Collection)} ()} and {@link OnContacts#onContacts(Whatsapp, Collection)} ()} should be used.
      *
@@ -209,7 +208,7 @@ public interface Listener {
     }
 
     /**
-     * Called when {@link SocketHandler} receives the privacy settings from Whatsapp
+     * Called when the socket receives the privacy settings from Whatsapp
      *
      * @param whatsapp        an instance to the calling api
      * @param privacySettings the settings
@@ -219,7 +218,7 @@ public interface Listener {
     }
 
     /**
-     * Called when {@link SocketHandler} receives the privacy settings from Whatsapp
+     * Called when the socket receives the privacy settings from Whatsapp
      *
      * @param privacySettings the settings
      */
@@ -642,7 +641,8 @@ public interface Listener {
     }
 
     /**
-     * Called when the socket receives a new contact
+     * Called when the socket receives a new contact.
+     * There isn't an overloaded method with a Whatsapp parameter due to technical limitations.
      *
      * @param contact the new contact
      */

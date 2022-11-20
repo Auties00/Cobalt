@@ -35,8 +35,8 @@ public class SenderKeyState implements ProtobufMessage, SignalSpecification {
         messageKeys.put(senderMessageKey.iteration(), senderMessageKey);
     }
 
-    public Optional<SenderMessageKey> removeSenderMessageKey(int iteration) {
-        return Optional.ofNullable(messageKeys.remove(iteration));
+    public Optional<SenderMessageKey> findSenderMessageKey(int iteration) {
+        return Optional.ofNullable(messageKeys.get(iteration));
     }
 
     public boolean equals(Object other) {

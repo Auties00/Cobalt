@@ -108,7 +108,7 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, ErrorHandl
                                             BiConsumer<Location, Throwable> onRestore,
                                             BiConsumer<Location, Throwable> onIgnored, Level loggingLevel) {
         return (location, throwable) -> {
-            if(location == CRYPTOGRAPHY){
+            if(location == CRYPTOGRAPHY || location == SOCKET){
                 return Result.RECONNECT;
             }
 
@@ -221,7 +221,12 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, ErrorHandl
         /**
          * Called when an error occurs when serializing or deserializing a Whatsapp message
          */
-        MESSAGE
+        MESSAGE,
+
+        /**
+         * Called when sending or receiving a socket message
+         */
+        SOCKET
     }
 
     /**

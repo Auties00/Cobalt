@@ -5,7 +5,7 @@ import it.auties.whatsapp.socket.SocketHandler;
 
 public interface OnSetting extends Listener {
     /**
-     * Called when {@link SocketHandler} receives a setting change from Whatsapp.
+     * Called when the socket receives a setting change from Whatsapp.
      *
      * @param setting the setting that was toggled
      */

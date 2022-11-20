@@ -107,11 +107,7 @@ class StreamHandler implements JacksonProvider {
         var updateType = node.attributes()
                 .getOptionalString("type")
                 .or(() -> node.findNode().map(Node::description))
-                .orElse(null);
-        if(updateType == null){
-            return;
-        }
-
+                .orElse("available");
         var chatJid = node.attributes()
                 .getJid("from")
                 .orElseThrow(() -> new NoSuchElementException("Missing from in chat state update"));
@@ -124,17 +120,20 @@ class StreamHandler implements JacksonProvider {
     }
 
     private void updateContactPresence(ContactJid chatJid, String updateType, Contact contact) {
-        var status = ContactStatus.of(updateType);
-        contact.lastKnownPresence(status.orElse(ContactStatus.AVAILABLE));
+        var status = ContactStatus.of(updateType)
+                .orElse(ContactStatus.AVAILABLE);
+        if(status == contact.lastKnownPresence()){
+            return;
+        }
+
+        contact.lastKnownPresence(status);
         contact.lastSeen(ZonedDateTime.now());
         socketHandler.store()
                 .findChatByJid(chatJid)
-                .ifPresent(chat -> updateChatPresence(status.orElse(ContactStatus.AVAILABLE), contact, chat));
-    }
-
-    private void updateChatPresence(ContactStatus status, Contact contact, Chat chat) {
-        chat.presences().put(contact.jid(), status);
-        socketHandler.onUpdateChatPresence(status, contact, chat);
+                .ifPresent(chat -> {
+                    chat.presences().put(contact.jid(), status);
+                    socketHandler.onUpdateChatPresence(status, contact, chat);
+                });
     }
 
     private void digestReceipt(Node node) {

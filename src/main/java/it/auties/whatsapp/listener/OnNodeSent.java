@@ -5,7 +5,7 @@ import it.auties.whatsapp.socket.SocketHandler;
 
 public interface OnNodeSent extends Listener {
     /**
-     * Called when {@link SocketHandler} sends a node to Whatsapp
+     * Called when the socket sends a node to Whatsapp
      *
      * @param outgoing the non-null node that was just sent
      */

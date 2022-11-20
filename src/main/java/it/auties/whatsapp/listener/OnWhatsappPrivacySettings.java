@@ -9,7 +9,7 @@ import java.util.Map;
 
 public interface OnWhatsappPrivacySettings extends Listener {
     /**
-     * Called when {@link SocketHandler} receives the privacy settings from Whatsapp
+     * Called when the socket receives the privacy settings from Whatsapp
      *
      * @param whatsapp        an instance to the calling api
      * @param privacySettings the settings

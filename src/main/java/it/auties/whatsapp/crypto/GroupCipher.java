@@ -32,17 +32,26 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) imple
         return Node.of("enc", of("v", "2", "type", "skmsg"), senderKeyMessage.serialized());
     }
 
+    // This approach but it's definitely not the best
     public byte[] decrypt(byte[] data) {
         var record = keys.findSenderKeyByName(name);
         var senderKeyMessage = SenderKeyMessage.ofSerialized(data);
-        var senderKeyState = record.findStateById(senderKeyMessage.id());
-        var senderKey = getSenderKey(senderKeyState, senderKeyMessage.iteration());
-        return AesCbc.decrypt(senderKey.iv(), senderKeyMessage.cipherText(), senderKey.cipherKey());
+        var senderKeyStates = record.findStateById(senderKeyMessage.id());
+        for(var senderKeyState : senderKeyStates){
+            try {
+                var senderKey = getSenderKey(senderKeyState, senderKeyMessage.iteration());
+                return AesCbc.decrypt(senderKey.iv(), senderKeyMessage.cipherText(), senderKey.cipherKey());
+            }catch (Throwable throwable){
+                // Ignore
+            }
+        }
+
+        throw new RuntimeException("Cannot decode message with any session");
     }
 
     private SenderMessageKey getSenderKey(SenderKeyState senderKeyState, int iteration) {
         if (senderKeyState.chainKey().iteration() > iteration) {
-            return senderKeyState.removeSenderMessageKey(iteration)
+            return senderKeyState.findSenderMessageKey(iteration)
                     .orElseThrow(() -> new NoSuchElementException("Received message with old counter: got %s, expected > %s"
                             .formatted(iteration, senderKeyState.chainKey().iteration())));
         }

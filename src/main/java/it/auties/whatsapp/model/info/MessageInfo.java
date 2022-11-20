@@ -250,7 +250,8 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * Reactions
      */
     @ProtobufProperty(index = 41, type = MESSAGE, implementation = ReactionMessage.class, repeated = true)
-    private List<ReactionMessage> reactions;
+    @Default
+    private List<ReactionMessage> reactions = new ArrayList<>();
 
     /**
      * Media data
