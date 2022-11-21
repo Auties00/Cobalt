@@ -443,7 +443,9 @@ class MessageHandler implements JacksonProvider {
                 return;
             }
 
-            socketHandler.sendMessageAck(infoNode, of("class", "receipt"));
+            socketHandler.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.key().id()), null);
+            socketHandler.sendMessageAck(infoNode, infoNode.attributes().map());
+
             var type = messageNode.attributes()
                     .getRequiredString("type");
             var encodedMessage = messageNode.contentAsBytes()
@@ -471,7 +473,6 @@ class MessageHandler implements JacksonProvider {
 
             saveMessage(info, category);
             socketHandler.onReply(info);
-            socketHandler.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.key().id()), null);
         } catch (Throwable throwable) {
             socketHandler.errorHandler()
                     .handleFailure(MESSAGE, throwable);

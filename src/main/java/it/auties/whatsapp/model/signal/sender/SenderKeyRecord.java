@@ -17,7 +17,7 @@ public class SenderKeyRecord implements ProtobufMessage {
         this.states = new LinkedHashMap<>();
     }
 
-    public SenderKeyState headState() {
+    public SenderKeyState findState() {
         return states.values()
                 .stream()
                 .flatMap(Collection::stream)

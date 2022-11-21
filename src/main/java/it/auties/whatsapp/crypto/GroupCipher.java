@@ -16,16 +16,17 @@ import static java.util.Map.of;
 public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) implements SignalSpecification {
     public Node encrypt(byte[] data) {
         var currentState = keys.findSenderKeyByName(name)
-                .headState();
+                .findState();
         var messageKey = currentState.chainKey()
                 .toMessageKey();
 
         var ciphertext = AesCbc.encrypt(messageKey.iv(), data, messageKey.cipherKey());
-
-        var senderKeyMessage = new SenderKeyMessage(currentState.id(), messageKey.iteration(), ciphertext,
-                currentState.signingKey()
-                        .privateKey());
-
+        var senderKeyMessage = new SenderKeyMessage(
+                currentState.id(),
+                messageKey.iteration(),
+                ciphertext,
+                currentState.signingKey().privateKey()
+        );
         var next = currentState.chainKey()
                 .next();
         currentState.chainKey(next);

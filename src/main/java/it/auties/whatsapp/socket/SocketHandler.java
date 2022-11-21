@@ -457,10 +457,18 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
                 .orElseThrow(() -> new NoSuchElementException("Missing from in message ack"));
         var participant = node.attributes()
                 .getNullableString("participant");
+        var recipient = node.attributes()
+                .getNullableString("recipient");
+        var type = node.attributes().getOptionalString("type")
+                .filter(ignored -> !node.hasDescription("message"))
+                .orElse(null);
         var attributes = Attributes.of(metadata)
                 .put("id", node.id())
                 .put("to", to)
+                .put("class", node.description())
                 .put("participant", participant, Objects::nonNull)
+                .put("recipient", recipient, Objects::nonNull)
+                .put("type", type, Objects::nonNull, entry -> !Objects.equals(entry, "unknown"))
                 .map();
         var receipt = ofAttributes("ack", attributes);
         sendWithNoResponse(receipt);

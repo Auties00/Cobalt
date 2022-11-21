@@ -21,6 +21,7 @@ import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
 import it.auties.whatsapp.model.request.Node;
+import it.auties.whatsapp.model.request.NodeHandler;
 import it.auties.whatsapp.model.response.ContactStatusResponse;
 import it.auties.whatsapp.model.signal.auth.DeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
@@ -36,6 +37,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -138,7 +140,7 @@ class StreamHandler implements JacksonProvider {
 
     private void digestReceipt(Node node) {
         var type = node.attributes()
-                .getNullableString("type");
+                .getString("type");
         var status = MessageStatus.of(type);
         if (status != null) {
             updateMessageStatus(node, status);
@@ -149,10 +151,10 @@ class StreamHandler implements JacksonProvider {
             throw new UnsupportedOperationException("Message retries are not fully supported yet");
         }
 
-        var attributes = Attributes.empty()
-                .put("class", "receipt")
-                .put("type", type, Objects::nonNull);
-        socketHandler.sendMessageAck(node, attributes.map());
+        socketHandler.sendMessageAck(
+                node,
+                Map.of("class", "receipt", "type", type)
+        );
     }
 
     private void updateMessageStatus(Node node, MessageStatus status) {
@@ -224,9 +226,9 @@ class StreamHandler implements JacksonProvider {
     }
 
     private void digestNotification(Node node) {
+        socketHandler.sendMessageAck(node, node.attributes().map());
         var type = node.attributes()
                 .getString("type", null);
-        socketHandler.sendMessageAck(node, of("class", "notification", "type", type));
         switch (type){
             case "w:gp2" -> handleGroupNotification(node);
             case "server_sync" -> handleServerSyncNotification(node);
@@ -444,10 +446,29 @@ class StreamHandler implements JacksonProvider {
                 .thenRun(socketHandler::onChats)
                 .exceptionallyAsync(exception -> socketHandler.errorHandler().handleFailure(MESSAGE, exception));
         socketHandler.onContacts();
-        socketHandler.store()
-                .contacts()
-                .forEach(socketHandler::subscribeToPresence);
         socketHandler.pullInitialPatches();
+
+        var delayedExecutor = CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS);
+        subscribeToAllPresences(delayedExecutor);
+    }
+
+    private void subscribeToAllPresences(Executor delayedExecutor) {
+        var future = CompletableFuture.runAsync(
+                () -> socketHandler.store().contacts().forEach(socketHandler::subscribeToPresence),
+                delayedExecutor
+        );
+        socketHandler.store()
+                .addNodeHandler(NodeHandler.of(node -> node.hasDescription("message") && node.attributes().hasKey("offline")))
+                .thenRunAsync(() -> rescheduleSubscriptionFuture(delayedExecutor, future));
+    }
+
+    private void rescheduleSubscriptionFuture(Executor delayedExecutor, CompletableFuture<Void> future) {
+        if(future.isDone()){
+            return;
+        }
+
+        future.cancel(true);
+        subscribeToAllPresences(delayedExecutor);
     }
 
     private void createPingTask() {
