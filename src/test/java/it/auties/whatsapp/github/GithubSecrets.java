@@ -60,25 +60,15 @@ public class GithubSecrets implements JacksonProvider {
 
     private void updateStore() throws IOException {
         var store = getStoreAsJson();
-        var cypheredStore = encrypt(store);
-        writeGpgSecret(GithubActions.STORE_NAME, cypheredStore);
+        writeGpgSecret(GithubActions.STORE_NAME, store);
     }
 
     private void updateKeys() throws IOException {
         var credentials = getCredentialsAsJson();
-        var cypheredCredentials = encrypt(credentials);
-        writeGpgSecret(GithubActions.CREDENTIALS_NAME, cypheredCredentials);
+        writeGpgSecret(GithubActions.CREDENTIALS_NAME, credentials);
     }
 
-    private byte[] getStoreAsJson() throws JsonProcessingException {
-        return SMILE.writeValueAsBytes(Whatsapp.lastConnection().store());
-    }
-
-    private byte[] getCredentialsAsJson() throws JsonProcessingException {
-        return SMILE.writeValueAsBytes(Whatsapp.lastConnection().keys());
-    }
-
-    private byte[] encrypt(byte[] data) {
+    private String encrypt(byte[] data) {
         var publicKeyBytes = Base64.getDecoder().decode(PUBLIC_KEY.key());
         var cypher = new byte[data.length + 48];
         var result = SODIUM.cryptoBoxSeal(cypher, data, data.length, publicKeyBytes);
@@ -86,7 +76,7 @@ public class GithubSecrets implements JacksonProvider {
             throw new IllegalStateException("crypto_box_seal failed");
         }
 
-        return data;
+        return new String(data, StandardCharsets.UTF_8);
     }
 
     @SneakyThrows
@@ -155,5 +145,13 @@ public class GithubSecrets implements JacksonProvider {
     private String loadContactName() throws IOException {
         var config = ConfigUtils.loadConfiguration();
         return Objects.requireNonNull(config.getProperty("contact"), "Missing github_token in configuration");
+    }
+
+    private byte[] getStoreAsJson() throws JsonProcessingException {
+        return SMILE.writeValueAsBytes(Whatsapp.lastConnection().store());
+    }
+
+    private byte[] getCredentialsAsJson() throws JsonProcessingException {
+        return SMILE.writeValueAsBytes(Whatsapp.lastConnection().keys());
     }
 }

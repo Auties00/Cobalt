@@ -34,7 +34,6 @@ import org.bouncycastle.openpgp.examples.ByteArrayHandler;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -49,7 +48,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
-import java.util.zip.GZIPInputStream;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation.class)
@@ -79,16 +77,13 @@ public class RunCITest implements Listener, JacksonProvider {
 
     private void createApi() {
         log("Initializing api to start testing...");
-        if (!GithubActions.isActionsEnvironment()) {
-            System.out.println("Skipping api test: detected local environment");
-            skip = true;
-            return;
-        }
 
         log("Detected github actions environment");
-        api = Whatsapp.newConnection(Whatsapp.Options.defaultOptions(),
+        api = Whatsapp.newConnection(
+                Whatsapp.Options.defaultOptions(),
                 loadGithubParameter(GithubActions.STORE_NAME, Store.class),
-                loadGithubParameter(GithubActions.CREDENTIALS_NAME, Keys.class));
+                loadGithubParameter(GithubActions.CREDENTIALS_NAME, Keys.class)
+        );
         api.addListener(this);
     }
 
@@ -100,9 +95,7 @@ public class RunCITest implements Listener, JacksonProvider {
                 Files.readAllBytes(path),
                 passphrase.toCharArray()
         );
-        var input = new ByteArrayInputStream(decrypted);
-        var gzip = new GZIPInputStream(input, 65536);
-        return SMILE.readValue(gzip, type);
+        return SMILE.readValue(decrypted, type);
     }
 
     private void loadConfig() throws IOException {
