@@ -147,8 +147,8 @@ class StreamHandler implements JacksonProvider {
         }
 
         if(Objects.equals(type, "retry")){
-            // TODO: 14/11/2022 Implement retries
-            throw new UnsupportedOperationException("Message retries are not fully supported yet");
+            System.err.println("Unsupported message retries");
+            return;
         }
 
         socketHandler.sendMessageAck(

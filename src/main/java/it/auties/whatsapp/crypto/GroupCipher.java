@@ -43,7 +43,6 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) imple
                 var senderKey = getSenderKey(senderKeyState, senderKeyMessage.iteration());
                 return AesCbc.decrypt(senderKey.iv(), senderKeyMessage.cipherText(), senderKey.cipherKey());
             }catch (Throwable throwable){
-                System.err.printf("Error: %s%n", throwable.getMessage());
                 // Ignore
             }
         }

@@ -78,8 +78,14 @@ public class RunCITest implements Listener, JacksonProvider {
     private void createApi() {
         log("Initializing api to start testing...");
         if (!GithubActions.isActionsEnvironment()) {
-            System.out.println("Skipping api test: detected local environment");
-            skip = true;
+            if(GithubActions.isReleaseEnv()) {
+                System.out.println("Skipping api test: detected local release environment");
+                skip = true;
+                return;
+            }
+
+            api = Whatsapp.lastConnection();
+            api.addListener(this);
             return;
         }
 
@@ -663,7 +669,6 @@ public class RunCITest implements Listener, JacksonProvider {
         log("Sent audio: %s", textResponse);
     }
 
-    @SuppressWarnings("HttpUrlsUsage")
     @Test
     @Order(31)
     public void testVideoMessage() {
@@ -675,7 +680,7 @@ public class RunCITest implements Listener, JacksonProvider {
         var video = VideoMessage.newVideoMessageBuilder()
                 .mediaConnection(api.store()
                         .mediaConnection())
-                .media(MediaUtils.readBytes("http://techslides.com/demos/sample-videos/small.mp4"))
+                .media(MediaUtils.readBytes("https://file-examples.com/storage/fedb96226c637d3059a2f86/2017/04/file_example_MP4_480_1_5MG.mp4"))
                 .caption("Video")
                 .build();
         var textResponse = api.sendMessage(contact, video)
@@ -683,7 +688,6 @@ public class RunCITest implements Listener, JacksonProvider {
         log("Sent video: %s", textResponse);
     }
 
-    @SuppressWarnings("HttpUrlsUsage")
     @Test
     @Order(32)
     public void testGifMessage() {
@@ -695,7 +699,7 @@ public class RunCITest implements Listener, JacksonProvider {
         var video = VideoMessage.newGifMessageBuilder()
                 .mediaConnection(api.store()
                         .mediaConnection())
-                .media(MediaUtils.readBytes("http://techslides.com/demos/sample-videos/small.mp4"))
+                .media(MediaUtils.readBytes("https://file-examples.com/storage/fedb96226c637d3059a2f86/2017/04/file_example_MP4_480_1_5MG.mp4"))
                 .caption("Gif")
                 .build();
         var textResponse = api.sendMessage(contact, video)
