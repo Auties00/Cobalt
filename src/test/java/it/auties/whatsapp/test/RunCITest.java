@@ -29,6 +29,7 @@ import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.utils.ConfigUtils;
 import it.auties.whatsapp.utils.MediaUtils;
 import lombok.SneakyThrows;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.examples.ByteArrayHandler;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
@@ -38,6 +39,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.Security;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -55,6 +57,10 @@ public class RunCITest implements Listener, JacksonProvider {
     private static ContactJid contact;
     private static ContactJid group;
     private static boolean skip;
+
+    static {
+        Security.addProvider(new BouncyCastleProvider());
+    }
 
     @BeforeAll
     public void init() throws IOException, InterruptedException {
