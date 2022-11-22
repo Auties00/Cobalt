@@ -75,6 +75,11 @@ public class RunCITest implements Listener, JacksonProvider {
 
     private void createApi() {
         log("Initializing api to start testing...");
+        if (!GithubActions.isActionsEnvironment()) {
+            System.out.println("Skipping api test: detected local environment");
+            skip = true;
+            return;
+        }
 
         log("Detected github actions environment");
         api = Whatsapp.newConnection(
