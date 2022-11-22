@@ -91,6 +91,8 @@ public class RunCITest implements Listener, JacksonProvider {
     private <T> T loadGithubParameter(String parameter, Class<T> type) {
         var passphrase = System.getenv(GithubActions.GPG_PASSWORD);
         var path = Path.of("ci/%s.gpg".formatted(parameter));
+        System.out.println(path.toAbsolutePath());
+        System.out.println(Files.exists(path));
         var decrypted = ByteArrayHandler.decrypt(
                 Files.readAllBytes(path),
                 passphrase.toCharArray()
