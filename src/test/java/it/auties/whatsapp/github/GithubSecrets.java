@@ -76,7 +76,7 @@ public class GithubSecrets implements JacksonProvider {
             throw new IllegalStateException("crypto_box_seal failed");
         }
 
-        return new String(data, StandardCharsets.UTF_8);
+        return Base64.getEncoder().encodeToString(cypher);
     }
 
     @SneakyThrows
