@@ -36,12 +36,14 @@ import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Security;
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -92,7 +94,7 @@ public class RunCITest implements Listener, JacksonProvider {
 
     @SneakyThrows
     private <T> T loadGithubParameter(String parameter, Class<T> type) {
-        var passphrase = new String(Base64.getDecoder().decode(System.getenv(GithubActions.GPG_PASSWORD)), StandardCharsets.UTF_8);
+        var passphrase = System.getenv(GithubActions.GPG_PASSWORD);
         var path = Path.of("ci/%s.gpg".formatted(parameter));
         var decrypted = ByteArrayHandler.decrypt(
                 Files.readAllBytes(path),
@@ -106,8 +108,7 @@ public class RunCITest implements Listener, JacksonProvider {
     private void loadConfig() throws IOException {
         if (GithubActions.isActionsEnvironment()) {
             log("Loading environment variables...");
-            var jid = new String(Base64.getDecoder().decode(System.getenv(GithubActions.CONTACT_NAME)), StandardCharsets.UTF_8);
-            contact = ContactJid.of(jid);
+            contact = ContactJid.of(System.getenv(GithubActions.CONTACT_NAME));
             log("Loaded environment variables...");
             return;
         }

@@ -13,7 +13,6 @@ import org.bouncycastle.bcpg.SymmetricKeyAlgorithmTags;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.examples.ByteArrayHandler;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -25,7 +24,6 @@ import java.nio.file.StandardOpenOption;
 import java.security.Security;
 import java.util.Base64;
 import java.util.Objects;
-import java.util.zip.GZIPOutputStream;
 
 import static java.net.URI.create;
 import static java.net.http.HttpRequest.BodyPublishers.ofString;
@@ -80,24 +78,15 @@ public class GithubSecrets implements JacksonProvider {
         return SMILE.writeValueAsBytes(Whatsapp.lastConnection().keys());
     }
 
-    private byte[] encrypt(byte[] data) throws IOException {
+    private byte[] encrypt(byte[] data) {
         var publicKeyBytes = Base64.getDecoder().decode(PUBLIC_KEY.key());
-        var compressed = getCompressedData(data);
-        var cypher = new byte[compressed.length + 48];
-        var result = SODIUM.cryptoBoxSeal(cypher, compressed, compressed.length, publicKeyBytes);
+        var cypher = new byte[data.length + 48];
+        var result = SODIUM.cryptoBoxSeal(cypher, data, data.length, publicKeyBytes);
         if (!result) {
             throw new IllegalStateException("crypto_box_seal failed");
         }
 
         return data;
-    }
-
-    private byte[] getCompressedData(byte[] data) throws IOException {
-        var compressedStream = new ByteArrayOutputStream();
-        var gzip = new GZIPOutputStream(compressedStream);
-        gzip.write(data);
-        gzip.close();
-        return compressedStream.toByteArray();
     }
 
     @SneakyThrows
@@ -137,7 +126,7 @@ public class GithubSecrets implements JacksonProvider {
     @SneakyThrows
     private void uploadSecret(String key, String value) {
         var encrypted = encrypt(value.getBytes(StandardCharsets.UTF_8));
-        var upload = new GithubUpload(PUBLIC_KEY.keyId(), Base64.getEncoder().encodeToString(encrypted));
+        var upload = new GithubUpload(PUBLIC_KEY.keyId(), encrypted);
         var request = HttpRequest.newBuilder()
                 .PUT(ofString(JSON.writeValueAsString(upload)))
                 .uri(create("%s/%s".formatted(REQUEST_PATH, UPDATE_SECRET_PATH.formatted(key))))
