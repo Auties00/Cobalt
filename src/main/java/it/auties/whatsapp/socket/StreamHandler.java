@@ -102,7 +102,7 @@ class StreamHandler implements JacksonProvider {
         }
 
         socketHandler.errorHandler()
-                .handleNodeFailure(new ErroneousNodeRequestException("Stream error", node));
+                .handleNodeFailure(new ErroneousNodeRequestException("Stream error: %s".formatted(node), node));
     }
 
     private void digestChatState(Node node) {
