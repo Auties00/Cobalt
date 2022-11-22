@@ -35,7 +35,7 @@ import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 class AppStateHandler implements JacksonProvider {
-    private static final int PULL_ATTEMPTS = 1;
+    private static final int PULL_ATTEMPTS = 3;
 
     private final SocketHandler socketHandler;
     private final Semaphore lock;
