@@ -118,6 +118,10 @@ class DefaultControllerProvider implements ControllerSerializerProvider, Control
         }
 
         var directory = LocalFileSystem.of(String.valueOf(store.id()));
+        if(Files.notExists(directory)){
+            return CompletableFuture.completedFuture(null);
+        }
+
         try(var walker = Files.walk(directory)){
             var futures = walker.filter(entry -> entry.getFileName().toString().startsWith(CHAT_PREFIX))
                     .map(entry -> deserializeChat(store, entry))
