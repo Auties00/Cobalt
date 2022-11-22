@@ -1,20 +1,13 @@
-package it.auties.whatsapp.dev;
+package it.auties.whatsapp;
 
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.github.GithubActions;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.util.JacksonProvider;
 import lombok.SneakyThrows;
-import org.junit.jupiter.api.Test;
 
+// Just used for testing locally
 public class WaitTest implements JacksonProvider {
-    @Test
-    public void testForFiveMinutes() {
-        if (GithubActions.isActionsEnvironment()) {
-            System.out.println("Skipping wait test: detected non local environment");
-            return;
-        }
-
+    public static void main(String[] args) {
         Whatsapp.lastConnection()
                 .addLoggedInListener(() -> System.out.println("Connected"))
                 .addNewMessageListener(WaitTest::logMessage)

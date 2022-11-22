@@ -1,4 +1,4 @@
-package it.auties.whatsapp.ci;
+package it.auties.whatsapp.test;
 
 import it.auties.whatsapp.github.GithubActions;
 import lombok.SneakyThrows;
@@ -32,8 +32,6 @@ public class TokensCollectorTest {
     private static HttpRequest createRequest(String url) {
         return HttpRequest.newBuilder()
                 .uri(URI.create(url))
-                .header("Host", "web.whatsapp.com")
-                .header("Connection", "keep-alive")
                 .header("Pragma", "no-cache")
                 .header("Cache-Control", "no-cache")
                 .header("Sec-Fetch-Site", "same-origin")

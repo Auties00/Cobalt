@@ -1,4 +1,4 @@
-package it.auties.whatsapp.ci;
+package it.auties.whatsapp.test;
 
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.api.Whatsapp;
@@ -29,13 +29,15 @@ import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.utils.ConfigUtils;
 import it.auties.whatsapp.utils.MediaUtils;
 import lombok.SneakyThrows;
+import org.bouncycastle.openpgp.examples.ByteArrayHandler;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -47,27 +49,31 @@ import java.util.zip.GZIPInputStream;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation.class)
-public class WhatsappAPITest implements Listener, JacksonProvider {
+public class RunCITest implements Listener, JacksonProvider {
     private static Whatsapp api;
     private static CountDownLatch latch;
     private static ContactJid contact;
     private static ContactJid group;
+    private static boolean skip;
 
     @BeforeAll
     public void init() throws IOException, InterruptedException {
         createApi();
+        if(skip){
+            return;
+        }
+
         loadConfig();
         createLatch();
         api.connect();
         latch.await();
     }
 
-    private void createApi() throws IOException {
+    private void createApi() {
         log("Initializing api to start testing...");
         if (!GithubActions.isActionsEnvironment()) {
-            log("Detected local environment");
-            api = Whatsapp.lastConnection();
-            api.addListener(this);
+            System.out.println("Skipping api test: detected local environment");
+            skip = true;
             return;
         }
 
@@ -78,16 +84,15 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
         api.addListener(this);
     }
 
-    private <T> T loadGithubParameter(String parameter, Class<T> type) throws IOException {
-        System.out.println(System.getenv("GITHUB_SECRETS"));
-        var chunksSize = new String(Base64.getDecoder().decode(System.getenv("%s_CHUNKS".formatted(parameter))), StandardCharsets.UTF_8);
-        var chunks = Integer.parseInt(chunksSize);
-        var result = new ByteArrayOutputStream();
-        for(var chunk = 0; chunk < chunks; chunks++){
-            result.write(Base64.getDecoder().decode(System.getenv("%s_%s".formatted(parameter, chunk))));
-        }
-
-        var input = new ByteArrayInputStream(Base64.getDecoder().decode(result.toByteArray()));
+    @SneakyThrows
+    private <T> T loadGithubParameter(String parameter, Class<T> type) {
+        var passphrase = new String(Base64.getDecoder().decode(System.getenv(GithubActions.GPG_PASSWORD)), StandardCharsets.UTF_8);
+        var path = Path.of("ci/%s.gpg".formatted(parameter));
+        var decrypted = ByteArrayHandler.decrypt(
+                Files.readAllBytes(path),
+                passphrase.toCharArray()
+        );
+        var input = new ByteArrayInputStream(decrypted);
         var gzip = new GZIPInputStream(input, 65536);
         return SMILE.readValue(gzip, type);
     }
@@ -95,8 +100,7 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     private void loadConfig() throws IOException {
         if (GithubActions.isActionsEnvironment()) {
             log("Loading environment variables...");
-            var jid = new String(Base64.getDecoder()
-                    .decode(System.getenv(GithubActions.CONTACT_NAME)), StandardCharsets.UTF_8);
+            var jid = new String(Base64.getDecoder().decode(System.getenv(GithubActions.CONTACT_NAME)), StandardCharsets.UTF_8);
             contact = ContactJid.of(jid);
             log("Loaded environment variables...");
             return;
@@ -134,6 +138,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(2)
     public void testChangeGlobalPresence() {
+        if(skip){
+            return;
+        }
+
         log("Changing global presence...");
         api.changePresence(true)
                 .join();
@@ -143,6 +151,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(3)
     public void testUserPresenceSubscription() {
+        if(skip){
+            return;
+        }
+
         log("Subscribing to user presence...");
         var userPresenceResponse = api.subscribeToPresence(contact)
                 .join();
@@ -152,6 +164,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(4)
     public void testPictureQuery() {
+        if(skip){
+            return;
+        }
+
         log("Loading picture...");
         var picResponse = api.queryPicture(contact)
                 .join();
@@ -161,6 +177,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(5)
     public void testStatusQuery() {
+        if(skip){
+            return;
+        }
+
         log("Querying %s's status...", contact);
         api.queryStatus(contact)
                 .join()
@@ -170,6 +190,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(8)
     public void testMarkChat() {
+        if(skip){
+            return;
+        }
+
         markAsUnread();
         markAsRead();
     }
@@ -191,6 +215,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(9)
     public void testGroupCreation() {
+        if(skip){
+            return;
+        }
+
         log("Creating group...");
         var response = api.createGroup(Bytes.ofRandom(5)
                         .toHex(), contact)
@@ -202,6 +230,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(10)
     public void testChangeIndividualPresence() {
+        if(skip){
+            return;
+        }
+
         if (group == null) {
             testGroupCreation();
         }
@@ -217,6 +249,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(11)
     public void testChangeGroupName() {
+        if(skip){
+            return;
+        }
+
         if (group == null) {
             testGroupCreation();
         }
@@ -230,6 +266,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @RepeatedTest(2)
     @Order(12)
     public void testChangeGroupDescription() {
+        if(skip){
+            return;
+        }
+
         if (group == null) {
             testGroupCreation();
         }
@@ -244,6 +284,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(13)
     public void testRemoveGroupParticipant() {
+        if(skip){
+            return;
+        }
+
         if (group == null) {
             testGroupCreation();
         }
@@ -257,6 +301,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(14)
     public void testAddGroupParticipant() {
+        if(skip){
+            return;
+        }
+
         if (group == null) {
             testGroupCreation();
         }
@@ -270,6 +318,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(15)
     public void testPromotion() {
+        if(skip){
+            return;
+        }
+
         if (group == null) {
             testGroupCreation();
         }
@@ -283,6 +335,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(16)
     public void testDemotion() {
+        if(skip){
+            return;
+        }
+
         if (group == null) {
             testGroupCreation();
         }
@@ -296,6 +352,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(17)
     public void testChangeAllGroupSettings() {
+        if(skip){
+            return;
+        }
+
         if (group == null) {
             testGroupCreation();
         }
@@ -313,6 +373,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(19)
     public void testGroupQuery() {
+        if(skip){
+            return;
+        }
+
         if (group == null) {
             testGroupCreation();
         }
@@ -326,6 +390,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(20)
     public void testMute() {
+        if(skip){
+            return;
+        }
+
         if (group == null) {
             testGroupCreation();
         }
@@ -339,6 +407,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(21)
     public void testUnmute() {
+        if(skip){
+            return;
+        }
+
         if (group == null) {
             testGroupCreation();
         }
@@ -352,6 +424,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(22)
     public void testArchive() {
+        if(skip){
+            return;
+        }
+
         if (group == null) {
             testGroupCreation();
         }
@@ -365,6 +441,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(23)
     public void testUnarchive() {
+        if(skip){
+            return;
+        }
+
         if (group == null) {
             testGroupCreation();
         }
@@ -378,6 +458,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(24)
     public void testPin() {
+        if(skip){
+            return;
+        }
+
         if (group == null) {
             testGroupCreation();
         }
@@ -398,6 +482,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(25)
     public void testUnpin() {
+        if(skip){
+            return;
+        }
+
         if (group == null) {
             testGroupCreation();
         }
@@ -418,6 +506,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(26)
     public void testTextMessage() {
+        if(skip){
+            return;
+        }
+
         log("Sending simple text...");
         var simple = api.sendMessage(contact, "Hello")
                 .join();
@@ -437,6 +529,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(27)
     public void deleteMessage() {
+        if(skip){
+            return;
+        }
+
         var example = api.sendMessage(contact, "Hello")
                 .join();
 
@@ -455,6 +551,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(28)
     public void testButtonsMessage() {
+        if(skip){
+            return;
+        }
+
         if(group == null){
             testGroupCreation();
         }
@@ -523,6 +623,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(29)
     public void testImageMessage() {
+        if(skip){
+            return;
+        }
+
         log("Sending image...");
         var image = ImageMessage.newImageMessageBuilder()
                 .mediaConnection(api.store()
@@ -539,6 +643,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(30)
     public void testAudioMessage() {
+        if(skip){
+            return;
+        }
+
         log("Sending audio...");
         var audio = AudioMessage.newAudioMessageBuilder()
                 .mediaConnection(api.store()
@@ -554,6 +662,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(31)
     public void testVideoMessage() {
+        if(skip){
+            return;
+        }
+
         log("Sending video...");
         var video = VideoMessage.newVideoMessageBuilder()
                 .mediaConnection(api.store()
@@ -570,6 +682,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(32)
     public void testGifMessage() {
+        if(skip){
+            return;
+        }
+
         log("Sending gif...");
         var video = VideoMessage.newGifMessageBuilder()
                 .mediaConnection(api.store()
@@ -586,6 +702,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(33)
     public void testPdfMessage() {
+        if(skip){
+            return;
+        }
+
         log("Sending pdf...");
         var document = DocumentMessage.newDocumentMessageBuilder()
                 .mediaConnection(api.store()
@@ -603,6 +723,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(34)
     public void testContactMessage() {
+        if(skip){
+            return;
+        }
+
         log("Sending contact message...");
         var vcard = ContactCard.newContactCardBuilder()
                 .name("A nice contact")
@@ -617,6 +741,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(35)
     public void testLocationMessage() {
+        if(skip){
+            return;
+        }
+
         log("Sending location message...");
         var location = LocationMessage.newLocationMessageBuilder()
                 .latitude(40.730610)
@@ -631,6 +759,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(36)
     public void testGroupInviteMessage() {
+        if(skip){
+            return;
+        }
+
         if (group == null) {
             testGroupCreation();
         }
@@ -657,6 +789,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(37)
     public void testEnableEphemeralMessages() {
+        if(skip){
+            return;
+        }
+
         if (group == null) {
             testGroupCreation();
         }
@@ -670,6 +806,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(38)
     public void testDisableEphemeralMessages() {
+        if(skip){
+            return;
+        }
+
         if (group == null) {
             testGroupCreation();
         }
@@ -683,6 +823,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(39)
     public void testLeave() {
+        if(skip){
+            return;
+        }
+
         if (group == null) {
             testGroupCreation();
         }
@@ -696,6 +840,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(40)
     public void testClearChat() {
+        if(skip){
+            return;
+        }
+
         log("Clearing chat...");
         var ephemeralResponse = api.clear(contact, false)
                 .join();
@@ -705,6 +853,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(41)
     public void testDeleteChat() {
+        if(skip){
+            return;
+        }
+
         log("Deleting chat...");
         var ephemeralResponse = api.delete(contact)
                 .join();
@@ -714,6 +866,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(42)
     public void testInteractiveMessage() { // These are not even supported as far as I can tell, though we have a test lol
+        if(skip){
+            return;
+        }
+
         log("Sending interactive messages..");
 
         var collectionMessage = BusinessCollection.builder()
@@ -756,6 +912,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(43)
     public void testTemplateMessage() {
+        if(skip){
+            return;
+        }
+
         log("Sending template message...");
         var quickReplyButton = HydratedButtonTemplate.of(1, HydratedQuickReplyButton.of("Click me!", "random"));
         var urlButton = HydratedButtonTemplate.of(2, HydratedURLButton.of("Search it", "https://google.com"));
@@ -775,6 +935,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(44)
     public void testListMessage() {
+        if(skip){
+            return;
+        }
+
         var buttons = List.of(ButtonRow.of("First option", "A nice description"),
                 ButtonRow.of("Second option", "A nice description"),
                 ButtonRow.of("Third option", "A nice description"));
@@ -799,6 +963,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(45)
     public void testReaction() throws InterruptedException {
+        if(skip){
+            return;
+        }
+
         var example = api.sendMessage(contact, "Hello")
                 .join();
 
@@ -818,6 +986,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @Test
     @Order(46)
     public void testMediaDownload(){
+        if(skip){
+            return;
+        }
+
         log("Trying to decode some medias...");
         var success = new AtomicInteger();
         var fail = new AtomicInteger();
@@ -842,6 +1014,10 @@ public class WhatsappAPITest implements Listener, JacksonProvider {
     @SuppressWarnings("JUnit3StyleTestMethodInJUnit4Class")
     @AfterAll
     public void testDisconnect() {
+        if(skip){
+            return;
+        }
+
         log("Logging off...");
         CompletableFuture.delayedExecutor(5, TimeUnit.MINUTES)
                 .execute(api::disconnect);

@@ -26,3 +26,4 @@ jobs:
           WHATSAPP_STORE: ${{ secrets.WHATSAPP_STORE }}
           WHATSAPP_KEYS: ${{ secrets.WHATSAPP_KEYS }}
           WHATSAPP_CONTACT: ${{ secrets.WHATSAPP_CONTACT }}
+          GPG_PASSWORD: ${{ secrets.GPG_PASSWORD }}

@@ -22,11 +22,11 @@ public class Tokens {
 
     public final String HEX_REGEX = "[^0-9A-F]+?";
 
-    public boolean noMatch(@NonNull String input, @NonNull String regex) {
+    public boolean anyMatch(@NonNull String input, @NonNull String regex) {
         return Pattern.compile(regex)
                 .matcher(input)
                 .results()
                 .findAny()
-                .isEmpty();
+                .isPresent();
     }
 }
