@@ -35,14 +35,12 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Security;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -93,6 +91,8 @@ public class RunCITest implements Listener, JacksonProvider {
         var path = Path.of("ci/%s.gpg".formatted(parameter));
         System.out.println(path.toAbsolutePath());
         System.out.println(Files.exists(path));
+        System.out.println(passphrase);
+        System.out.println(Base64.getEncoder().encodeToString(passphrase.getBytes(StandardCharsets.UTF_8)));
         var decrypted = ByteArrayHandler.decrypt(
                 Files.readAllBytes(path),
                 passphrase.toCharArray()
