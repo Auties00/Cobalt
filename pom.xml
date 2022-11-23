@@ -346,20 +346,20 @@
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcmail-jdk15</artifactId>
-            <version>1.46</version>
+            <artifactId>bcmail-jdk15on</artifactId>
+            <version>${bouncy.castle.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpg-jdk15</artifactId>
-            <version>1.46</version>
+            <artifactId>bcpg-jdk15on</artifactId>
+            <version>${bouncy.castle.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk15</artifactId>
-            <version>1.46</version>
+            <artifactId>bcprov-jdk15on</artifactId>
+            <version>${bouncy.castle.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
