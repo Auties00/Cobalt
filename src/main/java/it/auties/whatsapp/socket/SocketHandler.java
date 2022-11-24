@@ -110,7 +110,11 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
         this.messageHandler = new MessageHandler(this);
         this.appStateHandler = new AppStateHandler(this);
         this.errorHandler = new FailureHandler(this);
-        store().listeners().add((OnNewContact) whatsapp::subscribeToPresence);
+        if(options.automaticallySubscribeToPresences()) {
+            store().listeners()
+                    .add((OnNewContact) whatsapp::subscribeToPresence);
+        }
+
         getRuntime().addShutdownHook(new Thread(() -> onShutdown(false)));
     }
 

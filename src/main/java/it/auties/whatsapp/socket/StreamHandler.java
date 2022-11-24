@@ -77,16 +77,7 @@ class StreamHandler implements JacksonProvider {
             case "message" -> socketHandler.decodeMessage(node);
             case "notification" -> digestNotification(node);
             case "presence", "chatstate" -> digestChatState(node);
-            case "xmlstreamend" -> digestStreamEnd();
         }
-    }
-
-    private void digestStreamEnd() {
-        if (socketHandler.state() != SocketState.CONNECTED) {
-            return;
-        }
-
-        socketHandler.disconnect(false);
     }
 
     private void digestFailure(Node node) {
@@ -447,6 +438,9 @@ class StreamHandler implements JacksonProvider {
                 .exceptionallyAsync(exception -> socketHandler.errorHandler().handleFailure(MESSAGE, exception));
         socketHandler.onContacts();
         socketHandler.pullInitialPatches();
+        if(!socketHandler.options().automaticallySubscribeToPresences()){
+            return;
+        }
 
         var delayedExecutor = CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS);
         subscribeToAllPresences(delayedExecutor);

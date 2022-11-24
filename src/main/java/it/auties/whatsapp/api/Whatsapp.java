@@ -2494,6 +2494,13 @@ public class Whatsapp {
         private final boolean defaultSerialization = true;
 
         /**
+         * Whether the api should automatically subscribe to all contacts' presences to have them always up to date.
+         * Alternatively, you can subscribe manually to the ones you need using {@link Whatsapp#subscribeToPresence(ContactJidProvider)}
+         */
+        @Default
+        private final boolean automaticallySubscribeToPresences = true;
+
+        /**
          * Whether a preview should be automatically generated and attached to text messages that contain links.
          * By default, it's enabled with inference.
          */

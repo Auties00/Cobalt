@@ -759,6 +759,10 @@ class MessageHandler implements JacksonProvider {
 
     private void onInitialContacts() {
         socketHandler.onContacts();
+        if(!socketHandler.options().automaticallySubscribeToPresences()){
+            return;
+        }
+
         socketHandler.store()
                 .contacts()
                 .forEach(socketHandler::subscribeToPresence);
