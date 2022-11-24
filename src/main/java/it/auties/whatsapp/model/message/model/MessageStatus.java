@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 /**
  * The constants of this enumerated type describe the various types of status of a {@link Message}
@@ -47,13 +48,10 @@ public enum MessageStatus implements ProtobufMessage {
     @Getter
     private final int index;
 
-    public static MessageStatus of(String name) {
-        return name == null ?
-                null :
-                Arrays.stream(values())
-                        .filter(entry -> name.toLowerCase().contains(entry.name().toLowerCase()))
-                        .findFirst()
-                        .orElse(null);
+    public static Optional<MessageStatus> of(String name) {
+        return name == null ? Optional.empty() : Arrays.stream(values())
+                .filter(entry -> name.toLowerCase().contains(entry.name().toLowerCase()))
+                .findFirst();
     }
 
     @JsonCreator

@@ -131,12 +131,9 @@ class StreamHandler implements JacksonProvider {
 
     private void digestReceipt(Node node) {
         var type = node.attributes()
-                .getString("type");
-        var status = MessageStatus.of(type);
-        if (status != null) {
-            updateMessageStatus(node, status);
-        }
-
+                .getNullableString("type");
+        MessageStatus.of(type)
+                .ifPresent(status -> updateMessageStatus(node, status));
         if(Objects.equals(type, "retry")){
             System.err.println("Unsupported message retries");
             return;
@@ -144,7 +141,10 @@ class StreamHandler implements JacksonProvider {
 
         socketHandler.sendMessageAck(
                 node,
-                Map.of("class", "receipt", "type", type)
+                Attributes.empty()
+                        .put("class", "receipt")
+                        .put("type", type, Objects::nonNull)
+                        .map()
         );
     }
 
