@@ -387,7 +387,6 @@ class StreamHandler implements JacksonProvider {
         var statusCode = node.attributes()
                 .getInt("code");
         switch (statusCode) {
-            case 0 -> handleUnknownStreamError(node);
             case 515, 503 -> socketHandler.disconnect(true);
             case 401 -> handleStreamError(node);
             default -> node.children()
@@ -396,6 +395,7 @@ class StreamHandler implements JacksonProvider {
         }
     }
 
+    // FIXME: Is this needed when status code is not specified? / what are the implications of not having it?
     private void handleUnknownStreamError(Node node){
         var child = node.findNode()
                 .orElse(node);

@@ -15,6 +15,7 @@ import lombok.NonNull;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 import static it.auties.whatsapp.crypto.Handshake.PROLOGUE;
 import static java.util.concurrent.CompletableFuture.delayedExecutor;
@@ -36,9 +37,14 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      */
     private static final int TIMEOUT = 60;
 
+    /**
+     * The delayed executor used to cancel futures
+     */
+    private static final Executor EXECUTOR = delayedExecutor(TIMEOUT, SECONDS);
+
     private Request(String id, @NonNull Object body) {
         this(id, body, new CompletableFuture<>(), Exceptions.current());
-        delayedExecutor(TIMEOUT, SECONDS).execute(this::cancelTimedFuture);
+        EXECUTOR.execute(this::cancelTimedFuture);
     }
 
     /**
@@ -174,7 +180,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
             return;
         }
 
-        store.addPendingRequest(this);
+        store.addRequest(this);
     }
 
     private byte[] encryptMessage(Keys keys) {

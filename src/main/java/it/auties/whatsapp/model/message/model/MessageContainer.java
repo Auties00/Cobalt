@@ -604,7 +604,7 @@ public class MessageContainer implements ProtobufMessage {
     }
 
     /**
-     * Returns an unboxed message where are all future-proof messages(i.e. ephemeral and view once) have been unboxed
+     * Returns an unboxed message where are all result-proof messages(i.e. ephemeral and view once) have been unboxed
      *
      * @return a non-null message container
      */

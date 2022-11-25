@@ -133,7 +133,6 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
     public void changeKeys() {
         var oldListeners = new ArrayList<>(store.listeners());
         deleteAndClearKeys();
-
         var newId = KeyHelper.registrationId();
         this.keys = Keys.random(newId, options.defaultSerialization());
         this.store = Store.random(newId, options.defaultSerialization());
@@ -472,7 +471,7 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
                 .put("class", node.description())
                 .put("participant", participant, Objects::nonNull)
                 .put("recipient", recipient, Objects::nonNull)
-                .put("type", type, Objects::nonNull, entry -> !Objects.equals(entry, "unknown"))
+                .put("type", type, Objects::nonNull)
                 .map();
         var receipt = ofAttributes("ack", attributes);
         sendWithNoResponse(receipt);

@@ -157,12 +157,13 @@ public final class Store implements Controller<Store> {
     private boolean unarchiveChats;
 
     /**
-     * The non-null list of requests that are waiting for a response from Whatsapp
+     * The non-null list of requests that were sent to Whatsapp.
+     * They might or might not be waiting for a response
      */
     @NonNull
     @JsonIgnore
     @Default
-    private ConcurrentLinkedDeque<Request> pendingRequests = new ConcurrentLinkedDeque<>();
+    private ConcurrentLinkedDeque<Request> requests = new ConcurrentLinkedDeque<>();
 
     /**
      * The non-null list of all the predicates awaiting a result
@@ -447,7 +448,7 @@ public final class Store implements Controller<Store> {
     public Optional<Request> findPendingRequest(String id) {
         return id == null ?
                 Optional.empty() :
-                pendingRequests.parallelStream()
+                requests.parallelStream()
                         .filter(request -> Objects.equals(request.id(), id))
                         .findAny();
     }
@@ -647,8 +648,8 @@ public final class Store implements Controller<Store> {
         contacts.clear();
         status.clear();
         listeners.clear();
-        pendingRequests.forEach(request -> request.complete(null, false));
-        pendingRequests.clear();
+        requests.forEach(request -> request.complete(null, false));
+        requests.clear();
     }
 
     /**
@@ -691,7 +692,7 @@ public final class Store implements Controller<Store> {
     }
 
     private Request deleteAndComplete(Node response, Request request, boolean exceptionally) {
-        pendingRequests.remove(request);
+        requests.remove(request);
         request.complete(response, exceptionally);
         return request;
     }
@@ -781,13 +782,13 @@ public final class Store implements Controller<Store> {
     }
 
     /**
-     * Adds a pending request to this store
+     * Adds a request to this store
      *
-     * @param request the non-null status to add
-     * @return the non-null completable future of the request
+     * @param request the non-null request to add
+     * @return the non-null completable result of the request
      */
-    public CompletableFuture<Node> addPendingRequest(@NonNull Request request) {
-        pendingRequests.add(request);
+    public CompletableFuture<Node> addRequest(@NonNull Request request) {
+        requests.add(request);
         return request.future();
     }
 
@@ -795,7 +796,7 @@ public final class Store implements Controller<Store> {
      * Adds a pending request to this store
      *
      * @param handler the non-null handler to add
-     * @return the non-null completable future of the handler
+     * @return the non-null completable result of the handler
      */
     public CompletableFuture<Node> addNodeHandler(@NonNull NodeHandler handler) {
         pendingHandlers.add(handler);
@@ -806,7 +807,7 @@ public final class Store implements Controller<Store> {
      * Adds a replay handler to this store
      *
      * @param reply the non-null reply handler to add
-     * @return the non-null completable future of the reply handler
+     * @return the non-null completable result of the reply handler
      */
     public CompletableFuture<MessageInfo> addPendingReply(@NonNull ReplyHandler reply) {
         replyHandlers.add(reply);

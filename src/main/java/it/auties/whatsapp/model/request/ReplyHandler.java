@@ -9,7 +9,7 @@ import java.util.concurrent.CompletableFuture;
  * A model class that represents a pending reply that accepts only a result
  *
  * @param id the non-null id of the message waiting for a reply
- * @param future the non-null completable future that will be resolved when a reply becomes available
+ * @param future the non-null completable result that will be resolved when a reply becomes available
  */
 public record ReplyHandler(@NonNull String id, @NonNull CompletableFuture<MessageInfo> future) {
     /**
