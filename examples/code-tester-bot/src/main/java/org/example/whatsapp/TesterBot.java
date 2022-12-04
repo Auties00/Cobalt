@@ -48,6 +48,10 @@ public class TesterBot {
             return;
         }
 
+        if(!textMessage.text().contains("/java")){
+            return;
+        }
+
         try {
             var text = textMessage.text()
                     .replace("/java", "");

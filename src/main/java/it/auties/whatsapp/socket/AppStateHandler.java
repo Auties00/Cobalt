@@ -276,17 +276,18 @@ class AppStateHandler implements JacksonProvider {
                 .stream()
                 .flatMap(Collection::stream)
                 .map(this::parseSync)
+                .flatMap(Optional::stream)
                 .toList();
     }
 
-    private SnapshotSyncRecord parseSync(Node sync) {
+    private Optional<SnapshotSyncRecord> parseSync(Node sync) {
         var name = PatchType.of(sync.attributes()
                 .getString("name"));
         var type = sync.attributes()
                 .getString("type");
-        Validate.isTrue(!Objects.equals(type, "error"), "Received erroneous sync: %s", IllegalStateException.class,
-                sync.findNode("error")
-                        .orElse(null));
+        if(Objects.equals(type, "error")){
+            return Optional.empty();
+        }
         var more = sync.attributes()
                 .getBool("has_more_patches");
         var snapshotSync = sync.findNode("snapshot")
@@ -301,7 +302,7 @@ class AppStateHandler implements JacksonProvider {
                 .map(patch -> decodePatch(patch, versionCode))
                 .flatMap(Optional::stream)
                 .toList();
-        return new SnapshotSyncRecord(name, snapshotSync, patches, more);
+        return Optional.of(new SnapshotSyncRecord(name, snapshotSync, patches, more));
     }
 
     @SneakyThrows
