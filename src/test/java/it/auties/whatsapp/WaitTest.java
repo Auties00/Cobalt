@@ -21,7 +21,7 @@ public class WaitTest implements JacksonProvider {
                 .addAnyMessageStatusListener((chat, contact, info, status) -> System.out.printf("Message %s in chat %s now has status %s for %s %n", info.id(), info.chatName(), status, contact.name()))
                 .connect()
                 .join()
-                .await();
+                .join();
     }
 
     @SneakyThrows

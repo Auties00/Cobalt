@@ -1,10 +1,10 @@
 package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.api.ErrorHandler.Location;
-import it.auties.whatsapp.exception.ErroneousNodeRequestException;
 import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.util.Exceptions;
 
+import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -23,7 +23,7 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, ErrorHandl
      * System logger.
      * A nice feature from Java 9.
      */
-    System.Logger LOGGER = System.getLogger("ErrorHandler");
+    Logger logger = System.getLogger("ErrorHandler");
 
     /**
      * Default error handler.
@@ -69,7 +69,7 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, ErrorHandl
      */
     static ErrorHandler toFile(BiConsumer<Location, Throwable> onRestore, BiConsumer<Location, Throwable> onIgnored) {
         return defaultErrorHandler(
-                throwable -> LOGGER.log(INFO, "Saved stacktrace at: %s".formatted(Exceptions.save(throwable))),
+                throwable -> logger.log(INFO, "Saved stacktrace at: %s".formatted(Exceptions.save(throwable))),
                 onRestore, onIgnored, ERROR);
     }
 
@@ -108,7 +108,7 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, ErrorHandl
                                             BiConsumer<Location, Throwable> onRestore,
                                             BiConsumer<Location, Throwable> onIgnored, Level loggingLevel) {
         return (location, throwable) -> {
-            if(location == CRYPTOGRAPHY || location == SOCKET){
+            if(location == SOCKET){
                 return Result.RECONNECT;
             }
 
@@ -117,16 +117,17 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, ErrorHandl
             }
 
             if (loggingLevel != null) {
-                LOGGER.log(loggingLevel, "Socket failure at %s".formatted(location));
+                logger.log(loggingLevel, "Socket failure at %s".formatted(location));
             }
 
             if (exceptionPrinter != null) {
                 exceptionPrinter.accept(throwable);
             }
 
-            if (!isPingError(location, throwable) && !isHmacError(location, throwable)) {
+            if (location != CRYPTOGRAPHY
+                    && !(location == MESSAGE && throwable instanceof HmacValidationException)) {
                 if (loggingLevel != null) {
-                    LOGGER.log(loggingLevel, "Ignored failure");
+                    logger.log(loggingLevel, "Ignored failure");
                 }
 
                 if (onIgnored == null) {
@@ -138,7 +139,7 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, ErrorHandl
             }
 
             if (loggingLevel != null) {
-                LOGGER.log(loggingLevel, "Restoring session");
+                logger.log(loggingLevel, "Restoring session");
             }
 
             if (onRestore == null) {
@@ -148,20 +149,6 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, ErrorHandl
             onRestore.accept(location, throwable);
             return Result.RESTORE;
         };
-    }
-
-    private static boolean isHmacError(Location location, Throwable throwable) {
-        return location == MESSAGE
-                && throwable instanceof HmacValidationException;
-    }
-
-    private static boolean isPingError(Location location, Throwable throwable) {
-        return location == ERRONEOUS_NODE
-                && throwable instanceof ErroneousNodeRequestException erroneousNodeException
-                && erroneousNodeException.error()
-                .description()
-                .equals("iq") && erroneousNodeException.error()
-                .hasNode("ping");
     }
 
     /**

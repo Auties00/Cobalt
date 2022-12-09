@@ -40,6 +40,7 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
@@ -58,6 +59,7 @@ class MessageHandler implements JacksonProvider {
     private static final String PKMSG = "pkmsg";
     private static final String MSG = "msg";
     private static final int MAX_ATTEMPTS = 3;
+    private static final int INITIAL_PULL_FALLBACK_TIMEOUT = 30;
 
     private final SocketHandler socketHandler;
     private final Map<String, Integer> retries;
@@ -65,8 +67,8 @@ class MessageHandler implements JacksonProvider {
     private final Cache<String, List<ContactJid>> devicesCache;
     private final Set<Chat> historyCache;
     private final Semaphore semaphore;
-    private final AtomicBoolean receivedAppKeys;
     private final AtomicBoolean receivedPushNames;
+    private CompletableFuture<Void> fallbackPullPatchesFuture;
 
     protected MessageHandler(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
@@ -75,7 +77,6 @@ class MessageHandler implements JacksonProvider {
         this.devicesCache = createCache(Duration.ofMinutes(5));
         this.historyCache = new HashSet<>();
         this.semaphore = new Semaphore(1);
-        this.receivedAppKeys = new AtomicBoolean(false);
         this.receivedPushNames = new AtomicBoolean(false);
     }
 
@@ -132,10 +133,6 @@ class MessageHandler implements JacksonProvider {
     private void tryLock(boolean read) {
         try {
             if(read){
-                if(receivedAppKeys.get()){
-                    socketHandler.awaitAppReady();
-                }
-
                 semaphore.acquire();
                 return;
             }
@@ -208,7 +205,7 @@ class MessageHandler implements JacksonProvider {
                 ignored -> createMessageNodes(partitioned.get(true), deviceMessage));
         var others = querySessions(partitioned.get(false)).thenApplyAsync(
                 ignored -> createMessageNodes(partitioned.get(false), message));
-        return companions.thenCombineAsync(others, (first, second) -> append(first, second));
+        return companions.thenCombineAsync(others, (first, second) -> toSingleList(first, second));
     }
 
     private CompletableFuture<List<Node>> createGroupNodes(MessageInfo info, byte[] distributionMessage,
@@ -284,13 +281,13 @@ class MessageHandler implements JacksonProvider {
         var missing = partitioned.get(false);
         if (missing.isEmpty()) {
             return completedFuture(excludeSelf ?
-                    append(contacts, cached) :
+                    toSingleList(contacts, cached) :
                     cached);
         }
 
         return queryDevices(missing, excludeSelf).thenApplyAsync(missingDevices -> excludeSelf ?
-                append(contacts, cached, missingDevices) :
-                append(cached, missingDevices));
+                toSingleList(contacts, cached, missingDevices) :
+                toSingleList(cached, missingDevices));
     }
 
     private CompletableFuture<List<ContactJid>> queryDevices(List<ContactJid> contacts, boolean excludeSelf) {
@@ -680,8 +677,8 @@ class MessageHandler implements JacksonProvider {
 
                 socketHandler.keys()
                         .addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
-                receivedAppKeys.set(true);
-                socketHandler.pullInitialPatches();
+                var delayedExecutor = CompletableFuture.delayedExecutor(INITIAL_PULL_FALLBACK_TIMEOUT, TimeUnit.SECONDS);
+                this.fallbackPullPatchesFuture = CompletableFuture.runAsync(socketHandler::pullInitialPatches, delayedExecutor);
             }
 
             case REVOKE -> socketHandler.store()
@@ -737,9 +734,6 @@ class MessageHandler implements JacksonProvider {
                socketHandler.store()
                        .initialSnapshot(true);
                socketHandler.onChats();
-               if(receivedPushNames.get()){
-                   onInitialContacts();
-               }
             }
 
             case PUSH_NAME -> {
@@ -753,7 +747,16 @@ class MessageHandler implements JacksonProvider {
 
             case RECENT, FULL -> handleRecentMessagesListener(history);
 
-            case null -> {}
+            case null -> {
+                if(fallbackPullPatchesFuture != null){
+                    fallbackPullPatchesFuture.cancel(true);
+                }
+
+                socketHandler.pullInitialPatches();
+                if(receivedPushNames.get()){
+                    onInitialContacts();
+                }
+            }
         }
     }
 
@@ -794,7 +797,7 @@ class MessageHandler implements JacksonProvider {
     }
 
     @SafeVarargs
-    private <T> List<T> append(List<T>... all) {
+    private <T> List<T> toSingleList(List<T>... all) {
         return Stream.of(all)
                 .flatMap(Collection::stream)
                 .toList();

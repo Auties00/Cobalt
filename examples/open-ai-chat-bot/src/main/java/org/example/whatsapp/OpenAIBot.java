@@ -8,6 +8,7 @@ import it.auties.whatsapp.model.message.standard.TextMessage;
 
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
@@ -27,7 +28,7 @@ public class OpenAIBot {
     private static final ObjectMapper jsonMapper = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     private static final AtomicReference<String> sessionId = new AtomicReference<>();
-    private static final AtomicReference<String> parentMessageId = new AtomicReference<>("a881595b-4be7-4980-abc1-4b55d3d26b8e");
+    private static final AtomicReference<String> parentMessageId = new AtomicReference<>();
     private static final String bearerToken = System.getenv("openai_token");
 
     public static void main(String... args) throws ExecutionException, InterruptedException {
@@ -44,7 +45,7 @@ public class OpenAIBot {
             return;
         }
 
-        if(!textMessage.text().contains("/ai")){
+        if(!textMessage.text().contains("/ai") || info.chat().name().toLowerCase().contains("denis")){
             return;
         }
 
@@ -52,6 +53,7 @@ public class OpenAIBot {
             semaphore.acquire();
             var httpClient = HttpClient.newBuilder()
                     .version(HttpClient.Version.HTTP_1_1)
+                    .connectTimeout(Duration.ofSeconds(10))
                     .build(); // Avoid rate limiting
             var messageId = generateId();
             var lastMessageId = parentMessageId.getAndSet(messageId);

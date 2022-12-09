@@ -123,7 +123,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * Parses a nullable jid to the Whatsapp Jid Format
      *
      * @param jid the nullable jid to parse
-     * @return null if {@code jid == null}, otherwise a non null string
+     * @return null if {@code jid == null}, otherwise a non-null string
      */
     public static String withoutServer(String jid) {
         if (jid == null) {

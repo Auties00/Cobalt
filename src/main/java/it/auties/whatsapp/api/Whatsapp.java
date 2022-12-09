@@ -882,8 +882,8 @@ public class Whatsapp {
      *
      * @return the same instance
      */
-    public Whatsapp await() {
-        socketHandler.await();
+    public Whatsapp join() {
+        socketHandler.join();
         return this;
     }
 
@@ -2464,7 +2464,7 @@ public class Whatsapp {
         /**
          * Last known version of Whatsapp
          */
-        private static final Version WHATSAPP_VERSION = new Version(2, 2236, 10);
+        private static final Version WHATSAPP_VERSION = new Version(2, 2245, 9);
 
         /**
          * Constant for unlimited listeners size

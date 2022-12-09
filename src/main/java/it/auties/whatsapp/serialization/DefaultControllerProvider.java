@@ -3,6 +3,7 @@ package it.auties.whatsapp.serialization;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.chat.Chat;
+import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.util.LocalFileSystem;
 
 import java.io.IOException;
@@ -17,6 +18,9 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.WARNING;
 
 class DefaultControllerProvider implements ControllerSerializerProvider, ControllerDeserializerProvider {
     private static final String CHAT_PREFIX = "chat_";
@@ -94,20 +98,28 @@ class DefaultControllerProvider implements ControllerSerializerProvider, Control
     }
 
     private void serializeChat(Store store, Chat chat) {
-        var preferences = SmileFile.of("%s/%s%s.smile", store.id(), CHAT_PREFIX, chat.jid().toSignalAddress().name());
+        var preferences = SmileFile.of("%s/%s%s.smile", store.id(), CHAT_PREFIX, chat.jid());
         preferences.write(chat, true);
     }
 
     @Override
     public Optional<Keys> deserializeKeys(int id) {
         var preferences = SmileFile.of("%s/keys.smile", id);
-        return preferences.read(Keys.class);
+        try {
+            return preferences.read(Keys.class);
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Corrupted keys", exception);
+        }
     }
 
     @Override
     public Optional<Store> deserializeStore(int id) {
-        var preferences = SmileFile.of("%s/store.smile", id);
-        return preferences.read(Store.class);
+        try {
+            var preferences = SmileFile.of("%s/store.smile", id);
+            return preferences.read(Store.class);
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Corrupted store", exception);
+        }
     }
 
     @Override
@@ -136,10 +148,26 @@ class DefaultControllerProvider implements ControllerSerializerProvider, Control
 
     private CompletableFuture<Void> deserializeChat(Store baseStore, Path entry) {
         return CompletableFuture.runAsync(() -> {
-            var chatPreferences = SmileFile.of(entry);
-            var chat = chatPreferences.read(Chat.class)
-                    .orElseThrow(() -> new NoSuchElementException("Corrupted chat at %s".formatted(entry)));
-            baseStore.addChatDirect(chat);
+            try {
+                var chatPreferences = SmileFile.of(entry);
+                var chat = chatPreferences.read(Chat.class)
+                        .orElseThrow(() -> new NoSuchElementException("Corrupted chat at %s".formatted(entry)));
+                baseStore.addChatDirect(chat);
+            } catch (IOException exception){
+                var chatName = entry.getFileName()
+                        .toString()
+                        .replaceFirst(CHAT_PREFIX, "")
+                        .replace(".smile", "");
+                var logger = System.getLogger("Deserializer");
+                logger.log(ERROR, "Chat %s is corrupted, resetting it".formatted(chatName), exception);
+                try {
+                    Files.deleteIfExists(entry);
+                } catch (IOException deleteException) {
+                    logger.log(WARNING, "Cannot delete chat file");
+                }
+
+                baseStore.addChatDirect(Chat.ofJid(ContactJid.of(chatName)));
+            }
         });
     }
 }

@@ -214,7 +214,7 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
         }
     }
 
-    public void await() {
+    public void join() {
         try {
             latch.await();
         }catch (InterruptedException exception){

@@ -1030,7 +1030,7 @@ public class RunCITest implements Listener, JacksonProvider {
         log("Logging off...");
         CompletableFuture.delayedExecutor(5, TimeUnit.MINUTES)
                 .execute(api::disconnect);
-        api.await();
+        api.join();
         log("Logged off");
     }
 

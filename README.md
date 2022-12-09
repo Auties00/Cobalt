@@ -124,7 +124,7 @@ api.connect().join();
 > If you forget to call the get() method, or to handle this construct in any way, your application may terminate as there is no active work on the main thread.
 > For the same reason, remember to also await for the connection to be closed if the logic of your application is based on listeners:
 > ```java
-> api.await();
+> api.join();
 > ```
 
 ### How to close a connection

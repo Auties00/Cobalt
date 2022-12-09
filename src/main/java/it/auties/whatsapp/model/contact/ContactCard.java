@@ -40,7 +40,7 @@ public class ContactCard implements ProtobufMessage {
     /**
      * The name of the contact
      */
-    @NonNull String name;
+    String name;
 
     /**
      * The phone numbers, ordered by type
@@ -105,6 +105,15 @@ public class ContactCard implements ProtobufMessage {
     }
 
     /**
+     * Returns the name of this card if defined
+     *
+     * @return an optional
+     */
+    public Optional<String> name() {
+        return Optional.ofNullable(name);
+    }
+
+    /**
      * Returns the business name of this card if defined
      *
      * @return an optional
@@ -122,7 +131,7 @@ public class ContactCard implements ProtobufMessage {
         var vcard = new VCard();
         vcard.setVersion(version().map(VCardVersion::valueOfByStr)
                 .orElse(VCardVersion.V3_0));
-        vcard.setFormattedName(name());
+        vcard.setFormattedName(name);
         phoneNumbers().forEach((type, contact) -> addPhoneNumber(vcard, type, contact));
 
         if (businessName != null) {

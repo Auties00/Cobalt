@@ -150,7 +150,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
             return;
         }
 
-        if (exceptionally || isErroneousNode(response)) {
+        if (exceptionally) {
             future.completeExceptionally(
                     new ErroneousNodeRequestException("Cannot process request %s with %s".formatted(this, response), response,
                             caller));
@@ -158,13 +158,6 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
         }
 
         future.complete(response);
-    }
-
-    private boolean isErroneousNode(Node response) {
-        return response.attributes()
-                .getOptionalString("type")
-                .filter("error"::equals)
-                .isPresent();
     }
 
     private void handleSendResult(Store store, SendResult result, boolean response) {

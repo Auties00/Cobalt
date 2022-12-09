@@ -384,6 +384,12 @@ class StreamHandler implements JacksonProvider {
     }
 
     private void digestError(Node node) {
+        if(node.hasNode("bad-mac")){
+            socketHandler.errorHandler()
+                    .handleFailure(CRYPTOGRAPHY, new UnknownStreamException("Detected a bad mac"));
+            return;
+        }
+
         var statusCode = node.attributes()
                 .getInt("code");
         switch (statusCode) {
@@ -393,14 +399,6 @@ class StreamHandler implements JacksonProvider {
                     .forEach(error -> socketHandler.store()
                             .resolvePendingRequest(error, true));
         }
-    }
-
-    // FIXME: Is this needed when status code is not specified? / what are the implications of not having it?
-    private void handleUnknownStreamError(Node node){
-        var child = node.findNode()
-                .orElse(node);
-        socketHandler.errorHandler()
-                .handleFailure(CRYPTOGRAPHY, new UnknownStreamException(child.description()));
     }
 
     private void handleStreamError(Node node) {
