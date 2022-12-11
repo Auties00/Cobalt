@@ -463,7 +463,7 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
         var type = node.attributes().getOptionalString("type")
                 .filter(ignored -> !node.hasDescription("message"))
                 .orElse(null);
-        var attributes = Attributes.of(metadata)
+        var attributes = Attributes.empty()
                 .put("id", node.id())
                 .put("to", to)
                 .put("class", node.description())
