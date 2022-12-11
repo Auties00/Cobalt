@@ -10,6 +10,7 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.NonWritableChannelException;
+import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -76,6 +77,8 @@ final class SmileFile implements JacksonProvider {
             lock.release();
         }catch (IOException | NonWritableChannelException exception){
             throw new RuntimeException("Cannot write to file", exception);
+        }catch (OverlappingFileLockException ignored){
+
         }
     }
 }

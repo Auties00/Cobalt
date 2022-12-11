@@ -40,7 +40,6 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
@@ -59,7 +58,6 @@ class MessageHandler implements JacksonProvider {
     private static final String PKMSG = "pkmsg";
     private static final String MSG = "msg";
     private static final int MAX_ATTEMPTS = 3;
-    private static final int INITIAL_PULL_FALLBACK_TIMEOUT = 30;
 
     private final SocketHandler socketHandler;
     private final Map<String, Integer> retries;
@@ -68,7 +66,6 @@ class MessageHandler implements JacksonProvider {
     private final Set<Chat> historyCache;
     private final Semaphore semaphore;
     private final AtomicBoolean receivedPushNames;
-    private CompletableFuture<Void> fallbackPullPatchesFuture;
 
     protected MessageHandler(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
@@ -668,18 +665,9 @@ class MessageHandler implements JacksonProvider {
                 socketHandler.sendSyncReceipt(info, "hist_sync");
             }
 
-            case APP_STATE_SYNC_KEY_SHARE -> {
-                if (protocolMessage.appStateSyncKeyShare()
-                        .keys()
-                        .isEmpty()) {
-                    return;
-                }
-
-                socketHandler.keys()
-                        .addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
-                var delayedExecutor = CompletableFuture.delayedExecutor(INITIAL_PULL_FALLBACK_TIMEOUT, TimeUnit.SECONDS);
-                this.fallbackPullPatchesFuture = CompletableFuture.runAsync(socketHandler::pullInitialPatches, delayedExecutor);
-            }
+            case APP_STATE_SYNC_KEY_SHARE -> socketHandler.keys()
+                    .addAppKeys(protocolMessage.appStateSyncKeyShare()
+                            .keys());
 
             case REVOKE -> socketHandler.store()
                     .findMessageById(info.chat(), protocolMessage.key().id())
@@ -745,20 +733,18 @@ class MessageHandler implements JacksonProvider {
                 }
             }
 
-            case RECENT, FULL -> handleRecentMessagesListener(history);
-
-            case null -> {
-                if(fallbackPullPatchesFuture != null){
-                    fallbackPullPatchesFuture.cancel(true);
+            case RECENT, FULL -> {
+                if(!socketHandler.store().initialAppSync()){
+                    socketHandler.pullInitialPatches();
                 }
 
-                socketHandler.pullInitialPatches();
-                if(receivedPushNames.get()){
-                    onInitialContacts();
-                }
+                handleRecentMessagesListener(history);
             }
+
+            case null -> {}
         }
     }
+
 
     private void onInitialContacts() {
         socketHandler.onContacts();

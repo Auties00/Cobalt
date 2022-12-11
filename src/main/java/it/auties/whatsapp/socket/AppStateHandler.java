@@ -288,6 +288,7 @@ class AppStateHandler implements JacksonProvider {
         if(Objects.equals(type, "error")){
             return Optional.empty();
         }
+
         var more = sync.attributes()
                 .getBool("has_more_patches");
         var snapshotSync = sync.findNode("snapshot")

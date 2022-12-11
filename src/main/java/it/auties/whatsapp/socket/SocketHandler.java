@@ -259,16 +259,14 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
     }
 
     public CompletableFuture<Node> send(Node node) {
-        onNodeSent(node);
-        return errorHandler.failure()
-                .get() ?
-                CompletableFuture.failedFuture(new IllegalStateException("Socket is in fail safe state")) :
-                node.toRequest(node.id() == null ?
-                                store.nextTag() :
-                                null)
-                        .send(session, keys, store)
-                        .exceptionallyAsync(errorHandler::handleNodeFailure);
+        if(errorHandler.failure().get()){
+            return CompletableFuture.completedFuture(node);
+        }
 
+        onNodeSent(node);
+        return node.toRequest(node.id() == null ? store.nextTag() : null)
+                .send(session, keys, store)
+                .exceptionallyAsync(errorHandler::handleNodeFailure);
     }
 
     private void onNodeSent(Node node) {
