@@ -359,7 +359,11 @@ class AppStateHandler implements JacksonProvider {
                         clearChatAction
                 );
                 case ContactAction contactAction -> updateName(
-                        targetContact.orElseGet(() -> socketHandler.store().addContact(jid)),
+                        targetContact.orElseGet(() -> {
+                            var contact = socketHandler.store().addContact(jid);
+                            socketHandler.onNewContact(contact);
+                            return contact;
+                        }),
                         targetChat.orElseGet(() -> socketHandler.store().addChat(jid)),
                         contactAction
                 );

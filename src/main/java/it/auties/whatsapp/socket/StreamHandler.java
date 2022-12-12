@@ -246,7 +246,11 @@ class StreamHandler implements JacksonProvider {
 
         var fromContact = socketHandler.store()
                 .findContactByJid(fromJid)
-                .orElseGet(() -> socketHandler.store().addContact(fromJid));
+                .orElseGet(() -> {
+                    var contact = socketHandler.store().addContact(fromJid);
+                    socketHandler.onNewContact(contact);
+                    return contact;
+                });
         socketHandler.onContactPictureChange(fromContact);
     }
 
@@ -489,9 +493,8 @@ class StreamHandler implements JacksonProvider {
         socketHandler.sendWithNoResponse(ofAttributes("presence", of("type", "available")));
         socketHandler.store()
                 .findContactByJid(socketHandler.store().userCompanionJid().toUserJid())
-                .orElseGet(() -> socketHandler.store().addContact(socketHandler.store().userCompanionJid().toUserJid()))
-                .lastKnownPresence(ContactStatus.AVAILABLE)
-                .lastSeen(ZonedDateTime.now());
+                .ifPresent(entry -> entry.lastKnownPresence(ContactStatus.AVAILABLE)
+                        .lastSeen(ZonedDateTime.now()));
     }
 
     private void updateUserStatus(boolean update) {
@@ -533,7 +536,11 @@ class StreamHandler implements JacksonProvider {
     private void markBlocked(ContactJid entry) {
         socketHandler.store()
                 .findContactByJid(entry)
-                .orElseGet(() -> socketHandler.store().addContact(entry))
+                .orElseGet(() -> {
+                    var contact = socketHandler.store().addContact(entry);
+                    socketHandler.onNewContact(contact);
+                    return contact;
+                })
                 .blocked(true);
     }
 
@@ -720,6 +727,10 @@ class StreamHandler implements JacksonProvider {
                 .orElseThrow(() -> new NoSuchElementException("Missing companion"));
         socketHandler.store()
                 .userCompanionJid(companion);
+        socketHandler.store()
+                .addContact(Contact.ofJid(socketHandler.store()
+                        .userCompanionJid()
+                        .toUserJid()));
     }
 
     public void dispose() {

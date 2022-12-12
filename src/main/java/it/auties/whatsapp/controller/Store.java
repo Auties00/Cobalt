@@ -30,15 +30,12 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.net.URI;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static java.util.concurrent.CompletableFuture.runAsync;
-import static java.util.concurrent.Executors.newScheduledThreadPool;
-import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 /**
  * This controller holds the user-related data regarding a WhatsappWeb session
@@ -214,15 +211,6 @@ public final class Store implements Controller<Store> {
     @Default
     @Getter
     private long initializationTimeStamp = Clock.now();
-
-    /**
-     * The non-null service used to call listeners.
-     * This is needed in order to not block the socket.
-     */
-    @NonNull
-    @JsonIgnore
-    @Default
-    private ScheduledExecutorService requestsService = newScheduledThreadPool(10);
 
     /**
      * The media connection associated with this store
@@ -572,7 +560,6 @@ public final class Store implements Controller<Store> {
      */
     public Contact addContact(@NonNull Contact contact) {
         contacts.put(contact.jid(), contact);
-        callListeners(listener -> listener.onNewContact(contact));
         return contact;
     }
 
@@ -650,45 +637,6 @@ public final class Store implements Controller<Store> {
         listeners.clear();
         requests.forEach(request -> request.complete(null, false));
         requests.clear();
-    }
-
-    /**
-     * Executes an operation on every registered listener on the listener thread
-     * This should be used to be sure that when a listener should be called it's called on a thread that is not the WebSocket's.
-     * If this condition isn't met, if the thread is put on hold to wait for a response for a pending request, the WebSocket will freeze.
-     *
-     * @param consumer the operation to execute
-     */
-    @SneakyThrows
-    public void invokeListeners(Consumer<Listener> consumer) {
-        if (requestsService.isShutdown()) {
-            this.requestsService = newSingleThreadScheduledExecutor();
-        }
-
-        var futures = listeners.stream()
-                .map(listener -> runAsync(() -> consumer.accept(listener), requestsService))
-                .toArray(CompletableFuture[]::new);
-        CompletableFuture.allOf(futures)
-                .get();
-    }
-
-    /**
-     * Executes an operation on every registered listener on the listener thread
-     * This should be used to be sure that when a listener should be called it's called on a thread that is not the WebSocket's.
-     * If this condition isn't met, if the thread is put on hold to wait for a response for a pending request, the WebSocket will freeze.
-     *
-     * @param consumer the operation to execute
-     */
-    public void callListeners(Consumer<Listener> consumer) {
-        listeners.forEach(listener -> callListener(consumer, listener));
-    }
-
-    private void callListener(Consumer<Listener> consumer, Listener listener) {
-        if (requestsService.isShutdown()) {
-            this.requestsService = newSingleThreadScheduledExecutor();
-        }
-
-        requestsService.execute(() -> consumer.accept(listener));
     }
 
     private Request deleteAndComplete(Node response, Request request, boolean exceptionally) {
@@ -824,7 +772,6 @@ public final class Store implements Controller<Store> {
     }
 
     public void dispose() {
-        requestsService.shutdownNow();
         serialize(false);
     }
 

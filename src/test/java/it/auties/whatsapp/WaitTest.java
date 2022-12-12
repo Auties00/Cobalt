@@ -8,7 +8,7 @@ import lombok.SneakyThrows;
 // Just used for testing locally
 public class WaitTest implements JacksonProvider {
     public static void main(String[] args) {
-        Whatsapp.lastConnection()
+        Whatsapp.firstConnection()
                 .addLoggedInListener(() -> System.out.println("Connected"))
                 .addNewMessageListener(WaitTest::logMessage)
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))

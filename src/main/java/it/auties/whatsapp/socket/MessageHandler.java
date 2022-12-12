@@ -64,8 +64,8 @@ class MessageHandler implements JacksonProvider {
     private final Cache<ContactJid, GroupMetadata> groupsCache;
     private final Cache<String, List<ContactJid>> devicesCache;
     private final Set<Chat> historyCache;
-    private final Semaphore semaphore;
     private final AtomicBoolean receivedPushNames;
+    private final Semaphore encodeSemaphore;
 
     protected MessageHandler(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
@@ -73,7 +73,7 @@ class MessageHandler implements JacksonProvider {
         this.groupsCache = createCache(Duration.ofMinutes(5));
         this.devicesCache = createCache(Duration.ofMinutes(5));
         this.historyCache = new HashSet<>();
-        this.semaphore = new Semaphore(1);
+        this.encodeSemaphore = new Semaphore(1);
         this.receivedPushNames = new AtomicBoolean(false);
     }
 
@@ -85,12 +85,21 @@ class MessageHandler implements JacksonProvider {
 
     @SafeVarargs
     protected final CompletableFuture<Void> encode(MessageInfo info, Entry<String, Object>... attributes) {
-        return CompletableFuture.runAsync(() -> tryLock(false))
+        return CompletableFuture.runAsync(this::prepareEncoding)
                 .thenComposeAsync(ignored -> isConversation(info) ?
                         encodeConversation(info, attributes) :
                         encodeGroup(info, attributes))
-                .thenRunAsync(semaphore::release)
+                .thenRunAsync(encodeSemaphore::release)
                 .exceptionallyAsync(this::handleMessageFailure);
+    }
+
+    private void prepareEncoding() {
+        try {
+            socketHandler.awaitAppReady();
+            encodeSemaphore.acquire();
+        }catch (InterruptedException exception){
+            throw new RuntimeException("Cannot acquire lock", exception);
+        }
     }
 
     @SafeVarargs
@@ -127,22 +136,8 @@ class MessageHandler implements JacksonProvider {
                         .addMessage(info));
     }
 
-    private void tryLock(boolean read) {
-        try {
-            if(read){
-                semaphore.acquire();
-                return;
-            }
-
-            socketHandler.awaitAppReady();
-            semaphore.acquire();
-        }catch (InterruptedException exception){
-            throw new RuntimeException("Cannot acquire lock", exception);
-        }
-    }
-
     private <T> T handleMessageFailure(Throwable throwable) {
-        semaphore.release();
+        encodeSemaphore.release();
         return socketHandler.errorHandler()
                 .handleFailure(MESSAGE, throwable);
     }
@@ -375,22 +370,18 @@ class MessageHandler implements JacksonProvider {
         builder.createOutgoing(registrationId, identity, signedKey, key);
     }
 
-    protected void decodeAsync(Node node) {
-        CompletableFuture.runAsync(() -> decodeLocked(node))
-                .exceptionallyAsync(throwable -> socketHandler.errorHandler().handleFailure(MESSAGE, throwable));
-    }
+    public synchronized void decode(Node node) {
+        try {
+            var encrypted = node.findNodes("enc");
+            if(node.hasNode("unavailable") && !node.hasNode("enc")) {
+                decode(node, null);
+                return;
+            }
 
-    private void decodeLocked(Node node) {
-        tryLock(true);
-        var encrypted = node.findNodes("enc");
-        if(node.hasNode("unavailable") && !node.hasNode("enc")) {
-            decode(node, null);
-            semaphore.release();
-            return;
+            encrypted.forEach(message -> decode(node, message));
+        }catch (Throwable throwable){
+            socketHandler.errorHandler().handleFailure(MESSAGE, throwable);
         }
-
-        encrypted.forEach(message -> decode(node, message));
-        semaphore.release();
     }
 
     private void decode(Node infoNode, Node messageNode) {
@@ -437,9 +428,6 @@ class MessageHandler implements JacksonProvider {
                 return;
             }
 
-            socketHandler.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.key().id()), null);
-            socketHandler.sendMessageAck(infoNode, infoNode.attributes().map());
-
             var type = messageNode.attributes()
                     .getRequiredString("type");
             var encodedMessage = messageNode.contentAsBytes()
@@ -466,6 +454,8 @@ class MessageHandler implements JacksonProvider {
             }
 
             saveMessage(info, category);
+            socketHandler.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.key().id()), null);
+            socketHandler.sendMessageAck(infoNode, infoNode.attributes().map());
             socketHandler.onReply(info);
         } catch (Throwable throwable) {
             socketHandler.errorHandler()
@@ -776,7 +766,11 @@ class MessageHandler implements JacksonProvider {
         var jid = ContactJid.of(pushName.id());
         socketHandler.store()
                 .findContactByJid(jid)
-                .orElseGet(() -> socketHandler.store().addContact(jid))
+                .orElseGet(() -> {
+                    var contact = socketHandler.store().addContact(jid);
+                    socketHandler.onNewContact(contact);
+                    return contact;
+                })
                 .chosenName(pushName.name());
         var action = ContactAction.of(pushName.name(), null);
         socketHandler.onAction(action);

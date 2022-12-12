@@ -641,8 +641,17 @@ public interface Listener {
     }
 
     /**
-     * Called when the socket receives a new contact.
-     * There isn't an overloaded method with a Whatsapp parameter due to technical limitations.
+     * Called when the socket receives a new contact
+     *
+     * @param whatsapp an instance to the calling api
+     * @param contact the new contact
+     */
+    default void onNewContact(Whatsapp whatsapp, Contact contact) {
+
+    }
+
+    /**
+     * Called when the socket receives a new contact
      *
      * @param contact the new contact
      */
