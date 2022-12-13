@@ -6,6 +6,7 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.standard.TextMessage;
 
+import java.net.CookieManager;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.time.Duration;
@@ -22,8 +23,14 @@ import static java.net.http.HttpRequest.BodyPublishers.ofString;
 public class OpenAIBot {
     // Constants
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36";
-
+            
     // Things we need to contact the openai api
+    private static final HttpClient httpClient = HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_1_1)
+            .connectTimeout(Duration.ofSeconds(10))
+            .followRedirects(HttpClient.Redirect.ALWAYS)
+            .cookieHandler(new CookieManager())
+            .build(); // Avoid rate limiting
     private static final Semaphore semaphore = new Semaphore(1);
     private static final ObjectMapper jsonMapper = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -32,7 +39,6 @@ public class OpenAIBot {
     private static final String bearerToken = System.getenv("openai_token");
 
     public static void main(String... args) throws ExecutionException, InterruptedException {
-        // Create a new instance of WhatsappAPI
         Whatsapp.lastConnection()
                 .addLoggedInListener(() -> System.out.println("Connected!"))
                 .addNewMessageListener(OpenAIBot::onNewMessage)
@@ -51,10 +57,6 @@ public class OpenAIBot {
 
         try {
             semaphore.acquire();
-            var httpClient = HttpClient.newBuilder()
-                    .version(HttpClient.Version.HTTP_1_1)
-                    .connectTimeout(Duration.ofSeconds(10))
-                    .build(); // Avoid rate limiting
             var messageId = generateId();
             var lastMessageId = parentMessageId.getAndSet(messageId);
             var openAiRequest = new ChatRequest(

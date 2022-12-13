@@ -26,7 +26,6 @@ public class AesGmc {
         return cipher(ivBytes, input, key, additionalData, encrypt);
     }
 
-
     public byte[] cipher(byte @NonNull [] iv, byte @NonNull [] input, byte @NonNull [] key, byte[] additionalData,
                          boolean encrypt) {
         try {

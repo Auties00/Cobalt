@@ -158,7 +158,6 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
     }
 
     @OnOpen
-    @SneakyThrows
     public void onOpen(@NonNull Session session) {
         this.session = session;
         if (state == SocketState.CONNECTED) {
@@ -413,7 +412,6 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
                 .toList();
     }
 
-    @SneakyThrows
     public CompletableFuture<GroupMetadata> queryGroupMetadata(ContactJid group) {
         var body = ofAttributes("query", of("request", "interactive"));
         return sendQuery(group, "get", "w:g2", body).thenApplyAsync(node -> node.findNode("group")
@@ -727,7 +725,6 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
     }
 
     private void callListener(Consumer<Listener> consumer, Listener listener) {
-        // TODO: Wait for app state
         if (listenersService.isShutdown()) {
             this.listenersService = newSingleThreadScheduledExecutor();
         }

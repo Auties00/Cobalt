@@ -33,7 +33,6 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) imple
         return Node.of("enc", of("v", "2", "type", "skmsg"), senderKeyMessage.serialized());
     }
 
-    // This approach but it's definitely not the best
     public byte[] decrypt(byte[] data) {
         var record = keys.findSenderKeyByName(name);
         var senderKeyMessage = SenderKeyMessage.ofSerialized(data);
@@ -42,8 +41,8 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) imple
             try {
                 var senderKey = getSenderKey(senderKeyState, senderKeyMessage.iteration());
                 return AesCbc.decrypt(senderKey.iv(), senderKeyMessage.cipherText(), senderKey.cipherKey());
-            }catch (Throwable throwable){
-                // Ignore
+            }catch (Throwable ignored){
+
             }
         }
 

@@ -25,6 +25,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.*;
@@ -36,6 +37,8 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 
 class AppStateHandler implements JacksonProvider {
     private static final int PULL_ATTEMPTS = 3;
+    public static final int PULL_TIMEOUT = 30;
+    public static final int PUSH_TIMEOUT = 120;
 
     private final SocketHandler socketHandler;
     private final Semaphore lock;
@@ -49,27 +52,21 @@ class AppStateHandler implements JacksonProvider {
     }
 
     protected CompletableFuture<Void> push(@NonNull PatchRequest patch) {
-        return CompletableFuture.runAsync(() -> tryLock(true))
+        return CompletableFuture.runAsync(() -> acquireLock(true))
                 .thenComposeAsync(result -> sendPullRequest(patch.type()))
-                .thenApplyAsync(result -> createPushRequest(patch, result))
+                .thenApplyAsync(result -> createPushRequest(patch))
                 .thenComposeAsync(this::sendPush)
                 .thenRunAsync(lock::release)
-                .exceptionallyAsync(this::handlePushError);
+                .exceptionallyAsync(throwable -> {
+                    lock.release();
+                    return socketHandler.errorHandler()
+                            .handleFailure(PUSH_APP_STATE, throwable);
+                })
+                .orTimeout(PUSH_TIMEOUT, TimeUnit.SECONDS);
     }
 
-    private Void handlePushError(Throwable throwable) {
-        lock.release();
-        return socketHandler.errorHandler()
-                .handleFailure(PUSH_APP_STATE, throwable);
-    }
-
-    private PushRequest createPushRequest(PatchRequest patch, Boolean success) {
+    private PushRequest createPushRequest(PatchRequest patch) {
         try {
-            if (success == null || !success) {
-                throw new RuntimeException("Cannot push patch %s as preliminary pull failed"
-                        .formatted(patch));
-            }
-
             var oldState = socketHandler.keys()
                     .findHashStateByName(patch.type())
                     .orElseGet(() -> new LTHashState(patch.type()));
@@ -131,7 +128,7 @@ class AppStateHandler implements JacksonProvider {
 
             return new PushRequest(patch, oldState, newState, sync);
         } catch (Throwable throwable) {
-            throw new RuntimeException("Cannot push patch %s as preliminary pull failed");
+            throw new RuntimeException("Cannot create patch %s".formatted(patch), throwable);
         }
     }
 
@@ -146,7 +143,7 @@ class AppStateHandler implements JacksonProvider {
                             .putState(request.patch().type(), request.newState()))
                     .thenRunAsync(() -> handleSyncRequest(request.patch().type(), request.sync(), request.oldState(), request.newState().version()));
         }catch (Throwable throwable) {
-            throw new RuntimeException("Cannot send push request", throwable);
+            throw new RuntimeException("Cannot push patch", throwable);
         }
     }
 
@@ -156,32 +153,28 @@ class AppStateHandler implements JacksonProvider {
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    protected CompletableFuture<Boolean> pull(boolean initial, PatchType... patchTypes) {
-        return CompletableFuture.runAsync(() -> tryLock(!initial))
+    protected CompletableFuture<Void> pull(boolean initial, PatchType... patchTypes) {
+        return CompletableFuture.runAsync(() -> acquireLock(!initial))
                 .thenComposeAsync(ignored -> sendPullRequest(patchTypes))
-                .thenApplyAsync(this::onPull)
-                .exceptionallyAsync(exception -> handlePullError(initial, exception));
+                .thenRunAsync(() -> {
+                    ready.countDown();
+                    socketHandler.store().initialAppSync(true);
+                    lock.release();
+                })
+                .exceptionallyAsync(exception -> {
+                    if(initial) {
+                        ready.countDown();
+                        return socketHandler.errorHandler()
+                                .handleFailure(INITIAL_APP_STATE_SYNC, exception);
+                    }
+
+                    return socketHandler.errorHandler()
+                            .handleFailure(PULL_APP_STATE, exception);
+                })
+                .orTimeout(PULL_TIMEOUT, TimeUnit.SECONDS);
     }
 
-    private Boolean onPull(Boolean result) {
-        markReady();
-        socketHandler.store().initialAppSync(true);
-        lock.release();
-        return result;
-    }
-
-    private boolean handlePullError(boolean initial, Throwable exception) {
-        if(initial) {
-            markReady();
-            socketHandler.errorHandler().handleFailure(INITIAL_APP_STATE_SYNC, exception);
-            return false;
-        }
-
-        socketHandler.errorHandler().handleFailure(PULL_APP_STATE, exception);
-        return false;
-    }
-
-    private CompletableFuture<Boolean> sendPullRequest(PatchType... patchTypes) {
+    private CompletableFuture<Void> sendPullRequest(PatchType... patchTypes) {
         Validate.isTrue(patchTypes.length != 0,
                 "Cannot pull no patches", IllegalArgumentException.class);
         var versions = new HashMap<PatchType, Long>();
@@ -189,7 +182,7 @@ class AppStateHandler implements JacksonProvider {
         return pull(Arrays.asList(patchTypes), versions, attempts);
     }
 
-    private CompletableFuture<Boolean> pull(List<PatchType> patchTypes, Map<PatchType, Long> versions,
+    private CompletableFuture<Void> pull(List<PatchType> patchTypes, Map<PatchType, Long> versions,
                                             Map<PatchType, Integer> attempts) {
         var tempStates = new HashMap<PatchType, LTHashState>();
         var nodes = patchTypes.stream()
@@ -202,8 +195,7 @@ class AppStateHandler implements JacksonProvider {
                 .thenApplyAsync(records -> decodeSyncs(versions, attempts, tempStates, records))
                 .thenComposeAsync(remaining -> remaining.isEmpty() ?
                         completedFuture(null) :
-                        pull(remaining, versions, attempts))
-                .thenApplyAsync(ignored -> true);
+                        pull(remaining, versions, attempts));
     }
 
     private List<PatchType> decodeSyncs(Map<PatchType, Long> versions, Map<PatchType, Integer> attempts,
@@ -598,7 +590,7 @@ class AppStateHandler implements JacksonProvider {
         return Hmac.calculateSha256(total, key);
     }
 
-    private void tryLock(boolean necessary) {
+    private void acquireLock(boolean necessary) {
         try {
             if(!necessary){
                 return;
@@ -634,10 +626,6 @@ class AppStateHandler implements JacksonProvider {
 
     private record PushRequest(PatchRequest patch, LTHashState oldState, LTHashState newState, PatchSync sync){
 
-    }
-
-    public void markReady() {
-        ready.countDown();
     }
 
     public void awaitReady() {
