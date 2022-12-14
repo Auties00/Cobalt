@@ -4,8 +4,8 @@ import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.location.InteractiveLocationAnnotation;
 import it.auties.whatsapp.model.media.MediaConnection;
-import it.auties.whatsapp.model.message.model.InteractiveAnnotation;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.util.Clock;
@@ -93,8 +93,8 @@ public final class ImageMessage extends MediaMessage {
     /**
      * Interactive annotations
      */
-    @ProtobufProperty(index = 10, type = MESSAGE, implementation = InteractiveAnnotation.class, repeated = true)
-    private List<InteractiveAnnotation> interactiveAnnotations;
+    @ProtobufProperty(index = 10, type = MESSAGE, implementation = InteractiveLocationAnnotation.class, repeated = true)
+    private List<InteractiveLocationAnnotation> interactiveAnnotations;
 
     /**
      * The direct path to the encoded image that this object wraps
@@ -204,7 +204,7 @@ public final class ImageMessage extends MediaMessage {
 
     public static abstract class ImageMessageBuilder<C extends ImageMessage, B extends ImageMessageBuilder<C, B>>
             extends MediaMessageBuilder<C, B> {
-        public B interactiveAnnotations(List<InteractiveAnnotation> interactiveAnnotations) {
+        public B interactiveAnnotations(List<InteractiveLocationAnnotation> interactiveAnnotations) {
             if (this.interactiveAnnotations == null)
                 this.interactiveAnnotations = new ArrayList<>();
             this.interactiveAnnotations.addAll(interactiveAnnotations);
