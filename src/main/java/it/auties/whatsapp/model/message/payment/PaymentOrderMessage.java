@@ -3,7 +3,7 @@ package it.auties.whatsapp.model.message.payment;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.info.ContextInfo;
+import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
 import lombok.*;
@@ -24,7 +24,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Jacksonized
 @Builder(builderMethodName = "newPaymentOrderMessageBuilder")
 @Accessors(fluent = true)
-public final class PaymentOrderMessage extends ContextInfo implements PaymentMessage {
+public final class PaymentOrderMessage extends ContextualMessage implements PaymentMessage {
     /**
      * The jid of this order
      */

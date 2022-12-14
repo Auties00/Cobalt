@@ -15,7 +15,7 @@ import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.DownloadResult;
-import it.auties.whatsapp.model.message.device.DeviceSentMessage;
+import it.auties.whatsapp.model.message.server.DeviceSentMessage;
 import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
@@ -734,7 +734,7 @@ class MessageHandler implements JacksonProvider {
                 handleRecentMessagesListener(history);
             }
 
-            case null -> {}
+            default -> {}
         }
     }
 

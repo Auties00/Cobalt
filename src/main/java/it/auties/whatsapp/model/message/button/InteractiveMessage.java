@@ -1,4 +1,4 @@
-package it.auties.whatsapp.model.message.standard;
+package it.auties.whatsapp.model.message.button;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;

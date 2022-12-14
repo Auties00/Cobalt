@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.sync;
 
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,12 +14,12 @@ import java.util.List;
 
 import static it.auties.protobuf.base.ProtobufType.BYTES;
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
-
 @AllArgsConstructor
 @Data
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
+@ProtobufName("SyncdSnapshot")
 public class SnapshotSync implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = VersionSync.class)
     private VersionSync version;

@@ -1,16 +1,14 @@
 package it.auties.whatsapp.model.message.model;
 
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.info.CallInfo;
 import it.auties.whatsapp.model.info.MessageContextInfo;
 import it.auties.whatsapp.model.message.button.*;
-import it.auties.whatsapp.model.message.device.DeviceSentMessage;
-import it.auties.whatsapp.model.message.device.DeviceSyncMessage;
 import it.auties.whatsapp.model.message.payment.*;
-import it.auties.whatsapp.model.message.server.ProtocolMessage;
-import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
-import it.auties.whatsapp.model.message.server.StickerSyncRMRMessage;
+import it.auties.whatsapp.model.message.server.*;
 import it.auties.whatsapp.model.message.standard.*;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -21,7 +19,6 @@ import java.util.Optional;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.STRING;
-
 /**
  * A container for all types of messages known currently to WhatsappWeb.
  * <p>
@@ -30,11 +27,11 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
  * <p>
  * There are several categories of messages:
  * <ul>
- *     <li>Server messages</li>
- *     <li>Button messages</li>
- *     <li>Product messages</li>
- *     <li>Payment messages</li>
- *     <li>Standard messages</li>
+ * <li>Server messages</li>
+ * <li>Button messages</li>
+ * <li>Product messages</li>
+ * <li>Payment messages</li>
+ * <li>Standard messages</li>
  * </ul>
  */
 @AllArgsConstructor
@@ -42,6 +39,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder(builderMethodName = "newMessageContainerBuilder")
 @Jacksonized
 @Accessors(fluent = true)
+@ProtobufName("Message")
 public class MessageContainer implements ProtobufMessage {
     private static final EmptyMessage EMPTY_MESSAGE = new EmptyMessage();
 
@@ -153,8 +151,8 @@ public class MessageContainer implements ProtobufMessage {
     /**
      * Template message
      */
-    @ProtobufProperty(index = 25, type = MESSAGE, implementation = TemplateMessage.class)
-    private TemplateMessage template;
+    @ProtobufProperty(index = 25, type = MESSAGE, implementation = it.auties.whatsapp.model.message.button.TemplateMessage.class)
+    private it.auties.whatsapp.model.message.button.TemplateMessage template;
 
     /**
      * Sticker message
@@ -264,6 +262,36 @@ public class MessageContainer implements ProtobufMessage {
     @ProtobufProperty(index = 47, type = MESSAGE, implementation = StickerSyncRMRMessage.class)
     private StickerSyncRMRMessage stickerSync;
 
+    @ProtobufProperty(index = 48, name = "interactiveResponseMessage", type = ProtobufType.MESSAGE)
+    private InteractiveResponseMessage interactiveResponseMessage;
+
+    @ProtobufProperty(index = 49, name = "pollCreationMessage", type = ProtobufType.MESSAGE)
+    private PollCreationMessage pollCreationMessage;
+
+    @ProtobufProperty(index = 50, name = "pollUpdateMessage", type = ProtobufType.MESSAGE)
+    private PollUpdateMessage pollUpdateMessage;
+
+    @ProtobufProperty(index = 51, name = "keepInChatMessage", type = ProtobufType.MESSAGE)
+    private KeepInChatMessage keepInChatMessage;
+
+    @ProtobufProperty(index = 53, name = "documentWithCaptionMessage", type = ProtobufType.MESSAGE)
+    private FutureMessageContainer documentWithCaptionMessage;
+
+    @ProtobufProperty(index = 54, name = "requestPhoneNumberMessage", type = ProtobufType.MESSAGE)
+    private RequestPhoneNumberMessage requestPhoneNumberMessage;
+
+    @ProtobufProperty(index = 55, name = "viewOnceMessageV2", type = ProtobufType.MESSAGE)
+    private FutureMessageContainer viewOnceMessageV2;
+
+    @ProtobufProperty(index = 56, name = "encReactionMessage", type = ProtobufType.MESSAGE)
+    private EncryptedReactionMessage encReactionMessage;
+
+    @ProtobufProperty(index = 58, name = "editedMessage", type = ProtobufType.MESSAGE)
+    private FutureMessageContainer editedMessage;
+
+    @ProtobufProperty(index = 59, name = "viewOnceMessageV2Extension", type = ProtobufType.MESSAGE)
+    private FutureMessageContainer viewOnceMessageV2Extension;
+
     /**
      * Message context info
      */
@@ -300,7 +328,7 @@ public class MessageContainer implements ProtobufMessage {
             case DeclinePaymentRequestMessage declinePaymentRequest ->
                     builder.declinePaymentRequest(declinePaymentRequest);
             case CancelPaymentRequestMessage cancelPaymentRequest -> builder.cancelPaymentRequest(cancelPaymentRequest);
-            case TemplateMessage template -> builder.template(template);
+            case it.auties.whatsapp.model.message.button.TemplateMessage template -> builder.template(template);
             case StickerMessage sticker -> builder.sticker(sticker);
             case GroupInviteMessage groupInvite -> builder.groupInvite(groupInvite);
             case TemplateReplyMessage templateButtonReply -> builder.templateReply(templateButtonReply);
@@ -317,6 +345,12 @@ public class MessageContainer implements ProtobufMessage {
             case ReactionMessage reaction -> builder.reaction(reaction);
             case StickerSyncRMRMessage stickerSync -> builder.stickerSync(stickerSync);
             case DeviceSentMessage deviceSent -> builder.deviceSent(deviceSent);
+            case InteractiveResponseMessage interactiveResponseMessage -> builder.interactiveResponseMessage(interactiveResponseMessage);
+            case PollCreationMessage pollCreationMessage -> builder.pollCreationMessage(pollCreationMessage);
+            case PollUpdateMessage pollUpdateMessage -> builder.pollUpdateMessage(pollUpdateMessage);
+            case KeepInChatMessage keepInChatMessage -> builder.keepInChatMessage(keepInChatMessage);
+            case RequestPhoneNumberMessage requestPhoneNumberMessage -> builder.requestPhoneNumberMessage(requestPhoneNumberMessage);
+            case EncryptedReactionMessage encReactionMessage -> builder.encReactionMessage(encReactionMessage);
             default -> throw new IllegalStateException("Unsupported message: " + message);
         }
 
@@ -368,6 +402,18 @@ public class MessageContainer implements ProtobufMessage {
     }
 
     /**
+     * Constructs a new MessageContainer from a message of any type that can only be seen once(version v2)
+     *
+     * @param message the message that the new container should wrap
+     * @param <T>     the type of the message
+     */
+    public static <T extends Message> MessageContainer ofViewOnceV2(@NonNull T message) {
+        return MessageContainer.newMessageContainerBuilder()
+                .viewOnceMessageV2(FutureMessageContainer.of(message))
+                .build();
+    }
+
+    /**
      * Constructs a new MessageContainer from a message of any type marking it as ephemeral
      *
      * @param message the message that the new container should wrap
@@ -376,6 +422,30 @@ public class MessageContainer implements ProtobufMessage {
     public static <T extends Message> MessageContainer ofEphemeral(@NonNull T message) {
         return MessageContainer.newMessageContainerBuilder()
                 .ephemeral(FutureMessageContainer.of(message))
+                .build();
+    }
+
+    /**
+     * Constructs a new MessageContainer from an edited message
+     *
+     * @param message the message that the new container should wrap
+     * @param <T>     the type of the message
+     */
+    public static <T extends Message> MessageContainer ofEditedMessage(@NonNull T message) {
+        return MessageContainer.newMessageContainerBuilder()
+                .editedMessage(FutureMessageContainer.of(message))
+                .build();
+    }
+
+    /**
+     * Constructs a new MessageContainer from a document with caption message
+     *
+     * @param message the message that the new container should wrap
+     * @param <T>     the type of the message
+     */
+    public static <T extends Message> MessageContainer ofDocumentWithCaption(@NonNull T message) {
+        return MessageContainer.newMessageContainerBuilder()
+                .documentWithCaptionMessage(FutureMessageContainer.of(message))
                 .build();
     }
 
@@ -458,6 +528,26 @@ public class MessageContainer implements ProtobufMessage {
             return reaction;
         if (stickerSync != null)
             return stickerSync;
+        if (interactiveResponseMessage != null)
+            return interactiveResponseMessage;
+        if (pollCreationMessage != null)
+            return pollCreationMessage;
+        if (pollUpdateMessage != null)
+            return pollUpdateMessage;
+        if (keepInChatMessage != null)
+            return keepInChatMessage;
+        if (documentWithCaptionMessage != null)
+            return documentWithCaptionMessage.unbox();
+        if (requestPhoneNumberMessage != null)
+            return requestPhoneNumberMessage;
+        if (viewOnceMessageV2 != null)
+            return viewOnceMessageV2.unbox();
+        if (encReactionMessage != null)
+            return encReactionMessage;
+        if (editedMessage != null)
+            return editedMessage.unbox();
+        if (viewOnceMessageV2Extension != null)
+            return viewOnceMessageV2Extension.unbox();
         return EMPTY_MESSAGE;
     }
 
@@ -506,6 +596,20 @@ public class MessageContainer implements ProtobufMessage {
         if (this.viewOnce != null && viewOnce.unbox() instanceof ContextualMessage contextualViewOnce)
             return Optional.of(contextualViewOnce);
         if (this.ephemeral != null && ephemeral.unbox() instanceof ContextualMessage contextualEphemeral)
+            return Optional.of(contextualEphemeral);
+        if (interactiveResponseMessage != null)
+            return Optional.of(interactiveResponseMessage);
+        if (pollCreationMessage != null)
+            return Optional.of(pollCreationMessage);
+        if (documentWithCaptionMessage != null && documentWithCaptionMessage.unbox() instanceof ContextualMessage contextualEphemeral)
+            return Optional.of(contextualEphemeral);
+        if (requestPhoneNumberMessage != null)
+            return Optional.of(requestPhoneNumberMessage);
+        if (viewOnceMessageV2 != null && viewOnceMessageV2.unbox() instanceof ContextualMessage contextualEphemeral)
+            return Optional.of(contextualEphemeral);
+        if (editedMessage != null && editedMessage.unbox() instanceof ContextualMessage contextualEphemeral)
+            return Optional.of(contextualEphemeral);
+        if (viewOnceMessageV2Extension != null && viewOnceMessageV2Extension.unbox() instanceof ContextualMessage contextualEphemeral)
             return Optional.of(contextualEphemeral);
         return Optional.empty();
     }

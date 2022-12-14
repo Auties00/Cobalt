@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.button;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -11,7 +12,6 @@ import java.util.Arrays;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.UINT32;
-
 /**
  * A model class that represents a template for a button
  */
@@ -20,6 +20,7 @@ import static it.auties.protobuf.base.ProtobufType.UINT32;
 @Builder(builderMethodName = "newRawButtonTemplateBuilder")
 @Jacksonized
 @Accessors(fluent = true)
+@ProtobufName("TemplateButton")
 public class ButtonTemplate implements ProtobufMessage {
     @ProtobufProperty(index = 4, type = UINT32)
     private int index;
@@ -55,10 +56,7 @@ public class ButtonTemplate implements ProtobufMessage {
      * @return a non-null button template
      */
     public static ButtonTemplate of(int index, @NonNull URLButton urlButton) {
-        return ButtonTemplate.newRawButtonTemplateBuilder()
-                .index(index)
-                .urlButton(urlButton)
-                .build();
+        return ButtonTemplate.newRawButtonTemplateBuilder().index(index).urlButton(urlButton).build();
     }
 
     /**
@@ -68,11 +66,9 @@ public class ButtonTemplate implements ProtobufMessage {
      * @param callButton the non-null call button
      * @return a non-null button template
      */
-    public static ButtonTemplate of(int index, @NonNull CallButton callButton) {
-        return ButtonTemplate.newRawButtonTemplateBuilder()
-                .index(index)
-                .callButton(callButton)
-                .build();
+    public static ButtonTemplate of(int index, @NonNull
+    CallButton callButton) {
+        return ButtonTemplate.newRawButtonTemplateBuilder().index(index).callButton(callButton).build();
     }
 
     /**
@@ -96,36 +92,29 @@ public class ButtonTemplate implements ProtobufMessage {
     @AllArgsConstructor
     @Accessors(fluent = true)
     public enum ButtonType implements ProtobufMessage {
+
         /**
          * No button
          */
         NONE(0),
-
         /**
          * Quick reply button
          */
         QUICK_REPLY_BUTTON(1),
-
-
         /**
          * Url button
          */
         URL_BUTTON(2),
-
         /**
          * Call button
          */
         CALL_BUTTON(3);
-
         @Getter
         private final int index;
 
         @JsonCreator
         public static ButtonType of(int index) {
-            return Arrays.stream(values())
-                    .filter(entry -> entry.index() == index)
-                    .findFirst()
-                    .orElse(ButtonType.NONE);
+            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(ButtonType.NONE);
         }
     }
 }

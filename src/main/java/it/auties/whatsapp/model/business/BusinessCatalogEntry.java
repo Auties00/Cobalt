@@ -1,4 +1,4 @@
-package it.auties.whatsapp.model.action;
+package it.auties.whatsapp.model.business;
 
 import it.auties.whatsapp.model.request.Node;
 import lombok.NonNull;

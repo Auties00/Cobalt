@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.location;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,7 +16,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
-
 /**
  * A model class that describes an interactive annotation linked to a message
  */
@@ -24,6 +24,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Builder(builderMethodName = "newInteractiveAnnotation")
 @Jacksonized
 @Accessors(fluent = true)
+@ProtobufName("InteractiveAnnotation")
 public class InteractiveLocationAnnotation implements ProtobufMessage {
     /**
      * Polygon vertices
@@ -43,9 +44,7 @@ public class InteractiveLocationAnnotation implements ProtobufMessage {
      * @return a non-null Action
      */
     public Action type() {
-        return location != null ?
-                Action.LOCATION :
-                Action.UNKNOWN;
+        return location != null ? Action.LOCATION : Action.UNKNOWN;
     }
 
     /**
@@ -53,33 +52,31 @@ public class InteractiveLocationAnnotation implements ProtobufMessage {
      */
     @AllArgsConstructor
     @Accessors(fluent = true)
+    @ProtobufName("ActionType")
     public enum Action implements ProtobufMessage {
+
         /**
          * Unknown
          */
         UNKNOWN(0),
-
         /**
          * Location
          */
         LOCATION(2);
-
         @Getter
         private final int index;
 
         @JsonCreator
         public static Action of(int index) {
-            return Arrays.stream(values())
-                    .filter(entry -> entry.index() == index)
-                    .findFirst()
-                    .orElse(Action.UNKNOWN);
+            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(Action.UNKNOWN);
         }
     }
 
     public static class InteractiveLocationAnnotationBuilder {
         public InteractiveLocationAnnotationBuilder polygonVertices(List<Point> polygonVertices) {
-            if (this.polygonVertices == null)
+            if (this.polygonVertices == null) {
                 this.polygonVertices = new ArrayList<>();
+            }
             this.polygonVertices.addAll(polygonVertices);
             return this;
         }

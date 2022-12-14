@@ -2,7 +2,9 @@ package it.auties.whatsapp.model.chat;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.contact.Contact;
@@ -24,7 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 import static it.auties.protobuf.base.ProtobufType.*;
-
 /**
  * A model class that represents a Chat.
  * A chat can be of two types: a conversation with a contact or a group.
@@ -37,7 +38,8 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class Chat implements ProtobufMessage, ContactJidProvider {
+@ProtobufName("Conversation")
+public final class Chat implements ProtobufMessage , ContactJidProvider {
     /**
      * The non-null unique jid used to identify this chat
      */
@@ -76,6 +78,18 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     private int unreadMessagesCount;
 
     /**
+     * Whether this chat is read only
+     */
+    @ProtobufProperty(index = 7, name = "readOnly", type = ProtobufType.BOOL)
+    private boolean readOnly;
+
+    /**
+     * Whether this chat has been trasfered completely
+     */
+    @ProtobufProperty(index = 8, name = "endOfHistoryTransfer", type = ProtobufType.BOOL)
+    private boolean endOfHistoryTransfer;
+
+    /**
      * The seconds in seconds before a message is automatically deleted from this chat both locally and from WhatsappWeb's servers.
      * If ephemeral messages aren't enabled, this field has a value of 0
      */
@@ -89,6 +103,12 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      */
     @ProtobufProperty(index = 10, type = INT64)
     private long ephemeralMessagesToggleTime;
+
+    /**
+     * The history sync status
+     */
+    @ProtobufProperty(index = 11, name = "endOfHistoryTransferType", type = ProtobufType.MESSAGE)
+    private EndOfHistoryTransferType endOfHistoryTransferType;
 
     /**
      * The timestamp for the creation of this chat in seconds since {@link java.time.Instant#EPOCH}
@@ -119,6 +139,19 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      */
     @ProtobufProperty(index = 17, type = MESSAGE, implementation = ChatDisappear.class)
     private ChatDisappear disappearInitiator;
+
+    /**
+     * Whether this chat was manually marked as unread
+     */
+    @ProtobufProperty(index = 19, name = "markedAsUnread", type = ProtobufType.BOOL)
+    private boolean markedAsUnread;
+
+    /**
+     * The participants of this chat
+     */
+    @ProtobufProperty(implementation = GroupParticipant.class, index = 20, name = "participant", repeated = true, type = ProtobufType.MESSAGE)
+    @Default
+    private List<GroupParticipant> participants = new ArrayList<>();
 
     /**
      * The token of this chat
@@ -180,6 +213,84 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     private boolean suspended;
 
     /**
+     * Whether this chat was terminated
+     */
+    @ProtobufProperty(index = 30, name = "terminated", type = ProtobufType.BOOL)
+    private boolean terminated;
+
+    /**
+     * The timestamp at which the chat, if a group, was created
+     */
+    @ProtobufProperty(index = 31, name = "createdAt", type = ProtobufType.UINT64)
+    private long createdAt;
+
+    /**
+     * The user who created this chat, if a group
+     */
+    @ProtobufProperty(index = 32, name = "createdBy", type = ProtobufType.STRING)
+    private String createdBy;
+
+    /**
+     * The description of this chat, if a group
+     */
+    @ProtobufProperty(index = 33, name = "description", type = ProtobufType.STRING)
+    private String description;
+
+    /**
+     * Whether this chat is an official support chat from Whatsapp
+     */
+    @ProtobufProperty(index = 34, name = "support", type = ProtobufType.BOOL)
+    private boolean support;
+
+    /**
+     * Whether this chat is a parent group
+     */
+    @ProtobufProperty(index = 35, name = "isParentGroup", type = ProtobufType.BOOL)
+    private boolean isParentGroup;
+
+    /**
+     * Whether this chat is a default sub group
+     */
+    @ProtobufProperty(index = 36, name = "isDefaultSubgroup", type = ProtobufType.BOOL)
+    private boolean isDefaultSubgroup;
+
+    /**
+     * The parent group's jid
+     */
+    @ProtobufProperty(index = 37, name = "parentGroupId", type = ProtobufType.STRING)
+    private ContactJid parentGroupJid;
+
+    /**
+     * Unknown
+     */
+    @ProtobufProperty(index = 38, name = "displayName", type = ProtobufType.STRING)
+    private String displayName;
+
+    /**
+     * Unknown
+     */
+    @ProtobufProperty(index = 39, name = "pnJid", type = ProtobufType.STRING)
+    private String pnJid;
+
+    /**
+     * Unknown
+     */
+    @ProtobufProperty(index = 40, name = "shareOwnPn", type = ProtobufType.BOOL)
+    private boolean shareOwnPn;
+
+    /**
+     * Unknown
+     */
+    @ProtobufProperty(index = 41, name = "pnhDuplicateLidThread", type = ProtobufType.BOOL)
+    private boolean pnhDuplicateLidThread;
+
+    /**
+     * Unknown
+     */
+    @ProtobufProperty(index = 42, name = "lidJid", type = ProtobufType.STRING)
+    private String lidJid;
+
+    /**
      * A map that holds the status of each participant, excluding yourself, for this chat.
      * If the chat is not a group, this map's size will range from 0 to 1.
      * Otherwise, it will range from 0 to the number of participants - 1.
@@ -215,10 +326,9 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @param jid the non-null jid
      * @return a non-null chat
      */
-    public static Chat ofJid(@NonNull ContactJid jid) {
-        return Chat.builder()
-                .jid(jid)
-                .build();
+    public static Chat ofJid(@NonNull
+    ContactJid jid) {
+        return Chat.builder().jid(jid).build();
     }
 
     /**
@@ -236,7 +346,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      *
      * @return a boolean
      */
-    public boolean hasName(){
+    public boolean hasName() {
         return name != null;
     }
 
@@ -290,11 +400,10 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      *
      * @return a non-null collection
      */
-    public Collection<MessageInfo> unreadMessages(){
-        if(!hasUnreadMessages()){
+    public Collection<MessageInfo> unreadMessages() {
+        if (!hasUnreadMessages()) {
             return List.of();
         }
-
         var list = new ArrayList<>(messages);
         return list.subList(list.size() - unreadMessagesCount(), list.size());
     }
@@ -368,9 +477,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an optional
      */
     public Optional<MessageInfo> lastMessage() {
-        return messages.isEmpty() ?
-                Optional.empty() :
-                Optional.of(messages.getLast());
+        return messages.isEmpty() ? Optional.empty() : Optional.of(messages.getLast());
     }
 
     /**
@@ -379,10 +486,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an optional
      */
     public Optional<MessageInfo> lastStandardMessage() {
-        return messages.stream()
-                .filter(info -> !info.message()
-                        .hasCategory(MessageCategory.SERVER))
-                .reduce((first, second) -> second);
+        return messages.stream().filter(info -> !info.message().hasCategory(MessageCategory.SERVER)).reduce((first, second) -> second);
     }
 
     /**
@@ -391,9 +495,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an optional
      */
     public Optional<MessageInfo> lastMessageFromMe() {
-        return messages.stream()
-                .filter(MessageInfo::fromMe)
-                .reduce((first, second) -> second);
+        return messages.stream().filter(MessageInfo::fromMe).reduce((first, second) -> second);
     }
 
     /**
@@ -402,10 +504,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an optional
      */
     public Optional<MessageInfo> lastServerMessage() {
-        return messages.stream()
-                .filter(info -> info.message()
-                        .hasCategory(MessageCategory.SERVER))
-                .reduce((first, second) -> second);
+        return messages.stream().filter(info -> info.message().hasCategory(MessageCategory.SERVER)).reduce((first, second) -> second);
     }
 
     /**
@@ -414,9 +513,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an optional
      */
     public Optional<MessageInfo> firstMessage() {
-        return messages.isEmpty() ?
-                Optional.empty() :
-                Optional.of(messages.getFirst());
+        return messages.isEmpty() ? Optional.empty() : Optional.of(messages.getFirst());
     }
 
     /**
@@ -425,9 +522,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an optional
      */
     public Optional<MessageInfo> firstMessageFromMe() {
-        return messages.stream()
-                .filter(MessageInfo::fromMe)
-                .findFirst();
+        return messages.stream().filter(MessageInfo::fromMe).findFirst();
     }
 
     /**
@@ -436,10 +531,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an optional
      */
     public Optional<MessageInfo> firstStandardMessage() {
-        return messages.stream()
-                .filter(info -> !info.message()
-                        .hasCategory(MessageCategory.SERVER))
-                .findFirst();
+        return messages.stream().filter(info -> !info.message().hasCategory(MessageCategory.SERVER)).findFirst();
     }
 
     /**
@@ -448,10 +540,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an optional
      */
     public Optional<MessageInfo> firstServerMessage() {
-        return messages.stream()
-                .filter(info -> info.message()
-                        .hasCategory(MessageCategory.SERVER))
-                .findFirst();
+        return messages.stream().filter(info -> info.message().hasCategory(MessageCategory.SERVER)).findFirst();
     }
 
     /**
@@ -460,9 +549,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return a non-null list of messages
      */
     public List<MessageInfo> starredMessages() {
-        return messages.stream()
-                .filter(MessageInfo::starred)
-                .toList();
+        return messages.stream().filter(MessageInfo::starred).toList();
     }
 
     /**
@@ -481,7 +568,8 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @param info the message to remove
      * @return whether the message was removed
      */
-    public boolean removeMessage(@NonNull MessageInfo info) {
+    public boolean removeMessage(@NonNull
+    MessageInfo info) {
         return messages.remove(info);
     }
 
@@ -491,7 +579,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @param other the chat
      * @return a boolean
      */
-    public boolean equals(Object other){
+    public boolean equals(Object other) {
         return other instanceof Chat that
                 && Objects.equals(this.jid(), that.jid());
     }
@@ -512,13 +600,33 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
         return jid();
     }
 
+
+    /**
+     * The constants of this enumerated type describe the various types of trasnfers that can regard a chat history sync
+     */
+    @AllArgsConstructor
+    @Accessors(fluent = true)
+    public enum EndOfHistoryTransferType implements ProtobufMessage {
+        /**
+         * Complete, but more messages remain on the phone
+         */
+        COMPLETE_BUT_MORE_MESSAGES_REMAIN_ON_PRIMARY(0),
+
+        /**
+         * Complete and no more messages remain on the phone
+         */
+        COMPLETE_AND_NO_MORE_MESSAGE_REMAIN_ON_PRIMARY(1);
+
+        @Getter
+        private final int index;
+    }
+
     public static class ChatBuilder {
         public ChatBuilder messages(List<MessageInfo> messages) {
             if (this.messages$value == null) {
                 this.messages$value = new ConcurrentLinkedDeque<>();
                 this.messages$set = true;
             }
-
             // Kind of abusing the type system of java
             // If the chat was received from Whatsapp, the actual type of the list is HistorySyncMessage, and it needs to be unwrapped
             // Though if the message was stored locally it's actually a MessageInfo(unwrapped HistorySyncMessage)
@@ -532,16 +640,22 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
                     messages$value.add(historySyncMessage.message());
                     return;
                 }
-
                 if (entry instanceof MessageInfo messageInfo) {
                     messages$value.add(messageInfo);
                     return;
                 }
-
-                throw new IllegalArgumentException("Unexpected value: " + entry.getClass()
-                        .getName());
+                throw new IllegalArgumentException("Unexpected value: " + entry.getClass().getName());
             });
+            return this;
+        }
 
+        public Chat.ChatBuilder participants(List<GroupParticipant> participants) {
+            if (this.participants$value == null) {
+                this.participants$value = new ArrayList<>();
+                this.participants$set = true;
+            }
+
+            participants$value.addAll(participants);
             return this;
         }
     }

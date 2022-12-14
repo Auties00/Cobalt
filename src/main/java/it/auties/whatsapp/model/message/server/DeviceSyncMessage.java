@@ -1,8 +1,8 @@
-package it.auties.whatsapp.model.message.device;
+package it.auties.whatsapp.model.message.server;
 
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.model.message.model.DeviceMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
+import it.auties.whatsapp.model.message.model.ServerMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,7 +21,7 @@ import static it.auties.protobuf.base.ProtobufType.BYTES;
 @Jacksonized
 @Builder(builderMethodName = "newDeviceSyncMessageBuilder")
 @Accessors(fluent = true)
-public final class DeviceSyncMessage implements DeviceMessage {
+public final class DeviceSyncMessage implements ServerMessage {
     /**
      * The data that this synchronization wraps encoded as xml and stored in an array of bytes
      */

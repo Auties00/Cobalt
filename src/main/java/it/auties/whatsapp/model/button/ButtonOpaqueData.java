@@ -1,15 +1,21 @@
 package it.auties.whatsapp.model.button;
 
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufType;
+import it.auties.whatsapp.model.poll.PollEncValue;
+import it.auties.whatsapp.model.poll.PollOption;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import static it.auties.protobuf.base.ProtobufType.*;
+import java.util.ArrayList;
+import java.util.List;
 
+import static it.auties.protobuf.base.ProtobufType.*;
 /**
  * A model class that represents data about a button
  */
@@ -18,6 +24,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Builder(builderMethodName = "newButtonOpaqueDataBuilder")
 @Jacksonized
 @Accessors(fluent = true)
+@ProtobufName("MsgOpaqueData")
 public class ButtonOpaqueData implements ProtobufMessage {
     /**
      * The body of the button
@@ -30,12 +37,6 @@ public class ButtonOpaqueData implements ProtobufMessage {
      */
     @ProtobufProperty(index = 3, type = STRING)
     private String caption;
-
-    /**
-     * The client url of the button
-     */
-    @ProtobufProperty(index = 4, type = STRING)
-    private String clientUrl;
 
     /**
      * The longitude of the button
@@ -84,4 +85,59 @@ public class ButtonOpaqueData implements ProtobufMessage {
      */
     @ProtobufProperty(index = 13, type = STRING)
     private String description;
+
+    @ProtobufProperty(index = 6, name = "isLive", type = ProtobufType.BOOL)
+    private Boolean isLive;
+
+    @ProtobufProperty(index = 14, name = "futureproofBuffer", type = ProtobufType.BYTES)
+    private byte[] futureproofBuffer;
+
+    @ProtobufProperty(index = 15, name = "clientUrl", type = ProtobufType.STRING)
+    private String clientUrl;
+
+    @ProtobufProperty(index = 16, name = "loc", type = ProtobufType.STRING)
+    private String loc;
+
+    @ProtobufProperty(index = 17, name = "pollName", type = ProtobufType.STRING)
+    private String pollName;
+
+    @ProtobufProperty(implementation = PollOption.class, index = 18, name = "pollOptions", repeated = true, type = ProtobufType.MESSAGE)
+    private List<PollOption> pollOptions;
+
+    @ProtobufProperty(index = 20, name = "pollSelectableOptionsCount", type = ProtobufType.UINT32)
+    private Integer pollSelectableOptionsCount;
+
+    @ProtobufProperty(index = 21, name = "messageSecret", type = ProtobufType.BYTES)
+    private byte[] messageSecret;
+
+    @ProtobufProperty(index = 51, name = "originalSelfAuthor", type = ProtobufType.STRING)
+    private String originalSelfAuthor;
+
+    @ProtobufProperty(index = 22, name = "senderTimestampMs", type = ProtobufType.INT64)
+    private Long senderTimestampMs;
+
+    @ProtobufProperty(index = 23, name = "pollUpdateParentKey", type = ProtobufType.STRING)
+    private String pollUpdateParentKey;
+
+    @ProtobufProperty(index = 24, name = "encPollVote", type = ProtobufType.MESSAGE)
+    private PollEncValue encPollVote;
+
+    @ProtobufProperty(index = 25, name = "encReactionTargetMessageKey", type = ProtobufType.STRING)
+    private String encReactionTargetMessageKey;
+
+    @ProtobufProperty(index = 26, name = "encReactionEncPayload", type = ProtobufType.BYTES)
+    private byte[] encReactionEncPayload;
+
+    @ProtobufProperty(index = 27, name = "encReactionEncIv", type = ProtobufType.BYTES)
+    private byte[] encReactionEncIv;
+
+    public static class ButtonOpaqueDataBuilder {
+        public ButtonOpaqueData.ButtonOpaqueDataBuilder pollOptions(List<PollOption> pollOptions) {
+            if (this.pollOptions == null)
+                this.pollOptions = new ArrayList<>();
+
+            this.pollOptions.addAll(pollOptions);
+            return this;
+        }
+    }
 }

@@ -179,6 +179,13 @@ public enum MessageType {
      */
     REACTION,
 
+    INTERACTIVE_RESPONSE,
+    NATIVE_FLOW_RESPONSE,
+    KEEP_IN_CHAT,
+    POLL_CREATION,
+    POLL_UPDATE,
+    REQUEST_PHONE_NUMBER,
+    ENCRYPTED_REACTION,
     /**
      * Sticker sync
      */

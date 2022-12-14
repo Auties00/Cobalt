@@ -1,7 +1,9 @@
 package it.auties.whatsapp.model.sync;
 
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.setting.*;
 import it.auties.whatsapp.util.Clock;
@@ -19,14 +21,15 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Jacksonized
 @ToString
 @Accessors(fluent = true)
+@ProtobufName("SyncActionValue")
 public class ActionValueSync implements ProtobufMessage {
-    //<editor-fold desc="Metadata">
+    // <editor-fold desc="Metadata">
     @ProtobufProperty(index = 1, type = INT64)
     @Getter
     private long timestamp;
     //</editor-fold>
-
-    //<editor-fold desc="Actions">
+    
+    // <editor-fold desc="Actions">
     @ProtobufProperty(index = 2, type = MESSAGE, implementation = StarAction.class)
     private StarAction starAction;
 
@@ -74,9 +77,39 @@ public class ActionValueSync implements ProtobufMessage {
 
     @ProtobufProperty(index = 26, type = MESSAGE, implementation = AndroidUnsupportedActions.class)
     private AndroidUnsupportedActions androidUnsupportedActions;
-    //</editor-fold>
 
-    //<editor-fold desc="Settings">
+    @ProtobufProperty(index = 27, name = "agentAction", type = ProtobufType.MESSAGE)
+    private AgentAction agentAction;
+
+    @ProtobufProperty(index = 28, name = "subscriptionAction", type = ProtobufType.MESSAGE)
+    private SubscriptionAction subscriptionAction;
+
+    @ProtobufProperty(index = 29, name = "userStatusMuteAction", type = ProtobufType.MESSAGE)
+    private UserStatusMuteAction userStatusMuteAction;
+
+    @ProtobufProperty(index = 30, name = "timeFormatAction", type = ProtobufType.MESSAGE)
+    private TimeFormatAction timeFormatAction;
+
+    @ProtobufProperty(index = 31, name = "nuxAction", type = ProtobufType.MESSAGE)
+    private NuxAction nuxAction;
+
+    @ProtobufProperty(index = 32, name = "primaryVersionAction", type = ProtobufType.MESSAGE)
+    private PrimaryVersionAction primaryVersionAction;
+
+    @ProtobufProperty(index = 33, name = "stickerAction", type = ProtobufType.MESSAGE)
+    private StickerAction stickerAction;
+
+    @ProtobufProperty(index = 34, name = "removeRecentStickerAction", type = ProtobufType.MESSAGE)
+    private RemoveRecentStickerAction removeRecentStickerAction;
+
+    @ProtobufProperty(index = 35, name = "chatAssignment", type = ProtobufType.MESSAGE)
+    private ChatAssignmentAction chatAssignmentAction;
+
+    @ProtobufProperty(index = 36, name = "chatAssignmentOpenedStatus", type = ProtobufType.MESSAGE)
+    private ChatAssignmentOpenedStatusAction chatAssignmentOpenedStatusAction;
+    // editor-fold>
+    
+    // <editor-fold desc="Settings">
     @ProtobufProperty(index = 6, type = MESSAGE, implementation = SecurityNotificationSetting.class)
     private SecurityNotificationSetting securityNotificationSetting;
 
@@ -89,8 +122,8 @@ public class ActionValueSync implements ProtobufMessage {
     @ProtobufProperty(index = 23, type = MESSAGE, implementation = UnarchiveChatsSetting.class)
     private UnarchiveChatsSetting unarchiveChatsSetting;
     //</editor-fold>
-
-    //<editor-fold desc="Misc">
+    
+    // <editor-fold desc="Misc">
     @ProtobufProperty(index = 10, type = MESSAGE, implementation = RecentStickerMetadata.class)
     @Getter
     private RecentStickerMetadata recentStickerMetadata;
@@ -99,10 +132,9 @@ public class ActionValueSync implements ProtobufMessage {
     @Getter
     private KeyExpiration keyExpiration;
 
-    @ProtobufProperty(index = 24, type = MESSAGE, implementation = PrimaryFeature.class)
+    @ProtobufProperty(index = 24, type = MESSAGE, implementation = ActionValueSync.PrimaryFeature.class)
     @Getter
     private PrimaryFeature primaryFeature;
-
     //</editor-fold>
 
     //<editor-fold desc="Constructors">
@@ -130,6 +162,16 @@ public class ActionValueSync implements ProtobufMessage {
             case FavoriteStickerAction favoriteStickerAction -> this.favoriteStickerAction = favoriteStickerAction;
             case AndroidUnsupportedActions androidUnsupportedActions ->
                     this.androidUnsupportedActions = androidUnsupportedActions;
+            case AgentAction agentAction -> this.agentAction = agentAction;
+            case ChatAssignmentAction chatAssignmentAction -> this.chatAssignmentAction = chatAssignmentAction;
+            case ChatAssignmentOpenedStatusAction chatAssignmentOpenedStatusAction -> this.chatAssignmentOpenedStatusAction = chatAssignmentOpenedStatusAction;
+            case NuxAction nuxAction -> this.nuxAction = nuxAction;
+            case PrimaryVersionAction primaryVersionAction -> this.primaryVersionAction = primaryVersionAction;
+            case RemoveRecentStickerAction removeRecentStickerAction -> this.removeRecentStickerAction = removeRecentStickerAction;
+            case StickerAction stickerAction -> this.stickerAction = stickerAction;
+            case SubscriptionAction subscriptionAction -> this.subscriptionAction = subscriptionAction;
+            case TimeFormatAction timeFormatAction -> this.timeFormatAction = timeFormatAction;
+            case UserStatusMuteAction userStatusMuteAction -> this.userStatusMuteAction = userStatusMuteAction;
         }
     }
 
@@ -142,8 +184,8 @@ public class ActionValueSync implements ProtobufMessage {
             case PushNameSetting pushNameSetting -> this.pushNameSetting = pushNameSetting;
             case LocaleSetting localeSetting -> this.localeSetting = localeSetting;
             case UnarchiveChatsSetting unarchiveChatsSetting -> this.unarchiveChatsSetting = unarchiveChatsSetting;
-            case EphemeralSetting ephemeralSetting -> throw new UnsupportedOperationException(
-                    "Cannot wrap %s in action value sync".formatted(ephemeralSetting));
+            default -> throw new UnsupportedOperationException(
+                    "Cannot wrap %s in action value sync".formatted(setting));
         }
     }
 
@@ -191,6 +233,26 @@ public class ActionValueSync implements ProtobufMessage {
             return favoriteStickerAction;
         if (androidUnsupportedActions != null)
             return androidUnsupportedActions;
+        if(agentAction != null)
+            return agentAction;
+        if(chatAssignmentAction != null)
+            return chatAssignmentAction;
+        if(chatAssignmentOpenedStatusAction != null)
+            return chatAssignmentOpenedStatusAction;
+        if(nuxAction != null)
+            return nuxAction;
+        if(primaryVersionAction != null)
+            return primaryVersionAction;
+        if(removeRecentStickerAction != null)
+            return removeRecentStickerAction;
+        if(stickerAction != null)
+            return stickerAction;
+        if(subscriptionAction != null)
+            return subscriptionAction;
+        if(timeFormatAction != null)
+            return timeFormatAction;
+        if(userStatusMuteAction != null)
+            return userStatusMuteAction;
         return null;
     }
 

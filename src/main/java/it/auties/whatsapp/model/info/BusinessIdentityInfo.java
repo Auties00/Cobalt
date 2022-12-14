@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.info;
 
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.business.BusinessActorsType;
 import it.auties.whatsapp.model.business.BusinessCertificate;
@@ -12,7 +13,6 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.*;
-
 /**
  * A model class that holds the information related to the identity of a business account.
  */
@@ -21,6 +21,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
+@ProtobufName("BizIdentityInfo")
 public final class BusinessIdentityInfo implements Info {
     /**
      * The level of verification of this account

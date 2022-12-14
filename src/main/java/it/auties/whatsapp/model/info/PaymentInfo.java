@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.payment.RequestPaymentMessage;
@@ -15,7 +16,6 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.Arrays;
 
 import static it.auties.protobuf.base.ProtobufType.*;
-
 /**
  * A model class that holds the information related to a payment.
  */
@@ -29,7 +29,7 @@ public final class PaymentInfo implements Info {
      * The currency of this transaction
      */
     @Deprecated
-    @ProtobufProperty(index = 1, type = MESSAGE, implementation = PaymentInfoCurrency.class)
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = PaymentInfo.PaymentInfoCurrency.class)
     private PaymentInfoCurrency currencyDeprecated;
 
     /**
@@ -47,7 +47,7 @@ public final class PaymentInfo implements Info {
     /**
      * The status of this payment
      */
-    @ProtobufProperty(index = 4, type = MESSAGE, implementation = PaymentInfoStatus.class)
+    @ProtobufProperty(index = 4, type = MESSAGE, implementation = PaymentInfo.PaymentInfoStatus.class)
     private PaymentInfoStatus status;
 
     /**
@@ -83,7 +83,7 @@ public final class PaymentInfo implements Info {
     /**
      * The status of this transaction
      */
-    @ProtobufProperty(index = 10, type = MESSAGE, implementation = PaymentInfoTxnStatus.class)
+    @ProtobufProperty(index = 10, type = MESSAGE, implementation = PaymentInfo.PaymentInfoTxnStatus.class)
     private PaymentInfoTxnStatus transactionStatus;
 
     /**
@@ -107,14 +107,16 @@ public final class PaymentInfo implements Info {
     /**
      * The constants of this enumerated type describe the currencies supported for a transaction described by a {@link PaymentInfo}
      */
+    @AllArgsConstructor
     @Accessors(fluent = true)
     @Deprecated
+    @ProtobufName("Currency")
     public enum PaymentInfoCurrency {
+
         /**
          * Unknown currency
          */
         UNKNOWN_CURRENCY(0),
-
         /**
          * Indian rupees
          */
@@ -123,16 +125,9 @@ public final class PaymentInfo implements Info {
         @Getter
         private final int index;
 
-        PaymentInfoCurrency(int index) {
-            this.index = index;
-        }
-
         @JsonCreator
         public static PaymentInfoCurrency of(int index) {
-            return Arrays.stream(values())
-                    .filter(entry -> entry.index() == index)
-                    .findFirst()
-                    .orElse(null);
+            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
         }
     }
 
@@ -141,81 +136,70 @@ public final class PaymentInfo implements Info {
      */
     @AllArgsConstructor
     @Accessors(fluent = true)
+    @ProtobufName("Status")
     public enum PaymentInfoStatus {
+
         /**
          * Unknown status
          */
         UNKNOWN_STATUS(0),
-
         /**
          * Processing
          */
         PROCESSING(1),
-
         /**
          * Sent
          */
         SENT(2),
-
         /**
          * Need to accept
          */
         NEED_TO_ACCEPT(3),
-
         /**
          * Complete
          */
         COMPLETE(4),
-
         /**
          * Could not complete
          */
         COULD_NOT_COMPLETE(5),
-
         /**
          * Refunded
          */
         REFUNDED(6),
-
         /**
          * Expired
          */
         EXPIRED(7),
-
         /**
          * Rejected
          */
         REJECTED(8),
-
         /**
          * Cancelled
          */
         CANCELLED(9),
-
         /**
          * Waiting for payer
          */
         WAITING_FOR_PAYER(10),
-
         /**
          * Waiting
          */
         WAITING(11);
-
         @Getter
         private final int index;
 
         public static PaymentInfoStatus of(int index) {
-            return Arrays.stream(values())
-                    .filter(entry -> entry.index() == index)
-                    .findFirst()
-                    .orElse(null);
+            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
         }
     }
 
     @AllArgsConstructor
     @Accessors(fluent = true)
+    @ProtobufName("TxnStatus")
     public enum PaymentInfoTxnStatus {
+
         UNKNOWN(0),
         PENDING_SETUP(1),
         PENDING_RECEIVER_SETUP(2),
@@ -244,16 +228,15 @@ public final class PaymentInfo implements Info {
         COLLECT_EXPIRED(25),
         COLLECT_CANCELED(26),
         COLLECT_CANCELLING(27),
-        IN_REVIEW(28);
-
+        IN_REVIEW(28),
+        REVERSAL_SUCCESS(29),
+        REVERSAL_PENDING(30),
+        REFUND_PENDING(31);
         @Getter
         private final int index;
 
         public static PaymentInfoTxnStatus of(int index) {
-            return Arrays.stream(values())
-                    .filter(entry -> entry.index() == index)
-                    .findFirst()
-                    .orElse(null);
+            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
         }
     }
 }

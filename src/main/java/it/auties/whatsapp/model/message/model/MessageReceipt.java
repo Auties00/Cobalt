@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.message.model;
 
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.contact.ContactJid;
 import lombok.AllArgsConstructor;
@@ -15,12 +16,12 @@ import java.util.List;
 
 import static it.auties.protobuf.base.ProtobufType.INT64;
 import static it.auties.protobuf.base.ProtobufType.STRING;
-
 @AllArgsConstructor
 @Data
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
+@ProtobufName("UserReceipt")
 public class MessageReceipt implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = STRING, implementation = ContactJid.class)
     @NonNull
@@ -43,15 +44,17 @@ public class MessageReceipt implements ProtobufMessage {
 
     public static class MessageReceiptBuilder {
         public MessageReceiptBuilder pendingDeviceJid(List<String> pendingDeviceJid) {
-            if (this.pendingDeviceJid == null)
+            if (this.pendingDeviceJid == null) {
                 this.pendingDeviceJid = new ArrayList<>();
+            }
             this.pendingDeviceJid.addAll(pendingDeviceJid);
             return this;
         }
 
         public MessageReceiptBuilder deliveredDeviceJid(List<String> deliveredDeviceJid) {
-            if (this.deliveredDeviceJid == null)
+            if (this.deliveredDeviceJid == null) {
                 this.deliveredDeviceJid = new ArrayList<>();
+            }
             this.deliveredDeviceJid.addAll(deliveredDeviceJid);
             return this;
         }

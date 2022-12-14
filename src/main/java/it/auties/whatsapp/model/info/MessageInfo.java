@@ -1,7 +1,9 @@
 package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.business.BusinessPrivacyStatus;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
@@ -12,6 +14,9 @@ import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.standard.LiveLocationMessage;
 import it.auties.whatsapp.model.message.standard.ReactionMessage;
 import it.auties.whatsapp.model.sync.PhotoChange;
+import it.auties.whatsapp.model.message.model.KeepInChat;
+import it.auties.whatsapp.model.poll.PollAdditionalMetadata;
+import it.auties.whatsapp.model.poll.PollUpdate;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.JacksonProvider;
 import lombok.*;
@@ -26,7 +31,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static it.auties.protobuf.base.ProtobufType.*;
 import static java.util.Objects.requireNonNullElseGet;
-
 /**
  * A model class that holds the information related to a {@link Message}.
  */
@@ -36,7 +40,26 @@ import static java.util.Objects.requireNonNullElseGet;
 @Builder(builderMethodName = "newMessageInfo")
 @Jacksonized
 @Accessors(fluent = true)
-public final class MessageInfo implements Info, MessageMetadataProvider, JacksonProvider {
+@ProtobufName("WebMessageInfo")
+public final class MessageInfo implements Info , MessageMetadataProvider , JacksonProvider {
+    /**
+     * Constructs a new MessageInfo from a MessageKey and a MessageContainer
+     *
+     * @param key
+     * 		the key of the message
+     * @param container
+     * 		the container of the message
+     */
+    public MessageInfo(@NonNull
+    MessageKey key, @NonNull
+    MessageContainer container) {
+        this.key = key;
+        this.timestamp = Clock.now();
+        this.status = MessageStatus.PENDING;
+        this.message = container;
+        this.individualStatus = new ConcurrentHashMap<>();
+    }
+
     /**
      * The MessageKey of this message
      */
@@ -147,7 +170,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * The stub type of this message.
      * This property is populated only if the message that {@link MessageInfo#message} wraps is a {@link ProtocolMessage}.
      */
-    @ProtobufProperty(index = 24, type = MESSAGE, implementation = StubType.class)
+    @ProtobufProperty(index = 24, type = MESSAGE, implementation = MessageInfo.StubType.class)
     private StubType stubType;
 
     /**
@@ -271,19 +294,29 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
     @ProtobufProperty(index = 44, type = MESSAGE, implementation = PublicServiceAnnouncementStatus.class)
     private PublicServiceAnnouncementStatus psaStatus;
 
-    /**
-     * Constructs a new MessageInfo from a MessageKey and a MessageContainer
-     *
-     * @param key       the key of the message
-     * @param container the container of the message
-     */
-    public MessageInfo(@NonNull MessageKey key, @NonNull MessageContainer container) {
-        this.key = key;
-        this.timestamp = Clock.now();
-        this.status = MessageStatus.PENDING;
-        this.message = container;
-        this.individualStatus = new ConcurrentHashMap<>();
-    }
+    @ProtobufProperty(implementation = PollUpdate.class, index = 45, name = "pollUpdates", repeated = true, type = ProtobufType.MESSAGE)
+    private List<PollUpdate> pollUpdates;
+
+    @ProtobufProperty(index = 46, name = "pollAdditionalMetadata", type = ProtobufType.MESSAGE)
+    private PollAdditionalMetadata pollAdditionalMetadata;
+
+    @ProtobufProperty(index = 47, name = "agentId", type = ProtobufType.STRING)
+    private String agentId;
+
+    @ProtobufProperty(index = 48, name = "statusAlreadyViewed", type = ProtobufType.BOOL)
+    private Boolean statusAlreadyViewed;
+
+    @ProtobufProperty(index = 49, name = "messageSecret", type = ProtobufType.BYTES)
+    private byte[] messageSecret;
+
+    @ProtobufProperty(index = 50, name = "keepInChat", type = ProtobufType.MESSAGE)
+    private KeepInChat keepInChat;
+
+    @ProtobufProperty(index = 51, name = "originalSelfAuthorUserJidString", type = ProtobufType.STRING)
+    private String originalSelfAuthorUserJidString;
+
+    @ProtobufProperty(index = 52, name = "revokeMessageTimestamp", type = ProtobufType.UINT64)
+    private Long revokeMessageTimestamp;
 
     /**
      * Returns the jid of the contact or group that sent the message.
@@ -318,8 +351,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * @return a non-null ContactJid
      */
     public ContactJid senderJid() {
-        return requireNonNullElseGet(senderJid, () -> key.senderJid()
-                .orElseGet(key::chatJid));
+        return requireNonNullElseGet(senderJid, () -> key.senderJid().orElseGet(key::chatJid));
     }
 
     /**
@@ -337,8 +369,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * @return a non-null String
      */
     public String senderName() {
-        return sender().map(Contact::name)
-                .orElseGet(senderJid()::user);
+        return sender().map(Contact::name).orElseGet(senderJid()::user);
     }
 
     /**
@@ -356,8 +387,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * @return an optional
      */
     public Optional<Contact> sender() {
-        return Optional.ofNullable(sender)
-                .or(key::sender);
+        return Optional.ofNullable(sender).or(key::sender);
     }
 
     /**
@@ -366,10 +396,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * @return a non-empty optional {@link MessageInfo} if this message quotes a message in memory
      */
     public Optional<QuotedMessage> quotedMessage() {
-        return Optional.of(message)
-                .flatMap(MessageContainer::contentWithContext)
-                .map(ContextualMessage::contextInfo)
-                .flatMap(QuotedMessage::of);
+        return Optional.of(message).flatMap(MessageContainer::contentWithContext).map(ContextualMessage::contextInfo).flatMap(QuotedMessage::of);
     }
 
     /**
@@ -378,11 +405,10 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      *
      * @return a non-null string
      */
-    public String toJson(){
+    public String toJson() {
         try {
-            return JSON.writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(this);
-        }catch (IOException exception){
+            return JSON.writerWithDefaultPrettyPrinter().writeValueAsString(this);
+        } catch (IOException exception) {
             throw new UncheckedIOException("Cannot convert message to json", exception);
         }
     }
@@ -397,7 +423,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
     }
 
     public boolean equals(Object object) {
-        return object instanceof MessageInfo that && Objects.equals(this.id(), that.id());
+        return (object instanceof MessageInfo that) && Objects.equals(this.id(), that.id());
     }
 
     @Override
@@ -463,10 +489,8 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
         PAYMENT_TRANSACTION_STATUS_UPDATE_FAILED(49, List.of("payment_transaction_status_update_failed")),
         PAYMENT_TRANSACTION_STATUS_UPDATE_REFUNDED(50, List.of("payment_transaction_status_update_refunded")),
         PAYMENT_TRANSACTION_STATUS_UPDATE_REFUND_FAILED(51, List.of("payment_transaction_status_update_refund_failed")),
-        PAYMENT_TRANSACTION_STATUS_RECEIVER_PENDING_SETUP(52,
-                List.of("payment_transaction_status_receiver_pending_setup")),
-        PAYMENT_TRANSACTION_STATUS_RECEIVER_SUCCESS_AFTER_HICCUP(53,
-                List.of("payment_transaction_status_receiver_success_after_hiccup")),
+        PAYMENT_TRANSACTION_STATUS_RECEIVER_PENDING_SETUP(52, List.of("payment_transaction_status_receiver_pending_setup")),
+        PAYMENT_TRANSACTION_STATUS_RECEIVER_SUCCESS_AFTER_HICCUP(53, List.of("payment_transaction_status_receiver_success_after_hiccup")),
         PAYMENT_ACTION_ACCOUNT_SETUP_REMINDER(54, List.of("payment_action_account_setup_reminder")),
         PAYMENT_ACTION_SEND_PAYMENT_REMINDER(55, List.of("payment_action_send_payment_reminder")),
         PAYMENT_ACTION_SEND_PAYMENT_INVITATION(56, List.of("payment_action_send_payment_invitation")),
@@ -493,18 +517,14 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
         BLUE_MSG_BSP_FB_TO_SELF_FB(77, List.of("blue_msg_bsp_fb_to_self_fb")),
         BLUE_MSG_BSP_FB_TO_SELF_PREMISE(78, List.of("blue_msg_bsp_fb_to_self_premise")),
         BLUE_MSG_BSP_FB_UNVERIFIED(79, List.of("blue_msg_bsp_fb_unverified")),
-        BLUE_MSG_BSP_FB_UNVERIFIED_TO_SELF_PREMISE_VERIFIED(80,
-                List.of("blue_msg_bsp_fb_unverified_to_self_premise_verified")),
+        BLUE_MSG_BSP_FB_UNVERIFIED_TO_SELF_PREMISE_VERIFIED(80, List.of("blue_msg_bsp_fb_unverified_to_self_premise_verified")),
         BLUE_MSG_BSP_FB_VERIFIED(81, List.of("blue_msg_bsp_fb_verified")),
-        BLUE_MSG_BSP_FB_VERIFIED_TO_SELF_PREMISE_UNVERIFIED(82,
-                List.of("blue_msg_bsp_fb_verified_to_self_premise_unverified")),
+        BLUE_MSG_BSP_FB_VERIFIED_TO_SELF_PREMISE_UNVERIFIED(82, List.of("blue_msg_bsp_fb_verified_to_self_premise_unverified")),
         BLUE_MSG_BSP_PREMISE_TO_SELF_PREMISE(83, List.of("blue_msg_bsp_premise_to_self_premise")),
         BLUE_MSG_BSP_PREMISE_UNVERIFIED(84, List.of("blue_msg_bsp_premise_unverified")),
-        BLUE_MSG_BSP_PREMISE_UNVERIFIED_TO_SELF_PREMISE_VERIFIED(85,
-                List.of("blue_msg_bsp_premise_unverified_to_self_premise_verified")),
+        BLUE_MSG_BSP_PREMISE_UNVERIFIED_TO_SELF_PREMISE_VERIFIED(85, List.of("blue_msg_bsp_premise_unverified_to_self_premise_verified")),
         BLUE_MSG_BSP_PREMISE_VERIFIED(86, List.of("blue_msg_bsp_premise_verified")),
-        BLUE_MSG_BSP_PREMISE_VERIFIED_TO_SELF_PREMISE_UNVERIFIED(87,
-                List.of("blue_msg_bsp_premise_verified_to_self_premise_unverified")),
+        BLUE_MSG_BSP_PREMISE_VERIFIED_TO_SELF_PREMISE_UNVERIFIED(87, List.of("blue_msg_bsp_premise_verified_to_self_premise_unverified")),
         BLUE_MSG_CONSUMER_TO_BSP_FB_UNVERIFIED(88, List.of("blue_msg_consumer_to_bsp_fb_unverified")),
         BLUE_MSG_CONSUMER_TO_BSP_PREMISE_UNVERIFIED(89, List.of("blue_msg_consumer_to_bsp_premise_unverified")),
         BLUE_MSG_CONSUMER_TO_SELF_FB_UNVERIFIED(90, List.of("blue_msg_consumer_to_self_fb_unverified")),
@@ -512,11 +532,9 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
         BLUE_MSG_SELF_FB_TO_BSP_PREMISE(92, List.of("blue_msg_self_fb_to_bsp_premise")),
         BLUE_MSG_SELF_FB_TO_SELF_PREMISE(93, List.of("blue_msg_self_fb_to_self_premise")),
         BLUE_MSG_SELF_FB_UNVERIFIED(94, List.of("blue_msg_self_fb_unverified")),
-        BLUE_MSG_SELF_FB_UNVERIFIED_TO_SELF_PREMISE_VERIFIED(95,
-                List.of("blue_msg_self_fb_unverified_to_self_premise_verified")),
+        BLUE_MSG_SELF_FB_UNVERIFIED_TO_SELF_PREMISE_VERIFIED(95, List.of("blue_msg_self_fb_unverified_to_self_premise_verified")),
         BLUE_MSG_SELF_FB_VERIFIED(96, List.of("blue_msg_self_fb_verified")),
-        BLUE_MSG_SELF_FB_VERIFIED_TO_SELF_PREMISE_UNVERIFIED(97,
-                List.of("blue_msg_self_fb_verified_to_self_premise_unverified")),
+        BLUE_MSG_SELF_FB_VERIFIED_TO_SELF_PREMISE_UNVERIFIED(97, List.of("blue_msg_self_fb_verified_to_self_premise_unverified")),
         BLUE_MSG_SELF_PREMISE_TO_BSP_PREMISE(98, List.of("blue_msg_self_premise_to_bsp_premise")),
         BLUE_MSG_SELF_PREMISE_UNVERIFIED(99, List.of("blue_msg_self_premise_unverified")),
         BLUE_MSG_SELF_PREMISE_VERIFIED(100, List.of("blue_msg_self_premise_verified")),
@@ -531,16 +549,12 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
         BLUE_MSG_VERIFIED_TO_BSP_PREMISE_UNVERIFIED(109, List.of("blue_msg_verified_to_bsp_premise_unverified")),
         BLUE_MSG_VERIFIED_TO_SELF_FB_UNVERIFIED(110, List.of("blue_msg_verified_to_self_fb_unverified")),
         BLUE_MSG_VERIFIED_TO_UNVERIFIED(111, List.of("blue_msg_verified_to_unverified")),
-        BLUE_MSG_BSP_FB_UNVERIFIED_TO_BSP_PREMISE_VERIFIED(112,
-                List.of("blue_msg_bsp_fb_unverified_to_bsp_premise_verified")),
+        BLUE_MSG_BSP_FB_UNVERIFIED_TO_BSP_PREMISE_VERIFIED(112, List.of("blue_msg_bsp_fb_unverified_to_bsp_premise_verified")),
         BLUE_MSG_BSP_FB_UNVERIFIED_TO_SELF_FB_VERIFIED(113, List.of("blue_msg_bsp_fb_unverified_to_self_fb_verified")),
-        BLUE_MSG_BSP_FB_VERIFIED_TO_BSP_PREMISE_UNVERIFIED(114,
-                List.of("blue_msg_bsp_fb_verified_to_bsp_premise_unverified")),
+        BLUE_MSG_BSP_FB_VERIFIED_TO_BSP_PREMISE_UNVERIFIED(114, List.of("blue_msg_bsp_fb_verified_to_bsp_premise_unverified")),
         BLUE_MSG_BSP_FB_VERIFIED_TO_SELF_FB_UNVERIFIED(115, List.of("blue_msg_bsp_fb_verified_to_self_fb_unverified")),
-        BLUE_MSG_SELF_FB_UNVERIFIED_TO_BSP_PREMISE_VERIFIED(116,
-                List.of("blue_msg_self_fb_unverified_to_bsp_premise_verified")),
-        BLUE_MSG_SELF_FB_VERIFIED_TO_BSP_PREMISE_UNVERIFIED(117,
-                List.of("blue_msg_self_fb_verified_to_bsp_premise_unverified")),
+        BLUE_MSG_SELF_FB_UNVERIFIED_TO_BSP_PREMISE_VERIFIED(116, List.of("blue_msg_self_fb_unverified_to_bsp_premise_verified")),
+        BLUE_MSG_SELF_FB_VERIFIED_TO_BSP_PREMISE_UNVERIFIED(117, List.of("blue_msg_self_fb_verified_to_bsp_premise_unverified")),
         E2E_IDENTITY_UNAVAILABLE(118, List.of("e2e_identity_unavailable")),
         GROUP_CREATING(119, List.of()),
         GROUP_CREATE_FAILED(120, List.of()),
@@ -565,16 +579,26 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
         COMMUNITY_UNLINK_SUB_GROUP(139, List.of("sub_group_unlink")),
         GROUP_PARTICIPANT_ACCEPT(140, List.of()),
         GROUP_PARTICIPANT_LINKED_GROUP_JOIN(141, List.of("linked_group_join")),
-        COMMUNITY_CREATE(142, List.of("community_create"));
-
-        // LINK: "link",
-        // UNLINK: "unlink",
-        // LINKED_GROUP_PROMOTE: "linked_group_promote",
-        // LINKED_GROUP_DEMOTE: "linked_group_demote",
-        // MEMBERSHIP_APPROVAL_MODE: "membership_approval_mode",
-        // MEMBERSHIP_APPROVAL_REQUEST: "membership_approval_request"
-        // SUSPENDED: "suspended",
-        // UNSUSPENDED: "unsuspended"
+        COMMUNITY_CREATE(142, List.of("community_create")),
+        EPHEMERAL_KEEP_IN_CHAT(143, List.of("ephemeral_keep_in_chat")),
+        GROUP_MEMBERSHIP_JOIN_APPROVAL_REQUEST(144, List.of("membership_approval_request")),
+        GROUP_MEMBERSHIP_JOIN_APPROVAL_MODE(145, List.of("membership_approval_mode")),
+        INTEGRITY_UNLINK_PARENT_GROUP(146, List.of("integrity_parent_group_unlink")),
+        COMMUNITY_PARTICIPANT_PROMOTE(147, List.of("linked_group_promote")),
+        COMMUNITY_PARTICIPANT_DEMOTE(148, List.of("linked_group_demote")),
+        COMMUNITY_PARENT_GROUP_DELETED(149, List.of("delete_parent_group")),
+        COMMUNITY_LINK_PARENT_GROUP_MEMBERSHIP_APPROVAL(150, List.of("parent_group_link_membership_approval")),
+        GROUP_PARTICIPANT_JOINED_GROUP_AND_PARENT_GROUP(151, List.of("auto_add")),
+        MASKED_THREAD_CREATED(152, List.of("masked_thread_created")),
+        MASKED_THREAD_UNMASKED(153, List.of()),
+        BIZ_CHAT_ASSIGNMENT(154, List.of("chat_assignment")),
+        CHAT_PSA(155, List.of("e2e_notification")),
+        CHAT_POLL_CREATION_MESSAGE(156, List.of()),
+        CAG_MASKED_THREAD_CREATED(157, List.of("cag_masked_thread_created")),
+        COMMUNITY_PARENT_GROUP_SUBJECT_CHANGED(158, List.of("subject")),
+        CAG_INVITE_AUTO_ADD(159, List.of("invite_auto_add")),
+        BIZ_CHAT_ASSIGNMENT_UNASSIGN(160, List.of("chat_assignment_unassign")),
+        CAG_INVITE_AUTO_JOINED(161, List.of("invite_auto_add"));
 
         @Getter
         private final int index;
@@ -584,17 +608,21 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
 
         @JsonCreator
         public static StubType of(int index) {
-            return Arrays.stream(values())
-                    .filter(entry -> entry.index() == index)
-                    .findFirst()
-                    .orElse(null);
+            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
         }
 
         public static Optional<StubType> of(String symbol) {
-            return Arrays.stream(values())
-                    .filter(entry -> entry.symbols()
-                            .contains(symbol))
-                    .findFirst();
+            return Arrays.stream(values()).filter(entry -> entry.symbols().contains(symbol)).findFirst();
+        }
+    }
+
+    public static class MessageInfoBuilder {
+        public MessageInfo.MessageInfoBuilder pollUpdates(List<PollUpdate> pollUpdates) {
+            if (this.pollUpdates == null)
+                this.pollUpdates = new ArrayList<>();
+
+            this.pollUpdates.addAll(pollUpdates);
+            return this;
         }
     }
 }

@@ -21,8 +21,6 @@ import it.auties.whatsapp.model.request.ReplyHandler;
 import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.serialization.ControllerProviderLoader;
 import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.util.ConcurrentSet;
-import it.auties.whatsapp.util.InitializationLock;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
@@ -33,6 +31,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -50,7 +49,7 @@ public final class Store implements Controller<Store> {
      * All the known stores
      */
     @JsonIgnore
-    private static ConcurrentSet<Store> stores = new ConcurrentSet<>();
+    private static ConcurrentHashMap<Integer, Store> stores = new ConcurrentHashMap<>();
 
     /**
      * The session id of this store
@@ -121,7 +120,7 @@ public final class Store implements Controller<Store> {
      */
     @NonNull
     @Default
-    private ConcurrentHashMap<ContactJid, Set<MessageInfo>> status = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<ContactJid, ConcurrentLinkedDeque<MessageInfo>> status = new ConcurrentHashMap<>();
 
     /**
      * The non-null map of privacy settings
@@ -216,8 +215,14 @@ public final class Store implements Controller<Store> {
      * The media connection associated with this store
      */
     @JsonIgnore
+    private MediaConnection mediaConnection;
+
+    /**
+     * The media connection latch associated with this store
+     */
+    @JsonIgnore
     @Default
-    private InitializationLock<MediaConnection> mediaConnection = new InitializationLock<>();
+    private final CountDownLatch mediaConnectionLatch = new CountDownLatch(1);
 
     @JsonIgnore
     @Getter
@@ -245,7 +250,7 @@ public final class Store implements Controller<Store> {
                 .id(id)
                 .useDefaultSerializer(useDefaultSerializer)
                 .build();
-        stores.add(result);
+        stores.put(result.id(), result);
         return result;
     }
 
@@ -272,10 +277,7 @@ public final class Store implements Controller<Store> {
      * @return a non-null optional
      */
     public static Optional<Store> findStoreById(int id) {
-        return Collections.synchronizedSet(stores)
-                .parallelStream()
-                .filter(entry -> entry.id() == id)
-                .findFirst();
+        return Optional.ofNullable(stores.get(id));
     }
 
     /**
@@ -660,7 +662,13 @@ public final class Store implements Controller<Store> {
      * @return the media connection
      */
     public MediaConnection mediaConnection() {
-        return mediaConnection.read();
+       try {
+           mediaConnectionLatch.await();
+           return mediaConnection;
+       }catch (InterruptedException exception){
+           throw new RuntimeException("Cannot lock on media connection." +
+                   " An error occurred previously while creating it probably", exception);
+       }
     }
 
     /**
@@ -670,7 +678,7 @@ public final class Store implements Controller<Store> {
      * @return the same instance
      */
     public Store mediaConnection(MediaConnection mediaConnection) {
-        this.mediaConnection.write(mediaConnection);
+        this.mediaConnection = mediaConnection;
         return this;
     }
 
@@ -723,7 +731,7 @@ public final class Store implements Controller<Store> {
      */
     public Store addStatus(@NonNull MessageInfo info) {
         attribute(info);
-        var wrapper = Objects.requireNonNullElseGet(status.get(info.senderJid()), ConcurrentSet<MessageInfo>::new);
+        var wrapper = Objects.requireNonNullElseGet(status.get(info.senderJid()), ConcurrentLinkedDeque<MessageInfo>::new);
         wrapper.add(info);
         status.put(info.senderJid(), wrapper);
         return this;

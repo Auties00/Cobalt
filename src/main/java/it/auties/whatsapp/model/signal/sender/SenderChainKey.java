@@ -4,7 +4,6 @@ import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.whatsapp.crypto.Hmac;
 import lombok.Builder;
 import lombok.extern.jackson.Jacksonized;
-
 @Builder
 @Jacksonized
 public record SenderChainKey(int iteration, byte[] seed) implements ProtobufMessage {

@@ -1,9 +1,9 @@
-package it.auties.whatsapp.model.message.device;
+package it.auties.whatsapp.model.message.server;
 
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.whatsapp.model.message.model.DeviceMessage;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageType;
+import it.auties.whatsapp.model.message.model.ServerMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,7 +23,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Jacksonized
 @Builder(builderMethodName = "newDeviceSentMessageBuilder")
 @Accessors(fluent = true)
-public final class DeviceSentMessage implements DeviceMessage {
+public final class DeviceSentMessage implements ServerMessage {
     /**
      * The unique identifier that this message update regards.
      */

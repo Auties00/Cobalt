@@ -2,9 +2,7 @@ package it.auties.whatsapp.model.message.model;
 
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.info.ContextInfo;
-import it.auties.whatsapp.model.message.button.ButtonsMessage;
-import it.auties.whatsapp.model.message.button.ListMessage;
-import it.auties.whatsapp.model.message.button.TemplateMessage;
+import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.standard.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder.Default;
@@ -26,9 +24,10 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Data
 @Accessors(fluent = true)
 public sealed abstract class ContextualMessage implements Message
-        permits ButtonsMessage, ListMessage, TemplateMessage,
-        ButtonReplyMessage, MediaMessage, ContactMessage, ContactsArrayMessage, GroupInviteMessage, InteractiveMessage,
-        LiveLocationMessage, LocationMessage, ProductMessage, TextMessage {
+        permits ButtonsMessage, InteractiveMessage, InteractiveResponseMessage, ListMessage, TemplateMessage,
+        ButtonReplyMessage, MediaMessage, it.auties.whatsapp.model.message.payment.PaymentOrderMessage, ContactMessage,
+        ContactsArrayMessage, GroupInviteMessage, LiveLocationMessage, LocationMessage, PollCreationMessage,
+        ProductMessage, RequestPhoneNumberMessage, TextMessage {
     /**
      * The context info of this message
      */

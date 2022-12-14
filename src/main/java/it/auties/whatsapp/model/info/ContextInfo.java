@@ -2,12 +2,12 @@ package it.auties.whatsapp.model.info;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatDisappear;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.message.model.*;
-import it.auties.whatsapp.model.message.payment.PaymentOrderMessage;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static it.auties.protobuf.base.ProtobufType.*;
-
 /**
  * A model class that holds the information related to a {@link ContextualMessage}.
  */
@@ -26,7 +25,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Jacksonized
 @Builder(builderMethodName = "newContextInfo")
 @Accessors(fluent = true)
-public sealed class ContextInfo implements Info permits PaymentOrderMessage {
+public final class ContextInfo implements Info {
     /**
      * The jid of the message that this ContextualMessage quotes
      */
@@ -182,6 +181,18 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
     @ProtobufProperty(index = 35, type = STRING, implementation = ContactJid.class)
     private ContactJid parentGroup;
 
+    /**
+     * Trust banner type
+     */
+    @ProtobufProperty(index = 37, name = "trustBannerType", type = ProtobufType.STRING)
+    private String trustBannerType;
+
+    /**
+     * Trust banner action
+     */
+    @ProtobufProperty(index = 38, name = "trustBannerAction", type = ProtobufType.UINT32)
+    private Integer trustBannerAction;
+
     private ContextInfo(@NonNull MessageMetadataProvider quotedMessage) {
         this.quotedMessageId = quotedMessage.id();
         this.quotedMessageSenderJid = quotedMessage.sender()
@@ -201,7 +212,8 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
      * @param quotedMessage the message to quote
      * @return a non-null context info
      */
-    public static ContextInfo of(@NonNull MessageMetadataProvider quotedMessage) {
+    public static ContextInfo of(@NonNull
+    MessageMetadataProvider quotedMessage) {
         return new ContextInfo(quotedMessage);
     }
 
@@ -247,8 +259,7 @@ public sealed class ContextInfo implements Info permits PaymentOrderMessage {
      * @return an optional
      */
     public Optional<ContactJid> quotedMessageChatJid() {
-        return Optional.ofNullable(quotedMessageChatJid)
-                .or(this::quotedMessageSenderJid);
+        return Optional.ofNullable(quotedMessageChatJid).or(this::quotedMessageSenderJid);
     }
 
     /**

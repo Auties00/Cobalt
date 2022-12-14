@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.business;
 
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +10,6 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.STRING;
-
 /**
  * A model class that represents a time a localizable name
  */
@@ -18,6 +18,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder(builderMethodName = "newLocalizedName")
 @Jacksonized
 @Accessors(fluent = true)
+@ProtobufName("LocalizedName")
 public class BusinessLocalizedName implements ProtobufMessage {
     /**
      * Lg

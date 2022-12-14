@@ -40,7 +40,6 @@ open module it.auties.whatsappweb4j {
     exports it.auties.whatsapp.model.info;
     exports it.auties.whatsapp.model.media;
     exports it.auties.whatsapp.model.message.server;
-    exports it.auties.whatsapp.model.message.device;
     exports it.auties.whatsapp.model.message.model;
     exports it.auties.whatsapp.model.message.payment;
     exports it.auties.whatsapp.model.message.standard;

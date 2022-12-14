@@ -388,6 +388,8 @@ class AppStateHandler implements JacksonProvider {
                 case SecurityNotificationSetting ignored -> {}
                 case UnarchiveChatsSetting unarchiveChatsSetting -> socketHandler.store()
                         .unarchiveChats(unarchiveChatsSetting.unarchiveChats());
+                case AutoDownloadSettings autoDownloadSettings -> {}
+                case AvatarUserSettings avatarUserSettings -> {}
             }
 
             socketHandler.onSetting(setting);
