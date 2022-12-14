@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.model;
 
+import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,7 +9,6 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.STRING;
-
 /**
  * An action link for a button
  */
@@ -17,7 +17,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class ActionLink {
+public class ActionLink implements ProtobufMessage {
     /**
      * The url of the action
      */
