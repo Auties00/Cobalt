@@ -65,6 +65,7 @@ class MessageHandler implements JacksonProvider {
     private final Cache<String, List<ContactJid>> devicesCache;
     private final Set<Chat> historyCache;
     private final AtomicBoolean receivedPushNames;
+    private final AtomicBoolean sentInitialPatch;
     private final Semaphore encodeSemaphore;
 
     protected MessageHandler(SocketHandler socketHandler) {
@@ -74,6 +75,7 @@ class MessageHandler implements JacksonProvider {
         this.devicesCache = createCache(Duration.ofMinutes(5));
         this.historyCache = new HashSet<>();
         this.encodeSemaphore = new Semaphore(1);
+        this.sentInitialPatch = new AtomicBoolean(false);
         this.receivedPushNames = new AtomicBoolean(false);
     }
 
@@ -724,8 +726,9 @@ class MessageHandler implements JacksonProvider {
             }
 
             case RECENT, FULL -> {
-                if(!socketHandler.store().initialAppSync()){
+                if(!sentInitialPatch.get()){
                     socketHandler.pullInitialPatches();
+                    sentInitialPatch.set(true);
                 }
 
                 handleRecentMessagesListener(history);

@@ -124,7 +124,8 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, ErrorHandl
                 exceptionPrinter.accept(throwable);
             }
 
-            if (location != CRYPTOGRAPHY
+            if (location != INITIAL_APP_STATE_SYNC
+                    && location != CRYPTOGRAPHY
                     && !(location == MESSAGE && throwable instanceof HmacValidationException)) {
                 if (loggingLevel != null) {
                     logger.log(loggingLevel, "Ignored failure");

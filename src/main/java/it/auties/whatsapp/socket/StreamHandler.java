@@ -359,6 +359,10 @@ class StreamHandler implements JacksonProvider {
     }
 
     private void handleServerSyncNotification(Node node) {
+        if(!socketHandler.store().initialAppSync()){
+            return;
+        }
+
         node.findNode("collection")
                 .map(entry -> entry.attributes().getRequiredString("name"))
                 .map(PatchType::of)
