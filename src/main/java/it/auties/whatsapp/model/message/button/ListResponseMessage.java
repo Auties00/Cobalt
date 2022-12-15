@@ -21,7 +21,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
  */
 @AllArgsConstructor
 @Data
-@SuperBuilder(builderMethodName = "newListResponseMessageBuilder")
+@SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
 @EqualsAndHashCode(callSuper = true)

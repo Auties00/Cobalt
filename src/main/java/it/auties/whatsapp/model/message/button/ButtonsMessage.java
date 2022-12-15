@@ -34,7 +34,7 @@ import static java.util.Objects.requireNonNullElseGet;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Jacksonized
-@Builder(builderMethodName = "newRawButtonsMessageBuilder")
+@Builder
 @Accessors(fluent = true)
 public final class ButtonsMessage extends ContextualMessage implements ButtonMessage {
     /**
@@ -83,7 +83,8 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
      * The context info of this message
      */
     @ProtobufProperty(index = 8, type = MESSAGE, implementation = ContextInfo.class)
-    private ContextInfo contextInfo; 
+    @Builder.Default
+    private ContextInfo contextInfo  = new ContextInfo();
 
     /**
      * The buttons that this message wraps
@@ -107,7 +108,7 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
      * @param buttons     the buttons of this message
      * @return a non-null new message
      */
-    @Builder(builderClassName = "EmptyButtonsMessageBuilder", builderMethodName = "newButtonsWithoutHeaderMessageBuilder")
+    @Builder(builderClassName = "EmptyButtonsMessageBuilder", builderMethodName = "withoutHeaderMessageBuilder")
     private static ButtonsMessage emptyBuilder(String body, String footer, ContextInfo contextInfo,
                                                List<Button> buttons) {
         return createBuilder(HeaderType.EMPTY, body, footer, contextInfo, buttons).build();
@@ -124,7 +125,7 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
      * @param buttons     the buttons of this message
      * @return a non-null new message
      */
-    @Builder(builderClassName = "TextButtonsMessageBuilder", builderMethodName = "newButtonsWithTextHeaderMessageBuilder")
+    @Builder(builderClassName = "TextButtonsMessageBuilder", builderMethodName = "withTextHeaderMessageBuilder")
     private static ButtonsMessage textBuilder(String header, String body, String footer, ContextInfo contextInfo,
                                               List<Button> buttons) {
         return createBuilder(HeaderType.TEXT, body, footer, contextInfo, buttons).headerText(header)
@@ -142,7 +143,7 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
      * @param buttons     the buttons of this message
      * @return a non-null new message
      */
-    @Builder(builderClassName = "DocumentButtonsMessageBuilder", builderMethodName = "newButtonsWithDocumentHeaderMessageBuilder")
+    @Builder(builderClassName = "DocumentButtonsMessageBuilder", builderMethodName = "withDocumentHeaderMessageBuilder")
     private static ButtonsMessage documentBuilder(DocumentMessage header, String body, String footer,
                                                   ContextInfo contextInfo, List<Button> buttons) {
         return createBuilder(HeaderType.DOCUMENT, body, footer, contextInfo, buttons).headerDocument(header)
@@ -160,7 +161,7 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
      * @param buttons     the buttons of this message
      * @return a non-null new message
      */
-    @Builder(builderClassName = "ImageButtonsMessageBuilder", builderMethodName = "newButtonsWithImageHeaderMessageBuilder")
+    @Builder(builderClassName = "ImageButtonsMessageBuilder", builderMethodName = "withImageHeaderMessageBuilder")
     private static ButtonsMessage imageBuilder(ImageMessage header, String body, String footer, ContextInfo contextInfo,
                                                List<Button> buttons) {
         return createBuilder(HeaderType.IMAGE, body, footer, contextInfo, buttons).headerImage(header)
@@ -178,7 +179,7 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
      * @param buttons     the buttons of this message
      * @return a non-null new message
      */
-    @Builder(builderClassName = "VideoButtonsMessageBuilder", builderMethodName = "newButtonsWithVideoHeaderMessageBuilder")
+    @Builder(builderClassName = "VideoButtonsMessageBuilder", builderMethodName = "withVideoHeaderMessageBuilder")
     private static ButtonsMessage videoBuilder(VideoMessage header, String body, String footer, ContextInfo contextInfo,
                                                List<Button> buttons) {
         return createBuilder(HeaderType.VIDEO, body, footer, contextInfo, buttons).headerVideo(header)
@@ -196,7 +197,7 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
      * @param buttons     the buttons of this message
      * @return a non-null new message
      */
-    @Builder(builderClassName = "LocationHeaderButtonsMessageBuilder", builderMethodName = "newButtonsWithLocationHeaderMessageBuilder")
+    @Builder(builderClassName = "LocationHeaderButtonsMessageBuilder", builderMethodName = "withLocationHeaderMessageBuilder")
     private static ButtonsMessage locationBuilder(LocationMessage header, String body, String footer,
                                                   ContextInfo contextInfo, List<Button> buttons) {
         return createBuilder(HeaderType.LOCATION, body, footer, contextInfo, buttons).headerLocation(header)
@@ -205,7 +206,7 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
 
     private static ButtonsMessageBuilder createBuilder(HeaderType image, String body, String footer,
                                                        ContextInfo contextInfo, List<Button> buttons) {
-        return ButtonsMessage.newRawButtonsMessageBuilder()
+        return ButtonsMessage.builder()
                 .headerType(image)
                 .body(body)
                 .footer(footer)

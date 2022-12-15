@@ -13,7 +13,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.util.*;
 
-import static it.auties.whatsapp.model.chat.GroupPolicy.forData;
 import static it.auties.whatsapp.model.chat.GroupSetting.SEND_MESSAGES;
 
 /**
@@ -93,7 +92,7 @@ public class GroupMetadata implements ProtobufMessage {
                 .getJid("creator")
                 .orElse(null);
         var policies = new HashMap<GroupSetting, GroupPolicy>();
-        policies.put(SEND_MESSAGES, forData(node.hasNode("announce")));
+        policies.put(SEND_MESSAGES, GroupPolicy.of(node.hasNode("announce")));
         var description = node.findNode("description")
                 .flatMap(parent -> parent.findNode("body"))
                 .map(GroupMetadata::parseDescription)

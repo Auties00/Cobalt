@@ -302,8 +302,8 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
         return appStateHandler.push(request);
     }
 
-    public void pullInitialPatches() {
-        appStateHandler.pull(true, PatchType.values());
+    public CompletableFuture<Void> pullInitialPatches() {
+        return appStateHandler.pull(true, PatchType.values());
     }
 
     public void pullPatch(PatchType... patchTypes) {

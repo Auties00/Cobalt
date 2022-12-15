@@ -21,7 +21,8 @@ import lombok.extern.jackson.Jacksonized;
 @ProtobufName("RequestPhoneNumberMessage")
 public final class RequestPhoneNumberMessage extends ContextualMessage {
     @ProtobufProperty(index = 1, name = "contextInfo", type = ProtobufType.MESSAGE)
-    private ContextInfo contextInfo;
+    @Builder.Default
+    private ContextInfo contextInfo = new ContextInfo();
 
     @Override
     public MessageType type() {

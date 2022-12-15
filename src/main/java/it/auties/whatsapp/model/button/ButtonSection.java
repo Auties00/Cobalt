@@ -19,7 +19,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
  */
 @AllArgsConstructor(staticName = "of")
 @Data
-@Builder(builderMethodName = "newButtonSectionBuilder")
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 public class ButtonSection implements ProtobufMessage {

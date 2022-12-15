@@ -25,7 +25,7 @@ public enum GroupPolicy implements ProtobufMessage {
      * @param input the boolean value obtained from Whatsapp
      * @return a non-null GroupPolicy
      */
-    public static GroupPolicy forData(boolean input) {
+    public static GroupPolicy of(boolean input) {
         return input ?
                 ADMINS :
                 ANYONE;

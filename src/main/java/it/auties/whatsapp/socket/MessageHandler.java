@@ -2,10 +2,8 @@ package it.auties.whatsapp.socket;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import it.auties.whatsapp.crypto.GroupBuilder;
-import it.auties.whatsapp.crypto.GroupCipher;
-import it.auties.whatsapp.crypto.SessionBuilder;
-import it.auties.whatsapp.crypto.SessionCipher;
+import it.auties.bytes.Bytes;
+import it.auties.whatsapp.crypto.*;
 import it.auties.whatsapp.model.action.ContactAction;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
@@ -19,6 +17,7 @@ import it.auties.whatsapp.model.message.server.DeviceSentMessage;
 import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
+import it.auties.whatsapp.model.message.standard.PollUpdateMessage;
 import it.auties.whatsapp.model.message.standard.ReactionMessage;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.setting.EphemeralSetting;
@@ -34,6 +33,7 @@ import it.auties.whatsapp.util.*;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -126,7 +126,7 @@ class MessageHandler implements JacksonProvider {
     @SafeVarargs
     private CompletableFuture<Void> encodeConversation(MessageInfo info, Entry<String, Object>... attributes) {
         var encodedMessage = BytesHelper.messageToBytes(info.message());
-        var deviceMessage = DeviceSentMessage.newDeviceSentMessage(info.chatJid()
+        var deviceMessage = DeviceSentMessage.of(info.chatJid()
                 .toString(), info.message(), null);
         var encodedDeviceMessage = BytesHelper.messageToBytes(deviceMessage);
         var knownDevices = List.of(socketHandler.store().userCompanionJid().toUserJid(), info.chatJid());
@@ -403,8 +403,8 @@ class MessageHandler implements JacksonProvider {
             var participant = infoNode.attributes()
                     .getJid("participant")
                     .orElse(null);
-            var messageBuilder = MessageInfo.newMessageInfo();
-            var keyBuilder = MessageKey.newMessageKeyBuilder();
+            var messageBuilder = MessageInfo.builder();
+            var keyBuilder = MessageKey.builder();
             if(from.hasServer(ContactJid.Server.WHATSAPP) || from.hasServer(ContactJid.Server.USER)){
                 keyBuilder.chatJid(recipient);
                 keyBuilder.senderJid(from);
@@ -441,18 +441,37 @@ class MessageHandler implements JacksonProvider {
                 return;
             }
 
-            var messageContainer = BytesHelper.bytesToMessage(decodedMessage.message());
-            var message = messageContainer.content() instanceof DeviceSentMessage deviceSentMessage ?
-                    MessageContainer.of(deviceSentMessage.message()
-                            .content()) :
-                    messageContainer;
-            info.message(message);
+            var messageContainer = BytesHelper.bytesToMessage(decodedMessage.message()).unbox();
+            info.message(messageContainer);
             socketHandler.store().attribute(info);
 
             var category = infoNode.attributes().getString("category");
             var content = info.message().content();
             if (content instanceof SenderKeyDistributionMessage distributionMessage) {
                 handleDistributionMessage(distributionMessage, info.senderJid());
+            }
+
+            if(content instanceof PollUpdateMessage pollUpdateMessage){
+                var parentMsgOriginalSender = pollUpdateMessage.pollCreationMessageKey()
+                        .senderJid()
+                        .orElseGet(pollUpdateMessage.pollCreationMessageKey()::chatJid)
+                        .toUserJid()
+                        .toString()
+                        .getBytes(StandardCharsets.UTF_8);
+                var modificationSender = info.senderJid()
+                        .toString()
+                        .getBytes(StandardCharsets.UTF_8);
+                var secretName = pollUpdateMessage.secretName()
+                        .getBytes(StandardCharsets.UTF_8);
+                var infoData = Bytes.of(info.id())
+                        .append(parentMsgOriginalSender)
+                        .append(modificationSender)
+                        .append(secretName)
+                        .toByteArray();
+                var expanded = Hkdf.extractAndExpand(pollUpdateMessage.vote().encPayload(), infoData, 32);
+                var keyData = "%s\0%s".formatted(info.id(), info.senderJid().toUserJid().toString())
+                        .getBytes(StandardCharsets.UTF_8);
+                var decrypted = AesCbc.decrypt(pollUpdateMessage.vote().encIv(), expanded, keyData);
             }
 
             saveMessage(info, category);
@@ -721,13 +740,14 @@ class MessageHandler implements JacksonProvider {
                         .forEach(this::handNewPushName);
                 receivedPushNames.set(true);
                 if(socketHandler.store().initialSnapshot()){
-                    onInitialContacts();
+                    socketHandler.onContacts();
                 }
             }
 
             case RECENT, FULL -> {
                 if(!sentInitialPatch.get()){
-                    socketHandler.pullInitialPatches();
+                    socketHandler.pullInitialPatches()
+                            .thenRunAsync(this::subscribeToAllPresences);
                     sentInitialPatch.set(true);
                 }
 
@@ -738,10 +758,9 @@ class MessageHandler implements JacksonProvider {
         }
     }
 
-
-    private void onInitialContacts() {
-        socketHandler.onContacts();
-        if(!socketHandler.options().automaticallySubscribeToPresences()){
+    private void subscribeToAllPresences() {
+        if (!socketHandler.options()
+                .automaticallySubscribeToPresences()) {
             return;
         }
 

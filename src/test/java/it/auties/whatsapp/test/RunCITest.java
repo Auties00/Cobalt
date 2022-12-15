@@ -572,7 +572,7 @@ public class RunCITest implements Listener, JacksonProvider {
         }
 
         log("Sending buttons...");
-        var emptyButtons = ButtonsMessage.newButtonsWithoutHeaderMessageBuilder()
+        var emptyButtons = ButtonsMessage.withoutHeaderMessageBuilder()
                 .body("A nice body")
                 .footer("A nice footer")
                 .buttons(createButtons())
@@ -580,7 +580,7 @@ public class RunCITest implements Listener, JacksonProvider {
         api.sendMessage(group, emptyButtons)
                 .join();
 
-        var textButtons = ButtonsMessage.newButtonsWithTextHeaderMessageBuilder()
+        var textButtons = ButtonsMessage.withTextHeaderMessageBuilder()
                 .header("A nice header")
                 .body("A nice body")
                 .footer("A nice footer")
@@ -589,7 +589,7 @@ public class RunCITest implements Listener, JacksonProvider {
         api.sendMessage(group, textButtons)
                 .join();
 
-        var document = DocumentMessage.newDocumentMessageBuilder()
+        var document = DocumentMessage.simpleBuilder()
                 .mediaConnection(api.store()
                         .mediaConnection())
                 .media(MediaUtils.readBytes("http://www.orimi.com/pdf-test.pdf"))
@@ -597,7 +597,7 @@ public class RunCITest implements Listener, JacksonProvider {
                 .fileName("pdf-test.pdf")
                 .pageCount(1)
                 .build();
-        var documentButtons = ButtonsMessage.newButtonsWithDocumentHeaderMessageBuilder()
+        var documentButtons = ButtonsMessage.withDocumentHeaderMessageBuilder()
                 .header(document)
                 .body("A nice body")
                 .footer("A nice footer")
@@ -606,14 +606,14 @@ public class RunCITest implements Listener, JacksonProvider {
         api.sendMessage(group, documentButtons)
                 .join();
 
-        var image = ImageMessage.newImageMessageBuilder()
+        var image = ImageMessage.simpleBuilder()
                 .mediaConnection(api.store()
                         .mediaConnection())
                 .media(MediaUtils.readBytes(
                         "https://2.bp.blogspot.com/-DqXILvtoZFA/Wmmy7gRahnI/AAAAAAAAB0g/59c8l63QlJcqA0591t8-kWF739DiOQLcACEwYBhgL/s1600/pol-venere-botticelli-01.jpg"))
                 .caption("Image test")
                 .build();
-        var imageButtons = ButtonsMessage.newButtonsWithImageHeaderMessageBuilder()
+        var imageButtons = ButtonsMessage.withImageHeaderMessageBuilder()
                 .header(image)
                 .body("A nice body")
                 .footer("A nice footer")
@@ -640,7 +640,7 @@ public class RunCITest implements Listener, JacksonProvider {
         }
 
         log("Sending image...");
-        var image = ImageMessage.newImageMessageBuilder()
+        var image = ImageMessage.simpleBuilder()
                 .mediaConnection(api.store()
                         .mediaConnection())
                 .media(MediaUtils.readBytes(
@@ -660,7 +660,7 @@ public class RunCITest implements Listener, JacksonProvider {
         }
 
         log("Sending audio...");
-        var audio = AudioMessage.newAudioMessageBuilder()
+        var audio = AudioMessage.simpleBuilder()
                 .mediaConnection(api.store()
                         .mediaConnection())
                 .media(MediaUtils.readBytes("https://www.kozco.com/tech/organfinale.mp3"))
@@ -678,7 +678,7 @@ public class RunCITest implements Listener, JacksonProvider {
         }
 
         log("Sending video...");
-        var video = VideoMessage.newVideoMessageBuilder()
+        var video = VideoMessage.simpleVideoBuilder()
                 .mediaConnection(api.store()
                         .mediaConnection())
                 .media(MediaUtils.readBytes("https://file-examples.com/storage/fedb96226c637d3059a2f86/2017/04/file_example_MP4_480_1_5MG.mp4"))
@@ -697,7 +697,7 @@ public class RunCITest implements Listener, JacksonProvider {
         }
 
         log("Sending gif...");
-        var video = VideoMessage.newGifMessageBuilder()
+        var video = VideoMessage.simpleGifBuilder()
                 .mediaConnection(api.store()
                         .mediaConnection())
                 .media(MediaUtils.readBytes("https://file-examples.com/storage/fedb96226c637d3059a2f86/2017/04/file_example_MP4_480_1_5MG.mp4"))
@@ -717,7 +717,7 @@ public class RunCITest implements Listener, JacksonProvider {
         }
 
         log("Sending pdf...");
-        var document = DocumentMessage.newDocumentMessageBuilder()
+        var document = DocumentMessage.simpleBuilder()
                 .mediaConnection(api.store()
                         .mediaConnection())
                 .media(MediaUtils.readBytes("http://www.orimi.com/pdf-test.pdf"))
@@ -738,11 +738,11 @@ public class RunCITest implements Listener, JacksonProvider {
         }
 
         log("Sending contact message...");
-        var vcard = ContactCard.newContactCardBuilder()
+        var vcard = ContactCard.builder()
                 .name("A nice contact")
                 .phoneNumber(contact)
                 .build();
-        var contactMessage = ContactMessage.newContactMessage("A nice contact", vcard);
+        var contactMessage = ContactMessage.of("A nice contact", vcard);
         var response = api.sendMessage(contact, contactMessage)
                 .join();
         log("Sent contact: %s", response);
@@ -756,7 +756,7 @@ public class RunCITest implements Listener, JacksonProvider {
         }
 
         log("Sending location message...");
-        var location = LocationMessage.newLocationMessageBuilder()
+        var location = LocationMessage.builder()
                 .latitude(40.730610)
                 .longitude(-73.935242)
                 .magneticNorthOffset(0)
@@ -783,7 +783,7 @@ public class RunCITest implements Listener, JacksonProvider {
         log("Queried %s", code);
 
         log("Sending group invite message...");
-        var invite = GroupInviteMessage.newGroupInviteMessageBuilder()
+        var invite = GroupInviteMessage.builder()
                 .group(group)
                 .code(code)
                 .expiration(ZonedDateTime.now()
@@ -887,30 +887,30 @@ public class RunCITest implements Listener, JacksonProvider {
                 .id("15086146312")
                 .version(3)
                 .build();
-        var interactiveMessageWithCollection = InteractiveMessage.newInteractiveWithCollectionMessageBuilder()
+        var interactiveMessageWithCollection = InteractiveMessage.withCollectionMessageBuilder()
                 .content(collectionMessage)
                 .build();
         api.sendMessage(contact, interactiveMessageWithCollection)
                 .join();
 
-        var shopMessage = BusinessShop.newShopBuilder()
+        var shopMessage = BusinessShop.builder()
                 .id(Bytes.ofRandom(5)
                         .toHex())
                 .version(3)
                 .surfaceType(BusinessShop.SurfaceType.WHATSAPP)
                 .build();
-        var interactiveMessageWithShop = InteractiveMessage.newInteractiveWithShopMessageBuilder()
+        var interactiveMessageWithShop = InteractiveMessage.withShopMessageBuilder()
                 .content(shopMessage)
                 .build();
         api.sendMessage(contact, interactiveMessageWithShop)
                 .join();
 
-        var nativeFlowMessage = BusinessNativeFlow.newNativeFlow()
+        var nativeFlowMessage = BusinessNativeFlow.builder()
                 .buttons(List.of(NativeFlowButton.of("hello :)", "")))
                 .version(3)
                 .parameters("")
                 .build();
-        var interactiveMessageWithFlow = InteractiveMessage.newInteractiveWithNativeFlowMessageBuilder()
+        var interactiveMessageWithFlow = InteractiveMessage.withNativeFlowMessageBuilder()
                 .content(nativeFlowMessage)
                 .build();
         api.sendMessage(contact, interactiveMessageWithFlow)
@@ -931,7 +931,7 @@ public class RunCITest implements Listener, JacksonProvider {
         var urlButton = HydratedButtonTemplate.of(2, HydratedURLButton.of("Search it", "https://google.com"));
         var callButton = HydratedButtonTemplate.of(3,
                 HydratedCallButton.of("Call me", "+%s".formatted(contact.user())));
-        var fourRowTemplate = HydratedFourRowTemplate.newHydratedFourRowTemplateWithTextTitleBuilder()
+        var fourRowTemplate = HydratedFourRowTemplate.withTextTitleBuilder()
                 .title("A nice title")
                 .body("A nice body")
                 .buttons(List.of(quickReplyButton, urlButton, callButton))
@@ -957,7 +957,7 @@ public class RunCITest implements Listener, JacksonProvider {
                 ButtonRow.of("Second option", "A nice description"),
                 ButtonRow.of("Third option", "A nice description"));
         var anotherSection = ButtonSection.of("First section", otherButtons);
-        var listMessage = ListMessage.newListMessageBuilder()
+        var listMessage = ListMessage.builder()
                 .sections(List.of(section, anotherSection))
                 .button("Click me")
                 .title("A nice title")

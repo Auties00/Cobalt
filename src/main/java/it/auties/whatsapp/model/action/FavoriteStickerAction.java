@@ -14,7 +14,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
  */
 @AllArgsConstructor
 @Data
-@Builder(builderMethodName = "newFavoriteStickerActionBuilder")
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 public final class FavoriteStickerAction implements Action {

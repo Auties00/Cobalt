@@ -17,11 +17,11 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 /**
  * A model class that represents a message that refers to a message sent by the device paired with the active WhatsappWeb session.
  */
-@AllArgsConstructor(staticName = "newDeviceSentMessage")
+@AllArgsConstructor(staticName = "of")
 @NoArgsConstructor
 @Data
 @Jacksonized
-@Builder(builderMethodName = "newDeviceSentMessageBuilder")
+@Builder
 @Accessors(fluent = true)
 public final class DeviceSentMessage implements ServerMessage {
     /**

@@ -28,7 +28,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Data
 @Accessors(fluent = true)
 @Jacksonized
-@Builder(builderMethodName = "newMessageKeyBuilder")
+@Builder
 @ToString(exclude = {"chat", "sender"})
 public class MessageKey implements ProtobufMessage {
     /**

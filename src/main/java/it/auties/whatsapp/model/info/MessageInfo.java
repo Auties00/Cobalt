@@ -37,7 +37,7 @@ import static java.util.Objects.requireNonNullElseGet;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Builder(builderMethodName = "newMessageInfo")
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("WebMessageInfo")
@@ -304,7 +304,7 @@ public final class MessageInfo implements Info , MessageMetadataProvider , Jacks
     private String agentId;
 
     @ProtobufProperty(index = 48, name = "statusAlreadyViewed", type = ProtobufType.BOOL)
-    private Boolean statusAlreadyViewed;
+    private boolean statusAlreadyViewed;
 
     @ProtobufProperty(index = 49, name = "messageSecret", type = ProtobufType.BYTES)
     private byte[] messageSecret;
@@ -316,7 +316,7 @@ public final class MessageInfo implements Info , MessageMetadataProvider , Jacks
     private String originalSelfAuthorUserJidString;
 
     @ProtobufProperty(index = 52, name = "revokeMessageTimestamp", type = ProtobufType.UINT64)
-    private Long revokeMessageTimestamp;
+    private long revokeMessageTimestamp;
 
     /**
      * Returns the jid of the contact or group that sent the message.

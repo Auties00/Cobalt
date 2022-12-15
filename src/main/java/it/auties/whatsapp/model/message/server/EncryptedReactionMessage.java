@@ -9,14 +9,19 @@ import it.auties.whatsapp.model.message.model.ServerMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.experimental.Accessors;
+import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 @AllArgsConstructor
 @Data
+@Accessors(fluent = true)
 @Jacksonized
 @Builder
 @ProtobufName("EncReactionMessage")
 public final class EncryptedReactionMessage implements ServerMessage {
+    private static final String ENC_REACTION = "Enc Reaction";
+
     @ProtobufProperty(index = 1, name = "targetMessageKey", type = ProtobufType.MESSAGE)
     private MessageKey targetMessageKey;
 
@@ -25,6 +30,10 @@ public final class EncryptedReactionMessage implements ServerMessage {
 
     @ProtobufProperty(index = 3, name = "encIv", type = ProtobufType.BYTES)
     private byte[] encIv;
+
+    public String secretName(){
+        return ENC_REACTION;
+    }
 
     @Override
     public MessageType type() {

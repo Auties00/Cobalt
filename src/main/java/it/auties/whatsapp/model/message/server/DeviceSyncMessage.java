@@ -15,11 +15,11 @@ import static it.auties.protobuf.base.ProtobufType.BYTES;
 /**
  * A model class that represents a message that refers to a message sent by the device paired with the active WhatsappWeb session to dataSync.
  */
-@AllArgsConstructor(staticName = "newDeviceSyncMessage")
+@AllArgsConstructor(staticName = "of")
 @NoArgsConstructor
 @Data
 @Jacksonized
-@Builder(builderMethodName = "newDeviceSyncMessageBuilder")
+@Builder
 @Accessors(fluent = true)
 public final class DeviceSyncMessage implements ServerMessage {
     /**

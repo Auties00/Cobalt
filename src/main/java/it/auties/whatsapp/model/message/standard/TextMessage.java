@@ -21,7 +21,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(builderMethodName = "newTextMessageBuilder")
+@SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
 public final class TextMessage extends ContextualMessage {

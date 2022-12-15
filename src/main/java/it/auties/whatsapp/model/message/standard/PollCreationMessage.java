@@ -9,8 +9,10 @@ import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.poll.PollOptionName;
 import lombok.AllArgsConstructor;
+import lombok.Builder.Default;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
@@ -21,6 +23,7 @@ import java.util.List;
 @Data
 @Jacksonized
 @SuperBuilder
+@Accessors(fluent = true)
 @EqualsAndHashCode(callSuper = true)
 @ProtobufName("PollCreationMessage")
 public final class PollCreationMessage extends ContextualMessage {
@@ -37,7 +40,8 @@ public final class PollCreationMessage extends ContextualMessage {
     private Integer selectableOptionsCount;
 
     @ProtobufProperty(index = 5, name = "contextInfo", type = ProtobufType.MESSAGE)
-    private ContextInfo contextInfo;
+    @Default
+    private ContextInfo contextInfo = new ContextInfo();
 
     @Override
     public MessageType type() {

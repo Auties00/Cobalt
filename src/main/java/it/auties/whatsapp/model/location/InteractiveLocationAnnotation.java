@@ -21,7 +21,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
  */
 @AllArgsConstructor
 @Data
-@Builder(builderMethodName = "newInteractiveAnnotation")
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("InteractiveAnnotation")

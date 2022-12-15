@@ -8,9 +8,11 @@ import it.auties.whatsapp.model.message.model.MessageKey;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 @AllArgsConstructor
 @Data
+@Accessors(fluent = true)
 @Jacksonized
 @Builder
 @ProtobufName("PollUpdate")
@@ -22,5 +24,5 @@ public class PollUpdate implements ProtobufMessage {
     private PollVoteMessage vote;
 
     @ProtobufProperty(index = 3, name = "senderTimestampMs", type = ProtobufType.INT64)
-    private Long senderTimestampMs;
+    private long senderTimestampMilliseconds;
 }

@@ -274,10 +274,10 @@ class StreamHandler implements JacksonProvider {
     }
 
     private void addMessageForGroupStubType(Chat chat, StubType stubType, long timestamp) {
-        var key = MessageKey.newMessageKeyBuilder()
+        var key = MessageKey.builder()
                 .chatJid(chat.jid())
                 .build();
-        var message = MessageInfo.newMessageInfo()
+        var message = MessageInfo.builder()
                 .timestamp(timestamp)
                 .key(key)
                 .ignore(true)

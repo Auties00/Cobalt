@@ -21,7 +21,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
  */
 @AllArgsConstructor
 @Data
-@Builder(builderMethodName = "newRawButtonBuilder")
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 public class Button implements ProtobufMessage {
@@ -58,7 +58,7 @@ public class Button implements ProtobufMessage {
      * @return a non-null button
      */
     public static Button newResponseButton(@NonNull String id, @NonNull String text) {
-        return Button.newRawButtonBuilder()
+        return Button.builder()
                 .id(id)
                 .text(ButtonText.of(text))
                 .type(ButtonType.RESPONSE)

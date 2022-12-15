@@ -8,11 +8,13 @@ import it.auties.whatsapp.model.contact.ContactJid;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.experimental.Accessors;
 import lombok.Getter;
 import lombok.extern.jackson.Jacksonized;
 
 @AllArgsConstructor
 @Data
+@Accessors(fluent = true)
 @Jacksonized
 @Builder
 @ProtobufName("PastParticipant")

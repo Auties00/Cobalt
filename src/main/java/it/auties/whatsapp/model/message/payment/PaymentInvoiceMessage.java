@@ -24,7 +24,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Jacksonized
-@SuperBuilder(builderMethodName = "newPaymentInvoiceMessageBuilder")
+@SuperBuilder
 @Accessors(fluent = true)
 public final class PaymentInvoiceMessage extends MediaMessage implements PaymentMessage {
     /**

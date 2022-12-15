@@ -17,7 +17,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
  */
 @AllArgsConstructor(staticName = "of")
 @Data
-@Builder(builderMethodName = "newAccountPayloadBuilder")
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("BizAccountPayload")

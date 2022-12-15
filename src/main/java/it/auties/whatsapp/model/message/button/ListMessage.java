@@ -28,7 +28,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Jacksonized
-@Builder(builderMethodName = "newListMessageBuilder")
+@Builder
 @Accessors(fluent = true)
 public final class ListMessage extends ContextualMessage implements ButtonMessage {
     /**

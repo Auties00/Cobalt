@@ -15,7 +15,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
  */
 @AllArgsConstructor(staticName = "of")
 @Data
-@Builder(builderMethodName = "newLocalizedName")
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("LocalizedName")

@@ -71,7 +71,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
             var device = Integer.parseUnsignedInt(simpleUser[1]);
             if (user.contains("_")) {
                 var simpleUserAgent = user.split("_", 2);
-                var agent = Integer.parseUnsignedInt(simpleUserAgent[1]);
+                var agent = tryParseAgent(simpleUserAgent[1]);
                 return new ContactJid(simpleUserAgent[0], server, device, agent);
             }
 
@@ -83,7 +83,16 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
         }
 
         var simpleUserAgent = complexUser.split("_", 2);
-        return new ContactJid(simpleUserAgent[0], server, 0, Integer.parseUnsignedInt(simpleUserAgent[1]));
+        var agent = tryParseAgent(simpleUserAgent[1]);
+        return new ContactJid(simpleUserAgent[0], server, 0, agent);
+    }
+
+    private static int tryParseAgent(String string){
+        try {
+            return Integer.parseUnsignedInt(string);
+        }catch (NumberFormatException exception){
+            return 0;
+        }
     }
 
     /**

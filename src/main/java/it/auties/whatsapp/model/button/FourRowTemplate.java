@@ -26,7 +26,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
  */
 @AllArgsConstructor
 @Data
-@Builder(builderMethodName = "newRawFourRowTemplate")
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 public class FourRowTemplate implements ProtobufMessage {
@@ -86,7 +86,7 @@ public class FourRowTemplate implements ProtobufMessage {
      * @param buttons the buttons of this template
      * @return a non-null new template
      */
-    @Builder(builderClassName = "EmptyFourRowTemplateBuilder", builderMethodName = "newFourRowTemplateWithoutTitleBuilder")
+    @Builder(builderClassName = "EmptyFourRowTemplateBuilder", builderMethodName = "withoutTitleBuilder")
     private static FourRowTemplate emptyBuilder(HighlyStructuredMessage content, HighlyStructuredMessage footer,
                                                 List<ButtonTemplate> buttons) {
         return createBuilder(content, footer, buttons).build();
@@ -102,7 +102,7 @@ public class FourRowTemplate implements ProtobufMessage {
      * @param buttons the buttons of this template
      * @return a non-null new template
      */
-    @Builder(builderClassName = "DocumentFourRowTemplateBuilder", builderMethodName = "newFourRowTemplateWithDocumentTitleBuilder")
+    @Builder(builderClassName = "DocumentFourRowTemplateBuilder", builderMethodName = "withDocumentTitleBuilder")
     private static FourRowTemplate documentBuilder(DocumentMessage title, HighlyStructuredMessage content,
                                                    HighlyStructuredMessage footer, List<ButtonTemplate> buttons) {
         return createBuilder(content, footer, buttons).documentTitle(title)
@@ -119,7 +119,7 @@ public class FourRowTemplate implements ProtobufMessage {
      * @param buttons the buttons of this template
      * @return a non-null new template
      */
-    @Builder(builderClassName = "HighlyStructuredFourRowTemplateBuilder", builderMethodName = "newFourRowTemplateWithHighlyStructuredTitleBuilder")
+    @Builder(builderClassName = "HighlyStructuredFourRowTemplateBuilder", builderMethodName = "withHighlyStructuredTitleBuilder")
     private static FourRowTemplate highlyStructuredBuilder(HighlyStructuredMessage title,
                                                            HighlyStructuredMessage content,
                                                            HighlyStructuredMessage footer,
@@ -137,7 +137,7 @@ public class FourRowTemplate implements ProtobufMessage {
      * @param buttons the buttons of this template
      * @return a non-null new template
      */
-    @Builder(builderClassName = "ImageFourRowTemplateBuilder", builderMethodName = "newFourRowTemplateWithImageTitleBuilder")
+    @Builder(builderClassName = "ImageFourRowTemplateBuilder", builderMethodName = "withImageTitleBuilder")
     private static FourRowTemplate imageBuilder(ImageMessage title, HighlyStructuredMessage content,
                                                 HighlyStructuredMessage footer, List<ButtonTemplate> buttons) {
         return createBuilder(content, footer, buttons).imageTitle(title)
@@ -154,7 +154,7 @@ public class FourRowTemplate implements ProtobufMessage {
      * @param buttons the buttons of this template
      * @return a non-null new template
      */
-    @Builder(builderClassName = "VideoFourRowTemplateBuilder", builderMethodName = "newFourRowTemplateWithVideoTitleBuilder")
+    @Builder(builderClassName = "VideoFourRowTemplateBuilder", builderMethodName = "withVideoTitleBuilder")
     private static FourRowTemplate videoBuilder(VideoMessage title, HighlyStructuredMessage content,
                                                 HighlyStructuredMessage footer, List<ButtonTemplate> buttons) {
         return createBuilder(content, footer, buttons).videoTitle(title)
@@ -171,7 +171,7 @@ public class FourRowTemplate implements ProtobufMessage {
      * @param buttons the buttons of this template
      * @return a non-null new template
      */
-    @Builder(builderClassName = "LocationFourRowTemplateBuilder", builderMethodName = "newFourRowTemplateWithLocationTitleBuilder")
+    @Builder(builderClassName = "LocationFourRowTemplateBuilder", builderMethodName = "withLocationTitleBuilder")
     private static FourRowTemplate locationBuilder(LocationMessage title, HighlyStructuredMessage content,
                                                    HighlyStructuredMessage footer, List<ButtonTemplate> buttons) {
         return createBuilder(content, footer, buttons).locationTitle(title)
@@ -181,7 +181,7 @@ public class FourRowTemplate implements ProtobufMessage {
 
     private static FourRowTemplateBuilder createBuilder(HighlyStructuredMessage content, HighlyStructuredMessage footer,
                                                         List<ButtonTemplate> buttons) {
-        return FourRowTemplate.newRawFourRowTemplate()
+        return FourRowTemplate.builder()
                 .content(content)
                 .footer(footer)
                 .buttons(buttons);

@@ -11,6 +11,7 @@ import it.auties.whatsapp.model.message.payment.*;
 import it.auties.whatsapp.model.message.server.*;
 import it.auties.whatsapp.model.message.standard.*;
 import lombok.*;
+import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
@@ -36,7 +37,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
  */
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder(builderMethodName = "newMessageContainerBuilder")
+@Builder(builderMethodName = "newMessageContainerBuilder", toBuilder = true)
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("Message")
@@ -151,8 +152,8 @@ public class MessageContainer implements ProtobufMessage {
     /**
      * Template message
      */
-    @ProtobufProperty(index = 25, type = MESSAGE, implementation = it.auties.whatsapp.model.message.button.TemplateMessage.class)
-    private it.auties.whatsapp.model.message.button.TemplateMessage template;
+    @ProtobufProperty(index = 25, type = MESSAGE, implementation = TemplateMessage.class)
+    private TemplateMessage template;
 
     /**
      * Sticker message
@@ -263,41 +264,41 @@ public class MessageContainer implements ProtobufMessage {
     private StickerSyncRMRMessage stickerSync;
 
     @ProtobufProperty(index = 48, name = "interactiveResponseMessage", type = ProtobufType.MESSAGE)
-    private InteractiveResponseMessage interactiveResponseMessage;
+    private InteractiveResponseMessage interactiveResponse;
 
     @ProtobufProperty(index = 49, name = "pollCreationMessage", type = ProtobufType.MESSAGE)
-    private PollCreationMessage pollCreationMessage;
+    private PollCreationMessage pollCreation;
 
     @ProtobufProperty(index = 50, name = "pollUpdateMessage", type = ProtobufType.MESSAGE)
-    private PollUpdateMessage pollUpdateMessage;
+    private PollUpdateMessage pollUpdate;
 
     @ProtobufProperty(index = 51, name = "keepInChatMessage", type = ProtobufType.MESSAGE)
-    private KeepInChatMessage keepInChatMessage;
+    private KeepInChatMessage keepInChat;
 
     @ProtobufProperty(index = 53, name = "documentWithCaptionMessage", type = ProtobufType.MESSAGE)
-    private FutureMessageContainer documentWithCaptionMessage;
+    private FutureMessageContainer documentWithCaption;
 
     @ProtobufProperty(index = 54, name = "requestPhoneNumberMessage", type = ProtobufType.MESSAGE)
-    private RequestPhoneNumberMessage requestPhoneNumberMessage;
+    private RequestPhoneNumberMessage requestPhoneNumber;
 
     @ProtobufProperty(index = 55, name = "viewOnceMessageV2", type = ProtobufType.MESSAGE)
-    private FutureMessageContainer viewOnceMessageV2;
+    private FutureMessageContainer viewOnceV2;
 
     @ProtobufProperty(index = 56, name = "encReactionMessage", type = ProtobufType.MESSAGE)
-    private EncryptedReactionMessage encReactionMessage;
+    private EncryptedReactionMessage encryptedReaction;
 
     @ProtobufProperty(index = 58, name = "editedMessage", type = ProtobufType.MESSAGE)
-    private FutureMessageContainer editedMessage;
+    private FutureMessageContainer edited;
 
     @ProtobufProperty(index = 59, name = "viewOnceMessageV2Extension", type = ProtobufType.MESSAGE)
-    private FutureMessageContainer viewOnceMessageV2Extension;
+    private FutureMessageContainer viewOnceV2Extension;
 
     /**
      * Message context info
      */
     @ProtobufProperty(index = 35, type = MESSAGE, implementation = MessageContextInfo.class)
-    @Setter
-    private MessageContextInfo deviceInfo;
+    @Default
+    private MessageContextInfo deviceInfo = MessageContextInfo.of();
 
     /**
      * Constructs a new MessageContainerBuilder from a message of any type
@@ -345,12 +346,12 @@ public class MessageContainer implements ProtobufMessage {
             case ReactionMessage reaction -> builder.reaction(reaction);
             case StickerSyncRMRMessage stickerSync -> builder.stickerSync(stickerSync);
             case DeviceSentMessage deviceSent -> builder.deviceSent(deviceSent);
-            case InteractiveResponseMessage interactiveResponseMessage -> builder.interactiveResponseMessage(interactiveResponseMessage);
-            case PollCreationMessage pollCreationMessage -> builder.pollCreationMessage(pollCreationMessage);
-            case PollUpdateMessage pollUpdateMessage -> builder.pollUpdateMessage(pollUpdateMessage);
-            case KeepInChatMessage keepInChatMessage -> builder.keepInChatMessage(keepInChatMessage);
-            case RequestPhoneNumberMessage requestPhoneNumberMessage -> builder.requestPhoneNumberMessage(requestPhoneNumberMessage);
-            case EncryptedReactionMessage encReactionMessage -> builder.encReactionMessage(encReactionMessage);
+            case InteractiveResponseMessage interactiveResponseMessage -> builder.interactiveResponse(interactiveResponseMessage);
+            case PollCreationMessage pollCreationMessage -> builder.pollCreation(pollCreationMessage);
+            case PollUpdateMessage pollUpdateMessage -> builder.pollUpdate(pollUpdateMessage);
+            case KeepInChatMessage keepInChatMessage -> builder.keepInChat(keepInChatMessage);
+            case RequestPhoneNumberMessage requestPhoneNumberMessage -> builder.requestPhoneNumber(requestPhoneNumberMessage);
+            case EncryptedReactionMessage encReactionMessage -> builder.encryptedReaction(encReactionMessage);
             default -> throw new IllegalStateException("Unsupported message: " + message);
         }
 
@@ -409,7 +410,7 @@ public class MessageContainer implements ProtobufMessage {
      */
     public static <T extends Message> MessageContainer ofViewOnceV2(@NonNull T message) {
         return MessageContainer.newMessageContainerBuilder()
-                .viewOnceMessageV2(FutureMessageContainer.of(message))
+                .viewOnceV2(FutureMessageContainer.of(message))
                 .build();
     }
 
@@ -433,7 +434,7 @@ public class MessageContainer implements ProtobufMessage {
      */
     public static <T extends Message> MessageContainer ofEditedMessage(@NonNull T message) {
         return MessageContainer.newMessageContainerBuilder()
-                .editedMessage(FutureMessageContainer.of(message))
+                .edited(FutureMessageContainer.of(message))
                 .build();
     }
 
@@ -445,7 +446,7 @@ public class MessageContainer implements ProtobufMessage {
      */
     public static <T extends Message> MessageContainer ofDocumentWithCaption(@NonNull T message) {
         return MessageContainer.newMessageContainerBuilder()
-                .documentWithCaptionMessage(FutureMessageContainer.of(message))
+                .documentWithCaption(FutureMessageContainer.of(message))
                 .build();
     }
 
@@ -501,7 +502,7 @@ public class MessageContainer implements ProtobufMessage {
         if (this.product != null)
             return product;
         if (this.deviceSent != null)
-            return deviceSent;
+            return deviceSent.message().content();
         if (this.deviceSync != null)
             return deviceSync;
         if (this.list != null)
@@ -528,26 +529,26 @@ public class MessageContainer implements ProtobufMessage {
             return reaction;
         if (stickerSync != null)
             return stickerSync;
-        if (interactiveResponseMessage != null)
-            return interactiveResponseMessage;
-        if (pollCreationMessage != null)
-            return pollCreationMessage;
-        if (pollUpdateMessage != null)
-            return pollUpdateMessage;
-        if (keepInChatMessage != null)
-            return keepInChatMessage;
-        if (documentWithCaptionMessage != null)
-            return documentWithCaptionMessage.unbox();
-        if (requestPhoneNumberMessage != null)
-            return requestPhoneNumberMessage;
-        if (viewOnceMessageV2 != null)
-            return viewOnceMessageV2.unbox();
-        if (encReactionMessage != null)
-            return encReactionMessage;
-        if (editedMessage != null)
-            return editedMessage.unbox();
-        if (viewOnceMessageV2Extension != null)
-            return viewOnceMessageV2Extension.unbox();
+        if (interactiveResponse != null)
+            return interactiveResponse;
+        if (pollCreation != null)
+            return pollCreation;
+        if (pollUpdate != null)
+            return pollUpdate;
+        if (keepInChat != null)
+            return keepInChat;
+        if (documentWithCaption != null)
+            return documentWithCaption.unbox();
+        if (requestPhoneNumber != null)
+            return requestPhoneNumber;
+        if (viewOnceV2 != null)
+            return viewOnceV2.unbox();
+        if (encryptedReaction != null)
+            return encryptedReaction;
+        if (edited != null)
+            return edited.unbox();
+        if (viewOnceV2Extension != null)
+            return viewOnceV2Extension.unbox();
         return EMPTY_MESSAGE;
     }
 
@@ -597,19 +598,19 @@ public class MessageContainer implements ProtobufMessage {
             return Optional.of(contextualViewOnce);
         if (this.ephemeral != null && ephemeral.unbox() instanceof ContextualMessage contextualEphemeral)
             return Optional.of(contextualEphemeral);
-        if (interactiveResponseMessage != null)
-            return Optional.of(interactiveResponseMessage);
-        if (pollCreationMessage != null)
-            return Optional.of(pollCreationMessage);
-        if (documentWithCaptionMessage != null && documentWithCaptionMessage.unbox() instanceof ContextualMessage contextualEphemeral)
+        if (interactiveResponse != null)
+            return Optional.of(interactiveResponse);
+        if (pollCreation != null)
+            return Optional.of(pollCreation);
+        if (documentWithCaption != null && documentWithCaption.unbox() instanceof ContextualMessage contextualEphemeral)
             return Optional.of(contextualEphemeral);
-        if (requestPhoneNumberMessage != null)
-            return Optional.of(requestPhoneNumberMessage);
-        if (viewOnceMessageV2 != null && viewOnceMessageV2.unbox() instanceof ContextualMessage contextualEphemeral)
+        if (requestPhoneNumber != null)
+            return Optional.of(requestPhoneNumber);
+        if (viewOnceV2 != null && viewOnceV2.unbox() instanceof ContextualMessage contextualEphemeral)
             return Optional.of(contextualEphemeral);
-        if (editedMessage != null && editedMessage.unbox() instanceof ContextualMessage contextualEphemeral)
+        if (edited != null && edited.unbox() instanceof ContextualMessage contextualEphemeral)
             return Optional.of(contextualEphemeral);
-        if (viewOnceMessageV2Extension != null && viewOnceMessageV2Extension.unbox() instanceof ContextualMessage contextualEphemeral)
+        if (viewOnceV2Extension != null && viewOnceV2Extension.unbox() instanceof ContextualMessage contextualEphemeral)
             return Optional.of(contextualEphemeral);
         return Optional.empty();
     }
@@ -713,7 +714,11 @@ public class MessageContainer implements ProtobufMessage {
      * @return a non-null message container
      */
     public MessageContainer unbox(){
-        return MessageContainer.of(content());
+        return MessageContainer.of(content())
+                .toBuilder()
+                .call(call)
+                .deviceInfo(deviceInfo)
+                .build();
     }
 
     /**

@@ -28,7 +28,7 @@ import static java.util.Objects.requireNonNullElse;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(builderMethodName = "newRawStickerMessageBuilder")
+@SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
 public final class StickerMessage extends MediaMessage {
@@ -129,12 +129,12 @@ public final class StickerMessage extends MediaMessage {
      * @param contextInfo     the context info that the new message wraps
      * @return a non-null new message
      */
-    @Builder(builderClassName = "SimpleStickerMessageBuilder", builderMethodName = "newStickerMessageBuilder")
-    private static StickerMessage builder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media,
+    @Builder(builderClassName = "SimpleStickerMessageBuilder", builderMethodName = "simpleBuilder")
+    private static StickerMessage customBuilder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media,
                                           String mimeType, byte[] thumbnail, boolean animated,
                                           ContextInfo contextInfo) {
         var upload = Medias.upload(media, STICKER, mediaConnection);
-        return StickerMessage.newRawStickerMessageBuilder()
+        return StickerMessage.builder()
                 .mediaSha256(upload.fileSha256())
                 .mediaEncryptedSha256(upload.fileEncSha256())
                 .mediaKey(upload.mediaKey())

@@ -22,7 +22,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Jacksonized
-@Builder(builderMethodName = "newPaymentOrderMessageBuilder")
+@Builder
 @Accessors(fluent = true)
 public final class PaymentOrderMessage extends ContextualMessage implements PaymentMessage {
     /**

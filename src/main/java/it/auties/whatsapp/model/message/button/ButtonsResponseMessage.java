@@ -19,12 +19,12 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 /**
  * A model class that represents a message that contains a response to a previous {@link ButtonsMessage}
  */
-@AllArgsConstructor(staticName = "newButtonsResponseMessage")
+@AllArgsConstructor(staticName = "of")
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Jacksonized
-@SuperBuilder(builderMethodName = "newRawButtonsResponseMessageBuilder")
+@SuperBuilder
 @Accessors(fluent = true)
 public final class ButtonsResponseMessage extends ButtonReplyMessage {
     /**
@@ -58,7 +58,7 @@ public final class ButtonsResponseMessage extends ButtonReplyMessage {
                         .content() instanceof ButtonsMessage,
                 "Cannot select buttons message, erroneous type: %s" + quoted.message()
                         .content());
-        return ButtonsResponseMessage.newRawButtonsResponseMessageBuilder()
+        return ButtonsResponseMessage.builder()
                 .buttonId(button.id())
                 .buttonText(button.text()
                         .content())

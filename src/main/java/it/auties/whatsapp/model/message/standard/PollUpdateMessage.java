@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.message.standard;
 
-import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.protobuf.base.ProtobufType;
@@ -13,14 +12,19 @@ import it.auties.whatsapp.model.poll.PollUpdateMessageMetadata;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.experimental.Accessors;
+import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 @AllArgsConstructor
 @Data
+@Accessors(fluent = true)
 @Jacksonized
 @Builder
 @ProtobufName("PollUpdateMessage")
 public final class PollUpdateMessage implements Message {
+    private static final String POLL_NAME = "Poll Vote";
+
     @ProtobufProperty(index = 1, name = "pollCreationMessageKey", type = ProtobufType.MESSAGE)
     private MessageKey pollCreationMessageKey;
 
@@ -31,7 +35,11 @@ public final class PollUpdateMessage implements Message {
     private PollUpdateMessageMetadata metadata;
 
     @ProtobufProperty(index = 4, name = "senderTimestampMs", type = ProtobufType.INT64)
-    private Long senderTimestampMilliseconds;
+    private long senderTimestampMilliseconds;
+
+    public String secretName(){
+        return POLL_NAME;
+    }
 
     @Override
     public MessageType type() {

@@ -25,7 +25,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(builderMethodName = "newContactsArrayMessageBuilder")
+@SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
 public final class ContactsArrayMessage extends ContextualMessage {

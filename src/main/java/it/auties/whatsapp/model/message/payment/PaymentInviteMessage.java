@@ -20,7 +20,7 @@ import static it.auties.protobuf.base.ProtobufType.UINT64;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Builder(builderMethodName = "newPaymentInviteMessageBuilder")
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 public final class PaymentInviteMessage implements PaymentMessage {

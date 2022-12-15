@@ -16,9 +16,9 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 /**
  * A model class that represents a message that cancels a {@link RequestPaymentMessage}.
  */
-@AllArgsConstructor(staticName = "newCancelPaymentMessage")
+@AllArgsConstructor(staticName = "of")
 @NoArgsConstructor
-@Builder(builderMethodName = "newCancelPaymentMessageBuilder")
+@Builder
 @Jacksonized
 @Data
 @Accessors(fluent = true)

@@ -81,7 +81,7 @@ public class Decoder {
 
     private Object read(boolean parseBytes) {
         var tag = buffer.readUnsignedByte();
-        return switch (forData(tag)) {
+        return switch (Tag.of(tag)) {
             case LIST_EMPTY -> null;
             case COMPANION_JID -> readCompanionJid();
             case LIST_8 -> readList(buffer.readUnsignedByte());

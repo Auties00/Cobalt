@@ -16,10 +16,10 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 /**
  * A model class that represents a message to decline a {@link RequestPaymentMessage}.
  */
-@AllArgsConstructor(staticName = "newDeclinePaymentRequestMessage")
+@AllArgsConstructor(staticName = "of")
 @NoArgsConstructor
 @Data
-@Builder(builderMethodName = "newDeclinePaymentRequestMessageBuilder")
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 public final class DeclinePaymentRequestMessage implements PaymentMessage {

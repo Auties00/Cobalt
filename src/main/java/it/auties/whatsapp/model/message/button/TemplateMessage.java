@@ -25,7 +25,7 @@ import static java.util.Objects.requireNonNullElseGet;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(builderMethodName = "newRawTemplateMessageBuilder")
+@SuperBuilder
 @Accessors(fluent = true)
 public final class TemplateMessage extends ContextualMessage implements ButtonMessage {
     /**
@@ -75,7 +75,7 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
      */
     public static TemplateMessage newFourRowTemplateMessage(@NonNull FourRowTemplate template,
                                                             ContextInfo contextInfo) {
-        return TemplateMessage.newRawTemplateMessageBuilder()
+        return TemplateMessage.builder()
                 .fourRowTemplate(template)
                 .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .build();
@@ -100,7 +100,7 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
      */
     public static TemplateMessage newHydratedFourRowTemplateMessage(@NonNull HydratedFourRowTemplate template,
                                                                     ContextInfo contextInfo) {
-        return TemplateMessage.newRawTemplateMessageBuilder()
+        return TemplateMessage.builder()
                 .hydratedFourRowTemplate(template)
                 .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .build();
@@ -125,7 +125,7 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
      */
     public static TemplateMessage newHydratedTemplateMessage(@NonNull HydratedFourRowTemplate template,
                                                              ContextInfo contextInfo) {
-        return TemplateMessage.newRawTemplateMessageBuilder()
+        return TemplateMessage.builder()
                 .hydratedTemplate(template)
                 .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .build();

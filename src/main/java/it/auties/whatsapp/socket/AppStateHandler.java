@@ -336,15 +336,12 @@ class AppStateHandler implements JacksonProvider {
 
         var action = value.action();
         if (action != null) {
-            var jid = ContactJid.of(mutation.messageIndex()
-                    .chatJid());
-            var targetContact = socketHandler.store()
-                    .findContactByJid(jid);
-            var targetChat = socketHandler.store()
-                    .findChatByJid(jid);
+            var jid = Optional.ofNullable(mutation.messageIndex().chatJid())
+                    .map(ContactJid::of);
+            var targetContact = jid.flatMap(socketHandler.store()::findContactByJid);
+            var targetChat = jid.flatMap(socketHandler.store()::findChatByJid);
             var targetMessage = targetChat.flatMap(chat -> socketHandler.store()
-                    .findMessageById(chat, mutation.messageIndex()
-                            .messageId()));
+                    .findMessageById(chat, mutation.messageIndex().messageId()));
             switch (action) {
                 case ClearChatAction clearChatAction -> clearMessages(
                         targetChat.orElse(null),
@@ -352,11 +349,11 @@ class AppStateHandler implements JacksonProvider {
                 );
                 case ContactAction contactAction -> updateName(
                         targetContact.orElseGet(() -> {
-                            var contact = socketHandler.store().addContact(jid);
+                            var contact = socketHandler.store().addContact(jid.orElseThrow());
                             socketHandler.onNewContact(contact);
                             return contact;
                         }),
-                        targetChat.orElseGet(() -> socketHandler.store().addChat(jid)),
+                        targetChat.orElseGet(() -> socketHandler.store().addChat(jid.orElseThrow())),
                         contactAction
                 );
                 case DeleteChatAction ignored ->
@@ -373,7 +370,11 @@ class AppStateHandler implements JacksonProvider {
                         targetMessage.ifPresent(message -> message.starred(starAction.starred()));
                 case ArchiveChatAction archiveChatAction ->
                         targetChat.ifPresent(chat -> chat.archived(archiveChatAction.archived()));
-                default -> {}
+                case TimeFormatAction timeFormatAction -> socketHandler.store()
+                        .twentyFourHourFormat(timeFormatAction.twentyFourHourFormatEnabled());
+                default -> {
+
+                }
             }
 
             socketHandler.onAction(action);
@@ -385,11 +386,9 @@ class AppStateHandler implements JacksonProvider {
                 case EphemeralSetting ephemeralSetting -> showEphemeralMessageWarning(ephemeralSetting);
                 case LocaleSetting localeSetting -> socketHandler.updateLocale(localeSetting.locale(), socketHandler.store().userLocale());
                 case PushNameSetting pushNameSetting -> socketHandler.updateUserName(pushNameSetting.name(), socketHandler.store().userName());
-                case SecurityNotificationSetting ignored -> {}
                 case UnarchiveChatsSetting unarchiveChatsSetting -> socketHandler.store()
                         .unarchiveChats(unarchiveChatsSetting.unarchiveChats());
-                case AutoDownloadSettings autoDownloadSettings -> {}
-                case AvatarUserSettings avatarUserSettings -> {}
+                default -> {}
             }
 
             socketHandler.onSetting(setting);

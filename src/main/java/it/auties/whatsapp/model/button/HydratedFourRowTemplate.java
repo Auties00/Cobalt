@@ -26,7 +26,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
  */
 @AllArgsConstructor
 @Data
-@Builder(builderMethodName = "newRawHydratedFourRowTemplate")
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 public class HydratedFourRowTemplate implements ProtobufMessage {
@@ -65,7 +65,7 @@ public class HydratedFourRowTemplate implements ProtobufMessage {
      * @param buttons the buttons of this template
      * @return a non-null new template
      */
-    @Builder(builderClassName = "EmptyFourRowTemplateBuilder", builderMethodName = "newHydratedFourRowTemplateWithoutTitleBuilder")
+    @Builder(builderClassName = "EmptyFourRowTemplateBuilder", builderMethodName = "withoutTitleBuilder")
     private static HydratedFourRowTemplate emptyBuilder(String body, String footer,
                                                         List<HydratedButtonTemplate> buttons, String id) {
         return createBuilder(body, footer, buttons, id).build();
@@ -81,7 +81,7 @@ public class HydratedFourRowTemplate implements ProtobufMessage {
      * @param buttons the buttons of this template
      * @return a non-null new template
      */
-    @Builder(builderClassName = "DocumentHydratedFourRowTemplateBuilder", builderMethodName = "newHydratedFourRowTemplateWithDocumentTitleBuilder")
+    @Builder(builderClassName = "DocumentHydratedFourRowTemplateBuilder", builderMethodName = "withDocumentTitleBuilder")
     private static HydratedFourRowTemplate documentBuilder(DocumentMessage title, String body, String footer,
                                                            List<HydratedButtonTemplate> buttons, String id) {
         return createBuilder(body, footer, buttons, id).documentTitle(title)
@@ -98,7 +98,7 @@ public class HydratedFourRowTemplate implements ProtobufMessage {
      * @param buttons the buttons of this template
      * @return a non-null new template
      */
-    @Builder(builderClassName = "HighlyStructuredHydratedFourRowTemplateBuilder", builderMethodName = "newHydratedFourRowTemplateWithTextTitleBuilder")
+    @Builder(builderClassName = "HighlyStructuredHydratedFourRowTemplateBuilder", builderMethodName = "withTextTitleBuilder")
     private static HydratedFourRowTemplate textBuilder(String title, String body, String footer,
                                                        List<HydratedButtonTemplate> buttons, String id) {
         return createBuilder(body, footer, buttons, id).textTitle(title)
@@ -114,7 +114,7 @@ public class HydratedFourRowTemplate implements ProtobufMessage {
      * @param buttons the buttons of this template
      * @return a non-null new template
      */
-    @Builder(builderClassName = "ImageHydratedFourRowTemplateBuilder", builderMethodName = "newHydratedFourRowTemplateWithImageTitleBuilder")
+    @Builder(builderClassName = "ImageHydratedFourRowTemplateBuilder", builderMethodName = "withImageTitleBuilder")
     private static HydratedFourRowTemplate imageBuilder(ImageMessage title, String body, String footer,
                                                         List<HydratedButtonTemplate> buttons, String id) {
         return createBuilder(body, footer, buttons, id).imageTitle(title)
@@ -131,7 +131,7 @@ public class HydratedFourRowTemplate implements ProtobufMessage {
      * @param buttons the buttons of this template
      * @return a non-null new template
      */
-    @Builder(builderClassName = "VideoHydratedFourRowTemplateBuilder", builderMethodName = "newHydratedFourRowTemplateWithVideoTitleBuilder")
+    @Builder(builderClassName = "VideoHydratedFourRowTemplateBuilder", builderMethodName = "withVideoTitleBuilder")
     private static HydratedFourRowTemplate videoBuilder(VideoMessage title, String body, String footer,
                                                         List<HydratedButtonTemplate> buttons, String id) {
         return createBuilder(body, footer, buttons, id).videoTitle(title)
@@ -148,7 +148,7 @@ public class HydratedFourRowTemplate implements ProtobufMessage {
      * @param buttons the buttons of this template
      * @return a non-null new template
      */
-    @Builder(builderClassName = "LocationHydratedFourRowTemplateBuilder", builderMethodName = "newHydratedFourRowTemplateWithLocationTitleBuilder")
+    @Builder(builderClassName = "LocationHydratedFourRowTemplateBuilder", builderMethodName = "withLocationTitleBuilder")
     private static HydratedFourRowTemplate locationBuilder(LocationMessage title, String body, String footer,
                                                            List<HydratedButtonTemplate> buttons, String id) {
         return createBuilder(body, footer, buttons, id).locationTitle(title)
@@ -159,7 +159,7 @@ public class HydratedFourRowTemplate implements ProtobufMessage {
     private static HydratedFourRowTemplate.HydratedFourRowTemplateBuilder createBuilder(String body, String footer,
                                                                                         List<HydratedButtonTemplate> buttons,
                                                                                         String id) {
-        return HydratedFourRowTemplate.newRawHydratedFourRowTemplate()
+        return HydratedFourRowTemplate.builder()
                 .body(body)
                 .footer(footer)
                 .buttons(buttons)

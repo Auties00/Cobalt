@@ -21,7 +21,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
  */
 @AllArgsConstructor
 @Data
-@Builder(builderMethodName = "newButtonOpaqueDataBuilder")
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("MsgOpaqueData")

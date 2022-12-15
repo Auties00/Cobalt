@@ -17,7 +17,7 @@ import static it.auties.protobuf.base.ProtobufType.UINT32;
  */
 @AllArgsConstructor
 @Data
-@Builder(builderMethodName = "newRawHydratedButtonTemplateBuilder")
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 public class HydratedButtonTemplate implements ProtobufMessage {
@@ -41,7 +41,7 @@ public class HydratedButtonTemplate implements ProtobufMessage {
      * @return a non-null button template
      */
     public static HydratedButtonTemplate of(int index, @NonNull HydratedQuickReplyButton quickReplyButton) {
-        return HydratedButtonTemplate.newRawHydratedButtonTemplateBuilder()
+        return HydratedButtonTemplate.builder()
                 .index(index)
                 .quickReplyButton(quickReplyButton)
                 .build();
@@ -55,7 +55,7 @@ public class HydratedButtonTemplate implements ProtobufMessage {
      * @return a non-null button template
      */
     public static HydratedButtonTemplate of(int index, @NonNull HydratedURLButton urlButton) {
-        return HydratedButtonTemplate.newRawHydratedButtonTemplateBuilder()
+        return HydratedButtonTemplate.builder()
                 .index(index)
                 .urlButton(urlButton)
                 .build();
@@ -69,7 +69,7 @@ public class HydratedButtonTemplate implements ProtobufMessage {
      * @return a non-null button template
      */
     public static HydratedButtonTemplate of(int index, @NonNull HydratedCallButton callButton) {
-        return HydratedButtonTemplate.newRawHydratedButtonTemplateBuilder()
+        return HydratedButtonTemplate.builder()
                 .index(index)
                 .callButton(callButton)
                 .build();

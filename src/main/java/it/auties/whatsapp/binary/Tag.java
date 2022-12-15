@@ -31,7 +31,7 @@ public enum Tag {
     @Getter
     private final int data;
 
-    public static Tag forData(int data) {
+    public static Tag of(int data) {
         return Arrays.stream(values())
                 .filter(entry -> entry.data() == data)
                 .findAny()

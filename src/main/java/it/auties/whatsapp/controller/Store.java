@@ -153,6 +153,13 @@ public final class Store implements Controller<Store> {
     private boolean unarchiveChats;
 
     /**
+     * Whether the twenty-hours format is being used by the client
+     */
+    @Getter
+    @Setter
+    private boolean twentyFourHourFormat;
+
+    /**
      * The non-null list of requests that were sent to Whatsapp.
      * They might or might not be waiting for a response
      */

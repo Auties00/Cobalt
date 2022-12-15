@@ -30,7 +30,7 @@ import static java.util.Objects.requireNonNullElseGet;
  */
 @AllArgsConstructor
 @Data
-@Builder(builderMethodName = "newRawInteractiveMessageBuilder")
+@Builder
 @Jacksonized
 @EqualsAndHashCode(callSuper = true)
 @Accessors(fluent = true)
@@ -88,10 +88,10 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
      * @param contextInfo the context info of this message
      * @return a non-null new message
      */
-    @Builder(builderClassName = "ShopInteractiveMessageBuilder", builderMethodName = "newInteractiveWithShopMessageBuilder")
+    @Builder(builderClassName = "ShopInteractiveMessageBuilder", builderMethodName = "withShopMessageBuilder")
     private static InteractiveMessage shopBuilder(ProductHeader header, String body, String footer,
                                                   BusinessShop content, ContextInfo contextInfo) {
-        return InteractiveMessage.newRawInteractiveMessageBuilder()
+        return InteractiveMessage.builder()
                 .header(header)
                 .body(ProductBody.of(body))
                 .footer(ProductFooter.of(footer))
@@ -110,10 +110,10 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
      * @param contextInfo the context info of this message
      * @return a non-null new message
      */
-    @Builder(builderClassName = "CollectionInteractiveMessageBuilder", builderMethodName = "newInteractiveWithCollectionMessageBuilder")
+    @Builder(builderClassName = "CollectionInteractiveMessageBuilder", builderMethodName = "withCollectionMessageBuilder")
     private static InteractiveMessage collectionBuilder(ProductHeader header, String body, String footer,
                                                         BusinessCollection content, ContextInfo contextInfo) {
-        return InteractiveMessage.newRawInteractiveMessageBuilder()
+        return InteractiveMessage.builder()
                 .header(header)
                 .body(ProductBody.of(body))
                 .footer(ProductFooter.of(footer))
@@ -132,10 +132,10 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
      * @param contextInfo the context info of this message
      * @return a non-null new message
      */
-    @Builder(builderClassName = "NativeFlowInteractiveMessageBuilder", builderMethodName = "newInteractiveWithNativeFlowMessageBuilder")
+    @Builder(builderClassName = "NativeFlowInteractiveMessageBuilder", builderMethodName = "withNativeFlowMessageBuilder")
     private static InteractiveMessage nativeFlowBuilder(ProductHeader header, String body, String footer,
                                                         BusinessNativeFlow content, ContextInfo contextInfo) {
-        return InteractiveMessage.newRawInteractiveMessageBuilder()
+        return InteractiveMessage.builder()
                 .header(header)
                 .body(ProductBody.of(body))
                 .footer(ProductFooter.of(footer))

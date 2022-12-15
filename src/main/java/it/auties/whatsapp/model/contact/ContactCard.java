@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
  */
 @AllArgsConstructor(staticName = "of")
 @Value
-@Builder(builderMethodName = "newContactCardBuilder")
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 public class ContactCard implements ProtobufMessage {

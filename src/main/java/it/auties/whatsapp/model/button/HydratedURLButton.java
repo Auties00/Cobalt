@@ -15,7 +15,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
  */
 @AllArgsConstructor(staticName = "of")
 @Data
-@Builder(builderMethodName = "newHydratedURLButton")
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 public class HydratedURLButton implements ProtobufMessage {

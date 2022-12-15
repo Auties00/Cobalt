@@ -6,6 +6,7 @@ import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.experimental.Accessors;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -20,7 +21,7 @@ import static it.auties.protobuf.base.ProtobufType.UINT32;
  */
 @AllArgsConstructor
 @Data
-@Builder(builderMethodName = "newDateTimeComponentBuilder")
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 public class BusinessDateTimeComponent implements ProtobufMessage {

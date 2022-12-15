@@ -12,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder.Default;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
@@ -19,6 +20,7 @@ import lombok.extern.jackson.Jacksonized;
 @Data
 @Jacksonized
 @SuperBuilder
+@Accessors(fluent = true)
 @EqualsAndHashCode(callSuper = true)
 @ProtobufName("InteractiveResponseMessage")
 public final class InteractiveResponseMessage extends ContextualMessage {

@@ -17,7 +17,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
  */
 @AllArgsConstructor
 @Data
-@Builder(builderMethodName = "newRawLocalizableParameterBuilder")
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 public class BusinessLocalizableParameter implements ProtobufMessage {
@@ -47,7 +47,7 @@ public class BusinessLocalizableParameter implements ProtobufMessage {
      * @return a non-null localizable parameter
      */
     public static BusinessLocalizableParameter of(String defaultValue, @NonNull BusinessCurrency currencyParameter) {
-        return BusinessLocalizableParameter.newRawLocalizableParameterBuilder()
+        return BusinessLocalizableParameter.builder()
                 .defaultValue(defaultValue)
                 .currencyParameter(currencyParameter)
                 .build();
@@ -61,7 +61,7 @@ public class BusinessLocalizableParameter implements ProtobufMessage {
      * @return a non-null localizable parameter
      */
     public static BusinessLocalizableParameter of(String defaultValue, @NonNull BusinessDateTime dateTimeParameter) {
-        return BusinessLocalizableParameter.newRawLocalizableParameterBuilder()
+        return BusinessLocalizableParameter.builder()
                 .defaultValue(defaultValue)
                 .dateTimeParameter(dateTimeParameter)
                 .build();

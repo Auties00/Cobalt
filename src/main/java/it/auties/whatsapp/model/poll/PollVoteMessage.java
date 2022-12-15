@@ -7,6 +7,7 @@ import it.auties.protobuf.base.ProtobufType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ import java.util.List;
 
 @AllArgsConstructor
 @Data
+@Accessors(fluent = true)
 @Jacksonized
 @Builder
 @ProtobufName("PollVoteMessage")

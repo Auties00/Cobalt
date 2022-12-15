@@ -25,7 +25,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @NoArgsConstructor
 @Data
 @Jacksonized
-@Builder(builderMethodName = "newHighlyStructuredMessageBuilder")
+@Builder
 @Accessors(fluent = true)
 public final class HighlyStructuredMessage implements ButtonMessage {
     /**

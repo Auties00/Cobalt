@@ -6,6 +6,7 @@ import it.auties.whatsapp.model.message.model.ServerMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.experimental.Accessors;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -20,7 +21,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Builder(builderMethodName = "newSenderKeyDistributionMessageBuilder")
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 public final class SenderKeyDistributionMessage implements ServerMessage {

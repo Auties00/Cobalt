@@ -18,7 +18,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
  */
 @AllArgsConstructor
 @Data
-@Builder(builderMethodName = "newVerifiedNameDetailsBuilder")
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 public class BusinessVerifiedNameDetails implements ProtobufMessage {

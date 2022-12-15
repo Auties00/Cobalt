@@ -9,6 +9,7 @@ import it.auties.whatsapp.model.payment.PaymentMoney;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.experimental.Accessors;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -22,7 +23,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @NoArgsConstructor
 @Data
 @Jacksonized
-@Builder(builderMethodName = "newRequestPaymentMessageBuilder")
+@Builder
 @Accessors(fluent = true)
 public final class RequestPaymentMessage implements PaymentMessage {
     /**

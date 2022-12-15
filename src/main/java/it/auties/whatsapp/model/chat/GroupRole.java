@@ -1,6 +1,8 @@
 package it.auties.whatsapp.model.chat;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.whatsapp.api.Whatsapp;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -16,21 +18,28 @@ import java.util.Objects;
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
+@ProtobufName("Rank")
 public enum GroupRole implements ProtobufMessage {
     /**
      * A participant of the group with no special powers
      */
-    USER(null),
+    USER(0, null),
 
     /**
      * A participant of the group with administration powers
      */
-    ADMIN("admin"),
+    ADMIN(1, "admin"),
 
     /**
      * The founder of the group, also known as super admin
      */
-    FOUNDER("superadmin");
+    FOUNDER(2, "superadmin");
+
+    /**
+     * The name of the role according to Whatsapp
+     */
+    @Getter
+    private final int index;
 
     /**
      * The name of the role according to Whatsapp
@@ -44,10 +53,18 @@ public enum GroupRole implements ProtobufMessage {
      * @param input the nullable value obtained from Whatsapp
      * @return a non-null GroupRole
      */
-    public static GroupRole forData(String input) {
+    public static GroupRole of(String input) {
         return Arrays.stream(values())
                 .filter(entry -> Objects.equals(entry.data(), input))
                 .findFirst()
                 .orElseThrow(() -> new NoSuchElementException("Cannot find GroupRole for %s".formatted(input)));
+    }
+
+    @JsonCreator
+    public static GroupRole of(int index) {
+        return Arrays.stream(values())
+                .filter(entry -> entry.index() == index)
+                .findFirst()
+                .orElse(null);
     }
 }

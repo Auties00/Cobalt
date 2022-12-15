@@ -23,7 +23,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @NoArgsConstructor
 @Data
 @Jacksonized
-@Builder(builderMethodName = "newContextInfo")
+@Builder
 @Accessors(fluent = true)
 public final class ContextInfo implements Info {
     /**

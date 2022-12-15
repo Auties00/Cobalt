@@ -19,10 +19,7 @@ import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.ContextInfo;
-import it.auties.whatsapp.model.info.MessageContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.message.button.ButtonsMessage;
-import it.auties.whatsapp.model.message.button.ListMessage;
 import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.standard.GroupInviteMessage;
@@ -1086,12 +1083,12 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<MessageInfo> sendReaction(@NonNull MessageMetadataProvider message, String reaction) {
-        var key = MessageKey.newMessageKeyBuilder()
+        var key = MessageKey.builder()
                 .chatJid(message.chat()
                         .jid())
                 .id(message.id())
                 .build();
-        var reactionMessage = ReactionMessage.newReactionMessageBuilder()
+        var reactionMessage = ReactionMessage.builder()
                 .key(key)
                 .content(reaction)
                 .timestamp(Instant.now()
@@ -1177,7 +1174,7 @@ public class Whatsapp {
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJidProvider chat,
                                                       @NonNull MessageContainer message) {
-        var key = MessageKey.newMessageKeyBuilder()
+        var key = MessageKey.builder()
                 .chatJid(chat.toJid())
                 .fromMe(true)
                 .senderJid(chat.toJid()
@@ -1185,7 +1182,7 @@ public class Whatsapp {
                         store().userCompanionJid() :
                         null)
                 .build();
-        var info = MessageInfo.newMessageInfo()
+        var info = MessageInfo.builder()
                 .senderJid(chat.toJid()
                         .hasServer(GROUP) ?
                         store().userCompanionJid() :
@@ -1246,16 +1243,11 @@ public class Whatsapp {
     // Credit to Baileys
     // https://github.com/adiwajshing/Baileys/blob/f0bdb12e56cea8b0bfbb0dff37c01690274e3e31/src/Utils/messages.ts#L781
     private void fixButtons(MessageInfo info){
-        if(!(info.message().content() instanceof ButtonsMessage) && !(info.message().content() instanceof ListMessage)){
+        if(info.message().category() != MessageCategory.BUTTON){
             return;
         }
-        
-        var context = MessageContextInfo.builder()
-                .deviceListMetadataVersion(2)
-                .deviceListMetadata(DeviceListMetadata.of())
-                .build();
+
         info.message(info.message().toViewOnce());
-        info.message().deviceInfo(context);
     }
 
     private void createPreview(MessageInfo info) {
@@ -1313,7 +1305,7 @@ public class Whatsapp {
                         .findFirst()
                         .map(LinkPreviewMedia::uri)
                         .orElse(null);
-                var replacement = TextMessage.newTextMessageBuilder()
+                var replacement = TextMessage.builder()
                         .text(invite.caption() != null ? "%s: %s".formatted(invite.caption(), url) : url)
                         .description("WhatsApp Group Invite")
                         .title(invite.groupName())
@@ -1867,7 +1859,7 @@ public class Whatsapp {
         return switch (chat.toJid()
                 .server()) {
             case USER, WHATSAPP -> {
-                var message = ProtocolMessage.newProtocolMessageBuilder()
+                var message = ProtocolMessage.builder()
                         .protocolType(ProtocolMessage.ProtocolMessageType.EPHEMERAL_SETTING)
                         .ephemeralExpiration(timer.period()
                                 .toSeconds())
@@ -2048,7 +2040,7 @@ public class Whatsapp {
      */
     public CompletableFuture<MessageInfo> delete(@NonNull MessageInfo info, boolean everyone) {
         if (everyone) {
-            var message = ProtocolMessage.newProtocolMessageBuilder()
+            var message = ProtocolMessage.builder()
                     .protocolType(ProtocolMessage.ProtocolMessageType.REVOKE)
                     .key(info.key())
                     .build();
@@ -2458,7 +2450,7 @@ public class Whatsapp {
     /**
      * A configuration class used to specify the behaviour of {@link Whatsapp}
      */
-    @Builder(builderMethodName = "newOptions")
+    @Builder
     @With
     @Data
     @Accessors(fluent = true)
@@ -2559,7 +2551,7 @@ public class Whatsapp {
          * @return a non-null options configuration
          */
         public static Options defaultOptions() {
-            return newOptions().build();
+            return Options.builder().build();
         }
     }
 }

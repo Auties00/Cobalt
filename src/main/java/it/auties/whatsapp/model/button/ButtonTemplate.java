@@ -17,7 +17,7 @@ import static it.auties.protobuf.base.ProtobufType.UINT32;
  */
 @AllArgsConstructor
 @Data
-@Builder(builderMethodName = "newRawButtonTemplateBuilder")
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("TemplateButton")
@@ -42,7 +42,7 @@ public class ButtonTemplate implements ProtobufMessage {
      * @return a non-null button template
      */
     public static ButtonTemplate of(int index, @NonNull QuickReplyButton quickReplyButton) {
-        return ButtonTemplate.newRawButtonTemplateBuilder()
+        return ButtonTemplate.builder()
                 .index(index)
                 .quickReplyButton(quickReplyButton)
                 .build();
@@ -56,7 +56,10 @@ public class ButtonTemplate implements ProtobufMessage {
      * @return a non-null button template
      */
     public static ButtonTemplate of(int index, @NonNull URLButton urlButton) {
-        return ButtonTemplate.newRawButtonTemplateBuilder().index(index).urlButton(urlButton).build();
+        return ButtonTemplate.builder()
+                .index(index)
+                .urlButton(urlButton)
+                .build();
     }
 
     /**
@@ -68,7 +71,7 @@ public class ButtonTemplate implements ProtobufMessage {
      */
     public static ButtonTemplate of(int index, @NonNull
     CallButton callButton) {
-        return ButtonTemplate.newRawButtonTemplateBuilder().index(index).callButton(callButton).build();
+        return ButtonTemplate.builder().index(index).callButton(callButton).build();
     }
 
     /**

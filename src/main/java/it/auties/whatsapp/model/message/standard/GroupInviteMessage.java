@@ -24,11 +24,11 @@ import static it.auties.protobuf.base.ProtobufType.*;
 /**
  * A model class that represents a message holding a whatsapp group invite inside
  */
-@AllArgsConstructor(staticName = "newGroupInviteMessage")
+@AllArgsConstructor(staticName = "of")
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(builderMethodName = "newGroupInviteMessageBuilder")
+@SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
 public final class GroupInviteMessage extends ContextualMessage {

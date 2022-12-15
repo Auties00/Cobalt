@@ -22,7 +22,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
  */
 @AllArgsConstructor
 @Data
-@Builder(builderMethodName = "newRawProductHeaderBuilder")
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 public class ProductHeader implements ProtobufMessage {
@@ -76,9 +76,9 @@ public class ProductHeader implements ProtobufMessage {
      * @param attachment the attachment of this header
      * @return a non-null new header
      */
-    @Builder(builderClassName = "DocumentProductHeaderBuilder", builderMethodName = "newProductHeaderWithDocumentMessageBuilder")
+    @Builder(builderClassName = "DocumentProductHeaderBuilder", builderMethodName = "withDocumentMessageBuilder")
     private static ProductHeader documentBuilder(String title, String subtitle, DocumentMessage attachment) {
-        return ProductHeader.newRawProductHeaderBuilder()
+        return ProductHeader.builder()
                 .title(title)
                 .subtitle(subtitle)
                 .documentAttachment(attachment)
@@ -94,9 +94,9 @@ public class ProductHeader implements ProtobufMessage {
      * @param attachment the attachment of this header
      * @return a non-null new header
      */
-    @Builder(builderClassName = "ImageProductHeaderBuilder", builderMethodName = "newProductHeaderWithImageMessageBuilder")
+    @Builder(builderClassName = "ImageProductHeaderBuilder", builderMethodName = "withImageMessageBuilder")
     private static ProductHeader imageBuilder(String title, String subtitle, ImageMessage attachment) {
-        return ProductHeader.newRawProductHeaderBuilder()
+        return ProductHeader.builder()
                 .title(title)
                 .subtitle(subtitle)
                 .imageAttachment(attachment)
@@ -112,9 +112,9 @@ public class ProductHeader implements ProtobufMessage {
      * @param attachment the attachment of this header
      * @return a non-null new header
      */
-    @Builder(builderClassName = "ThumbnailProductHeaderBuilder", builderMethodName = "newProductHeaderWithThumbnailMessageBuilder")
+    @Builder(builderClassName = "ThumbnailProductHeaderBuilder", builderMethodName = "withThumbnailMessageBuilder")
     private static ProductHeader thumbnailBuilder(String title, String subtitle, byte[] attachment) {
-        return ProductHeader.newRawProductHeaderBuilder()
+        return ProductHeader.builder()
                 .title(title)
                 .subtitle(subtitle)
                 .thumbnailAttachment(attachment)
@@ -130,9 +130,9 @@ public class ProductHeader implements ProtobufMessage {
      * @param attachment the attachment of this header
      * @return a non-null new header
      */
-    @Builder(builderClassName = "VideoProductHeaderBuilder", builderMethodName = "newProductHeaderWithVideoMessageBuilder")
+    @Builder(builderClassName = "VideoProductHeaderBuilder", builderMethodName = "withVideoMessageBuilder")
     private static ProductHeader videoBuilder(String title, String subtitle, VideoMessage attachment) {
-        return ProductHeader.newRawProductHeaderBuilder()
+        return ProductHeader.builder()
                 .title(title)
                 .subtitle(subtitle)
                 .videoAttachment(attachment)

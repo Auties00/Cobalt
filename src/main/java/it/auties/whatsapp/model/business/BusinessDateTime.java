@@ -16,7 +16,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
  */
 @AllArgsConstructor(staticName = "of")
 @Data
-@Builder(builderMethodName = "newRawDateTimeBuilder")
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 public class BusinessDateTime implements ProtobufMessage {
@@ -39,7 +39,7 @@ public class BusinessDateTime implements ProtobufMessage {
      * @return a non-null date time
      */
     public static BusinessDateTime of(@NonNull BusinessDateTimeComponent componentDate) {
-        return BusinessDateTime.newRawDateTimeBuilder()
+        return BusinessDateTime.builder()
                 .componentDate(componentDate)
                 .build();
     }
@@ -51,7 +51,7 @@ public class BusinessDateTime implements ProtobufMessage {
      * @return a non-null date time
      */
     public static BusinessDateTime of(@NonNull BusinessDateTimeUnixEpoch unixEpochDate) {
-        return BusinessDateTime.newRawDateTimeBuilder()
+        return BusinessDateTime.builder()
                 .unixEpochDate(unixEpochDate)
                 .build();
     }
