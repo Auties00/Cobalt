@@ -13,8 +13,11 @@ import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.DownloadResult;
+import it.auties.whatsapp.model.message.model.MessageCategory;
+import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.message.model.MessageStatus;
+import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.server.DeviceSentMessage;
-import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.model.message.standard.PollUpdateMessage;
@@ -451,7 +454,7 @@ class MessageHandler implements JacksonProvider {
                 handleDistributionMessage(distributionMessage, info.senderJid());
             }
 
-            if(content instanceof PollUpdateMessage pollUpdateMessage){
+            if(content  instanceof PollUpdateMessage pollUpdateMessage){
                 var parentMsgOriginalSender = pollUpdateMessage.pollCreationMessageKey()
                         .senderJid()
                         .orElseGet(pollUpdateMessage.pollCreationMessageKey()::chatJid)
@@ -745,16 +748,19 @@ class MessageHandler implements JacksonProvider {
             }
 
             case RECENT, FULL -> {
-                if(!sentInitialPatch.get()){
+                handleRecentMessagesListener(history);
+                if(!sentInitialPatch.getAndSet(true)){
                     socketHandler.pullInitialPatches()
                             .thenRunAsync(this::subscribeToAllPresences);
-                    sentInitialPatch.set(true);
                 }
-
-                handleRecentMessagesListener(history);
             }
 
-            default -> {}
+            case NON_BLOCKING_DATA -> history.pastParticipants()
+                    .forEach(pastParticipants -> socketHandler.store()
+                            .findChatByJid(pastParticipants.groupJid())
+                            .orElseGet(() -> socketHandler.store().addChat(pastParticipants.groupJid()))
+                            .pastParticipants()
+                            .addAll(pastParticipants.pastParticipants()));
         }
     }
 

@@ -147,11 +147,17 @@ public final class Chat implements ProtobufMessage , ContactJidProvider {
     private boolean markedAsUnread;
 
     /**
-     * The participants of this chat
+     * The participants of this chat, if it's a group
      */
     @ProtobufProperty(implementation = GroupParticipant.class, index = 20, name = "participant", repeated = true, type = ProtobufType.MESSAGE)
     @Default
     private List<GroupParticipant> participants = new ArrayList<>();
+
+    /**
+     * The participants that used to be in this chat, if it's a group
+     */
+    @Default
+    private List<PastParticipant> pastParticipants = new ArrayList<>();
 
     /**
      * The token of this chat

@@ -1202,21 +1202,18 @@ public class Whatsapp {
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull MessageInfo info) {
         store().attribute(info);
-        info.key()
-                .chatJid(info.chatJid()
-                        .toUserJid());
-        info.key()
-                .senderJid(info.senderJid() == null ?
-                        null :
-                        info.senderJid()
-                                .toUserJid());
+        var randomSecret = Bytes.ofRandom(32).toByteArray();
+        info.messageSecret(randomSecret)
+                .message().deviceInfo()
+                .messageSecret(randomSecret);
+        info.key().chatJid(info.chatJid().toUserJid());
+        info.key().senderJid(info.senderJid() == null ? null : info.senderJid().toUserJid());
         createPreview(info);
         parseEphemeralMessage(info);
         fixButtons(info);
-
-        var future = info.chat().hasUnreadMessages() ?
-                markRead(info.chat()).thenComposeAsync(ignored -> socketHandler.sendMessage(info)) :
-                socketHandler.sendMessage(info);
+        var future = info.chat().hasUnreadMessages()
+                ? markRead(info.chat()).thenComposeAsync(ignored -> socketHandler.sendMessage(info))
+                : socketHandler.sendMessage(info);
         return future.thenApplyAsync(ignored -> info);
     }
 

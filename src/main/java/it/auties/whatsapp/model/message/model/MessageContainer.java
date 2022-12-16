@@ -5,7 +5,7 @@ import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.info.CallInfo;
-import it.auties.whatsapp.model.info.MessageContextInfo;
+import it.auties.whatsapp.model.info.DeviceContextInfo;
 import it.auties.whatsapp.model.message.button.*;
 import it.auties.whatsapp.model.message.payment.*;
 import it.auties.whatsapp.model.message.server.*;
@@ -296,9 +296,10 @@ public class MessageContainer implements ProtobufMessage {
     /**
      * Message context info
      */
-    @ProtobufProperty(index = 35, type = MESSAGE, implementation = MessageContextInfo.class)
+    @ProtobufProperty(index = 35, type = MESSAGE, implementation = DeviceContextInfo.class)
+    @Getter
     @Default
-    private MessageContextInfo deviceInfo = MessageContextInfo.of();
+    private DeviceContextInfo deviceInfo = DeviceContextInfo.of();
 
     /**
      * Constructs a new MessageContainerBuilder from a message of any type
@@ -671,15 +672,6 @@ public class MessageContainer implements ProtobufMessage {
      */
     public Optional<CallInfo> call() {
         return Optional.ofNullable(call);
-    }
-
-    /**
-     * Returns the device info, if any is present
-     *
-     * @return a non-null optional
-     */
-    public Optional<MessageContextInfo> deviceInfo() {
-        return Optional.ofNullable(deviceInfo);
     }
 
     /**

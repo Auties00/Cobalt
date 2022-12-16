@@ -18,7 +18,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class MessageContextInfo implements Info {
+public final class DeviceContextInfo implements Info {
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = DeviceListMetadata.class)
     @Default
     private DeviceListMetadata deviceListMetadata = DeviceListMetadata.of();
@@ -33,8 +33,8 @@ public final class MessageContextInfo implements Info {
     @ProtobufProperty(index = 4, name = "paddingBytes", type = ProtobufType.BYTES)
     private byte[] paddingBytes;
 
-    public static MessageContextInfo of(){
-        return MessageContextInfo.builder()
+    public static DeviceContextInfo of(){
+        return DeviceContextInfo.builder()
                 .build();
     }
 }
