@@ -50,9 +50,7 @@ public final class MessageInfo implements Info , MessageMetadataProvider , Jacks
      * @param container
      * 		the container of the message
      */
-    public MessageInfo(@NonNull
-    MessageKey key, @NonNull
-    MessageContainer container) {
+    public MessageInfo(@NonNull MessageKey key, @NonNull MessageContainer container) {
         this.key = key;
         this.timestamp = Clock.now();
         this.status = MessageStatus.PENDING;
@@ -110,6 +108,9 @@ public final class MessageInfo implements Info , MessageMetadataProvider , Jacks
     @Setter(AccessLevel.NONE)
     private ContactJid senderJid;
 
+    /**
+     * The sender of the message
+     */
     private Contact sender;
 
     /**

@@ -8,7 +8,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 @AllArgsConstructor
@@ -19,8 +18,8 @@ import lombok.extern.jackson.Jacksonized;
 @ProtobufName("PollEncValue")
 public class PollEncValue implements ProtobufMessage {
     @ProtobufProperty(index = 1, name = "encPayload", type = ProtobufType.BYTES)
-    private byte[] encPayload;
+    private byte[] payload;
 
     @ProtobufProperty(index = 2, name = "encIv", type = ProtobufType.BYTES)
-    private byte[] encIv;
+    private byte[] iv;
 }

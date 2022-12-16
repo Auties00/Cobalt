@@ -37,7 +37,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
  */
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder(builderMethodName = "newMessageContainerBuilder", toBuilder = true)
+@Builder(toBuilder = true)
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("Message")
@@ -308,8 +308,8 @@ public class MessageContainer implements ProtobufMessage {
      * @param <T>     the type of the message
      * @return a non-null builder
      */
-    public static <T extends Message> MessageContainerBuilder newMessageContainerBuilder(@NonNull T message) {
-        var builder = MessageContainer.newMessageContainerBuilder();
+    public static <T extends Message> MessageContainerBuilder builder(@NonNull T message) {
+        var builder = MessageContainer.builder();
         switch (message) {
             case EmptyMessage ignored -> {}
             case SenderKeyDistributionMessage senderKeyDistribution ->
@@ -364,7 +364,7 @@ public class MessageContainer implements ProtobufMessage {
      *
      * @return a non-null builder
      */
-    public static MessageContainerBuilder newMessageContainerBuilder(){
+    public static MessageContainerBuilder builder(){
         return new MessageContainerBuilder();
     }
 
@@ -374,7 +374,7 @@ public class MessageContainer implements ProtobufMessage {
      * @param message the text message with no context
      */
     public static MessageContainer of(@NonNull String message) {
-        return MessageContainer.newMessageContainerBuilder()
+        return MessageContainer.builder()
                 .text(TextMessage.of(message))
                 .build();
     }
@@ -387,7 +387,7 @@ public class MessageContainer implements ProtobufMessage {
      * @return a non-null container
      */
     public static <T extends Message> MessageContainer of(@NonNull T message) {
-        return newMessageContainerBuilder(message)
+        return builder(message)
                 .build();
     }
 
@@ -398,7 +398,7 @@ public class MessageContainer implements ProtobufMessage {
      * @param <T>     the type of the message
      */
     public static <T extends Message> MessageContainer ofViewOnce(@NonNull T message) {
-        return MessageContainer.newMessageContainerBuilder()
+        return MessageContainer.builder()
                 .viewOnce(FutureMessageContainer.of(message))
                 .build();
     }
@@ -410,7 +410,7 @@ public class MessageContainer implements ProtobufMessage {
      * @param <T>     the type of the message
      */
     public static <T extends Message> MessageContainer ofViewOnceV2(@NonNull T message) {
-        return MessageContainer.newMessageContainerBuilder()
+        return MessageContainer.builder()
                 .viewOnceV2(FutureMessageContainer.of(message))
                 .build();
     }
@@ -422,7 +422,7 @@ public class MessageContainer implements ProtobufMessage {
      * @param <T>     the type of the message
      */
     public static <T extends Message> MessageContainer ofEphemeral(@NonNull T message) {
-        return MessageContainer.newMessageContainerBuilder()
+        return MessageContainer.builder()
                 .ephemeral(FutureMessageContainer.of(message))
                 .build();
     }
@@ -434,7 +434,7 @@ public class MessageContainer implements ProtobufMessage {
      * @param <T>     the type of the message
      */
     public static <T extends Message> MessageContainer ofEditedMessage(@NonNull T message) {
-        return MessageContainer.newMessageContainerBuilder()
+        return MessageContainer.builder()
                 .edited(FutureMessageContainer.of(message))
                 .build();
     }
@@ -446,7 +446,7 @@ public class MessageContainer implements ProtobufMessage {
      * @param <T>     the type of the message
      */
     public static <T extends Message> MessageContainer ofDocumentWithCaption(@NonNull T message) {
-        return MessageContainer.newMessageContainerBuilder()
+        return MessageContainer.builder()
                 .documentWithCaption(FutureMessageContainer.of(message))
                 .build();
     }
@@ -680,7 +680,7 @@ public class MessageContainer implements ProtobufMessage {
      * @return a non-null message container
      */
     public MessageContainer toEphemeral() {
-        return newMessageContainerBuilder()
+        return MessageContainer.builder()
                 .ephemeral(FutureMessageContainer.of(content()))
                 .call(call)
                 .deviceInfo(deviceInfo)
@@ -693,7 +693,7 @@ public class MessageContainer implements ProtobufMessage {
      * @return a non-null message container
      */
     public MessageContainer toViewOnce() {
-        return newMessageContainerBuilder()
+        return MessageContainer.builder()
                 .viewOnce(FutureMessageContainer.of(content()))
                 .call(call)
                 .deviceInfo(deviceInfo)
@@ -706,6 +706,20 @@ public class MessageContainer implements ProtobufMessage {
      * @return a non-null message container
      */
     public MessageContainer unbox(){
+        if (this.deviceSent != null)
+            return deviceSent.message();
+        if(viewOnce != null)
+            return viewOnce.content();
+        if (this.ephemeral != null)
+            return ephemeral.content();
+        if (documentWithCaption != null)
+            return documentWithCaption.content();
+        if (viewOnceV2 != null)
+            return viewOnceV2.content();
+        if (edited != null)
+            return edited.content();
+        if (viewOnceV2Extension != null)
+            return viewOnceV2Extension.content();
         return MessageContainer.of(content())
                 .toBuilder()
                 .call(call)

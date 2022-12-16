@@ -97,19 +97,21 @@ class StreamHandler implements JacksonProvider {
     }
 
     private void digestChatState(Node node) {
-        var updateType = node.attributes()
-                .getOptionalString("type")
-                .or(() -> node.findNode().map(Node::description))
-                .orElse("available");
-        var chatJid = node.attributes()
-                .getJid("from")
-                .orElseThrow(() -> new NoSuchElementException("Missing from in chat state update"));
-        var participantJid = node.attributes()
-                .getJid("participant")
-                .orElse(chatJid);
-        socketHandler.store()
-                .findContactByJid(participantJid)
-                .ifPresent(contact -> updateContactPresence(chatJid, updateType, contact));
+        CompletableFuture.runAsync(() -> {
+            var updateType = node.attributes()
+                    .getOptionalString("type")
+                    .or(() -> node.findNode().map(Node::description))
+                    .orElse("available");
+            var chatJid = node.attributes()
+                    .getJid("from")
+                    .orElseThrow(() -> new NoSuchElementException("Missing from in chat state update"));
+            var participantJid = node.attributes()
+                    .getJid("participant")
+                    .orElse(chatJid);
+            socketHandler.store()
+                    .findContactByJid(participantJid)
+                    .ifPresent(contact -> updateContactPresence(chatJid, updateType, contact));
+        });
     }
 
     private void updateContactPresence(ContactJid chatJid, String updateType, Contact contact) {
@@ -118,6 +120,7 @@ class StreamHandler implements JacksonProvider {
         if(status == contact.lastKnownPresence()){
             return;
         }
+
 
         contact.lastKnownPresence(status);
         contact.lastSeen(ZonedDateTime.now());

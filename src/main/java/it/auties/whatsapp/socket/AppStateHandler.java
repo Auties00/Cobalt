@@ -41,14 +41,14 @@ class AppStateHandler implements JacksonProvider {
     public static final int PUSH_TIMEOUT = 120;
 
     private final SocketHandler socketHandler;
-    private final Semaphore lock;
-    private final CountDownLatch ready;
+    private final Semaphore semaphore;
+    private final CountDownLatch countDownLatch;
 
     @SneakyThrows
     protected AppStateHandler(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
-        this.lock = new Semaphore(1);
-        this.ready = new CountDownLatch(1);
+        this.semaphore = new Semaphore(1);
+        this.countDownLatch = new CountDownLatch(1);
     }
 
     protected CompletableFuture<Void> push(@NonNull PatchRequest patch) {
@@ -56,9 +56,9 @@ class AppStateHandler implements JacksonProvider {
                 .thenComposeAsync(result -> sendPullRequest(patch.type()))
                 .thenApplyAsync(result -> createPushRequest(patch))
                 .thenComposeAsync(this::sendPush)
-                .thenRunAsync(lock::release)
+                .thenRunAsync(semaphore::release)
                 .exceptionallyAsync(throwable -> {
-                    lock.release();
+                    semaphore.release();
                     return socketHandler.errorHandler()
                             .handleFailure(PUSH_APP_STATE, throwable);
                 })
@@ -157,13 +157,13 @@ class AppStateHandler implements JacksonProvider {
         return CompletableFuture.runAsync(() -> acquireLock(!initial))
                 .thenComposeAsync(ignored -> sendPullRequest(patchTypes))
                 .thenRunAsync(() -> {
-                    ready.countDown();
+                    countDownLatch.countDown();
                     socketHandler.store().initialAppSync(true);
-                    lock.release();
+                    semaphore.release();
                 })
                 .exceptionallyAsync(exception -> {
                     if(initial) {
-                        ready.countDown();
+                        countDownLatch.countDown();
                         return socketHandler.errorHandler()
                                 .handleFailure(INITIAL_APP_STATE_SYNC, exception);
                     }
@@ -597,7 +597,7 @@ class AppStateHandler implements JacksonProvider {
                 return;
             }
 
-            lock.acquire();
+            semaphore.acquire();
         }catch (InterruptedException exception){
             throw new RuntimeException("Cannot lock", exception);
         }
@@ -631,7 +631,7 @@ class AppStateHandler implements JacksonProvider {
 
     public void awaitReady() {
         try {
-           ready.await();
+           countDownLatch.await();
         }catch (InterruptedException exception){
             throw new RuntimeException("Cannot await app state", exception);
         }

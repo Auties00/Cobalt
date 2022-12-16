@@ -20,10 +20,12 @@ import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.server.DeviceSentMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
+import it.auties.whatsapp.model.message.standard.PollCreationMessage;
 import it.auties.whatsapp.model.message.standard.PollUpdateMessage;
 import it.auties.whatsapp.model.message.standard.ReactionMessage;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.setting.EphemeralSetting;
+import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalDistributionMessage;
@@ -454,8 +456,21 @@ class MessageHandler implements JacksonProvider {
                 handleDistributionMessage(distributionMessage, info.senderJid());
             }
 
-            if(content  instanceof PollUpdateMessage pollUpdateMessage){
-                var parentMsgOriginalSender = pollUpdateMessage.pollCreationMessageKey()
+            if(content instanceof PollCreationMessage pollCreationMessage){
+                pollCreationMessage.encryptionKey(messageContainer.deviceInfo().messageSecret());
+            }
+
+            if(content instanceof PollUpdateMessage pollUpdateMessage){
+                var originalPollInfo = socketHandler.store()
+                        .findMessageByKey(pollUpdateMessage.pollCreationMessageKey())
+                        .orElseThrow(() -> new NoSuchElementException("Missing original poll message"));
+                Validate.isTrue(originalPollInfo.message().type() == MessageType.POLL_CREATION,
+                        "Original poll message has wrong type: %s", originalPollInfo.message().type());
+                var originalPollMessage = (PollCreationMessage) originalPollInfo.message()
+                        .content();
+                var originalPollMessageId = originalPollInfo.id()
+                        .getBytes(StandardCharsets.UTF_8);
+                var originalPollSender = pollUpdateMessage.pollCreationMessageKey()
                         .senderJid()
                         .orElseGet(pollUpdateMessage.pollCreationMessageKey()::chatJid)
                         .toUserJid()
@@ -466,15 +481,27 @@ class MessageHandler implements JacksonProvider {
                         .getBytes(StandardCharsets.UTF_8);
                 var secretName = pollUpdateMessage.secretName()
                         .getBytes(StandardCharsets.UTF_8);
-                var infoData = Bytes.of(info.id())
-                        .append(parentMsgOriginalSender)
+                var payloadEncrypted = Bytes.of(info.id())
+                        .append(originalPollMessageId)
+                        .append(originalPollSender)
                         .append(modificationSender)
                         .append(secretName)
+                        .append(1)
                         .toByteArray();
-                var expanded = Hkdf.extractAndExpand(pollUpdateMessage.vote().encPayload(), infoData, 32);
-                var keyData = "%s\0%s".formatted(info.id(), info.senderJid().toUserJid().toString())
+                var signKey = SignalKeyPair.random()
+                        .publicKey();
+                var hmacSha256SignKey = Hmac.calculateSha256(originalPollMessage.encryptionKey(), signKey);
+                var decryptionKey = Hmac.calculateSha256(hmacSha256SignKey, payloadEncrypted);
+                var additionalData = "%s\0%s".formatted(info.id(), info.senderJid().toUserJid().toString())
                         .getBytes(StandardCharsets.UTF_8);
-                var decrypted = AesCbc.decrypt(pollUpdateMessage.vote().encIv(), expanded, keyData);
+
+                var decrypted = AesGmc.cipher(
+                        pollUpdateMessage.vote().iv(),
+                        pollUpdateMessage.vote().payload(),
+                        decryptionKey,
+                        additionalData,
+                        false
+                );
             }
 
             saveMessage(info, category);

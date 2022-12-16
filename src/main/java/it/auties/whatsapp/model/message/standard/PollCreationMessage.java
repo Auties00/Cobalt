@@ -28,7 +28,7 @@ import java.util.List;
 @ProtobufName("PollCreationMessage")
 public final class PollCreationMessage extends ContextualMessage {
     @ProtobufProperty(index = 1, name = "encKey", type = ProtobufType.BYTES)
-    private byte[] encKey;
+    private byte[] encryptionKey;
 
     @ProtobufProperty(index = 2, name = "name", type = ProtobufType.STRING)
     private String name;
@@ -37,7 +37,7 @@ public final class PollCreationMessage extends ContextualMessage {
     private List<PollOptionName> options;
 
     @ProtobufProperty(index = 4, name = "selectableOptionsCount", type = ProtobufType.UINT32)
-    private Integer selectableOptionsCount;
+    private int selectableOptionsCount;
 
     @ProtobufProperty(index = 5, name = "contextInfo", type = ProtobufType.MESSAGE)
     @Default
