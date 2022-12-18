@@ -13,19 +13,16 @@ import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.DownloadResult;
-import it.auties.whatsapp.model.message.model.MessageCategory;
-import it.auties.whatsapp.model.message.model.MessageKey;
-import it.auties.whatsapp.model.message.model.MessageStatus;
-import it.auties.whatsapp.model.message.model.MessageType;
+import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.server.DeviceSentMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.model.message.standard.PollCreationMessage;
 import it.auties.whatsapp.model.message.standard.PollUpdateMessage;
 import it.auties.whatsapp.model.message.standard.ReactionMessage;
+import it.auties.whatsapp.model.poll.PollVoteMessage;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.setting.EphemeralSetting;
-import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalDistributionMessage;
@@ -449,61 +446,8 @@ class MessageHandler implements JacksonProvider {
             var messageContainer = BytesHelper.bytesToMessage(decodedMessage.message()).unbox();
             info.message(messageContainer);
             socketHandler.store().attribute(info);
-
+            handleMessageContent(info, messageContainer);
             var category = infoNode.attributes().getString("category");
-            var content = info.message().content();
-            if (content instanceof SenderKeyDistributionMessage distributionMessage) {
-                handleDistributionMessage(distributionMessage, info.senderJid());
-            }
-
-            if(content instanceof PollCreationMessage pollCreationMessage){
-                pollCreationMessage.encryptionKey(messageContainer.deviceInfo().messageSecret());
-            }
-
-            if(content instanceof PollUpdateMessage pollUpdateMessage){
-                var originalPollInfo = socketHandler.store()
-                        .findMessageByKey(pollUpdateMessage.pollCreationMessageKey())
-                        .orElseThrow(() -> new NoSuchElementException("Missing original poll message"));
-                Validate.isTrue(originalPollInfo.message().type() == MessageType.POLL_CREATION,
-                        "Original poll message has wrong type: %s", originalPollInfo.message().type());
-                var originalPollMessage = (PollCreationMessage) originalPollInfo.message()
-                        .content();
-                var originalPollMessageId = originalPollInfo.id()
-                        .getBytes(StandardCharsets.UTF_8);
-                var originalPollSender = pollUpdateMessage.pollCreationMessageKey()
-                        .senderJid()
-                        .orElseGet(pollUpdateMessage.pollCreationMessageKey()::chatJid)
-                        .toUserJid()
-                        .toString()
-                        .getBytes(StandardCharsets.UTF_8);
-                var modificationSender = info.senderJid()
-                        .toString()
-                        .getBytes(StandardCharsets.UTF_8);
-                var secretName = pollUpdateMessage.secretName()
-                        .getBytes(StandardCharsets.UTF_8);
-                var payloadEncrypted = Bytes.of(info.id())
-                        .append(originalPollMessageId)
-                        .append(originalPollSender)
-                        .append(modificationSender)
-                        .append(secretName)
-                        .append(1)
-                        .toByteArray();
-                var signKey = SignalKeyPair.random()
-                        .publicKey();
-                var hmacSha256SignKey = Hmac.calculateSha256(originalPollMessage.encryptionKey(), signKey);
-                var decryptionKey = Hmac.calculateSha256(hmacSha256SignKey, payloadEncrypted);
-                var additionalData = "%s\0%s".formatted(info.id(), info.senderJid().toUserJid().toString())
-                        .getBytes(StandardCharsets.UTF_8);
-
-                var decrypted = AesGmc.cipher(
-                        pollUpdateMessage.vote().iv(),
-                        pollUpdateMessage.vote().payload(),
-                        decryptionKey,
-                        additionalData,
-                        false
-                );
-            }
-
             saveMessage(info, category);
             socketHandler.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.key().id()), null);
             socketHandler.sendMessageAck(infoNode, infoNode.attributes().map());
@@ -511,6 +455,78 @@ class MessageHandler implements JacksonProvider {
         } catch (Throwable throwable) {
             socketHandler.errorHandler()
                     .handleFailure(MESSAGE, throwable);
+        }
+    }
+
+    private void handleMessageContent(MessageInfo info, MessageContainer messageContainer) {
+        switch (info.message().content()) {
+            case SenderKeyDistributionMessage distributionMessage ->
+                    handleDistributionMessage(distributionMessage, info.senderJid());
+            case PollCreationMessage pollCreationMessage ->
+                    handlePollCreation(messageContainer, pollCreationMessage);
+            case PollUpdateMessage pollUpdateMessage ->
+                    handlePollUpdate(info, pollUpdateMessage);
+            default -> {}
+        }
+    }
+
+    private void handlePollCreation(MessageContainer messageContainer, PollCreationMessage pollCreationMessage) {
+        if(pollCreationMessage.encryptionKey() != null){
+            return;
+        }
+
+        if(messageContainer.deviceInfo().messageSecret() == null){
+            return;
+        }
+
+        pollCreationMessage.encryptionKey(messageContainer.deviceInfo().messageSecret());
+    }
+
+    private void handlePollUpdate(MessageInfo info, PollUpdateMessage pollUpdateMessage) {
+        try {
+            var originalPollInfo = socketHandler.store()
+                    .findMessageByKey(pollUpdateMessage.pollCreationMessageKey())
+                    .orElseThrow(() -> new NoSuchElementException("Missing original poll message"));
+            Validate.isTrue(originalPollInfo.message().type() == MessageType.POLL_CREATION,
+                    "Original poll message has wrong type: %s", originalPollInfo.message().type());
+            var originalPollMessage = (PollCreationMessage) originalPollInfo.message()
+                    .content();
+            var originalPollSender = originalPollInfo.senderJid()
+                    .toUserJid()
+                    .toString()
+                    .getBytes(StandardCharsets.UTF_8);
+            var modificationSenderJid = info.senderJid().toUserJid();
+            var modificationSender = modificationSenderJid.toString().getBytes(StandardCharsets.UTF_8);
+            var secretName = pollUpdateMessage.secretName()
+                    .getBytes(StandardCharsets.UTF_8);
+            var useSecretPayload = Bytes.of(originalPollInfo.id())
+                    .append(originalPollSender)
+                    .append(modificationSender)
+                    .append(secretName)
+                    .toByteArray();
+            var useCaseSecret = Hkdf.extractAndExpand(originalPollMessage.encryptionKey(), useSecretPayload, 32);
+            var additionalData = "%s\0%s".formatted(originalPollInfo.id(), modificationSenderJid)
+                    .getBytes(StandardCharsets.UTF_8);
+            var decrypted = AesGmc.cipher(
+                    pollUpdateMessage.vote().iv(),
+                    pollUpdateMessage.vote().payload(),
+                    useCaseSecret,
+                    additionalData,
+                    false
+            );
+            var pollVoteMessage = PROTOBUF.readMessage(decrypted, PollVoteMessage.class);
+            var selectedOptions = pollVoteMessage.selectedOptions()
+                    .stream()
+                    .map(hash -> Bytes.of(hash).toHex())
+                    .map(originalPollMessage.selectableOptionsHashesMap()::get)
+                    .filter(Objects::nonNull)
+                    .toList();
+            var oldSelectedOptions = originalPollMessage.selectedOptionsMap()
+                    .get(modificationSenderJid);
+            originalPollMessage.selectedOptionsMap()
+                    .put(modificationSenderJid, toSingleList(selectedOptions, oldSelectedOptions));
+        }catch (Throwable throwable){
+            throw new RuntimeException("Cannot decode poll vote", throwable);
         }
     }
 
@@ -834,6 +850,7 @@ class MessageHandler implements JacksonProvider {
     @SafeVarargs
     private <T> List<T> toSingleList(List<T>... all) {
         return Stream.of(all)
+                .filter(Objects::nonNull)
                 .flatMap(Collection::stream)
                 .toList();
     }

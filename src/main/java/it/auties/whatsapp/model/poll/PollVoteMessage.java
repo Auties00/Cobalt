@@ -25,11 +25,10 @@ public class PollVoteMessage implements ProtobufMessage {
 
     public static class PollVoteMessageBuilder {
         public PollVoteMessageBuilder selectedOptions(List<byte[]> selectedOptions) {
-            if (PollVoteMessageBuilder.this.selectedOptions == null)
-                PollVoteMessageBuilder.this.selectedOptions = new ArrayList<>();
-
-            PollVoteMessageBuilder.this.selectedOptions.addAll(selectedOptions);
-            return PollVoteMessageBuilder.this;
+            if (this.selectedOptions == null)
+                this.selectedOptions = new ArrayList<>();
+            this.selectedOptions.addAll(selectedOptions);
+            return this;
         }
     }
 }

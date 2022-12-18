@@ -14,6 +14,7 @@ import java.io.ByteArrayOutputStream;
 public class Hkdf implements SignalSpecification {
     private final int ITERATION_START_OFFSET = 1; // v3
     private final int HASH_OUTPUT_SIZE = 32;
+    public final byte[] DEFAULT_SALT = new byte[HASH_OUTPUT_SIZE];
     private final String HMAC_SHA_256 = "HmacSHA256";
 
     public byte[][] deriveSecrets(byte[] input, byte[] info) {
@@ -21,7 +22,7 @@ public class Hkdf implements SignalSpecification {
     }
 
     public byte[][] deriveSecrets(byte[] input, byte[] info, int chunks) {
-        return deriveSecrets(input, new byte[HASH_OUTPUT_SIZE], info, chunks);
+        return deriveSecrets(input, DEFAULT_SALT, info, chunks);
     }
 
     public byte[][] deriveSecrets(byte[] input, byte[] salt, byte[] info) {
@@ -60,20 +61,12 @@ public class Hkdf implements SignalSpecification {
         return signed;
     }
 
-    public byte[] extractAndExpand(byte[] inputKeyMaterial, byte[] info, int outputLength) {
-        return extractAndExpand(inputKeyMaterial, new byte[HASH_OUTPUT_SIZE], info, outputLength);
+    public byte[] extractAndExpand(byte[] key, byte[] info, int outputLength) {
+        return extractAndExpand(key, DEFAULT_SALT, info, outputLength);
     }
 
-    public byte[] extractAndExpand(byte[] inputKeyMaterial, byte[] salt, byte[] info, int outputLength) {
-        var prk = extract(salt, inputKeyMaterial);
-        return expand(prk, info, outputLength);
-    }
-
-    @SneakyThrows
-    private byte[] extract(byte[] salt, byte[] inputKeyMaterial) {
-        var mac = Mac.getInstance(HMAC_SHA_256);
-        mac.init(new SecretKeySpec(salt, HMAC_SHA_256));
-        return mac.doFinal(inputKeyMaterial);
+    public byte[] extractAndExpand(byte[] key, byte[] salt, byte[] info, int outputLength) {
+        return expand(Hmac.calculateSha256(key, salt), info, outputLength);
     }
 
     @SneakyThrows

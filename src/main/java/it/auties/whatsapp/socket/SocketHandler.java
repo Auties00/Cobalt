@@ -251,7 +251,6 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
                     .complete(null);
         }
 
-
         if (state == SocketState.CONNECTED) {
             onDisconnected(DisconnectReason.RECONNECTING);
             disconnect(true);
