@@ -45,7 +45,7 @@ public record Attributes(@NonNull Map<String, Object> map) {
      * @return a new instance of Attributes
      */
     public static Attributes ofNullable(Map<String, Object> map) {
-        var modifiableMap = Optional.of(map)
+        var modifiableMap = Optional.ofNullable(map)
                 .map(HashMap::new)
                 .orElseGet(HashMap::new);
         return new Attributes(modifiableMap);
