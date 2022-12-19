@@ -2,11 +2,10 @@ package it.auties.whatsapp.model.sync;
 
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.model.request.Node;
-import it.auties.whatsapp.util.Attributes;
+import it.auties.whatsapp.model.request.Attributes;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
@@ -49,7 +48,7 @@ public class LTHashState {
     }
 
     public Node toNode() {
-        var attributes = Attributes.empty()
+        var attributes = Attributes.of()
                 .put("name", name)
                 .put("version", version)
                 .put("return_snapshot", version == 0)

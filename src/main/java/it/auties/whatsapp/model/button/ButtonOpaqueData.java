@@ -4,7 +4,7 @@ import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.protobuf.base.ProtobufType;
-import it.auties.whatsapp.model.poll.PollEncValue;
+import it.auties.whatsapp.model.poll.PollUpdateEncryptedMetadata;
 import it.auties.whatsapp.model.poll.PollOption;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -120,7 +120,7 @@ public class ButtonOpaqueData implements ProtobufMessage {
     private String pollUpdateParentKey;
 
     @ProtobufProperty(index = 24, name = "encPollVote", type = ProtobufType.MESSAGE)
-    private PollEncValue encPollVote;
+    private PollUpdateEncryptedMetadata encPollVote;
 
     @ProtobufProperty(index = 25, name = "encReactionTargetMessageKey", type = ProtobufType.STRING)
     private String encReactionTargetMessageKey;

@@ -28,6 +28,7 @@ import it.auties.whatsapp.model.message.standard.TextMessage;
 import it.auties.whatsapp.model.privacy.GdprAccountReport;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
+import it.auties.whatsapp.model.request.Attributes;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.NodeHandler;
 import it.auties.whatsapp.model.request.ReplyHandler;
@@ -967,7 +968,7 @@ public class Whatsapp {
                 "Cannot change setting %s toggle to %s: read receipts can either be seen by everyone or nobody",
                 value.name(), type.name());
 
-        var attributes = Attributes.empty()
+        var attributes = Attributes.of()
                 .put("name", type.data())
                 .put("last", value.data())
                 .put("dhash", "none", () -> value == PrivacySettingValue.CONTACT_EXCEPT)
@@ -1676,7 +1677,7 @@ public class Whatsapp {
         var descriptionNode = Optional.ofNullable(description)
                 .map(content -> Node.of("body", content.getBytes(StandardCharsets.UTF_8)))
                 .orElse(null);
-        var attributes = Attributes.empty()
+        var attributes = Attributes.of()
                 .put("id", MessageKey.randomId(), () -> description != null)
                 .put("delete", true, () -> description == null)
                 .put("prev", descriptionId, () -> descriptionId != null)
@@ -2359,7 +2360,7 @@ public class Whatsapp {
         var retryIdData = info.key().id().getBytes(StandardCharsets.UTF_8);
         var receipt = createReceipt(info);
         var ciphertext = AesGmc.cipher(retryIv, receipt, retryKey, retryIdData, true);
-        var rmrAttributes = Attributes.empty()
+        var rmrAttributes = Attributes.of()
                 .put("jid", info.chatJid())
                 .put("from_me", String.valueOf(info.fromMe()))
                 .put("participant", info.senderJid(), () -> !Objects.equals(info.chatJid(), info.senderJid()))

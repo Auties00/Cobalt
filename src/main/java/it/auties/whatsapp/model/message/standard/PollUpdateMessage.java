@@ -3,18 +3,21 @@ package it.auties.whatsapp.model.message.standard;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.protobuf.base.ProtobufType;
+import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.MessageType;
-import it.auties.whatsapp.model.poll.PollEncValue;
+import it.auties.whatsapp.model.poll.PollUpdateEncryptedMetadata;
+import it.auties.whatsapp.model.poll.PollOptionName;
 import it.auties.whatsapp.model.poll.PollUpdateMessageMetadata;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
+
+import java.util.List;
 
 @AllArgsConstructor
 @Data
@@ -25,11 +28,17 @@ import lombok.extern.jackson.Jacksonized;
 public final class PollUpdateMessage implements Message {
     private static final String POLL_NAME = "Poll Vote";
 
+    private ContactJid voter;
+
     @ProtobufProperty(index = 1, name = "pollCreationMessageKey", type = ProtobufType.MESSAGE)
     private MessageKey pollCreationMessageKey;
 
+    private PollCreationMessage pollCreationMessage;
+
+    private List<PollOptionName> votes;
+
     @ProtobufProperty(index = 2, name = "vote", type = ProtobufType.MESSAGE)
-    private PollEncValue vote;
+    private PollUpdateEncryptedMetadata encryptedMetadata;
 
     @ProtobufProperty(index = 3, name = "metadata", type = ProtobufType.MESSAGE)
     private PollUpdateMessageMetadata metadata;

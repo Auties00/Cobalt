@@ -19,6 +19,7 @@ import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MessageStatus;
+import it.auties.whatsapp.model.request.Attributes;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.model.response.ContactStatusResponse;
@@ -333,7 +334,7 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
 
     public CompletableFuture<Node> sendQuery(String id, ContactJid to, String method, String category,
                                              Map<String, Object> metadata, Node... body) {
-        var attributes = Attributes.of(metadata)
+        var attributes = Attributes.ofNullable(metadata)
                 .put("id", id, Objects::nonNull)
                 .put("type", method)
                 .put("to", to)
@@ -434,7 +435,7 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
             return;
         }
 
-        var attributes = Attributes.empty()
+        var attributes = Attributes.of()
                 .put("id", messages.get(0))
                 .put("t", Clock.now() / 1000)
                 .put("to", jid)
@@ -466,7 +467,7 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
         var type = node.attributes().getOptionalString("type")
                 .filter(ignored -> !node.hasDescription("message"))
                 .orElse(null);
-        var attributes = Attributes.empty()
+        var attributes = Attributes.of()
                 .put("id", node.id())
                 .put("to", to)
                 .put("class", node.description())

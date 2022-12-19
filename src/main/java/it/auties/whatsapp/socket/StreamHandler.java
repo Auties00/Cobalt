@@ -20,6 +20,7 @@ import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
+import it.auties.whatsapp.model.request.Attributes;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.NodeHandler;
 import it.auties.whatsapp.model.response.ContactStatusResponse;
@@ -144,7 +145,7 @@ class StreamHandler implements JacksonProvider {
 
         socketHandler.sendMessageAck(
                 node,
-                Attributes.empty()
+                Attributes.of()
                         .put("class", "receipt")
                         .put("type", type, Objects::nonNull)
                         .map()
@@ -717,7 +718,7 @@ class StreamHandler implements JacksonProvider {
     }
 
     private void sendConfirmNode(Node node, Node content) {
-        var attributes = Attributes.empty()
+        var attributes = Attributes.of()
                 .put("id", node.id())
                 .put("type", "result")
                 .put("to", ContactJid.WHATSAPP)

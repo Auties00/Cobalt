@@ -16,7 +16,7 @@ public record BusinessCatalogEntry(@NonNull String id, @NonNull URI encryptedIma
         var id = node.attributes()
                 .getRequiredString("id");
         var hidden = node.attributes()
-                .getBool("is_hidden");
+                .getBoolean("is_hidden");
         var name = node.findNode("name")
                 .flatMap(Node::contentAsString)
                 .orElseThrow(() -> new NoSuchElementException("Missing name for catalog entry"));

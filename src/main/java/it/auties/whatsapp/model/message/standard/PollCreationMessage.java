@@ -66,7 +66,7 @@ public final class PollCreationMessage extends ContextualMessage {
 
     public static abstract class PollCreationMessageBuilder<C extends PollCreationMessage, B extends PollCreationMessageBuilder<C, B>>
             extends ContextualMessageBuilder<C, B> {
-        public PollCreationMessageBuilder<C, B> options(List<PollOptionName> options) {
+        public PollCreationMessageBuilder<C, B> selectableOptions(List<PollOptionName> selectableOptions) {
             if (this.selectableOptions == null){
                 this.selectableOptions = new ArrayList<>();
             }
@@ -76,12 +76,12 @@ public final class PollCreationMessage extends ContextualMessage {
                 selectableOptionsHashesMap$value = new HashMap<>();
             }
 
-            options.forEach(entry -> {
+            selectableOptions.forEach(entry -> {
                 var sha256 = Bytes.of(Sha256.calculate(entry.optionName()))
                         .toHex();
                 selectableOptionsHashesMap$value.put(sha256, entry);
             });
-            this.selectableOptions.addAll(options);
+            this.selectableOptions.addAll(selectableOptions);
             return this;
         }
     }

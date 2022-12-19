@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.request;
 
-import it.auties.whatsapp.util.Attributes;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import it.auties.whatsapp.util.JacksonProvider;
 import lombok.NonNull;
 
 import java.nio.charset.StandardCharsets;
@@ -16,7 +17,7 @@ import static java.util.Objects.requireNonNull;
  * @param attributes  a non-null Map that describes the metadata of this object
  * @param content     a nullable object: a List of {@link Node}, a {@link String} or a {@link Number}
  */
-public record Node(@NonNull String description, @NonNull Attributes attributes, Object content) {
+public record Node(@NonNull String description, @NonNull Attributes attributes, Object content) implements JacksonProvider {
     /**
      * Constructs a Node that only provides a non-null tag
      *
@@ -24,7 +25,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @return a new node with the above characteristics
      */
     public static Node of(@NonNull String description) {
-        return new Node(description, Attributes.empty(), null);
+        return new Node(description, Attributes.of(), null);
     }
 
     /**
@@ -35,7 +36,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @return a new node with the above characteristics
      */
     public static Node of(@NonNull String description, Object content) {
-        return new Node(description, Attributes.empty(), content);
+        return new Node(description, Attributes.of(), content);
     }
 
     /**
@@ -47,7 +48,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @return a new node with the above characteristics
      */
     public static Node of(@NonNull String description, @NonNull Map<String, Object> attributes, Object content) {
-        return new Node(description, Attributes.of(attributes), content);
+        return new Node(description, Attributes.ofNullable(attributes), content);
     }
 
     /**
@@ -58,7 +59,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @return a new node with the above characteristics
      */
     public static Node ofAttributes(@NonNull String description, @NonNull Map<String, Object> attributes) {
-        return new Node(description, Attributes.of(attributes), null);
+        return new Node(description, Attributes.ofNullable(attributes), null);
     }
 
 
@@ -81,7 +82,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @return a new node with the above characteristics
      */
     public static Node ofChildren(@NonNull String description, Collection<Node> children) {
-        return new Node(description, Attributes.empty(), requireNonNullNodes(children));
+        return new Node(description, Attributes.of(), requireNonNullNodes(children));
     }
 
     /**
@@ -94,7 +95,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      */
     public static Node ofChildren(@NonNull String description, @NonNull Map<String, Object> attributes,
                                   Collection<Node> children) {
-        return new Node(description, Attributes.of(attributes), requireNonNullNodes(children));
+        return new Node(description, Attributes.ofNullable(attributes), requireNonNullNodes(children));
     }
 
     /**
@@ -306,6 +307,20 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
                 this.attributes(), that.attributes()) && (Objects.equals(this.content(),
                 that.content()) || this.content() instanceof byte[] theseBytes && that.content() instanceof byte[] thoseBytes && Arrays.equals(
                 theseBytes, thoseBytes));
+    }
+
+    /**
+     * Converts this node into a JSON String
+     *
+     * @return a non null String
+     */
+    public String toJson(){
+        try {
+            return JSON.writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(this);
+        }catch (JsonProcessingException exception){
+            throw new RuntimeException("Cannot convert node to json", exception);
+        }
     }
 
     /**

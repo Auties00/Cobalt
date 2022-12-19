@@ -21,6 +21,7 @@ import it.auties.whatsapp.model.message.standard.PollCreationMessage;
 import it.auties.whatsapp.model.message.standard.PollUpdateMessage;
 import it.auties.whatsapp.model.message.standard.ReactionMessage;
 import it.auties.whatsapp.model.poll.PollVoteMessage;
+import it.auties.whatsapp.model.request.Attributes;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.setting.EphemeralSetting;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
@@ -466,8 +467,15 @@ class MessageHandler implements JacksonProvider {
                     handlePollCreation(messageContainer, pollCreationMessage);
             case PollUpdateMessage pollUpdateMessage ->
                     handlePollUpdate(info, pollUpdateMessage);
+            case ReactionMessage reactionMessage -> handleReactionMessage(info, reactionMessage);
             default -> {}
         }
+    }
+
+    private void handleReactionMessage(MessageInfo info, ReactionMessage reactionMessage) {
+        info.ignore(true);
+        socketHandler.store().findMessageByKey(reactionMessage.key())
+                .ifPresent(message -> message.reactions().add(reactionMessage));
     }
 
     private void handlePollCreation(MessageContainer messageContainer, PollCreationMessage pollCreationMessage) {
@@ -491,11 +499,13 @@ class MessageHandler implements JacksonProvider {
                     "Original poll message has wrong type: %s", originalPollInfo.message().type());
             var originalPollMessage = (PollCreationMessage) originalPollInfo.message()
                     .content();
+            pollUpdateMessage.pollCreationMessage(originalPollMessage);
             var originalPollSender = originalPollInfo.senderJid()
                     .toUserJid()
                     .toString()
                     .getBytes(StandardCharsets.UTF_8);
             var modificationSenderJid = info.senderJid().toUserJid();
+            pollUpdateMessage.voter(modificationSenderJid);
             var modificationSender = modificationSenderJid.toString().getBytes(StandardCharsets.UTF_8);
             var secretName = pollUpdateMessage.secretName()
                     .getBytes(StandardCharsets.UTF_8);
@@ -508,8 +518,8 @@ class MessageHandler implements JacksonProvider {
             var additionalData = "%s\0%s".formatted(originalPollInfo.id(), modificationSenderJid)
                     .getBytes(StandardCharsets.UTF_8);
             var decrypted = AesGmc.cipher(
-                    pollUpdateMessage.vote().iv(),
-                    pollUpdateMessage.vote().payload(),
+                    pollUpdateMessage.encryptedMetadata().iv(),
+                    pollUpdateMessage.encryptedMetadata().payload(),
                     useCaseSecret,
                     additionalData,
                     false
@@ -521,10 +531,9 @@ class MessageHandler implements JacksonProvider {
                     .map(originalPollMessage.selectableOptionsHashesMap()::get)
                     .filter(Objects::nonNull)
                     .toList();
-            var oldSelectedOptions = originalPollMessage.selectedOptionsMap()
-                    .get(modificationSenderJid);
             originalPollMessage.selectedOptionsMap()
-                    .put(modificationSenderJid, toSingleList(selectedOptions, oldSelectedOptions));
+                    .put(modificationSenderJid, selectedOptions);
+            pollUpdateMessage.votes(selectedOptions);
         }catch (Throwable throwable){
             throw new RuntimeException("Cannot decode poll vote", throwable);
         }
@@ -551,7 +560,7 @@ class MessageHandler implements JacksonProvider {
             return;
         }
 
-        var retryAttributes = Attributes.empty()
+        var retryAttributes = Attributes.of()
                 .put("id", id)
                 .put("type", "retry")
                 .put("to", from)
@@ -680,21 +689,14 @@ class MessageHandler implements JacksonProvider {
 
         info.sender()
                 .ifPresent(sender -> sender.lastSeen(ZonedDateTime.now()));
-
         info.sender()
                 .filter(this::isTyping)
                 .ifPresent(sender -> sender.lastKnownPresence(ContactStatus.AVAILABLE));
 
-        if(info.message().type() == MessageType.REACTION){
-            info.ignore(true);
-            var reactionMessage = (ReactionMessage) info.message().content();
-            socketHandler.store().findMessageByKey(reactionMessage.key())
-                    .ifPresent(message -> message.reactions().add(reactionMessage));
-            socketHandler.onNewMessage(info);
-            return;
+        if(!info.ignore()) {
+            info.chat().unreadMessagesCount(info.chat().unreadMessagesCount() + 1);
         }
 
-        info.chat().unreadMessagesCount(info.chat().unreadMessagesCount() + 1);
         socketHandler.onNewMessage(info);
     }
 
