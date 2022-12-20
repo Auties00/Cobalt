@@ -17,7 +17,8 @@ import java.util.concurrent.CompletableFuture;
 import static java.lang.Long.parseLong;
 
 @RequiredArgsConstructor
-class AuthHandler implements JacksonProvider {
+class AuthHandler
+        implements JacksonProvider {
     private final SocketHandler socketHandler;
     private Handshake handshake;
     private CompletableFuture<Void> future;
@@ -25,8 +26,8 @@ class AuthHandler implements JacksonProvider {
     protected void createHandshake() {
         this.handshake = new Handshake(socketHandler.keys());
         handshake.updateHash(socketHandler.keys()
-                .ephemeralKeyPair()
-                .publicKey());
+                                     .ephemeralKeyPair()
+                                     .publicKey());
     }
 
     @SneakyThrows
@@ -47,8 +48,8 @@ class AuthHandler implements JacksonProvider {
         handshake.cipher(serverHello.payload(), false);
 
         var encodedKey = handshake.cipher(socketHandler.keys()
-                .noiseKeyPair()
-                .publicKey(), true);
+                                                  .noiseKeyPair()
+                                                  .publicKey(), true);
         var sharedPrivate = Curve25519.sharedKey(serverHello.ephemeral(), socketHandler.keys()
                 .noiseKeyPair()
                 .privateKey());
@@ -75,9 +76,14 @@ class AuthHandler implements JacksonProvider {
     }
 
     private ClientPayload finishUserPayload(ClientPayload.ClientPayloadBuilder builder) {
-        if (socketHandler.store().userCompanionJid() != null) {
-            return builder.username(parseLong(socketHandler.store().userCompanionJid().user()))
-                    .device(socketHandler.store().userCompanionJid().device())
+        if (socketHandler.store()
+                .userCompanionJid() != null) {
+            return builder.username(parseLong(socketHandler.store()
+                                                      .userCompanionJid()
+                                                      .user()))
+                    .device(socketHandler.store()
+                                    .userCompanionJid()
+                                    .device())
                     .build();
         }
 
@@ -88,7 +94,7 @@ class AuthHandler implements JacksonProvider {
     private UserAgent createUserAgent() {
         return UserAgent.builder()
                 .appVersion(socketHandler.options()
-                        .version())
+                                    .version())
                 .platform(UserAgent.UserAgentPlatform.WEB)
                 .releaseChannel(UserAgent.UserAgentReleaseChannel.RELEASE)
                 .build();
@@ -98,35 +104,35 @@ class AuthHandler implements JacksonProvider {
     private CompanionData createRegisterData() {
         return CompanionData.builder()
                 .buildHash(socketHandler.options()
-                        .version()
-                        .toHash())
+                                   .version()
+                                   .toHash())
                 .companion(PROTOBUF.writeValueAsBytes(createCompanionProps()))
                 .id(BytesHelper.intToBytes(socketHandler.keys()
-                        .id(), 4))
+                                                   .id(), 4))
                 .keyType(BytesHelper.intToBytes(SignalSpecification.KEY_TYPE, 1))
                 .identifier(socketHandler.keys()
-                        .identityKeyPair()
-                        .publicKey())
+                                    .identityKeyPair()
+                                    .publicKey())
                 .signatureId(socketHandler.keys()
-                        .signedKeyPair()
-                        .encodedId())
+                                     .signedKeyPair()
+                                     .encodedId())
                 .signaturePublicKey(socketHandler.keys()
-                        .signedKeyPair()
-                        .keyPair()
-                        .publicKey())
+                                            .signedKeyPair()
+                                            .keyPair()
+                                            .publicKey())
                 .signature(socketHandler.keys()
-                        .signedKeyPair()
-                        .signature())
+                                   .signedKeyPair()
+                                   .signature())
                 .build();
     }
 
     private Companion createCompanionProps() {
         return Companion.builder()
                 .os(socketHandler.options()
-                        .description())
+                            .description())
                 .platformType(Companion.CompanionPropsPlatformType.DESKTOP)
                 .requireFullSync(socketHandler.options()
-                        .historyLength() == HistoryLength.ONE_YEAR)
+                                         .historyLength() == HistoryLength.ONE_YEAR)
                 .build();
     }
 

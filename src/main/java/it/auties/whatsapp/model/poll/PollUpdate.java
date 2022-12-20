@@ -10,13 +10,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
+
 @AllArgsConstructor
 @Data
 @Accessors(fluent = true)
 @Jacksonized
 @Builder
 @ProtobufName("PollUpdate")
-public class PollUpdate implements ProtobufMessage {
+public class PollUpdate
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, name = "pollUpdateMessageKey", type = ProtobufType.MESSAGE)
     private MessageKey pollUpdateMessageKey;
 

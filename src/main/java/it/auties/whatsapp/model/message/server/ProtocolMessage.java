@@ -25,7 +25,8 @@ import static it.auties.protobuf.base.ProtobufType.UINT64;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class ProtocolMessage implements ServerMessage {
+public final class ProtocolMessage
+        implements ServerMessage {
     /**
      * The key of message that this server message regards
      */
@@ -93,7 +94,8 @@ public final class ProtocolMessage implements ServerMessage {
      */
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum ProtocolMessageType implements ProtobufMessage {
+    public enum ProtocolMessageType
+            implements ProtobufMessage {
         /**
          * A {@link ProtocolMessage} that notifies that a message was deleted for everyone in a chat
          */

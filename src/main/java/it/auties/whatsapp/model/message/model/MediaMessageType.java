@@ -10,7 +10,8 @@ import lombok.experimental.Accessors;
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum MediaMessageType implements ProtobufMessage {
+public enum MediaMessageType
+        implements ProtobufMessage {
     /**
      * The message is an image
      */
@@ -58,7 +59,7 @@ public enum MediaMessageType implements ProtobufMessage {
         return this == STICKER ?
                 IMAGE.path() :
                 "mms/%s".formatted(this.name()
-                        .toLowerCase());
+                                           .toLowerCase());
     }
 
     /**
@@ -66,8 +67,8 @@ public enum MediaMessageType implements ProtobufMessage {
      *
      * @return a non-null string
      */
-    public String fileExtension(){
-        return switch (this){
+    public String fileExtension() {
+        return switch (this) {
             case IMAGE -> "jpg";
             case DOCUMENT -> "";
             case AUDIO -> "mpeg";

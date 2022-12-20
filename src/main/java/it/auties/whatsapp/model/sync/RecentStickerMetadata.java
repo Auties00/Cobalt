@@ -8,18 +8,19 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.BOOL;
 import static it.auties.protobuf.base.ProtobufType.STRING;
+
 @AllArgsConstructor
 @Data
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("StickerMetadata")
-public class RecentStickerMetadata implements ProtobufMessage {
+public class RecentStickerMetadata
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = STRING)
     private String mediaDirectPath;
 

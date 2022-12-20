@@ -8,7 +8,8 @@ import lombok.NonNull;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
-public record SignalSignedKeyPair(int id, @NonNull SignalKeyPair keyPair, byte[] signature) implements ISignalKeyPair {
+public record SignalSignedKeyPair(int id, @NonNull SignalKeyPair keyPair, byte[] signature)
+        implements ISignalKeyPair {
     public static SignalSignedKeyPair of(int id, @NonNull SignalKeyPair identityKeyPair) {
         var keyPair = SignalKeyPair.random();
         var signature = Curve25519.sign(identityKeyPair.privateKey(), keyPair.encodedPublicKey(), true);
@@ -51,6 +52,6 @@ public record SignalSignedKeyPair(int id, @NonNull SignalKeyPair keyPair, byte[]
 
     public Node toNode() {
         return Node.ofChildren("skey", Node.of("id", encodedId()), Node.of("value", publicKey()),
-                Node.of("signature", signature()));
+                               Node.of("signature", signature()));
     }
 }

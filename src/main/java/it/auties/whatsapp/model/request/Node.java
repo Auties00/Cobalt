@@ -17,7 +17,8 @@ import static java.util.Objects.requireNonNull;
  * @param attributes  a non-null Map that describes the metadata of this object
  * @param content     a nullable object: a List of {@link Node}, a {@link String} or a {@link Number}
  */
-public record Node(@NonNull String description, @NonNull Attributes attributes, Object content) implements JacksonProvider {
+public record Node(@NonNull String description, @NonNull Attributes attributes, Object content)
+        implements JacksonProvider {
     /**
      * Constructs a Node that only provides a non-null tag
      *
@@ -94,7 +95,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @return a new node with the above characteristics
      */
     public static Node ofChildren(@NonNull String description, @NonNull Map<String, Object> attributes,
-                                  Collection<Node> children) {
+            Collection<Node> children) {
         return new Node(description, Attributes.ofNullable(attributes), requireNonNullNodes(children));
     }
 
@@ -107,19 +108,19 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @return a new node with the above characteristics
      */
     public static Node ofChildren(@NonNull String description, @NonNull Map<String, Object> attributes,
-                                  Node... children) {
+            Node... children) {
         return ofChildren(description, attributes, Arrays.asList(children));
     }
 
     private static List<Node> requireNonNullNodes(Collection<Node> nodes) {
-        if(nodes == null){
+        if (nodes == null) {
             return null;
         }
 
         var results = nodes.stream()
                 .filter(Objects::nonNull)
                 .toList();
-        if(results.isEmpty()){
+        if (results.isEmpty()) {
             return null;
         }
 
@@ -218,7 +219,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      * @param description the non-null description to check against
      * @return a boolean
      */
-    public boolean hasDescription(@NonNull String description){
+    public boolean hasDescription(@NonNull String description) {
         return Objects.equals(description(), description);
     }
 
@@ -305,7 +306,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
     public boolean equals(Object other) {
         return other instanceof Node that && Objects.equals(this.description(), that.description()) && Objects.equals(
                 this.attributes(), that.attributes()) && (Objects.equals(this.content(),
-                that.content()) || this.content() instanceof byte[] theseBytes && that.content() instanceof byte[] thoseBytes && Arrays.equals(
+                                                                         that.content()) || this.content() instanceof byte[] theseBytes && that.content() instanceof byte[] thoseBytes && Arrays.equals(
                 theseBytes, thoseBytes));
     }
 
@@ -314,11 +315,11 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
      *
      * @return a non null String
      */
-    public String toJson(){
+    public String toJson() {
         try {
             return JSON.writerWithDefaultPrettyPrinter()
                     .writeValueAsString(this);
-        }catch (JsonProcessingException exception){
+        } catch (JsonProcessingException exception) {
             throw new RuntimeException("Cannot convert node to json", exception);
         }
     }
@@ -340,8 +341,8 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
         var content = this.content == null ?
                 "" :
                 ", content=%s".formatted(this.content instanceof byte[] bytes ?
-                        Arrays.toString(bytes) :
-                        this.content);
+                                                 Arrays.toString(bytes) :
+                                                 this.content);
         return "Node[%s%s%s]".formatted(description, attributes, content);
     }
 }

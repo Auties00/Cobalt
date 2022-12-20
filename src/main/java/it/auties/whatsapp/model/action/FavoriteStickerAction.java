@@ -17,7 +17,8 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class FavoriteStickerAction implements Action {
+public final class FavoriteStickerAction
+        implements Action {
     /**
      * The direct path to the sticker
      */

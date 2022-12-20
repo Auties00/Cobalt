@@ -1,26 +1,25 @@
-package it.auties.whatsapp.model.sync;
+package it.auties.whatsapp.model.setting;
 
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.chat.ChatMediaVisibility;
 import it.auties.whatsapp.model.chat.ChatWallpaper;
-import it.auties.whatsapp.model.setting.AutoDownloadSettings;
-import it.auties.whatsapp.model.setting.AvatarUserSettings;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+
 @AllArgsConstructor
 @Data
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class GlobalSettings implements ProtobufMessage {
+public class GlobalSettings
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = ChatWallpaper.class)
     private ChatWallpaper lightThemeWallpaper;
 
@@ -40,16 +39,16 @@ public class GlobalSettings implements ProtobufMessage {
     private AutoDownloadSettings autoDownloadRoaming;
 
     @ProtobufProperty(index = 7, name = "showIndividualNotificationsPreview", type = ProtobufType.BOOL)
-    private Boolean showIndividualNotificationsPreview;
+    private boolean showIndividualNotificationsPreview;
 
     @ProtobufProperty(index = 8, name = "showGroupNotificationsPreview", type = ProtobufType.BOOL)
-    private Boolean showGroupNotificationsPreview;
+    private boolean showGroupNotificationsPreview;
 
     @ProtobufProperty(index = 9, name = "disappearingModeDuration", type = ProtobufType.INT32)
-    private Integer disappearingModeDuration;
+    private int disappearingModeDuration;
 
     @ProtobufProperty(index = 10, name = "disappearingModeTimestamp", type = ProtobufType.INT64)
-    private Long disappearingModeTimestamp;
+    private long disappearingModeTimestamp;
 
     @ProtobufProperty(index = 11, name = "avatarUserSettings", type = ProtobufType.MESSAGE)
     private AvatarUserSettings avatarUserSettings;

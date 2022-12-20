@@ -13,7 +13,7 @@ public record MediaKeys(byte[] mediaKey, byte[] iv, byte[] cipherKey, byte[] mac
 
     public static MediaKeys random(@NonNull String type) {
         return of(Bytes.ofRandom(32)
-                .toByteArray(), type);
+                          .toByteArray(), type);
     }
 
     public static MediaKeys of(byte @NonNull [] key, @NonNull String type) {

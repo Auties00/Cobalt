@@ -19,28 +19,31 @@ import java.util.concurrent.CompletableFuture;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-final class SmileFile implements JacksonProvider {
+final class SmileFile
+        implements JacksonProvider {
     @NonNull
     private final Path file;
 
-    private SmileFile(@NonNull Path file){
+    private SmileFile(@NonNull Path file) {
         try {
             this.file = file;
             Files.createDirectories(file.getParent());
-        }catch (IOException exception){
+        } catch (IOException exception) {
             throw new UncheckedIOException("Cannot create smile file", exception);
         }
     }
 
     public static SmileFile of(@NonNull String path, @NonNull Object... args) {
-        return of(LocalFileSystem.of(path.formatted(args)).toAbsolutePath());
+        return of(LocalFileSystem.of(path.formatted(args))
+                          .toAbsolutePath());
     }
 
     public static SmileFile of(Path path) {
         return new SmileFile(path);
     }
 
-    public <T> Optional<T> read(Class<T> clazz) throws IOException {
+    public <T> Optional<T> read(Class<T> clazz)
+            throws IOException {
         if (Files.notExists(file)) {
             return Optional.empty();
         }
@@ -60,14 +63,14 @@ final class SmileFile implements JacksonProvider {
 
     private void writeSync(Object input) {
         try {
-            if(Files.notExists(file)){
+            if (Files.notExists(file)) {
                 Files.createFile(file);
             }
-        }catch (IOException exception){
+        } catch (IOException exception) {
             throw new UncheckedIOException("Cannot prepare file for write", exception);
         }
 
-        try(var channel = FileChannel.open(file, StandardOpenOption.WRITE)) {
+        try (var channel = FileChannel.open(file, StandardOpenOption.WRITE)) {
             var lock = channel.lock();
             var result = new ByteArrayOutputStream();
             var gzipOutputStream = new GZIPOutputStream(result);
@@ -75,9 +78,9 @@ final class SmileFile implements JacksonProvider {
             gzipOutputStream.finish();
             channel.write(ByteBuffer.wrap(result.toByteArray()));
             lock.release();
-        }catch (IOException | NonWritableChannelException exception){
+        } catch (IOException | NonWritableChannelException exception) {
             throw new RuntimeException("Cannot write to file", exception);
-        }catch (OverlappingFileLockException ignored){
+        } catch (OverlappingFileLockException ignored) {
 
         }
     }

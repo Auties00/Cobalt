@@ -4,8 +4,8 @@ import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.protobuf.base.ProtobufType;
-import it.auties.whatsapp.model.poll.PollUpdateEncryptedMetadata;
 import it.auties.whatsapp.model.poll.PollOption;
+import it.auties.whatsapp.model.poll.PollUpdateEncryptedMetadata;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static it.auties.protobuf.base.ProtobufType.*;
+
 /**
  * A model class that represents data about a button
  */
@@ -25,7 +26,8 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("MsgOpaqueData")
-public class ButtonOpaqueData implements ProtobufMessage {
+public class ButtonOpaqueData
+        implements ProtobufMessage {
     /**
      * The body of the button
      */

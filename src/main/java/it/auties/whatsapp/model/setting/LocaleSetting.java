@@ -14,7 +14,8 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class LocaleSetting implements Setting {
+public final class LocaleSetting
+        implements Setting {
     @ProtobufProperty(index = 1, type = STRING)
     private String locale;
 

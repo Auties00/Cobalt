@@ -20,6 +20,7 @@ import java.util.Optional;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.STRING;
+
 /**
  * A container for all types of messages known currently to WhatsappWeb.
  * <p>
@@ -41,7 +42,8 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("Message")
-public class MessageContainer implements ProtobufMessage {
+public class MessageContainer
+        implements ProtobufMessage {
     private static final EmptyMessage EMPTY_MESSAGE = new EmptyMessage();
 
     @ProtobufProperty(index = 1, type = STRING)
@@ -311,7 +313,8 @@ public class MessageContainer implements ProtobufMessage {
     public static <T extends Message> MessageContainerBuilder builder(@NonNull T message) {
         var builder = MessageContainer.builder();
         switch (message) {
-            case EmptyMessage ignored -> {}
+            case EmptyMessage ignored -> {
+            }
             case SenderKeyDistributionMessage senderKeyDistribution ->
                     builder.senderKeyDistribution(senderKeyDistribution);
             case ImageMessage image -> builder.image(image);
@@ -347,11 +350,13 @@ public class MessageContainer implements ProtobufMessage {
             case ReactionMessage reaction -> builder.reaction(reaction);
             case StickerSyncRMRMessage stickerSync -> builder.stickerSync(stickerSync);
             case DeviceSentMessage deviceSent -> builder.deviceSent(deviceSent);
-            case InteractiveResponseMessage interactiveResponseMessage -> builder.interactiveResponse(interactiveResponseMessage);
+            case InteractiveResponseMessage interactiveResponseMessage ->
+                    builder.interactiveResponse(interactiveResponseMessage);
             case PollCreationMessage pollCreationMessage -> builder.pollCreation(pollCreationMessage);
             case PollUpdateMessage pollUpdateMessage -> builder.pollUpdate(pollUpdateMessage);
             case KeepInChatMessage keepInChatMessage -> builder.keepInChat(keepInChatMessage);
-            case RequestPhoneNumberMessage requestPhoneNumberMessage -> builder.requestPhoneNumber(requestPhoneNumberMessage);
+            case RequestPhoneNumberMessage requestPhoneNumberMessage ->
+                    builder.requestPhoneNumber(requestPhoneNumberMessage);
             case EncryptedReactionMessage encReactionMessage -> builder.encryptedReaction(encReactionMessage);
             default -> throw new IllegalStateException("Unsupported message: " + message);
         }
@@ -364,7 +369,7 @@ public class MessageContainer implements ProtobufMessage {
      *
      * @return a non-null builder
      */
-    public static MessageContainerBuilder builder(){
+    public static MessageContainerBuilder builder() {
         return new MessageContainerBuilder();
     }
 
@@ -387,8 +392,7 @@ public class MessageContainer implements ProtobufMessage {
      * @return a non-null container
      */
     public static <T extends Message> MessageContainer of(@NonNull T message) {
-        return builder(message)
-                .build();
+        return builder(message).build();
     }
 
     /**
@@ -503,7 +507,8 @@ public class MessageContainer implements ProtobufMessage {
         if (this.product != null)
             return product;
         if (this.deviceSent != null)
-            return deviceSent.message().content();
+            return deviceSent.message()
+                    .content();
         if (this.deviceSync != null)
             return deviceSync;
         if (this.list != null)
@@ -622,7 +627,7 @@ public class MessageContainer implements ProtobufMessage {
      * @param type the non-null type to check against
      * @return a boolean
      */
-    public boolean hasType(@NonNull MessageType type){
+    public boolean hasType(@NonNull MessageType type) {
         return content().type() == type;
     }
 
@@ -632,7 +637,7 @@ public class MessageContainer implements ProtobufMessage {
      * @param category the non-null category to check against
      * @return a boolean
      */
-    public boolean hasCategory(@NonNull MessageCategory category){
+    public boolean hasCategory(@NonNull MessageCategory category) {
         return content().category() == category;
     }
 
@@ -642,9 +647,11 @@ public class MessageContainer implements ProtobufMessage {
      * @return a non-null type
      */
     public MessageType type() {
-        return ephemeral != null ? MessageType.EPHEMERAL
-                : viewOnce != null ? MessageType.VIEW_ONCE
-                : content().type();
+        return ephemeral != null ?
+                MessageType.EPHEMERAL :
+                viewOnce != null ?
+                        MessageType.VIEW_ONCE :
+                        content().type();
     }
 
     /**
@@ -661,7 +668,7 @@ public class MessageContainer implements ProtobufMessage {
      *
      * @return a non-null category
      */
-    public MessageCategory category(){
+    public MessageCategory category() {
         return content().category();
     }
 
@@ -705,10 +712,10 @@ public class MessageContainer implements ProtobufMessage {
      *
      * @return a non-null message container
      */
-    public MessageContainer unbox(){
+    public MessageContainer unbox() {
         if (this.deviceSent != null)
             return deviceSent.message();
-        if(viewOnce != null)
+        if (viewOnce != null)
             return viewOnce.content();
         if (this.ephemeral != null)
             return ephemeral.content();

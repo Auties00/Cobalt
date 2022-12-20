@@ -20,7 +20,8 @@ import static it.auties.protobuf.base.ProtobufType.UINT32;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class HydratedButtonTemplate implements ProtobufMessage {
+public class HydratedButtonTemplate
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = HydratedQuickReplyButton.class)
     private HydratedQuickReplyButton quickReplyButton;
 
@@ -95,7 +96,8 @@ public class HydratedButtonTemplate implements ProtobufMessage {
      */
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum ButtonType implements ProtobufMessage {
+    public enum ButtonType
+            implements ProtobufMessage {
         /**
          * No button
          */

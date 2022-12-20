@@ -7,7 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.STRING;
@@ -20,7 +19,8 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder(access = AccessLevel.PROTECTED)
 @Jacksonized
 @Accessors(fluent = true)
-public class ProductBody implements ProtobufMessage {
+public class ProductBody
+        implements ProtobufMessage {
     /**
      * The body of this product
      */

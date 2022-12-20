@@ -30,7 +30,9 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class ListMessage extends ContextualMessage implements ButtonMessage {
+public final class ListMessage
+        extends ContextualMessage
+        implements ButtonMessage {
     /**
      * The title of this message
      */
@@ -78,7 +80,7 @@ public final class ListMessage extends ContextualMessage implements ButtonMessag
      */
     @ProtobufProperty(index = 8, type = MESSAGE, implementation = ContextInfo.class)
     @Default
-    private ContextInfo contextInfo = new ContextInfo();  
+    private ContextInfo contextInfo = new ContextInfo();
 
     @Override
     public MessageType type() {

@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static it.auties.protobuf.base.ProtobufType.*;
+
 /**
  * A model class that holds the information related to a {@link ContextualMessage}.
  */
@@ -25,7 +26,8 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class ContextInfo implements Info {
+public final class ContextInfo
+        implements Info {
     /**
      * The jid of the message that this ContextualMessage quotes
      */
@@ -212,8 +214,7 @@ public final class ContextInfo implements Info {
      * @param quotedMessage the message to quote
      * @return a non-null context info
      */
-    public static ContextInfo of(@NonNull
-    MessageMetadataProvider quotedMessage) {
+    public static ContextInfo of(@NonNull MessageMetadataProvider quotedMessage) {
         return new ContextInfo(quotedMessage);
     }
 
@@ -259,7 +260,8 @@ public final class ContextInfo implements Info {
      * @return an optional
      */
     public Optional<ContactJid> quotedMessageChatJid() {
-        return Optional.ofNullable(quotedMessageChatJid).or(this::quotedMessageSenderJid);
+        return Optional.ofNullable(quotedMessageChatJid)
+                .or(this::quotedMessageSenderJid);
     }
 
     /**
@@ -277,8 +279,6 @@ public final class ContextInfo implements Info {
      * @return a boolean
      */
     public boolean hasQuotedMessage() {
-        return quotedMessageId().isPresent()
-                && quotedMessage().isPresent()
-                && quotedMessageChat().isPresent();
+        return quotedMessageId().isPresent() && quotedMessage().isPresent() && quotedMessageChat().isPresent();
     }
 }

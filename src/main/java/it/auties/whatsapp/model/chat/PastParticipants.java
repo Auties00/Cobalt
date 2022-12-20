@@ -20,7 +20,8 @@ import java.util.List;
 @Jacksonized
 @Builder
 @ProtobufName("PastParticipants")
-public class PastParticipants implements ProtobufMessage {
+public class PastParticipants
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, name = "groupJid", type = ProtobufType.STRING)
     private ContactJid groupJid;
 

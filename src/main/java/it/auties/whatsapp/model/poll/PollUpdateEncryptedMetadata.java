@@ -16,7 +16,8 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @ProtobufName("PollEncValue")
-public class PollUpdateEncryptedMetadata implements ProtobufMessage {
+public class PollUpdateEncryptedMetadata
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, name = "encPayload", type = ProtobufType.BYTES)
     private byte[] payload;
 

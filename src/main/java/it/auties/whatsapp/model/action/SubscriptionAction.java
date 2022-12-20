@@ -15,7 +15,8 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @ProtobufName("SubscriptionAction")
-public final class SubscriptionAction implements Action {
+public final class SubscriptionAction
+        implements Action {
     @ProtobufProperty(index = 1, name = "isDeactivated", type = ProtobufType.BOOL)
     private boolean deactivated;
 

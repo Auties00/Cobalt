@@ -7,7 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.ArrayList;
@@ -23,7 +22,8 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class BusinessNativeFlow implements ProtobufMessage {
+public final class BusinessNativeFlow
+        implements ProtobufMessage {
     /**
      * The buttons of this flow
      */

@@ -13,7 +13,8 @@ import java.util.NoSuchElementException;
 
 import static java.util.Map.of;
 
-public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) implements SignalSpecification {
+public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys)
+        implements SignalSpecification {
     public Node encrypt(byte[] data) {
         var currentState = keys.findSenderKeyByName(name)
                 .findState();
@@ -21,12 +22,9 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) imple
                 .toMessageKey();
 
         var ciphertext = AesCbc.encrypt(messageKey.iv(), data, messageKey.cipherKey());
-        var senderKeyMessage = new SenderKeyMessage(
-                currentState.id(),
-                messageKey.iteration(),
-                ciphertext,
-                currentState.signingKey().privateKey()
-        );
+        var senderKeyMessage = new SenderKeyMessage(currentState.id(), messageKey.iteration(), ciphertext,
+                                                    currentState.signingKey()
+                                                            .privateKey());
         var next = currentState.chainKey()
                 .next();
         currentState.chainKey(next);
@@ -37,11 +35,11 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) imple
         var record = keys.findSenderKeyByName(name);
         var senderKeyMessage = SenderKeyMessage.ofSerialized(data);
         var senderKeyStates = record.findStateById(senderKeyMessage.id());
-        for(var senderKeyState : senderKeyStates){
+        for (var senderKeyState : senderKeyStates) {
             try {
                 var senderKey = getSenderKey(senderKeyState, senderKeyMessage.iteration());
                 return AesCbc.decrypt(senderKey.iv(), senderKeyMessage.cipherText(), senderKey.cipherKey());
-            }catch (Throwable ignored){
+            } catch (Throwable ignored) {
 
             }
         }
@@ -50,10 +48,13 @@ public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) imple
     }
 
     private SenderMessageKey getSenderKey(SenderKeyState senderKeyState, int iteration) {
-        if (senderKeyState.chainKey().iteration() > iteration) {
+        if (senderKeyState.chainKey()
+                .iteration() > iteration) {
             return senderKeyState.findSenderMessageKey(iteration)
-                    .orElseThrow(() -> new NoSuchElementException("Received message with old counter: got %s, expected > %s"
-                            .formatted(iteration, senderKeyState.chainKey().iteration())));
+                    .orElseThrow(() -> new NoSuchElementException(
+                            "Received message with old counter: got %s, expected > %s".formatted(iteration,
+                                                                                                 senderKeyState.chainKey()
+                                                                                                         .iteration())));
         }
 
         var lastChainKey = senderKeyState.chainKey();

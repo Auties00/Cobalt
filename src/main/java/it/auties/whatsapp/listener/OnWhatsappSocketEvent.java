@@ -3,7 +3,8 @@ package it.auties.whatsapp.listener;
 import it.auties.whatsapp.api.SocketEvent;
 import it.auties.whatsapp.api.Whatsapp;
 
-public interface OnWhatsappSocketEvent extends Listener {
+public interface OnWhatsappSocketEvent
+        extends Listener {
     /**
      * Called when an event regarding the underlying is fired
      *

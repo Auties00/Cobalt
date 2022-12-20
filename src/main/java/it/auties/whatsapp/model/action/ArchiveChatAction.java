@@ -7,7 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.BOOL;
@@ -21,7 +20,8 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Builder(access = AccessLevel.PROTECTED)
 @Jacksonized
 @Accessors(fluent = true)
-public final class ArchiveChatAction implements Action {
+public final class ArchiveChatAction
+        implements Action {
     /**
      * Whether the chat was archived
      */

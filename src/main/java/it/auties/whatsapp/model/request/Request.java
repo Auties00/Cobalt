@@ -60,7 +60,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     public static Request of(@NonNull Object body) {
         try {
             return new Request(null, PROTOBUF.writeValueAsBytes(body));
-        }catch (IOException exception){
+        } catch (IOException exception) {
             throw new IllegalArgumentException("Cannot encode %s".formatted(body), exception);
         }
     }
@@ -70,8 +70,10 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
             return;
         }
 
-        var exception = body instanceof Node node ? new ErroneousNodeRequestException("Node timed out(%s), no response from WhatsApp".formatted(node), node, caller)
-                : new ErroneousBinaryRequestException("Binary timed out, no response from WhatsApp", body, caller);
+        var exception = body instanceof Node node ?
+                new ErroneousNodeRequestException("Node timed out(%s), no response from WhatsApp".formatted(node), node,
+                                                  caller) :
+                new ErroneousBinaryRequestException("Binary timed out, no response from WhatsApp", body, caller);
         future.completeExceptionally(exception);
     }
 
@@ -82,7 +84,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @param store   the store
      */
     public CompletableFuture<Node> sendWithPrologue(@NonNull Session session, @NonNull Keys keys,
-                                                    @NonNull Store store) {
+            @NonNull Store store) {
         return send(session, keys, store, true, false);
     }
 
@@ -105,9 +107,9 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @return this request
      */
     public CompletableFuture<Void> sendWithNoResponse(@NonNull Session session, @NonNull Keys keys,
-                                                      @NonNull Store store) {
-        return send(session, keys, store, false, false)
-                .thenRunAsync(() -> {});
+            @NonNull Store store) {
+        return send(session, keys, store, false, false).thenRunAsync(() -> {
+        });
     }
 
     /**
@@ -120,12 +122,12 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * @return this request
      */
     public CompletableFuture<Node> send(@NonNull Session session, @NonNull Keys keys, @NonNull Store store,
-                                        boolean prologue, boolean response) {
+            boolean prologue, boolean response) {
         try {
             var ciphered = encryptMessage(keys);
             var buffer = Bytes.of(prologue ?
-                            PROLOGUE :
-                            new byte[0])
+                                          PROLOGUE :
+                                          new byte[0])
                     .appendInt(ciphered.length >> 16)
                     .appendShort(65535 & ciphered.length)
                     .append(ciphered)
@@ -133,7 +135,8 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
             session.getAsyncRemote()
                     .sendBinary(buffer, result -> handleSendResult(store, result, response));
         } catch (Exception exception) {
-            future.completeExceptionally(new IOException("Cannot send %s, an unknown exception occurred".formatted(this), exception));
+            future.completeExceptionally(
+                    new IOException("Cannot send %s, an unknown exception occurred".formatted(this), exception));
         }
 
         return future;
@@ -152,8 +155,8 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
 
         if (exceptionally) {
             future.completeExceptionally(
-                    new ErroneousNodeRequestException("Cannot process request %s with %s".formatted(this, response), response,
-                            caller));
+                    new ErroneousNodeRequestException("Cannot process request %s with %s".formatted(this, response),
+                                                      response, caller));
             return;
         }
 
@@ -164,7 +167,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
         if (!result.isOK()) {
             future.completeExceptionally(
                     new IOException("Cannot send request %s, erroneous send result".formatted(this),
-                            result.getException()));
+                                    result.getException()));
             return;
         }
 
@@ -189,6 +192,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
             return body;
         }
 
-        return AesGmc.cipher(keys.writeCounter(true), body, keys.writeKey().toByteArray(), true);
+        return AesGmc.cipher(keys.writeCounter(true), body, keys.writeKey()
+                .toByteArray(), true);
     }
 }

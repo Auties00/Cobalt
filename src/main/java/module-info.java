@@ -43,10 +43,8 @@ open module it.auties.whatsappweb4j {
     exports it.auties.whatsapp.model.message.model;
     exports it.auties.whatsapp.model.message.payment;
     exports it.auties.whatsapp.model.message.standard;
-    exports it.auties.whatsapp.model.signal.auth;
     exports it.auties.whatsapp.model.product;
     exports it.auties.whatsapp.model.setting;
-    exports it.auties.whatsapp.model.sync;
     exports it.auties.whatsapp.model.request;
     exports it.auties.whatsapp.model.response;
     exports it.auties.whatsapp.model.payment;
@@ -57,6 +55,7 @@ open module it.auties.whatsappweb4j {
     exports it.auties.whatsapp.util;
     exports it.auties.whatsapp.model.privacy;
     exports it.auties.whatsapp.model.location;
+    exports it.auties.whatsapp.model.poll;
 
     uses ControllerProvider;
 }

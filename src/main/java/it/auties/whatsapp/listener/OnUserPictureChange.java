@@ -2,7 +2,8 @@ package it.auties.whatsapp.listener;
 
 import java.net.URI;
 
-public interface OnUserPictureChange extends Listener {
+public interface OnUserPictureChange
+        extends Listener {
     /**
      * Called when the companion's picture changes
      *

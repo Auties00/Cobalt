@@ -7,7 +7,6 @@ import it.auties.whatsapp.model.media.AttachmentProvider;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -21,7 +20,8 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class HistorySyncNotification implements ProtobufMessage, AttachmentProvider {
+public final class HistorySyncNotification
+        implements ProtobufMessage, AttachmentProvider {
     @ProtobufProperty(index = 1, type = BYTES)
     private byte[] mediaSha256;
 

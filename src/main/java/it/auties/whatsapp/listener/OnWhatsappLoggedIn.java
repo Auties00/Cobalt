@@ -1,11 +1,11 @@
 package it.auties.whatsapp.listener;
 
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.socket.SocketHandler;
 
 import java.util.Collection;
 
-public interface OnWhatsappLoggedIn extends Listener {
+public interface OnWhatsappLoggedIn
+        extends Listener {
     /**
      * Called when the socket successfully establishes a connection and logs in into an account.
      * When this event is called, any data, including chats and contact, is not guaranteed to be already in memory.

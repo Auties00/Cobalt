@@ -52,7 +52,7 @@ public record BusinessCatalogEntry(@NonNull String id, @NonNull URI encryptedIma
                 .flatMap(Node::contentAsString)
                 .orElseThrow(() -> new NoSuchElementException("Missing currency for catalog entry"));
         return new BusinessCatalogEntry(id, encryptedImage, statusInfo, availability, name, sellerId, uri, description,
-                price, currency, hidden);
+                                        price, currency, hidden);
     }
 
     public enum ReviewStatus {

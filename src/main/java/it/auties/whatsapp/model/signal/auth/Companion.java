@@ -9,7 +9,6 @@ import it.auties.whatsapp.model.sync.HistorySyncConfig;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -17,13 +16,15 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.Arrays;
 
 import static it.auties.protobuf.base.ProtobufType.*;
+
 @AllArgsConstructor
 @Data
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("DeviceProps")
-public class Companion implements ProtobufMessage {
+public class Companion
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = STRING)
     private String os;
 
@@ -63,7 +64,10 @@ public class Companion implements ProtobufMessage {
 
         @JsonCreator
         public static CompanionPropsPlatformType of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(null);
         }
     }
 }

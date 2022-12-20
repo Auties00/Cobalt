@@ -34,7 +34,9 @@ import static java.util.Objects.requireNonNullElseGet;
 @Jacksonized
 @EqualsAndHashCode(callSuper = true)
 @Accessors(fluent = true)
-public final class InteractiveMessage extends ContextualMessage implements ButtonMessage {
+public final class InteractiveMessage
+        extends ContextualMessage
+        implements ButtonMessage {
     /**
      * Product header
      */
@@ -76,7 +78,7 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
      */
     @ProtobufProperty(index = 15, type = MESSAGE, implementation = ContextInfo.class)
     @Default
-    private ContextInfo contextInfo = new ContextInfo();  
+    private ContextInfo contextInfo = new ContextInfo();
 
     /**
      * Constructs a new builder to create an interactive message with a shop
@@ -90,7 +92,7 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
      */
     @Builder(builderClassName = "ShopInteractiveMessageBuilder", builderMethodName = "withShopMessageBuilder")
     private static InteractiveMessage shopBuilder(ProductHeader header, String body, String footer,
-                                                  BusinessShop content, ContextInfo contextInfo) {
+            BusinessShop content, ContextInfo contextInfo) {
         return InteractiveMessage.builder()
                 .header(header)
                 .body(ProductBody.of(body))
@@ -112,7 +114,7 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
      */
     @Builder(builderClassName = "CollectionInteractiveMessageBuilder", builderMethodName = "withCollectionMessageBuilder")
     private static InteractiveMessage collectionBuilder(ProductHeader header, String body, String footer,
-                                                        BusinessCollection content, ContextInfo contextInfo) {
+            BusinessCollection content, ContextInfo contextInfo) {
         return InteractiveMessage.builder()
                 .header(header)
                 .body(ProductBody.of(body))
@@ -134,7 +136,7 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
      */
     @Builder(builderClassName = "NativeFlowInteractiveMessageBuilder", builderMethodName = "withNativeFlowMessageBuilder")
     private static InteractiveMessage nativeFlowBuilder(ProductHeader header, String body, String footer,
-                                                        BusinessNativeFlow content, ContextInfo contextInfo) {
+            BusinessNativeFlow content, ContextInfo contextInfo) {
         return InteractiveMessage.builder()
                 .header(header)
                 .body(ProductBody.of(body))
@@ -174,7 +176,8 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
      */
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum ContentType implements ProtobufMessage {
+    public enum ContentType
+            implements ProtobufMessage {
         /**
          * No content
          */

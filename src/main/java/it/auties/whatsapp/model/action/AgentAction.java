@@ -15,7 +15,8 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @ProtobufName("AgentAction")
-public final class AgentAction implements Action {
+public final class AgentAction
+        implements Action {
     @ProtobufProperty(index = 1, name = "name", type = ProtobufType.STRING)
     private String name;
 

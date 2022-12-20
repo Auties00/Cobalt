@@ -22,7 +22,8 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class ButtonSection implements ProtobufMessage {
+public class ButtonSection
+        implements ProtobufMessage {
     /**
      * The title of the section
      */

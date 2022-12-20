@@ -30,7 +30,8 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Jacksonized
 @Builder
 @ToString(exclude = {"chat", "sender"})
-public class MessageKey implements ProtobufMessage {
+public class MessageKey
+        implements ProtobufMessage {
     /**
      * The jid of the chat where the message was sent
      */

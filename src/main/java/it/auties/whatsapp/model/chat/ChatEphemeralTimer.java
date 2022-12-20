@@ -11,7 +11,8 @@ import java.util.Arrays;
 
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum ChatEphemeralTimer implements ProtobufMessage {
+public enum ChatEphemeralTimer
+        implements ProtobufMessage {
     OFF(Duration.ofDays(0)),
     ONE_DAY(Duration.ofDays(1)),
     ONE_WEEK(Duration.ofDays(7)),

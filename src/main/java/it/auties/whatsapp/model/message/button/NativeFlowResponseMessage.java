@@ -17,7 +17,8 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @ProtobufName("NativeFlowResponseMessage")
-public final class NativeFlowResponseMessage implements ButtonMessage {
+public final class NativeFlowResponseMessage
+        implements ButtonMessage {
     @ProtobufProperty(index = 1, name = "name", type = ProtobufType.STRING)
     private String name;
 

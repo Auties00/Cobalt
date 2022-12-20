@@ -20,7 +20,8 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class DeviceListMetadata implements ProtobufMessage {
+public class DeviceListMetadata
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = BYTES)
     private byte[] senderKeyHash;
 

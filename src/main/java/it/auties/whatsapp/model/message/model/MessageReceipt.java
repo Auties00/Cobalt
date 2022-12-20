@@ -7,7 +7,6 @@ import it.auties.whatsapp.model.contact.ContactJid;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -17,13 +16,15 @@ import java.util.List;
 
 import static it.auties.protobuf.base.ProtobufType.INT64;
 import static it.auties.protobuf.base.ProtobufType.STRING;
+
 @AllArgsConstructor
 @Data
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("UserReceipt")
-public class MessageReceipt implements ProtobufMessage {
+public class MessageReceipt
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = STRING, implementation = ContactJid.class)
     @NonNull
     private String userJid;

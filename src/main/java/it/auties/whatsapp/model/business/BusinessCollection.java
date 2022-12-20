@@ -7,7 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.INT32;
@@ -21,7 +20,8 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class BusinessCollection implements ProtobufMessage {
+public final class BusinessCollection
+        implements ProtobufMessage {
     /**
      * The business jid of the message
      */

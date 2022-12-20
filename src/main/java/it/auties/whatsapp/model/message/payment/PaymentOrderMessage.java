@@ -24,7 +24,9 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class PaymentOrderMessage extends ContextualMessage implements PaymentMessage {
+public final class PaymentOrderMessage
+        extends ContextualMessage
+        implements PaymentMessage {
     /**
      * The jid of this order
      */

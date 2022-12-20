@@ -10,13 +10,14 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-@AllArgsConstructor
+@AllArgsConstructor(staticName = "of")
 @Data
 @Accessors(fluent = true)
 @Jacksonized
 @Builder
 @ProtobufName("Option")
-public class PollOptionName implements ProtobufMessage {
+public class PollOptionName
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, name = "optionName", type = ProtobufType.STRING)
-    private String optionName;
+    private String name;
 }

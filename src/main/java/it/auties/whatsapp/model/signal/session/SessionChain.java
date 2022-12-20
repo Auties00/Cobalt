@@ -10,7 +10,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @Builder
 @Jacksonized
-public record SessionChain(AtomicInteger counter, AtomicReference<byte[]> key, ConcurrentHashMap<Integer, byte[]> messageKeys) {
+public record SessionChain(AtomicInteger counter, AtomicReference<byte[]> key,
+                           ConcurrentHashMap<Integer, byte[]> messageKeys) {
     public SessionChain(int counter, byte @NonNull [] key) {
         this(new AtomicInteger(counter), new AtomicReference<>(key), new ConcurrentHashMap<>());
     }

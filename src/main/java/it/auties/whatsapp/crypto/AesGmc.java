@@ -18,7 +18,8 @@ public class AesGmc {
         return cipher(iv, input, key, null, encrypt);
     }
 
-    public byte[] cipher(long iv, byte @NonNull [] input, byte @NonNull [] key, byte[] additionalData, boolean encrypt) {
+    public byte[] cipher(long iv, byte @NonNull [] input, byte @NonNull [] key, byte[] additionalData,
+            boolean encrypt) {
         var ivBytes = Bytes.newBuffer(4)
                 .appendLong(iv)
                 .assertSize(12)
@@ -27,7 +28,7 @@ public class AesGmc {
     }
 
     public byte[] cipher(byte @NonNull [] iv, byte @NonNull [] input, byte @NonNull [] key, byte[] additionalData,
-                         boolean encrypt) {
+            boolean encrypt) {
         try {
             var cipher = new GCMBlockCipher(new AESEngine());
             var parameters = new AEADParameters(new KeyParameter(key), NONCE, iv, additionalData);
@@ -37,8 +38,10 @@ public class AesGmc {
             var outputOffset = cipher.processBytes(input, 0, input.length, output, 0);
             cipher.doFinal(output, outputOffset);
             return output;
-        }catch (InvalidCipherTextException exception){
-            throw new AesException("Cannot %s data using AesGMC".formatted(encrypt ? "encrypt" : "decrypt"), exception);
+        } catch (InvalidCipherTextException exception) {
+            throw new AesException("Cannot %s data using AesGMC".formatted(encrypt ?
+                                                                                   "encrypt" :
+                                                                                   "decrypt"), exception);
         }
     }
 }

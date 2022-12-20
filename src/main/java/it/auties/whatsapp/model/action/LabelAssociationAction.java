@@ -6,7 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.BOOL;
@@ -19,7 +18,8 @@ import static it.auties.protobuf.base.ProtobufType.BOOL;
 @Builder(access = AccessLevel.PROTECTED)
 @Jacksonized
 @Accessors(fluent = true)
-public final class LabelAssociationAction implements Action {
+public final class LabelAssociationAction
+        implements Action {
     /**
      * Whether the string was labeled
      */

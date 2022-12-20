@@ -10,6 +10,7 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.STRING;
+
 /**
  * A model class that represents a time a localizable name
  */
@@ -19,7 +20,8 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("LocalizedName")
-public class BusinessLocalizedName implements ProtobufMessage {
+public class BusinessLocalizedName
+        implements ProtobufMessage {
     /**
      * Lg
      */

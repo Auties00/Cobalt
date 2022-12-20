@@ -26,7 +26,9 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Jacksonized
 @SuperBuilder
 @Accessors(fluent = true)
-public final class PaymentInvoiceMessage extends MediaMessage implements PaymentMessage {
+public final class PaymentInvoiceMessage
+        extends MediaMessage
+        implements PaymentMessage {
     /**
      * The note of this invoice
      */

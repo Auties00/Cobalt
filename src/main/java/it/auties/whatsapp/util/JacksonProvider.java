@@ -28,7 +28,7 @@ public interface JacksonProvider {
                     .disable(FAIL_ON_UNKNOWN_PROPERTIES)
                     .registerModule(new Jdk8Module())
                     .registerModule(new SimpleMapModule());
-        }catch (Throwable throwable){
+        } catch (Throwable throwable) {
             var logger = System.getLogger("JacksonProvider");
             logger.log(ERROR, "An exception occurred while initializing protobuf", throwable);
             throw new RuntimeException("Cannot initialize protobuf", throwable);
@@ -47,7 +47,7 @@ public interface JacksonProvider {
                     .setVisibility(ALL, ANY)
                     .setVisibility(GETTER, NONE)
                     .setVisibility(IS_GETTER, NONE);
-        }catch (Throwable throwable){
+        } catch (Throwable throwable) {
             var logger = System.getLogger("JacksonProvider");
             logger.log(ERROR, "An exception occurred while initializing json", throwable);
             throw new RuntimeException("Cannot initialize json", throwable);
@@ -55,22 +55,22 @@ public interface JacksonProvider {
     }
 
     private static SmileMapper createSmile() {
-       try {
-           return (SmileMapper) new SmileMapper().registerModule(new Jdk8Module())
-                   .registerModule(new SimpleMapModule())
-                   .registerModule(new JavaTimeModule())
-                   .setSerializationInclusion(NON_DEFAULT)
-                   .enable(WRITE_ENUMS_USING_INDEX)
-                   .enable(FAIL_ON_EMPTY_BEANS)
-                   .enable(ACCEPT_SINGLE_VALUE_AS_ARRAY)
-                   .disable(FAIL_ON_UNKNOWN_PROPERTIES)
-                   .setVisibility(ALL, ANY)
-                   .setVisibility(GETTER, NONE)
-                   .setVisibility(IS_GETTER, NONE);
-       }catch (Throwable throwable){
-           var logger = System.getLogger("JacksonProvider");
-           logger.log(ERROR, "An exception occurred while initializing smile", throwable);
-           throw new RuntimeException("Cannot initialize smile", throwable);
-       }
+        try {
+            return (SmileMapper) new SmileMapper().registerModule(new Jdk8Module())
+                    .registerModule(new SimpleMapModule())
+                    .registerModule(new JavaTimeModule())
+                    .setSerializationInclusion(NON_DEFAULT)
+                    .enable(WRITE_ENUMS_USING_INDEX)
+                    .enable(FAIL_ON_EMPTY_BEANS)
+                    .enable(ACCEPT_SINGLE_VALUE_AS_ARRAY)
+                    .disable(FAIL_ON_UNKNOWN_PROPERTIES)
+                    .setVisibility(ALL, ANY)
+                    .setVisibility(GETTER, NONE)
+                    .setVisibility(IS_GETTER, NONE);
+        } catch (Throwable throwable) {
+            var logger = System.getLogger("JacksonProvider");
+            logger.log(ERROR, "An exception occurred while initializing smile", throwable);
+            throw new RuntimeException("Cannot initialize smile", throwable);
+        }
     }
 }

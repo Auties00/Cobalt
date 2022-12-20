@@ -13,7 +13,8 @@ import java.util.Arrays;
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum ChatMediaVisibility implements ProtobufMessage {
+public enum ChatMediaVisibility
+        implements ProtobufMessage {
     /**
      * Default
      */

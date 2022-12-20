@@ -15,7 +15,8 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Builder
 @Accessors(fluent = true)
 @Jacksonized
-class FutureMessageContainer implements ProtobufMessage {
+class FutureMessageContainer
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = MessageContainer.class)
     @Getter(AccessLevel.PROTECTED)
     private MessageContainer content;

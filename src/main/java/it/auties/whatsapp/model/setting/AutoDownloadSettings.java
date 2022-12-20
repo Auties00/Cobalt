@@ -8,13 +8,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
+
 @AllArgsConstructor
 @Data
 @Accessors(fluent = true)
 @Jacksonized
 @Builder
 @ProtobufName("AutoDownloadSettings")
-public final class AutoDownloadSettings implements Setting {
+public final class AutoDownloadSettings
+        implements Setting {
     @ProtobufProperty(index = 1, name = "downloadImages", type = ProtobufType.BOOL)
     private boolean downloadImages;
 

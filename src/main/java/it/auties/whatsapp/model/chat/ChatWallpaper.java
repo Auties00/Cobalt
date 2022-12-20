@@ -6,7 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.STRING;
@@ -20,7 +19,8 @@ import static it.auties.protobuf.base.ProtobufType.UINT32;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class ChatWallpaper implements ProtobufMessage {
+public class ChatWallpaper
+        implements ProtobufMessage {
     /**
      * The name of the file used as wallpaper
      */

@@ -2,9 +2,9 @@ package it.auties.whatsapp.listener;
 
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.request.Node;
-import it.auties.whatsapp.socket.SocketHandler;
 
-public interface OnWhatsappNodeReceived extends Listener {
+public interface OnWhatsappNodeReceived
+        extends Listener {
     /**
      * Called when the socket receives a node from Whatsapp
      *

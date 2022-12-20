@@ -11,8 +11,9 @@ public record ContactStatusResponse(@NonNull String status, @NonNull ZonedDateTi
         implements ResponseWrapper {
     public ContactStatusResponse(@NonNull Node source) {
         this(source.contentAsString()
-                .orElseThrow(() -> new NoSuchElementException("Missing status")), Clock.parse(source.attributes()
-                        .getLong("t"))
-                .orElse(ZonedDateTime.now()));
+                     .orElseThrow(() -> new NoSuchElementException("Missing status")), Clock.parse(source.attributes()
+                                                                                                           .getLong(
+                                                                                                                   "t"))
+                     .orElse(ZonedDateTime.now()));
     }
 }

@@ -12,11 +12,9 @@ import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.poll.PollOptionName;
-import lombok.AllArgsConstructor;
+import it.auties.whatsapp.util.KeyHelper;
+import lombok.*;
 import lombok.Builder.Default;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
@@ -30,12 +28,18 @@ import java.util.*;
 @Accessors(fluent = true)
 @EqualsAndHashCode(callSuper = true)
 @ProtobufName("PollCreationMessage")
-public final class PollCreationMessage extends ContextualMessage {
+public final class PollCreationMessage
+        extends ContextualMessage {
     @ProtobufProperty(index = 2, name = "name", type = ProtobufType.STRING)
     private String title;
 
     @ProtobufProperty(implementation = PollOptionName.class, index = 3, name = "options", repeated = true, type = ProtobufType.MESSAGE)
     private List<PollOptionName> selectableOptions;
+
+    @ProtobufProperty(index = 4, name = "selectableOptionsCount", type = ProtobufType.UINT32)
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private int selectableOptionsCount;
 
     @Default
     private Map<String, PollOptionName> selectableOptionsHashesMap = new HashMap<>();
@@ -44,7 +48,8 @@ public final class PollCreationMessage extends ContextualMessage {
     private Map<ContactJid, List<PollOptionName>> selectedOptionsMap = new HashMap<>();
 
     @ProtobufProperty(index = 1, name = "encKey", type = ProtobufType.BYTES)
-    private byte[] encryptionKey;
+    @Default
+    private byte[] encryptionKey = KeyHelper.senderKey();
 
     @ProtobufProperty(index = 5, name = "contextInfo", type = ProtobufType.MESSAGE)
     @Default
@@ -60,28 +65,29 @@ public final class PollCreationMessage extends ContextualMessage {
         return MessageCategory.STANDARD;
     }
 
-    public List<PollOptionName> getSelectedOptions(@NonNull ContactJidProvider provider){
+    public List<PollOptionName> getSelectedOptions(@NonNull ContactJidProvider provider) {
         return Objects.requireNonNullElseGet(selectedOptionsMap.get(provider.toJid()), List::of);
     }
 
     public static abstract class PollCreationMessageBuilder<C extends PollCreationMessage, B extends PollCreationMessageBuilder<C, B>>
             extends ContextualMessageBuilder<C, B> {
         public PollCreationMessageBuilder<C, B> selectableOptions(List<PollOptionName> selectableOptions) {
-            if (this.selectableOptions == null){
+            if (this.selectableOptions == null) {
                 this.selectableOptions = new ArrayList<>();
             }
 
             selectableOptionsHashesMap$set = true;
-            if(selectableOptionsHashesMap$value == null){
+            if (selectableOptionsHashesMap$value == null) {
                 selectableOptionsHashesMap$value = new HashMap<>();
             }
 
             selectableOptions.forEach(entry -> {
-                var sha256 = Bytes.of(Sha256.calculate(entry.optionName()))
+                var sha256 = Bytes.of(Sha256.calculate(entry.name()))
                         .toHex();
                 selectableOptionsHashesMap$value.put(sha256, entry);
             });
             this.selectableOptions.addAll(selectableOptions);
+            this.selectableOptionsCount = selectableOptions.size();
             return this;
         }
     }

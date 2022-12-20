@@ -31,7 +31,8 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class GroupInviteMessage extends ContextualMessage {
+public final class GroupInviteMessage
+        extends ContextualMessage {
     /**
      * The jid of the group that this invite regards
      */
@@ -74,7 +75,7 @@ public final class GroupInviteMessage extends ContextualMessage {
      */
     @ProtobufProperty(index = 7, type = MESSAGE, implementation = ContextInfo.class)
     @Default
-    private ContextInfo contextInfo = new ContextInfo();  
+    private ContextInfo contextInfo = new ContextInfo();
 
     /**
      * The type of this invite
@@ -104,7 +105,8 @@ public final class GroupInviteMessage extends ContextualMessage {
 
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum Type implements ProtobufMessage {
+    public enum Type
+            implements ProtobufMessage {
         DEFAULT(0),
         PARENT(1);
 

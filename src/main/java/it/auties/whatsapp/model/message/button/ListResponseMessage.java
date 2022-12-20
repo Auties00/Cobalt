@@ -25,7 +25,8 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Jacksonized
 @Accessors(fluent = true)
 @EqualsAndHashCode(callSuper = true)
-public final class ListResponseMessage extends ButtonReplyMessage {
+public final class ListResponseMessage
+        extends ButtonReplyMessage {
     /**
      * The title of this message
      */
@@ -43,7 +44,7 @@ public final class ListResponseMessage extends ButtonReplyMessage {
      */
     @ProtobufProperty(index = 4, type = MESSAGE, implementation = ContextInfo.class)
     @Builder.Default
-    private ContextInfo contextInfo = new ContextInfo();  
+    private ContextInfo contextInfo = new ContextInfo();
 
     /**
      * The description of this message

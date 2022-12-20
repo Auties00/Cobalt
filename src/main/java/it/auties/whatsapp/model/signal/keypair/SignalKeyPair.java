@@ -10,7 +10,8 @@ import java.security.interfaces.XECPrivateKey;
 import java.security.interfaces.XECPublicKey;
 import java.util.Arrays;
 
-public record SignalKeyPair(byte @NonNull [] publicKey, byte[] privateKey) implements ISignalKeyPair {
+public record SignalKeyPair(byte @NonNull [] publicKey, byte[] privateKey)
+        implements ISignalKeyPair {
     public SignalKeyPair(byte[] publicKey, byte[] privateKey) {
         this.publicKey = KeyHelper.withoutHeader(publicKey);
         this.privateKey = privateKey;

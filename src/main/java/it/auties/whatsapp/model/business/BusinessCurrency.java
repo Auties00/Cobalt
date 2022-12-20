@@ -6,7 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.INT64;
@@ -20,7 +19,8 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class BusinessCurrency implements ProtobufMessage {
+public class BusinessCurrency
+        implements ProtobufMessage {
     /**
      * The currency code
      */

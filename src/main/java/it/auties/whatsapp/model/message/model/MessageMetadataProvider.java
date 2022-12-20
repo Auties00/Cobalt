@@ -9,7 +9,8 @@ import java.util.Optional;
 /**
  * Model interface to mark classes that can provide info about a message
  */
-public sealed interface MessageMetadataProvider permits MessageInfo, QuotedMessage {
+public sealed interface MessageMetadataProvider
+        permits MessageInfo, QuotedMessage {
     /**
      * Returns the id of the message
      *

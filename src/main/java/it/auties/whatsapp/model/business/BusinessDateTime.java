@@ -19,7 +19,8 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class BusinessDateTime implements ProtobufMessage {
+public class BusinessDateTime
+        implements ProtobufMessage {
     /**
      * The date as a component
      */
@@ -74,7 +75,8 @@ public class BusinessDateTime implements ProtobufMessage {
      */
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum DateType implements ProtobufMessage {
+    public enum DateType
+            implements ProtobufMessage {
         /**
          * No date
          */

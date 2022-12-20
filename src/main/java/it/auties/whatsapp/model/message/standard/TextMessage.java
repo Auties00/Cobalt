@@ -24,7 +24,8 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class TextMessage extends ContextualMessage {
+public final class TextMessage
+        extends ContextualMessage {
     /**
      * The text that this message wraps
      */

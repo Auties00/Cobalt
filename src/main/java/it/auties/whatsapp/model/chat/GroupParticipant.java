@@ -39,7 +39,7 @@ public record GroupParticipant(
                 .getJid("jid")
                 .orElseThrow(() -> new NoSuchElementException("Missing participant in group response"));
         var role = GroupRole.of(node.attributes()
-                .getString("type", null));
+                                        .getString("type", null));
         return new GroupParticipant(id, role);
     }
 }

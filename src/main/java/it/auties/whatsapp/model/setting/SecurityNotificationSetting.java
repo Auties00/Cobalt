@@ -14,7 +14,8 @@ import static it.auties.protobuf.base.ProtobufType.BOOL;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class SecurityNotificationSetting implements Setting {
+public final class SecurityNotificationSetting
+        implements Setting {
     @ProtobufProperty(index = 1, type = BOOL)
     private boolean showNotification;
 

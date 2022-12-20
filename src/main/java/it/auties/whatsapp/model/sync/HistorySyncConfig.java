@@ -16,7 +16,8 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @ProtobufName("HistorySyncConfig")
-public class HistorySyncConfig implements ProtobufMessage {
+public class HistorySyncConfig
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, name = "fullSyncDaysLimit", type = ProtobufType.UINT32)
     private int fullSyncDaysLimit;
 

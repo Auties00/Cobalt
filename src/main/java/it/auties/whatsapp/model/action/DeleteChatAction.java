@@ -19,7 +19,8 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Builder(access = AccessLevel.PROTECTED)
 @Jacksonized
 @Accessors(fluent = true)
-public final class DeleteChatAction implements Action {
+public final class DeleteChatAction
+        implements Action {
     /**
      * The message range on which this action has effect
      */

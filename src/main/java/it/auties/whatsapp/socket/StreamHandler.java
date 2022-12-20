@@ -29,7 +29,10 @@ import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.serialization.ControllerProviderLoader;
-import it.auties.whatsapp.util.*;
+import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.JacksonProvider;
+import it.auties.whatsapp.util.SignalSpecification;
+import it.auties.whatsapp.util.Validate;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -53,7 +56,8 @@ import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 @RequiredArgsConstructor
 @Accessors(fluent = true)
-class StreamHandler implements JacksonProvider {
+class StreamHandler
+        implements JacksonProvider {
     private static final byte[] MESSAGE_HEADER = {6, 0};
     private static final byte[] SIGNATURE_HEADER = {6, 1};
     private static final int REQUIRED_PRE_KEYS_SIZE = 5;
@@ -89,7 +93,9 @@ class StreamHandler implements JacksonProvider {
                 .getInt("reason");
         if (reason == 401) {
             socketHandler.errorHandler()
-                    .handleFailure(LOGGED_OUT, new RuntimeException("The socket was closed from Whatsapp because of a failure at %s with status code %s".formatted(location, reason)));
+                    .handleFailure(LOGGED_OUT, new RuntimeException(
+                            "The socket was closed from Whatsapp because of a failure at %s with status code %s".formatted(
+                                    location, reason)));
             return;
         }
 
@@ -101,7 +107,8 @@ class StreamHandler implements JacksonProvider {
         CompletableFuture.runAsync(() -> {
             var updateType = node.attributes()
                     .getOptionalString("type")
-                    .or(() -> node.findNode().map(Node::description))
+                    .or(() -> node.findNode()
+                            .map(Node::description))
                     .orElse("available");
             var chatJid = node.attributes()
                     .getJid("from")
@@ -118,7 +125,7 @@ class StreamHandler implements JacksonProvider {
     private void updateContactPresence(ContactJid chatJid, String updateType, Contact contact) {
         var status = ContactStatus.of(updateType)
                 .orElse(ContactStatus.AVAILABLE);
-        if(status == contact.lastKnownPresence()){
+        if (status == contact.lastKnownPresence()) {
             return;
         }
 
@@ -128,7 +135,8 @@ class StreamHandler implements JacksonProvider {
         socketHandler.store()
                 .findChatByJid(chatJid)
                 .ifPresent(chat -> {
-                    chat.presences().put(contact.jid(), status);
+                    chat.presences()
+                            .put(contact.jid(), status);
                     socketHandler.onUpdateChatPresence(status, contact, chat);
                 });
     }
@@ -138,27 +146,26 @@ class StreamHandler implements JacksonProvider {
                 .getNullableString("type");
         MessageStatus.of(type)
                 .ifPresent(status -> updateMessageStatus(node, status));
-        if(Objects.equals(type, "retry")){
+        if (Objects.equals(type, "retry")) {
             System.err.println("Unsupported message retries");
             return;
         }
 
-        socketHandler.sendMessageAck(
-                node,
-                Attributes.of()
-                        .put("class", "receipt")
-                        .put("type", type, Objects::nonNull)
-                        .map()
-        );
+        socketHandler.sendMessageAck(node, Attributes.of()
+                .put("class", "receipt")
+                .put("type", type, Objects::nonNull)
+                .map());
     }
 
     private void updateMessageStatus(Node node, MessageStatus status) {
-        var from = node.attributes().getJid("from");
-        if(from.isEmpty()){
+        var from = node.attributes()
+                .getJid("from");
+        if (from.isEmpty()) {
             return;
         }
 
-        if(from.get().equals(ContactJid.STATUS_ACCOUNT)){
+        if (from.get()
+                .equals(ContactJid.STATUS_ACCOUNT)) {
             updateMessageStatus(node, status, null);
             return;
         }
@@ -182,17 +189,23 @@ class StreamHandler implements JacksonProvider {
                 .flatMap(Optional::stream)
                 .collect(Collectors.toList());
         messageIds.add(node.attributes()
-                .getRequiredString("id"));
+                               .getRequiredString("id"));
         messageIds.stream()
-                .map(messageId -> chat == null ? socketHandler.store().findStatusById(messageId)
-                        : socketHandler.store().findMessageById(chat, messageId))
+                .map(messageId -> chat == null ?
+                        socketHandler.store()
+                                .findStatusById(messageId) :
+                        socketHandler.store()
+                                .findMessageById(chat, messageId))
                 .flatMap(Optional::stream)
                 .forEach(message -> updateMessageStatus(status, participant, message));
     }
 
     private void updateMessageStatus(MessageStatus status, Contact participant, MessageInfo message) {
         message.status(status);
-        message.individualStatus().put(participant != null ? participant.jid() : message.senderJid(), status);
+        message.individualStatus()
+                .put(participant != null ?
+                             participant.jid() :
+                             message.senderJid(), status);
         socketHandler.onMessageStatus(status, participant, message, message.chat());
     }
 
@@ -221,10 +234,11 @@ class StreamHandler implements JacksonProvider {
     }
 
     private void digestNotification(Node node) {
-        socketHandler.sendMessageAck(node, node.attributes().map());
+        socketHandler.sendMessageAck(node, node.attributes()
+                .map());
         var type = node.attributes()
                 .getString("type", null);
-        switch (type){
+        switch (type) {
             case "w:gp2" -> handleGroupNotification(node);
             case "server_sync" -> handleServerSyncNotification(node);
             case "account_sync" -> handleAccountSyncNotification(node);
@@ -239,10 +253,11 @@ class StreamHandler implements JacksonProvider {
                 .orElseThrow(() -> new NoSuchElementException("Missing from in notification"));
         var fromChat = socketHandler.store()
                 .findChatByJid(fromJid)
-                .orElseGet(() -> socketHandler.store().addChat(fromJid));
+                .orElseGet(() -> socketHandler.store()
+                        .addChat(fromJid));
         var timestamp = node.attributes()
                 .getLong("t");
-        if(fromChat.isGroup()){
+        if (fromChat.isGroup()) {
             addMessageForGroupStubType(fromChat, StubType.GROUP_CHANGE_ICON, timestamp);
             socketHandler.onGroupPictureChange(fromChat);
             return;
@@ -251,7 +266,8 @@ class StreamHandler implements JacksonProvider {
         var fromContact = socketHandler.store()
                 .findContactByJid(fromJid)
                 .orElseGet(() -> {
-                    var contact = socketHandler.store().addContact(fromJid);
+                    var contact = socketHandler.store()
+                            .addContact(fromJid);
                     socketHandler.onNewContact(contact);
                     return contact;
                 });
@@ -273,7 +289,8 @@ class StreamHandler implements JacksonProvider {
                 .orElseThrow(() -> new NoSuchElementException("Missing chat in notification"));
         var fromChat = socketHandler.store()
                 .findChatByJid(fromJid)
-                .orElseGet(() -> socketHandler.store().addChat(fromJid));
+                .orElseGet(() -> socketHandler.store()
+                        .addChat(fromJid));
         addMessageForGroupStubType(fromChat, stubType, timestamp);
     }
 
@@ -312,11 +329,12 @@ class StreamHandler implements JacksonProvider {
 
     private void handleAccountSyncNotification(Node node) {
         var child = node.findNode();
-        if(child.isEmpty()){
+        if (child.isEmpty()) {
             return;
         }
 
-        switch (child.get().description()){
+        switch (child.get()
+                .description()) {
             case "privacy" -> changeUserPrivacySetting(child.get());
             case "disappearing_mode" -> updateUserDisappearingMode(child.get());
             case "status" -> updateUserStatus(true);
@@ -331,10 +349,12 @@ class StreamHandler implements JacksonProvider {
     }
 
     private void updateBlocklistEntry(Node entry) {
-        entry.attributes().getJid("jid")
+        entry.attributes()
+                .getJid("jid")
                 .flatMap(socketHandler.store()::findContactByJid)
                 .ifPresent(contact -> {
-                    contact.blocked(Objects.equals(entry.attributes().getString("action"), "block"));
+                    contact.blocked(Objects.equals(entry.attributes()
+                                                           .getString("action"), "block"));
                     socketHandler.onContactBlocked(contact);
                 });
     }
@@ -346,14 +366,15 @@ class StreamHandler implements JacksonProvider {
 
     private void updateUserDisappearingMode(Node child) {
         socketHandler.store()
-                .newChatsEphemeralTimer(ChatEphemeralTimer.of(child.attributes().getLong("duration")));
+                .newChatsEphemeralTimer(ChatEphemeralTimer.of(child.attributes()
+                                                                      .getLong("duration")));
     }
 
 
     private void addPrivacySetting(Attributes entry) {
         var privacyType = PrivacySettingType.of(entry.getString("name"));
         var privacyValue = PrivacySettingValue.of(entry.getString("value"));
-        if(privacyType.isEmpty() || privacyValue.isEmpty()){
+        if (privacyType.isEmpty() || privacyValue.isEmpty()) {
             return;
         }
 
@@ -363,12 +384,14 @@ class StreamHandler implements JacksonProvider {
     }
 
     private void handleServerSyncNotification(Node node) {
-        if(!socketHandler.store().initialAppSync()){
+        if (!socketHandler.store()
+                .initialAppSync()) {
             return;
         }
 
         node.findNode("collection")
-                .map(entry -> entry.attributes().getRequiredString("name"))
+                .map(entry -> entry.attributes()
+                        .getRequiredString("name"))
                 .map(PatchType::of)
                 .ifPresent(socketHandler::pullPatch);
     }
@@ -377,7 +400,7 @@ class StreamHandler implements JacksonProvider {
         var dirty = node.findNode("dirty");
         if (dirty.isEmpty()) {
             Validate.isTrue(!node.hasNode("downgrade_webclient"),
-                    "Multi device beta is not enabled. Please enable it from Whatsapp");
+                            "Multi device beta is not enabled. Please enable it from Whatsapp");
             return;
         }
 
@@ -392,11 +415,11 @@ class StreamHandler implements JacksonProvider {
                 .attributes()
                 .getString("timestamp");
         socketHandler.sendQuery("set", "urn:xmpp:whatsapp:dirty",
-                ofAttributes("clean", of("type", type, "timestamp", timestamp)));
+                                ofAttributes("clean", of("type", type, "timestamp", timestamp)));
     }
 
     private void digestError(Node node) {
-        if(node.hasNode("bad-mac")){
+        if (node.hasNode("bad-mac")) {
             socketHandler.errorHandler()
                     .handleFailure(CRYPTOGRAPHY, new UnknownStreamException("Detected a bad mac"));
             return;
@@ -422,8 +445,8 @@ class StreamHandler implements JacksonProvider {
                 .getString("reason", type);
         socketHandler.errorHandler()
                 .handleFailure(Objects.equals(reason, "device_removed") ?
-                        LOGGED_OUT :
-                        STREAM, new RuntimeException(reason));
+                                       LOGGED_OUT :
+                                       STREAM, new RuntimeException(reason));
     }
 
     private void digestSuccess() {
@@ -442,13 +465,16 @@ class StreamHandler implements JacksonProvider {
             return;
         }
 
-        ControllerProviderLoader.findOnlyDeserializer(socketHandler.options().defaultSerialization())
+        ControllerProviderLoader.findOnlyDeserializer(socketHandler.options()
+                                                              .defaultSerialization())
                 .attributeStore(socketHandler.store())
                 .thenRun(socketHandler::onChats)
-                .exceptionallyAsync(exception -> socketHandler.errorHandler().handleFailure(MESSAGE, exception));
+                .exceptionallyAsync(exception -> socketHandler.errorHandler()
+                        .handleFailure(MESSAGE, exception));
         socketHandler.onContacts();
         socketHandler.pullInitialPatches();
-        if(!socketHandler.options().automaticallySubscribeToPresences()){
+        if (!socketHandler.options()
+                .automaticallySubscribeToPresences()) {
             return;
         }
 
@@ -457,17 +483,17 @@ class StreamHandler implements JacksonProvider {
     }
 
     private void subscribeToAllPresences(Executor delayedExecutor) {
-        var future = CompletableFuture.runAsync(
-                () -> socketHandler.store().contacts().forEach(socketHandler::subscribeToPresence),
-                delayedExecutor
-        );
+        var future = CompletableFuture.runAsync(() -> socketHandler.store()
+                .contacts()
+                .forEach(socketHandler::subscribeToPresence), delayedExecutor);
         socketHandler.store()
-                .addNodeHandler(NodeHandler.of(node -> node.hasDescription("message") && node.attributes().hasKey("offline")))
+                .addNodeHandler(NodeHandler.of(node -> node.hasDescription("message") && node.attributes()
+                        .hasKey("offline")))
                 .thenRunAsync(() -> rescheduleSubscriptionFuture(delayedExecutor, future));
     }
 
     private void rescheduleSubscriptionFuture(Executor delayedExecutor, CompletableFuture<Void> future) {
-        if(future.isDone()){
+        if (future.isDone()) {
             return;
         }
 
@@ -500,24 +526,30 @@ class StreamHandler implements JacksonProvider {
     private void updateSelfPresence() {
         socketHandler.sendWithNoResponse(ofAttributes("presence", of("type", "available")));
         socketHandler.store()
-                .findContactByJid(socketHandler.store().userCompanionJid().toUserJid())
+                .findContactByJid(socketHandler.store()
+                                          .userCompanionJid()
+                                          .toUserJid())
                 .ifPresent(entry -> entry.lastKnownPresence(ContactStatus.AVAILABLE)
                         .lastSeen(ZonedDateTime.now()));
     }
 
     private void updateUserStatus(boolean update) {
-        socketHandler.queryStatus(socketHandler.store().userCompanionJid().toUserJid())
+        socketHandler.queryStatus(socketHandler.store()
+                                          .userCompanionJid()
+                                          .toUserJid())
                 .thenAcceptAsync(result -> parseNewStatus(result.orElse(null), update));
     }
 
     private void parseNewStatus(ContactStatusResponse result, boolean update) {
-        if(result == null){
+        if (result == null) {
             return;
         }
 
-        var oldStatus = socketHandler.store().userStatus();
-        socketHandler.store().userStatus(result.status());
-        if(!update){
+        var oldStatus = socketHandler.store()
+                .userStatus();
+        socketHandler.store()
+                .userStatus(result.status());
+        if (!update) {
             return;
         }
 
@@ -525,7 +557,9 @@ class StreamHandler implements JacksonProvider {
     }
 
     private void updateUserPicture(boolean update) {
-        socketHandler.queryPicture(socketHandler.store().userCompanionJid().toUserJid())
+        socketHandler.queryPicture(socketHandler.store()
+                                           .userCompanionJid()
+                                           .toUserJid())
                 .thenAcceptAsync(result -> handleUserPictureChange(result.orElse(null), update));
     }
 
@@ -533,8 +567,9 @@ class StreamHandler implements JacksonProvider {
         var oldStatus = socketHandler.store()
                 .userProfilePicture()
                 .orElse(null);
-        socketHandler.store().userProfilePicture(newPicture);
-        if(!update){
+        socketHandler.store()
+                .userProfilePicture(newPicture);
+        if (!update) {
             return;
         }
 
@@ -545,7 +580,8 @@ class StreamHandler implements JacksonProvider {
         socketHandler.store()
                 .findContactByJid(entry)
                 .orElseGet(() -> {
-                    var contact = socketHandler.store().addContact(entry);
+                    var contact = socketHandler.store()
+                            .addContact(entry);
                     socketHandler.onNewContact(contact);
                     return contact;
                 })
@@ -563,8 +599,8 @@ class StreamHandler implements JacksonProvider {
                 .map(entry -> entry.findNodes("prop"))
                 .flatMap(Collection::stream)
                 .map(node -> Map.entry(node.attributes()
-                        .getString("name"), node.attributes()
-                        .getString("value")))
+                                               .getString("name"), node.attributes()
+                                               .getString("value")))
                 .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
         socketHandler.onMetadata(properties);
     }
@@ -637,11 +673,14 @@ class StreamHandler implements JacksonProvider {
                 .map(SignalPreKeyPair::toNode)
                 .toList();
         socketHandler.sendQuery("set", "encrypt", Node.of("registration", BytesHelper.intToBytes(socketHandler.keys()
-                .id(), 4)), Node.of("type", SignalSpecification.KEY_BUNDLE_TYPE), Node.of("identity", socketHandler.keys()
-                .identityKeyPair()
-                .publicKey()), ofChildren("list", preKeys), socketHandler.keys()
-                .signedKeyPair()
-                .toNode());
+                                                                                                         .id(), 4)),
+                                Node.of("type", SignalSpecification.KEY_BUNDLE_TYPE), Node.of("identity",
+                                                                                              socketHandler.keys()
+                                                                                                      .identityKeyPair()
+                                                                                                      .publicKey()),
+                                ofChildren("list", preKeys), socketHandler.keys()
+                                        .signedKeyPair()
+                                        .toNode());
     }
 
     private void generateQrCode(Node node, Node container) {
@@ -654,14 +693,14 @@ class StreamHandler implements JacksonProvider {
                 .flatMap(Node::contentAsString)
                 .orElseThrow(() -> new NoSuchElementException("Missing ref"));
         var qr = "%s,%s,%s,%s".formatted(ref, Bytes.of(socketHandler.keys()
-                        .noiseKeyPair()
-                        .publicKey())
+                                                               .noiseKeyPair()
+                                                               .publicKey())
                 .toBase64(), Bytes.of(socketHandler.keys()
-                        .identityKeyPair()
-                        .publicKey())
-                .toBase64(), Bytes.of(socketHandler.keys()
-                        .companionKey())
-                .toBase64());
+                                              .identityKeyPair()
+                                              .publicKey())
+                                                 .toBase64(), Bytes.of(socketHandler.keys()
+                                                                               .companionKey())
+                                                 .toBase64());
         socketHandler.options()
                 .qrHandler()
                 .accept(qr);
@@ -674,7 +713,7 @@ class StreamHandler implements JacksonProvider {
         var deviceIdentity = container.findNode("device-identity")
                 .orElseThrow(() -> new NoSuchElementException("Missing device identity"));
         var advIdentity = PROTOBUF.readMessage(deviceIdentity.contentAsBytes()
-                .orElseThrow(), SignedDeviceIdentityHMAC.class);
+                                                       .orElseThrow(), SignedDeviceIdentityHMAC.class);
         var advSign = Hmac.calculateSha256(advIdentity.details(), socketHandler.keys()
                 .companionKey());
         if (!Arrays.equals(advIdentity.hmac(), advSign)) {
@@ -687,8 +726,8 @@ class StreamHandler implements JacksonProvider {
         var message = Bytes.of(MESSAGE_HEADER)
                 .append(account.details())
                 .append(socketHandler.keys()
-                        .identityKeyPair()
-                        .publicKey())
+                                .identityKeyPair()
+                                .publicKey())
                 .toByteArray();
         if (!Curve25519.verifySignature(account.accountSignatureKey(), message, account.accountSignature())) {
             socketHandler.errorHandler()
@@ -699,18 +738,18 @@ class StreamHandler implements JacksonProvider {
         var deviceSignatureMessage = Bytes.of(SIGNATURE_HEADER)
                 .append(account.details())
                 .append(socketHandler.keys()
-                        .identityKeyPair()
-                        .publicKey())
+                                .identityKeyPair()
+                                .publicKey())
                 .append(account.accountSignatureKey())
                 .toByteArray();
         account.deviceSignature(Curve25519.sign(socketHandler.keys()
-                .identityKeyPair()
-                .privateKey(), deviceSignatureMessage, true));
+                                                        .identityKeyPair()
+                                                        .privateKey(), deviceSignatureMessage, true));
 
         var keyIndex = PROTOBUF.readMessage(account.details(), DeviceIdentity.class)
                 .keyIndex();
-        var devicePairNode = ofChildren("pair-device-sign",
-                Node.of("device-identity", of("key-index", keyIndex), PROTOBUF.writeValueAsBytes(account.withoutKey())));
+        var devicePairNode = ofChildren("pair-device-sign", Node.of("device-identity", of("key-index", keyIndex),
+                                                                    PROTOBUF.writeValueAsBytes(account.withoutKey())));
 
         socketHandler.keys()
                 .companionIdentity(account);
@@ -737,8 +776,8 @@ class StreamHandler implements JacksonProvider {
                 .userCompanionJid(companion);
         socketHandler.store()
                 .addContact(Contact.ofJid(socketHandler.store()
-                        .userCompanionJid()
-                        .toUserJid()));
+                                                  .userCompanionJid()
+                                                  .toUserJid()));
     }
 
     public void dispose() {

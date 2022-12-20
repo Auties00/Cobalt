@@ -6,7 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.STRING;
@@ -16,7 +15,8 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class Product implements ProtobufMessage {
+public class Product
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = STRING)
     private String productId;
 }

@@ -23,7 +23,8 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder
 @Accessors(fluent = true)
-public final class TemplateReplyMessage extends ButtonReplyMessage {
+public final class TemplateReplyMessage
+        extends ButtonReplyMessage {
     /**
      * The id of the button that was selected from the previous template message
      */
@@ -41,7 +42,7 @@ public final class TemplateReplyMessage extends ButtonReplyMessage {
      */
     @ProtobufProperty(index = 3, type = MESSAGE, implementation = ContextInfo.class)
     @Default
-    private ContextInfo contextInfo = new ContextInfo();  
+    private ContextInfo contextInfo = new ContextInfo();
 
     /**
      * The index of the button that was selected from the previous template message

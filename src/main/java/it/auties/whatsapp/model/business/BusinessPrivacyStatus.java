@@ -13,7 +13,8 @@ import java.util.Arrays;
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum BusinessPrivacyStatus implements ProtobufMessage {
+public enum BusinessPrivacyStatus
+        implements ProtobufMessage {
     /**
      * End-to-end encryption
      */

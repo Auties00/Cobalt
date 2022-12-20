@@ -10,11 +10,13 @@ import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatMute;
 import it.auties.whatsapp.model.contact.Contact;
-import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.DownloadResult;
 import it.auties.whatsapp.model.request.Node;
-import it.auties.whatsapp.model.setting.*;
+import it.auties.whatsapp.model.setting.EphemeralSetting;
+import it.auties.whatsapp.model.setting.LocaleSetting;
+import it.auties.whatsapp.model.setting.PushNameSetting;
+import it.auties.whatsapp.model.setting.UnarchiveChatsSetting;
 import it.auties.whatsapp.model.sync.*;
 import it.auties.whatsapp.util.*;
 import lombok.NonNull;
@@ -35,11 +37,11 @@ import static java.util.Map.of;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
-class AppStateHandler implements JacksonProvider {
-    private static final int PULL_ATTEMPTS = 3;
+class AppStateHandler
+        implements JacksonProvider {
     public static final int PULL_TIMEOUT = 30;
     public static final int PUSH_TIMEOUT = 120;
-
+    private static final int PULL_ATTEMPTS = 3;
     private final SocketHandler socketHandler;
     private final Semaphore semaphore;
     private final CountDownLatch countDownLatch;
@@ -86,7 +88,7 @@ class AppStateHandler implements JacksonProvider {
             var encoded = PROTOBUF.writeValueAsBytes(actionData);
 
             var mutationKeys = MutationKeys.of(key.keyData()
-                    .keyData());
+                                                       .keyData());
             var encrypted = AesCbc.encryptAndPrefix(encoded, mutationKeys.encKey());
             var valueMac = generateMac(patch.operation(), encrypted, key.keyId()
                     .keyId(), mutationKeys.macKey());
@@ -100,11 +102,11 @@ class AppStateHandler implements JacksonProvider {
             newState.version(newState.version() + 1);
 
             var syncId = new KeyId(key.keyId()
-                    .keyId());
+                                           .keyId());
             var record = RecordSync.builder()
                     .index(new IndexSync(indexMac))
                     .value(new ValueSync(Bytes.of(encrypted, valueMac)
-                            .toByteArray()))
+                                                 .toByteArray()))
                     .keyId(syncId)
                     .build();
             var mutation = MutationSync.builder()
@@ -113,9 +115,9 @@ class AppStateHandler implements JacksonProvider {
                     .build();
 
             var snapshotMac = generateSnapshotMac(newState.hash(), newState.version(), patch.type(),
-                    mutationKeys.snapshotMacKey());
+                                                  mutationKeys.snapshotMacKey());
             var patchMac = generatePatchMac(snapshotMac, valueMac, newState.version(), patch.type(),
-                    mutationKeys.patchMacKey());
+                                            mutationKeys.patchMacKey());
             var sync = PatchSync.builder()
                     .patchMac(patchMac)
                     .snapshotMac(snapshotMac)
@@ -124,7 +126,7 @@ class AppStateHandler implements JacksonProvider {
                     .build();
             newState.indexValueMap()
                     .put(Bytes.of(indexMac)
-                            .toBase64(), valueMac);
+                                 .toBase64(), valueMac);
 
             return new PushRequest(patch, oldState, newState, sync);
         } catch (Throwable throwable) {
@@ -134,15 +136,20 @@ class AppStateHandler implements JacksonProvider {
 
     private CompletableFuture<Void> sendPush(PushRequest request) {
         try {
-            var body = ofChildren("collection",
-                    of("name", request.patch().type(), "version", request.newState().version() - 1, "return_snapshot", false),
-                    Node.of("patch", PROTOBUF.writeValueAsBytes(request.sync())));
+            var body = ofChildren("collection", of("name", request.patch()
+                                          .type(), "version", request.newState()
+                                                           .version() - 1, "return_snapshot", false),
+                                  Node.of("patch", PROTOBUF.writeValueAsBytes(request.sync())));
             return socketHandler.sendQuery("set", "w:sync:app:state", Node.ofChildren("sync", body))
                     .thenAcceptAsync(this::parseSyncRequest)
                     .thenRunAsync(() -> socketHandler.keys()
-                            .putState(request.patch().type(), request.newState()))
-                    .thenRunAsync(() -> handleSyncRequest(request.patch().type(), request.sync(), request.oldState(), request.newState().version()));
-        }catch (Throwable throwable) {
+                            .putState(request.patch()
+                                              .type(), request.newState()))
+                    .thenRunAsync(() -> handleSyncRequest(request.patch()
+                                                                  .type(), request.sync(), request.oldState(),
+                                                          request.newState()
+                                                                  .version()));
+        } catch (Throwable throwable) {
             throw new RuntimeException("Cannot push patch", throwable);
         }
     }
@@ -158,11 +165,12 @@ class AppStateHandler implements JacksonProvider {
                 .thenComposeAsync(ignored -> sendPullRequest(patchTypes))
                 .thenRunAsync(() -> {
                     countDownLatch.countDown();
-                    socketHandler.store().initialAppSync(true);
+                    socketHandler.store()
+                            .initialAppSync(true);
                     semaphore.release();
                 })
                 .exceptionallyAsync(exception -> {
-                    if(initial) {
+                    if (initial) {
                         countDownLatch.countDown();
                         return socketHandler.errorHandler()
                                 .handleFailure(INITIAL_APP_STATE_SYNC, exception);
@@ -175,15 +183,14 @@ class AppStateHandler implements JacksonProvider {
     }
 
     private CompletableFuture<Void> sendPullRequest(PatchType... patchTypes) {
-        Validate.isTrue(patchTypes.length != 0,
-                "Cannot pull no patches", IllegalArgumentException.class);
+        Validate.isTrue(patchTypes.length != 0, "Cannot pull no patches", IllegalArgumentException.class);
         var versions = new HashMap<PatchType, Long>();
         var attempts = new HashMap<PatchType, Integer>();
         return pull(Arrays.asList(patchTypes), versions, attempts);
     }
 
     private CompletableFuture<Void> pull(List<PatchType> patchTypes, Map<PatchType, Long> versions,
-                                            Map<PatchType, Integer> attempts) {
+            Map<PatchType, Integer> attempts) {
         var tempStates = new HashMap<PatchType, LTHashState>();
         var nodes = patchTypes.stream()
                 .map(patchType -> createStateWithVersion(patchType, versions))
@@ -199,7 +206,7 @@ class AppStateHandler implements JacksonProvider {
     }
 
     private List<PatchType> decodeSyncs(Map<PatchType, Long> versions, Map<PatchType, Integer> attempts,
-                                        Map<PatchType, LTHashState> tempStates, List<SnapshotSyncRecord> records) {
+            Map<PatchType, LTHashState> tempStates, List<SnapshotSyncRecord> records) {
         return records.stream()
                 .map(record -> decodeSync(record, versions, attempts, tempStates))
                 .peek(chunk -> chunk.records()
@@ -210,12 +217,12 @@ class AppStateHandler implements JacksonProvider {
     }
 
     private PatchChunk decodeSync(SnapshotSyncRecord record, Map<PatchType, Long> versions,
-                                  Map<PatchType, Integer> attempts, Map<PatchType, LTHashState> tempStates) {
+            Map<PatchType, Integer> attempts, Map<PatchType, LTHashState> tempStates) {
         try {
             var results = new ArrayList<ActionDataSync>();
             if (record.hasSnapshot()) {
                 var decodedSnapshot = decodeSnapshot(record.patchType(), versions.get(record.patchType()),
-                        record.snapshot());
+                                                     record.snapshot());
                 results.addAll(decodedSnapshot.records());
                 tempStates.put(record.patchType(), decodedSnapshot.state());
                 socketHandler.keys()
@@ -224,7 +231,7 @@ class AppStateHandler implements JacksonProvider {
 
             if (record.hasPatches()) {
                 var decodedPatches = decodePatches(record.patchType(), versions.get(record.patchType()),
-                        record.patches(), tempStates.get(record.patchType()));
+                                                   record.patches(), tempStates.get(record.patchType()));
                 results.addAll(decodedPatches.records());
                 socketHandler.keys()
                         .putState(record.patchType(), decodedPatches.state());
@@ -274,10 +281,10 @@ class AppStateHandler implements JacksonProvider {
 
     private Optional<SnapshotSyncRecord> parseSync(Node sync) {
         var name = PatchType.of(sync.attributes()
-                .getString("name"));
+                                        .getString("name"));
         var type = sync.attributes()
                 .getString("type");
-        if(Objects.equals(type, "error")){
+        if (Objects.equals(type, "error")) {
             return Optional.empty();
         }
 
@@ -305,11 +312,11 @@ class AppStateHandler implements JacksonProvider {
         }
 
         var blob = PROTOBUF.readMessage(snapshot.contentAsBytes()
-                .orElseThrow(), ExternalBlobReference.class);
+                                                .orElseThrow(), ExternalBlobReference.class);
         var syncedData = Medias.download(blob);
-        Validate.isTrue(syncedData.status() == DownloadResult.Status.SUCCESS,
-                "Cannot download snapshot");
-        return PROTOBUF.readMessage(syncedData.media().get(), SnapshotSync.class);
+        Validate.isTrue(syncedData.status() == DownloadResult.Status.SUCCESS, "Cannot download snapshot");
+        return PROTOBUF.readMessage(syncedData.media()
+                                            .get(), SnapshotSync.class);
     }
 
     @SneakyThrows
@@ -319,7 +326,7 @@ class AppStateHandler implements JacksonProvider {
         }
 
         var patchSync = PROTOBUF.readMessage(patch.contentAsBytes()
-                .orElseThrow(), PatchSync.class);
+                                                     .orElseThrow(), PatchSync.class);
         if (!patchSync.hasVersion()) {
             var version = new VersionSync(versionCode + 1);
             patchSync.version(version);
@@ -336,38 +343,34 @@ class AppStateHandler implements JacksonProvider {
 
         var action = value.action();
         if (action != null) {
-            var jid = Optional.ofNullable(mutation.messageIndex().chatJid())
-                    .map(ContactJid::of);
-            var targetContact = jid.flatMap(socketHandler.store()::findContactByJid);
-            var targetChat = jid.flatMap(socketHandler.store()::findChatByJid);
-            var targetMessage = targetChat.flatMap(chat -> socketHandler.store()
-                    .findMessageById(chat, mutation.messageIndex().messageId()));
+            var messageIndex = mutation.messageIndex();
+            var targetContact = messageIndex.chatJid().flatMap(socketHandler.store()::findContactByJid);
+            var targetChat = messageIndex.chatJid().flatMap(socketHandler.store()::findChatByJid);
+            var targetMessage = targetChat.flatMap(chat -> socketHandler.store().findMessageById(chat, mutation.messageIndex().messageId().orElse(null)));
             switch (action) {
-                case ClearChatAction clearChatAction -> clearMessages(
-                        targetChat.orElse(null),
-                        clearChatAction
-                );
-                case ContactAction contactAction -> updateName(
-                        targetContact.orElseGet(() -> {
-                            var contact = socketHandler.store().addContact(jid.orElseThrow());
-                            socketHandler.onNewContact(contact);
-                            return contact;
-                        }),
-                        targetChat.orElseGet(() -> socketHandler.store().addChat(jid.orElseThrow())),
-                        contactAction
-                );
-                case DeleteChatAction ignored ->
-                        targetChat.map(Chat::messages).ifPresent(Collection::clear);
+                case ClearChatAction clearChatAction -> clearMessages(targetChat.orElse(null), clearChatAction);
+                case ContactAction contactAction -> updateName(targetContact.orElseGet(() -> {
+                    var contact = socketHandler.store()
+                            .addContact(messageIndex.chatJid().orElseThrow());
+                    socketHandler.onNewContact(contact);
+                    return contact;
+                }), targetChat.orElseGet(() -> socketHandler.store()
+                        .addChat(messageIndex.chatJid().orElseThrow())), contactAction);
+                case DeleteChatAction ignored -> targetChat.map(Chat::messages)
+                        .ifPresent(Collection::clear);
                 case DeleteMessageForMeAction ignored ->
                         targetMessage.ifPresent(message -> targetChat.ifPresent(chat -> deleteMessage(message, chat)));
-                case MarkChatAsReadAction markAction ->
-                        targetChat.ifPresent(chat -> chat.unreadMessagesCount(markAction.read() ? 0 : -1));
+                case MarkChatAsReadAction markAction -> targetChat.ifPresent(chat -> chat.unreadMessagesCount(
+                        markAction.read() ?
+                                0 :
+                                -1));
                 case MuteAction muteAction ->
                         targetChat.ifPresent(chat -> chat.mute(ChatMute.muted(muteAction.muteEndTimestamp())));
-                case PinAction pinAction ->
-                        targetChat.ifPresent(chat -> chat.pinned(pinAction.pinned() ? mutation.value().timestamp() : 0));
-                case StarAction starAction ->
-                        targetMessage.ifPresent(message -> message.starred(starAction.starred()));
+                case PinAction pinAction -> targetChat.ifPresent(chat -> chat.pinned(pinAction.pinned() ?
+                                                                                             mutation.value()
+                                                                                                     .timestamp() :
+                                                                                             0));
+                case StarAction starAction -> targetMessage.ifPresent(message -> message.starred(starAction.starred()));
                 case ArchiveChatAction archiveChatAction ->
                         targetChat.ifPresent(chat -> chat.archived(archiveChatAction.archived()));
                 case TimeFormatAction timeFormatAction -> socketHandler.store()
@@ -377,18 +380,23 @@ class AppStateHandler implements JacksonProvider {
                 }
             }
 
-            socketHandler.onAction(action);
+            socketHandler.onAction(action, messageIndex);
         }
 
         var setting = value.setting();
-        if(setting != null) {
+        if (setting != null) {
             switch (setting) {
                 case EphemeralSetting ephemeralSetting -> showEphemeralMessageWarning(ephemeralSetting);
-                case LocaleSetting localeSetting -> socketHandler.updateLocale(localeSetting.locale(), socketHandler.store().userLocale());
-                case PushNameSetting pushNameSetting -> socketHandler.updateUserName(pushNameSetting.name(), socketHandler.store().userName());
+                case LocaleSetting localeSetting -> socketHandler.updateLocale(localeSetting.locale(),
+                                                                               socketHandler.store()
+                                                                                       .userLocale());
+                case PushNameSetting pushNameSetting -> socketHandler.updateUserName(pushNameSetting.name(),
+                                                                                     socketHandler.store()
+                                                                                             .userName());
                 case UnarchiveChatsSetting unarchiveChatsSetting -> socketHandler.store()
                         .unarchiveChats(unarchiveChatsSetting.unarchiveChats());
-                default -> {}
+                default -> {
+                }
             }
 
             socketHandler.onSetting(setting);
@@ -404,10 +412,8 @@ class AppStateHandler implements JacksonProvider {
 
     private void showEphemeralMessageWarning(EphemeralSetting ephemeralSetting) {
         var logger = System.getLogger("AppStateHandler");
-        logger.log(WARNING, "An ephemeral status update was received as a setting. " +
-                "Data: %s".formatted(ephemeralSetting) +
-                "This should not be possible." +
-                " Open an issue on Github please");
+        logger.log(WARNING, "An ephemeral status update was received as a setting. " + "Data: %s".formatted(
+                ephemeralSetting) + "This should not be possible." + " Open an issue on Github please");
     }
 
     private void clearMessages(Chat targetChat, ClearChatAction clearChatAction) {
@@ -450,26 +456,26 @@ class AppStateHandler implements JacksonProvider {
 
     @SneakyThrows
     private Optional<MutationsRecord> decodePatch(PatchType patchType, long minimumVersion, LTHashState newState,
-                                                  PatchSync patch) {
+            PatchSync patch) {
         if (patch.hasExternalMutations()) {
             var blob = Medias.download(patch.externalMutations());
-            Validate.isTrue(blob.status() == DownloadResult.Status.SUCCESS,
-                    "Cannot download mutations");
-            var mutationsSync = PROTOBUF.readMessage(blob.media().get(), MutationsSync.class);
+            Validate.isTrue(blob.status() == DownloadResult.Status.SUCCESS, "Cannot download mutations");
+            var mutationsSync = PROTOBUF.readMessage(blob.media()
+                                                             .get(), MutationsSync.class);
             patch.mutations()
                     .addAll(mutationsSync.mutations());
         }
 
         newState.version(patch.version());
         Validate.isTrue(Arrays.equals(calculateSyncMac(patch, patchType), patch.patchMac()), "sync_mac",
-                HmacValidationException.class);
+                        HmacValidationException.class);
         var mutations = decodeMutations(patch.mutations(), newState);
         newState.hash(mutations.result()
-                .hash());
+                              .hash());
         newState.indexValueMap(mutations.result()
-                .indexValueMap());
+                                       .indexValueMap());
         Validate.isTrue(Arrays.equals(generatePatchMac(patchType, newState, patch), patch.snapshotMac()), "patch_mac",
-                HmacValidationException.class);
+                        HmacValidationException.class);
 
         return Optional.of(mutations)
                 .filter(ignored -> minimumVersion == 0 || newState.version() > minimumVersion);
@@ -492,7 +498,7 @@ class AppStateHandler implements JacksonProvider {
                 .reduce(Bytes.newBuffer(), Bytes::append)
                 .toByteArray();
         return generatePatchMac(patch.snapshotMac(), mutationMacs, patch.version(), patchType,
-                mutationKeys.patchMacKey());
+                                mutationKeys.patchMacKey());
     }
 
     private SyncRecord decodeSnapshot(PatchType name, long minimumVersion, SnapshotSync snapshot) {
@@ -500,13 +506,13 @@ class AppStateHandler implements JacksonProvider {
                 .version());
         var mutations = decodeMutations(snapshot.records(), newState);
         newState.hash(mutations.result()
-                .hash());
+                              .hash());
         newState.indexValueMap(mutations.result()
-                .indexValueMap());
+                                       .indexValueMap());
         var mutationKeys = getMutationKeys(snapshot.keyId());
-        Validate.isTrue(Arrays.equals(snapshot.mac(),
-                        generateSnapshotMac(newState.hash(), newState.version(), name, mutationKeys.snapshotMacKey())),
-                "decode_snapshot", HmacValidationException.class);
+        Validate.isTrue(Arrays.equals(snapshot.mac(), generateSnapshotMac(newState.hash(), newState.version(), name,
+                                                                          mutationKeys.snapshotMacKey())),
+                        "decode_snapshot", HmacValidationException.class);
 
         if (minimumVersion == 0 || newState.version() > minimumVersion) {
             mutations.records()
@@ -521,7 +527,7 @@ class AppStateHandler implements JacksonProvider {
                 .findAppKeyById(snapshot.id())
                 .orElseThrow(() -> new NoSuchElementException("No keys available for mutation"));
         return MutationKeys.of(encryptedKey.keyData()
-                .keyData());
+                                       .keyData());
     }
 
     private MutationsRecord decodeMutations(List<? extends Syncable> syncs, LTHashState state) {
@@ -537,7 +543,7 @@ class AppStateHandler implements JacksonProvider {
         var mutationKeys = getMutationKeys(sync.keyId());
 
         var blob = Bytes.of(sync.value()
-                .blob());
+                                    .blob());
         var encryptedBlob = blob.cut(-SignalSpecification.KEY_LENGTH)
                 .toByteArray();
         var encryptedMac = blob.slice(-SignalSpecification.KEY_LENGTH)
@@ -548,10 +554,11 @@ class AppStateHandler implements JacksonProvider {
         var result = AesCbc.decrypt(encryptedBlob, mutationKeys.encKey());
         var actionSync = PROTOBUF.readMessage(result, ActionDataSync.class);
         Validate.isTrue(Arrays.equals(sync.index()
-                        .blob(), Hmac.calculateSha256(actionSync.index(), mutationKeys.indexKey())), "decode_mutation",
-                HmacValidationException.class);
+                                              .blob(),
+                                      Hmac.calculateSha256(actionSync.index(), mutationKeys.indexKey())),
+                        "decode_mutation", HmacValidationException.class);
         generator.mix(sync.index()
-                .blob(), encryptedMac, operation);
+                              .blob(), encryptedMac, operation);
         return actionSync;
     }
 
@@ -575,31 +582,39 @@ class AppStateHandler implements JacksonProvider {
         var total = Bytes.of(ltHash)
                 .append(BytesHelper.longToBytes(version))
                 .append(patchType.toString()
-                        .getBytes(StandardCharsets.UTF_8))
+                                .getBytes(StandardCharsets.UTF_8))
                 .toByteArray();
         return Hmac.calculateSha256(total, key);
     }
 
     private byte[] generatePatchMac(byte[] snapshotMac, byte[] valueMac, long version, PatchType patchType,
-                                    byte[] key) {
+            byte[] key) {
         var total = Bytes.of(snapshotMac)
                 .append(valueMac)
                 .append(BytesHelper.longToBytes(version))
                 .append(patchType.toString()
-                        .getBytes(StandardCharsets.UTF_8))
+                                .getBytes(StandardCharsets.UTF_8))
                 .toByteArray();
         return Hmac.calculateSha256(total, key);
     }
 
     private void acquireLock(boolean necessary) {
         try {
-            if(!necessary){
+            if (!necessary) {
                 return;
             }
 
             semaphore.acquire();
-        }catch (InterruptedException exception){
+        } catch (InterruptedException exception) {
             throw new RuntimeException("Cannot lock", exception);
+        }
+    }
+
+    public void awaitReady() {
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException exception) {
+            throw new RuntimeException("Cannot await app state", exception);
         }
     }
 
@@ -607,7 +622,8 @@ class AppStateHandler implements JacksonProvider {
 
     }
 
-    private record SnapshotSyncRecord(PatchType patchType, SnapshotSync snapshot, List<PatchSync> patches, boolean hasMore) {
+    private record SnapshotSyncRecord(PatchType patchType, SnapshotSync snapshot, List<PatchSync> patches,
+                                      boolean hasMore) {
         public boolean hasSnapshot() {
             return snapshot != null;
         }
@@ -625,15 +641,7 @@ class AppStateHandler implements JacksonProvider {
 
     }
 
-    private record PushRequest(PatchRequest patch, LTHashState oldState, LTHashState newState, PatchSync sync){
+    private record PushRequest(PatchRequest patch, LTHashState oldState, LTHashState newState, PatchSync sync) {
 
-    }
-
-    public void awaitReady() {
-        try {
-           countDownLatch.await();
-        }catch (InterruptedException exception){
-            throw new RuntimeException("Cannot await app state", exception);
-        }
     }
 }

@@ -21,7 +21,8 @@ import static it.auties.protobuf.base.ProtobufType.BYTES;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class DeviceSyncMessage implements ServerMessage {
+public final class DeviceSyncMessage
+        implements ServerMessage {
     /**
      * The data that this synchronization wraps encoded as xml and stored in an array of bytes
      */

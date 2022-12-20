@@ -42,16 +42,17 @@ import static java.util.Optional.empty;
 import static java.util.Optional.of;
 
 @UtilityClass
-public class Medias implements JacksonProvider {
+public class Medias
+        implements JacksonProvider {
     public static final int PROFILE_PIC_SIZE = 640;
+    public static final String DEFAULT_HOST = "https://mmg.whatsapp.net";
     private static final int THUMBNAIL_SIZE = 32;
     private static final int RANDOM_FILE_NAME_LENGTH = 8;
     private static final Map<String, Path> CACHE = new ConcurrentHashMap<>();
-    public static final String DEFAULT_HOST = "https://mmg.whatsapp.net";
 
     public Optional<byte[]> getPreview(URI imageUri) {
         try {
-            if(imageUri == null){
+            if (imageUri == null) {
                 return Optional.empty();
             }
 
@@ -84,7 +85,7 @@ public class Medias implements JacksonProvider {
     }
 
     private Optional<MediaFile> upload(byte[] file, MediaMessageType type, HttpClient client, String auth,
-                                       String host) {
+            String host) {
         try {
             var fileSha256 = Sha256.calculate(file);
             var keys = MediaKeys.random(type.keyName());
@@ -109,7 +110,7 @@ public class Medias implements JacksonProvider {
             Validate.isTrue(response.statusCode() == 200, "Invalid status code: %s", response.statusCode());
             var upload = JSON.readValue(response.body(), MediaUpload.class);
             return of(new MediaFile(fileSha256, fileEncSha256, keys.mediaKey(), file.length, upload.directPath(),
-                    upload.url()));
+                                    upload.url()));
         } catch (Throwable ignored) {
             return empty();
         }
@@ -118,23 +119,23 @@ public class Medias implements JacksonProvider {
     public DownloadResult download(AttachmentProvider provider) {
         try {
             Validate.isTrue(provider.mediaUrl() != null || provider.mediaDirectPath() != null,
-                    "Missing url and path from media");
+                            "Missing url and path from media");
             var url = Objects.requireNonNullElseGet(provider.mediaUrl(),
-                    () -> createMediaUrl(provider.mediaDirectPath()));
+                                                    () -> createMediaUrl(provider.mediaDirectPath()));
             var client = HttpClient.newHttpClient();
             var request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .GET()
                     .build();
             var response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
-            if(response.statusCode() == HttpURLConnection.HTTP_NOT_FOUND || response.statusCode() == HttpURLConnection.HTTP_GONE){
+            if (response.statusCode() == HttpURLConnection.HTTP_NOT_FOUND || response.statusCode() == HttpURLConnection.HTTP_GONE) {
                 return DownloadResult.missing();
             }
 
             var stream = Bytes.of(response.body());
             var sha256 = Sha256.calculate(stream.toByteArray());
             Validate.isTrue(Arrays.equals(sha256, provider.mediaEncryptedSha256()),
-                    "Cannot decode media: Invalid sha256 signature", SecurityException.class);
+                            "Cannot decode media: Invalid sha256 signature", SecurityException.class);
 
             var encryptedMedia = stream.cut(-10)
                     .toByteArray();
@@ -147,7 +148,7 @@ public class Medias implements JacksonProvider {
 
             var decrypted = AesCbc.decrypt(keys.iv(), encryptedMedia, keys.cipherKey());
             Validate.isTrue(provider.mediaSize() <= 0 || provider.mediaSize() == decrypted.length,
-                    "Cannot decode media: invalid size");
+                            "Cannot decode media: invalid size");
 
             return DownloadResult.success(decrypted);
         } catch (Throwable error) {
@@ -165,8 +166,7 @@ public class Medias implements JacksonProvider {
     }
 
     public Optional<String> getMimeType(String name) {
-        return getExtension(name)
-                .map(extension -> Path.of("bogus%s".formatted(extension)))
+        return getExtension(name).map(extension -> Path.of("bogus%s".formatted(extension)))
                 .flatMap(Medias::getMimeType);
     }
 
@@ -224,7 +224,7 @@ public class Medias implements JacksonProvider {
             }
 
             var result = new String(process.getInputStream()
-                    .readAllBytes(), StandardCharsets.UTF_8);
+                                            .readAllBytes(), StandardCharsets.UTF_8);
             return (int) Float.parseFloat(result);
         } catch (Throwable throwable) {
             return 0;
@@ -252,7 +252,7 @@ public class Medias implements JacksonProvider {
             }
 
             var result = new String(process.getInputStream()
-                    .readAllBytes(), StandardCharsets.UTF_8);
+                                            .readAllBytes(), StandardCharsets.UTF_8);
             var ffprobe = JSON.readValue(result, FfprobeResult.class);
             if (ffprobe.streams() == null || ffprobe.streams()
                     .isEmpty()) {
@@ -281,7 +281,8 @@ public class Medias implements JacksonProvider {
         try {
             var process = Runtime.getRuntime()
                     .exec("ffmpeg -ss 00:00:00 -i %s -y -vf scale=%s:-1 -vframes 1 -f image2 %s".formatted(input,
-                            Medias.THUMBNAIL_SIZE, output));
+                                                                                                           Medias.THUMBNAIL_SIZE,
+                                                                                                           output));
             if (process.waitFor() != 0) {
                 return Optional.empty();
             }
@@ -292,7 +293,7 @@ public class Medias implements JacksonProvider {
         } finally {
             try {
                 Files.delete(output);
-            }catch (IOException ignored) {
+            } catch (IOException ignored) {
 
             }
         }
@@ -300,12 +301,12 @@ public class Medias implements JacksonProvider {
 
     private Optional<byte[]> getImage(byte[] file, Format format, int dimensions) {
         try {
-            if(dimensions <= 0){
+            if (dimensions <= 0) {
                 return Optional.of(file);
             }
 
             var image = ImageIO.read(new ByteArrayInputStream(file));
-            if(image == null){
+            if (image == null) {
                 return Optional.empty();
             }
 
@@ -314,7 +315,7 @@ public class Medias implements JacksonProvider {
             ImageIO.write(resizedImage, format.name()
                     .toLowerCase(), outputStream);
             return Optional.of(outputStream.toByteArray());
-        }catch (IOException exception){
+        } catch (IOException exception) {
             return Optional.empty();
         }
     }
@@ -336,7 +337,7 @@ public class Medias implements JacksonProvider {
             writer.write(actual);
             writer.dispose();
             return outputStream.toByteArray();
-        }catch (IOException exception){
+        } catch (IOException exception) {
             throw new UncheckedIOException("Cannot generate profile pic", exception);
         }
     }
@@ -376,14 +377,14 @@ public class Medias implements JacksonProvider {
         return input;
     }
 
+    public String createMediaUrl(@NonNull String directPath) {
+        return DEFAULT_HOST + directPath;
+    }
+
     public enum Format {
         PNG,
         JPG,
         FILE,
         VIDEO
-    }
-
-    public String createMediaUrl(@NonNull String directPath){
-        return DEFAULT_HOST + directPath;
     }
 }

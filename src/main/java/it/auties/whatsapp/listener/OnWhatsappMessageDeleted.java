@@ -3,7 +3,8 @@ package it.auties.whatsapp.listener;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.MessageInfo;
 
-public interface OnWhatsappMessageDeleted extends Listener {
+public interface OnWhatsappMessageDeleted
+        extends Listener {
     /**
      * Called when a message is deleted
      *

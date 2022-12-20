@@ -15,7 +15,8 @@ import static it.auties.protobuf.base.ProtobufType.SFIXED64;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class EphemeralSetting implements Setting {
+public final class EphemeralSetting
+        implements Setting {
     @ProtobufProperty(index = 1, type = SFIXED32)
     private int duration;
 

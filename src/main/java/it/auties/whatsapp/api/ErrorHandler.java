@@ -18,7 +18,8 @@ import static java.lang.System.Logger.Level.INFO;
  * This interface allows to handle a socket error and provides a default way to do so
  */
 @SuppressWarnings("unused")
-public interface ErrorHandler extends BiFunction<Location, Throwable, ErrorHandler.Result> {
+public interface ErrorHandler
+        extends BiFunction<Location, Throwable, ErrorHandler.Result> {
     /**
      * System logger.
      * A nice feature from Java 9.
@@ -44,7 +45,7 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, ErrorHandl
      * @return a non-null error handler
      */
     static ErrorHandler toTerminal(BiConsumer<Location, Throwable> onRestore,
-                                   BiConsumer<Location, Throwable> onIgnored) {
+            BiConsumer<Location, Throwable> onIgnored) {
         return defaultErrorHandler(Throwable::printStackTrace, onRestore, onIgnored, ERROR);
     }
 
@@ -91,7 +92,7 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, ErrorHandl
      * @return a non-null error handler
      */
     static ErrorHandler defaultErrorHandler(BiConsumer<Location, Throwable> onRestore,
-                                            BiConsumer<Location, Throwable> onIgnored) {
+            BiConsumer<Location, Throwable> onIgnored) {
         return defaultErrorHandler(null, onRestore, onIgnored, ERROR);
     }
 
@@ -105,10 +106,9 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, ErrorHandl
      * @return a non-null error handler
      */
     static ErrorHandler defaultErrorHandler(Consumer<Throwable> exceptionPrinter,
-                                            BiConsumer<Location, Throwable> onRestore,
-                                            BiConsumer<Location, Throwable> onIgnored, Level loggingLevel) {
+            BiConsumer<Location, Throwable> onRestore, BiConsumer<Location, Throwable> onIgnored, Level loggingLevel) {
         return (location, throwable) -> {
-            if(location == SOCKET){
+            if (location == SOCKET) {
                 return Result.RECONNECT;
             }
 
@@ -124,9 +124,7 @@ public interface ErrorHandler extends BiFunction<Location, Throwable, ErrorHandl
                 exceptionPrinter.accept(throwable);
             }
 
-            if (location != INITIAL_APP_STATE_SYNC
-                    && location != CRYPTOGRAPHY
-                    && !(location == MESSAGE && throwable instanceof HmacValidationException)) {
+            if (location != INITIAL_APP_STATE_SYNC && location != CRYPTOGRAPHY && !(location == MESSAGE && throwable instanceof HmacValidationException)) {
                 if (loggingLevel != null) {
                     logger.log(loggingLevel, "Ignored failure");
                 }

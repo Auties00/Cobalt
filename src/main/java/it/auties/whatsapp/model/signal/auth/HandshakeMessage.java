@@ -6,7 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
@@ -16,7 +15,8 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class HandshakeMessage implements ProtobufMessage {
+public class HandshakeMessage
+        implements ProtobufMessage {
     @ProtobufProperty(index = 2, type = MESSAGE, implementation = ClientHello.class)
     private ClientHello clientHello;
 

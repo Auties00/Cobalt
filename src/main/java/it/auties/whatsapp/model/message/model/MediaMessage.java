@@ -34,7 +34,9 @@ import java.nio.file.StandardOpenOption;
 @NoArgsConstructor
 @Accessors(fluent = true)
 @EqualsAndHashCode(callSuper = true)
-public abstract sealed class MediaMessage extends ContextualMessage implements AttachmentProvider
+public abstract sealed class MediaMessage
+        extends ContextualMessage
+        implements AttachmentProvider
         permits PaymentInvoiceMessage, AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoMessage {
     /**
      * The cached decoded media, by default null
@@ -59,7 +61,7 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
      * @return a non-null result
      */
     public DownloadResult decodedMedia() {
-        if(decodedMedia == null || decodedMedia.status() != DownloadResult.Status.SUCCESS){
+        if (decodedMedia == null || decodedMedia.status() != DownloadResult.Status.SUCCESS) {
             this.decodedMedia = Medias.download(this);
         }
 
@@ -72,9 +74,10 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
      *
      * @return the non-null path where the file was downloaded
      */
-    public Path save(){
+    public Path save() {
         return LocalFileSystem.of("medias")
-                .resolve("%s.%s".formatted(Bytes.ofRandom(5).toHex(), mediaType().fileExtension()));
+                .resolve("%s.%s".formatted(Bytes.ofRandom(5)
+                                                   .toHex(), mediaType().fileExtension()));
     }
 
     /**
@@ -84,14 +87,15 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
      * @param path the non-null path where the media should be written.
      * @return the non-null path where the file was downloaded
      */
-    public Path save(@NonNull Path path){
+    public Path save(@NonNull Path path) {
         var result = decodedMedia();
         Validate.isTrue(result.status() == DownloadResult.Status.SUCCESS,
-                "Cannot save media: %s".formatted(result.status()));
+                        "Cannot save media: %s".formatted(result.status()));
         try {
             Files.createDirectories(path.getParent());
-            Files.write(path, result.media().get(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-        }catch (IOException exception){
+            Files.write(path, result.media()
+                    .get(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        } catch (IOException exception) {
             throw new UncheckedIOException("Cannot write media to file", exception);
         }
 

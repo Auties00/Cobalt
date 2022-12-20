@@ -8,7 +8,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.time.ZonedDateTime;
@@ -24,7 +23,8 @@ import static it.auties.protobuf.base.ProtobufType.INT64;
 @Builder(access = AccessLevel.PROTECTED)
 @Jacksonized
 @Accessors(fluent = true)
-public class BusinessDateTimeUnixEpoch implements ProtobufMessage {
+public class BusinessDateTimeUnixEpoch
+        implements ProtobufMessage {
     /**
      * The timestamp of the date
      */

@@ -7,7 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.*;
@@ -17,7 +16,8 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class NotificationMessageInfo implements Info {
+public final class NotificationMessageInfo
+        implements Info {
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = MessageKey.class)
     private MessageKey key;
 

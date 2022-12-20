@@ -8,7 +8,6 @@ import it.auties.whatsapp.model.message.model.PaymentMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -24,7 +23,8 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class SendPaymentMessage implements PaymentMessage {
+public final class SendPaymentMessage
+        implements PaymentMessage {
     /**
      * The caption message, that is the message below the payment confirmation
      */

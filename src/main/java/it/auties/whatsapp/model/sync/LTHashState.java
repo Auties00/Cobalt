@@ -1,8 +1,8 @@
 package it.auties.whatsapp.model.sync;
 
 import it.auties.whatsapp.binary.PatchType;
-import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.Attributes;
+import it.auties.whatsapp.model.request.Node;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

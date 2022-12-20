@@ -1,9 +1,9 @@
 package it.auties.whatsapp.listener;
 
 import it.auties.whatsapp.api.DisconnectReason;
-import it.auties.whatsapp.socket.SocketHandler;
 
-public interface OnDisconnected extends Listener {
+public interface OnDisconnected
+        extends Listener {
     /**
      * Called when the socket successfully disconnects from WhatsappWeb's WebSocket
      *

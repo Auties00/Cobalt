@@ -16,7 +16,8 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @ProtobufName("PollOption")
-public class PollOption implements ProtobufMessage {
+public class PollOption
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, name = "name", type = ProtobufType.STRING)
     private String name;
 }

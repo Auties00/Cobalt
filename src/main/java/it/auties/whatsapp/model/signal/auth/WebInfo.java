@@ -17,7 +17,8 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class WebInfo implements ProtobufMessage {
+public class WebInfo
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = STRING)
     private String refToken;
 
@@ -36,7 +37,8 @@ public class WebInfo implements ProtobufMessage {
 
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum WebInfoWebSubPlatform implements ProtobufMessage {
+    public enum WebInfoWebSubPlatform
+            implements ProtobufMessage {
         WEB_BROWSER(0),
         APP_STORE(1),
         WIN_STORE(2),

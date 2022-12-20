@@ -6,7 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.BOOL;
@@ -20,7 +19,8 @@ import static it.auties.protobuf.base.ProtobufType.INT64;
 @Builder(access = AccessLevel.PROTECTED)
 @Jacksonized
 @Accessors(fluent = true)
-public final class DeleteMessageForMeAction implements Action {
+public final class DeleteMessageForMeAction
+        implements Action {
     /**
      * Whether the media should be removed from the memory of the client
      */

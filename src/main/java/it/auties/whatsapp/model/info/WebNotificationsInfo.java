@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
@@ -17,7 +16,8 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class WebNotificationsInfo implements Info {
+public final class WebNotificationsInfo
+        implements Info {
     @ProtobufProperty(index = 2, type = UINT64)
     private long timestamp;
 

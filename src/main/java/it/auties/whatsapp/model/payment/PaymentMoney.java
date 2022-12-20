@@ -6,7 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.*;
@@ -16,7 +15,8 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class PaymentMoney implements ProtobufMessage {
+public class PaymentMoney
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = INT64)
     private long money;
 

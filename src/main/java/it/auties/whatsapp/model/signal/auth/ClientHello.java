@@ -5,7 +5,6 @@ import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -17,7 +16,8 @@ import static it.auties.protobuf.base.ProtobufType.BYTES;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class ClientHello implements ProtobufMessage {
+public class ClientHello
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = BYTES)
     private byte[] ephemeral;
 

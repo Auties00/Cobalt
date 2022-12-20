@@ -7,7 +7,8 @@ import lombok.experimental.UtilityClass;
 import java.security.SecureRandom;
 
 @UtilityClass
-public class KeyHelper implements SignalSpecification {
+public class KeyHelper
+        implements SignalSpecification {
     private final String SHA_PRNG = "SHA1PRNG";
 
     public byte[] withHeader(byte[] key) {

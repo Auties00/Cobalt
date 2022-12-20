@@ -6,7 +6,6 @@ import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -20,7 +19,8 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class RecordSync implements ProtobufMessage, Syncable {
+public final class RecordSync
+        implements ProtobufMessage, Syncable {
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = IndexSync.class)
     private IndexSync index;
 
@@ -30,9 +30,20 @@ public final class RecordSync implements ProtobufMessage, Syncable {
     @ProtobufProperty(index = 3, type = MESSAGE, implementation = KeyId.class)
     private KeyId keyId;
 
+    @Override
+    public Operation operation() {
+        return Operation.SET;
+    }
+
+    @Override
+    public RecordSync record() {
+        return this;
+    }
+
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum Operation implements ProtobufMessage {
+    public enum Operation
+            implements ProtobufMessage {
         SET(0, (byte) 0x01),
         REMOVE(1, (byte) 0x02);
 
@@ -49,15 +60,5 @@ public final class RecordSync implements ProtobufMessage, Syncable {
                     .findFirst()
                     .orElse(null);
         }
-    }
-
-    @Override
-    public Operation operation() {
-        return Operation.SET;
-    }
-
-    @Override
-    public RecordSync record() {
-        return this;
     }
 }

@@ -20,7 +20,8 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class BusinessLocalizableParameter implements ProtobufMessage {
+public class BusinessLocalizableParameter
+        implements ProtobufMessage {
     /**
      * The default value
      */
@@ -85,7 +86,8 @@ public class BusinessLocalizableParameter implements ProtobufMessage {
      */
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum ParameterType implements ProtobufMessage {
+    public enum ParameterType
+            implements ProtobufMessage {
         /**
          * No parameter
          */

@@ -23,7 +23,8 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class DeviceSentMessage implements ServerMessage {
+public final class DeviceSentMessage
+        implements ServerMessage {
     /**
      * The unique identifier that this message update regards.
      */

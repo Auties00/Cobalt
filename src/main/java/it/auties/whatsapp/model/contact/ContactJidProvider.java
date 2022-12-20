@@ -6,7 +6,8 @@ import lombok.NonNull;
 /**
  * Utility interface to make providing a jid easier
  */
-public sealed interface ContactJidProvider permits Chat, Contact, ContactJid {
+public sealed interface ContactJidProvider
+        permits Chat, Contact, ContactJid {
     /**
      * Returns this object as a jid
      *

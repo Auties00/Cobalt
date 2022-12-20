@@ -19,7 +19,8 @@ import java.util.Objects;
 @AllArgsConstructor
 @Accessors(fluent = true)
 @ProtobufName("Rank")
-public enum GroupRole implements ProtobufMessage {
+public enum GroupRole
+        implements ProtobufMessage {
     /**
      * A participant of the group with no special powers
      */

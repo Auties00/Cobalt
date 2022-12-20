@@ -16,7 +16,8 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @ProtobufName("KeepInChatMessage")
-public final class KeepInChatMessage implements Message {
+public final class KeepInChatMessage
+        implements Message {
     @ProtobufProperty(index = 1, name = "key", type = ProtobufType.MESSAGE)
     private MessageKey key;
 

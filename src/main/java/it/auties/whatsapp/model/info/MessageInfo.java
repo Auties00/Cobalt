@@ -3,20 +3,13 @@ package it.auties.whatsapp.model.info;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.business.BusinessPrivacyStatus;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.media.MediaData;
 import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
-import it.auties.whatsapp.model.message.standard.LiveLocationMessage;
 import it.auties.whatsapp.model.message.standard.ReactionMessage;
-import it.auties.whatsapp.model.sync.PhotoChange;
-import it.auties.whatsapp.model.message.model.KeepInChat;
-import it.auties.whatsapp.model.poll.PollAdditionalMetadata;
-import it.auties.whatsapp.model.poll.PollUpdate;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.JacksonProvider;
 import lombok.*;
@@ -31,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static it.auties.protobuf.base.ProtobufType.*;
 import static java.util.Objects.requireNonNullElseGet;
+
 /**
  * A model class that holds the information related to a {@link Message}.
  */
@@ -41,30 +35,14 @@ import static java.util.Objects.requireNonNullElseGet;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("WebMessageInfo")
-public final class MessageInfo implements Info , MessageMetadataProvider , JacksonProvider {
-    /**
-     * Constructs a new MessageInfo from a MessageKey and a MessageContainer
-     *
-     * @param key
-     * 		the key of the message
-     * @param container
-     * 		the container of the message
-     */
-    public MessageInfo(@NonNull MessageKey key, @NonNull MessageContainer container) {
-        this.key = key;
-        this.timestamp = Clock.now();
-        this.status = MessageStatus.PENDING;
-        this.message = container;
-        this.individualStatus = new ConcurrentHashMap<>();
-    }
-
+public final class MessageInfo
+        implements Info, MessageMetadataProvider, JacksonProvider {
     /**
      * The MessageKey of this message
      */
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = MessageKey.class)
     @NonNull
     private MessageKey key;
-
     /**
      * The container of this message
      */
@@ -72,13 +50,11 @@ public final class MessageInfo implements Info , MessageMetadataProvider , Jacks
     @NonNull
     @Default
     private MessageContainer message = new MessageContainer();
-
     /**
      * The timestamp, that is the seconds since {@link java.time.Instant#EPOCH}, when this message was sent
      */
     @ProtobufProperty(index = 3, type = UINT64)
     private long timestamp;
-
     /**
      * The global status of this message.
      * If the chat associated with this message is a group it is guaranteed that this field is equal or lower hierarchically then every value stored by {@link MessageInfo#individualStatus()}.
@@ -88,7 +64,6 @@ public final class MessageInfo implements Info , MessageMetadataProvider , Jacks
     @NonNull
     @Default
     private MessageStatus status = MessageStatus.PENDING;
-
     /**
      * A map that holds the read status of this message for each participant.
      * If the chat associated with this chat is not a group, this map's size will always be 1.
@@ -100,146 +75,43 @@ public final class MessageInfo implements Info , MessageMetadataProvider , Jacks
     @NonNull
     @Default
     private Map<ContactJid, MessageStatus> individualStatus = new ConcurrentHashMap<>();
-
     /**
      * The jid of the sender
      */
     @ProtobufProperty(index = 5, type = STRING, implementation = ContactJid.class)
     @Setter(AccessLevel.NONE)
     private ContactJid senderJid;
-
     /**
      * The sender of the message
      */
     private Contact sender;
-
-    /**
-     * Message C2 timestamp
-     */
-    @ProtobufProperty(index = 6, type = UINT64)
-    private long messageC2STimestamp;
-
     /**
      * Whether this message should be ignored or counted as an unread message
      */
     @ProtobufProperty(index = 16, type = BOOL)
     private boolean ignore;
-
     /**
      * Whether this message is starred
      */
     @ProtobufProperty(index = 17, type = BOOL)
     private boolean starred;
-
-    /**
-     * Whether this message was sent using a broadcast list
-     */
-    @ProtobufProperty(index = 18, type = BOOL)
-    private boolean broadcast;
-
     /**
      * Push name
      */
     @ProtobufProperty(index = 19, type = STRING)
     private String pushName;
-
-    /**
-     * Media Cipher Text SHA256
-     */
-    @ProtobufProperty(index = 20, type = BYTES)
-    private byte[] mediaCiphertextSha256;
-
-    /**
-     * Multicast
-     */
-    @ProtobufProperty(index = 21, type = BOOL)
-    private boolean multicast;
-
-    /**
-     * Url text
-     */
-    @ProtobufProperty(index = 22, type = BOOL)
-    private boolean urlText;
-
-    /**
-     * Url number
-     */
-    @ProtobufProperty(index = 23, type = BOOL)
-    private boolean urlNumber;
-
     /**
      * The stub type of this message.
      * This property is populated only if the message that {@link MessageInfo#message} wraps is a {@link ProtocolMessage}.
      */
     @ProtobufProperty(index = 24, type = MESSAGE, implementation = MessageInfo.StubType.class)
     private StubType stubType;
-
-    /**
-     * Clear media
-     */
-    @ProtobufProperty(index = 25, type = BOOL)
-    private boolean clearMedia;
-
     /**
      * Message stub parameters
      */
     @ProtobufProperty(index = 26, type = STRING, repeated = true)
-    private List<String> stubParameters;
-
-    /**
-     * Duration
-     */
-    @ProtobufProperty(index = 27, type = UINT32)
-    private int duration;
-
-    /**
-     * Labels
-     */
-    @ProtobufProperty(index = 28, type = STRING, repeated = true)
-    private List<String> labels;
-
-    /**
-     * PaymentInfo
-     */
-    @ProtobufProperty(index = 29, type = MESSAGE, implementation = PaymentInfo.class)
-    private PaymentInfo paymentInfo;
-
-    /**
-     * Final live location
-     */
-    @ProtobufProperty(index = 30, type = MESSAGE, implementation = LiveLocationMessage.class)
-    private LiveLocationMessage finalLiveLocation;
-
-    /**
-     * Quoted payment info
-     */
-    @ProtobufProperty(index = 31, type = MESSAGE, implementation = PaymentInfo.class)
-    private PaymentInfo quotedPaymentInfo;
-
-    /**
-     * Ephemeral start timestamp
-     */
-    @ProtobufProperty(index = 32, type = UINT64)
-    private long ephemeralStartTimestamp;
-
-    /**
-     * Ephemeral duration
-     */
-    @ProtobufProperty(index = 33, type = UINT32)
-    private int ephemeralDuration;
-
-    /**
-     * Enable ephemeral
-     */
-    @ProtobufProperty(index = 34, type = BOOL)
-    private boolean enableEphemeral;
-
-    /**
-     * Ephemeral out of sync
-     */
-    @ProtobufProperty(index = 35, type = BOOL)
-    private boolean ephemeralOutOfSync;
-
+    @Default
+    private List<String> stubParameters = new ArrayList<>();
     /**
      * Business privacy status
      */
@@ -251,25 +123,6 @@ public final class MessageInfo implements Info , MessageMetadataProvider , Jacks
      */
     @ProtobufProperty(index = 37, type = STRING)
     private String businessVerifiedName;
-
-    /**
-     * Media data
-     */
-    @ProtobufProperty(index = 38, type = MESSAGE, implementation = MediaData.class)
-    private MediaData mediaData;
-
-    /**
-     * Photo change
-     */
-    @ProtobufProperty(index = 39, type = MESSAGE, implementation = PhotoChange.class)
-    private PhotoChange photoChange;
-
-    /**
-     * Message receipt
-     */
-    @ProtobufProperty(index = 40, type = MESSAGE, implementation = MessageReceipt.class)
-    private MessageReceipt receipt;
-
     /**
      * Reactions
      */
@@ -278,46 +131,18 @@ public final class MessageInfo implements Info , MessageMetadataProvider , Jacks
     private List<ReactionMessage> reactions = new ArrayList<>();
 
     /**
-     * Media data
+     * Constructs a new MessageInfo from a MessageKey and a MessageContainer
+     *
+     * @param key       the key of the message
+     * @param container the container of the message
      */
-    @ProtobufProperty(index = 42, type = MESSAGE, implementation = MediaData.class)
-    private MediaData quotedStickerData;
-
-    /**
-     * Upcoming data
-     */
-    @ProtobufProperty(index = 43, type = BYTES)
-    private String futureProofData;
-
-    /**
-     * Public service announcement status
-     */
-    @ProtobufProperty(index = 44, type = MESSAGE, implementation = PublicServiceAnnouncementStatus.class)
-    private PublicServiceAnnouncementStatus psaStatus;
-
-    @ProtobufProperty(implementation = PollUpdate.class, index = 45, name = "pollUpdates", repeated = true, type = ProtobufType.MESSAGE)
-    private List<PollUpdate> pollUpdates;
-
-    @ProtobufProperty(index = 46, name = "pollAdditionalMetadata", type = ProtobufType.MESSAGE)
-    private PollAdditionalMetadata pollAdditionalMetadata;
-
-    @ProtobufProperty(index = 47, name = "agentId", type = ProtobufType.STRING)
-    private String agentId;
-
-    @ProtobufProperty(index = 48, name = "statusAlreadyViewed", type = ProtobufType.BOOL)
-    private boolean statusAlreadyViewed;
-
-    @ProtobufProperty(index = 49, name = "messageSecret", type = ProtobufType.BYTES)
-    private byte[] messageSecret;
-
-    @ProtobufProperty(index = 50, name = "keepInChat", type = ProtobufType.MESSAGE)
-    private KeepInChat keepInChat;
-
-    @ProtobufProperty(index = 51, name = "originalSelfAuthorUserJidString", type = ProtobufType.STRING)
-    private String originalSelfAuthorUserJidString;
-
-    @ProtobufProperty(index = 52, name = "revokeMessageTimestamp", type = ProtobufType.UINT64)
-    private long revokeMessageTimestamp;
+    public MessageInfo(@NonNull MessageKey key, @NonNull MessageContainer container) {
+        this.key = key;
+        this.timestamp = Clock.now();
+        this.status = MessageStatus.PENDING;
+        this.message = container;
+        this.individualStatus = new ConcurrentHashMap<>();
+    }
 
     /**
      * Returns the jid of the contact or group that sent the message.
@@ -352,7 +177,8 @@ public final class MessageInfo implements Info , MessageMetadataProvider , Jacks
      * @return a non-null ContactJid
      */
     public ContactJid senderJid() {
-        return requireNonNullElseGet(senderJid, () -> key.senderJid().orElseGet(key::chatJid));
+        return requireNonNullElseGet(senderJid, () -> key.senderJid()
+                .orElseGet(key::chatJid));
     }
 
     /**
@@ -370,7 +196,8 @@ public final class MessageInfo implements Info , MessageMetadataProvider , Jacks
      * @return a non-null String
      */
     public String senderName() {
-        return sender().map(Contact::name).orElseGet(senderJid()::user);
+        return sender().map(Contact::name)
+                .orElseGet(senderJid()::user);
     }
 
     /**
@@ -388,7 +215,8 @@ public final class MessageInfo implements Info , MessageMetadataProvider , Jacks
      * @return an optional
      */
     public Optional<Contact> sender() {
-        return Optional.ofNullable(sender).or(key::sender);
+        return Optional.ofNullable(sender)
+                .or(key::sender);
     }
 
     /**
@@ -397,7 +225,28 @@ public final class MessageInfo implements Info , MessageMetadataProvider , Jacks
      * @return a non-empty optional {@link MessageInfo} if this message quotes a message in memory
      */
     public Optional<QuotedMessage> quotedMessage() {
-        return Optional.of(message).flatMap(MessageContainer::contentWithContext).map(ContextualMessage::contextInfo).flatMap(QuotedMessage::of);
+        return Optional.of(message)
+                .flatMap(MessageContainer::contentWithContext)
+                .map(ContextualMessage::contextInfo)
+                .flatMap(QuotedMessage::of);
+    }
+
+    /**
+     * Returns the optional business verified push name
+     *
+     * @return an optional value
+     */
+    public Optional<String> businessVerifiedName() {
+        return Optional.ofNullable(businessVerifiedName);
+    }
+
+    /**
+     * Returns the optional business verified status
+     *
+     * @return an optional value
+     */
+    public Optional<BusinessPrivacyStatus> businessPrivacyStatus() {
+        return Optional.ofNullable(businessPrivacyStatus);
     }
 
     /**
@@ -408,7 +257,8 @@ public final class MessageInfo implements Info , MessageMetadataProvider , Jacks
      */
     public String toJson() {
         try {
-            return JSON.writerWithDefaultPrettyPrinter().writeValueAsString(this);
+            return JSON.writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(this);
         } catch (IOException exception) {
             throw new UncheckedIOException("Cannot convert message to json", exception);
         }
@@ -490,8 +340,10 @@ public final class MessageInfo implements Info , MessageMetadataProvider , Jacks
         PAYMENT_TRANSACTION_STATUS_UPDATE_FAILED(49, List.of("payment_transaction_status_update_failed")),
         PAYMENT_TRANSACTION_STATUS_UPDATE_REFUNDED(50, List.of("payment_transaction_status_update_refunded")),
         PAYMENT_TRANSACTION_STATUS_UPDATE_REFUND_FAILED(51, List.of("payment_transaction_status_update_refund_failed")),
-        PAYMENT_TRANSACTION_STATUS_RECEIVER_PENDING_SETUP(52, List.of("payment_transaction_status_receiver_pending_setup")),
-        PAYMENT_TRANSACTION_STATUS_RECEIVER_SUCCESS_AFTER_HICCUP(53, List.of("payment_transaction_status_receiver_success_after_hiccup")),
+        PAYMENT_TRANSACTION_STATUS_RECEIVER_PENDING_SETUP(52,
+                                                          List.of("payment_transaction_status_receiver_pending_setup")),
+        PAYMENT_TRANSACTION_STATUS_RECEIVER_SUCCESS_AFTER_HICCUP(53,
+                                                                 List.of("payment_transaction_status_receiver_success_after_hiccup")),
         PAYMENT_ACTION_ACCOUNT_SETUP_REMINDER(54, List.of("payment_action_account_setup_reminder")),
         PAYMENT_ACTION_SEND_PAYMENT_REMINDER(55, List.of("payment_action_send_payment_reminder")),
         PAYMENT_ACTION_SEND_PAYMENT_INVITATION(56, List.of("payment_action_send_payment_invitation")),
@@ -518,14 +370,18 @@ public final class MessageInfo implements Info , MessageMetadataProvider , Jacks
         BLUE_MSG_BSP_FB_TO_SELF_FB(77, List.of("blue_msg_bsp_fb_to_self_fb")),
         BLUE_MSG_BSP_FB_TO_SELF_PREMISE(78, List.of("blue_msg_bsp_fb_to_self_premise")),
         BLUE_MSG_BSP_FB_UNVERIFIED(79, List.of("blue_msg_bsp_fb_unverified")),
-        BLUE_MSG_BSP_FB_UNVERIFIED_TO_SELF_PREMISE_VERIFIED(80, List.of("blue_msg_bsp_fb_unverified_to_self_premise_verified")),
+        BLUE_MSG_BSP_FB_UNVERIFIED_TO_SELF_PREMISE_VERIFIED(80,
+                                                            List.of("blue_msg_bsp_fb_unverified_to_self_premise_verified")),
         BLUE_MSG_BSP_FB_VERIFIED(81, List.of("blue_msg_bsp_fb_verified")),
-        BLUE_MSG_BSP_FB_VERIFIED_TO_SELF_PREMISE_UNVERIFIED(82, List.of("blue_msg_bsp_fb_verified_to_self_premise_unverified")),
+        BLUE_MSG_BSP_FB_VERIFIED_TO_SELF_PREMISE_UNVERIFIED(82,
+                                                            List.of("blue_msg_bsp_fb_verified_to_self_premise_unverified")),
         BLUE_MSG_BSP_PREMISE_TO_SELF_PREMISE(83, List.of("blue_msg_bsp_premise_to_self_premise")),
         BLUE_MSG_BSP_PREMISE_UNVERIFIED(84, List.of("blue_msg_bsp_premise_unverified")),
-        BLUE_MSG_BSP_PREMISE_UNVERIFIED_TO_SELF_PREMISE_VERIFIED(85, List.of("blue_msg_bsp_premise_unverified_to_self_premise_verified")),
+        BLUE_MSG_BSP_PREMISE_UNVERIFIED_TO_SELF_PREMISE_VERIFIED(85,
+                                                                 List.of("blue_msg_bsp_premise_unverified_to_self_premise_verified")),
         BLUE_MSG_BSP_PREMISE_VERIFIED(86, List.of("blue_msg_bsp_premise_verified")),
-        BLUE_MSG_BSP_PREMISE_VERIFIED_TO_SELF_PREMISE_UNVERIFIED(87, List.of("blue_msg_bsp_premise_verified_to_self_premise_unverified")),
+        BLUE_MSG_BSP_PREMISE_VERIFIED_TO_SELF_PREMISE_UNVERIFIED(87,
+                                                                 List.of("blue_msg_bsp_premise_verified_to_self_premise_unverified")),
         BLUE_MSG_CONSUMER_TO_BSP_FB_UNVERIFIED(88, List.of("blue_msg_consumer_to_bsp_fb_unverified")),
         BLUE_MSG_CONSUMER_TO_BSP_PREMISE_UNVERIFIED(89, List.of("blue_msg_consumer_to_bsp_premise_unverified")),
         BLUE_MSG_CONSUMER_TO_SELF_FB_UNVERIFIED(90, List.of("blue_msg_consumer_to_self_fb_unverified")),
@@ -533,9 +389,11 @@ public final class MessageInfo implements Info , MessageMetadataProvider , Jacks
         BLUE_MSG_SELF_FB_TO_BSP_PREMISE(92, List.of("blue_msg_self_fb_to_bsp_premise")),
         BLUE_MSG_SELF_FB_TO_SELF_PREMISE(93, List.of("blue_msg_self_fb_to_self_premise")),
         BLUE_MSG_SELF_FB_UNVERIFIED(94, List.of("blue_msg_self_fb_unverified")),
-        BLUE_MSG_SELF_FB_UNVERIFIED_TO_SELF_PREMISE_VERIFIED(95, List.of("blue_msg_self_fb_unverified_to_self_premise_verified")),
+        BLUE_MSG_SELF_FB_UNVERIFIED_TO_SELF_PREMISE_VERIFIED(95,
+                                                             List.of("blue_msg_self_fb_unverified_to_self_premise_verified")),
         BLUE_MSG_SELF_FB_VERIFIED(96, List.of("blue_msg_self_fb_verified")),
-        BLUE_MSG_SELF_FB_VERIFIED_TO_SELF_PREMISE_UNVERIFIED(97, List.of("blue_msg_self_fb_verified_to_self_premise_unverified")),
+        BLUE_MSG_SELF_FB_VERIFIED_TO_SELF_PREMISE_UNVERIFIED(97,
+                                                             List.of("blue_msg_self_fb_verified_to_self_premise_unverified")),
         BLUE_MSG_SELF_PREMISE_TO_BSP_PREMISE(98, List.of("blue_msg_self_premise_to_bsp_premise")),
         BLUE_MSG_SELF_PREMISE_UNVERIFIED(99, List.of("blue_msg_self_premise_unverified")),
         BLUE_MSG_SELF_PREMISE_VERIFIED(100, List.of("blue_msg_self_premise_verified")),
@@ -550,12 +408,16 @@ public final class MessageInfo implements Info , MessageMetadataProvider , Jacks
         BLUE_MSG_VERIFIED_TO_BSP_PREMISE_UNVERIFIED(109, List.of("blue_msg_verified_to_bsp_premise_unverified")),
         BLUE_MSG_VERIFIED_TO_SELF_FB_UNVERIFIED(110, List.of("blue_msg_verified_to_self_fb_unverified")),
         BLUE_MSG_VERIFIED_TO_UNVERIFIED(111, List.of("blue_msg_verified_to_unverified")),
-        BLUE_MSG_BSP_FB_UNVERIFIED_TO_BSP_PREMISE_VERIFIED(112, List.of("blue_msg_bsp_fb_unverified_to_bsp_premise_verified")),
+        BLUE_MSG_BSP_FB_UNVERIFIED_TO_BSP_PREMISE_VERIFIED(112,
+                                                           List.of("blue_msg_bsp_fb_unverified_to_bsp_premise_verified")),
         BLUE_MSG_BSP_FB_UNVERIFIED_TO_SELF_FB_VERIFIED(113, List.of("blue_msg_bsp_fb_unverified_to_self_fb_verified")),
-        BLUE_MSG_BSP_FB_VERIFIED_TO_BSP_PREMISE_UNVERIFIED(114, List.of("blue_msg_bsp_fb_verified_to_bsp_premise_unverified")),
+        BLUE_MSG_BSP_FB_VERIFIED_TO_BSP_PREMISE_UNVERIFIED(114,
+                                                           List.of("blue_msg_bsp_fb_verified_to_bsp_premise_unverified")),
         BLUE_MSG_BSP_FB_VERIFIED_TO_SELF_FB_UNVERIFIED(115, List.of("blue_msg_bsp_fb_verified_to_self_fb_unverified")),
-        BLUE_MSG_SELF_FB_UNVERIFIED_TO_BSP_PREMISE_VERIFIED(116, List.of("blue_msg_self_fb_unverified_to_bsp_premise_verified")),
-        BLUE_MSG_SELF_FB_VERIFIED_TO_BSP_PREMISE_UNVERIFIED(117, List.of("blue_msg_self_fb_verified_to_bsp_premise_unverified")),
+        BLUE_MSG_SELF_FB_UNVERIFIED_TO_BSP_PREMISE_VERIFIED(116,
+                                                            List.of("blue_msg_self_fb_unverified_to_bsp_premise_verified")),
+        BLUE_MSG_SELF_FB_VERIFIED_TO_BSP_PREMISE_UNVERIFIED(117,
+                                                            List.of("blue_msg_self_fb_verified_to_bsp_premise_unverified")),
         E2E_IDENTITY_UNAVAILABLE(118, List.of("e2e_identity_unavailable")),
         GROUP_CREATING(119, List.of()),
         GROUP_CREATE_FAILED(120, List.of()),
@@ -609,20 +471,28 @@ public final class MessageInfo implements Info , MessageMetadataProvider , Jacks
 
         @JsonCreator
         public static StubType of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(null);
         }
 
         public static Optional<StubType> of(String symbol) {
-            return Arrays.stream(values()).filter(entry -> entry.symbols().contains(symbol)).findFirst();
+            return Arrays.stream(values())
+                    .filter(entry -> entry.symbols()
+                            .contains(symbol))
+                    .findFirst();
         }
     }
 
     public static class MessageInfoBuilder {
-        public MessageInfo.MessageInfoBuilder pollUpdates(List<PollUpdate> pollUpdates) {
-            if (this.pollUpdates == null)
-                this.pollUpdates = new ArrayList<>();
+        public MessageInfoBuilder stubParameters(List<String> stubParameters) {
+            if (!stubParameters$set) {
+                this.stubParameters$value = new ArrayList<>();
+                this.stubParameters$set = true;
+            }
 
-            this.pollUpdates.addAll(pollUpdates);
+            this.stubParameters$value.addAll(stubParameters);
             return this;
         }
     }

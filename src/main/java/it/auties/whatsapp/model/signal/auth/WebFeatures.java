@@ -7,7 +7,6 @@ import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -15,12 +14,14 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.Arrays;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+
 @AllArgsConstructor
 @Data
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class WebFeatures implements ProtobufMessage {
+public class WebFeatures
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = WebFeatures.WebFeaturesFlag.class)
     private WebFeaturesFlag labelsDisplay;
 
@@ -159,7 +160,8 @@ public class WebFeatures implements ProtobufMessage {
     @AllArgsConstructor
     @Accessors(fluent = true)
     @ProtobufName("Flag")
-    public enum WebFeaturesFlag implements ProtobufMessage {
+    public enum WebFeaturesFlag
+            implements ProtobufMessage {
 
         NOT_STARTED(0),
         FORCE_UPGRADE(1),
@@ -170,7 +172,10 @@ public class WebFeatures implements ProtobufMessage {
 
         @JsonCreator
         public static WebFeaturesFlag of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(null);
         }
     }
 }

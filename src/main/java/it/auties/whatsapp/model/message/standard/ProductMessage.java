@@ -10,7 +10,6 @@ import it.auties.whatsapp.model.product.ProductCatalog;
 import it.auties.whatsapp.model.product.ProductSnapshot;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
@@ -30,7 +29,9 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class ProductMessage extends ContextualMessage implements ButtonMessage {
+public final class ProductMessage
+        extends ContextualMessage
+        implements ButtonMessage {
     /**
      * The product that this message wraps
      */

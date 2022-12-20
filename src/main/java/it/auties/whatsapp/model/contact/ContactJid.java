@@ -87,10 +87,10 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
         return new ContactJid(simpleUserAgent[0], server, 0, agent);
     }
 
-    private static int tryParseAgent(String string){
+    private static int tryParseAgent(String string) {
         try {
             return Integer.parseUnsignedInt(string);
-        }catch (NumberFormatException exception){
+        } catch (NumberFormatException exception) {
             return 0;
         }
     }
@@ -195,7 +195,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @param server the server to check against
      * @return a boolean
      */
-    public boolean hasServer(@NonNull Server server){
+    public boolean hasServer(@NonNull Server server) {
         return server() == server;
     }
 

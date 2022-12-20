@@ -5,7 +5,8 @@ import it.auties.whatsapp.model.contact.Contact;
 
 import java.util.Collection;
 
-public interface OnContacts extends Listener {
+public interface OnContacts
+        extends Listener {
     /**
      * Called when the socket receives all the contacts from WhatsappWeb's WebSocket
      *

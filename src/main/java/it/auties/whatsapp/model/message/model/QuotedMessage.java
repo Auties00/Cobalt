@@ -16,7 +16,8 @@ import java.util.Optional;
 @AllArgsConstructor
 @Value
 @Accessors(fluent = true)
-public class QuotedMessage implements MessageMetadataProvider {
+public class QuotedMessage
+        implements MessageMetadataProvider {
     /**
      * The id of the message
      */

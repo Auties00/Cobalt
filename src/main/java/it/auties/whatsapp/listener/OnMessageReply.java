@@ -3,7 +3,8 @@ package it.auties.whatsapp.listener;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.QuotedMessage;
 
-public interface OnMessageReply extends Listener {
+public interface OnMessageReply
+        extends Listener {
     /**
      * Called when a message answers a previous message
      *

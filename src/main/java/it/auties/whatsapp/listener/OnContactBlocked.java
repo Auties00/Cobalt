@@ -2,7 +2,8 @@ package it.auties.whatsapp.listener;
 
 import it.auties.whatsapp.model.contact.Contact;
 
-public interface OnContactBlocked extends Listener{
+public interface OnContactBlocked
+        extends Listener {
     /**
      * Called when a contact is blocked or unblocked
      *

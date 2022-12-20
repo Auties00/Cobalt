@@ -7,7 +7,10 @@ import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.SignalSpecification;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
@@ -22,7 +25,8 @@ import static it.auties.protobuf.base.ProtobufType.UINT32;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class SenderKeyMessage implements ProtobufMessage, JacksonProvider, SignalSpecification {
+public class SenderKeyMessage
+        implements ProtobufMessage, JacksonProvider, SignalSpecification {
     private int version;
 
     @ProtobufProperty(index = 1, type = UINT32)
@@ -41,32 +45,32 @@ public class SenderKeyMessage implements ProtobufMessage, JacksonProvider, Signa
     private byte[] serialized;
 
     public SenderKeyMessage(int id, int iteration, byte @NonNull [] cipherText, byte @NonNull [] signingKey) {
-       try {
-           this.version = CURRENT_VERSION;
-           this.id = id;
-           this.iteration = iteration;
-           this.cipherText = cipherText;
-           this.signingKey = signingKey;
-           var serialized = Bytes.of(BytesHelper.versionToBytes(version))
-                   .append(PROTOBUF.writeValueAsBytes(this));
-           this.signature = Curve25519.sign(signingKey, serialized.toByteArray(), true);
-           this.serialized = serialized.append(signature)
-                   .toByteArray();
-       }catch (IOException exception){
-           throw new UncheckedIOException("Cannot create SenderKeyMessage", exception);
-       }
+        try {
+            this.version = CURRENT_VERSION;
+            this.id = id;
+            this.iteration = iteration;
+            this.cipherText = cipherText;
+            this.signingKey = signingKey;
+            var serialized = Bytes.of(BytesHelper.versionToBytes(version))
+                    .append(PROTOBUF.writeValueAsBytes(this));
+            this.signature = Curve25519.sign(signingKey, serialized.toByteArray(), true);
+            this.serialized = serialized.append(signature)
+                    .toByteArray();
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Cannot create SenderKeyMessage", exception);
+        }
     }
 
     public static SenderKeyMessage ofSerialized(byte[] serialized) {
         try {
             var buffer = Bytes.of(serialized);
             return PROTOBUF.readMessage(buffer.slice(1, -SIGNATURE_LENGTH)
-                            .toByteArray(), SenderKeyMessage.class)
+                                                .toByteArray(), SenderKeyMessage.class)
                     .version(BytesHelper.bytesToVersion(serialized[0]))
                     .signature(buffer.slice(-SIGNATURE_LENGTH)
-                            .toByteArray())
+                                       .toByteArray())
                     .serialized(serialized);
-        }catch (IOException exception){
+        } catch (IOException exception) {
             throw new UncheckedIOException("Cannot decipher SenderKeyMessage", exception);
         }
     }

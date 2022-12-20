@@ -6,7 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.INT32;
@@ -16,7 +15,8 @@ import static it.auties.protobuf.base.ProtobufType.INT32;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class KeyExpiration implements ProtobufMessage {
+public class KeyExpiration
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = INT32)
     private int expiredKeyEpoch;
 }

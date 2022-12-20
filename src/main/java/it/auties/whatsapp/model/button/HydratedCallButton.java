@@ -19,7 +19,8 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder(access = AccessLevel.PROTECTED)
 @Jacksonized
 @Accessors(fluent = true)
-public class HydratedCallButton implements ProtobufMessage {
+public class HydratedCallButton
+        implements ProtobufMessage {
     /**
      * The text of this button
      */

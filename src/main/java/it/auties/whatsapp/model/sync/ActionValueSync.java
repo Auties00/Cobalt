@@ -22,13 +22,14 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @ToString
 @Accessors(fluent = true)
 @ProtobufName("SyncActionValue")
-public class ActionValueSync implements ProtobufMessage {
+public class ActionValueSync
+        implements ProtobufMessage {
     // <editor-fold desc="Metadata">
     @ProtobufProperty(index = 1, type = INT64)
     @Getter
     private long timestamp;
     //</editor-fold>
-    
+
     // <editor-fold desc="Actions">
     @ProtobufProperty(index = 2, type = MESSAGE, implementation = StarAction.class)
     private StarAction starAction;
@@ -108,7 +109,7 @@ public class ActionValueSync implements ProtobufMessage {
     @ProtobufProperty(index = 36, name = "chatAssignmentOpenedStatus", type = ProtobufType.MESSAGE)
     private ChatAssignmentOpenedStatusAction chatAssignmentOpenedStatusAction;
     // editor-fold>
-    
+
     // <editor-fold desc="Settings">
     @ProtobufProperty(index = 6, type = MESSAGE, implementation = SecurityNotificationSetting.class)
     private SecurityNotificationSetting securityNotificationSetting;
@@ -122,7 +123,7 @@ public class ActionValueSync implements ProtobufMessage {
     @ProtobufProperty(index = 23, type = MESSAGE, implementation = UnarchiveChatsSetting.class)
     private UnarchiveChatsSetting unarchiveChatsSetting;
     //</editor-fold>
-    
+
     // <editor-fold desc="Misc">
     @ProtobufProperty(index = 10, type = MESSAGE, implementation = RecentStickerMetadata.class)
     @Getter
@@ -164,10 +165,12 @@ public class ActionValueSync implements ProtobufMessage {
                     this.androidUnsupportedActions = androidUnsupportedActions;
             case AgentAction agentAction -> this.agentAction = agentAction;
             case ChatAssignmentAction chatAssignmentAction -> this.chatAssignmentAction = chatAssignmentAction;
-            case ChatAssignmentOpenedStatusAction chatAssignmentOpenedStatusAction -> this.chatAssignmentOpenedStatusAction = chatAssignmentOpenedStatusAction;
+            case ChatAssignmentOpenedStatusAction chatAssignmentOpenedStatusAction ->
+                    this.chatAssignmentOpenedStatusAction = chatAssignmentOpenedStatusAction;
             case NuxAction nuxAction -> this.nuxAction = nuxAction;
             case PrimaryVersionAction primaryVersionAction -> this.primaryVersionAction = primaryVersionAction;
-            case RemoveRecentStickerAction removeRecentStickerAction -> this.removeRecentStickerAction = removeRecentStickerAction;
+            case RemoveRecentStickerAction removeRecentStickerAction ->
+                    this.removeRecentStickerAction = removeRecentStickerAction;
             case StickerAction stickerAction -> this.stickerAction = stickerAction;
             case SubscriptionAction subscriptionAction -> this.subscriptionAction = subscriptionAction;
             case TimeFormatAction timeFormatAction -> this.timeFormatAction = timeFormatAction;
@@ -184,8 +187,8 @@ public class ActionValueSync implements ProtobufMessage {
             case PushNameSetting pushNameSetting -> this.pushNameSetting = pushNameSetting;
             case LocaleSetting localeSetting -> this.localeSetting = localeSetting;
             case UnarchiveChatsSetting unarchiveChatsSetting -> this.unarchiveChatsSetting = unarchiveChatsSetting;
-            default -> throw new UnsupportedOperationException(
-                    "Cannot wrap %s in action value sync".formatted(setting));
+            default ->
+                    throw new UnsupportedOperationException("Cannot wrap %s in action value sync".formatted(setting));
         }
     }
 
@@ -233,25 +236,25 @@ public class ActionValueSync implements ProtobufMessage {
             return favoriteStickerAction;
         if (androidUnsupportedActions != null)
             return androidUnsupportedActions;
-        if(agentAction != null)
+        if (agentAction != null)
             return agentAction;
-        if(chatAssignmentAction != null)
+        if (chatAssignmentAction != null)
             return chatAssignmentAction;
-        if(chatAssignmentOpenedStatusAction != null)
+        if (chatAssignmentOpenedStatusAction != null)
             return chatAssignmentOpenedStatusAction;
-        if(nuxAction != null)
+        if (nuxAction != null)
             return nuxAction;
-        if(primaryVersionAction != null)
+        if (primaryVersionAction != null)
             return primaryVersionAction;
-        if(removeRecentStickerAction != null)
+        if (removeRecentStickerAction != null)
             return removeRecentStickerAction;
-        if(stickerAction != null)
+        if (stickerAction != null)
             return stickerAction;
-        if(subscriptionAction != null)
+        if (subscriptionAction != null)
             return subscriptionAction;
-        if(timeFormatAction != null)
+        if (timeFormatAction != null)
             return timeFormatAction;
-        if(userStatusMuteAction != null)
+        if (userStatusMuteAction != null)
             return userStatusMuteAction;
         return null;
     }
@@ -277,7 +280,8 @@ public class ActionValueSync implements ProtobufMessage {
     @Jacksonized
     @Builder
     @Accessors(fluent = true)
-    public static class PrimaryFeature implements ProtobufMessage {
+    public static class PrimaryFeature
+            implements ProtobufMessage {
         @ProtobufProperty(index = 1, type = STRING, repeated = true)
         private List<String> flags;
 

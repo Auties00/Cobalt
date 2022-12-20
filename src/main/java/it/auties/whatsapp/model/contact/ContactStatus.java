@@ -13,7 +13,8 @@ import java.util.Optional;
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum ContactStatus implements ProtobufMessage {
+public enum ContactStatus
+        implements ProtobufMessage {
     /**
      * When the contact is online
      */

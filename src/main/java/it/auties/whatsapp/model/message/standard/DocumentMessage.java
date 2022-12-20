@@ -31,7 +31,8 @@ import static it.auties.whatsapp.util.Medias.Format.FILE;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class DocumentMessage extends MediaMessage {
+public final class DocumentMessage
+        extends MediaMessage {
     /**
      * The upload url of the encoded document that this object wraps
      */
@@ -121,8 +122,7 @@ public final class DocumentMessage extends MediaMessage {
      */
     @Builder(builderClassName = "SimpleDocumentMessageBuilder", builderMethodName = "simpleBuilder")
     private static DocumentMessage customBuilder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media,
-                                           String mimeType, String title, int pageCount, String fileName,
-                                           byte[] thumbnail, ContextInfo contextInfo) {
+            String mimeType, String title, int pageCount, String fileName, byte[] thumbnail, ContextInfo contextInfo) {
         var upload = Medias.upload(media, DOCUMENT, mediaConnection);
         return DocumentMessage.builder()
                 .mediaSha256(upload.fileSha256())
@@ -133,15 +133,16 @@ public final class DocumentMessage extends MediaMessage {
                 .mediaDirectPath(upload.directPath())
                 .mediaSize(upload.fileLength())
                 .mimetype(Optional.ofNullable(mimeType)
-                        .or(() -> Medias.getMimeType(fileName))
-                        .or(() -> Medias.getMimeType(media))
-                        .orElse(DOCUMENT.defaultMimeType()))
+                                  .or(() -> Medias.getMimeType(fileName))
+                                  .or(() -> Medias.getMimeType(media))
+                                  .orElse(DOCUMENT.defaultMimeType()))
                 .fileName(fileName)
                 .pageCount(pageCount)
                 .title(title)
                 .thumbnail(thumbnail != null ?
-                        thumbnail :
-                        Medias.getThumbnail(media, FILE).orElse(null))
+                                   thumbnail :
+                                   Medias.getThumbnail(media, FILE)
+                                           .orElse(null))
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .build();
     }

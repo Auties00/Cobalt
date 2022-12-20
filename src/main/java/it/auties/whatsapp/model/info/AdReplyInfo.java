@@ -19,7 +19,8 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class AdReplyInfo implements Info {
+public final class AdReplyInfo
+        implements Info {
     /**
      * The name of the advertiser that served the original companion
      */

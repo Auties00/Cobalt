@@ -7,7 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.INT64;
@@ -18,7 +17,8 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class SyncActionMessage implements ProtobufMessage {
+public class SyncActionMessage
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = MessageKey.class)
     private MessageKey key;
 

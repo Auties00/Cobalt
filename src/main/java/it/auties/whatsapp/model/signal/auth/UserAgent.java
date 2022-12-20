@@ -6,7 +6,6 @@ import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -21,7 +20,8 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class UserAgent implements ProtobufMessage {
+public class UserAgent
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = UserAgentPlatform.class)
     private UserAgentPlatform platform;
 
@@ -63,7 +63,8 @@ public class UserAgent implements ProtobufMessage {
 
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum UserAgentPlatform implements ProtobufMessage {
+    public enum UserAgentPlatform
+            implements ProtobufMessage {
         ANDROID(0),
         IOS(1),
         WINDOWS_PHONE(2),
@@ -105,7 +106,8 @@ public class UserAgent implements ProtobufMessage {
 
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum UserAgentReleaseChannel implements ProtobufMessage {
+    public enum UserAgentReleaseChannel
+            implements ProtobufMessage {
         RELEASE(0),
         BETA(1),
         ALPHA(2),

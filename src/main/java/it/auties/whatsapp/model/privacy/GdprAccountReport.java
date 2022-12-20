@@ -12,13 +12,6 @@ import java.time.ZonedDateTime;
  */
 public sealed interface GdprAccountReport {
     /**
-     * Returns the type of this report
-     *
-     * @return a non-null type
-     */
-    Type type();
-
-    /**
      * Constructs a pending gdpr report from a timestamp
      *
      * @param timestamp the timestamp in seconds
@@ -26,8 +19,8 @@ public sealed interface GdprAccountReport {
      */
     static Pending ofPending(long timestamp) {
         return new Pending(Clock.parse(timestamp)
-                .orElse(ZonedDateTime.now()
-                        .plusDays(3)));
+                                   .orElse(ZonedDateTime.now()
+                                                   .plusDays(3)));
     }
 
     /**
@@ -49,36 +42,11 @@ public sealed interface GdprAccountReport {
     }
 
     /**
-     * A pending gdpr request
+     * Returns the type of this report
      *
-     * @param dateTime the eta for the result of the request
+     * @return a non-null type
      */
-    record Pending(@NonNull ZonedDateTime dateTime) implements GdprAccountReport {
-        @Override
-        public Type type() {
-            return Type.PENDING;
-        }
-    }
-
-    /**
-     * A successful gdpr request
-     */
-    record Ready() implements GdprAccountReport {
-        @Override
-        public Type type() {
-            return Type.READY;
-        }
-    }
-
-    /**
-     * An erroneous gdpr request
-     */
-    record Error() implements GdprAccountReport {
-        @Override
-        public Type type() {
-            return Type.ERROR;
-        }
-    }
+    Type type();
 
     /**
      * The constants of this enumerated type describe the status of a gdpr request
@@ -98,5 +66,40 @@ public sealed interface GdprAccountReport {
          * The report is ready to be downloaded
          */
         READY
+    }
+
+    /**
+     * A pending gdpr request
+     *
+     * @param dateTime the eta for the result of the request
+     */
+    record Pending(@NonNull ZonedDateTime dateTime)
+            implements GdprAccountReport {
+        @Override
+        public Type type() {
+            return Type.PENDING;
+        }
+    }
+
+    /**
+     * A successful gdpr request
+     */
+    record Ready()
+            implements GdprAccountReport {
+        @Override
+        public Type type() {
+            return Type.READY;
+        }
+    }
+
+    /**
+     * An erroneous gdpr request
+     */
+    record Error()
+            implements GdprAccountReport {
+        @Override
+        public Type type() {
+            return Type.ERROR;
+        }
     }
 }

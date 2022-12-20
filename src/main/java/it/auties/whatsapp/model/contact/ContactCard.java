@@ -27,7 +27,8 @@ import java.util.stream.Collectors;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class ContactCard implements ProtobufMessage {
+public class ContactCard
+        implements ProtobufMessage {
     private static final String BUSINESS_NAME_PROPERTY = "X-WA-BIZ-NAME";
     private static final String PHONE_NUMBER_PROPERTY = "WAID";
     private static final String DEFAULT_NUMBER_TYPE = "CELL";
@@ -130,7 +131,7 @@ public class ContactCard implements ProtobufMessage {
     public String toVcard() {
         var vcard = new VCard();
         vcard.setVersion(version().map(VCardVersion::valueOfByStr)
-                .orElse(VCardVersion.V3_0));
+                                 .orElse(VCardVersion.V3_0));
         vcard.setFormattedName(name);
         phoneNumbers().forEach((type, contact) -> addPhoneNumber(vcard, type, contact));
 

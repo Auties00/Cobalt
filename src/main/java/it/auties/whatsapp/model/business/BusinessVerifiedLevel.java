@@ -13,7 +13,8 @@ import java.util.Arrays;
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum BusinessVerifiedLevel implements ProtobufMessage {
+public enum BusinessVerifiedLevel
+        implements ProtobufMessage {
     /**
      * Unknown
      */

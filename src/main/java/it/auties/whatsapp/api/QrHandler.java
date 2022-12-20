@@ -26,7 +26,8 @@ import static java.nio.file.Files.createTempFile;
  */
 @FunctionalInterface
 @SuppressWarnings("unused")
-public interface QrHandler extends Consumer<String> {
+public interface QrHandler
+        extends Consumer<String> {
     /**
      * Prints the QR code to the terminal.
      * If your terminal doesn't support utf, you may see random characters.
@@ -55,7 +56,7 @@ public interface QrHandler extends Consumer<String> {
     static QrHandler toFile(@NonNull ToFileConsumer fileConsumer) {
         try {
             var file = createTempFile(UUID.randomUUID()
-                    .toString(), ".jpg");
+                                              .toString(), ".jpg");
             return toFile(file, fileConsumer);
         } catch (IOException exception) {
             throw new UncheckedIOException("Cannot create temp file for qr handler", exception);
@@ -92,7 +93,8 @@ public interface QrHandler extends Consumer<String> {
         try {
             var writer = new MultiFormatWriter();
             return writer.encode(qr, BarcodeFormat.QR_CODE, size, size,
-                    Map.of(EncodeHintType.MARGIN, margin, EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.L));
+                                 Map.of(EncodeHintType.MARGIN, margin, EncodeHintType.ERROR_CORRECTION,
+                                        ErrorCorrectionLevel.L));
         } catch (WriterException exception) {
             throw new UnsupportedOperationException("Cannot create qr code", exception);
         }
@@ -101,7 +103,8 @@ public interface QrHandler extends Consumer<String> {
     /**
      * This interface allows to consume a file created by {@link QrHandler#toFile(Path, ToFileConsumer)} easily
      */
-    interface ToFileConsumer extends Consumer<Path> {
+    interface ToFileConsumer
+            extends Consumer<Path> {
         /**
          * Discard the newly created file
          */

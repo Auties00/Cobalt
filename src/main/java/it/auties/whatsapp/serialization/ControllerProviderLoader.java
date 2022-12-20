@@ -35,9 +35,8 @@ public class ControllerProviderLoader {
      * @param useDefault whether the default serializer should be included
      * @return a non-null list
      */
-    public LinkedList<Integer> findAllIds(boolean useDefault){
-        return stream(useDefault)
-                .map(ControllerProvider::findIds)
+    public LinkedList<Integer> findAllIds(boolean useDefault) {
+        return stream(useDefault).map(ControllerProvider::findIds)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toCollection(LinkedList::new));
     }
@@ -48,7 +47,7 @@ public class ControllerProviderLoader {
      * @param useDefault whether the default serializer should be included
      * @return a non-null list
      */
-    public List<ControllerSerializerProvider> findAllSerializers(boolean useDefault){
+    public List<ControllerSerializerProvider> findAllSerializers(boolean useDefault) {
         return ControllerProviderLoader.stream(useDefault)
                 .filter(entry -> entry instanceof ControllerSerializerProvider)
                 .map(entry -> (ControllerSerializerProvider) entry)
@@ -61,7 +60,7 @@ public class ControllerProviderLoader {
      * @param useDefault whether the default serializer should be included
      * @return a non-null list
      */
-    public ControllerDeserializerProvider findOnlyDeserializer(boolean useDefault){
+    public ControllerDeserializerProvider findOnlyDeserializer(boolean useDefault) {
         var providers = ControllerProviderLoader.stream(useDefault)
                 .filter(entry -> entry instanceof ControllerDeserializerProvider)
                 .map(entry -> (ControllerDeserializerProvider) entry)
@@ -71,18 +70,21 @@ public class ControllerProviderLoader {
         var best = providers.stream()
                 .filter(ControllerDeserializerProvider::isBest)
                 .collect(Collectors.toCollection(LinkedList::new));
-        if(best.isEmpty()){
-            checkProviders(providers, "Cannot resolve conflicts between serializers, more than one serializer with default priority exists: %s");
+        if (best.isEmpty()) {
+            checkProviders(providers,
+                           "Cannot resolve conflicts between serializers, more than one serializer with default priority exists: %s");
             return providers.getFirst();
         }
 
-        checkProviders(best, "Cannot resolve conflicts between serializers, more than one serializer with high priority exists: %s");
+        checkProviders(best,
+                       "Cannot resolve conflicts between serializers, more than one serializer with high priority exists: %s");
         return best.getFirst();
     }
 
     private void checkProviders(Collection<? extends ControllerProvider> providers, String message) {
-        Validate.isTrue(providers.size() == 1, message,
-                UnsupportedOperationException.class,
-                providers.stream().map(Object::getClass).map(Class::getName).collect(Collectors.joining(", ")));
+        Validate.isTrue(providers.size() == 1, message, UnsupportedOperationException.class, providers.stream()
+                .map(Object::getClass)
+                .map(Class::getName)
+                .collect(Collectors.joining(", ")));
     }
 }

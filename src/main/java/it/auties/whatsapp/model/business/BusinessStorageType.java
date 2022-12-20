@@ -13,7 +13,8 @@ import java.util.Arrays;
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum BusinessStorageType implements ProtobufMessage {
+public enum BusinessStorageType
+        implements ProtobufMessage {
     /**
      * Hosted on a private server ("On-Premise")
      */

@@ -36,7 +36,8 @@ import static java.util.Objects.requireNonNullElse;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class VideoMessage extends MediaMessage {
+public final class VideoMessage
+        extends MediaMessage {
     /**
      * The upload url of the encoded video that this object wraps
      */
@@ -155,8 +156,7 @@ public final class VideoMessage extends MediaMessage {
      */
     @Builder(builderClassName = "SimpleVideoMessageBuilder", builderMethodName = "simpleVideoBuilder")
     private static VideoMessage videoBuilder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media,
-                                             String mimeType, String caption, byte[] thumbnail,
-                                             ContextInfo contextInfo) {
+            String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
         var dimensions = Medias.getDimensions(media, true);
         var duration = Medias.getDuration(media, true);
         var upload = Medias.upload(media, VIDEO, mediaConnection);
@@ -170,8 +170,9 @@ public final class VideoMessage extends MediaMessage {
                 .mediaSize(upload.fileLength())
                 .mimetype(requireNonNullElse(mimeType, VIDEO.defaultMimeType()))
                 .thumbnail(thumbnail != null ?
-                        thumbnail :
-                        Medias.getThumbnail(media, Medias.Format.VIDEO).orElse(null))
+                                   thumbnail :
+                                   Medias.getThumbnail(media, Medias.Format.VIDEO)
+                                           .orElse(null))
                 .caption(caption)
                 .width(dimensions.width())
                 .height(dimensions.height())
@@ -197,10 +198,10 @@ public final class VideoMessage extends MediaMessage {
      */
     @Builder(builderClassName = "SimpleGifBuilder", builderMethodName = "simpleGifBuilder")
     private static VideoMessage gifBuilder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media,
-                                           String mimeType, String caption, VideoMessageAttribution gifAttribution,
-                                           byte[] thumbnail, ContextInfo contextInfo) {
+            String mimeType, String caption, VideoMessageAttribution gifAttribution, byte[] thumbnail,
+            ContextInfo contextInfo) {
         Validate.isTrue(isNotGif(media, mimeType),
-                "Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
+                        "Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
         var dimensions = Medias.getDimensions(media, true);
         var duration = Medias.getDuration(media, true);
         var upload = Medias.upload(media, VIDEO, mediaConnection);
@@ -214,8 +215,9 @@ public final class VideoMessage extends MediaMessage {
                 .mediaSize(upload.fileLength())
                 .mimetype(requireNonNullElse(mimeType, VIDEO.defaultMimeType()))
                 .thumbnail(thumbnail != null ?
-                        thumbnail :
-                        Medias.getThumbnail(media, Medias.Format.VIDEO).orElse(null))
+                                   thumbnail :
+                                   Medias.getThumbnail(media, Medias.Format.VIDEO)
+                                           .orElse(null))
                 .caption(caption)
                 .width(dimensions.width())
                 .height(dimensions.height())

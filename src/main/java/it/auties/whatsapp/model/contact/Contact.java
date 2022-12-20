@@ -24,7 +24,8 @@ import java.util.Optional;
 @Accessors(fluent = true)
 @ToString
 @SuppressWarnings("unused")
-public final class Contact implements ProtobufMessage, ContactJidProvider {
+public final class Contact
+        implements ProtobufMessage, ContactJidProvider {
     /**
      * The non-null unique jid used to identify this contact
      */
@@ -114,9 +115,8 @@ public final class Contact implements ProtobufMessage, ContactJidProvider {
      * @param other the contact
      * @return a boolean
      */
-    public boolean equals(Object other){
-        return other instanceof Contact that
-                && Objects.equals(this.jid(), that.jid());
+    public boolean equals(Object other) {
+        return other instanceof Contact that && Objects.equals(this.jid(), that.jid());
     }
 
     @Override

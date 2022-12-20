@@ -5,7 +5,6 @@ import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -22,7 +21,8 @@ import static it.auties.protobuf.base.ProtobufType.INT32;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public class Point implements ProtobufMessage {
+public class Point
+        implements ProtobufMessage {
     /**
      * X coordinate, deprecated
      *

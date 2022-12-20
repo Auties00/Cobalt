@@ -206,7 +206,8 @@ public class Encoder {
             case Node ignored -> throw new IllegalArgumentException(
                     "Invalid payload type(nodes should be wrapped by a collection): %s".formatted(input));
             default -> throw new IllegalArgumentException("Invalid payload type(%s): %s".formatted(input.getClass()
-                    .getName(), input));
+                                                                                                           .getName(),
+                                                                                                   input));
         }
     }
 
@@ -236,13 +237,13 @@ public class Encoder {
         if (jid.user() != null) {
             writeString(jid.user());
             writeString(jid.server()
-                    .address());
+                                .address());
             return;
         }
 
         this.buffer = buffer.append(LIST_EMPTY.data());
         writeString(jid.server()
-                .address());
+                            .address());
     }
 
     private int length(String input) {

@@ -6,7 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.STRING;
@@ -19,7 +18,8 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder(access = AccessLevel.PROTECTED)
 @Jacksonized
 @Accessors(fluent = true)
-public final class ContactAction implements Action {
+public final class ContactAction
+        implements Action {
     /**
      * The full name of the contact
      */

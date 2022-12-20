@@ -10,7 +10,8 @@ import java.io.ByteArrayOutputStream;
 import java.util.zip.Inflater;
 
 @UtilityClass
-public class BytesHelper implements JacksonProvider {
+public class BytesHelper
+        implements JacksonProvider {
     public byte versionToBytes(int version) {
         return (byte) (version << 4 | SignalSpecification.CURRENT_VERSION);
     }

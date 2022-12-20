@@ -36,12 +36,12 @@ public enum PrivacySettingValue {
      */
     NOBODY("none");
 
+    @Getter
+    private final String data;
+
     public static Optional<PrivacySettingValue> of(String id) {
         return Arrays.stream(values())
                 .filter(entry -> Objects.equals(entry.data(), id))
                 .findFirst();
     }
-
-    @Getter
-    private final String data;
 }

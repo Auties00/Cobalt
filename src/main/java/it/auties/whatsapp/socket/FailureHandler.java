@@ -7,10 +7,12 @@ import it.auties.whatsapp.util.JacksonProvider;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-class FailureHandler implements JacksonProvider {
+class FailureHandler
+        implements JacksonProvider {
     private final SocketHandler socketHandler;
     private final AtomicBoolean failure;
-    public FailureHandler(SocketHandler socketHandler){
+
+    public FailureHandler(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
         this.failure = new AtomicBoolean();
     }
@@ -23,18 +25,18 @@ class FailureHandler implements JacksonProvider {
     }
 
     protected <T> T handleFailure(ErrorHandler.Location location, Throwable throwable) {
-        if(location == ErrorHandler.Location.ERRONEOUS_NODE && failure.get()){
+        if (location == ErrorHandler.Location.ERRONEOUS_NODE && failure.get()) {
             return null;
         }
 
         var result = socketHandler.options()
                 .errorHandler()
                 .apply(location, throwable);
-        if(failure.get()){
+        if (failure.get()) {
             return null;
         }
 
-        if(result != ErrorHandler.Result.DISCARD){
+        if (result != ErrorHandler.Result.DISCARD) {
             failure.set(true);
         }
 

@@ -27,7 +27,9 @@ import static java.util.Objects.requireNonNullElseGet;
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder
 @Accessors(fluent = true)
-public final class TemplateMessage extends ContextualMessage implements ButtonMessage {
+public final class TemplateMessage
+        extends ContextualMessage
+        implements ButtonMessage {
     /**
      * Four row template.
      * This property is defined only if {@link TemplateMessage#formatType()} == {@link Format#FOUR_ROW_TEMPLATE}.
@@ -47,7 +49,7 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
      */
     @ProtobufProperty(index = 3, type = MESSAGE, implementation = ContextInfo.class)
     @Default
-    private ContextInfo contextInfo = new ContextInfo();  
+    private ContextInfo contextInfo = new ContextInfo();
 
     /**
      * Hydrated template
@@ -74,7 +76,7 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
      * @return a non-null template message
      */
     public static TemplateMessage newFourRowTemplateMessage(@NonNull FourRowTemplate template,
-                                                            ContextInfo contextInfo) {
+            ContextInfo contextInfo) {
         return TemplateMessage.builder()
                 .fourRowTemplate(template)
                 .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new))
@@ -99,7 +101,7 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
      * @return a non-null template message
      */
     public static TemplateMessage newHydratedFourRowTemplateMessage(@NonNull HydratedFourRowTemplate template,
-                                                                    ContextInfo contextInfo) {
+            ContextInfo contextInfo) {
         return TemplateMessage.builder()
                 .hydratedFourRowTemplate(template)
                 .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new))
@@ -124,7 +126,7 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
      * @return a non-null template message
      */
     public static TemplateMessage newHydratedTemplateMessage(@NonNull HydratedFourRowTemplate template,
-                                                             ContextInfo contextInfo) {
+            ContextInfo contextInfo) {
         return TemplateMessage.builder()
                 .hydratedTemplate(template)
                 .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new))

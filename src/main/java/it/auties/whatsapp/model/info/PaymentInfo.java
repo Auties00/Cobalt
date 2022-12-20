@@ -9,7 +9,6 @@ import it.auties.whatsapp.model.payment.PaymentMoney;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -17,6 +16,7 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.Arrays;
 
 import static it.auties.protobuf.base.ProtobufType.*;
+
 /**
  * A model class that holds the information related to a payment.
  */
@@ -25,7 +25,8 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class PaymentInfo implements Info {
+public final class PaymentInfo
+        implements Info {
     /**
      * The currency of this transaction
      */
@@ -128,7 +129,10 @@ public final class PaymentInfo implements Info {
 
         @JsonCreator
         public static PaymentInfoCurrency of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(null);
         }
     }
 
@@ -192,7 +196,10 @@ public final class PaymentInfo implements Info {
         private final int index;
 
         public static PaymentInfoStatus of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(null);
         }
     }
 
@@ -237,7 +244,10 @@ public final class PaymentInfo implements Info {
         private final int index;
 
         public static PaymentInfoTxnStatus of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(null);
         }
     }
 }

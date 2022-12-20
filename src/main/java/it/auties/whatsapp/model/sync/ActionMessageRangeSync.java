@@ -8,7 +8,6 @@ import it.auties.whatsapp.model.message.model.MessageKey;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -24,7 +23,8 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class ActionMessageRangeSync implements ProtobufMessage {
+public class ActionMessageRangeSync
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = INT64)
     private Long lastMessageTimestamp;
 
@@ -60,7 +60,7 @@ public class ActionMessageRangeSync implements ProtobufMessage {
                 null;
         var key = info != null ?
                 checkSenderKey(info.key()
-                        .copy()) :
+                                       .copy()) :
                 null;
         return new SyncActionMessage(key, timestamp);
     }

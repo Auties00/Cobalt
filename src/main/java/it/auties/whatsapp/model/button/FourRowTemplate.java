@@ -29,7 +29,8 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class FourRowTemplate implements ProtobufMessage {
+public class FourRowTemplate
+        implements ProtobufMessage {
     /**
      * The document title of this row
      */
@@ -88,7 +89,7 @@ public class FourRowTemplate implements ProtobufMessage {
      */
     @Builder(builderClassName = "EmptyFourRowTemplateBuilder", builderMethodName = "withoutTitleBuilder")
     private static FourRowTemplate emptyBuilder(HighlyStructuredMessage content, HighlyStructuredMessage footer,
-                                                List<ButtonTemplate> buttons) {
+            List<ButtonTemplate> buttons) {
         return createBuilder(content, footer, buttons).build();
 
     }
@@ -104,7 +105,7 @@ public class FourRowTemplate implements ProtobufMessage {
      */
     @Builder(builderClassName = "DocumentFourRowTemplateBuilder", builderMethodName = "withDocumentTitleBuilder")
     private static FourRowTemplate documentBuilder(DocumentMessage title, HighlyStructuredMessage content,
-                                                   HighlyStructuredMessage footer, List<ButtonTemplate> buttons) {
+            HighlyStructuredMessage footer, List<ButtonTemplate> buttons) {
         return createBuilder(content, footer, buttons).documentTitle(title)
                 .build();
 
@@ -121,9 +122,7 @@ public class FourRowTemplate implements ProtobufMessage {
      */
     @Builder(builderClassName = "HighlyStructuredFourRowTemplateBuilder", builderMethodName = "withHighlyStructuredTitleBuilder")
     private static FourRowTemplate highlyStructuredBuilder(HighlyStructuredMessage title,
-                                                           HighlyStructuredMessage content,
-                                                           HighlyStructuredMessage footer,
-                                                           List<ButtonTemplate> buttons) {
+            HighlyStructuredMessage content, HighlyStructuredMessage footer, List<ButtonTemplate> buttons) {
         return createBuilder(content, footer, buttons).highlyStructuredTitle(title)
                 .build();
     }
@@ -139,7 +138,7 @@ public class FourRowTemplate implements ProtobufMessage {
      */
     @Builder(builderClassName = "ImageFourRowTemplateBuilder", builderMethodName = "withImageTitleBuilder")
     private static FourRowTemplate imageBuilder(ImageMessage title, HighlyStructuredMessage content,
-                                                HighlyStructuredMessage footer, List<ButtonTemplate> buttons) {
+            HighlyStructuredMessage footer, List<ButtonTemplate> buttons) {
         return createBuilder(content, footer, buttons).imageTitle(title)
                 .build();
 
@@ -156,7 +155,7 @@ public class FourRowTemplate implements ProtobufMessage {
      */
     @Builder(builderClassName = "VideoFourRowTemplateBuilder", builderMethodName = "withVideoTitleBuilder")
     private static FourRowTemplate videoBuilder(VideoMessage title, HighlyStructuredMessage content,
-                                                HighlyStructuredMessage footer, List<ButtonTemplate> buttons) {
+            HighlyStructuredMessage footer, List<ButtonTemplate> buttons) {
         return createBuilder(content, footer, buttons).videoTitle(title)
                 .build();
 
@@ -173,14 +172,14 @@ public class FourRowTemplate implements ProtobufMessage {
      */
     @Builder(builderClassName = "LocationFourRowTemplateBuilder", builderMethodName = "withLocationTitleBuilder")
     private static FourRowTemplate locationBuilder(LocationMessage title, HighlyStructuredMessage content,
-                                                   HighlyStructuredMessage footer, List<ButtonTemplate> buttons) {
+            HighlyStructuredMessage footer, List<ButtonTemplate> buttons) {
         return createBuilder(content, footer, buttons).locationTitle(title)
                 .build();
 
     }
 
     private static FourRowTemplateBuilder createBuilder(HighlyStructuredMessage content, HighlyStructuredMessage footer,
-                                                        List<ButtonTemplate> buttons) {
+            List<ButtonTemplate> buttons) {
         return FourRowTemplate.builder()
                 .content(content)
                 .footer(footer)
@@ -212,7 +211,8 @@ public class FourRowTemplate implements ProtobufMessage {
      */
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum TitleType implements ProtobufMessage {
+    public enum TitleType
+            implements ProtobufMessage {
         /**
          * No title
          */

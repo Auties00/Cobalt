@@ -12,6 +12,7 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+
 /**
  * A model class that holds a payload about a business account.
  */
@@ -21,12 +22,13 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("BizAccountPayload")
-public class BusinessAccountPayload implements ProtobufMessage , JacksonProvider {
+public class BusinessAccountPayload
+        implements ProtobufMessage, JacksonProvider {
     /**
      * The certificate of this account
      */
-    @ProtobufProperty(index = 1, type = MESSAGE, implementation = BusinessCertificate.class)
-    private BusinessCertificate certificate;
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = BusinessVerifiedNameCertificate.class)
+    private BusinessVerifiedNameCertificate certificate;
 
     /**
      * The info about this account

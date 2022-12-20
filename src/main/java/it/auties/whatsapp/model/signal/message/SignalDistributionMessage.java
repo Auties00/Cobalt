@@ -15,7 +15,8 @@ import static it.auties.protobuf.base.ProtobufType.UINT32;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class SignalDistributionMessage implements SignalProtocolMessage {
+public final class SignalDistributionMessage
+        implements SignalProtocolMessage {
     /**
      * The version of this message
      */
@@ -65,8 +66,8 @@ public final class SignalDistributionMessage implements SignalProtocolMessage {
     @SneakyThrows
     public static SignalDistributionMessage ofSerialized(byte[] serialized) {
         return PROTOBUF.readMessage(Bytes.of(serialized)
-                        .slice(1)
-                        .toByteArray(), SignalDistributionMessage.class)
+                                            .slice(1)
+                                            .toByteArray(), SignalDistributionMessage.class)
                 .version(BytesHelper.bytesToVersion(serialized[0]))
                 .serialized(serialized);
     }

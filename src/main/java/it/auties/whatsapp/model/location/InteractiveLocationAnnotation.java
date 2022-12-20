@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+
 /**
  * A model class that describes an interactive annotation linked to a message
  */
@@ -25,7 +26,8 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("InteractiveAnnotation")
-public class InteractiveLocationAnnotation implements ProtobufMessage {
+public class InteractiveLocationAnnotation
+        implements ProtobufMessage {
     /**
      * Polygon vertices
      */
@@ -44,7 +46,9 @@ public class InteractiveLocationAnnotation implements ProtobufMessage {
      * @return a non-null Action
      */
     public Action type() {
-        return location != null ? Action.LOCATION : Action.UNKNOWN;
+        return location != null ?
+                Action.LOCATION :
+                Action.UNKNOWN;
     }
 
     /**
@@ -53,7 +57,8 @@ public class InteractiveLocationAnnotation implements ProtobufMessage {
     @AllArgsConstructor
     @Accessors(fluent = true)
     @ProtobufName("ActionType")
-    public enum Action implements ProtobufMessage {
+    public enum Action
+            implements ProtobufMessage {
 
         /**
          * Unknown
@@ -68,7 +73,10 @@ public class InteractiveLocationAnnotation implements ProtobufMessage {
 
         @JsonCreator
         public static Action of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(Action.UNKNOWN);
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(Action.UNKNOWN);
         }
     }
 

@@ -3,7 +3,8 @@ package it.auties.whatsapp.exception;
 /**
  * An unchecked exception that is thrown when an erroneous binary is received by Whatsapp
  */
-public final class ErroneousBinaryRequestException extends ErroneousRequestException {
+public final class ErroneousBinaryRequestException
+        extends ErroneousRequestException {
     private final Object error;
 
     @SuppressWarnings("unused")

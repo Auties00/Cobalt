@@ -15,7 +15,8 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class ServerErrorReceipt implements ProtobufMessage {
+public class ServerErrorReceipt
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = STRING)
     private String messageId;
 }

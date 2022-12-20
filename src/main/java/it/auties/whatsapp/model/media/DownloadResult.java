@@ -21,8 +21,7 @@ public class DownloadResult {
 
     Throwable error;
 
-    @NonNull
-    Status status;
+    @NonNull Status status;
 
     /**
      * Constructs a new successful download result
@@ -30,7 +29,7 @@ public class DownloadResult {
      * @param media the non-null media that was downloaded
      * @return a non-null download result
      */
-    public static DownloadResult success(byte @NonNull [] media){
+    public static DownloadResult success(byte @NonNull [] media) {
         return new DownloadResult(media, null, Status.SUCCESS);
     }
 
@@ -40,7 +39,7 @@ public class DownloadResult {
      * @param throwable the non-null error
      * @return a non-null download result
      */
-    public static DownloadResult error(@NonNull Throwable throwable){
+    public static DownloadResult error(@NonNull Throwable throwable) {
         return new DownloadResult(null, throwable, Status.ERROR);
     }
 
@@ -49,7 +48,7 @@ public class DownloadResult {
      *
      * @return a non-null download result
      */
-    public static DownloadResult missing(){
+    public static DownloadResult missing() {
         return MISSING;
     }
 
@@ -59,7 +58,7 @@ public class DownloadResult {
      *
      * @return a non-null optional
      */
-    public Optional<byte[]> media(){
+    public Optional<byte[]> media() {
         return Optional.ofNullable(media);
     }
 
@@ -69,7 +68,7 @@ public class DownloadResult {
      *
      * @return a non-null optional
      */
-    public Optional<Throwable> error(){
+    public Optional<Throwable> error() {
         return Optional.ofNullable(error);
     }
 

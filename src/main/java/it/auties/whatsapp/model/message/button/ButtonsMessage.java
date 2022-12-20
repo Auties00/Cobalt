@@ -36,7 +36,9 @@ import static java.util.Objects.requireNonNullElseGet;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class ButtonsMessage extends ContextualMessage implements ButtonMessage {
+public final class ButtonsMessage
+        extends ContextualMessage
+        implements ButtonMessage {
     /**
      * The text attached to this message
      */
@@ -84,7 +86,7 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
      */
     @ProtobufProperty(index = 8, type = MESSAGE, implementation = ContextInfo.class)
     @Builder.Default
-    private ContextInfo contextInfo  = new ContextInfo();
+    private ContextInfo contextInfo = new ContextInfo();
 
     /**
      * The buttons that this message wraps
@@ -110,7 +112,7 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
      */
     @Builder(builderClassName = "EmptyButtonsMessageBuilder", builderMethodName = "withoutHeaderMessageBuilder")
     private static ButtonsMessage emptyBuilder(String body, String footer, ContextInfo contextInfo,
-                                               List<Button> buttons) {
+            List<Button> buttons) {
         return createBuilder(HeaderType.EMPTY, body, footer, contextInfo, buttons).build();
     }
 
@@ -127,7 +129,7 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
      */
     @Builder(builderClassName = "TextButtonsMessageBuilder", builderMethodName = "withTextHeaderMessageBuilder")
     private static ButtonsMessage textBuilder(String header, String body, String footer, ContextInfo contextInfo,
-                                              List<Button> buttons) {
+            List<Button> buttons) {
         return createBuilder(HeaderType.TEXT, body, footer, contextInfo, buttons).headerText(header)
                 .build();
     }
@@ -145,7 +147,7 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
      */
     @Builder(builderClassName = "DocumentButtonsMessageBuilder", builderMethodName = "withDocumentHeaderMessageBuilder")
     private static ButtonsMessage documentBuilder(DocumentMessage header, String body, String footer,
-                                                  ContextInfo contextInfo, List<Button> buttons) {
+            ContextInfo contextInfo, List<Button> buttons) {
         return createBuilder(HeaderType.DOCUMENT, body, footer, contextInfo, buttons).headerDocument(header)
                 .build();
     }
@@ -163,7 +165,7 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
      */
     @Builder(builderClassName = "ImageButtonsMessageBuilder", builderMethodName = "withImageHeaderMessageBuilder")
     private static ButtonsMessage imageBuilder(ImageMessage header, String body, String footer, ContextInfo contextInfo,
-                                               List<Button> buttons) {
+            List<Button> buttons) {
         return createBuilder(HeaderType.IMAGE, body, footer, contextInfo, buttons).headerImage(header)
                 .build();
     }
@@ -181,7 +183,7 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
      */
     @Builder(builderClassName = "VideoButtonsMessageBuilder", builderMethodName = "withVideoHeaderMessageBuilder")
     private static ButtonsMessage videoBuilder(VideoMessage header, String body, String footer, ContextInfo contextInfo,
-                                               List<Button> buttons) {
+            List<Button> buttons) {
         return createBuilder(HeaderType.VIDEO, body, footer, contextInfo, buttons).headerVideo(header)
                 .build();
     }
@@ -199,13 +201,13 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
      */
     @Builder(builderClassName = "LocationHeaderButtonsMessageBuilder", builderMethodName = "withLocationHeaderMessageBuilder")
     private static ButtonsMessage locationBuilder(LocationMessage header, String body, String footer,
-                                                  ContextInfo contextInfo, List<Button> buttons) {
+            ContextInfo contextInfo, List<Button> buttons) {
         return createBuilder(HeaderType.LOCATION, body, footer, contextInfo, buttons).headerLocation(header)
                 .build();
     }
 
     private static ButtonsMessageBuilder createBuilder(HeaderType image, String body, String footer,
-                                                       ContextInfo contextInfo, List<Button> buttons) {
+            ContextInfo contextInfo, List<Button> buttons) {
         return ButtonsMessage.builder()
                 .headerType(image)
                 .body(body)
@@ -224,7 +226,8 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
      */
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum HeaderType implements ProtobufMessage {
+    public enum HeaderType
+            implements ProtobufMessage {
         /**
          * Unknown
          */

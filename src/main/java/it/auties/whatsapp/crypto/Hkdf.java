@@ -11,7 +11,8 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayOutputStream;
 
 @UtilityClass
-public class Hkdf implements SignalSpecification {
+public class Hkdf
+        implements SignalSpecification {
     private final int ITERATION_START_OFFSET = 1; // v3
     private final int HASH_OUTPUT_SIZE = 32;
     public final byte[] DEFAULT_SALT = new byte[HASH_OUTPUT_SIZE];

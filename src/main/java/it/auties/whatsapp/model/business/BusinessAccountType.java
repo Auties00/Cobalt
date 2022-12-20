@@ -13,7 +13,8 @@ import java.util.Arrays;
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum BusinessAccountType implements ProtobufMessage {
+public enum BusinessAccountType
+        implements ProtobufMessage {
     /**
      * Enterprise
      */

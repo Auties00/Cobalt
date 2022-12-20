@@ -17,7 +17,8 @@ import static it.auties.protobuf.base.ProtobufType.UINT32;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class SignalMessage implements SignalProtocolMessage {
+public final class SignalMessage
+        implements SignalProtocolMessage {
     private int version;
 
     @ProtobufProperty(index = 1, type = BYTES)
@@ -38,7 +39,7 @@ public final class SignalMessage implements SignalProtocolMessage {
 
     @SneakyThrows
     public SignalMessage(byte @NonNull [] ephemeralPublicKey, int counter, int previousCounter,
-                         byte @NonNull [] ciphertext, Function<byte[], byte[]> signer) {
+            byte @NonNull [] ciphertext, Function<byte[], byte[]> signer) {
         this.version = CURRENT_VERSION;
         this.ephemeralPublicKey = ephemeralPublicKey;
         this.counter = counter;
@@ -55,10 +56,10 @@ public final class SignalMessage implements SignalProtocolMessage {
     public static SignalMessage ofSerialized(byte[] serialized) {
         var buffer = Bytes.of(serialized);
         return PROTOBUF.readMessage(buffer.slice(1, -MAC_LENGTH)
-                        .toByteArray(), SignalMessage.class)
+                                            .toByteArray(), SignalMessage.class)
                 .version(BytesHelper.bytesToVersion(serialized[0]))
                 .signature(buffer.slice(-MAC_LENGTH)
-                        .toByteArray())
+                                   .toByteArray())
                 .serialized(serialized);
     }
 }

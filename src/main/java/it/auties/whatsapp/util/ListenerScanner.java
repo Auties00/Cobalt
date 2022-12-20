@@ -31,8 +31,8 @@ public class ListenerScanner {
 
     private Listener initialize(Class<?> listener, Whatsapp whatsapp) {
         Validate.isTrue(Listener.class.isAssignableFrom(listener),
-                "Cannot initialize listener at %s: cannot register classes that don't implement WhatsappListener",
-                listener.getName(), IllegalArgumentException.class);
+                        "Cannot initialize listener at %s: cannot register classes that don't implement WhatsappListener",
+                        listener.getName(), IllegalArgumentException.class);
         try {
             return (Listener) listener.getConstructor(createParameters(whatsapp))
                     .newInstance(createArguments(whatsapp));
@@ -51,10 +51,12 @@ public class ListenerScanner {
                                     .getName()), accessException);
         } catch (InvocationTargetException invocationException) {
             throw new IllegalArgumentException(
-                        "Cannot initialize listener at %s: an error occurred while initializing the class(check its static initializers)".formatted(listener.getName()), invocationException);
+                    "Cannot initialize listener at %s: an error occurred while initializing the class(check its static initializers)".formatted(
+                            listener.getName()), invocationException);
         } catch (InstantiationException instantiationException) {
             throw new IllegalArgumentException(
-                    "Cannot initialize listener at %s: an error occurred while initializing the class(check its constructor)".formatted(listener.getName()), instantiationException);
+                    "Cannot initialize listener at %s: an error occurred while initializing the class(check its constructor)".formatted(
+                            listener.getName()), instantiationException);
         }
 
     }

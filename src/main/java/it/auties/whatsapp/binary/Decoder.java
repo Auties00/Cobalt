@@ -27,8 +27,8 @@ public class Decoder {
         var data = buffer.remaining()
                 .toByteArray();
         this.buffer = Bytes.of(token == 0 ?
-                data :
-                BytesHelper.deflate(data));
+                                       data :
+                                       BytesHelper.deflate(data));
         return readNode();
     }
 

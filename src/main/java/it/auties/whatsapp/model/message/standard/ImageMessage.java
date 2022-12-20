@@ -34,7 +34,8 @@ import static java.util.Objects.requireNonNullElse;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class ImageMessage extends MediaMessage {
+public final class ImageMessage
+        extends MediaMessage {
     /**
      * The upload url of the encoded image that this object wraps
      */
@@ -170,7 +171,7 @@ public final class ImageMessage extends MediaMessage {
      */
     @Builder(builderClassName = "SimpleImageBuilder", builderMethodName = "simpleBuilder")
     private static ImageMessage customBuilder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media,
-                                        String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
+            String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
         var dimensions = Medias.getDimensions(media, false);
         var upload = Medias.upload(media, IMAGE, mediaConnection);
         return ImageMessage.builder()
@@ -186,8 +187,9 @@ public final class ImageMessage extends MediaMessage {
                 .width(dimensions.width())
                 .height(dimensions.height())
                 .thumbnail(thumbnail != null ?
-                        thumbnail :
-                        Medias.getThumbnail(media, JPG).orElse(null))
+                                   thumbnail :
+                                   Medias.getThumbnail(media, JPG)
+                                           .orElse(null))
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .build();
     }

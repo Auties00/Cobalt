@@ -60,17 +60,17 @@ public class SessionState {
 
     public boolean hasChain(byte[] senderEphemeral) {
         return chains.containsKey(Bytes.of(senderEphemeral)
-                .toHex());
+                                          .toHex());
     }
 
     public Optional<SessionChain> findChain(byte[] senderEphemeral) {
         return Optional.ofNullable(chains.get(Bytes.of(senderEphemeral)
-                .toHex()));
+                                                      .toHex()));
     }
 
     public SessionState addChain(byte[] senderEphemeral, SessionChain chain) {
         chains.put(Bytes.of(senderEphemeral)
-                .toHex(), chain);
+                           .toHex(), chain);
         return this;
     }
 

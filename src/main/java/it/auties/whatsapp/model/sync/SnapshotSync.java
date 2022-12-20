@@ -7,7 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.ArrayList;
@@ -15,13 +14,15 @@ import java.util.List;
 
 import static it.auties.protobuf.base.ProtobufType.BYTES;
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+
 @AllArgsConstructor
 @Data
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("SyncdSnapshot")
-public class SnapshotSync implements ProtobufMessage {
+public class SnapshotSync
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = VersionSync.class)
     private VersionSync version;
 

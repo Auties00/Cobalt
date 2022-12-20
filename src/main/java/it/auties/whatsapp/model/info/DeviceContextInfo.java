@@ -10,6 +10,8 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.Optional;
+
 import static it.auties.protobuf.base.ProtobufType.INT32;
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
@@ -18,7 +20,8 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class DeviceContextInfo implements Info {
+public final class DeviceContextInfo
+        implements Info {
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = DeviceListMetadata.class)
     @Default
     private DeviceListMetadata deviceListMetadata = DeviceListMetadata.of();
@@ -33,7 +36,15 @@ public final class DeviceContextInfo implements Info {
     @ProtobufProperty(index = 4, name = "paddingBytes", type = ProtobufType.BYTES)
     private byte[] paddingBytes;
 
-    public static DeviceContextInfo of(){
+    public Optional<byte[]> messageSecret(){
+        return Optional.ofNullable(messageSecret);
+    }
+
+    public Optional<byte[]> paddingBytes(){
+        return Optional.ofNullable(paddingBytes);
+    }
+
+    public static DeviceContextInfo of() {
         return DeviceContextInfo.builder()
                 .build();
     }

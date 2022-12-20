@@ -10,12 +10,13 @@ public class Validate {
     }
 
     public void isTrue(boolean value, @NonNull String message, @NonNull Class<? extends Throwable> throwable,
-                       Object... args) {
+            Object... args) {
         isTrue(value, createThrowable(throwable, message.formatted(args)));
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends Throwable> void isTrue(boolean value, @NonNull Throwable throwable) throws T {
+    public <T extends Throwable> void isTrue(boolean value, @NonNull Throwable throwable)
+            throws T {
         if (value) {
             return;
         }

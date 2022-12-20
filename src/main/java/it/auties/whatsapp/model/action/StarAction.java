@@ -18,7 +18,8 @@ import static it.auties.protobuf.base.ProtobufType.BOOL;
 @Builder(access = AccessLevel.PROTECTED)
 @Jacksonized
 @Accessors(fluent = true)
-public final class StarAction implements Action {
+public final class StarAction
+        implements Action {
     /**
      * Whether this action set the message as starred
      */

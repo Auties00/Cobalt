@@ -22,7 +22,8 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Jacksonized
 @Data
 @Accessors(fluent = true)
-public final class CancelPaymentRequestMessage implements PaymentMessage {
+public final class CancelPaymentRequestMessage
+        implements PaymentMessage {
     /**
      * The key of the original {@link RequestPaymentMessage} that this message cancels
      */

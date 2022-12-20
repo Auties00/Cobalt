@@ -11,9 +11,11 @@ import java.util.*;
 @AllArgsConstructor
 @Builder
 @Jacksonized
-public class SenderKeyRecord implements ProtobufMessage {
+public class SenderKeyRecord
+        implements ProtobufMessage {
     private final LinkedHashMap<Integer, List<SenderKeyState>> states;
-    public SenderKeyRecord(){
+
+    public SenderKeyRecord() {
         this.states = new LinkedHashMap<>();
     }
 
@@ -45,8 +47,7 @@ public class SenderKeyRecord implements ProtobufMessage {
     }
 
     public boolean equals(Object object) {
-        return object instanceof SenderKeyRecord that
-                && Objects.equals(this.states, that.states);
+        return object instanceof SenderKeyRecord that && Objects.equals(this.states, that.states);
     }
 
     @Override

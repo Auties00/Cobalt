@@ -24,7 +24,8 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class Button implements ProtobufMessage {
+public class Button
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = STRING)
     private String id;
 
@@ -46,7 +47,7 @@ public class Button implements ProtobufMessage {
      */
     public static Button newResponseButton(@NonNull String text) {
         return newResponseButton(Bytes.ofRandom(6)
-                .toHex(), text);
+                                         .toHex(), text);
     }
 
     /**
@@ -67,7 +68,8 @@ public class Button implements ProtobufMessage {
 
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum ButtonType implements ProtobufMessage {
+    public enum ButtonType
+            implements ProtobufMessage {
         UNKNOWN(0),
         RESPONSE(1),
         NATIVE_FLOW(2);

@@ -7,7 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.ArrayList;
@@ -23,7 +22,8 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Builder(access = AccessLevel.PROTECTED)
 @Jacksonized
 @Accessors(fluent = true)
-public final class RecentEmojiWeightsAction implements Action {
+public final class RecentEmojiWeightsAction
+        implements Action {
     /**
      * The weight of the emojis
      */

@@ -27,7 +27,8 @@ import static java.net.http.HttpResponse.BodyHandlers.ofString;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class Version implements ProtobufMessage, JacksonProvider {
+public class Version
+        implements ProtobufMessage, JacksonProvider {
     @ProtobufProperty(index = 1, type = UINT32)
     private Integer primary;
 

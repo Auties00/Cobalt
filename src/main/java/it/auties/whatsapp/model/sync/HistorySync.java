@@ -1,17 +1,18 @@
 package it.auties.whatsapp.model.sync;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.base.ProtobufMessage;import it.auties.protobuf.base.ProtobufName;
+import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.chat.Chat;
-import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.chat.PastParticipants;
+import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.setting.GlobalSettings;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -21,12 +22,14 @@ import java.util.Arrays;
 import java.util.List;
 
 import static it.auties.protobuf.base.ProtobufType.*;
+
 @AllArgsConstructor
 @Data
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class HistorySync implements ProtobufMessage {
+public class HistorySync
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = HistorySync.HistorySyncHistorySyncType.class)
     private HistorySyncHistorySyncType syncType;
 
@@ -79,7 +82,10 @@ public class HistorySync implements ProtobufMessage {
 
         @JsonCreator
         public static HistorySyncHistorySyncType of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(null);
         }
     }
 

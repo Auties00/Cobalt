@@ -1,4 +1,5 @@
 package it.auties.whatsapp.model.business;
+
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
@@ -6,16 +7,18 @@ import it.auties.protobuf.base.ProtobufType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.Getter;
+import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
+
 @AllArgsConstructor
 @Data
 @Accessors(fluent = true)
 @Jacksonized
 @Builder
 @ProtobufName("BizAccountLinkInfo")
-public class BusinessAccountLinkInfo implements ProtobufMessage {
+public class BusinessAccountLinkInfo
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, name = "whatsappBizAcctFbid", type = ProtobufType.UINT64)
     private long whatsappBizAccountFacebookId;
 
@@ -32,14 +35,16 @@ public class BusinessAccountLinkInfo implements ProtobufMessage {
     private AccountType accountType;
 
     @AllArgsConstructor
-    public enum AccountType implements ProtobufMessage {
+    public enum AccountType
+            implements ProtobufMessage {
         ENTERPRISE(0);
         @Getter
         private final int index;
     }
 
     @AllArgsConstructor
-    public enum HostStorageType implements ProtobufMessage {
+    public enum HostStorageType
+            implements ProtobufMessage {
         ON_PREMISE(0),
         FACEBOOK(1);
         @Getter

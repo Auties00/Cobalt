@@ -7,7 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.With;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -16,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static it.auties.protobuf.base.ProtobufType.*;
+
 @AllArgsConstructor
 @Data
 @Builder
@@ -23,7 +23,8 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @With
 @Accessors(fluent = true)
 @ProtobufName("SyncdPatch")
-public class PatchSync implements ProtobufMessage {
+public class PatchSync
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = VersionSync.class)
     private VersionSync version;
 
@@ -50,7 +51,9 @@ public class PatchSync implements ProtobufMessage {
     private Integer deviceIndex;
 
     public long version() {
-        return hasVersion() ? version.version() : 0L;
+        return hasVersion() ?
+                version.version() :
+                0L;
     }
 
     public boolean hasVersion() {

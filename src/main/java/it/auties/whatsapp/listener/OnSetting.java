@@ -1,9 +1,9 @@
 package it.auties.whatsapp.listener;
 
 import it.auties.whatsapp.model.setting.Setting;
-import it.auties.whatsapp.socket.SocketHandler;
 
-public interface OnSetting extends Listener {
+public interface OnSetting
+        extends Listener {
     /**
      * Called when the socket receives a setting change from Whatsapp.
      *

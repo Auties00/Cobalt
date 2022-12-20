@@ -23,7 +23,8 @@ import lombok.extern.jackson.Jacksonized;
 @Accessors(fluent = true)
 @EqualsAndHashCode(callSuper = true)
 @ProtobufName("InteractiveResponseMessage")
-public final class InteractiveResponseMessage extends ContextualMessage {
+public final class InteractiveResponseMessage
+        extends ContextualMessage {
     @ProtobufProperty(index = 1, name = "body", type = ProtobufType.MESSAGE)
     private ProductBody body;
 

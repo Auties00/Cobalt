@@ -8,7 +8,8 @@ import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.SignalSpecification;
 import lombok.NonNull;
 
-public record GroupBuilder(@NonNull Keys keys) implements SignalSpecification {
+public record GroupBuilder(@NonNull Keys keys)
+        implements SignalSpecification {
     public byte[] createOutgoing(SenderKeyName name) {
         var record = keys.findSenderKeyByName(name);
         if (record.isEmpty()) {
@@ -16,8 +17,10 @@ public record GroupBuilder(@NonNull Keys keys) implements SignalSpecification {
         }
 
         var state = record.findState();
-        var message = new SignalDistributionMessage(state.id(), state.chainKey().iteration(),
-                state.chainKey().seed(), state.signingKey().encodedPublicKey());
+        var message = new SignalDistributionMessage(state.id(), state.chainKey()
+                .iteration(), state.chainKey()
+                                                            .seed(), state.signingKey()
+                                                            .encodedPublicKey());
         return message.serialized();
     }
 

@@ -7,7 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Objects;
@@ -19,7 +18,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Jacksonized
 @Data
 @Accessors(fluent = true)
-public class SenderKeyState implements ProtobufMessage, SignalSpecification {
+public class SenderKeyState
+        implements ProtobufMessage, SignalSpecification {
     private final int id;
     private final SignalKeyPair signingKey;
     private final ConcurrentHashMap<Integer, SenderMessageKey> messageKeys;
@@ -41,8 +41,7 @@ public class SenderKeyState implements ProtobufMessage, SignalSpecification {
     }
 
     public boolean equals(Object other) {
-        return other instanceof SenderKeyState that
-                && Objects.equals(this.id(), that.id());
+        return other instanceof SenderKeyState that && Objects.equals(this.id(), that.id());
     }
 
     @Override

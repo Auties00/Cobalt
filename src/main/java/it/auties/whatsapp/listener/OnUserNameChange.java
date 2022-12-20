@@ -1,6 +1,7 @@
 package it.auties.whatsapp.listener;
 
-public interface OnUserNameChange extends Listener {
+public interface OnUserNameChange
+        extends Listener {
     /**
      * Called when the companion's name changes
      *

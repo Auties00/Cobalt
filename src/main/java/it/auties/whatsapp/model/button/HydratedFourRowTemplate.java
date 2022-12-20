@@ -29,7 +29,8 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class HydratedFourRowTemplate implements ProtobufMessage {
+public class HydratedFourRowTemplate
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = DocumentMessage.class)
     private DocumentMessage documentTitle;
 
@@ -67,7 +68,7 @@ public class HydratedFourRowTemplate implements ProtobufMessage {
      */
     @Builder(builderClassName = "EmptyFourRowTemplateBuilder", builderMethodName = "withoutTitleBuilder")
     private static HydratedFourRowTemplate emptyBuilder(String body, String footer,
-                                                        List<HydratedButtonTemplate> buttons, String id) {
+            List<HydratedButtonTemplate> buttons, String id) {
         return createBuilder(body, footer, buttons, id).build();
 
     }
@@ -83,7 +84,7 @@ public class HydratedFourRowTemplate implements ProtobufMessage {
      */
     @Builder(builderClassName = "DocumentHydratedFourRowTemplateBuilder", builderMethodName = "withDocumentTitleBuilder")
     private static HydratedFourRowTemplate documentBuilder(DocumentMessage title, String body, String footer,
-                                                           List<HydratedButtonTemplate> buttons, String id) {
+            List<HydratedButtonTemplate> buttons, String id) {
         return createBuilder(body, footer, buttons, id).documentTitle(title)
                 .build();
 
@@ -100,7 +101,7 @@ public class HydratedFourRowTemplate implements ProtobufMessage {
      */
     @Builder(builderClassName = "HighlyStructuredHydratedFourRowTemplateBuilder", builderMethodName = "withTextTitleBuilder")
     private static HydratedFourRowTemplate textBuilder(String title, String body, String footer,
-                                                       List<HydratedButtonTemplate> buttons, String id) {
+            List<HydratedButtonTemplate> buttons, String id) {
         return createBuilder(body, footer, buttons, id).textTitle(title)
                 .build();
     }
@@ -116,7 +117,7 @@ public class HydratedFourRowTemplate implements ProtobufMessage {
      */
     @Builder(builderClassName = "ImageHydratedFourRowTemplateBuilder", builderMethodName = "withImageTitleBuilder")
     private static HydratedFourRowTemplate imageBuilder(ImageMessage title, String body, String footer,
-                                                        List<HydratedButtonTemplate> buttons, String id) {
+            List<HydratedButtonTemplate> buttons, String id) {
         return createBuilder(body, footer, buttons, id).imageTitle(title)
                 .build();
 
@@ -133,7 +134,7 @@ public class HydratedFourRowTemplate implements ProtobufMessage {
      */
     @Builder(builderClassName = "VideoHydratedFourRowTemplateBuilder", builderMethodName = "withVideoTitleBuilder")
     private static HydratedFourRowTemplate videoBuilder(VideoMessage title, String body, String footer,
-                                                        List<HydratedButtonTemplate> buttons, String id) {
+            List<HydratedButtonTemplate> buttons, String id) {
         return createBuilder(body, footer, buttons, id).videoTitle(title)
                 .build();
 
@@ -150,15 +151,14 @@ public class HydratedFourRowTemplate implements ProtobufMessage {
      */
     @Builder(builderClassName = "LocationHydratedFourRowTemplateBuilder", builderMethodName = "withLocationTitleBuilder")
     private static HydratedFourRowTemplate locationBuilder(LocationMessage title, String body, String footer,
-                                                           List<HydratedButtonTemplate> buttons, String id) {
+            List<HydratedButtonTemplate> buttons, String id) {
         return createBuilder(body, footer, buttons, id).locationTitle(title)
                 .build();
 
     }
 
     private static HydratedFourRowTemplate.HydratedFourRowTemplateBuilder createBuilder(String body, String footer,
-                                                                                        List<HydratedButtonTemplate> buttons,
-                                                                                        String id) {
+            List<HydratedButtonTemplate> buttons, String id) {
         return HydratedFourRowTemplate.builder()
                 .body(body)
                 .footer(footer)
@@ -190,7 +190,8 @@ public class HydratedFourRowTemplate implements ProtobufMessage {
      */
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum TitleType implements ProtobufMessage {
+    public enum TitleType
+            implements ProtobufMessage {
         /**
          * No title
          */

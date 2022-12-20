@@ -28,7 +28,8 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class ContactsArrayMessage extends ContextualMessage {
+public final class ContactsArrayMessage
+        extends ContextualMessage {
     /**
      * The name of the contact the first contact that this message wraps
      */

@@ -15,7 +15,8 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @ProtobufName("AvatarUserSettings")
-public final class AvatarUserSettings implements Setting {
+public final class AvatarUserSettings
+        implements Setting {
     @ProtobufProperty(index = 1, name = "fbid", type = ProtobufType.STRING)
     private String facebookId;
 

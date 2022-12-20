@@ -26,22 +26,26 @@ import static it.auties.curve25519.Curve25519.sharedKey;
 import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 
-public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys) implements SignalSpecification {
+public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
+        implements SignalSpecification {
     public Node encrypt(byte @NonNull [] data) {
         var currentState = loadSession().currentState();
         Validate.isTrue(keys.hasTrust(address, currentState.remoteIdentityKey()), "Untrusted key",
-                SecurityException.class);
+                        SecurityException.class);
 
         var chain = currentState.findChain(currentState.ephemeralKeyPair()
-                        .encodedPublicKey())
+                                                   .encodedPublicKey())
                 .orElseThrow(() -> new NoSuchElementException("Missing chain for %s".formatted(address)));
-        fillMessageKeys(chain, chain.counter().get() + 1);
+        fillMessageKeys(chain, chain.counter()
+                .get() + 1);
 
         var currentKey = chain.messageKeys()
-                .get(chain.counter().get());
+                .get(chain.counter()
+                             .get());
         var secrets = Hkdf.deriveSecrets(currentKey, "WhisperMessageKeys".getBytes(StandardCharsets.UTF_8));
         chain.messageKeys()
-                .remove(chain.counter().get());
+                .remove(chain.counter()
+                                .get());
 
         var iv = Bytes.of(secrets[2])
                 .cut(IV_LENGTH)
@@ -61,8 +65,9 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
 
     private byte[] encrypt(SessionState state, SessionChain chain, byte[] key, byte[] encrypted) {
         var message = new SignalMessage(state.ephemeralKeyPair()
-                .encodedPublicKey(), chain.counter().get(), state.previousCounter(), encrypted,
-                encodedMessage -> createMessageSignature(state, key, encodedMessage));
+                                                .encodedPublicKey(), chain.counter()
+                                                .get(), state.previousCounter(), encrypted,
+                                        encodedMessage -> createMessageSignature(state, key, encodedMessage));
 
         var serializedMessage = message.serialized();
         if (!state.hasPreKey()) {
@@ -70,17 +75,18 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
         }
 
         var preKeyMessage = new SignalPreKeyMessage(state.pendingPreKey()
-                .preKeyId(), state.pendingPreKey()
-                .baseKey(), keys.identityKeyPair()
-                .encodedPublicKey(), serializedMessage, keys.id(), state.pendingPreKey()
-                .signedKeyId());
+                                                            .preKeyId(), state.pendingPreKey()
+                                                            .baseKey(), keys.identityKeyPair()
+                                                            .encodedPublicKey(), serializedMessage, keys.id(),
+                                                    state.pendingPreKey()
+                                                            .signedKeyId());
 
         return preKeyMessage.serialized();
     }
 
     private byte[] createMessageSignature(SessionState state, byte[] key, byte[] encodedMessage) {
         var macInput = Bytes.of(keys.identityKeyPair()
-                        .encodedPublicKey())
+                                        .encodedPublicKey())
                 .append(state.remoteIdentityKey())
                 .append(encodedMessage)
                 .assertSize(encodedMessage.length + 33 + 33)
@@ -91,20 +97,28 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
     }
 
     private void fillMessageKeys(SessionChain chain, int counter) {
-        if (chain.counter().get() >= counter) {
+        if (chain.counter()
+                .get() >= counter) {
             return;
         }
 
-        Validate.isTrue(counter - chain.counter().get() <= MAX_MESSAGES,
-                "Message overflow: expected <= %s, got %s",
-                MAX_MESSAGES, counter - chain.counter().get());
-        Validate.isTrue(chain.key().get() != null, "Closed chain");
-        var messagesHmac = Hmac.calculateSha256(new byte[]{1}, chain.key().get());
+        Validate.isTrue(counter - chain.counter()
+                                .get() <= MAX_MESSAGES, "Message overflow: expected <= %s, got %s", MAX_MESSAGES,
+                        counter - chain.counter()
+                                .get());
+        Validate.isTrue(chain.key()
+                                .get() != null, "Closed chain");
+        var messagesHmac = Hmac.calculateSha256(new byte[]{1}, chain.key()
+                .get());
         chain.messageKeys()
-                .put(chain.counter().get() + 1, messagesHmac);
-        var keyHmac = Hmac.calculateSha256(new byte[]{2}, chain.key().get());
-        chain.key().set(keyHmac);
-        chain.counter().getAndIncrement();
+                .put(chain.counter()
+                             .get() + 1, messagesHmac);
+        var keyHmac = Hmac.calculateSha256(new byte[]{2}, chain.key()
+                .get());
+        chain.key()
+                .set(keyHmac);
+        chain.counter()
+                .getAndIncrement();
         fillMessageKeys(chain, counter);
     }
 
@@ -158,7 +172,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
 
         var hmacInput = Bytes.of(state.remoteIdentityKey())
                 .append(keys.identityKeyPair()
-                        .encodedPublicKey())
+                                .encodedPublicKey())
                 .append(message.serialized())
                 .cut(-MAC_LENGTH)
                 .toByteArray();
@@ -183,16 +197,18 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
         var previousRatchet = state.findChain(state.lastRemoteEphemeralKey());
         previousRatchet.ifPresent(chain -> {
             fillMessageKeys(chain, state.previousCounter());
-            chain.key().set(null);
+            chain.key()
+                    .set(null);
         });
 
         calculateRatchet(message, state, false);
         var previousCounter = state.findChain(state.ephemeralKeyPair()
-                .encodedPublicKey());
+                                                      .encodedPublicKey());
         previousCounter.ifPresent(chain -> {
-            state.previousCounter(chain.counter().get());
+            state.previousCounter(chain.counter()
+                                          .get());
             state.removeChain(state.ephemeralKeyPair()
-                    .encodedPublicKey());
+                                      .encodedPublicKey());
         });
 
         state.ephemeralKeyPair(SignalKeyPair.random());
@@ -204,7 +220,7 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
         var sharedSecret = sharedKey(KeyHelper.withoutHeader(message.ephemeralPublicKey()), state.ephemeralKeyPair()
                 .privateKey());
         var masterKey = Hkdf.deriveSecrets(sharedSecret, state.rootKey(),
-                "WhisperRatchet".getBytes(StandardCharsets.UTF_8), 2);
+                                           "WhisperRatchet".getBytes(StandardCharsets.UTF_8), 2);
         var chainKey = sending ?
                 state.ephemeralKeyPair()
                         .encodedPublicKey() :

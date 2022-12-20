@@ -14,7 +14,8 @@ import java.util.Optional;
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum MessageStatus implements ProtobufMessage {
+public enum MessageStatus
+        implements ProtobufMessage {
     /**
      * Unknown
      */
@@ -49,9 +50,13 @@ public enum MessageStatus implements ProtobufMessage {
     private final int index;
 
     public static Optional<MessageStatus> of(String name) {
-        return name == null ? Optional.empty() : Arrays.stream(values())
-                .filter(entry -> name.toLowerCase().contains(entry.name().toLowerCase()))
-                .findFirst();
+        return name == null ?
+                Optional.empty() :
+                Arrays.stream(values())
+                        .filter(entry -> name.toLowerCase()
+                                .contains(entry.name()
+                                                  .toLowerCase()))
+                        .findFirst();
     }
 
     @JsonCreator

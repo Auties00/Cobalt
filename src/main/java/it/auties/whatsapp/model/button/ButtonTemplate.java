@@ -12,6 +12,7 @@ import java.util.Arrays;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.UINT32;
+
 /**
  * A model class that represents a template for a button
  */
@@ -21,7 +22,8 @@ import static it.auties.protobuf.base.ProtobufType.UINT32;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("TemplateButton")
-public class ButtonTemplate implements ProtobufMessage {
+public class ButtonTemplate
+        implements ProtobufMessage {
     @ProtobufProperty(index = 4, type = UINT32)
     private int index;
 
@@ -69,9 +71,11 @@ public class ButtonTemplate implements ProtobufMessage {
      * @param callButton the non-null call button
      * @return a non-null button template
      */
-    public static ButtonTemplate of(int index, @NonNull
-    CallButton callButton) {
-        return ButtonTemplate.builder().index(index).callButton(callButton).build();
+    public static ButtonTemplate of(int index, @NonNull CallButton callButton) {
+        return ButtonTemplate.builder()
+                .index(index)
+                .callButton(callButton)
+                .build();
     }
 
     /**
@@ -94,7 +98,8 @@ public class ButtonTemplate implements ProtobufMessage {
      */
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum ButtonType implements ProtobufMessage {
+    public enum ButtonType
+            implements ProtobufMessage {
 
         /**
          * No button
@@ -117,7 +122,10 @@ public class ButtonTemplate implements ProtobufMessage {
 
         @JsonCreator
         public static ButtonType of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(ButtonType.NONE);
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(ButtonType.NONE);
         }
     }
 }

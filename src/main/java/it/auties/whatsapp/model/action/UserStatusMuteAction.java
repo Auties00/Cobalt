@@ -15,7 +15,8 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @ProtobufName("UserStatusMuteAction")
-public final class UserStatusMuteAction implements Action {
+public final class UserStatusMuteAction
+        implements Action {
     @ProtobufProperty(index = 1, name = "muted", type = ProtobufType.BOOL)
     private boolean muted;
 

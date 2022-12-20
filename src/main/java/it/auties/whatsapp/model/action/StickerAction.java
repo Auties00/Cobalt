@@ -15,7 +15,8 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @ProtobufName("StickerAction")
-public final class StickerAction implements Action {
+public final class StickerAction
+        implements Action {
     @ProtobufProperty(index = 1, name = "url", type = ProtobufType.STRING)
     private String url;
 

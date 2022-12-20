@@ -2,7 +2,8 @@ package it.auties.whatsapp.listener;
 
 import it.auties.whatsapp.model.chat.Chat;
 
-public interface OnChatMessagesSync extends Listener {
+public interface OnChatMessagesSync
+        extends Listener {
     /**
      * Called when the socket receives the recent message for a chat
      *

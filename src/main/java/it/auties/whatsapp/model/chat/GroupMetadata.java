@@ -21,7 +21,8 @@ import static it.auties.whatsapp.model.chat.GroupSetting.SEND_MESSAGES;
 @AllArgsConstructor
 @Value
 @Accessors(fluent = true)
-public class GroupMetadata implements ProtobufMessage {
+public class GroupMetadata
+        implements ProtobufMessage {
     /**
      * The jid of the group
      */
@@ -83,10 +84,10 @@ public class GroupMetadata implements ProtobufMessage {
         var subject = node.attributes()
                 .getString("subject");
         var subjectTimestamp = Clock.parse(node.attributes()
-                        .getLong("s_t"))
+                                                   .getLong("s_t"))
                 .orElse(ZonedDateTime.now());
         var foundationTimestamp = Clock.parse(node.attributes()
-                        .getLong("creation"))
+                                                      .getLong("creation"))
                 .orElse(ZonedDateTime.now());
         var founder = node.attributes()
                 .getJid("creator")
@@ -111,7 +112,7 @@ public class GroupMetadata implements ProtobufMessage {
                 .map(GroupParticipant::of)
                 .toList();
         return new GroupMetadata(groupId, subject, subjectTimestamp, foundationTimestamp, founder, description,
-                descriptionId, policies, participants, ephemeral);
+                                 descriptionId, policies, participants, ephemeral);
     }
 
     private static String parseDescription(Node wrapper) {
@@ -120,8 +121,8 @@ public class GroupMetadata implements ProtobufMessage {
             case String string -> string;
             case byte[] bytes -> new String(bytes, StandardCharsets.UTF_8);
             default -> throw new IllegalArgumentException("Illegal body type: %s".formatted(wrapper.content()
-                    .getClass()
-                    .getName()));
+                                                                                                    .getClass()
+                                                                                                    .getName()));
         };
     }
 

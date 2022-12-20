@@ -14,6 +14,7 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.Arrays;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+
 /**
  * A model that represents a chat disappear mode
  */
@@ -23,7 +24,8 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("DisappearingMode")
-public class ChatDisappear implements ProtobufMessage {
+public class ChatDisappear
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = ChatDisappear.Type.class)
     private Type disappear;
 
@@ -33,7 +35,8 @@ public class ChatDisappear implements ProtobufMessage {
     @AllArgsConstructor
     @Accessors(fluent = true)
     @ProtobufName("Initiator")
-    public enum Type implements ProtobufMessage {
+    public enum Type
+            implements ProtobufMessage {
 
         /**
          * Changed in chat
@@ -52,7 +55,10 @@ public class ChatDisappear implements ProtobufMessage {
 
         @JsonCreator
         public static Type of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(null);
         }
     }
 }

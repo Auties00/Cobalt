@@ -8,8 +8,8 @@ import it.auties.whatsapp.model.contact.ContactJid;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.Getter;
+import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 @AllArgsConstructor
@@ -18,7 +18,8 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @ProtobufName("PastParticipant")
-public class PastParticipant implements ProtobufMessage {
+public class PastParticipant
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, name = "userJid", type = ProtobufType.STRING)
     private ContactJid userJid;
 
@@ -29,7 +30,8 @@ public class PastParticipant implements ProtobufMessage {
     private long leaveTimestamp;
 
     @AllArgsConstructor
-    public enum LeaveReason implements ProtobufMessage {
+    public enum LeaveReason
+            implements ProtobufMessage {
         LEFT(0),
         REMOVED(1);
 

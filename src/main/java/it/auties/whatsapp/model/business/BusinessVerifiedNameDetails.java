@@ -21,7 +21,8 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class BusinessVerifiedNameDetails implements ProtobufMessage {
+public class BusinessVerifiedNameDetails
+        implements ProtobufMessage {
     /**
      * The verified serial
      */

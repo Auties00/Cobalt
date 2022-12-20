@@ -15,7 +15,8 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @ProtobufName("TimeFormatAction")
-public final class TimeFormatAction implements Action {
+public final class TimeFormatAction
+        implements Action {
     @ProtobufProperty(index = 1, name = "isTwentyFourHourFormatEnabled", type = ProtobufType.BOOL)
     private boolean twentyFourHourFormatEnabled;
 

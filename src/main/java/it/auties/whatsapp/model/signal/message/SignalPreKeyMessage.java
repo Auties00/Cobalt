@@ -6,7 +6,6 @@ import it.auties.whatsapp.util.BytesHelper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -19,7 +18,8 @@ import static it.auties.protobuf.base.ProtobufType.UINT32;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class SignalPreKeyMessage implements SignalProtocolMessage {
+public final class SignalPreKeyMessage
+        implements SignalProtocolMessage {
     private int version;
 
     @ProtobufProperty(index = 1, type = UINT32)
@@ -44,7 +44,7 @@ public final class SignalPreKeyMessage implements SignalProtocolMessage {
 
     @SneakyThrows
     public SignalPreKeyMessage(int preKeyId, byte[] baseKey, byte[] identityKey, byte[] serializedSignalMessage,
-                               int registrationId, int signedPreKeyId) {
+            int registrationId, int signedPreKeyId) {
         this.version = CURRENT_VERSION;
         this.preKeyId = preKeyId;
         this.baseKey = baseKey;
@@ -60,8 +60,8 @@ public final class SignalPreKeyMessage implements SignalProtocolMessage {
     @SneakyThrows
     public static SignalPreKeyMessage ofSerialized(byte[] serialized) {
         return PROTOBUF.readMessage(Bytes.of(serialized)
-                        .slice(1)
-                        .toByteArray(), SignalPreKeyMessage.class)
+                                            .slice(1)
+                                            .toByteArray(), SignalPreKeyMessage.class)
                 .version(BytesHelper.bytesToVersion(serialized[0]))
                 .serialized(serialized);
     }

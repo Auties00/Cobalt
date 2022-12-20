@@ -44,19 +44,24 @@ import java.util.stream.Stream;
 @Builder(access = AccessLevel.PROTECTED)
 @Accessors(fluent = true, chain = true)
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public final class Store implements Controller<Store> {
+public final class Store
+        implements Controller<Store> {
     /**
      * All the known stores
      */
     @JsonIgnore
     private static ConcurrentHashMap<Integer, Store> stores = new ConcurrentHashMap<>();
-
+    /**
+     * The media connection latch associated with this store
+     */
+    @JsonIgnore
+    @Default
+    private final CountDownLatch mediaConnectionLatch = new CountDownLatch(1);
     /**
      * The session id of this store
      */
     @Getter
     private int id;
-
     /**
      * The locale of the user linked to this account.
      * This field will be null while the user hasn't logged in yet.
@@ -65,7 +70,6 @@ public final class Store implements Controller<Store> {
     @Getter
     @Setter
     private String userLocale;
-
     /**
      * The name of the user linked to this account.
      * This field will be null while the user hasn't logged in yet.
@@ -74,7 +78,6 @@ public final class Store implements Controller<Store> {
     @Getter
     @Setter
     private String userName;
-
     /**
      * The profile picture of the user linked to this account.
      * This field will be null while the user hasn't logged in yet.
@@ -82,7 +85,6 @@ public final class Store implements Controller<Store> {
      */
     @Setter
     private URI userProfilePicture;
-
     /**
      * The status of the user linked to this account.
      * This field will be null while the user hasn't logged in yet.
@@ -91,7 +93,6 @@ public final class Store implements Controller<Store> {
     @Getter
     @Setter
     private String userStatus;
-
     /**
      * The user linked to this account.
      * This field will be null while the user hasn't logged in yet.
@@ -99,7 +100,6 @@ public final class Store implements Controller<Store> {
     @Getter
     @Setter
     private ContactJid userCompanionJid;
-
     /**
      * The non-null map of chats
      */
@@ -107,21 +107,18 @@ public final class Store implements Controller<Store> {
     @Default
     @JsonIgnore
     private ConcurrentHashMap<ContactJid, Chat> chats = new ConcurrentHashMap<>();
-
     /**
      * The non-null map of contacts
      */
     @NonNull
     @Default
     private ConcurrentHashMap<ContactJid, Contact> contacts = new ConcurrentHashMap<>();
-
     /**
      * The non-null list of status messages
      */
     @NonNull
     @Default
     private ConcurrentHashMap<ContactJid, ConcurrentLinkedDeque<MessageInfo>> status = new ConcurrentHashMap<>();
-
     /**
      * The non-null map of privacy settings
      */
@@ -129,7 +126,6 @@ public final class Store implements Controller<Store> {
     @Default
     @Getter
     private ConcurrentHashMap<PrivacySettingType, PrivacySettingValue> privacySettings = new ConcurrentHashMap<>();
-
     /**
      * Whether this store has already received the snapshot from
      * Whatsapp Web containing chats and contacts
@@ -137,28 +133,24 @@ public final class Store implements Controller<Store> {
     @Getter
     @Setter
     private boolean initialSnapshot;
-
     /**
      * Whether the initial app sync has already been sent
      */
     @Getter
     @Setter
     private boolean initialAppSync;
-
     /**
      * Whether chats should be unarchived if a new message arrives
      */
     @Getter
     @Setter
     private boolean unarchiveChats;
-
     /**
      * Whether the twenty-hours format is being used by the client
      */
     @Getter
     @Setter
     private boolean twentyFourHourFormat;
-
     /**
      * The non-null list of requests that were sent to Whatsapp.
      * They might or might not be waiting for a response
@@ -167,7 +159,6 @@ public final class Store implements Controller<Store> {
     @JsonIgnore
     @Default
     private ConcurrentLinkedDeque<Request> requests = new ConcurrentLinkedDeque<>();
-
     /**
      * The non-null list of all the predicates awaiting a result
      */
@@ -175,7 +166,6 @@ public final class Store implements Controller<Store> {
     @JsonIgnore
     @Default
     private ConcurrentLinkedDeque<NodeHandler> pendingHandlers = new ConcurrentLinkedDeque<>();
-
     /**
      * The non-null list of replies waiting to be fulfilled
      */
@@ -183,7 +173,6 @@ public final class Store implements Controller<Store> {
     @JsonIgnore
     @Default
     private ConcurrentLinkedDeque<ReplyHandler> replyHandlers = new ConcurrentLinkedDeque<>();
-
     /**
      * The non-null list of listeners
      */
@@ -192,7 +181,6 @@ public final class Store implements Controller<Store> {
     @Default
     @Getter
     private ConcurrentLinkedDeque<Listener> listeners = new ConcurrentLinkedDeque<>();
-
     /**
      * Request counter
      */
@@ -200,7 +188,6 @@ public final class Store implements Controller<Store> {
     @JsonIgnore
     @Default
     private AtomicLong counter = new AtomicLong();
-
     /**
      * The request tag, used to create messages
      */
@@ -210,27 +197,17 @@ public final class Store implements Controller<Store> {
     private String tag = Bytes.ofRandom(1)
             .toHex()
             .toLowerCase(Locale.ROOT);
-
     /**
      * The timestamp in seconds for the initialization of this object
      */
     @Default
     @Getter
     private long initializationTimeStamp = Clock.now();
-
     /**
      * The media connection associated with this store
      */
     @JsonIgnore
     private MediaConnection mediaConnection;
-
-    /**
-     * The media connection latch associated with this store
-     */
-    @JsonIgnore
-    @Default
-    private final CountDownLatch mediaConnectionLatch = new CountDownLatch(1);
-
     @JsonIgnore
     @Getter
     @Setter
@@ -248,7 +225,7 @@ public final class Store implements Controller<Store> {
     /**
      * Constructs a new default instance of WhatsappStore
      *
-     * @param id the unsigned jid of this store
+     * @param id                   the unsigned jid of this store
      * @param useDefaultSerializer whether the default serializer should be used
      * @return a non-null store
      */
@@ -264,7 +241,7 @@ public final class Store implements Controller<Store> {
     /**
      * Returns the store saved in memory or constructs a new clean instance
      *
-     * @param id the jid of this session
+     * @param id                   the jid of this session
      * @param useDefaultSerializer whether the default serializer should be used
      * @return a non-null store
      */
@@ -300,7 +277,7 @@ public final class Store implements Controller<Store> {
                         .filter(contact -> contact.jid()
                                 .user()
                                 .equals(jid.toJid()
-                                        .user()))
+                                                .user()))
                         .findAny();
     }
 
@@ -345,7 +322,7 @@ public final class Store implements Controller<Store> {
                         .filter(chat -> chat.jid()
                                 .user()
                                 .equals(jid.toJid()
-                                        .user()))
+                                                .user()))
                         .findAny();
     }
 
@@ -369,8 +346,9 @@ public final class Store implements Controller<Store> {
      * @return a non-null optional
      */
     public Optional<MessageInfo> findMessageById(ContactJidProvider provider, String id) {
-        var chat = provider instanceof Chat value ? value
-                : findChatByJid(provider.toJid()).orElse(null);
+        var chat = provider instanceof Chat value ?
+                value :
+                findChatByJid(provider.toJid()).orElse(null);
         if (chat == null || id == null) {
             return Optional.empty();
         }
@@ -378,7 +356,7 @@ public final class Store implements Controller<Store> {
         return chat.messages()
                 .parallelStream()
                 .filter(message -> Objects.equals(message.key()
-                        .id(), id))
+                                                          .id(), id))
                 .findAny();
     }
 
@@ -453,13 +431,12 @@ public final class Store implements Controller<Store> {
     /**
      * Queries the first request whose id equals the one stored by the response and, if any is found, it completes it
      *
-     * @param response the response to complete the request with
+     * @param response      the response to complete the request with
      * @param exceptionally whether the response is erroneous
      * @return a boolean
      */
     public boolean resolvePendingRequest(@NonNull Node response, boolean exceptionally) {
-        return findPendingRequest(response.id())
-                .map(request -> deleteAndComplete(response, request, exceptionally))
+        return findPendingRequest(response.id()).map(request -> deleteAndComplete(response, request, exceptionally))
                 .isPresent();
     }
 
@@ -470,8 +447,9 @@ public final class Store implements Controller<Store> {
      * @return a boolean
      */
     public boolean resolvePendingReply(@NonNull MessageInfo response) {
-        var contextualMessage = response.message().contentWithContext();
-        if(contextualMessage.isEmpty()){
+        var contextualMessage = response.message()
+                .contentWithContext();
+        if (contextualMessage.isEmpty()) {
             return false;
         }
 
@@ -479,16 +457,18 @@ public final class Store implements Controller<Store> {
                 .contextInfo()
                 .quotedMessageId()
                 .orElse(null);
-        if(contextualMessageId == null){
+        if (contextualMessageId == null) {
             return false;
         }
 
         var result = replyHandlers.stream()
-                .filter(entry -> entry.id().equals(contextualMessageId))
+                .filter(entry -> entry.id()
+                        .equals(contextualMessageId))
                 .findFirst();
         result.ifPresent(reply -> {
             replyHandlers.remove(reply);
-            reply.future().complete(response);
+            reply.future()
+                    .complete(response);
         });
         return result.isPresent();
     }
@@ -499,13 +479,15 @@ public final class Store implements Controller<Store> {
      * @param response the response to test the handler with
      * @return a boolean
      */
-    public boolean resolvePendingHandler(@NonNull Node response){
+    public boolean resolvePendingHandler(@NonNull Node response) {
         var result = pendingHandlers.stream()
-                .filter(predicate -> predicate.predicate().test(response))
+                .filter(predicate -> predicate.predicate()
+                        .test(response))
                 .findFirst();
         result.ifPresent(nodeHandler -> {
             pendingHandlers.remove(nodeHandler);
-            nodeHandler.future().complete(response);
+            nodeHandler.future()
+                    .complete(response);
         });
         return result.isPresent();
     }
@@ -529,10 +511,10 @@ public final class Store implements Controller<Store> {
     public Chat addChat(@NonNull Chat chat) {
         chat.messages()
                 .forEach(this::attribute);
-        if(chat.hasName()) {
-            if (chat.jid().hasServer(ContactJid.Server.WHATSAPP)) {
-                findContactByJid(chat.jid())
-                        .orElseGet(() -> addContact(Contact.ofJid(chat.jid())))
+        if (chat.hasName()) {
+            if (chat.jid()
+                    .hasServer(ContactJid.Server.WHATSAPP)) {
+                findContactByJid(chat.jid()).orElseGet(() -> addContact(Contact.ofJid(chat.jid())))
                         .fullName(chat.name());
             }
         }
@@ -573,9 +555,9 @@ public final class Store implements Controller<Store> {
     }
 
     public void attribute(MessageInfo info) {
-        var chat = findChatByJid(info.chatJid())
-                .orElseGet(() -> addChat(Chat.ofJid(info.chatJid())));
-        info.key().chat(chat);
+        var chat = findChatByJid(info.chatJid()).orElseGet(() -> addChat(Chat.ofJid(info.chatJid())));
+        info.key()
+                .chat(chat);
         info.key()
                 .senderJid()
                 .ifPresent(senderJid -> attributeSender(info, senderJid));
@@ -586,8 +568,7 @@ public final class Store implements Controller<Store> {
     }
 
     private MessageKey attributeSender(MessageInfo info, ContactJid senderJid) {
-        var contact = findContactByJid(senderJid)
-                .orElseGet(() -> addContact(Contact.ofJid(senderJid)));
+        var contact = findContactByJid(senderJid).orElseGet(() -> addContact(Contact.ofJid(senderJid)));
         return info.sender(contact)
                 .key()
                 .sender(contact);
@@ -601,14 +582,12 @@ public final class Store implements Controller<Store> {
     }
 
     private void attributeContextChat(ContextInfo contextInfo, ContactJid chatJid) {
-        var chat = findChatByJid(chatJid)
-                .orElseGet(() -> addChat(Chat.ofJid(chatJid)));
+        var chat = findChatByJid(chatJid).orElseGet(() -> addChat(Chat.ofJid(chatJid)));
         contextInfo.quotedMessageChat(chat);
     }
 
     private void attributeContextSender(ContextInfo contextInfo, ContactJid senderJid) {
-        var contact = findContactByJid(senderJid)
-                .orElseGet(() -> addContact(Contact.ofJid(senderJid)));
+        var contact = findContactByJid(senderJid).orElseGet(() -> addContact(Contact.ofJid(senderJid)));
         contextInfo.quotedMessageSender(contact);
     }
 
@@ -669,13 +648,14 @@ public final class Store implements Controller<Store> {
      * @return the media connection
      */
     public MediaConnection mediaConnection() {
-       try {
-           mediaConnectionLatch.await();
-           return mediaConnection;
-       }catch (InterruptedException exception){
-           throw new RuntimeException("Cannot lock on media connection." +
-                   " An error occurred previously while creating it probably", exception);
-       }
+        try {
+            mediaConnectionLatch.await();
+            return mediaConnection;
+        } catch (InterruptedException exception) {
+            throw new RuntimeException(
+                    "Cannot lock on media connection." + " An error occurred previously while creating it probably",
+                    exception);
+        }
     }
 
     /**
@@ -738,7 +718,8 @@ public final class Store implements Controller<Store> {
      */
     public Store addStatus(@NonNull MessageInfo info) {
         attribute(info);
-        var wrapper = Objects.requireNonNullElseGet(status.get(info.senderJid()), ConcurrentLinkedDeque<MessageInfo>::new);
+        var wrapper = Objects.requireNonNullElseGet(status.get(info.senderJid()),
+                                                    ConcurrentLinkedDeque<MessageInfo>::new);
         wrapper.add(info);
         status.put(info.senderJid(), wrapper);
         return this;

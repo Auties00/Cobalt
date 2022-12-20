@@ -7,7 +7,6 @@ import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -16,12 +15,14 @@ import java.util.Arrays;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.STRING;
+
 @AllArgsConstructor
 @Data
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class MediaRetryNotification implements ProtobufMessage {
+public class MediaRetryNotification
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = STRING)
     private String messageId;
 
@@ -34,7 +35,8 @@ public class MediaRetryNotification implements ProtobufMessage {
     @AllArgsConstructor
     @Accessors(fluent = true)
     @ProtobufName("ResultType")
-    public enum Result implements ProtobufMessage {
+    public enum Result
+            implements ProtobufMessage {
 
         GENERAL_ERROR(0),
         SUCCESS(1),
@@ -45,7 +47,10 @@ public class MediaRetryNotification implements ProtobufMessage {
 
         @JsonCreator
         public static Result of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(null);
         }
     }
 }

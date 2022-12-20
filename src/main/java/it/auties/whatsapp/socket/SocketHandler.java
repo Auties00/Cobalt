@@ -17,6 +17,7 @@ import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.contact.ContactStatus;
+import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.request.Attributes;
@@ -57,7 +58,8 @@ import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 @Accessors(fluent = true)
 @ClientEndpoint(configurator = SocketHandler.OriginPatcher.class)
 @SuppressWarnings("unused")
-public class SocketHandler implements JacksonProvider, SignalSpecification {
+public class SocketHandler
+        implements JacksonProvider, SignalSpecification {
     private static final String WHATSAPP_URL = "wss://web.whatsapp.com/ws/chat";
 
     static {
@@ -103,12 +105,12 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
     @Getter
     @NonNull
     private Store store;
-    
+
     @NonNull
     private ScheduledExecutorService listenersService;
-    
+
     public SocketHandler(@NonNull Whatsapp whatsapp, @NonNull Whatsapp.Options options, @NonNull Store store,
-                         @NonNull Keys keys) {
+            @NonNull Keys keys) {
         this.whatsapp = whatsapp;
         this.options = options;
         this.store = store;
@@ -121,7 +123,7 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
         this.appStateHandler = new AppStateHandler(this);
         this.errorHandler = new FailureHandler(this);
         this.listenersService = Executors.newScheduledThreadPool(10);
-        if(options.automaticallySubscribeToPresences()) {
+        if (options.automaticallySubscribeToPresences()) {
             store().listeners()
                     .add((OnNewContact) whatsapp::subscribeToPresence);
         }
@@ -134,7 +136,7 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
         store.dispose();
         streamHandler.dispose();
         listenersService.shutdownNow();
-        if(reconnect){
+        if (reconnect) {
             return;
         }
 
@@ -152,7 +154,7 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
                 .addAll(oldListeners);
         onDisconnected(DisconnectReason.LOGGED_OUT);
     }
-    
+
     @NonNull
     public Session session() {
         return session;
@@ -170,7 +172,7 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
         onSocketEvent(SocketEvent.OPEN);
         authHandler.createHandshake();
         var clientHello = new ClientHello(keys.ephemeralKeyPair()
-                .publicKey());
+                                                  .publicKey());
         var handshakeMessage = new HandshakeMessage(clientHello);
         Request.of(handshakeMessage)
                 .sendWithPrologue(session, keys, store)
@@ -220,7 +222,7 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
 
             getWebSocketContainer().connectToServer(this, URI.create(WHATSAPP_URL));
             return authHandler.future();
-        }catch (IOException | DeploymentException exception){
+        } catch (IOException | DeploymentException exception) {
             throw new RuntimeException("Cannot connect to socket", exception);
         }
     }
@@ -228,18 +230,22 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
     public void join() {
         try {
             latch.await();
-        }catch (InterruptedException exception){
+        } catch (InterruptedException exception) {
             throw new RuntimeException("Cannot await socket", exception);
         }
     }
 
     public CompletableFuture<Void> disconnect(boolean reconnect) {
         try {
-            state(reconnect ? SocketState.RECONNECTING : SocketState.DISCONNECTED);
+            state(reconnect ?
+                          SocketState.RECONNECTING :
+                          SocketState.DISCONNECTED);
             keys.clear();
             session.close();
-            return reconnect ? connect() : completedFuture(null);
-        }catch (IOException exception){
+            return reconnect ?
+                    connect() :
+                    completedFuture(null);
+        } catch (IOException exception) {
             throw new RuntimeException("Cannot disconnect socket", exception);
         }
     }
@@ -269,12 +275,15 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
     }
 
     public CompletableFuture<Node> send(Node node) {
-        if(errorHandler.failure().get()){
+        if (errorHandler.failure()
+                .get()) {
             return CompletableFuture.completedFuture(node);
         }
 
         onNodeSent(node);
-        return node.toRequest(node.id() == null ? store.nextTag() : null)
+        return node.toRequest(node.id() == null ?
+                                      store.nextTag() :
+                                      null)
                 .send(session, keys, store)
                 .exceptionallyAsync(errorHandler::handleNodeFailure);
     }
@@ -292,8 +301,8 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
                 .get() ?
                 CompletableFuture.failedFuture(new IllegalStateException("Socket is in fail safe state")) :
                 node.toRequest(node.id() == null ?
-                                store.nextTag() :
-                                null)
+                                       store.nextTag() :
+                                       null)
                         .sendWithNoResponse(session, keys, store)
                         .exceptionallyAsync(throwable -> errorHandler.handleFailure(SOCKET, throwable));
     }
@@ -324,7 +333,7 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
     }
 
     public CompletableFuture<Node> sendQuery(String method, String category, Map<String, Object> metadata,
-                                             Node... body) {
+            Node... body) {
         return sendQuery(null, ContactJid.WHATSAPP, method, category, metadata, body);
     }
 
@@ -333,7 +342,7 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
     }
 
     public CompletableFuture<Node> sendQuery(String id, ContactJid to, String method, String category,
-                                             Map<String, Object> metadata, Node... body) {
+            Map<String, Object> metadata, Node... body) {
         var attributes = Attributes.ofNullable(metadata)
                 .put("id", id, Objects::nonNull)
                 .put("type", method)
@@ -347,17 +356,15 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
         var query = Node.ofChildren("query", queryNode);
         var list = Node.ofChildren("list", queryBody);
         var sync = ofChildren("usync",
-                of("sid", store.nextTag(), "mode", "query", "last", "true", "index", "0", "context", "interactive"),
-                query, list);
-        return sendQuery("get", "usync", sync)
-                .thenApplyAsync(this::parseQueryResult);
+                              of("sid", store.nextTag(), "mode", "query", "last", "true", "index", "0", "context",
+                                 "interactive"), query, list);
+        return sendQuery("get", "usync", sync).thenApplyAsync(this::parseQueryResult);
     }
 
     public CompletableFuture<Optional<ContactStatusResponse>> queryStatus(@NonNull ContactJidProvider chat) {
         var query = Node.of("status");
         var body = Node.ofAttributes("user", Map.of("jid", chat.toJid()));
-        return sendInteractiveQuery(query, body)
-                .thenApplyAsync(this::parseStatus);
+        return sendInteractiveQuery(query, body).thenApplyAsync(this::parseStatus);
     }
 
     private Optional<ContactStatusResponse> parseStatus(List<Node> responses) {
@@ -370,8 +377,8 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
 
     public CompletableFuture<Optional<URI>> queryPicture(@NonNull ContactJidProvider chat) {
         var body = Node.ofAttributes("picture", Map.of("query", "url"));
-        return sendQuery("get", "w:profile:picture", Map.of("target", chat.toJid()), body)
-                .thenApplyAsync(this::parseChatPicture);
+        return sendQuery("get", "w:profile:picture", Map.of("target", chat.toJid()), body).thenApplyAsync(
+                this::parseChatPicture);
     }
 
     private Optional<URI> parseChatPicture(Node result) {
@@ -382,8 +389,7 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
     }
 
     public CompletableFuture<List<ContactJid>> queryBlockList() {
-        return sendQuery("get", "blocklist", (Node) null)
-                .thenApplyAsync(this::parseBlockList);
+        return sendQuery("get", "blocklist", (Node) null).thenApplyAsync(this::parseBlockList);
     }
 
     private List<ContactJid> parseBlockList(Node result) {
@@ -397,7 +403,7 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
                 .toList();
     }
 
-    public CompletableFuture<Void> subscribeToPresence(ContactJidProvider jid){
+    public CompletableFuture<Void> subscribeToPresence(ContactJidProvider jid) {
         var node = Node.ofAttributes("presence", Map.of("to", jid.toJid(), "type", "subscribe"));
         return sendWithNoResponse(node);
     }
@@ -421,12 +427,14 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
     }
 
     protected void sendSyncReceipt(MessageInfo info, String type) {
-        if(store.userCompanionJid() == null){
+        if (store.userCompanionJid() == null) {
             return;
         }
 
-        var receipt = ofAttributes("receipt", of("to", ContactJid.of(store.userCompanionJid().user(), ContactJid.Server.USER), "type", type, "id", info.key()
-                .id()));
+        var receipt = ofAttributes("receipt", of("to", ContactJid.of(store.userCompanionJid()
+                                                                             .user(), ContactJid.Server.USER), "type",
+                                                 type, "id", info.key()
+                                                         .id()));
         sendWithNoResponse(receipt);
     }
 
@@ -464,7 +472,8 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
                 .getNullableString("participant");
         var recipient = node.attributes()
                 .getNullableString("recipient");
-        var type = node.attributes().getOptionalString("type")
+        var type = node.attributes()
+                .getOptionalString("type")
                 .filter(ignored -> !node.hasDescription("message"))
                 .orElse(null);
         var attributes = Attributes.of()
@@ -494,7 +503,7 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
 
     protected void onMessageStatus(MessageStatus status, Contact participant, MessageInfo message, Chat chat) {
         callListeners(listener -> {
-            if(participant == null) {
+            if (participant == null) {
                 listener.onConversationMessageStatus(whatsapp, message, status);
                 listener.onConversationMessageStatus(message, status);
             }
@@ -553,10 +562,10 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
         });
     }
 
-    protected void onAction(Action action) {
+    protected void onAction(Action action, MessageIndexInfo indexInfo) {
         callListeners(listener -> {
-            listener.onAction(whatsapp, action);
-            listener.onAction(action);
+            listener.onAction(whatsapp, action, indexInfo);
+            listener.onAction(action, indexInfo);
         });
     }
 
@@ -579,9 +588,10 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
             listener.onLoggedIn(whatsapp);
             listener.onLoggedIn();
         });
-        authHandler.future().complete(null);
+        authHandler.future()
+                .complete(null);
     }
-    
+
     protected void onChats() {
         invokeListeners(listener -> {
             listener.onChats(whatsapp, store().chats());
@@ -624,8 +634,10 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
     protected void onReply(MessageInfo info) {
         store.resolvePendingReply(info);
         callListeners(listener -> {
-            listener.onMessageReply(whatsapp, info, info.quotedMessage().get());
-            listener.onMessageReply(info, info.quotedMessage().get());
+            listener.onMessageReply(whatsapp, info, info.quotedMessage()
+                    .get());
+            listener.onMessageReply(info, info.quotedMessage()
+                    .get());
         });
     }
 
@@ -658,11 +670,11 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
     }
 
     public void updateUserName(String newName, String oldName) {
-        if(newName == null || Objects.equals(newName, oldName)){
+        if (newName == null || Objects.equals(newName, oldName)) {
             return;
         }
 
-        if(oldName != null) {
+        if (oldName != null) {
             sendWithNoResponse(Node.ofAttributes("presence", Map.of("name", oldName, "type", "unavailable")));
             sendWithNoResponse(Node.ofAttributes("presence", Map.of("name", newName, "type", "available")));
             callListeners(listener -> {
@@ -671,17 +683,18 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
             });
         }
 
-        store().findContactByJid(store().userCompanionJid().toUserJid())
+        store().findContactByJid(store().userCompanionJid()
+                                         .toUserJid())
                 .ifPresent(entry -> entry.chosenName(newName));
         store().userName(newName);
     }
 
     public void updateLocale(String newLocale, String oldLocale) {
-        if(!Objects.equals(newLocale, oldLocale)){
+        if (!Objects.equals(newLocale, oldLocale)) {
             return;
         }
 
-        if(oldLocale != null){
+        if (oldLocale != null) {
             callListeners(listener -> {
                 listener.onUserLocaleChange(whatsapp, oldLocale, newLocale);
                 listener.onUserLocaleChange(oldLocale, newLocale);
@@ -718,7 +731,7 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
         CompletableFuture.allOf(futures)
                 .get();
     }
-    
+
     private void callListeners(Consumer<Listener> consumer) {
         store.listeners()
                 .forEach(listener -> callListener(consumer, listener));
@@ -732,7 +745,8 @@ public class SocketHandler implements JacksonProvider, SignalSpecification {
         listenersService.execute(() -> consumer.accept(listener));
     }
 
-    public static class OriginPatcher extends Configurator {
+    public static class OriginPatcher
+            extends Configurator {
         @Override
         public void beforeRequest(@NonNull Map<String, List<String>> headers) {
             headers.put("Origin", List.of("https://web.whatsapp.com"));

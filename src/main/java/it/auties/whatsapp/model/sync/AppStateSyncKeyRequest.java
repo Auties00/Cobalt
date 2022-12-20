@@ -6,7 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.ArrayList;
@@ -19,7 +18,8 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class AppStateSyncKeyRequest implements ProtobufMessage {
+public class AppStateSyncKeyRequest
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = AppStateSyncKeyId.class, repeated = true)
     private List<AppStateSyncKeyId> keyIds;
 

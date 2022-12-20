@@ -3,8 +3,11 @@ package it.auties.whatsapp.model.request;
 import it.auties.whatsapp.model.contact.ContactJid;
 import lombok.NonNull;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
@@ -45,7 +48,7 @@ public record Attributes(@NonNull Map<String, Object> map) {
      * @return a new instance of Attributes
      */
     public static Attributes ofNullable(Map<String, Object> map) {
-        var modifiableMap = Optional.of(map)
+        var modifiableMap = Optional.ofNullable(map)
                 .map(HashMap::new)
                 .orElseGet(HashMap::new);
         return new Attributes(modifiableMap);
@@ -64,10 +67,10 @@ public record Attributes(@NonNull Map<String, Object> map) {
     /**
      * Inserts a key-value pair in the wrapped map
      *
-     * @param key the non-null key
-     * @param value the nullable value
+     * @param key        the non-null key
+     * @param value      the nullable value
      * @param conditions the non-null conditions that must be met to insert the value
-     * @param <T> the type of the value
+     * @param <T>        the type of the value
      * @return the calling instance
      */
     @SafeVarargs
@@ -81,8 +84,8 @@ public record Attributes(@NonNull Map<String, Object> map) {
     /**
      * Inserts a key-value pair in the wrapped map
      *
-     * @param key the non-null key
-     * @param value the nullable value
+     * @param key        the non-null key
+     * @param value      the nullable value
      * @param conditions the non-null conditions that must be met to insert the value
      * @return the calling instance
      */
@@ -98,7 +101,7 @@ public record Attributes(@NonNull Map<String, Object> map) {
     /**
      * Inserts a key-value pair in the wrapped map
      *
-     * @param key the non-null key
+     * @param key   the non-null key
      * @param value the nullable value
      * @return the calling instance
      */
@@ -110,10 +113,10 @@ public record Attributes(@NonNull Map<String, Object> map) {
     /**
      * Gets a value by key in the wrapped map
      *
-     * @param key the non-null key
+     * @param key          the non-null key
      * @param defaultValue the non-null default value
-     * @param clazz the non-null type of the value that is returned
-     * @param <T> the type of the value that is returned
+     * @param clazz        the non-null type of the value that is returned
+     * @param <T>          the type of the value that is returned
      * @return the non-null value
      */
     public <T> T get(@NonNull String key, @NonNull T defaultValue, @NonNull Class<T> clazz) {
@@ -123,9 +126,9 @@ public record Attributes(@NonNull Map<String, Object> map) {
     /**
      * Gets a value by key in the wrapped map
      *
-     * @param key the non-null key
+     * @param key   the non-null key
      * @param clazz the non-null type of the value that is returned
-     * @param <T> the type of the value that is returned
+     * @param <T>   the type of the value that is returned
      * @return the non-null value
      */
     public <T> Optional<T> get(@NonNull String key, @NonNull Class<T> clazz) {
@@ -221,8 +224,7 @@ public record Attributes(@NonNull Map<String, Object> map) {
      * @return a non-null string
      */
     public String getString(@NonNull String key, String defaultValue) {
-        return get(key, Object.class)
-                .map(Object::toString)
+        return get(key, Object.class).map(Object::toString)
                 .orElse(defaultValue);
     }
 
@@ -233,8 +235,7 @@ public record Attributes(@NonNull Map<String, Object> map) {
      * @return a boolean
      */
     public boolean getBoolean(@NonNull String key) {
-        return get(key, Object.class)
-                .map(this::parseBool)
+        return get(key, Object.class).map(this::parseBool)
                 .orElse(false);
     }
 

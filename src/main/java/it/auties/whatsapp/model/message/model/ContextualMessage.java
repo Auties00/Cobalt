@@ -23,11 +23,9 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @SuperBuilder
 @Data
 @Accessors(fluent = true)
-public sealed abstract class ContextualMessage implements Message
-        permits ButtonsMessage, InteractiveMessage, InteractiveResponseMessage, ListMessage, TemplateMessage,
-        ButtonReplyMessage, MediaMessage, it.auties.whatsapp.model.message.payment.PaymentOrderMessage, ContactMessage,
-        ContactsArrayMessage, GroupInviteMessage, LiveLocationMessage, LocationMessage, PollCreationMessage,
-        ProductMessage, RequestPhoneNumberMessage, TextMessage {
+public sealed abstract class ContextualMessage
+        implements Message
+        permits ButtonsMessage, InteractiveMessage, InteractiveResponseMessage, ListMessage, TemplateMessage, ButtonReplyMessage, MediaMessage, it.auties.whatsapp.model.message.payment.PaymentOrderMessage, ContactMessage, ContactsArrayMessage, GroupInviteMessage, LiveLocationMessage, LocationMessage, PollCreationMessage, ProductMessage, RequestPhoneNumberMessage, TextMessage {
     /**
      * The context info of this message
      */

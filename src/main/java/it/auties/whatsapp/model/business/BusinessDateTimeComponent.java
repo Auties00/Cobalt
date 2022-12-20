@@ -6,7 +6,6 @@ import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -24,7 +23,8 @@ import static it.auties.protobuf.base.ProtobufType.UINT32;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class BusinessDateTimeComponent implements ProtobufMessage {
+public class BusinessDateTimeComponent
+        implements ProtobufMessage {
     /**
      * The day of the week
      */
@@ -72,7 +72,8 @@ public class BusinessDateTimeComponent implements ProtobufMessage {
      */
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum DayOfWeek implements ProtobufMessage {
+    public enum DayOfWeek
+            implements ProtobufMessage {
         /**
          * Monday
          */
@@ -125,7 +126,8 @@ public class BusinessDateTimeComponent implements ProtobufMessage {
      */
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum CalendarType implements ProtobufMessage {
+    public enum CalendarType
+            implements ProtobufMessage {
         /**
          * Gregorian calendar
          */

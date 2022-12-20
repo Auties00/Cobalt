@@ -20,7 +20,8 @@ import java.util.List;
 @Jacksonized
 @Builder
 @ProtobufName("PollVoteMessage")
-public class PollVoteMessage implements ProtobufMessage {
+public class PollVoteMessage
+        implements ProtobufMessage {
     @ProtobufProperty(implementation = byte[].class, index = 1, name = "selectedOptions", repeated = true, type = ProtobufType.BYTES)
     @Default
     private List<byte[]> selectedOptions = new ArrayList<>();

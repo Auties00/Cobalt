@@ -15,7 +15,8 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @ProtobufName("NuxAction")
-public final class NuxAction implements Action {
+public final class NuxAction
+        implements Action {
     @ProtobufProperty(index = 1, name = "acknowledged", type = ProtobufType.BOOL)
     private boolean acknowledged;
 

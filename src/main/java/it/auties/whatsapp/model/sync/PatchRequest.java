@@ -15,7 +15,7 @@ public record PatchRequest(PatchType type, ActionValueSync sync, String index, i
 
     @SneakyThrows
     public static PatchRequest of(PatchType type, ActionValueSync sync, Operation operation, int version,
-                                  String... args) {
+            String... args) {
         var index = JSON.writeValueAsString(createArguments(sync, args));
         return new PatchRequest(type, sync, index, version, operation);
     }

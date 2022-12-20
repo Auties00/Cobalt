@@ -6,7 +6,6 @@ import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
@@ -25,7 +24,8 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class LiveLocationMessage extends ContextualMessage {
+public final class LiveLocationMessage
+        extends ContextualMessage {
     /**
      * The latitude of the location that this message wraps
      */

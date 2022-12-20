@@ -8,8 +8,8 @@ import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.MessageType;
-import it.auties.whatsapp.model.poll.PollUpdateEncryptedMetadata;
 import it.auties.whatsapp.model.poll.PollOptionName;
+import it.auties.whatsapp.model.poll.PollUpdateEncryptedMetadata;
 import it.auties.whatsapp.model.poll.PollUpdateMessageMetadata;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,7 +25,8 @@ import java.util.List;
 @Jacksonized
 @Builder
 @ProtobufName("PollUpdateMessage")
-public final class PollUpdateMessage implements Message {
+public final class PollUpdateMessage
+        implements Message {
     private static final String POLL_NAME = "Poll Vote";
 
     private ContactJid voter;
@@ -46,7 +47,7 @@ public final class PollUpdateMessage implements Message {
     @ProtobufProperty(index = 4, name = "senderTimestampMs", type = ProtobufType.INT64)
     private long senderTimestampMilliseconds;
 
-    public String secretName(){
+    public String secretName() {
         return POLL_NAME;
     }
 

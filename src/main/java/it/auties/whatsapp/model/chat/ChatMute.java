@@ -12,7 +12,8 @@ import java.util.Optional;
  *
  * @param endTimeStamp the end date of the mute associated with this object stored as second since {@link Instant#EPOCH}
  */
-public record ChatMute(long endTimeStamp) implements ProtobufMessage {
+public record ChatMute(long endTimeStamp)
+        implements ProtobufMessage {
     /**
      * Not muted flag
      */
@@ -58,8 +59,8 @@ public record ChatMute(long endTimeStamp) implements ProtobufMessage {
      */
     public static ChatMute mutedForEightHours() {
         return muted(ZonedDateTime.now()
-                .plusHours(8)
-                .toEpochSecond());
+                             .plusHours(8)
+                             .toEpochSecond());
     }
 
     /**
@@ -69,8 +70,8 @@ public record ChatMute(long endTimeStamp) implements ProtobufMessage {
      */
     public static ChatMute mutedForOneWeek() {
         return muted(ZonedDateTime.now()
-                .plusWeeks(1)
-                .toEpochSecond());
+                             .plusWeeks(1)
+                             .toEpochSecond());
     }
 
     /**
@@ -139,7 +140,8 @@ public record ChatMute(long endTimeStamp) implements ProtobufMessage {
     /**
      * The constants of this enumerated type describe the various types of mute a {@link ChatMute} can describe
      */
-    public enum Type implements ProtobufMessage {
+    public enum Type
+            implements ProtobufMessage {
         /**
          * This constant describes a {@link ChatMute} that holds a seconds greater than 0
          * Simply put, {@link ChatMute#endTimeStamp()} > 0

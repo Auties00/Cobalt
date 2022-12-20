@@ -19,7 +19,8 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder(access = AccessLevel.PROTECTED)
 @Jacksonized
 @Accessors(fluent = true)
-public class ProductFooter implements ProtobufMessage {
+public class ProductFooter
+        implements ProtobufMessage {
     /**
      * The footer of this product
      */

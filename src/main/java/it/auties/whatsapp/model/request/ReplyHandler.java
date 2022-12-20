@@ -8,7 +8,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * A model class that represents a pending reply that accepts only a result
  *
- * @param id the non-null id of the message waiting for a reply
+ * @param id     the non-null id of the message waiting for a reply
  * @param future the non-null completable result that will be resolved when a reply becomes available
  */
 public record ReplyHandler(@NonNull String id, @NonNull CompletableFuture<MessageInfo> future) {
@@ -18,7 +18,7 @@ public record ReplyHandler(@NonNull String id, @NonNull CompletableFuture<Messag
      * @param id the non-null id of the message waiting for a reply
      * @return a non-null reply
      */
-    public static ReplyHandler of(@NonNull String id){
+    public static ReplyHandler of(@NonNull String id) {
         return new ReplyHandler(id, new CompletableFuture<>());
     }
 }

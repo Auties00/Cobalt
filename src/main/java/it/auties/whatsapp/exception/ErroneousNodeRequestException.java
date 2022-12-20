@@ -5,7 +5,8 @@ import it.auties.whatsapp.model.request.Node;
 /**
  * An unchecked exception that is thrown when an erroneous node is received by Whatsapp
  */
-public final class ErroneousNodeRequestException extends ErroneousRequestException {
+public final class ErroneousNodeRequestException
+        extends ErroneousRequestException {
     private final Node error;
 
     public ErroneousNodeRequestException(String message, Node error) {

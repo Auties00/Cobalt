@@ -15,7 +15,8 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @ProtobufName("ChatAssignmentAction")
-public final class ChatAssignmentAction implements Action {
+public final class ChatAssignmentAction
+        implements Action {
     @ProtobufProperty(index = 1, name = "deviceAgentID", type = ProtobufType.STRING)
     private String deviceAgentID;
 

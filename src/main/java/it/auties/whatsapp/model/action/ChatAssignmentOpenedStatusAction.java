@@ -15,7 +15,8 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @ProtobufName("ChatAssignmentOpenedStatusAction")
-public final class ChatAssignmentOpenedStatusAction implements Action {
+public final class ChatAssignmentOpenedStatusAction
+        implements Action {
     @ProtobufProperty(index = 1, name = "chatOpened", type = ProtobufType.BOOL)
     private boolean chatOpened;
 

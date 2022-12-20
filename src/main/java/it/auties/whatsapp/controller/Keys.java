@@ -36,7 +36,8 @@ import static java.util.Objects.requireNonNullElseGet;
 @Jacksonized
 @Accessors(fluent = true, chain = true)
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public final class Keys implements Controller<Keys> {
+public final class Keys
+        implements Controller<Keys> {
     /**
      * The client id
      */
@@ -155,7 +156,7 @@ public final class Keys implements Controller<Keys> {
     /**
      * Returns a new instance of random keys
      *
-     * @param id the unsigned id of these keys
+     * @param id                   the unsigned id of these keys
      * @param useDefaultSerializer whether the default serializer should be used
      * @return a non-null instance of WhatsappKeys
      */
@@ -172,7 +173,7 @@ public final class Keys implements Controller<Keys> {
     /**
      * Returns the keys saved in memory or constructs a new clean instance
      *
-     * @param id the id of this session
+     * @param id                   the id of this session
      * @param useDefaultSerializer whether the default serializer should be used
      * @return a non-null instance of WhatsappKeys
      */
@@ -263,7 +264,7 @@ public final class Keys implements Controller<Keys> {
     public Optional<AppStateSyncKey> findAppKeyById(byte[] id) {
         return appStateKeys.stream()
                 .filter(preKey -> preKey.keyId() != null && Arrays.equals(preKey.keyId()
-                        .keyId(), id))
+                                                                                  .keyId(), id))
                 .findFirst();
     }
 
@@ -399,7 +400,7 @@ public final class Keys implements Controller<Keys> {
      *
      * @return a boolean
      */
-    public boolean hasAppKeys(){
+    public boolean hasAppKeys() {
         return !appStateKeys.isEmpty();
     }
 
@@ -407,7 +408,7 @@ public final class Keys implements Controller<Keys> {
     private void defaultSignedKey() {
         this.signedKeyPair = SignalSignedKeyPair.of(id, identityKeyPair);
     }
-    
+
     /**
      * This function sets the companionIdentity field to the value of the companionIdentity parameter, serializes the
      * object, and returns the object.

@@ -4,7 +4,8 @@ import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.sync.ExternalBlobReference;
 import it.auties.whatsapp.model.sync.HistorySyncNotification;
 
-public sealed interface AttachmentProvider permits MediaMessage, ExternalBlobReference, HistorySyncNotification {
+public sealed interface AttachmentProvider
+        permits MediaMessage, ExternalBlobReference, HistorySyncNotification {
     String mediaUrl();
 
     AttachmentProvider mediaUrl(String mediaUrl);

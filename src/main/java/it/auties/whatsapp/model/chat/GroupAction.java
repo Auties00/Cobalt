@@ -9,7 +9,8 @@ import it.auties.whatsapp.model.contact.Contact;
  * Said chat should be a group: {@link Chat#isGroup()}.
  * Said actions can be executed using various methods in {@link Whatsapp}.
  */
-public enum GroupAction implements ProtobufMessage {
+public enum GroupAction
+        implements ProtobufMessage {
     /**
      * Adds a contact to a group
      */

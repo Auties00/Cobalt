@@ -7,17 +7,18 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.BYTES;
+
 @AllArgsConstructor
 @Data
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("ADVSignedDeviceIdentityHMAC")
-public class SignedDeviceIdentityHMAC implements ProtobufMessage {
+public class SignedDeviceIdentityHMAC
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = BYTES)
     private byte[] details;
 

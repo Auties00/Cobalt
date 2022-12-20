@@ -10,13 +10,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
+
 @AllArgsConstructor
 @Data
 @Accessors(fluent = true)
 @Jacksonized
 @Builder
 @ProtobufName("KeepInChat")
-public class KeepInChat implements ProtobufMessage {
+public class KeepInChat
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, name = "keepType", type = ProtobufType.MESSAGE)
     private KeepInChatType keepType;
 

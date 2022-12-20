@@ -4,7 +4,8 @@ import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.KeyHelper;
 
-public sealed interface ISignalKeyPair permits SignalKeyPair, SignalPreKeyPair, SignalSignedKeyPair {
+public sealed interface ISignalKeyPair
+        permits SignalKeyPair, SignalPreKeyPair, SignalSignedKeyPair {
     default int id() {
         throw new UnsupportedOperationException(getClass().getName() + " doesn't provide an id");
     }

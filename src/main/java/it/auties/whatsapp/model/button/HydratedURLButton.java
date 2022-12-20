@@ -18,7 +18,8 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class HydratedURLButton implements ProtobufMessage {
+public class HydratedURLButton
+        implements ProtobufMessage {
     /**
      * The text of this button
      */

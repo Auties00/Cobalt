@@ -25,7 +25,8 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class ProductHeader implements ProtobufMessage {
+public class ProductHeader
+        implements ProtobufMessage {
     /**
      * The title of this header
      */

@@ -11,23 +11,25 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.NoSuchElementException;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.WARNING;
 
-class DefaultControllerProvider implements ControllerSerializerProvider, ControllerDeserializerProvider {
+class DefaultControllerProvider
+        implements ControllerSerializerProvider, ControllerDeserializerProvider {
     private static final String CHAT_PREFIX = "chat_";
 
     private final AtomicReference<CompletableFuture<Void>> deserializer;
-    public DefaultControllerProvider(){
+    private final Map<ContactJid, Integer> hashCodesMap;
+
+    public DefaultControllerProvider() {
         this.deserializer = new AtomicReference<>();
+        this.hashCodesMap = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -53,7 +55,7 @@ class DefaultControllerProvider implements ControllerSerializerProvider, Control
     private Optional<Integer> parsePathAsId(Path file) {
         try {
             return Optional.of(Integer.parseInt(file.getFileName()
-                    .toString()));
+                                                        .toString()));
         } catch (NumberFormatException ignored) {
             return Optional.empty();
         }
@@ -61,7 +63,8 @@ class DefaultControllerProvider implements ControllerSerializerProvider, Control
 
     @Override
     public void serializeKeys(Keys keys, boolean async) {
-        if(deserializer.get() == null || !deserializer.get().isDone()){
+        if (deserializer.get() == null || !deserializer.get()
+                .isDone()) {
             return;
         }
 
@@ -71,7 +74,8 @@ class DefaultControllerProvider implements ControllerSerializerProvider, Control
 
     @Override
     public void serializeStore(Store store, boolean async) {
-        if(deserializer.get() == null || !deserializer.get().isDone()){
+        if (deserializer.get() == null || !deserializer.get()
+                .isDone()) {
             return;
         }
 
@@ -84,16 +88,17 @@ class DefaultControllerProvider implements ControllerSerializerProvider, Control
     }
 
     private boolean updateHash(Chat entry) {
-        if(entry.lastHashCode() == -1){
+        var lastHashCode = hashCodesMap.get(entry.jid());
+        if (lastHashCode == null) {
             return true;
         }
 
         var newHashCode = entry.hashCode();
-        if (newHashCode == entry.lastHashCode()) {
+        if (newHashCode == lastHashCode) {
             return false;
         }
 
-        entry.lastHashCode(newHashCode);
+        hashCodesMap.put(entry.jid(), newHashCode);
         return true;
     }
 
@@ -125,23 +130,25 @@ class DefaultControllerProvider implements ControllerSerializerProvider, Control
     @Override
     public synchronized CompletableFuture<Void> attributeStore(Store store) {
         var oldTask = deserializer.get();
-        if(oldTask != null) {
+        if (oldTask != null) {
             return oldTask;
         }
 
         var directory = LocalFileSystem.of(String.valueOf(store.id()));
-        if(Files.notExists(directory)){
+        if (Files.notExists(directory)) {
             return CompletableFuture.completedFuture(null);
         }
 
-        try(var walker = Files.walk(directory)){
-            var futures = walker.filter(entry -> entry.getFileName().toString().startsWith(CHAT_PREFIX))
+        try (var walker = Files.walk(directory)) {
+            var futures = walker.filter(entry -> entry.getFileName()
+                            .toString()
+                            .startsWith(CHAT_PREFIX))
                     .map(entry -> deserializeChat(store, entry))
                     .toArray(CompletableFuture[]::new);
             var result = CompletableFuture.allOf(futures);
             deserializer.set(result);
             return result;
-        }catch (IOException exception){
+        } catch (IOException exception) {
             throw new UncheckedIOException("Cannot deserialize store", exception);
         }
     }
@@ -152,8 +159,9 @@ class DefaultControllerProvider implements ControllerSerializerProvider, Control
                 var chatPreferences = SmileFile.of(entry);
                 var chat = chatPreferences.read(Chat.class)
                         .orElseThrow(() -> new NoSuchElementException("Corrupted chat at %s".formatted(entry)));
+                hashCodesMap.put(chat.jid(), chat.hashCode());
                 baseStore.addChatDirect(chat);
-            } catch (IOException exception){
+            } catch (IOException exception) {
                 var chatName = entry.getFileName()
                         .toString()
                         .replaceFirst(CHAT_PREFIX, "")

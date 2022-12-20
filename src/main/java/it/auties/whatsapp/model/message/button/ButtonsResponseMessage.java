@@ -26,7 +26,8 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Jacksonized
 @SuperBuilder
 @Accessors(fluent = true)
-public final class ButtonsResponseMessage extends ButtonReplyMessage {
+public final class ButtonsResponseMessage
+        extends ButtonReplyMessage {
     /**
      * The id of the button that was selected
      */
@@ -44,7 +45,7 @@ public final class ButtonsResponseMessage extends ButtonReplyMessage {
      */
     @ProtobufProperty(index = 3, type = MESSAGE, implementation = ContextInfo.class)
     @Default
-    private ContextInfo contextInfo = new ContextInfo();  
+    private ContextInfo contextInfo = new ContextInfo();
 
     /**
      * Constructs a response message from a buttons message and a selected button
@@ -55,13 +56,13 @@ public final class ButtonsResponseMessage extends ButtonReplyMessage {
      */
     public static ButtonsResponseMessage of(@NonNull MessageInfo quoted, @NonNull Button button) {
         Validate.isTrue(quoted.message()
-                        .content() instanceof ButtonsMessage,
-                "Cannot select buttons message, erroneous type: %s" + quoted.message()
-                        .content());
+                                .content() instanceof ButtonsMessage,
+                        "Cannot select buttons message, erroneous type: %s" + quoted.message()
+                                .content());
         return ButtonsResponseMessage.builder()
                 .buttonId(button.id())
                 .buttonText(button.text()
-                        .content())
+                                    .content())
                 .contextInfo(ContextInfo.of(quoted))
                 .build();
     }

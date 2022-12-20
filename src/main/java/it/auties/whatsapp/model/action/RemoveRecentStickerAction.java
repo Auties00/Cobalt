@@ -15,7 +15,8 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @ProtobufName("RemoveRecentStickerAction")
-public final class RemoveRecentStickerAction implements Action {
+public final class RemoveRecentStickerAction
+        implements Action {
     @ProtobufProperty(index = 1, name = "lastStickerSentTs", type = ProtobufType.INT64)
     private long lastStickerSentTimestamp;
 

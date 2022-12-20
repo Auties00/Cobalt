@@ -44,12 +44,12 @@ public enum PrivacySettingType {
      */
     READ_RECEIPTS("readreceipts");
 
+    @Getter
+    private final String data;
+
     public static Optional<PrivacySettingType> of(String id) {
         return Arrays.stream(values())
                 .filter(entry -> Objects.equals(entry.data(), id))
                 .findFirst();
     }
-
-    @Getter
-    private final String data;
 }

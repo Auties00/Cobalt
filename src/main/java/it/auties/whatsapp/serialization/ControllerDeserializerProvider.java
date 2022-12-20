@@ -10,7 +10,8 @@ import java.util.concurrent.CompletableFuture;
  * This interface provides a standardized way to deserialize a session.
  * Implement this interface and <a href="https://www.baeldung.com/java-spi#3-service-provider">register it in your manifest</a>
  */
-public non-sealed interface ControllerDeserializerProvider extends ControllerProvider {
+public non-sealed interface ControllerDeserializerProvider
+        extends ControllerProvider {
     /**
      * Serializes the keys
      *
@@ -35,7 +36,7 @@ public non-sealed interface ControllerDeserializerProvider extends ControllerPro
      * @param store the non-null store to attribute
      * @return a completable result
      */
-    default CompletableFuture<Void> attributeStore(@SuppressWarnings("unused") Store store){
+    default CompletableFuture<Void> attributeStore(@SuppressWarnings("unused") Store store) {
         return CompletableFuture.completedFuture(null);
     }
 
@@ -45,7 +46,7 @@ public non-sealed interface ControllerDeserializerProvider extends ControllerPro
      *
      * @return the boolean
      */
-    default boolean isBest(){
+    default boolean isBest() {
         return true;
     }
 }

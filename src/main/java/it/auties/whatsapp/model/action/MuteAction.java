@@ -19,7 +19,8 @@ import static it.auties.protobuf.base.ProtobufType.INT64;
 @Builder(access = AccessLevel.PROTECTED)
 @Jacksonized
 @Accessors(fluent = true)
-public final class MuteAction implements Action {
+public final class MuteAction
+        implements Action {
     /**
      * Whether this action marks the chat as muted
      */

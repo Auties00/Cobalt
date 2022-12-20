@@ -44,12 +44,12 @@ public class LTHash {
             }
 
             indexValueMap.remove(indexMacBase64, prevOp);
-        }else {
+        } else {
             add.add(valueMac);
             indexValueMap.put(indexMacBase64, valueMac);
         }
 
-        if(prevOp != null){
+        if (prevOp != null) {
             subtract.add(prevOp);
         }
     }

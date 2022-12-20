@@ -15,6 +15,7 @@ import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.setting.Setting;
+import it.auties.whatsapp.model.info.MessageIndexInfo;
 
 import java.net.URI;
 import java.util.Collection;
@@ -131,21 +132,23 @@ public interface Listener {
     }
 
     /**
-     * Called when the socket receives an sync from Whatsapp.
+     * Called when the socket receives a sync from Whatsapp.
      *
-     * @param whatsapp an instance to the calling api
-     * @param action   the sync that was executed
+     * @param whatsapp         an instance to the calling api
+     * @param action           the sync that was executed
+     * @param messageIndexInfo the data about this action
      */
-    default void onAction(Whatsapp whatsapp, Action action) {
+    default void onAction(Whatsapp whatsapp, Action action, MessageIndexInfo messageIndexInfo) {
 
     }
 
     /**
-     * Called when the socket receives an sync from Whatsapp.
+     * Called when the socket receives a sync from Whatsapp.
      *
-     * @param action the sync that was executed
+     * @param action           the sync that was executed
+     * @param messageIndexInfo the data about this action
      */
-    default void onAction(Action action) {
+    default void onAction(Action action, MessageIndexInfo messageIndexInfo) {
 
     }
 
@@ -256,7 +259,7 @@ public interface Listener {
      * Particularly old chats may come later through {@link Listener#onChatMessagesSync(Chat, boolean)}
      *
      * @param whatsapp an instance to the calling api
-     * @param chats the chats
+     * @param chats    the chats
      */
     default void onChats(Whatsapp whatsapp, Collection<Chat> chats) {
 
@@ -305,9 +308,9 @@ public interface Listener {
      * This method is only called when the QR is first scanned and history is being synced.
      *
      * @param percentage the percentage synced up to now
-     * @param recent whether the sync is about the recent messages or older messages
+     * @param recent     whether the sync is about the recent messages or older messages
      */
-    default void onHistorySyncProgress(int percentage, boolean recent){
+    default void onHistorySyncProgress(int percentage, boolean recent) {
 
     }
 
@@ -315,11 +318,11 @@ public interface Listener {
      * Called when the socket receives the sync percentage for the full or recent chunk of messages.
      * This method is only called when the QR is first scanned and history is being synced.
      *
-     * @param whatsapp an instance to the calling api
+     * @param whatsapp   an instance to the calling api
      * @param percentage the percentage synced up to now
-     * @param recent whether the sync is about the recent messages or older messages
+     * @param recent     whether the sync is about the recent messages or older messages
      */
-    default void onHistorySyncProgress(Whatsapp whatsapp, int percentage, boolean recent){
+    default void onHistorySyncProgress(Whatsapp whatsapp, int percentage, boolean recent) {
 
     }
 
@@ -401,7 +404,7 @@ public interface Listener {
      * @param status   the new status of the message
      */
     default void onAnyMessageStatus(Whatsapp whatsapp, Chat chat, Contact contact, MessageInfo info,
-                                    MessageStatus status) {
+            MessageStatus status) {
 
     }
 
@@ -424,7 +427,7 @@ public interface Listener {
      * Called when the socket receives all the status updated from WhatsappWeb's Socket.
      *
      * @param whatsapp an instance to the calling api
-     * @param status the status
+     * @param status   the status
      */
     default void onMediaStatus(Whatsapp whatsapp, Collection<MessageInfo> status) {
 
@@ -483,7 +486,7 @@ public interface Listener {
      * @param info   the answer message
      * @param quoted the quoted message
      */
-    default void onMessageReply(MessageInfo info, QuotedMessage quoted){
+    default void onMessageReply(MessageInfo info, QuotedMessage quoted) {
 
     }
 
@@ -491,10 +494,10 @@ public interface Listener {
      * Called when a message answers a previous message
      *
      * @param whatsapp an instance to the calling api
-     * @param info   the answer message
-     * @param quoted the quoted message
+     * @param info     the answer message
+     * @param quoted   the quoted message
      */
-    default void onMessageReply(Whatsapp whatsapp, MessageInfo info, QuotedMessage quoted){
+    default void onMessageReply(Whatsapp whatsapp, MessageInfo info, QuotedMessage quoted) {
 
     }
 
@@ -503,7 +506,7 @@ public interface Listener {
      *
      * @param contact the contact whose pic changed
      */
-    default void onContactPictureChange(Contact contact){
+    default void onContactPictureChange(Contact contact) {
 
     }
 
@@ -512,9 +515,9 @@ public interface Listener {
      * Called when a contact's profile picture changes
      *
      * @param whatsapp an instance to the calling api
-     * @param contact the contact whose pic changed
+     * @param contact  the contact whose pic changed
      */
-    default void onContactPictureChange(Whatsapp whatsapp, Contact contact){
+    default void onContactPictureChange(Whatsapp whatsapp, Contact contact) {
 
     }
 
@@ -523,7 +526,7 @@ public interface Listener {
      *
      * @param group the group whose pic changed
      */
-    default void onGroupPictureChange(Chat group){
+    default void onGroupPictureChange(Chat group) {
 
     }
 
@@ -531,9 +534,9 @@ public interface Listener {
      * Called when a group's picture changes
      *
      * @param whatsapp an instance to the calling api
-     * @param group the group whose pic changed
+     * @param group    the group whose pic changed
      */
-    default void onGroupPictureChange(Whatsapp whatsapp, Chat group){
+    default void onGroupPictureChange(Whatsapp whatsapp, Chat group) {
 
     }
 
@@ -543,7 +546,7 @@ public interface Listener {
      * @param oldName the non-null old name
      * @param newName the non-null new name
      */
-    default void onUserNameChange(String oldName, String newName){
+    default void onUserNameChange(String oldName, String newName) {
 
     }
 
@@ -551,10 +554,10 @@ public interface Listener {
      * Called when the companion's name changes
      *
      * @param whatsapp an instance to the calling api
-     * @param oldName the non-null old name
-     * @param newName the non-null new name
+     * @param oldName  the non-null old name
+     * @param newName  the non-null new name
      */
-    default void onUserNameChange(Whatsapp whatsapp, String oldName, String newName){
+    default void onUserNameChange(Whatsapp whatsapp, String oldName, String newName) {
 
     }
 
@@ -564,18 +567,18 @@ public interface Listener {
      * @param oldStatus the non-null old status
      * @param newStatus the non-null new status
      */
-    default void onUserStatusChange(String oldStatus, String newStatus){
+    default void onUserStatusChange(String oldStatus, String newStatus) {
 
     }
 
     /**
      * Called when the companion's status changes
      *
-     * @param whatsapp an instance to the calling api
+     * @param whatsapp  an instance to the calling api
      * @param oldStatus the non-null old status
      * @param newStatus the non-null new status
      */
-    default void onUserStatusChange(Whatsapp whatsapp, String oldStatus, String newStatus){
+    default void onUserStatusChange(Whatsapp whatsapp, String oldStatus, String newStatus) {
 
     }
 
@@ -585,18 +588,18 @@ public interface Listener {
      * @param oldPicture the non-null old picture
      * @param newPicture the non-null new picture
      */
-    default void onUserPictureChange(URI oldPicture, URI newPicture){
+    default void onUserPictureChange(URI oldPicture, URI newPicture) {
 
     }
 
     /**
      * Called when the companion's picture changes
      *
-     * @param whatsapp an instance to the calling api
+     * @param whatsapp   an instance to the calling api
      * @param oldPicture the non-null old picture
      * @param newPicture the non-null new picture
      */
-    default void onUserPictureChange(Whatsapp whatsapp, URI oldPicture, URI newPicture){
+    default void onUserPictureChange(Whatsapp whatsapp, URI oldPicture, URI newPicture) {
 
     }
 
@@ -606,18 +609,18 @@ public interface Listener {
      * @param oldLocale the non-null old locale
      * @param newLocale the non-null new picture
      */
-    default void onUserLocaleChange(String oldLocale, String newLocale){
+    default void onUserLocaleChange(String oldLocale, String newLocale) {
 
     }
 
     /**
      * Called when the companion's locale changes
      *
-     * @param whatsapp an instance to the calling api
+     * @param whatsapp  an instance to the calling api
      * @param oldLocale the non-null old locale
      * @param newLocale the non-null new picture
      */
-    default void onUserLocaleChange(Whatsapp whatsapp, String oldLocale, String newLocale){
+    default void onUserLocaleChange(Whatsapp whatsapp, String oldLocale, String newLocale) {
 
     }
 
@@ -626,7 +629,7 @@ public interface Listener {
      *
      * @param contact the non-null contact
      */
-    default void onContactBlocked(Contact contact){
+    default void onContactBlocked(Contact contact) {
 
     }
 
@@ -634,9 +637,9 @@ public interface Listener {
      * Called when a contact is blocked or unblocked
      *
      * @param whatsapp an instance to the calling api
-     * @param contact the non-null contact
+     * @param contact  the non-null contact
      */
-    default void onContactBlocked(Whatsapp whatsapp, Contact contact){
+    default void onContactBlocked(Whatsapp whatsapp, Contact contact) {
 
     }
 
@@ -644,7 +647,7 @@ public interface Listener {
      * Called when the socket receives a new contact
      *
      * @param whatsapp an instance to the calling api
-     * @param contact the new contact
+     * @param contact  the new contact
      */
     default void onNewContact(Whatsapp whatsapp, Contact contact) {
 

@@ -31,7 +31,8 @@ import static java.util.Objects.requireNonNullElse;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class StickerMessage extends MediaMessage {
+public final class StickerMessage
+        extends MediaMessage {
     /**
      * The upload url of the encoded sticker that this object wraps
      */
@@ -131,8 +132,7 @@ public final class StickerMessage extends MediaMessage {
      */
     @Builder(builderClassName = "SimpleStickerMessageBuilder", builderMethodName = "simpleBuilder")
     private static StickerMessage customBuilder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media,
-                                          String mimeType, byte[] thumbnail, boolean animated,
-                                          ContextInfo contextInfo) {
+            String mimeType, byte[] thumbnail, boolean animated, ContextInfo contextInfo) {
         var upload = Medias.upload(media, STICKER, mediaConnection);
         return StickerMessage.builder()
                 .mediaSha256(upload.fileSha256())
@@ -144,8 +144,9 @@ public final class StickerMessage extends MediaMessage {
                 .mediaSize(upload.fileLength())
                 .mimetype(requireNonNullElse(mimeType, STICKER.defaultMimeType()))
                 .thumbnail(thumbnail != null ?
-                        thumbnail :
-                        Medias.getThumbnail(media, PNG).orElse(null))
+                                   thumbnail :
+                                   Medias.getThumbnail(media, PNG)
+                                           .orElse(null))
                 .animated(animated)
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .build();

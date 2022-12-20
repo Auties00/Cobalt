@@ -29,7 +29,8 @@ import static it.auties.whatsapp.model.message.model.MediaMessageType.AUDIO;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class AudioMessage extends MediaMessage {
+public final class AudioMessage
+        extends MediaMessage {
     /**
      * The upload url of the encoded media that this object wraps
      */
@@ -112,7 +113,7 @@ public final class AudioMessage extends MediaMessage {
      */
     @Builder(builderClassName = "SimpleAudioMessageBuilder", builderMethodName = "simpleBuilder")
     private static AudioMessage customBuilder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media,
-                                        ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
+            ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
         var duration = Medias.getDuration(media, true);
         var upload = Medias.upload(media, AUDIO, mediaConnection);
         return AudioMessage.builder()

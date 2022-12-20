@@ -23,7 +23,8 @@ import static it.auties.protobuf.base.ProtobufType.UINT64;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class PaymentInviteMessage implements PaymentMessage {
+public final class PaymentInviteMessage
+        implements PaymentMessage {
     /**
      * The type of service used for this payment
      */

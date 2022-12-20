@@ -5,7 +5,8 @@ import it.auties.whatsapp.model.chat.Chat;
 
 import java.util.Collection;
 
-public interface OnChats extends Listener {
+public interface OnChats
+        extends Listener {
     /**
      * Called when the socket receives all the chats from WhatsappWeb's WebSocket.
      * When this event is fired, it is guaranteed that all metadata excluding messages will be present.

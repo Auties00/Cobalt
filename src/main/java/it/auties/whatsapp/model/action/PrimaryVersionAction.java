@@ -15,7 +15,8 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @ProtobufName("PrimaryVersionAction")
-public final class PrimaryVersionAction implements Action {
+public final class PrimaryVersionAction
+        implements Action {
     @ProtobufProperty(index = 1, name = "version", type = ProtobufType.STRING)
     private String version;
 

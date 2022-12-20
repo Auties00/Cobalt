@@ -12,7 +12,8 @@ import lombok.experimental.Accessors;
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum GroupSetting implements ProtobufMessage {
+public enum GroupSetting
+        implements ProtobufMessage {
     /**
      * Who can edit the metadata of a group
      */

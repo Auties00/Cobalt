@@ -9,7 +9,9 @@ import java.io.UncheckedIOException;
  * This interface represents is implemented by all WhatsappWeb4J's controllers.
  * It provides an easy way to store IDs and serialize said class.
  */
-public sealed interface Controller<T extends Controller<T>> extends JacksonProvider permits Store, Keys {
+public sealed interface Controller<T extends Controller<T>>
+        extends JacksonProvider
+        permits Store, Keys {
     /**
      * Returns the id of this controller
      *
@@ -59,7 +61,7 @@ public sealed interface Controller<T extends Controller<T>> extends JacksonProvi
         try {
             return JSON.writerWithDefaultPrettyPrinter()
                     .writeValueAsString(this);
-        }catch (IOException exception){
+        } catch (IOException exception) {
             throw new UncheckedIOException("Cannot convert controller to json", exception);
         }
     }

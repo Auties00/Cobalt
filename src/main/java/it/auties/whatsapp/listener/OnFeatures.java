@@ -1,10 +1,9 @@
 package it.auties.whatsapp.listener;
 
-import it.auties.whatsapp.socket.SocketHandler;
-
 import java.util.List;
 
-public interface OnFeatures extends Listener {
+public interface OnFeatures
+        extends Listener {
     /**
      * Called when the socket receives new features from Whatsapp.
      *

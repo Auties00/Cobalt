@@ -8,7 +8,6 @@ import it.auties.protobuf.base.ProtobufType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
@@ -18,12 +17,14 @@ import java.util.Arrays;
 import java.util.List;
 
 import static it.auties.protobuf.base.ProtobufType.*;
+
 @AllArgsConstructor
 @Data
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class ClientPayload implements ProtobufMessage {
+public class ClientPayload
+        implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = UINT64)
     private Long username;
 
@@ -113,7 +114,8 @@ public class ClientPayload implements ProtobufMessage {
 
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum ClientPayloadClientFeature implements ProtobufMessage {
+    public enum ClientPayloadClientFeature
+            implements ProtobufMessage {
 
         NONE(0);
         @Getter
@@ -121,14 +123,18 @@ public class ClientPayload implements ProtobufMessage {
 
         @JsonCreator
         public static ClientPayloadClientFeature of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(null);
         }
     }
 
     @AllArgsConstructor
     @Accessors(fluent = true)
     @ProtobufName("IOSAppExtension")
-    public enum ClientPayloadIOSAppExtension implements ProtobufMessage {
+    public enum ClientPayloadIOSAppExtension
+            implements ProtobufMessage {
 
         SHARE_EXTENSION(0),
         SERVICE_EXTENSION(1),
@@ -137,14 +143,18 @@ public class ClientPayload implements ProtobufMessage {
         private final int index;
 
         public static ClientPayloadIOSAppExtension of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(null);
         }
     }
 
     @AllArgsConstructor
     @Accessors(fluent = true)
     @ProtobufName("ConnectType")
-    public enum ClientPayloadConnectType implements ProtobufMessage {
+    public enum ClientPayloadConnectType
+            implements ProtobufMessage {
 
         CELLULAR_UNKNOWN(0),
         WIFI_UNKNOWN(1),
@@ -165,14 +175,18 @@ public class ClientPayload implements ProtobufMessage {
         private final int index;
 
         public static ClientPayloadConnectType of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(null);
         }
     }
 
     @AllArgsConstructor
     @Accessors(fluent = true)
     @ProtobufName("ConnectReason")
-    public enum ClientPayloadConnectReason implements ProtobufMessage {
+    public enum ClientPayloadConnectReason
+            implements ProtobufMessage {
 
         PUSH(0),
         USER_ACTIVATED(1),
@@ -184,14 +198,18 @@ public class ClientPayload implements ProtobufMessage {
         private final int index;
 
         public static ClientPayloadConnectReason of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(null);
         }
     }
 
     @AllArgsConstructor
     @Accessors(fluent = true)
     @ProtobufName("Product")
-    public enum ClientPayloadProduct implements ProtobufMessage {
+    public enum ClientPayloadProduct
+            implements ProtobufMessage {
 
         WHATSAPP(0),
         MESSENGER(1);
@@ -199,12 +217,16 @@ public class ClientPayload implements ProtobufMessage {
         private final int index;
 
         public static ClientPayloadProduct of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
+            return Arrays.stream(values())
+                    .filter(entry -> entry.index() == index)
+                    .findFirst()
+                    .orElse(null);
         }
     }
 
     @AllArgsConstructor
-    public enum BizMarketSegment implements ProtobufMessage {
+    public enum BizMarketSegment
+            implements ProtobufMessage {
 
         DEFAULT(0),
         DEVX(1),
