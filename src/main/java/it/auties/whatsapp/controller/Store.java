@@ -51,17 +51,21 @@ public final class Store
      */
     @JsonIgnore
     private static ConcurrentHashMap<Integer, Store> stores = new ConcurrentHashMap<>();
+
     /**
      * The media connection latch associated with this store
      */
     @JsonIgnore
     @Default
     private final CountDownLatch mediaConnectionLatch = new CountDownLatch(1);
+
+
     /**
      * The session id of this store
      */
     @Getter
     private int id;
+
     /**
      * The locale of the user linked to this account.
      * This field will be null while the user hasn't logged in yet.
@@ -70,6 +74,7 @@ public final class Store
     @Getter
     @Setter
     private String userLocale;
+
     /**
      * The name of the user linked to this account.
      * This field will be null while the user hasn't logged in yet.
@@ -78,6 +83,7 @@ public final class Store
     @Getter
     @Setter
     private String userName;
+
     /**
      * The profile picture of the user linked to this account.
      * This field will be null while the user hasn't logged in yet.
@@ -85,6 +91,7 @@ public final class Store
      */
     @Setter
     private URI userProfilePicture;
+
     /**
      * The status of the user linked to this account.
      * This field will be null while the user hasn't logged in yet.
@@ -93,6 +100,7 @@ public final class Store
     @Getter
     @Setter
     private String userStatus;
+
     /**
      * The user linked to this account.
      * This field will be null while the user hasn't logged in yet.
@@ -100,6 +108,7 @@ public final class Store
     @Getter
     @Setter
     private ContactJid userCompanionJid;
+
     /**
      * The non-null map of chats
      */
@@ -107,18 +116,21 @@ public final class Store
     @Default
     @JsonIgnore
     private ConcurrentHashMap<ContactJid, Chat> chats = new ConcurrentHashMap<>();
+
     /**
      * The non-null map of contacts
      */
     @NonNull
     @Default
     private ConcurrentHashMap<ContactJid, Contact> contacts = new ConcurrentHashMap<>();
+
     /**
      * The non-null list of status messages
      */
     @NonNull
     @Default
     private ConcurrentHashMap<ContactJid, ConcurrentLinkedDeque<MessageInfo>> status = new ConcurrentHashMap<>();
+
     /**
      * The non-null map of privacy settings
      */
@@ -126,6 +138,7 @@ public final class Store
     @Default
     @Getter
     private ConcurrentHashMap<PrivacySettingType, PrivacySettingValue> privacySettings = new ConcurrentHashMap<>();
+
     /**
      * Whether this store has already received the snapshot from
      * Whatsapp Web containing chats and contacts
@@ -133,24 +146,28 @@ public final class Store
     @Getter
     @Setter
     private boolean initialSnapshot;
+
     /**
      * Whether the initial app sync has already been sent
      */
     @Getter
     @Setter
     private boolean initialAppSync;
+
     /**
      * Whether chats should be unarchived if a new message arrives
      */
     @Getter
     @Setter
     private boolean unarchiveChats;
+
     /**
      * Whether the twenty-hours format is being used by the client
      */
     @Getter
     @Setter
     private boolean twentyFourHourFormat;
+
     /**
      * The non-null list of requests that were sent to Whatsapp.
      * They might or might not be waiting for a response
@@ -159,6 +176,7 @@ public final class Store
     @JsonIgnore
     @Default
     private ConcurrentLinkedDeque<Request> requests = new ConcurrentLinkedDeque<>();
+
     /**
      * The non-null list of all the predicates awaiting a result
      */
@@ -166,6 +184,7 @@ public final class Store
     @JsonIgnore
     @Default
     private ConcurrentLinkedDeque<NodeHandler> pendingHandlers = new ConcurrentLinkedDeque<>();
+
     /**
      * The non-null list of replies waiting to be fulfilled
      */
@@ -173,6 +192,7 @@ public final class Store
     @JsonIgnore
     @Default
     private ConcurrentLinkedDeque<ReplyHandler> replyHandlers = new ConcurrentLinkedDeque<>();
+
     /**
      * The non-null list of listeners
      */
@@ -181,6 +201,7 @@ public final class Store
     @Default
     @Getter
     private ConcurrentLinkedDeque<Listener> listeners = new ConcurrentLinkedDeque<>();
+
     /**
      * Request counter
      */
@@ -188,6 +209,7 @@ public final class Store
     @JsonIgnore
     @Default
     private AtomicLong counter = new AtomicLong();
+
     /**
      * The request tag, used to create messages
      */
@@ -197,17 +219,20 @@ public final class Store
     private String tag = Bytes.ofRandom(1)
             .toHex()
             .toLowerCase(Locale.ROOT);
+
     /**
      * The timestamp in seconds for the initialization of this object
      */
     @Default
     @Getter
     private long initializationTimeStamp = Clock.now();
+
     /**
      * The media connection associated with this store
      */
     @JsonIgnore
     private MediaConnection mediaConnection;
+
     @JsonIgnore
     @Getter
     @Setter
@@ -653,7 +678,7 @@ public final class Store
             return mediaConnection;
         } catch (InterruptedException exception) {
             throw new RuntimeException(
-                    "Cannot lock on media connection." + " An error occurred previously while creating it probably",
+                    "Cannot lock on media connection. An error occurred previously while creating it probably",
                     exception);
         }
     }
@@ -666,6 +691,7 @@ public final class Store
      */
     public Store mediaConnection(MediaConnection mediaConnection) {
         this.mediaConnection = mediaConnection;
+        mediaConnectionLatch.countDown();
         return this;
     }
 

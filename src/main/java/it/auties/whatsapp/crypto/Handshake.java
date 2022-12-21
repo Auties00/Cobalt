@@ -45,6 +45,14 @@ public class Handshake {
         var expanded = Bytes.of(Hkdf.extractAndExpand(new byte[0], salt.toByteArray(), null, 64));
         keys.writeKey(expanded.cut(32));
         keys.readKey(expanded.slice(32));
+        dispose();
+    }
+
+    private void dispose() {
+        this.hash = null;
+        this.salt = null;
+        this.cryptoKey = null;
+        this.counter = 0;
     }
 
     public void mixIntoKey(byte @NonNull [] bytes) {

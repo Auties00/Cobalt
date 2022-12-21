@@ -2,6 +2,7 @@ package it.auties.whatsapp.binary;
 
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.contact.ContactJid.Server;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Validate;
@@ -14,7 +15,6 @@ import java.util.Map;
 import java.util.stream.IntStream;
 
 import static it.auties.whatsapp.binary.Tag.*;
-import static it.auties.whatsapp.model.contact.ContactJid.Server.forAddress;
 import static it.auties.whatsapp.model.request.Node.of;
 import static it.auties.whatsapp.model.request.Node.ofAttributes;
 
@@ -128,8 +128,8 @@ public class Decoder {
 
     private ContactJid readJidPair() {
         return switch (read(true)) {
-            case String encoded -> ContactJid.of(encoded, forAddress(readString()));
-            case null -> ContactJid.ofServer(forAddress(readString()));
+            case String encoded -> ContactJid.of(encoded, Server.of(readString()));
+            case null -> ContactJid.ofServer(Server.of(readString()));
             default -> throw new RuntimeException("Invalid jid type");
         };
     }

@@ -44,7 +44,7 @@ class AppStateHandler
     private static final int PULL_ATTEMPTS = 3;
     private final SocketHandler socketHandler;
     private final Semaphore semaphore;
-    private final CountDownLatch countDownLatch;
+    private CountDownLatch countDownLatch;
 
     @SneakyThrows
     protected AppStateHandler(SocketHandler socketHandler) {
@@ -616,6 +616,11 @@ class AppStateHandler
         } catch (InterruptedException exception) {
             throw new RuntimeException("Cannot await app state", exception);
         }
+    }
+
+    public void dispose(){
+        semaphore.release();
+        this.countDownLatch = new CountDownLatch(1);
     }
 
     private record SyncRecord(LTHashState state, List<ActionDataSync> records) {

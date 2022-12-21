@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.message.standard;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
@@ -24,6 +25,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
+@ProtobufName("ExtendedTextName")
 public final class TextMessage
         extends ContextualMessage {
     /**

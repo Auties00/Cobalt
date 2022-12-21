@@ -17,32 +17,32 @@ import java.util.Optional;
 public enum MessageStatus
         implements ProtobufMessage {
     /**
-     * Unknown
+     * Erroneous status(no ticks)
      */
-    UNKNOWN(0),
+    ERROR(0),
 
     /**
-     * Pending
+     * Pending status(no ticks)
      */
     PENDING(1),
 
     /**
-     * Acknowledged by the server
+     * Acknowledged by the server(no ticks)
      */
     SERVER_ACK(2),
 
     /**
-     * Delivered
+     * Delivered(one tick)
      */
     DELIVERED(3),
 
     /**
-     * Read
+     * Read(two ticks)
      */
     READ(4),
 
     /**
-     * Played
+     * Played(two ticks)
      */
     PLAYED(5);
 
@@ -64,6 +64,6 @@ public enum MessageStatus
         return Arrays.stream(values())
                 .filter(entry -> entry.index() == index)
                 .findFirst()
-                .orElse(UNKNOWN);
+                .orElse(ERROR);
     }
 }

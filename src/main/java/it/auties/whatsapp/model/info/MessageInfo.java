@@ -7,9 +7,12 @@ import it.auties.whatsapp.model.business.BusinessPrivacyStatus;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.media.MediaData;
 import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
+import it.auties.whatsapp.model.message.standard.LiveLocationMessage;
 import it.auties.whatsapp.model.message.standard.ReactionMessage;
+import it.auties.whatsapp.model.sync.PhotoChange;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.JacksonProvider;
 import lombok.*;
@@ -20,7 +23,6 @@ import lombok.extern.jackson.Jacksonized;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static it.auties.protobuf.base.ProtobufType.*;
 import static java.util.Objects.requireNonNullElseGet;
@@ -43,6 +45,7 @@ public final class MessageInfo
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = MessageKey.class)
     @NonNull
     private MessageKey key;
+
     /**
      * The container of this message
      */
@@ -50,68 +53,195 @@ public final class MessageInfo
     @NonNull
     @Default
     private MessageContainer message = new MessageContainer();
+
     /**
      * The timestamp, that is the seconds since {@link java.time.Instant#EPOCH}, when this message was sent
      */
     @ProtobufProperty(index = 3, type = UINT64)
     private long timestamp;
+
     /**
-     * The global status of this message.
-     * If the chat associated with this message is a group it is guaranteed that this field is equal or lower hierarchically then every value stored by {@link MessageInfo#individualStatus()}.
-     * Otherwise, this field is guaranteed to be equal to the single value stored by {@link MessageInfo#individualStatus()} for the contact associated with the chat associated with this message.
+     * The global status of this message
      */
     @ProtobufProperty(index = 4, type = MESSAGE, implementation = MessageStatus.class)
     @NonNull
     @Default
     private MessageStatus status = MessageStatus.PENDING;
-    /**
-     * A map that holds the read status of this message for each participant.
-     * If the chat associated with this chat is not a group, this map's size will always be 1.
-     * In this case it is guaranteed that the value stored in this map for the contact associated with this chat equals {@link MessageInfo#status()}.
-     * Otherwise, it is guaranteed to have a size of participants - 1.
-     * In this case it is guaranteed that every value stored in this map for each participant of this chat is equal or higher hierarchically then {@link MessageInfo#status()}.
-     * It is important to remember that it is guaranteed that every participant will be present as a key.
-     */
-    @NonNull
-    @Default
-    private Map<ContactJid, MessageStatus> individualStatus = new ConcurrentHashMap<>();
+
     /**
      * The jid of the sender
      */
     @ProtobufProperty(index = 5, type = STRING, implementation = ContactJid.class)
     @Setter(AccessLevel.NONE)
     private ContactJid senderJid;
+
     /**
      * The sender of the message
      */
     private Contact sender;
+
     /**
      * Whether this message should be ignored or counted as an unread message
      */
     @ProtobufProperty(index = 16, type = BOOL)
     private boolean ignore;
+
     /**
      * Whether this message is starred
      */
     @ProtobufProperty(index = 17, type = BOOL)
     private boolean starred;
+
+    /**
+     * Broadcast.
+     * This field is suppressed because this information is available from the message itself.
+     */
+    @ProtobufProperty(index = 18, type = BOOL)
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private boolean broadcast;
+
     /**
      * Push name
      */
     @ProtobufProperty(index = 19, type = STRING)
     private String pushName;
+
+    /**
+     * Media cipher
+     * This field is suppressed because this information is available from the message itself
+     */
+    @ProtobufProperty(index = 20, type = BYTES)
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private byte[] mediaCiphertextSha256;
+
+    /**
+     * Multicast
+     * This field is suppressed because this information is available from the message itself
+     */
+    @ProtobufProperty(index = 21, type = BOOL)
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private boolean multicast;
+
+    /**
+     * Url text
+     * This field is suppressed because this information is available from the message itself
+     */
+    @ProtobufProperty(index = 22, type = BOOL)
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private boolean urlText;
+
+    /**
+     * Url number
+     * This field is suppressed because this information is available from the message itself
+     */
+    @ProtobufProperty(index = 23, type = BOOL)
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private boolean urlNumber;
+    
     /**
      * The stub type of this message.
      * This property is populated only if the message that {@link MessageInfo#message} wraps is a {@link ProtocolMessage}.
      */
     @ProtobufProperty(index = 24, type = MESSAGE, implementation = MessageInfo.StubType.class)
     private StubType stubType;
+
+    /**
+     * Clear media
+     * This field is suppressed because this information is available from the message itself
+     */
+    @ProtobufProperty(index = 25, type = BOOL)
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private boolean clearMedia;
+
     /**
      * Message stub parameters
      */
     @ProtobufProperty(index = 26, type = STRING, repeated = true)
     @Default
     private List<String> stubParameters = new ArrayList<>();
+    
+    /**
+     * Duration
+     * This field is suppressed because this information is available from the message itself
+     */
+    @ProtobufProperty(index = 27, type = UINT32)
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private int duration;
+
+    /**
+     * Labels
+     * This field is suppressed because this information is available from the message itself
+     */
+    @ProtobufProperty(index = 28, type = STRING, repeated = true)
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @Default
+    private List<String> labels = new ArrayList<>();
+
+    /**
+     * PaymentInfo
+     */
+    @ProtobufProperty(index = 29, type = MESSAGE, implementation = PaymentInfo.class)
+    private PaymentInfo paymentInfo;
+
+    /**
+     * Final live location
+     * This field is suppressed because this information is available from the message itself
+     */
+    @ProtobufProperty(index = 30, type = MESSAGE, implementation = LiveLocationMessage.class)
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private LiveLocationMessage finalLiveLocation;
+
+    /**
+     * Quoted payment info
+     */
+    @ProtobufProperty(index = 31, type = MESSAGE, implementation = PaymentInfo.class)
+    private PaymentInfo quotedPaymentInfo;
+
+    /**
+     * Ephemeral start timestamp
+     * This field is suppressed because this information is available from the message itself
+     */
+    @ProtobufProperty(index = 32, type = UINT64)
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private long ephemeralStartTimestamp;
+
+    /**
+     * Ephemeral duration
+     * This field is suppressed because this information is available from the message itself
+     */
+    @ProtobufProperty(index = 33, type = UINT32)
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private int ephemeralDuration;
+
+    /**
+     * Enable ephemeral
+     * This field is suppressed because this information is available from the message itself
+     */
+    @ProtobufProperty(index = 34, type = BOOL)
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private boolean enableEphemeral;
+
+    /**
+     * Ephemeral out of sync
+     * This field is suppressed because this information is available from the message itself
+     */
+    @ProtobufProperty(index = 35, type = BOOL)
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private boolean ephemeralOutOfSync;
+    
     /**
      * Business privacy status
      */
@@ -123,12 +253,59 @@ public final class MessageInfo
      */
     @ProtobufProperty(index = 37, type = STRING)
     private String businessVerifiedName;
+
+    /**
+     * Media data
+     * This field is suppressed because this information is available from the message itself
+     */
+    @ProtobufProperty(index = 38, type = MESSAGE, implementation = MediaData.class)
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private MediaData mediaData;
+
+    /**
+     * Photo change
+     * This field is suppressed because this information is available from the message itself
+     */
+    @ProtobufProperty(index = 39, type = MESSAGE, implementation = PhotoChange.class)
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private PhotoChange photoChange;
+
+    /**
+     * Message receipt
+     */
+    @ProtobufProperty(index = 40, type = MESSAGE, implementation = MessageReceipt.class)
+    @Default
+    private MessageReceipt receipt = MessageReceipt.of();
+
     /**
      * Reactions
      */
     @ProtobufProperty(index = 41, type = MESSAGE, implementation = ReactionMessage.class, repeated = true)
     @Default
     private List<ReactionMessage> reactions = new ArrayList<>();
+    
+    /**
+     * Media data
+     * This field is suppressed because this information is available from the message itself
+     */
+    @ProtobufProperty(index = 42, type = MESSAGE, implementation = MediaData.class)
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private MediaData quotedStickerData;
+
+    /**
+     * Upcoming data
+     */
+    @ProtobufProperty(index = 43, type = BYTES)
+    private String futureProofData;
+
+    /**
+     * Public service announcement status
+     */
+    @ProtobufProperty(index = 44, type = MESSAGE, implementation = PublicServiceAnnouncementStatus.class)
+    private PublicServiceAnnouncementStatus psaStatus;
 
     /**
      * Constructs a new MessageInfo from a MessageKey and a MessageContainer
@@ -141,7 +318,6 @@ public final class MessageInfo
         this.timestamp = Clock.now();
         this.status = MessageStatus.PENDING;
         this.message = container;
-        this.individualStatus = new ConcurrentHashMap<>();
     }
 
     /**
@@ -232,6 +408,15 @@ public final class MessageInfo
     }
 
     /**
+     * Returns the optional push name
+     *
+     * @return an optional value
+     */
+    public Optional<String> pushName() {
+        return Optional.ofNullable(pushName);
+    }
+
+    /**
      * Returns the optional business verified push name
      *
      * @return an optional value
@@ -247,6 +432,51 @@ public final class MessageInfo
      */
     public Optional<BusinessPrivacyStatus> businessPrivacyStatus() {
         return Optional.ofNullable(businessPrivacyStatus);
+    }
+
+    /**
+     * Returns the optional stub type
+     *
+     * @return an optional value
+     */
+    public Optional<StubType> stubType() {
+        return Optional.ofNullable(stubType);
+    }
+
+    /**
+     * Returns the optional payment info
+     *
+     * @return an optional value
+     */
+    public Optional<PaymentInfo> paymentInfo() {
+        return Optional.ofNullable(paymentInfo);
+    }
+
+    /**
+     * Returns the optional quoted payment info
+     *
+     * @return an optional value
+     */
+    public Optional<PaymentInfo> quotedPaymentInfo() {
+        return Optional.ofNullable(quotedPaymentInfo);
+    }
+
+    /**
+     * Returns the optional quoted sticker data
+     *
+     * @return an optional value
+     */
+    public Optional<String> futureProofData() {
+        return Optional.ofNullable(futureProofData);
+    }
+
+    /**
+     * Returns the optional psa status
+     *
+     * @return an optional value
+     */
+    public Optional<PublicServiceAnnouncementStatus> psaStatus() {
+        return Optional.ofNullable(psaStatus);
     }
 
     /**
@@ -274,7 +504,7 @@ public final class MessageInfo
     }
 
     public boolean equals(Object object) {
-        return (object instanceof MessageInfo that) && Objects.equals(this.id(), that.id());
+        return object instanceof MessageInfo that && Objects.equals(this.id(), that.id());
     }
 
     @Override
@@ -493,6 +723,26 @@ public final class MessageInfo
             }
 
             this.stubParameters$value.addAll(stubParameters);
+            return this;
+        }
+
+        public MessageInfoBuilder reactions(List<ReactionMessage> reactions) {
+            if (!reactions$set) {
+                this.reactions$value = new ArrayList<>();
+                this.reactions$set = true;
+            }
+
+            this.reactions$value.addAll(reactions);
+            return this;
+        }
+
+        public MessageInfoBuilder labels(List<String> labels) {
+            if (!labels$set) {
+                this.labels$value = new ArrayList<>();
+                this.labels$set = true;
+            }
+
+            this.labels$value.addAll(labels);
             return this;
         }
     }

@@ -16,6 +16,7 @@ import it.auties.whatsapp.model.business.BusinessCollectionEntry;
 import it.auties.whatsapp.model.business.BusinessProfile;
 import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.contact.ContactJid.Server;
 import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.ContextInfo;
@@ -1208,19 +1209,17 @@ public class Whatsapp {
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJidProvider chat,
             @NonNull MessageContainer message) {
+        var sender = chat.toJid()
+                .hasServer(GROUP) ?
+                store().userCompanionJid() :
+                null;
         var key = MessageKey.builder()
                 .chatJid(chat.toJid())
                 .fromMe(true)
-                .senderJid(chat.toJid()
-                                   .hasServer(GROUP) ?
-                                   store().userCompanionJid() :
-                                   null)
+                .senderJid(sender)
                 .build();
         var info = MessageInfo.builder()
-                .senderJid(chat.toJid()
-                                   .hasServer(GROUP) ?
-                                   store().userCompanionJid() :
-                                   null)
+                .senderJid(sender)
                 .key(key)
                 .message(message)
                 .timestamp(Clock.now())
@@ -1560,7 +1559,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<Optional<Chat>> acceptGroupInvite(@NonNull String inviteCode) {
-        return socketHandler.sendQuery(ContactJid.GROUP, "set", "w:g2",
+        return socketHandler.sendQuery(Server.GROUP.toJid(), "set", "w:g2",
                                        Node.ofAttributes("invite", Map.of("code", inviteCode)))
                 .thenApplyAsync(this::parseAcceptInvite);
     }
@@ -1823,7 +1822,7 @@ public class Whatsapp {
                 .toArray(Node[]::new);
         var key = ofRandom(12).toHex();
         var body = Node.ofChildren("create", Map.of("subject", subject, "key", key), participants);
-        return socketHandler.sendQuery(ContactJid.GROUP, "set", "w:g2", body)
+        return socketHandler.sendQuery(Server.GROUP.toJid(), "set", "w:g2", body)
                 .thenApplyAsync(response -> Optional.ofNullable(response)
                         .flatMap(node -> node.findNode("group"))
                         .orElseThrow(() -> new NoSuchElementException(
@@ -1839,7 +1838,7 @@ public class Whatsapp {
      */
     public <T extends ContactJidProvider> CompletableFuture<T> leaveGroup(@NonNull T group) {
         var body = Node.ofChildren("leave", Node.ofAttributes("group", Map.of("id", group.toJid())));
-        return socketHandler.sendQuery(ContactJid.GROUP, "set", "w:g2", body)
+        return socketHandler.sendQuery(Server.GROUP.toJid(), "set", "w:g2", body)
                 .thenApplyAsync(ignored -> group);
     }
 

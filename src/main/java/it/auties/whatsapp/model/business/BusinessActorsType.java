@@ -19,6 +19,7 @@ public enum BusinessActorsType
      * Self
      */
     SELF(0),
+
     /**
      * Bsp
      */

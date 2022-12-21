@@ -7,10 +7,14 @@ import it.auties.whatsapp.util.JacksonProvider;
 public class WaitTest implements JacksonProvider {
     public static void main(String[] args) {
         Whatsapp.firstConnection()
-                .addLoggedInListener(() -> System.out.println("Connected"))
+                .addLoggedInListener(() -> {
+                    System.out.println("Connected");
+                })
                 .addNewMessageListener(message -> System.out.println(message.toJson()))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
-                .addChatsListener(chats -> System.out.printf("Chats: %s%n", chats.size()))
+                .addChatsListener(chats -> {
+                    System.out.printf("Chats: %s%n", chats.size());
+                })
                 .addNodeReceivedListener(incoming -> System.out.printf("Received node %s%n", incoming))
                 .addNodeSentListener(outgoing -> System.out.printf("Sent node %s%n", outgoing))
                 .addActionListener((action, info) -> System.out.printf("New action: %s, info: %s%n", action, info))

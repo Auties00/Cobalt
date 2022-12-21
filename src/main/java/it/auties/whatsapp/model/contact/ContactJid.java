@@ -22,26 +22,6 @@ import java.util.Objects;
 public record ContactJid(String user, @NonNull Server server, int device, int agent)
         implements ProtobufMessage, ContactJidProvider {
     /**
-     * The official business account address
-     */
-    public static final ContactJid OFFICIAL_BUSINESS_ACCOUNT = ContactJid.of("16505361212@s.whatsapp.net");
-
-    /**
-     * The official status account
-     */
-    public static final ContactJid STATUS_ACCOUNT = ContactJid.of("status@broadcast");
-
-    /**
-     * The ID of Whatsapp, used to send nodes
-     */
-    public static final ContactJid WHATSAPP = ofServer(Server.WHATSAPP);
-
-    /**
-     * The ID of Groups, used to send nodes
-     */
-    public static final ContactJid GROUP = ofServer(Server.GROUP);
-
-    /**
      * Constructs a new ContactId for a user from a jid
      *
      * @param jid the non-null jid of the user
@@ -49,7 +29,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      */
     @JsonCreator
     public static ContactJid of(@NonNull String jid) {
-        return of(jid, Server.forAddress(jid));
+        return of(jid, Server.of(jid));
     }
 
     /**
@@ -166,16 +146,11 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @return a non null type
      */
     public Type type() {
-        if (isCompanion()) {
-            return Type.COMPANION;
-        }
-
-        if (equals(OFFICIAL_BUSINESS_ACCOUNT)) {
-            return Type.OFFICIAL_BUSINESS_ACCOUNT;
-        }
-
-        return switch (server()) {
-            case WHATSAPP -> Type.USER;
+        return isCompanion() ? Type.COMPANION : switch (server()) {
+            case WHATSAPP -> Objects.equals(user(), "16505361212") ?
+                    Type.OFFICIAL_SURVEY_ACCOUNT :
+                    Type.USER;
+            case LID -> Type.LID;
             case BROADCAST -> Objects.equals(user(), "status") ?
                     Type.STATUS :
                     Type.BROADCAST;
@@ -184,6 +159,8 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
             case USER -> switch (user()) {
                 case "server" -> Type.SERVER;
                 case "0" -> Type.ANNOUNCEMENT;
+                case "16508638904" -> Type.IAS;
+                case "16505361212" -> Type.OFFICIAL_BUSINESS_ACCOUNT;
                 default -> Type.UNKNOWN;
             };
         };
@@ -195,7 +172,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @param server the server to check against
      * @return a boolean
      */
-    public boolean hasServer(@NonNull Server server) {
+    public boolean hasServer(Server server) {
         return server() == server;
     }
 
@@ -205,7 +182,7 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @param server the server to check against
      * @return a boolean
      */
-    public boolean isServerJid(@NonNull Server server) {
+    public boolean isServerJid(Server server) {
         return user() == null && server() == server;
     }
 
@@ -274,7 +251,8 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
      * @return a non-null jid
      */
     @Override
-    public @NonNull ContactJid toJid() {
+    @NonNull
+    public ContactJid toJid() {
         return this;
     }
 
@@ -291,6 +269,16 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
          * Regular Whatsapp contact Jid
          */
         USER,
+
+        /**
+         * Official survey account
+         */
+        OFFICIAL_SURVEY_ACCOUNT,
+
+        /**
+         * Lid
+         */
+        LID,
 
         /**
          * Broadcast list
@@ -321,6 +309,11 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
          * Announcements Chat Jid: Read only chat, usually used by Whatsapp for log updates
          */
         ANNOUNCEMENT,
+
+        /**
+         * IAS Chat jid
+         */
+        IAS,
 
         /**
          * Image Status Jid of a contact
@@ -362,17 +355,26 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
         /**
          * Whatsapp
          */
-        WHATSAPP("s.whatsapp.net");
+        WHATSAPP("s.whatsapp.net"),
+
+        /**
+         * Lid
+         */
+        LID("lid");
 
         @Getter
         private final String address;
 
         @JsonCreator
-        public static Server forAddress(String address) {
+        public static Server of(String address) {
             return Arrays.stream(values())
                     .filter(entry -> address != null && address.endsWith(entry.address()))
                     .findFirst()
                     .orElse(WHATSAPP);
+        }
+
+        public ContactJid toJid(){
+            return ofServer(this);
         }
 
         @Override

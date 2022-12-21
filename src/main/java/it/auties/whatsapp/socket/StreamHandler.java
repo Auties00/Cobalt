@@ -12,6 +12,8 @@ import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.contact.ContactJid.Server;
+import it.auties.whatsapp.model.contact.ContactJid.Type;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.info.MessageInfo.StubType;
@@ -164,8 +166,7 @@ class StreamHandler
             return;
         }
 
-        if (from.get()
-                .equals(ContactJid.STATUS_ACCOUNT)) {
+        if (from.get().type() == Type.STATUS) {
             updateMessageStatus(node, status, null);
             return;
         }
@@ -202,10 +203,8 @@ class StreamHandler
 
     private void updateMessageStatus(MessageStatus status, Contact participant, MessageInfo message) {
         message.status(status);
-        message.individualStatus()
-                .put(participant != null ?
-                             participant.jid() :
-                             message.senderJid(), status);
+        var container = status == MessageStatus.READ ? message.receipt().readJids() : message.receipt().pendingJids();
+        container.add(participant != null ? participant.jid() : message.senderJid());
         socketHandler.onMessageStatus(status, participant, message, message.chat());
     }
 
@@ -760,7 +759,7 @@ class StreamHandler
         var attributes = Attributes.of()
                 .put("id", node.id())
                 .put("type", "result")
-                .put("to", ContactJid.WHATSAPP)
+                .put("to", Server.WHATSAPP.toJid())
                 .map();
         var request = ofChildren("iq", attributes, content);
         socketHandler.sendWithNoResponse(request);

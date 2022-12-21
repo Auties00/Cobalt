@@ -25,5 +25,5 @@ public class PhotoChange
     private byte[] newPhoto;
 
     @ProtobufProperty(index = 3, type = UINT32)
-    private Integer newPhotoId;
+    private int newPhotoId;
 }

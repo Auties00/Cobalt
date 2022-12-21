@@ -4,19 +4,25 @@ import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.util.Clock;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Data;
-import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static it.auties.protobuf.base.ProtobufType.INT64;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 
+/**
+ * A model that represents the receipt for a message
+ */
 @AllArgsConstructor
 @Data
 @Builder
@@ -26,38 +32,60 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 public class MessageReceipt
         implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = STRING, implementation = ContactJid.class)
-    @NonNull
-    private String userJid;
+    private ContactJid userJid;
 
     @ProtobufProperty(index = 2, type = INT64)
-    private long receiptTimestamp;
+    private Long receiptTimestamp;
 
     @ProtobufProperty(index = 3, type = INT64)
-    private long readTimestamp;
+    private Long readTimestamp;
 
     @ProtobufProperty(index = 4, type = INT64)
-    private long playedTimestamp;
+    private Long playedTimestamp;
 
-    @ProtobufProperty(index = 5, type = STRING, repeated = true)
-    private List<String> pendingDeviceJid;
+    @ProtobufProperty(index = 5, type = STRING, repeated = true, implementation = ContactJid.class)
+    @Default
+    private List<ContactJid> pendingJids = new ArrayList<>();
 
-    @ProtobufProperty(index = 6, type = STRING, repeated = true)
-    private List<String> deliveredDeviceJid;
+    @ProtobufProperty(index = 6, type = STRING, repeated = true, implementation = ContactJid.class)
+    @Default
+    private List<ContactJid> readJids = new ArrayList<>();
+   
+    public static MessageReceipt of(){
+        return MessageReceipt.builder()
+                .build();
+    }
+    
+    public Optional<ZonedDateTime> receiptTimestamp(){
+        return Clock.parse(readTimestamp);
+    }
+
+    public Optional<ZonedDateTime> readTimestamp(){
+        return Clock.parse(readTimestamp);
+    }
+
+    public Optional<ZonedDateTime> playedTimestamp(){
+        return Clock.parse(playedTimestamp);
+    }
 
     public static class MessageReceiptBuilder {
-        public MessageReceiptBuilder pendingDeviceJid(List<String> pendingDeviceJid) {
-            if (this.pendingDeviceJid == null) {
-                this.pendingDeviceJid = new ArrayList<>();
+        public MessageReceiptBuilder pendingJids(List<ContactJid> pendingJids) {
+            if (!this.pendingJids$set) {
+                this.pendingJids$value = new ArrayList<>();
+                this.pendingJids$set = true;
             }
-            this.pendingDeviceJid.addAll(pendingDeviceJid);
+            
+            this.pendingJids$value.addAll(pendingJids);
             return this;
         }
 
-        public MessageReceiptBuilder deliveredDeviceJid(List<String> deliveredDeviceJid) {
-            if (this.deliveredDeviceJid == null) {
-                this.deliveredDeviceJid = new ArrayList<>();
+        public MessageReceiptBuilder readJids(List<ContactJid> readJids) {
+            if (!this.readJids$set) {
+                this.readJids$value = new ArrayList<>();
+                this.readJids$set = true;
             }
-            this.deliveredDeviceJid.addAll(deliveredDeviceJid);
+            
+            this.readJids$value.addAll(readJids);
             return this;
         }
     }

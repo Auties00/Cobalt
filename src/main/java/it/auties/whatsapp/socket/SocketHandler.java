@@ -3,6 +3,7 @@ package it.auties.whatsapp.socket;
 import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.SocketEvent;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.api.Whatsapp.Options;
 import it.auties.whatsapp.binary.MessageWrapper;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.controller.Keys;
@@ -15,6 +16,7 @@ import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.GroupMetadata;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.contact.ContactJid.Server;
 import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
@@ -83,7 +85,7 @@ public class SocketHandler
 
     @NonNull
     @Getter
-    private final Whatsapp.Options options;
+    private final Options options;
 
     @NonNull
     @Getter(AccessLevel.PROTECTED)
@@ -109,7 +111,7 @@ public class SocketHandler
     @NonNull
     private ScheduledExecutorService listenersService;
 
-    public SocketHandler(@NonNull Whatsapp whatsapp, @NonNull Whatsapp.Options options, @NonNull Store store,
+    public SocketHandler(@NonNull Whatsapp whatsapp, @NonNull Options options, @NonNull Store store,
             @NonNull Keys keys) {
         this.whatsapp = whatsapp;
         this.options = options;
@@ -135,6 +137,8 @@ public class SocketHandler
         keys.dispose();
         store.dispose();
         streamHandler.dispose();
+        appStateHandler.dispose();
+        messageHandler.dispose();
         listenersService.shutdownNow();
         if (reconnect) {
             return;
@@ -329,12 +333,12 @@ public class SocketHandler
     }
 
     public CompletableFuture<Node> sendQuery(String method, String category, Node... body) {
-        return sendQuery(null, ContactJid.WHATSAPP, method, category, null, body);
+        return sendQuery(null, Server.WHATSAPP.toJid(), method, category, null, body);
     }
 
     public CompletableFuture<Node> sendQuery(String method, String category, Map<String, Object> metadata,
             Node... body) {
-        return sendQuery(null, ContactJid.WHATSAPP, method, category, metadata, body);
+        return sendQuery(null, Server.WHATSAPP.toJid(), method, category, metadata, body);
     }
 
     public CompletableFuture<Node> sendQuery(ContactJid to, String method, String category, Node... body) {

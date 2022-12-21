@@ -12,6 +12,7 @@ import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.chat.GroupMetadata;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.contact.ContactJid.Type;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -99,8 +100,8 @@ class MessageHandler
                         encodeConversation(info, attributes) :
                         encodeGroup(info, attributes))
                 .thenRunAsync(encodeSemaphore::release)
-                .thenRunAsync(() -> info.chat().addMessage(info))
-                .exceptionallyAsync(this::handleMessageFailure);
+                .thenRunAsync(() -> handleMessageSent(info))
+                .exceptionallyAsync(throwable -> handleMessageFailure(throwable, info));
     }
 
     private void prepareEncoding() {
@@ -151,7 +152,14 @@ class MessageHandler
                         .addMessage(info));
     }
 
-    private <T> T handleMessageFailure(Throwable throwable) {
+    private void handleMessageSent(MessageInfo info) {
+        info.status(MessageStatus.DELIVERED);
+        info.chat()
+                .addMessage(info);
+    }
+
+    private <T> T handleMessageFailure(Throwable throwable, MessageInfo info) {
+        info.status(MessageStatus.ERROR);
         encodeSemaphore.release();
         return socketHandler.errorHandler()
                 .handleFailure(MESSAGE, throwable);
@@ -458,14 +466,6 @@ class MessageHandler
                 messageBuilder.senderJid(requireNonNull(participant, "Missing participant in group message"));
             }
 
-            var key = keyBuilder.id(id)
-                    .build();
-            var info = messageBuilder.key(key)
-                    .pushName(pushName)
-                    .businessVerifiedName(businessName)
-                    .timestamp(timestamp)
-                    .status(MessageStatus.DELIVERED)
-                    .build();
             if (messageNode == null) {
                 sendRetryReceipt(timestamp, id, from, recipient, participant, null, null, null);
                 return;
@@ -483,7 +483,15 @@ class MessageHandler
 
             var messageContainer = BytesHelper.bytesToMessage(decodedMessage.message())
                     .unbox();
-            info.message(messageContainer);
+            var key = keyBuilder.id(id)
+                    .build();
+            var info = messageBuilder.key(key)
+                    .pushName(pushName)
+                    .businessVerifiedName(businessName)
+                    .timestamp(timestamp)
+                    .status(key.fromMe() ? MessageStatus.DELIVERED : messageContainer.type() == MessageType.AUDIO ? MessageStatus.PLAYED : MessageStatus.READ)
+                    .message(messageContainer)
+                    .build();
             socketHandler.store()
                     .attribute(info);
             handleMessageContent(info, messageContainer);
@@ -677,8 +685,7 @@ class MessageHandler
     }
 
     private void saveMessage(MessageInfo info, String category) {
-        if (info.chatJid()
-                .equals(ContactJid.STATUS_ACCOUNT)) {
+        if (info.chatJid().type() == Type.STATUS) {
             socketHandler.store()
                     .addStatus(info);
             socketHandler.onNewStatus(info);
@@ -876,7 +883,7 @@ class MessageHandler
                 })
                 .chosenName(pushName.name());
         var action = ContactAction.of(pushName.name(), null);
-        socketHandler.onAction(action, MessageIndexInfo.of("custom", null, null, true));
+        socketHandler.onAction(action, MessageIndexInfo.of("contact", null, null, true));
     }
 
     @SafeVarargs
@@ -885,6 +892,16 @@ class MessageHandler
                 .filter(Objects::nonNull)
                 .flatMap(Collection::stream)
                 .toList();
+    }
+
+    public void dispose(){
+        retries.clear();
+        groupsCache.invalidateAll();
+        devicesCache.invalidateAll();
+        historyCache.clear();
+        receivedPushNames.set(false);
+        sentInitialPatch.set(false);;
+        encodeSemaphore.release();
     }
 
     private record MessageDecodeResult(byte[] message, Throwable error) {

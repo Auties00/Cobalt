@@ -70,13 +70,13 @@ public class HistorySync
     @Accessors(fluent = true)
     @ProtobufName("HistorySyncType")
     public enum HistorySyncHistorySyncType {
-
         INITIAL_BOOTSTRAP(0),
         INITIAL_STATUS_V3(1),
         FULL(2),
         RECENT(3),
         PUSH_NAME(4),
         NON_BLOCKING_DATA(5);
+
         @Getter
         private final int index;
 
