@@ -619,8 +619,7 @@ class StreamHandler
 
         socketHandler.store()
                 .serialize(true);
-        socketHandler.sendWithNoResponse(
-                Node.of("iq", Map.of("xmlns", "w:p", "to", Server.WHATSAPP.toJid(), "type", "get"), Node.of("ping")));
+        socketHandler.sendQuery("get", "w:p", Node.of("ping"));
         socketHandler.onSocketEvent(SocketEvent.PING);
     }
 
