@@ -427,8 +427,7 @@ class AppStateHandler
                 .stream()
                 .map(SyncActionMessage::key)
                 .filter(Objects::nonNull)
-                .forEach(key -> targetChat.messages()
-                        .removeIf(entry -> Objects.equals(entry.id(), key.id())));
+                .forEach(key -> targetChat.removeMessage(entry -> Objects.equals(entry.id(), key.id())));
     }
 
     private void updateName(Contact contact, Chat chat, ContactAction contactAction) {

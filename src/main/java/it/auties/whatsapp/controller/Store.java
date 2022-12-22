@@ -579,7 +579,14 @@ public final class Store
         return contact;
     }
 
-    public void attribute(MessageInfo info) {
+    /**
+     * Attributes a message
+     * Usually used by the socket handler
+     *
+     * @param info a non-null message
+     * @return the same incoming message
+     */
+    public MessageInfo attribute(@NonNull MessageInfo info) {
         var chat = findChatByJid(info.chatJid()).orElseGet(() -> addChat(Chat.ofJid(info.chatJid())));
         info.key()
                 .chat(chat);
@@ -590,6 +597,7 @@ public final class Store
                 .contentWithContext()
                 .map(ContextualMessage::contextInfo)
                 .ifPresent(this::attributeContext);
+        return info;
     }
 
     private MessageKey attributeSender(MessageInfo info, ContactJid senderJid) {

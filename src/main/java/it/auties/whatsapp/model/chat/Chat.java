@@ -24,6 +24,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.function.Predicate;
 
 import static it.auties.protobuf.base.ProtobufType.*;
 import static java.util.Objects.requireNonNullElseGet;
@@ -85,6 +86,7 @@ public final class Chat
      */
     @ProtobufProperty(index = 6, type = UINT32)
     private int unreadMessagesCount;
+
     /**
      * Whether this chat is read only
      */
@@ -502,7 +504,7 @@ public final class Chat
     public Optional<MessageInfo> lastMessage() {
         return messages.isEmpty() ?
                 Optional.empty() :
-                Optional.of(messages.getLast());
+                Optional.of(messages.getFirst());
     }
 
     /**
@@ -514,7 +516,7 @@ public final class Chat
         return messages.stream()
                 .filter(info -> !info.message()
                         .hasCategory(MessageCategory.SERVER))
-                .reduce((first, second) -> second);
+                .findFirst();
     }
 
     /**
@@ -525,7 +527,7 @@ public final class Chat
     public Optional<MessageInfo> lastMessageFromMe() {
         return messages.stream()
                 .filter(MessageInfo::fromMe)
-                .reduce((first, second) -> second);
+                .findFirst();
     }
 
     /**
@@ -537,7 +539,7 @@ public final class Chat
         return messages.stream()
                 .filter(info -> info.message()
                         .hasCategory(MessageCategory.SERVER))
-                .reduce((first, second) -> second);
+                .findFirst();
     }
 
     /**
@@ -548,7 +550,7 @@ public final class Chat
     public Optional<MessageInfo> firstMessage() {
         return messages.isEmpty() ?
                 Optional.empty() :
-                Optional.of(messages.getFirst());
+                Optional.of(messages.getLast());
     }
 
     /**
@@ -559,7 +561,7 @@ public final class Chat
     public Optional<MessageInfo> firstMessageFromMe() {
         return messages.stream()
                 .filter(MessageInfo::fromMe)
-                .findFirst();
+                .reduce((first, second) -> second);
     }
 
     /**
@@ -571,7 +573,7 @@ public final class Chat
         return messages.stream()
                 .filter(info -> !info.message()
                         .hasCategory(MessageCategory.SERVER))
-                .findFirst();
+                .reduce((first, second) -> second);
     }
 
     /**
@@ -583,7 +585,7 @@ public final class Chat
         return messages.stream()
                 .filter(info -> info.message()
                         .hasCategory(MessageCategory.SERVER))
-                .findFirst();
+                .reduce((first, second) -> second);
     }
 
     /**
@@ -591,7 +593,7 @@ public final class Chat
      *
      * @return a non-null list of messages
      */
-    public List<MessageInfo> starredMessages() {
+    public Collection<MessageInfo> starredMessages() {
         return messages.stream()
                 .filter(MessageInfo::starred)
                 .toList();
@@ -671,6 +673,15 @@ public final class Chat
     }
 
     /**
+     * Returns an immodifiable list of all the messages in this chat
+     *
+     * @return a non-null collection
+     */
+    public Collection<MessageInfo> messages(){
+        return Collections.unmodifiableCollection(messages);
+    }
+
+    /**
      * Remove a message from the chat
      *
      * @param info the message to remove
@@ -678,6 +689,16 @@ public final class Chat
      */
     public boolean removeMessage(@NonNull MessageInfo info) {
         return messages.remove(info);
+    }
+
+    /**
+     * Remove a message from the chat
+     *
+     * @param predicate the predicate that determines if a message should be removed
+     * @return whether the message was removed
+     */
+    public boolean removeMessage(@NonNull Predicate<? super MessageInfo> predicate) {
+        return messages.removeIf(predicate);
     }
 
     /**

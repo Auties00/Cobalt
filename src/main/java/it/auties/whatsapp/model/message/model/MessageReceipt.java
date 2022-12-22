@@ -5,10 +5,8 @@ import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.util.Clock;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
+import lombok.*;
 import lombok.Builder.Default;
-import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
@@ -32,10 +30,13 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 public class MessageReceipt
         implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = STRING, implementation = ContactJid.class)
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     private ContactJid userJid;
 
     @ProtobufProperty(index = 2, type = INT64)
-    private Long receiptTimestamp;
+    @Default
+    private long deliveredTimestamp = Clock.now();
 
     @ProtobufProperty(index = 3, type = INT64)
     private Long readTimestamp;
@@ -45,7 +46,7 @@ public class MessageReceipt
 
     @ProtobufProperty(index = 5, type = STRING, repeated = true, implementation = ContactJid.class)
     @Default
-    private List<ContactJid> pendingJids = new ArrayList<>();
+    private List<ContactJid> deliveredJids = new ArrayList<>();
 
     @ProtobufProperty(index = 6, type = STRING, repeated = true, implementation = ContactJid.class)
     @Default
@@ -56,7 +57,7 @@ public class MessageReceipt
                 .build();
     }
     
-    public Optional<ZonedDateTime> receiptTimestamp(){
+    public Optional<ZonedDateTime> deliveredTimestamp(){
         return Clock.parse(readTimestamp);
     }
 
@@ -69,13 +70,13 @@ public class MessageReceipt
     }
 
     public static class MessageReceiptBuilder {
-        public MessageReceiptBuilder pendingJids(List<ContactJid> pendingJids) {
-            if (!this.pendingJids$set) {
-                this.pendingJids$value = new ArrayList<>();
-                this.pendingJids$set = true;
+        public MessageReceiptBuilder deliveredJids(List<ContactJid> deliveredJids) {
+            if (!this.deliveredJids$set) {
+                this.deliveredJids$value = new ArrayList<>();
+                this.deliveredJids$set = true;
             }
             
-            this.pendingJids$value.addAll(pendingJids);
+            this.deliveredJids$value.addAll(deliveredJids);
             return this;
         }
 

@@ -96,11 +96,9 @@ class MessageHandler
     @SafeVarargs
     protected final CompletableFuture<Void> encode(MessageInfo info, Entry<String, Object>... attributes) {
         return CompletableFuture.runAsync(this::prepareEncoding)
-                .thenComposeAsync(ignored -> isConversation(info) ?
-                        encodeConversation(info, attributes) :
-                        encodeGroup(info, attributes))
+                .thenComposeAsync(ignored -> isConversation(info) ? encodeConversation(info, attributes) : encodeGroup(info, attributes))
                 .thenRunAsync(encodeSemaphore::release)
-                .thenRunAsync(() -> handleMessageSent(info))
+                .thenRunAsync(() -> info.chat().addMessage(socketHandler.store().attribute(info.status(MessageStatus.DELIVERED))))
                 .exceptionallyAsync(throwable -> handleMessageFailure(throwable, info));
     }
 
@@ -114,7 +112,7 @@ class MessageHandler
     }
 
     @SafeVarargs
-    private CompletableFuture<Void> encodeGroup(MessageInfo info, Entry<String, Object>... attributes) {
+    private CompletableFuture<Node> encodeGroup(MessageInfo info, Entry<String, Object>... attributes) {
         var encodedMessage = BytesHelper.messageToBytes(info.message());
         var senderName = new SenderKeyName(info.chatJid()
                                                    .toString(), socketHandler.store()
@@ -130,13 +128,11 @@ class MessageHandler
                 .thenComposeAsync(this::getDevices)
                 .thenComposeAsync(allDevices -> createGroupNodes(info, signalMessage, allDevices))
                 .thenApplyAsync(preKeys -> createEncodedMessageNode(info, preKeys, groupMessage, attributes))
-                .thenComposeAsync(socketHandler::send)
-                .thenRunAsync(() -> info.chat()
-                        .addMessage(info));
+                .thenComposeAsync(socketHandler::send);
     }
 
     @SafeVarargs
-    private CompletableFuture<Void> encodeConversation(MessageInfo info, Entry<String, Object>... attributes) {
+    private CompletableFuture<Node> encodeConversation(MessageInfo info, Entry<String, Object>... attributes) {
         var encodedMessage = BytesHelper.messageToBytes(info.message());
         var deviceMessage = DeviceSentMessage.of(info.chatJid()
                                                          .toString(), info.message(), null);
@@ -147,15 +143,7 @@ class MessageHandler
         return getDevices(knownDevices, true).thenComposeAsync(
                         allDevices -> createConversationNodes(allDevices, encodedMessage, encodedDeviceMessage))
                 .thenApplyAsync(sessions -> createEncodedMessageNode(info, sessions, null, attributes))
-                .thenComposeAsync(socketHandler::send)
-                .thenRunAsync(() -> info.chat()
-                        .addMessage(info));
-    }
-
-    private void handleMessageSent(MessageInfo info) {
-        info.status(MessageStatus.DELIVERED);
-        info.chat()
-                .addMessage(info);
+                .thenComposeAsync(socketHandler::send);
     }
 
     private <T> T handleMessageFailure(Throwable throwable, MessageInfo info) {
@@ -866,9 +854,10 @@ class MessageHandler
     private void updateChatMessages(Chat carrier) {
         socketHandler.store()
                 .findChatByJid(carrier.jid())
-                .ifPresentOrElse(chat -> chat.messages()
-                        .addAll(carrier.messages()), () -> socketHandler.store()
-                        .addChat(carrier));
+                .ifPresentOrElse(chat -> carrier.messages()
+                        .stream()
+                        .map(socketHandler.store()::attribute)
+                        .forEach(chat::addMessage), () -> socketHandler.store().addChat(carrier));
     }
 
     private void handNewPushName(PushName pushName) {

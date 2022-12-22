@@ -31,10 +31,7 @@ import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
 import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.serialization.ControllerProviderLoader;
-import it.auties.whatsapp.util.BytesHelper;
-import it.auties.whatsapp.util.JacksonProvider;
-import it.auties.whatsapp.util.SignalSpecification;
-import it.auties.whatsapp.util.Validate;
+import it.auties.whatsapp.util.*;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -198,14 +195,24 @@ class StreamHandler
                         socketHandler.store()
                                 .findMessageById(chat, messageId))
                 .flatMap(Optional::stream)
-                .forEach(message -> updateMessageStatus(status, participant, message));
+                .forEach(message -> updateMessageStatus(status, participant, message, chat));
     }
 
-    private void updateMessageStatus(MessageStatus status, Contact participant, MessageInfo message) {
+    private void updateMessageStatus(MessageStatus status, Contact participant, MessageInfo message, Chat chat) {
         message.status(status);
-        var container = status == MessageStatus.READ ? message.receipt().readJids() : message.receipt().pendingJids();
+        var container = status == MessageStatus.READ ? message.receipt().readJids() : message.receipt().deliveredJids();
         container.add(participant != null ? participant.jid() : message.senderJid());
-        socketHandler.onMessageStatus(status, participant, message, message.chat());
+        if(participant == null || chat.participants().size() == container.size()){
+            if(status == MessageStatus.READ) {
+                message.receipt()
+                        .readTimestamp(Clock.now());
+            }else if(status == MessageStatus.PLAYED) {
+                message.receipt()
+                        .playedTimestamp(Clock.now());
+            }
+        }
+
+        socketHandler.onMessageStatus(status, participant, message, chat);
     }
 
     private void digestCall(Node node) {
@@ -304,7 +311,7 @@ class StreamHandler
                 .stubType(stubType)
                 .stubParameters(List.of())
                 .build();
-        chat.addMessage(message);
+        chat.addMessage(socketHandler.store().attribute(message));
     }
 
     private void handleEncryptNotification(Node node) {
@@ -612,7 +619,8 @@ class StreamHandler
 
         socketHandler.store()
                 .serialize(true);
-        socketHandler.sendQuery("get", "w:p", Node.of("ping"));
+        socketHandler.sendWithNoResponse(
+                Node.of("iq", Map.of("xmlns", "w:p", "to", Server.WHATSAPP.toJid(), "type", "get"), Node.of("ping")));
         socketHandler.onSocketEvent(SocketEvent.PING);
     }
 
