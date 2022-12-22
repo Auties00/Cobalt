@@ -53,6 +53,9 @@ import java.util.stream.IntStream;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation.class)
 public class RunCITest implements Listener, JacksonProvider {
+    @SuppressWarnings("HttpUrlsUsage")
+    private static final String VIDEO_URL = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
+
     private static Whatsapp api;
     private static CountDownLatch latch;
     private static ContactJid contact;
@@ -681,7 +684,7 @@ public class RunCITest implements Listener, JacksonProvider {
         var video = VideoMessage.simpleVideoBuilder()
                 .mediaConnection(api.store()
                         .mediaConnection())
-                .media(MediaUtils.readBytes("https://file-examples.com/storage/fedb96226c637d3059a2f86/2017/04/file_example_MP4_480_1_5MG.mp4"))
+                .media(MediaUtils.readBytes(VIDEO_URL))
                 .caption("Video")
                 .build();
         var textResponse = api.sendMessage(contact, video)
@@ -700,7 +703,7 @@ public class RunCITest implements Listener, JacksonProvider {
         var video = VideoMessage.simpleGifBuilder()
                 .mediaConnection(api.store()
                         .mediaConnection())
-                .media(MediaUtils.readBytes("https://file-examples.com/storage/fedb96226c637d3059a2f86/2017/04/file_example_MP4_480_1_5MG.mp4"))
+                .media(MediaUtils.readBytes(VIDEO_URL))
                 .caption("Gif")
                 .build();
         var textResponse = api.sendMessage(contact, video)

@@ -336,6 +336,10 @@ public class SocketHandler
         return sendQuery(null, Server.WHATSAPP.toJid(), method, category, null, body);
     }
 
+    public CompletableFuture<Void> sendQueryWithNoResponse(String method, String category, Node... body) {
+        return sendQueryWithNoResponse(null, Server.WHATSAPP.toJid(), method, category, null, body);
+    }
+
     public CompletableFuture<Node> sendQuery(String method, String category, Map<String, Object> metadata,
             Node... body) {
         return sendQuery(null, Server.WHATSAPP.toJid(), method, category, metadata, body);
@@ -354,6 +358,17 @@ public class SocketHandler
                 .put("xmlns", category, Objects::nonNull)
                 .map();
         return send(ofChildren("iq", attributes, body));
+    }
+
+    public CompletableFuture<Void> sendQueryWithNoResponse(String id, ContactJid to, String method, String category,
+            Map<String, Object> metadata, Node... body) {
+        var attributes = Attributes.ofNullable(metadata)
+                .put("id", id, Objects::nonNull)
+                .put("type", method)
+                .put("to", to)
+                .put("xmlns", category, Objects::nonNull)
+                .map();
+        return sendWithNoResponse(ofChildren("iq", attributes, body));
     }
 
     public CompletableFuture<List<Node>> sendInteractiveQuery(Node queryNode, Node... queryBody) {

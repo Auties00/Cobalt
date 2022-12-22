@@ -619,7 +619,7 @@ class StreamHandler
 
         socketHandler.store()
                 .serialize(true);
-        socketHandler.sendQuery("get", "w:p", Node.of("ping"));
+        socketHandler.sendQueryWithNoResponse("get", "w:p", Node.of("ping"));
         socketHandler.onSocketEvent(SocketEvent.PING);
     }
 

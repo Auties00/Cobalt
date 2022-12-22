@@ -22,7 +22,7 @@ public class TokensCollectorTest {
             .version(HttpClient.Version.HTTP_1_1)
             .build();
     private static final String SOURCE_NAME = "Tokens.java";
-    private static final String TOKEN_REGEX = "<script defer=\"defer\" src=\"/bootstrap_qr.([^\"]*).js\">";
+    private static final String TOKEN_REGEX = "<script defer=\"defer\" src=\"/app.([^\"]*).js\">";
     private static final String SINGLE_BYTE_REGEX = "t.SINGLE_BYTE_TOKEN=\\[\"(.*?)\"]";
     private static final String DICTIONARY_0_REGEX = "const n=\\[\"(.*?)\"]";
     private static final String DICTIONARY_1_REGEX = "const r=\\[\"(.*?)\"]";
@@ -90,7 +90,7 @@ public class TokensCollectorTest {
         var whatsappRequest = createRequest("https://web.whatsapp.com");
         var whatsappResponse = HTTP_CLIENT.send(whatsappRequest, ofString());
         var token = findResult(whatsappResponse.body(), TOKEN_REGEX);
-        var sourceRequest = createRequest("https://web.whatsapp.com/bootstrap_qr.%s.js".formatted(token));
+        var sourceRequest = createRequest("https://web.whatsapp.com/app.%s.js".formatted(token));
         return HTTP_CLIENT.send(sourceRequest, ofString())
                 .body();
     }
