@@ -703,8 +703,6 @@ public final class Chat
 
     /**
      * Removes all messages from the chat
-     *
-     * @return whether the message was removed
      */
     public void removeMessages() {
         messages.clear();
