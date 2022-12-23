@@ -202,7 +202,7 @@ class StreamHandler
         message.status(status);
         var container = status == MessageStatus.READ ? message.receipt().readJids() : message.receipt().deliveredJids();
         container.add(participant != null ? participant.jid() : message.senderJid());
-        if(participant == null || chat.participants().size() == container.size()){
+        if(chat == null || participant == null || chat.participants().size() == container.size()){
             if(status == MessageStatus.READ) {
                 message.receipt()
                         .readTimestamp(Clock.now());
