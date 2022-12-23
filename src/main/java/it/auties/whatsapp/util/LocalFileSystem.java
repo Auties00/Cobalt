@@ -32,7 +32,12 @@ public class LocalFileSystem {
     @SuppressWarnings("ResultOfMethodCallIgnored")
     public void delete(String folder) {
         try {
-            try (var walker = Files.walk(of(folder))) {
+            var folderPath = Path.of(folder);
+            if(Files.notExists(folderPath)){
+                return;
+            }
+
+            try (var walker = Files.walk(folderPath)) {
                 walker.sorted(Comparator.reverseOrder())
                         .map(Path::toFile)
                         .forEach(File::delete);

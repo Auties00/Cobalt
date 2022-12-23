@@ -192,7 +192,6 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
             return body;
         }
 
-        return AesGmc.cipher(keys.writeCounter(true), body, keys.writeKey()
-                .toByteArray(), true);
+        return AesGmc.encrypt(keys.writeCounter(true), body, keys.writeKey().toByteArray());
     }
 }

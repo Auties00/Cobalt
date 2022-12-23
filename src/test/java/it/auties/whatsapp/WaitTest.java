@@ -6,7 +6,7 @@ import it.auties.whatsapp.util.JacksonProvider;
 // Just used for testing locally
 public class WaitTest implements JacksonProvider {
     public static void main(String[] args) {
-        Whatsapp.firstConnection()
+        Whatsapp.lastConnection()
                 .addLoggedInListener(() -> {
                     System.out.println("Connected");
                 })

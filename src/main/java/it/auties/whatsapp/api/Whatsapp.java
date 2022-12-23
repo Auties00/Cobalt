@@ -2436,7 +2436,7 @@ public class Whatsapp {
                 .id()
                 .getBytes(StandardCharsets.UTF_8);
         var receipt = createReceipt(info);
-        var ciphertext = AesGmc.cipher(retryIv, receipt, retryKey, retryIdData, true);
+        var ciphertext = AesGmc.encrypt(retryIv, receipt, retryKey, retryIdData);
         var rmrAttributes = Attributes.of()
                 .put("jid", info.chatJid())
                 .put("from_me", String.valueOf(info.fromMe()))
@@ -2482,7 +2482,7 @@ public class Whatsapp {
         var mediaIv = encryptNode.findNode("enc_iv")
                 .flatMap(Node::contentAsBytes)
                 .orElseThrow(() -> new NoSuchElementException("Missing encrypted iv node in media reupload"));
-        var mediaRetryNotificationData = AesGmc.cipher(mediaIv, mediaPayload, retryKey, retryIdData, false);
+        var mediaRetryNotificationData = AesGmc.decrypt(mediaIv, mediaPayload, retryKey, retryIdData);
         var mediaRetryNotification = readRetryNotification(mediaRetryNotificationData);
         Validate.isTrue(mediaRetryNotification.directPath() != null, "Media retry upload failed: %s",
                         mediaRetryNotification);

@@ -555,9 +555,9 @@ class MessageHandler
             var useCaseSecret = Hkdf.extractAndExpand(originalPollMessage.encryptionKey(), useSecretPayload, 32);
             var additionalData = "%s\0%s".formatted(originalPollInfo.id(), modificationSenderJid)
                     .getBytes(StandardCharsets.UTF_8);
-            var decrypted = AesGmc.cipher(pollUpdateMessage.encryptedMetadata()
+            var decrypted = AesGmc.decrypt(pollUpdateMessage.encryptedMetadata()
                                                   .iv(), pollUpdateMessage.encryptedMetadata()
-                                                  .payload(), useCaseSecret, additionalData, false);
+                                                  .payload(), useCaseSecret, additionalData);
             var pollVoteMessage = PROTOBUF.readMessage(decrypted, PollVoteMessage.class);
             var selectedOptions = pollVoteMessage.selectedOptions()
                     .stream()
