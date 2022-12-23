@@ -356,8 +356,7 @@ class AppStateHandler
                     return contact;
                 }), targetChat.orElseGet(() -> socketHandler.store()
                         .addChat(messageIndex.chatJid().orElseThrow())), contactAction);
-                case DeleteChatAction ignored -> targetChat.map(Chat::messages)
-                        .ifPresent(Collection::clear);
+                case DeleteChatAction ignored -> targetChat.ifPresent(Chat::removeMessages);
                 case DeleteMessageForMeAction ignored ->
                         targetMessage.ifPresent(message -> targetChat.ifPresent(chat -> deleteMessage(message, chat)));
                 case MarkChatAsReadAction markAction -> targetChat.ifPresent(chat -> chat.unreadMessagesCount(

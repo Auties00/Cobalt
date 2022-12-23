@@ -1820,8 +1820,7 @@ public class Whatsapp {
         var participants = Arrays.stream(contacts)
                 .map(contact -> Node.ofAttributes("participant", Map.of("jid", contact.toJid())))
                 .toArray(Node[]::new);
-        var key = ofRandom(12).toHex();
-        var body = Node.ofChildren("create", Map.of("subject", subject, "key", key), participants);
+        var body = Node.ofChildren("create", Map.of("subject", subject, "key", ofRandom(12).toHex()), participants);
         return socketHandler.sendQuery(Server.GROUP.toJid(), "set", "w:g2", body)
                 .thenApplyAsync(response -> Optional.ofNullable(response)
                         .flatMap(node -> node.findNode("group"))
