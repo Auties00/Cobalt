@@ -61,10 +61,12 @@ public class HistorySync
     private Integer threadDsTimeframeOffset;
 
     @ProtobufProperty(implementation = RecentStickerMetadata.class, index = 11, name = "recentStickers", repeated = true, type = ProtobufType.MESSAGE)
-    private List<RecentStickerMetadata> recentStickers;
+    @Default
+    private List<RecentStickerMetadata> recentStickers = new ArrayList<>();
 
     @ProtobufProperty(implementation = PastParticipants.class, index = 12, name = "pastParticipants", repeated = true, type = ProtobufType.MESSAGE)
-    private List<PastParticipants> pastParticipants;
+    @Default
+    private List<PastParticipants> pastParticipants = new ArrayList<>();
 
     @AllArgsConstructor
     @Accessors(fluent = true)
@@ -92,47 +94,51 @@ public class HistorySync
     public static class HistorySyncBuilder {
         public HistorySyncBuilder conversations(List<Chat> conversations) {
             if (!conversations$set) {
-                this.conversations$value = conversations;
+                this.conversations$value = new ArrayList<>();
                 this.conversations$set = true;
-                return this;
             }
+
             this.conversations$value.addAll(conversations);
             return this;
         }
 
         public HistorySyncBuilder statusV3Messages(List<MessageInfo> statusV3Messages) {
             if (!statusV3Messages$set) {
-                this.statusV3Messages$value = statusV3Messages;
+                this.statusV3Messages$value = new ArrayList<>();
                 this.statusV3Messages$set = true;
-                return this;
             }
+
             this.statusV3Messages$value.addAll(statusV3Messages);
             return this;
         }
 
         public HistorySyncBuilder pushNames(List<PushName> pushNames) {
             if (!pushNames$set) {
-                this.pushNames$value = pushNames;
+                this.pushNames$value = new ArrayList<>();
                 this.pushNames$set = true;
-                return this;
             }
+
             this.pushNames$value.addAll(pushNames);
             return this;
         }
 
         public HistorySync.HistorySyncBuilder recentStickers(List<RecentStickerMetadata> recentStickers) {
-            if (this.recentStickers == null)
-                this.recentStickers = new ArrayList<>();
+            if (!recentStickers$set) {
+                this.recentStickers$set = true;
+                this.recentStickers$value = new ArrayList<>();
+            }
 
-            this.recentStickers.addAll(recentStickers);
+            this.recentStickers$value.addAll(recentStickers);
             return this;
         }
 
         public HistorySync.HistorySyncBuilder pastParticipants(List<PastParticipants> pastParticipants) {
-            if (this.pastParticipants == null)
-                this.pastParticipants = new ArrayList<>();
+            if (!this.pastParticipants$set) {
+                this.pastParticipants$set = true;
+                this.pastParticipants$value = new ArrayList<>();
+            }
 
-            this.pastParticipants.addAll(pastParticipants);
+            this.pastParticipants$value.addAll(pastParticipants);
             return this;
         }
     }
