@@ -67,65 +67,43 @@ If you are trying to implement a feature that is present on WhatsappWeb's WebCli
 consider using [WhatsappWeb4jRequestAnalyzer](https://github.com/Auties00/whatsappweb4j-request-analyzer), a tool I
 built for this exact purpose.
 
+### Disclaimer about async operations 
+This library heavily depends on async operations using the CompletableFuture construct.
+Remember to handle them as your application will terminate without doing anything if the main thread is not executing any task.
+Please do not open redundant issues on GitHub because of this.
+
 ### How to create a connection
 
 The most important class of this API is Whatsapp, an interface between your application and WhatsappWeb's socket.
 
-There are numerous named constructors that can be used to initiate a connection:
+You can create a new connection directly:
+```java
+var api = Whatsapp.newConnection();
+```
 
-1. New simple connection
+If you need, you can supply a custom set of options:
+```java
+var options = Options.defaultOptions(); // Set the options you need using the wither or the builder
+var api = Whatsapp.newConnection(options);
+```
 
-   ```java
-   var api = Whatsapp.newConnection();
-   ```
-
-2. Configurable new connection
-
-   ```java
-   var configuration = WhatsappOptions.newOptions() // Implement only the options that you need!
-           .id(ThreadLocalRandom.current().nextInt()) // A random unique ID associated with the session
-           .autodetectListeners(true) // Marks whether listeners marked with @RegisterListener should be automatically registered
-           .defaultSerialization(true) // Whether the default serialization mechanism should be used
-           .automaticTextPreview(TextPreviewSetting.ENABLED_WITH_INFERENCE) // Whether link previews should automatically be generated for texts containing links
-           .version(new Version(2,2212,7)) // The default version of this client
-           .url("wss://web.whatsapp.com/ws") // The URL of WhatsappWeb's Socket
-           .description("WhatsappWeb4j") // The name of the service that is displayed in Whatsapp's devices tab
-           .historyLength(HistoryLength.THREE_MONTHS) // The amount of chat history that Whatsapp sends to the client on the first scan
-           .errorHandler(ErrorHandler.toTerminal()) // Socket errrors handler
-           .qrHandler(QrHandler.toTerminal()) // Qr code handler
-           .build(); // Creates an instance of WhatsappOptions
-   var api = Whatsapp.newConnection(options);
-   ```
-
-3. Last known connection chronologically
-
-   ```java
-    var api = Whatsapp.lastConnection();
-   ```
-   > **_IMPORTANT:_**  If no previous session exists, a new one will be created silently
-
-4. First known connection chronologically
-   ```java
-   var api = Whatsapp.firstConnection();
-   ```
-   > **_IMPORTANT:_**  If no previous session exists, a new one will be created silently
-
+If a connection was already created previously, use any of these methods instead depending on your needs:
+```java
+var apiById = Whatsapp.newConnection(someId); // Finds a connection by its id
+var latestApi = Whatsapp.lastConnection(); // Finds the latest connection that was opened
+var firstApi = Whatsapp.firstConnection(); // Finds the first connection that was opened
+var allKnownApis = Whatsapp.streamConnections(); // Streams all the known connections
+```
+> **_IMPORTANT:_**  If no previous session exists or if the id doesn't match a known connection, a new one will be created silently
 
 ### How to open a connection
 
-Once you have created a new connection, you probably want to open it and wait until the operation succeeds:
+To open the connection to Whatsapp use the connect method.
+This method returns a CompletableFuture that will be completed only when the connection is closed.
+So, by calling the join method which awaits a future, we are waiting for the connection to be closed:
 ```java
 api.connect().join();
 ```
-
-> **_IMPORTANT:_**
-> Remember that this library heavily depends on async operations using the CompletableFuture construct.
-> As a matter of fact, the connect method returns a CompletableFuture that is resolved only when the connection is successfully created.
-> If you forget to call the get() method, or to handle this construct in any way, your application may terminate as there is no active work on the main thread.
-> For the same reason, remember to also await for the connection to be closed if the logic of your application is based on listeners:
-> ```java
-> api.join();
-> ```
 
 ### How to close a connection
 
@@ -151,7 +129,6 @@ There are three ways to close a connection:
    api.logout().join();
    ```
    > **_IMPORTANT:_** The session doesn't remain valid for future uses
-
 
 ### What is a listener and how to register it
 
@@ -238,8 +215,7 @@ Listeners can be used either as:
                 .addLoggedInListener(() -> System.out.println("Connected"))
                 .addNewMessageListener((whatsapp, info) -> whatsapp.sendMessage(info.chatJid(), "Automatic answer", info))
                 .connect()
-                .join()
-                .await();
+                .join();
    ```
 
 ### How to handle serialization
@@ -251,47 +227,7 @@ In practice, this means that this data needs to be serialized somewhere.
 By default, this library serializes data regarding a session at `$HOME/.whatsappweb4j/<session_id>` in two different files, respectively for the store(chats, contacts and messages) and keys(cryptographic data).
 The latter is serialized every time a modification occurs to the model, while the store is serialized everytime a ping is sent by the socket to the server.
 Both are serialized when the socket is closed.
-Here is the default implementation:
 
-```java
-public class DefaultControllerProvider implements ControllerProvider {
-    @Override
-    public LinkedList<Integer> ids() {
-        try (var walker = Files.walk(Preferences.home(), 1)
-                .sorted(Comparator.comparing(this::getLastModifiedTime))) {
-            return walker.map(this::parsePathAsId)
-                    .flatMap(Optional::stream)
-                    .collect(Collectors.toCollection(LinkedList::new));
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Cannot list known ids", exception);
-        }
-    }
-
-    private FileTime getLastModifiedTime(Path path) {
-        try {
-            return Files.getLastModifiedTime(path);
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Cannot get last modification date", exception);
-        }
-    }
-
-    private Optional<Integer> parsePathAsId(Path file) {
-        try {
-            return Optional.of(Integer.parseInt(file.getFileName()
-                    .toString()));
-        } catch (NumberFormatException ignored) {
-            return Optional.empty();
-        }
-    }
-
-
-    @Override
-    public void serialize(Controller<?> controller) {
-        controller.preferences()
-                .writeJson(controller, true);
-    }
-}
-```
 If your application needs to serialize data in a different way, for example in a database:
 1. Disable the default serialization mechanism (optional)
 
@@ -301,45 +237,19 @@ If your application needs to serialize data in a different way, for example in a
     var api = Whatsapp.newConnection(options); // Any named constructor can be used
     ```
 
-2. Create a custom serializer 
+2. Create a custom ControllerSerializerProvider and/or ControllerDeserializerProvider
 
-    ```java
-    public class CustomProvider implements ControllerProvider {
-        @Override
-        public LinkedList<Integer> ids() {
-           // List all the ids that your serializer has created
-        }
-   
-        @Override
-        public void serialize(Controller<?> controller) {
-            // Your logic
-        }
-    }
-    ```
-
-3. Register the custom serializer in the manifest
+3. Register the custom serializer and/or deserializer in the manifest
 
    - Create a directory called services inside the META-INF. 
-   - Inside the folder that was just created, create a file called `it.auties.whatsapp.controller.ControllerProvider`.
+   - Inside the folder that was just created, create a file called `it.auties.whatsapp.serialization.ControllerProvider`.
    - Finally, inside the file that was just created write the fully qualified name of your implementation, for example `com.example.CustomProvider`.
-
-
-### How to delete a session
-
-To delete a particular session, call the delete method on a Whatsapp instance:
-```java
-api.delete();
-```
-
-Instead, if you want to delete all sessions use:
-```java
-Whatsapp.deleteSessions();
-```
 
 ### How to handle session disconnects
 
 When the session is closed, the onDisconnect method in any listener is invoked.
-There are three types of reasons for which this can happen:
+These are the three reasons that can cause a disconnect:
+
 1. DISCONNECTED
 
     A normal disconnection.
@@ -353,7 +263,6 @@ There are three types of reasons for which this can happen:
 3. LOGGED_OUT
 
     The client was logged out by itself or by its companion.
-    When this happens the connection is terminated and becomes expired.
     By default, no error is thrown if this happens, though this behaviour can be changed easily:
     ```java
     import it.auties.whatsapp.api.DisconnectReason;
@@ -478,7 +387,7 @@ All types of messages supported by Whatsapp are supported by this library:
 - Complex text
 
     ```java
-    var message = TextMessage.newTextMessageBuilder() // Create a new text message
+    var message = TextMessage.builder() // Create a new text message
             .text("Check this video out: https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the text of the message
             .canonicalUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the url of the message
             .matchedText("https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the matched text for the url in the message
@@ -491,7 +400,7 @@ All types of messages supported by Whatsapp are supported by this library:
 - Location
 
     ```java
-    var location = LocationMessage.newLocationMessageBuilder() // Create a new location message
+    var location = LocationMessage.builder() // Create a new location message
             .caption("Look at this!") // Set the caption of the message, that is the text below the file
             .latitude(38.9193) // Set the longitude of the location to share
             .longitude(1183.1389) // Set the latitude of the location to share
@@ -502,7 +411,7 @@ All types of messages supported by Whatsapp are supported by this library:
 - Live location
 
     ```java
-    var location = LiveLocationMessage.newLiveLocationMessageBuilder() // Create a new live location message
+    var location = LiveLocationMessage.builder() // Create a new live location message
             .caption("Look at this!") // Set the caption of the message, that is the text below the file. Not available if this message is live
             .latitude(38.9193) // Set the longitude of the location to share
             .longitude(1183.1389) // Set the latitude of the location to share
@@ -511,8 +420,7 @@ All types of messages supported by Whatsapp are supported by this library:
             .build(); // Create the message
     api.sendMessage(chat, location);
     ```
-  > **_IMPORTANT:_** Updating the position of a live location message is not supported as of now out of the box.
-  > The tools to do so, though, are in the API.
+  > **_IMPORTANT:_** Live location updates are not supported by Whatsapp multi-device. No ETA has been given for a fix.
 
 - Group invite
     ```java
@@ -520,8 +428,8 @@ All types of messages supported by Whatsapp are supported by this library:
             .findChatByName("Programmers")
             .filter(Chat::isGroup)
             .orElseThrow(() -> new NoSuchElementException("Hey, you don't exist"));
-    var inviteCode = api.queryInviteCode(group).join();
-    var groupInvite = GroupInviteMessage.newGroupInviteMessageBuilder() // Create a new group invite message
+    var inviteCode = api.queryGroupInviteCode(group).join();
+    var groupInvite = GroupInviteMessage.builder() // Create a new group invite message
             .caption("Come join my group of fellow programmers") // Set the caption of this message
             .name(group.name()) // Set the name of the group
             .groupJid(group.jid())) // Set the jid of the group
@@ -533,11 +441,11 @@ All types of messages supported by Whatsapp are supported by this library:
 
 - Contact
     ```java
-     var vcard = ContactCard.newContactCardBuilder() // Create a new vcard
+     var vcard = ContactCard.builder() // Create a new vcard
             .name("A nice friend") // Set the name of the contact
             .phoneNumber(contact) // Set the phone number of the contact
             .build(); // Create the vcard
-    var contactMessage = ContactMessage.newContactMessageBuilder()  // Create a new contact message
+    var contactMessage = ContactMessage.builder()  // Create a new contact message
             .name("A nice friend") // Set the display name of the contact
             .vcard(vcard) // Set the vcard(https://en.wikipedia.org/wiki/VCard) of the contact
             .build(); // Create the message
@@ -547,7 +455,7 @@ All types of messages supported by Whatsapp are supported by this library:
 - Contact array
 
     ```java
-    var contactsMessage = ContactsArrayMessage.newContactsArrayMessageBuilder()  // Create a new contacts array message
+    var contactsMessage = ContactsArrayMessage.builder()  // Create a new contacts array message
             .name("A nice friend") // Set the display name of the first contact that this message contains
             .contacts(List.of(jack,lucy,jeff)) // Set a list of contact messages that this message wraps
             .build(); // Create the message
@@ -558,8 +466,8 @@ All types of messages supported by Whatsapp are supported by this library:
    
    To create any number of messages to attach to a buttons message use the Button class:
    ```java
-   var button = Button.newTextResponseButton("A nice button!"); // Create a button
-   var anotherButton = Button.newTextResponseButton("Another button :)"); // Create another button with different text
+   var button = Button.ofTextResponse("A nice button!"); // Create a button
+   var anotherButton = Button.ofTextResponse("Another button :)"); // Create another button with different text
    ```
   
    There are many types of buttons:
@@ -569,7 +477,7 @@ All types of messages supported by Whatsapp are supported by this library:
      - Empty header
 
           ```java
-          var buttons = ButtonsMessage.newButtonsWithoutHeaderMessageBuilder() // Create a new button message builder
+          var buttons = ButtonsMessage.withoutHeaderBuilder() // Create a new button message builder
                .body("A nice body") // Set the body
                .footer("A nice footer") // Set the footer
                .buttons(List.of(button, anotherButton)) // Set the buttons
@@ -580,7 +488,7 @@ All types of messages supported by Whatsapp are supported by this library:
      - Text header
 
           ```java
-          var buttons = ButtonsMessage.newButtonsWithTextHeaderMessageBuilder() // Create a new button message builder
+          var buttons = ButtonsMessage.withTextHeaderBuilder() // Create a new button message builder
                .header("A nice header :)") // Set the header
                .body("A nice body") // Set the body
                .footer("A nice footer") // Set the footer
@@ -592,7 +500,7 @@ All types of messages supported by Whatsapp are supported by this library:
      - Document header
 
           ```java
-          var buttons = ButtonsMessage.newButtonsWithDocumentHeaderMessageBuilder() // Create a new button message builder
+          var buttons = ButtonsMessage.withDocumentHeaderBuilder() // Create a new button message builder
                .header(documentMessage) // Set the header
                .body("A nice body") // Set the body
                .footer("A nice footer") // Set the footer
@@ -604,7 +512,7 @@ All types of messages supported by Whatsapp are supported by this library:
      - Image header
 
           ```java
-          var buttons = ButtonsMessage.newButtonsWithImageHeaderMessageBuilder() // Create a new button message builder
+          var buttons = ButtonsMessage.withImageHeaderBuilder() // Create a new button message builder
                .header(imageMessage) // Set the header
                .body("A nice body") // Set the body
                .footer("A nice footer") // Set the footer
@@ -616,7 +524,7 @@ All types of messages supported by Whatsapp are supported by this library:
      - Video header
 
           ```java
-          var buttons = ButtonsMessage.newButtonsWithVideoHeaderMessageBuilder() // Create a new button message builder
+          var buttons = ButtonsMessage.withVideoHeaderBuilder() // Create a new button message builder
                .header(videoMessage) // Set the header
                .body("A nice body") // Set the body
                .footer("A nice footer") // Set the footer
@@ -628,7 +536,7 @@ All types of messages supported by Whatsapp are supported by this library:
      - Location header
 
           ```java
-          var buttons = ButtonsMessage.newButtonsWithLocationHeaderMessageBuilder() // Create a new button message builder
+          var buttons = ButtonsMessage.withLocationHeaderBuilder() // Create a new button message builder
                .header(locationMessage) // Set the header
                .body("A nice body") // Set the body
                .footer("A nice footer") // Set the footer
@@ -655,7 +563,7 @@ All types of messages supported by Whatsapp are supported by this library:
            ButtonRow.of("Second option", "A nice description"),
            ButtonRow.of("Third option", "A nice description")); // Create some other buttons
      var anotherSection = ButtonSection.of("First section", otherButtons); // Create another section from those buttons
-     var listMessage = ListMessage.newListMessageBuilder() // Create a list message builder
+     var listMessage = ListMessage.builder() // Create a list message builder
            .sections(List.of(section, anotherSection)) // Set the sections
            .button("Click me") // Set the button name that opens the menu
            .title("A nice title") // Set the title of the message
@@ -666,17 +574,17 @@ All types of messages supported by Whatsapp are supported by this library:
      api.sendMessage(contact, listMessage);
     ```
 
-  - Template button (NOT RECOMMENDED, use list message instead)
+  - Template button
      ```java
      var quickReplyButton = HydratedButtonTemplate.of(1, HydratedQuickReplyButton.of("Click me!", "random")); // Create a quick reply button
      var urlButton = HydratedButtonTemplate.of(2, HydratedURLButton.of("Search it", "https://google.com")); // Create an url button
      var callButton = HydratedButtonTemplate.of(3, HydratedCallButton.of("Call me", "some_phone_number")); // Create a call button
-     var fourRowTemplate = HydratedFourRowTemplate.newHydratedFourRowTemplateWithTextTitleBuilder() // Create a new template builder
+     var fourRowTemplate = HydratedFourRowTemplate.withTextTitleBuilder() // Create a new template builder
            .title("A nice title") // Set the title
            .body("A nice body") // Set the body
            .buttons(List.of(quickReplyButton, urlButton, callButton)) // Set the buttons
            .build(); // Create the template
-     var templateMessage = TemplateMessage.newHydratedTemplateMessage(fourRowTemplate); // Create a template message
+     var templateMessage = TemplateMessage.of(fourRowTemplate); // Create a template message
      api.sendMessage(contact, templateMessage);
     ```
 
@@ -700,8 +608,7 @@ All types of messages supported by Whatsapp are supported by this library:
    - Image
   
      ```java
-     var image = ImageMessage.newImageMessageBuilder() // Create a new image message builder
-           .mediaConnection(api.store().mediaConnection()) // The media connection to use for the upload
+     var image = ImageMessage.simpleBuilder() // Create a new image message builder
            .media(media) // Set the image of this message
            .caption("A nice image") // Set the caption of this message
            .build(); // Create the message
@@ -711,8 +618,7 @@ All types of messages supported by Whatsapp are supported by this library:
   - Audio or voice
 
     ```java
-     var audio = AudioMessage.newAudioMessageBuilder() // Create a new audio message builder
-           .mediaConnection(api.store().mediaConnection()) // The media connection to use for the upload
+     var audio = AudioMessage.simpleBuilder() // Create a new audio message builder
            .media(urlMedia) // Set the audio of this message
            .voiceMessage(false) // Set whether this message is a voice message
            .build(); // Create the message
@@ -722,8 +628,7 @@ All types of messages supported by Whatsapp are supported by this library:
   -  Video
 
      ```java
-     var video = VideoMessage.newVideoMessageBuilder() // Create a new video message builder
-           .mediaConnection(api.store().mediaConnection()) // The media connection to use for the upload
+     var video = VideoMessage.simpleVideoBuilder() // Create a new video message builder
            .media(urlMedia) // Set the video of this message
            .caption("A nice video") // Set the caption of this message
            .width(100) // Set the width of the video
@@ -735,8 +640,7 @@ All types of messages supported by Whatsapp are supported by this library:
   -  GIF(Video)
 
      ```java
-     var gif = VideoMessage.newGifMessageBuilder() // Create a new gif message builder
-           .mediaConnection(api.store().mediaConnection()) // The media connection to use for the upload
+     var gif = VideoMessage.simpleGifBuilder() // Create a new gif message builder
            .media(urlMedia) // Set the gif of this message
            .caption("A nice video") // Set the caption of this message
            .gifAttribution(VideoMessageAttribution.TENOR) // Set the source of the gif
@@ -748,8 +652,7 @@ All types of messages supported by Whatsapp are supported by this library:
   -  Document
 
      ```java
-     var document = DocumentMessage.newDocumentMessageBuilder() // Create a new document message builder
-           .mediaConnection(api.store().mediaConnection()) // The media connection to use for the upload
+     var document = DocumentMessage.simpleBuilder() // Create a new document message builder
            .media(urlMedia) // Set the document of this message
            .title("A nice pdf") // Set the title of the document
            .fileName("pdf-test.pdf") // Set the name of the document
@@ -846,7 +749,7 @@ var status = api.queryStatus(contact) // A completable future
 ##### Profile picture or chat picture
 
 ``` java
-var status = api.queryPic(contact) // A completable future
+var status = api.queryPicture(contact) // A completable future
       .join() // Wait for the future to complete
       .orElse(null); // If no picture is available yield null
 ```
@@ -955,28 +858,28 @@ var response = future.join(); // Wait for the future to complete
 ##### Add a contact to a group
 
 ``` java
-var future = api.add(group, contact);  // A future for the request
+var future = api.addGroupParticipant(group, contact);  // A future for the request
 var response = future.join(); // Wait for the future to complete
 ```
 
 ##### Remove a contact from a group
 
 ``` java
-var future = api.remove(group, contact);  // A future for the request
+var future = api.removeGroupParticipant(group, contact);  // A future for the request
 var response = future.join(); // Wait for the future to complete
 ```
 
 ##### Promote a contact to admin in a group
 
 ``` java
-var future = api.promote(group, contact);  // A future for the request
+var future = api.promoteGroupParticipant(group, contact);  // A future for the request
 var response = future.join(); // Wait for the future to complete
 ```
 
 ##### Demote a contact to user in a group
 
 ``` java
-var future = api.demote(group, contact);  // A future for the request
+var future = api.demoteGroupParticipant(group, contact);  // A future for the request
 var response = future.join(); // Wait for the future to complete
 ```
 
@@ -985,14 +888,14 @@ var response = future.join(); // Wait for the future to complete
 ##### Change group's name/subject
 
 ``` java
-var future = api.changeSubject(group, newName);  // A future for the request
+var future = api.changeGroupSubject(group, newName);  // A future for the request
 var response = future.join(); // Wait for the future to complete
 ```
 
 ##### Change or remove group's description
 
 ``` java
-var future = api.changeDescription(group, newDescription);  // A future for the request
+var future = api.changeGroupDescription(group, newDescription);  // A future for the request
 var response = future.join(); // Wait for the future to complete
 ```
 
@@ -1013,7 +916,7 @@ var response = future.join(); // Wait for the future to complete
 ##### Change or remove the picture of a group
 
 ``` java
-var future = api.changePicture(group, img);  // A future for the request
+var future = api.changeGroupPicture(group, img);  // A future for the request
 var response = future.join(); // Wait for the future to complete
 ```
 
@@ -1022,34 +925,34 @@ var response = future.join(); // Wait for the future to complete
 ##### Create a group
 
 ``` java
-var future = api.create("A nice name :)", friend, friend2);  // A future for the request
+var future = api.createGroup("A nice name :)", friend, friend2);  // A future for the request
 var response = future.join(); // Wait for the future to complete
 ```
 
 ##### Leave a group
 
 ``` java
-var future = api.leave(group);  // A future for the request
+var future = api.leaveGroup(group);  // A future for the request
 var response = future.join(); // Wait for the future to complete
 ```
 
 ##### Query a group's invite code
 
 ``` java
-var future = api.queryInviteCode(group);  // A future for the request
+var future = api.queryGroupInviteCode(group);  // A future for the request
 var response = future.join(); // Wait for the future to complete
 ```
 
 ##### Revoke a group's invite code
 
 ``` java
-var future = api.revokeInviteCode(group);  // A future for the request
+var future = api.revokeGroupInviteCode(group);  // A future for the request
 var response = future.join(); // Wait for the future to complete
 ```
 
 ##### Query a group's invite code
 
 ``` java
-var future = api.acceptInvite(inviteCode);  // A future for the request
+var future = api.acceptGroupInvite(inviteCode);  // A future for the request
 var response = future.join(); // Wait for the future to complete
 ```

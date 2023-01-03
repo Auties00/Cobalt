@@ -221,12 +221,13 @@ class AppStateHandler
         try {
             var results = new ArrayList<ActionDataSync>();
             if (record.hasSnapshot()) {
-                var decodedSnapshot = decodeSnapshot(record.patchType(), versions.get(record.patchType()),
-                                                     record.snapshot());
-                results.addAll(decodedSnapshot.records());
-                tempStates.put(record.patchType(), decodedSnapshot.state());
-                socketHandler.keys()
-                        .putState(record.patchType(), decodedSnapshot.state());
+                decodeSnapshot(record.patchType(), versions.get(record.patchType()), record.snapshot())
+                        .ifPresent(decodedSnapshot -> {
+                            results.addAll(decodedSnapshot.records());
+                            tempStates.put(record.patchType(), decodedSnapshot.state());
+                            socketHandler.keys()
+                                    .putState(record.patchType(), decodedSnapshot.state());
+                        });
             }
 
             if (record.hasPatches()) {
@@ -465,28 +466,36 @@ class AppStateHandler
         }
 
         newState.version(patch.version());
-        Validate.isTrue(Arrays.equals(calculateSyncMac(patch, patchType), patch.patchMac()), "sync_mac",
+        var syncMac = calculateSyncMac(patch, patchType);
+        Validate.isTrue(syncMac.isEmpty() || Arrays.equals(syncMac.get(), patch.patchMac()), "sync_mac",
                         HmacValidationException.class);
+
         var mutations = decodeMutations(patch.mutations(), newState);
         newState.hash(mutations.result()
                               .hash());
         newState.indexValueMap(mutations.result()
                                        .indexValueMap());
-        Validate.isTrue(Arrays.equals(generatePatchMac(patchType, newState, patch), patch.snapshotMac()), "patch_mac",
+
+        var snapshotMac = generatePatchMac(patchType, newState, patch);
+        Validate.isTrue(snapshotMac.isEmpty() || Arrays.equals(snapshotMac.get(), patch.snapshotMac()), "patch_mac",
                         HmacValidationException.class);
 
         return Optional.of(mutations)
                 .filter(ignored -> minimumVersion == 0 || newState.version() > minimumVersion);
     }
 
-    private byte[] generatePatchMac(PatchType name, LTHashState newState, PatchSync patch) {
-        var mutationKeys = getMutationKeys(patch.keyId());
-        return generateSnapshotMac(newState.hash(), newState.version(), name, mutationKeys.snapshotMacKey());
+    private Optional<byte[]> generatePatchMac(PatchType name, LTHashState newState, PatchSync patch) {
+        return getMutationKeys(patch.keyId())
+                .map(mutationKeys -> generateSnapshotMac(newState.hash(), newState.version(), name, mutationKeys.snapshotMacKey()));
     }
 
-    private byte[] calculateSyncMac(PatchSync patch, PatchType patchType) {
-        var mutationKeys = getMutationKeys(patch.keyId());
-        var mutationMacs = patch.mutations()
+    private Optional<byte[]> calculateSyncMac(PatchSync patch, PatchType patchType) {
+        return getMutationKeys(patch.keyId())
+                .map(mutationKeys -> generatePatchMac(patch.snapshotMac(), getSyncMutationMac(patch), patch.version(), patchType, mutationKeys.patchMacKey()));
+    }
+
+    private byte[] getSyncMutationMac(PatchSync patch) {
+        return patch.mutations()
                 .stream()
                 .map(mutation -> mutation.record()
                         .value()
@@ -495,11 +504,14 @@ class AppStateHandler
                 .map(binary -> binary.slice(-SignalSpecification.KEY_LENGTH))
                 .reduce(Bytes.newBuffer(), Bytes::append)
                 .toByteArray();
-        return generatePatchMac(patch.snapshotMac(), mutationMacs, patch.version(), patchType,
-                                mutationKeys.patchMacKey());
     }
 
-    private SyncRecord decodeSnapshot(PatchType name, long minimumVersion, SnapshotSync snapshot) {
+    private Optional<SyncRecord> decodeSnapshot(PatchType name, long minimumVersion, SnapshotSync snapshot) {
+        var mutationKeys = getMutationKeys(snapshot.keyId());
+        if(mutationKeys.isEmpty()){
+            return Optional.empty();
+        }
+
         var newState = new LTHashState(name, snapshot.version()
                 .version());
         var mutations = decodeMutations(snapshot.records(), newState);
@@ -507,9 +519,8 @@ class AppStateHandler
                               .hash());
         newState.indexValueMap(mutations.result()
                                        .indexValueMap());
-        var mutationKeys = getMutationKeys(snapshot.keyId());
         Validate.isTrue(Arrays.equals(snapshot.mac(), generateSnapshotMac(newState.hash(), newState.version(), name,
-                                                                          mutationKeys.snapshotMacKey())),
+                                                                          mutationKeys.get().snapshotMacKey())),
                         "decode_snapshot", HmacValidationException.class);
 
         if (minimumVersion == 0 || newState.version() > minimumVersion) {
@@ -517,28 +528,32 @@ class AppStateHandler
                     .clear();
         }
 
-        return new SyncRecord(newState, mutations.records());
+        return Optional.of(new SyncRecord(newState, mutations.records()));
     }
 
-    private MutationKeys getMutationKeys(KeyId snapshot) {
-        var encryptedKey = socketHandler.keys()
+    private Optional<MutationKeys> getMutationKeys(KeyId snapshot) {
+        return socketHandler.keys()
                 .findAppKeyById(snapshot.id())
-                .orElseThrow(() -> new NoSuchElementException("No keys available for mutation"));
-        return MutationKeys.of(encryptedKey.keyData()
-                                       .keyData());
+                .map(AppStateSyncKey::keyData)
+                .map(AppStateSyncKeyData::keyData)
+                .map(MutationKeys::of);
     }
 
     private MutationsRecord decodeMutations(List<? extends Syncable> syncs, LTHashState state) {
         var generator = new LTHash(state);
         var mutations = syncs.stream()
                 .map(mutation -> decodeMutation(mutation.operation(), mutation.record(), generator))
+                .flatMap(Optional::stream)
                 .collect(Collectors.toList());
         return new MutationsRecord(generator.finish(), mutations);
     }
 
     @SneakyThrows
-    private ActionDataSync decodeMutation(RecordSync.Operation operation, RecordSync sync, LTHash generator) {
+    private Optional<ActionDataSync> decodeMutation(RecordSync.Operation operation, RecordSync sync, LTHash generator) {
         var mutationKeys = getMutationKeys(sync.keyId());
+        if(mutationKeys.isEmpty()){
+            return Optional.empty();
+        }
 
         var blob = Bytes.of(sync.value()
                                     .blob());
@@ -546,18 +561,17 @@ class AppStateHandler
                 .toByteArray();
         var encryptedMac = blob.slice(-SignalSpecification.KEY_LENGTH)
                 .toByteArray();
-        Validate.isTrue(Arrays.equals(encryptedMac, generateMac(operation, encryptedBlob, sync.keyId()
-                .id(), mutationKeys.macKey())), "decode_mutation", HmacValidationException.class);
+        Validate.isTrue(Arrays.equals(encryptedMac, generateMac(operation, encryptedBlob, sync.keyId().id(), mutationKeys.get().macKey())), "decode_mutation", HmacValidationException.class);
 
-        var result = AesCbc.decrypt(encryptedBlob, mutationKeys.encKey());
+        var result = AesCbc.decrypt(encryptedBlob, mutationKeys.get().encKey());
         var actionSync = PROTOBUF.readMessage(result, ActionDataSync.class);
         Validate.isTrue(Arrays.equals(sync.index()
                                               .blob(),
-                                      Hmac.calculateSha256(actionSync.index(), mutationKeys.indexKey())),
+                                      Hmac.calculateSha256(actionSync.index(), mutationKeys.get().indexKey())),
                         "decode_mutation", HmacValidationException.class);
         generator.mix(sync.index()
                               .blob(), encryptedMac, operation);
-        return actionSync;
+        return Optional.of(actionSync);
     }
 
     private byte[] generateMac(RecordSync.Operation operation, byte[] data, byte[] keyId, byte[] key) {

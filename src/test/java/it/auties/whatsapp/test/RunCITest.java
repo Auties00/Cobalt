@@ -57,6 +57,7 @@ public class RunCITest implements Listener, JacksonProvider {
     private static final String VIDEO_URL = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
 
     private static Whatsapp api;
+    private static CompletableFuture<Void> future;
     private static CountDownLatch latch;
     private static ContactJid contact;
     private static ContactJid group;
@@ -75,7 +76,7 @@ public class RunCITest implements Listener, JacksonProvider {
 
         loadConfig();
         createLatch();
-        api.connect();
+        future = api.connect();
         latch.await();
     }
 
@@ -575,7 +576,7 @@ public class RunCITest implements Listener, JacksonProvider {
         }
 
         log("Sending buttons...");
-        var emptyButtons = ButtonsMessage.withoutHeaderMessageBuilder()
+        var emptyButtons = ButtonsMessage.withoutHeaderBuilder()
                 .body("A nice body")
                 .footer("A nice footer")
                 .buttons(createButtons())
@@ -583,7 +584,7 @@ public class RunCITest implements Listener, JacksonProvider {
         api.sendMessage(group, emptyButtons)
                 .join();
 
-        var textButtons = ButtonsMessage.withTextHeaderMessageBuilder()
+        var textButtons = ButtonsMessage.withTextHeaderBuilder()
                 .header("A nice header")
                 .body("A nice body")
                 .footer("A nice footer")
@@ -600,7 +601,7 @@ public class RunCITest implements Listener, JacksonProvider {
                 .fileName("pdf-test.pdf")
                 .pageCount(1)
                 .build();
-        var documentButtons = ButtonsMessage.withDocumentHeaderMessageBuilder()
+        var documentButtons = ButtonsMessage.withDocumentHeaderBuilder()
                 .header(document)
                 .body("A nice body")
                 .footer("A nice footer")
@@ -616,7 +617,7 @@ public class RunCITest implements Listener, JacksonProvider {
                         "https://2.bp.blogspot.com/-DqXILvtoZFA/Wmmy7gRahnI/AAAAAAAAB0g/59c8l63QlJcqA0591t8-kWF739DiOQLcACEwYBhgL/s1600/pol-venere-botticelli-01.jpg"))
                 .caption("Image test")
                 .build();
-        var imageButtons = ButtonsMessage.withImageHeaderMessageBuilder()
+        var imageButtons = ButtonsMessage.withImageHeaderBuilder()
                 .header(image)
                 .body("A nice body")
                 .footer("A nice footer")
@@ -631,7 +632,7 @@ public class RunCITest implements Listener, JacksonProvider {
     private List<Button> createButtons() {
         return IntStream.range(0, 3)
                 .mapToObj("Button %s"::formatted)
-                .map(Button::newResponseButton)
+                .map(Button::ofTextResponse)
                 .toList();
     }
 
@@ -1034,7 +1035,7 @@ public class RunCITest implements Listener, JacksonProvider {
         log("Logging off...");
         CompletableFuture.delayedExecutor(5, TimeUnit.MINUTES)
                 .execute(api::disconnect);
-        api.join();
+        future.join();
         log("Logged off");
     }
 

@@ -120,7 +120,7 @@ public interface ErrorHandler
                 logger.log(loggingLevel, "Socket failure at %s".formatted(location));
             }
 
-            if (exceptionPrinter != null) {
+            if (throwable != null && exceptionPrinter != null) {
                 exceptionPrinter.accept(throwable);
             }
 
@@ -208,6 +208,11 @@ public interface ErrorHandler
          * Called when an error occurs when serializing or deserializing a Whatsapp message
          */
         MESSAGE,
+
+        /**
+         * Called when an error occurs when deciphering a poll message
+         */
+        POLL,
 
         /**
          * Called when sending or receiving a socket message

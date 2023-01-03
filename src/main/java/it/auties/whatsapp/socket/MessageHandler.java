@@ -3,6 +3,7 @@ package it.auties.whatsapp.socket;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import it.auties.bytes.Bytes;
+import it.auties.whatsapp.api.ErrorHandler.Location;
 import it.auties.whatsapp.crypto.*;
 import it.auties.whatsapp.model.action.ContactAction;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificate;
@@ -72,7 +73,6 @@ class MessageHandler
     private final Cache<ContactJid, GroupMetadata> groupsCache;
     private final Cache<String, List<ContactJid>> devicesCache;
     private final Set<Chat> historyCache;
-    private final AtomicBoolean receivedPushNames;
     private final AtomicBoolean sentInitialPatch;
     private final Semaphore encodeSemaphore;
 
@@ -84,7 +84,6 @@ class MessageHandler
         this.historyCache = new HashSet<>();
         this.encodeSemaphore = new Semaphore(1);
         this.sentInitialPatch = new AtomicBoolean(false);
-        this.receivedPushNames = new AtomicBoolean(false);
     }
 
     private <K, V> Cache<K, V> createCache(Duration duration) {
@@ -570,7 +569,7 @@ class MessageHandler
                     .put(modificationSenderJid, selectedOptions);
             pollUpdateMessage.votes(selectedOptions);
         } catch (Throwable throwable) {
-            throw new RuntimeException("Cannot decode poll vote", throwable);
+            socketHandler.errorHandler().handleFailure(Location.POLL, null);
         }
     }
 
@@ -803,21 +802,15 @@ class MessageHandler
                 socketHandler.onChats();
             }
 
-            case PUSH_NAME -> {
-                history.pushNames()
-                        .forEach(this::handNewPushName);
-                receivedPushNames.set(true);
-                if (socketHandler.store()
-                        .initialSnapshot()) {
-                    socketHandler.onContacts();
-                }
-            }
+            case PUSH_NAME -> history.pushNames()
+                    .forEach(this::handNewPushName);
 
             case RECENT, FULL -> {
                 handleRecentMessagesListener(history);
                 if (!sentInitialPatch.getAndSet(true)) {
                     socketHandler.pullInitialPatches()
-                            .thenRunAsync(this::subscribeToAllPresences);
+                            .thenRunAsync(this::subscribeToAllPresences)
+                            .thenRunAsync(socketHandler::onContacts);
                 }
             }
 
@@ -888,8 +881,7 @@ class MessageHandler
         groupsCache.invalidateAll();
         devicesCache.invalidateAll();
         historyCache.clear();
-        receivedPushNames.set(false);
-        sentInitialPatch.set(false);;
+        sentInitialPatch.set(false);
         encodeSemaphore.release();
     }
 

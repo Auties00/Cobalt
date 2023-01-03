@@ -233,7 +233,7 @@ public class Whatsapp {
      * Deletes all the known connections from memory
      */
     public static void deleteConnections() {
-        streamConnections().forEach(Whatsapp::delete);
+        streamConnections().forEach(entry -> LocalFileSystem.delete(String.valueOf(entry.keys().id())));
     }
 
     private static LinkPreviewMedia compareDimensions(LinkPreviewMedia first, LinkPreviewMedia second) {
@@ -917,69 +917,50 @@ public class Whatsapp {
     }
 
     /**
-     * Waits for the socket to be closed on the current thread
-     */
-    public void join() {
-        socketHandler.join();
-    }
-
-    /**
      * Opens a connection with Whatsapp Web's WebSocket if a previous connection doesn't exist
      *
-     * @return the same instance wrapped in a completable result
+     * @return a future that will only be completed when the connection is closed
      */
-    public CompletableFuture<Whatsapp> connect() {
+    public CompletableFuture<Void> connect() {
         return socketHandler.connect()
-                .thenApplyAsync(ignored -> this);
+                .thenRunAsync(socketHandler::join);
     }
 
     /**
      * Disconnects from Whatsapp Web's WebSocket if a previous connection exists
      *
-     * @return the same instance wrapped in a completable result
+     * @return a future
      */
-    public CompletableFuture<Whatsapp> disconnect() {
-        return socketHandler.disconnect(false)
-                .thenApplyAsync(ignored -> this);
-    }
-
-    /**
-     * Deletes the data associated with this session and disconnects from it
-     *
-     * @return the same instance wrapped in a completable result
-     */
-    public CompletableFuture<Whatsapp> delete() {
-        LocalFileSystem.delete(String.valueOf(keys().id()));
-        return disconnect();
+    public CompletableFuture<Void> disconnect() {
+        return socketHandler.disconnect(false);
     }
 
     /**
      * Disconnects and reconnects to Whatsapp Web's WebSocket if a previous connection exists
      *
-     * @return the same instance wrapped in a completable result
+     * @return a future
      */
-    public CompletableFuture<Whatsapp> reconnect() {
-        return socketHandler.disconnect(true)
-                .thenApplyAsync(ignored -> this);
+    public CompletableFuture<Void> reconnect() {
+        return socketHandler.disconnect(true);
     }
 
     /**
      * Disconnects from Whatsapp Web's WebSocket and logs out of WhatsappWeb invalidating the previous saved credentials.
      * The next time the API is used, the QR code will need to be scanned again.
      *
-     * @return the same instance wrapped in a completable result
+     * @return a future
      */
-    public CompletableFuture<Whatsapp> logout() {
-        if (store().userCompanionJid() != null) {
-            var metadata = Map.of("jid", store().userCompanionJid(), "reason", "user_initiated");
-            var device = Node.ofAttributes("remove-companion-device", metadata);
-            return socketHandler.sendQuery("set", "md", device)
-                    .thenRunAsync(socketHandler::changeKeys)
-                    .thenApplyAsync(ignored -> this);
+    public CompletableFuture<Void> logout() {
+        if (store().userCompanionJid() == null) {
+            return disconnect()
+                    .thenRunAsync(() -> LocalFileSystem.delete(String.valueOf(keys().id())));
         }
 
-        return disconnect().thenRunAsync(socketHandler::changeKeys)
-                .thenApplyAsync(ignored -> this);
+        var metadata = Map.of("jid", store().userCompanionJid(), "reason", "user_initiated");
+        var device = Node.ofAttributes("remove-companion-device", metadata);
+        return socketHandler.sendQuery("set", "md", device)
+                .thenComposeAsync(ignored -> socketHandler.disconnect(false))
+                .thenRunAsync(() -> LocalFileSystem.delete(String.valueOf(keys().id())));
     }
 
     /**
@@ -989,7 +970,7 @@ public class Whatsapp {
      * @param type     the non-null setting to change
      * @param value    the non-null value to attribute to the setting
      * @param excluded the non-null excluded contacts if value is {@link PrivacySettingValue#CONTACT_EXCEPT}
-     * @return the same instance wrapped in a completable result
+     * @return the same instance wrapped in a completable future
      */
     @SafeVarargs
     public final <T extends ContactJidProvider> CompletableFuture<Whatsapp> changePrivacySetting(
@@ -1027,7 +1008,7 @@ public class Whatsapp {
      * Changes the default ephemeral timer of new chats.
      *
      * @param timer the new ephemeral timer
-     * @return the same instance wrapped in a completable result
+     * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Whatsapp> changeNewChatsEphemeralTimer(@NonNull ChatEphemeralTimer timer) {
         return socketHandler.sendQuery("set", "disappearing_mode", Node.ofAttributes("disappearing_mode",
@@ -1042,7 +1023,7 @@ public class Whatsapp {
      * It takes three business days to receive it.
      * To query the result status, use {@link Whatsapp#getGdprAccountInfoStatus()}
      *
-     * @return the same instance wrapped in a completable result
+     * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Whatsapp> createGdprAccountInfo() {
         return socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account",
@@ -1054,7 +1035,7 @@ public class Whatsapp {
      * Queries the document containing all the data that was collected by Whatsapp about this user.
      * To create a request for this document, use {@link Whatsapp#createGdprAccountInfo()}
      *
-     * @return the same instance wrapped in a completable result
+     * @return the same instance wrapped in a completable future
      */
     // TODO: Implement ready and error states
     public CompletableFuture<GdprAccountReport> getGdprAccountInfoStatus() {
@@ -1068,7 +1049,7 @@ public class Whatsapp {
      * Changes the name of this user
      *
      * @param newName the non-null new name
-     * @return the same instance wrapped in a completable result
+     * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Whatsapp> changeName(@NonNull String newName) {
         var oldName = socketHandler.store()
@@ -1082,7 +1063,7 @@ public class Whatsapp {
      * Changes the status(i.e. user description) of this user
      *
      * @param newStatus the non-null new status
-     * @return the same instance wrapped in a completable result
+     * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Whatsapp> changeStatus(@NonNull String newStatus) {
         return socketHandler.sendQuery("set", "status", Node.of("status", newStatus.getBytes(StandardCharsets.UTF_8)))

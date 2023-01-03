@@ -45,8 +45,8 @@ public class Button
      * @param text the non-null text of this button
      * @return a non-null button
      */
-    public static Button newResponseButton(@NonNull String text) {
-        return newResponseButton(Bytes.ofRandom(6)
+    public static Button ofTextResponse(@NonNull String text) {
+        return ofTextResponse(Bytes.ofRandom(6)
                                          .toHex(), text);
     }
 
@@ -58,7 +58,7 @@ public class Button
      * @param text the non-null text of this button
      * @return a non-null button
      */
-    public static Button newResponseButton(@NonNull String id, @NonNull String text) {
+    public static Button ofTextResponse(@NonNull String id, @NonNull String text) {
         return Button.builder()
                 .id(id)
                 .text(ButtonText.of(text))
