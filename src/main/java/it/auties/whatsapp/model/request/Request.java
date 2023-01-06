@@ -108,8 +108,8 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      */
     public CompletableFuture<Void> sendWithNoResponse(@NonNull Session session, @NonNull Keys keys,
             @NonNull Store store) {
-        return send(session, keys, store, false, false).thenRunAsync(() -> {
-        });
+        return send(session, keys, store, false, false)
+                .thenRunAsync(() -> {});
     }
 
     /**
@@ -155,8 +155,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
 
         if (exceptionally) {
             future.completeExceptionally(
-                    new ErroneousNodeRequestException("Cannot process request %s with %s".formatted(this, response),
-                                                      response, caller));
+                    new ErroneousNodeRequestException("Cannot process request %s with %s".formatted(this, response), response, caller));
             return;
         }
 

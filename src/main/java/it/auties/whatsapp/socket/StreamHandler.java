@@ -2,6 +2,7 @@ package it.auties.whatsapp.socket;
 
 import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
+import it.auties.whatsapp.api.ErrorHandler.Location;
 import it.auties.whatsapp.api.SocketEvent;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.crypto.Hmac;
@@ -51,6 +52,8 @@ import static it.auties.whatsapp.api.ErrorHandler.Location.*;
 import static it.auties.whatsapp.model.request.Node.ofAttributes;
 import static it.auties.whatsapp.model.request.Node.ofChildren;
 import static java.util.Map.of;
+import static java.util.concurrent.CompletableFuture.delayedExecutor;
+import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 @RequiredArgsConstructor
@@ -99,7 +102,7 @@ class StreamHandler
         }
 
         socketHandler.errorHandler()
-                .handleNodeFailure(new ErroneousNodeRequestException("Stream error: %s".formatted(node), node));
+                .handleFailure(Location.STREAM, new ErroneousNodeRequestException("Stream error(%s)".formatted(node), node));
     }
 
     private void digestChatState(Node node) {
@@ -478,7 +481,6 @@ class StreamHandler
                 .exceptionallyAsync(exception -> socketHandler.errorHandler()
                         .handleFailure(MESSAGE, exception));
         socketHandler.onContacts();
-        socketHandler.pullInitialPatches();
         if (!socketHandler.options()
                 .automaticallySubscribeToPresences()) {
             return;
@@ -635,14 +637,7 @@ class StreamHandler
                         .mediaConnection(result))
                 .exceptionallyAsync(throwable -> socketHandler.errorHandler()
                         .handleFailure(MEDIA_CONNECTION, throwable))
-                .thenRunAsync(() -> runAsyncDelayed(this::createMediaConnection, socketHandler.store()
-                        .mediaConnection()
-                        .ttl()));
-    }
-
-    private void runAsyncDelayed(Runnable runnable, int seconds) {
-        var mediaService = CompletableFuture.delayedExecutor(seconds, TimeUnit.SECONDS);
-        CompletableFuture.runAsync(runnable, mediaService);
+                .thenRunAsync(() -> runAsync(this::createMediaConnection, delayedExecutor(socketHandler.store().mediaConnection().ttl(), TimeUnit.SECONDS)));
     }
 
     private void digestIq(Node node) {

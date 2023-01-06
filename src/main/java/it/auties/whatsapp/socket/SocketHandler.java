@@ -274,6 +274,12 @@ public class SocketHandler
 
     @OnError
     public void onError(Throwable throwable) {
+        if(throwable instanceof IllegalStateException stateException
+                && stateException.getMessage().equals("The connection has been closed.")) { // FIXME: is this a good way to check this?
+            onClose();
+            return;
+        }
+
         onSocketEvent(SocketEvent.ERROR);
         errorHandler.handleFailure(UNKNOWN, throwable);
     }
@@ -285,11 +291,8 @@ public class SocketHandler
         }
 
         onNodeSent(node);
-        return node.toRequest(node.id() == null ?
-                                      store.nextTag() :
-                                      null)
-                .send(session, keys, store)
-                .exceptionallyAsync(errorHandler::handleNodeFailure);
+        return node.toRequest(node.id() == null ? store.nextTag() : null)
+                .send(session, keys, store);
     }
 
     private void onNodeSent(Node node) {
@@ -336,6 +339,7 @@ public class SocketHandler
         return sendQuery(null, Server.WHATSAPP.toJid(), method, category, null, body);
     }
 
+    @SuppressWarnings("UnusedReturnValue")
     public CompletableFuture<Void> sendQueryWithNoResponse(String method, String category, Node... body) {
         return sendQueryWithNoResponse(null, Server.WHATSAPP.toJid(), method, category, null, body);
     }
@@ -441,7 +445,6 @@ public class SocketHandler
         var body = ofAttributes("query", of("request", "interactive"));
         return sendQuery(group, "get", "w:g2", body).thenApplyAsync(node -> node.findNode("group")
                         .orElseThrow(() -> new ErroneousNodeRequestException("Missing group node", node)))
-                .exceptionallyAsync(errorHandler::handleNodeFailure)
                 .thenApplyAsync(GroupMetadata::of);
     }
 
