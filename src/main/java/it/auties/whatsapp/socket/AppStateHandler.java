@@ -622,15 +622,19 @@ class AppStateHandler
         }
     }
 
-    public void awaitReady() {
+    protected void awaitReady() {
         try {
+            if(socketHandler.store().initialAppSync()){
+                return;
+            }
+
             countDownLatch.await();
         } catch (InterruptedException exception) {
             throw new RuntimeException("Cannot await app state", exception);
         }
     }
 
-    public void dispose(){
+    protected void dispose(){
         semaphore.release();
         this.countDownLatch = new CountDownLatch(1);
     }

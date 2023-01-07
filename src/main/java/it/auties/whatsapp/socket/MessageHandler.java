@@ -476,9 +476,23 @@ class MessageHandler
                     .pushName(pushName)
                     .businessVerifiedName(businessName)
                     .timestamp(timestamp)
-                    .status(key.fromMe() ? MessageStatus.DELIVERED : messageContainer.type() == MessageType.AUDIO ? MessageStatus.PLAYED : MessageStatus.READ)
+                    .status(key.fromMe() ? MessageStatus.DELIVERED :
+                                    messageContainer.type() == MessageType.AUDIO ? MessageStatus.PLAYED : MessageStatus.READ)
                     .message(messageContainer)
                     .build();
+            info.receipt()
+                    .deliveredTimestamp(Clock.now());
+            switch (info.status()) {
+                case READ -> info.receipt()
+                        .readTimestamp(Clock.now());
+                case PLAYED -> {
+                    info.receipt()
+                            .readTimestamp(Clock.now());
+                    info.receipt()
+                            .playedTimestamp(Clock.now());
+                }
+            }
+
             socketHandler.store()
                     .attribute(info);
             handleMessageContent(info, messageContainer);

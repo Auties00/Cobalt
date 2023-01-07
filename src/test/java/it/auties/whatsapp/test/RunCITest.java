@@ -230,6 +230,32 @@ public class RunCITest implements Listener, JacksonProvider {
 
     @Test
     @Order(9)
+    public void testClearChat() {
+        if(skip){
+            return;
+        }
+
+        log("Clearing chat...");
+        var ephemeralResponse = api.clear(contact, false)
+                .join();
+        log("Cleared chat: %s", ephemeralResponse);
+    }
+
+    @Test
+    @Order(10)
+    public void testDeleteChat() {
+        if(skip){
+            return;
+        }
+
+        log("Deleting chat...");
+        var ephemeralResponse = api.delete(contact)
+                .join();
+        log("Deleted chat: %s", ephemeralResponse);
+    }
+
+    @Test
+    @Order(11)
     public void testGroupCreation() {
         if(skip){
             return;
@@ -244,7 +270,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(10)
+    @Order(12)
     public void testChangeIndividualPresence() {
         if(skip){
             return;
@@ -263,7 +289,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(11)
+    @Order(13)
     public void testChangeGroupName() {
         if(skip){
             return;
@@ -280,7 +306,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @RepeatedTest(2)
-    @Order(12)
+    @Order(14)
     public void testChangeGroupDescription() {
         if(skip){
             return;
@@ -298,7 +324,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(13)
+    @Order(15)
     public void testRemoveGroupParticipant() {
         if(skip){
             return;
@@ -315,7 +341,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(14)
+    @Order(16)
     public void testAddGroupParticipant() {
         if(skip){
             return;
@@ -332,7 +358,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(15)
+    @Order(17)
     public void testPromotion() {
         if(skip){
             return;
@@ -349,7 +375,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(16)
+    @Order(18)
     public void testDemotion() {
         if(skip){
             return;
@@ -366,7 +392,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(17)
+    @Order(19)
     public void testChangeAllGroupSettings() {
         if(skip){
             return;
@@ -387,7 +413,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(19)
+    @Order(20)
     public void testGroupQuery() {
         if(skip){
             return;
@@ -404,7 +430,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(20)
+    @Order(21)
     public void testMute() {
         if(skip){
             return;
@@ -421,7 +447,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(21)
+    @Order(22)
     public void testUnmute() {
         if(skip){
             return;
@@ -438,7 +464,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(22)
+    @Order(23)
     public void testArchive() {
         if(skip){
             return;
@@ -455,7 +481,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(23)
+    @Order(24)
     public void testUnarchive() {
         if(skip){
             return;
@@ -472,7 +498,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(24)
+    @Order(25)
     public void testPin() {
         if(skip){
             return;
@@ -496,7 +522,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(25)
+    @Order(26)
     public void testUnpin() {
         if(skip){
             return;
@@ -520,7 +546,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(26)
+    @Order(27)
     public void testTextMessage() {
         if(skip){
             return;
@@ -543,7 +569,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(27)
+    @Order(28)
     public void deleteMessage() {
         if(skip){
             return;
@@ -565,7 +591,7 @@ public class RunCITest implements Listener, JacksonProvider {
 
     @SuppressWarnings("HttpUrlsUsage")
     @Test
-    @Order(28)
+    @Order(29)
     public void testButtonsMessage() {
         if(skip){
             return;
@@ -628,12 +654,12 @@ public class RunCITest implements Listener, JacksonProvider {
     private List<Button> createButtons() {
         return IntStream.range(0, 3)
                 .mapToObj("Button %s"::formatted)
-                .map(Button::ofTextResponse)
+                .map(Button::of)
                 .toList();
     }
 
     @Test
-    @Order(29)
+    @Order(30)
     public void testImageMessage() {
         if(skip){
             return;
@@ -651,7 +677,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(30)
+    @Order(31)
     public void testAudioMessage() {
         if(skip){
             return;
@@ -667,7 +693,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(31)
+    @Order(32)
     public void testVideoMessage() {
         if(skip){
             return;
@@ -684,7 +710,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(32)
+    @Order(33)
     public void testGifMessage() {
         if(skip){
             return;
@@ -702,7 +728,7 @@ public class RunCITest implements Listener, JacksonProvider {
 
     @SuppressWarnings("HttpUrlsUsage")
     @Test
-    @Order(33)
+    @Order(34)
     public void testPdfMessage() {
         if(skip){
             return;
@@ -721,7 +747,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(34)
+    @Order(35)
     public void testContactMessage() {
         if(skip){
             return;
@@ -739,7 +765,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(35)
+    @Order(36)
     public void testLocationMessage() {
         if(skip){
             return;
@@ -757,7 +783,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(36)
+    @Order(37)
     public void testGroupInviteMessage() {
         if(skip){
             return;
@@ -787,7 +813,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(37)
+    @Order(38)
     public void testEnableEphemeralMessages() {
         if(skip){
             return;
@@ -804,7 +830,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(38)
+    @Order(39)
     public void testDisableEphemeralMessages() {
         if(skip){
             return;
@@ -821,7 +847,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(39)
+    @Order(40)
     public void testLeave() {
         if(skip){
             return;
@@ -838,34 +864,8 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(40)
-    public void testClearChat() {
-        if(skip){
-            return;
-        }
-
-        log("Clearing chat...");
-        var ephemeralResponse = api.clear(contact, false)
-                .join();
-        log("Cleared chat: %s", ephemeralResponse);
-    }
-
-    @Test
     @Order(41)
-    public void testDeleteChat() {
-        if(skip){
-            return;
-        }
-
-        log("Deleting chat...");
-        var ephemeralResponse = api.delete(contact)
-                .join();
-        log("Deleted chat: %s", ephemeralResponse);
-    }
-
-    @Test
-    @Order(42)
-    public void testInteractiveMessage() { // These are not even supported as far as I can tell, though we have a test lol
+    public void testInteractiveMessage() { // These are not even supported, though we have a test lol
         if(skip){
             return;
         }
@@ -910,30 +910,29 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(43)
+    @Order(42)
     public void testTemplateMessage() {
         if(skip){
             return;
         }
 
         log("Sending template message...");
-        var quickReplyButton = HydratedButtonTemplate.of(1, HydratedQuickReplyButton.of("Click me!", "random"));
-        var urlButton = HydratedButtonTemplate.of(2, HydratedURLButton.of("Search it", "https://google.com"));
-        var callButton = HydratedButtonTemplate.of(3,
-                HydratedCallButton.of("Call me", contact.toPhoneNumber()));
+        var quickReplyButton = HydratedButtonTemplate.of(HydratedQuickReplyButton.of("Click me"));
+        var urlButton = HydratedButtonTemplate.of(HydratedURLButton.of("Search it", "https://google.com"));
+        var callButton = HydratedButtonTemplate.of(HydratedCallButton.of("Call me", contact.toPhoneNumber()));
         var fourRowTemplate = HydratedFourRowTemplate.withTextTitleBuilder()
-                .title("A nice title")
                 .body("A nice body")
+                .footer("A nice footer")
                 .buttons(List.of(quickReplyButton, urlButton, callButton))
                 .build();
-        var templateMessage = TemplateMessage.newHydratedTemplateMessage(fourRowTemplate);
+        var templateMessage = TemplateMessage.of(fourRowTemplate);
         api.sendMessage(contact, templateMessage)
                 .join();
         log("Sent template message");
     }
 
     @Test
-    @Order(44)
+    @Order(43)
     public void testListMessage() {
         if(skip){
             return;
@@ -961,8 +960,8 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
-    @Order(45)
-    public void testReaction() throws InterruptedException {
+    @Order(44)
+    public void testReaction() {
         if(skip){
             return;
         }
@@ -974,17 +973,10 @@ public class RunCITest implements Listener, JacksonProvider {
         var simple = api.sendReaction(example, "💖")
                 .join();
         log("Sent heart reaction: %s", simple);
-
-        Thread.sleep(2000L);
-
-        log("Removing reaction...");
-        var context = api.removeReaction(example)
-                .join();
-        log("Removed reaction: %s", context);
     }
 
     @Test
-    @Order(46)
+    @Order(45)
     public void testMediaDownload(){
         if(skip){
             return;
@@ -1026,11 +1018,6 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Override
-    public void onNewMessage(MessageInfo info) {
-        System.out.printf("New message: %s%n", info);
-    }
-
-    @Override
     public void onNodeSent(Node outgoing) {
         System.out.printf("Sent node %s%n", outgoing);
     }
@@ -1051,7 +1038,6 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Override
-    @SneakyThrows
     public void onNewMessage(Whatsapp whatsapp, MessageInfo info) {
         System.out.println(info.toJson());
     }

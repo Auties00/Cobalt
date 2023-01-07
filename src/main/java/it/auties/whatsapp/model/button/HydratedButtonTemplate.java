@@ -37,13 +37,11 @@ public class HydratedButtonTemplate
     /**
      * Constructs a new template from a quick reply
      *
-     * @param index            the index of this button
      * @param quickReplyButton the non-null quick reply
      * @return a non-null button template
      */
-    public static HydratedButtonTemplate of(int index, @NonNull HydratedQuickReplyButton quickReplyButton) {
+    public static HydratedButtonTemplate of(@NonNull HydratedQuickReplyButton quickReplyButton) {
         return HydratedButtonTemplate.builder()
-                .index(index)
                 .quickReplyButton(quickReplyButton)
                 .build();
     }
@@ -51,13 +49,11 @@ public class HydratedButtonTemplate
     /**
      * Constructs a new template from an url button
      *
-     * @param index     the index of this button
      * @param urlButton the non-null url button
      * @return a non-null button template
      */
-    public static HydratedButtonTemplate of(int index, @NonNull HydratedURLButton urlButton) {
+    public static HydratedButtonTemplate of(@NonNull HydratedURLButton urlButton) {
         return HydratedButtonTemplate.builder()
-                .index(index)
                 .urlButton(urlButton)
                 .build();
     }
@@ -65,13 +61,11 @@ public class HydratedButtonTemplate
     /**
      * Constructs a new template from a call button
      *
-     * @param index      the index of this button
      * @param callButton the non-null call button
      * @return a non-null button template
      */
-    public static HydratedButtonTemplate of(int index, @NonNull HydratedCallButton callButton) {
+    public static HydratedButtonTemplate of(@NonNull HydratedCallButton callButton) {
         return HydratedButtonTemplate.builder()
-                .index(index)
                 .callButton(callButton)
                 .build();
     }

@@ -7,16 +7,14 @@ import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import it.auties.whatsapp.model.message.standard.LocationMessage;
 import it.auties.whatsapp.model.message.standard.VideoMessage;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
+import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.STRING;
@@ -25,38 +23,71 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
  * A model class that represents a hydrated four row template
  */
 @AllArgsConstructor
+@NoArgsConstructor(staticName = "of")
 @Data
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class HydratedFourRowTemplate
-        implements ProtobufMessage {
+public final class HydratedFourRowTemplate
+        implements TemplateFormatter {
+    /**
+     * The id of the template
+     */
+    @ProtobufProperty(index = 9, type = STRING)
+    private String templateId;
+
+    /**
+     * The document title of this row.
+     * This property is defined only if {@link HydratedFourRowTemplate#titleType()} == {@link TitleType#DOCUMENT_MESSAGE}.
+     */
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = DocumentMessage.class)
     private DocumentMessage documentTitle;
 
+    /**
+     * The text title of this row.
+     * This property is defined only if {@link HydratedFourRowTemplate#titleType()} == {@link TitleType#TEXT_TITLE}.
+     */
     @ProtobufProperty(index = 2, type = STRING)
     private String textTitle;
 
+    /**
+     * The image title of this row.
+     * This property is defined only if {@link HydratedFourRowTemplate#titleType()} == {@link TitleType#IMAGE_MESSAGE}.
+     */
     @ProtobufProperty(index = 3, type = MESSAGE, implementation = ImageMessage.class)
     private ImageMessage imageTitle;
 
+    /**
+     * The video title of this row.
+     * This property is defined only if {@link HydratedFourRowTemplate#titleType()} == {@link TitleType#VIDEO_MESSAGE}.
+     */
     @ProtobufProperty(index = 4, type = MESSAGE, implementation = VideoMessage.class)
     private VideoMessage videoTitle;
 
+    /**
+     * The location title of this row.
+     * This property is defined only if {@link HydratedFourRowTemplate#titleType()} == {@link TitleType#LOCATION_MESSAGE}.
+     */
     @ProtobufProperty(index = 5, type = MESSAGE, implementation = LocationMessage.class)
     private LocationMessage locationTitle;
 
+    /**
+     * The body of this row
+     */
     @ProtobufProperty(index = 6, type = STRING)
     private String body;
 
+    /**
+     * The footer of this row
+     */
     @ProtobufProperty(index = 7, type = STRING)
     private String footer;
 
+    /**
+     * The buttons of this row
+     */
     @ProtobufProperty(index = 8, type = MESSAGE, implementation = HydratedButtonTemplate.class, repeated = true)
     private List<HydratedButtonTemplate> buttons;
-
-    @ProtobufProperty(index = 9, type = STRING)
-    private String id;
 
     /**
      * Constructs a new builder to create a four row template without a title
@@ -157,13 +188,15 @@ public class HydratedFourRowTemplate
 
     }
 
-    private static HydratedFourRowTemplate.HydratedFourRowTemplateBuilder createBuilder(String body, String footer,
+    private static HydratedFourRowTemplateBuilder createBuilder(String body, String footer,
             List<HydratedButtonTemplate> buttons, String id) {
+        IntStream.range(0, buttons.size())
+                .forEach(index -> buttons.get(index).index(index + 1));
         return HydratedFourRowTemplate.builder()
                 .body(body)
                 .footer(footer)
                 .buttons(buttons)
-                .id(id);
+                .templateId(id);
     }
 
     /**

@@ -39,13 +39,11 @@ public class ButtonTemplate
     /**
      * Constructs a new template from a quick reply
      *
-     * @param index            the index of this button
      * @param quickReplyButton the non-null quick reply
      * @return a non-null button template
      */
-    public static ButtonTemplate of(int index, @NonNull QuickReplyButton quickReplyButton) {
+    public static ButtonTemplate of(@NonNull QuickReplyButton quickReplyButton) {
         return ButtonTemplate.builder()
-                .index(index)
                 .quickReplyButton(quickReplyButton)
                 .build();
     }
@@ -53,13 +51,11 @@ public class ButtonTemplate
     /**
      * Constructs a new template from an url button
      *
-     * @param index     the index of this button
      * @param urlButton the non-null url button
      * @return a non-null button template
      */
-    public static ButtonTemplate of(int index, @NonNull URLButton urlButton) {
+    public static ButtonTemplate of(@NonNull URLButton urlButton) {
         return ButtonTemplate.builder()
-                .index(index)
                 .urlButton(urlButton)
                 .build();
     }
@@ -67,13 +63,11 @@ public class ButtonTemplate
     /**
      * Constructs a new template from a call button
      *
-     * @param index      the index of this button
      * @param callButton the non-null call button
      * @return a non-null button template
      */
-    public static ButtonTemplate of(int index, @NonNull CallButton callButton) {
+    public static ButtonTemplate of(@NonNull CallButton callButton) {
         return ButtonTemplate.builder()
-                .index(index)
                 .callButton(callButton)
                 .build();
     }

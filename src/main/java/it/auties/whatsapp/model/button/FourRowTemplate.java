@@ -8,16 +8,14 @@ import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import it.auties.whatsapp.model.message.standard.LocationMessage;
 import it.auties.whatsapp.model.message.standard.VideoMessage;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
+import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
@@ -25,56 +23,62 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
  * A model class that represents a four row template
  */
 @AllArgsConstructor
+@NoArgsConstructor(staticName = "of")
 @Data
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class FourRowTemplate
-        implements ProtobufMessage {
+public final class FourRowTemplate
+        implements TemplateFormatter {
     /**
-     * The document title of this row
+     * The document title of this row.
+     * This property is defined only if {@link FourRowTemplate#titleType()} == {@link TitleType#DOCUMENT_MESSAGE}.
      */
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = DocumentMessage.class)
     private DocumentMessage documentTitle;
 
     /**
-     * The highly structured title of this row
+     * The highly structured title of this row.
+     * This property is defined only if {@link FourRowTemplate#titleType()} == {@link TitleType#HIGHLY_STRUCTURED_MESSAGE}.
      */
     @ProtobufProperty(index = 2, type = MESSAGE, implementation = HighlyStructuredMessage.class)
     private HighlyStructuredMessage highlyStructuredTitle;
 
     /**
-     * The image title of this row
+     * The image title of this row.
+     * This property is defined only if {@link FourRowTemplate#titleType()} == {@link TitleType#IMAGE_MESSAGE}.
      */
     @ProtobufProperty(index = 3, type = MESSAGE, implementation = ImageMessage.class)
     private ImageMessage imageTitle;
 
     /**
      * The video title of this row
+     * This property is defined only if {@link FourRowTemplate#titleType()} == {@link TitleType#VIDEO_MESSAGE}.
      */
     @ProtobufProperty(index = 4, type = MESSAGE, implementation = VideoMessage.class)
     private VideoMessage videoTitle;
 
     /**
-     * The location title of this row
+     * The location title of this row.
+     * This property is defined only if {@link FourRowTemplate#titleType()} == {@link TitleType#LOCATION_MESSAGE}.
      */
     @ProtobufProperty(index = 5, type = MESSAGE, implementation = LocationMessage.class)
     private LocationMessage locationTitle;
 
     /**
-     * The content of this template
+     * The content of this row
      */
     @ProtobufProperty(index = 6, type = MESSAGE, implementation = HighlyStructuredMessage.class)
     private HighlyStructuredMessage content;
 
     /**
-     * The footer of this template
+     * The footer of this row
      */
     @ProtobufProperty(index = 7, type = MESSAGE, implementation = HighlyStructuredMessage.class)
     private HighlyStructuredMessage footer;
 
     /**
-     * The buttons of this template
+     * The buttons of this row
      */
     @ProtobufProperty(index = 8, type = MESSAGE, implementation = ButtonTemplate.class, repeated = true)
     private List<ButtonTemplate> buttons;
@@ -91,7 +95,6 @@ public class FourRowTemplate
     private static FourRowTemplate emptyBuilder(HighlyStructuredMessage content, HighlyStructuredMessage footer,
             List<ButtonTemplate> buttons) {
         return createBuilder(content, footer, buttons).build();
-
     }
 
     /**
@@ -158,7 +161,6 @@ public class FourRowTemplate
             HighlyStructuredMessage footer, List<ButtonTemplate> buttons) {
         return createBuilder(content, footer, buttons).videoTitle(title)
                 .build();
-
     }
 
     /**
@@ -180,12 +182,13 @@ public class FourRowTemplate
 
     private static FourRowTemplateBuilder createBuilder(HighlyStructuredMessage content, HighlyStructuredMessage footer,
             List<ButtonTemplate> buttons) {
+        IntStream.range(0, buttons.size())
+                .forEach(index -> buttons.get(index).index(index + 1));
         return FourRowTemplate.builder()
                 .content(content)
                 .footer(footer)
                 .buttons(buttons);
     }
-
 
     /**
      * Returns the type of title that this template wraps
@@ -256,7 +259,7 @@ public class FourRowTemplate
     }
 
     public static class FourRowTemplateBuilder {
-        public FourRowTemplateBuilder hydratedButtons(List<ButtonTemplate> buttons) {
+        public FourRowTemplateBuilder buttons(List<ButtonTemplate> buttons) {
             if (this.buttons == null)
                 this.buttons = new ArrayList<>();
             this.buttons.addAll(buttons);

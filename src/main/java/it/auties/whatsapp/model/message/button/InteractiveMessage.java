@@ -6,6 +6,7 @@ import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.business.BusinessCollection;
 import it.auties.whatsapp.model.business.BusinessNativeFlow;
 import it.auties.whatsapp.model.business.BusinessShop;
+import it.auties.whatsapp.model.button.TemplateFormatter;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
@@ -29,6 +30,7 @@ import static java.util.Objects.requireNonNullElseGet;
  * Not really clear how this could be used, contributions are welcomed.
  */
 @AllArgsConstructor
+@NoArgsConstructor(staticName = "of")
 @Data
 @Builder
 @Jacksonized
@@ -36,7 +38,7 @@ import static java.util.Objects.requireNonNullElseGet;
 @Accessors(fluent = true)
 public final class InteractiveMessage
         extends ContextualMessage
-        implements ButtonMessage {
+        implements ButtonMessage, TemplateFormatter {
     /**
      * Product header
      */

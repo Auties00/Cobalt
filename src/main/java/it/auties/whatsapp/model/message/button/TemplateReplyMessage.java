@@ -11,6 +11,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
 
 import static it.auties.protobuf.base.ProtobufType.*;
 
@@ -22,6 +23,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder
+@Jacksonized
 @Accessors(fluent = true)
 public final class TemplateReplyMessage
         extends ButtonReplyMessage {

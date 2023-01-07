@@ -1215,8 +1215,12 @@ public class Whatsapp {
     public CompletableFuture<MessageInfo> sendMessage(@NonNull MessageInfo info) {
         store().attribute(info);
         attributeMessageMetadata(info);
-        var future = info.chat()
-                .hasUnreadMessages() ?
+        if(info.message().content() instanceof ContextualMessage contextualMessage){
+            contextualMessage.contextInfo(null);
+        }
+
+        info.message(info.message().toBuilder().deviceInfo(null).build());
+        var future = info.chat().hasUnreadMessages() ?
                 markRead(info.chat()).thenComposeAsync(ignored -> socketHandler.sendMessage(info)) :
                 socketHandler.sendMessage(info);
         return future.thenApplyAsync(ignored -> info);
