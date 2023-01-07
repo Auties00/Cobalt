@@ -225,6 +225,15 @@ public record ContactJid(String user, @NonNull Server server, int device, int ag
                 "%s@%s".formatted(leading, server());
     }
 
+    /**
+     * Converts this jid to a non-formatted phone number
+     *
+     * @return a non-null String
+     */
+    public String toPhoneNumber() {
+        return "+%s".formatted(user);
+    }
+
     @Override
     public Object toValue() {
         return toString();

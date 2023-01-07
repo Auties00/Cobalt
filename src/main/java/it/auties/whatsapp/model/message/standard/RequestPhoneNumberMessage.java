@@ -9,10 +9,15 @@ import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.jackson.Jacksonized;
 
+/**
+ * A model class that represents a message holding a request for a phone number inside
+ * Still needs to be implemented by Whatsapp
+ */
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -21,8 +26,11 @@ import lombok.extern.jackson.Jacksonized;
 @ProtobufName("RequestPhoneNumberMessage")
 public final class RequestPhoneNumberMessage
         extends ContextualMessage {
+    /**
+     * The context of this message
+     */
     @ProtobufProperty(index = 1, name = "contextInfo", type = ProtobufType.MESSAGE)
-    @Builder.Default
+    @Default
     private ContextInfo contextInfo = new ContextInfo();
 
     @Override

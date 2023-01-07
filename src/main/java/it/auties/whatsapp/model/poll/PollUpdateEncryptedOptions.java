@@ -14,20 +14,23 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.ArrayList;
 import java.util.List;
 
-@AllArgsConstructor
+/**
+ * A model class that represents the cypher data to decode the votes of a user inside {@link it.auties.whatsapp.model.message.standard.PollUpdateMessage}
+ */
+@AllArgsConstructor(staticName = "of")
 @Data
 @Accessors(fluent = true)
 @Jacksonized
 @Builder
 @ProtobufName("PollVoteMessage")
-public class PollVoteMessage
+public class PollUpdateEncryptedOptions
         implements ProtobufMessage {
     @ProtobufProperty(implementation = byte[].class, index = 1, name = "selectedOptions", repeated = true, type = ProtobufType.BYTES)
     @Default
     private List<byte[]> selectedOptions = new ArrayList<>();
 
-    public static class PollVoteMessageBuilder {
-        public PollVoteMessageBuilder selectedOptions(List<byte[]> selectedOptions) {
+    public static class PollUpdateEncryptedOptionsBuilder {
+        public PollUpdateEncryptedOptionsBuilder selectedOptions(List<byte[]> selectedOptions) {
             if (!selectedOptions$set) {
                 this.selectedOptions$value = selectedOptions;
                 this.selectedOptions$set = true;

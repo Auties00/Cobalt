@@ -5,7 +5,7 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.location.InteractiveLocationAnnotation;
-import it.auties.whatsapp.model.media.MediaConnection;
+import it.auties.whatsapp.model.media.DownloadResult;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.util.Clock;
@@ -161,7 +161,6 @@ public final class ImageMessage
      * Constructs a new builder to create a ImageMessage.
      * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
      *
-     * @param mediaConnection the media connection to use to upload this message
      * @param media           the non-null image that the new message wraps
      * @param mimeType        the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
      * @param caption         the caption of the new message
@@ -170,18 +169,11 @@ public final class ImageMessage
      * @return a non-null new message
      */
     @Builder(builderClassName = "SimpleImageBuilder", builderMethodName = "simpleBuilder")
-    private static ImageMessage customBuilder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media,
-            String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
+    private static ImageMessage customBuilder(byte @NonNull [] media, String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
         var dimensions = Medias.getDimensions(media, false);
-        var upload = Medias.upload(media, IMAGE, mediaConnection);
         return ImageMessage.builder()
-                .mediaSha256(upload.fileSha256())
-                .mediaEncryptedSha256(upload.fileEncSha256())
-                .mediaKey(upload.mediaKey())
+                .decodedMedia(DownloadResult.success(media))
                 .mediaKeyTimestamp(Clock.now())
-                .mediaUrl(upload.url())
-                .mediaDirectPath(upload.directPath())
-                .mediaSize(upload.fileLength())
                 .mimetype(requireNonNullElse(mimeType, IMAGE.defaultMimeType()))
                 .caption(caption)
                 .width(dimensions.width())

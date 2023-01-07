@@ -4,15 +4,18 @@ import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.protobuf.base.ProtobufType;
+import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.crypto.Sha256;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.info.ContextInfo;
+import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
-import it.auties.whatsapp.model.poll.PollOptionName;
+import it.auties.whatsapp.model.poll.PollOption;
 import it.auties.whatsapp.util.KeyHelper;
+import it.auties.whatsapp.util.Validate;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
@@ -20,7 +23,11 @@ import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * A model class that represents a message holding a poll inside
+ */
 @AllArgsConstructor
 @Data
 @Jacksonized
@@ -30,30 +37,80 @@ import java.util.*;
 @ProtobufName("PollCreationMessage")
 public final class PollCreationMessage
         extends ContextualMessage {
+    /**
+     * The title of the poll
+     */
     @ProtobufProperty(index = 2, name = "name", type = ProtobufType.STRING)
     private String title;
 
-    @ProtobufProperty(implementation = PollOptionName.class, index = 3, name = "options", repeated = true, type = ProtobufType.MESSAGE)
-    private List<PollOptionName> selectableOptions;
+    /**
+     * A list of options that can be selected in the poll
+     */
+    @ProtobufProperty(implementation = PollOption.class, index = 3, name = "options", repeated = true, type = ProtobufType.MESSAGE)
+    private List<PollOption> selectableOptions;
 
+    /**
+     * Internal field required by the protobuf to count the number of selectable options
+     */
     @ProtobufProperty(index = 4, name = "selectableOptionsCount", type = ProtobufType.UINT32)
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private int selectableOptionsCount;
 
+    /**
+     * The SHA256 hashes of {@link PollCreationMessage#selectableOptions}
+     */
     @Default
-    private Map<String, PollOptionName> selectableOptionsHashesMap = new HashMap<>();
+    private Map<String, PollOption> selectableOptionsHashesMap = new ConcurrentHashMap<>();
 
+    /**
+     * The map of the options selected by each person that can vote in this poll
+     */
     @Default
-    private Map<ContactJid, List<PollOptionName>> selectedOptionsMap = new HashMap<>();
+    private Map<ContactJid, List<PollOption>> selectedOptionsMap = new ConcurrentHashMap<>();
 
+    /**
+     * The encryption key of this poll
+     */
     @ProtobufProperty(index = 1, name = "encKey", type = ProtobufType.BYTES)
     @Default
     private byte[] encryptionKey = KeyHelper.senderKey();
 
+    /**
+     * The context of this message
+     */
     @ProtobufProperty(index = 5, name = "contextInfo", type = ProtobufType.MESSAGE)
     @Default
     private ContextInfo contextInfo = new ContextInfo();
+
+    /**
+     * Constructs a new builder to create a PollCreationMessage
+     * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
+     *
+     * @param title the non-null title of the poll
+     * @param selectableOptions the null-null non-empty options of the poll
+     * @return a non-null new message
+     */
+    @Builder(builderClassName = "SimplePollCreationMessageBuilder", builderMethodName = "simpleBuilder")
+    private static PollCreationMessage customBuilder(@NonNull String title, @NonNull List<PollOption> selectableOptions) {
+        Validate.isTrue(!selectableOptions.isEmpty(), "Options cannot be empty");
+        return PollCreationMessage.builder()
+                .title(title)
+                .selectableOptions(selectableOptions)
+                .build();
+    }
+
+    /**
+     * Returns an unmodifiable list of the options that a contact voted in this poll
+     *
+     * @param contact the non-null contact that voted in this poll
+     * @return a non-null unmodifiable map
+     */
+    public List<PollOption> getSelectedOptions(@NonNull ContactJidProvider contact) {
+        return Optional.of(selectedOptionsMap.get(contact.toJid()))
+                .map(Collections::unmodifiableList)
+                .orElseGet(List::of);
+    }
 
     @Override
     public MessageType type() {
@@ -65,13 +122,9 @@ public final class PollCreationMessage
         return MessageCategory.STANDARD;
     }
 
-    public List<PollOptionName> getSelectedOptions(@NonNull ContactJidProvider provider) {
-        return Objects.requireNonNullElseGet(selectedOptionsMap.get(provider.toJid()), List::of);
-    }
-
     public static abstract class PollCreationMessageBuilder<C extends PollCreationMessage, B extends PollCreationMessageBuilder<C, B>>
             extends ContextualMessageBuilder<C, B> {
-        public PollCreationMessageBuilder<C, B> selectableOptions(List<PollOptionName> selectableOptions) {
+        public PollCreationMessageBuilder<C, B> selectableOptions(List<PollOption> selectableOptions) {
             if (this.selectableOptions == null) {
                 this.selectableOptions = new ArrayList<>();
             }

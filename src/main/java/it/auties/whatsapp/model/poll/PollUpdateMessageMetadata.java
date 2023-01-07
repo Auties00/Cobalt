@@ -8,6 +8,10 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+/**
+ * A model class that represents additional metadata about a {@link it.auties.whatsapp.model.message.standard.PollUpdateMessage}
+ * Currently empty
+ */
 @AllArgsConstructor
 @Data
 @Accessors(fluent = true)

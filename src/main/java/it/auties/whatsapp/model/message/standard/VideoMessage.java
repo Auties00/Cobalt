@@ -6,7 +6,7 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.location.InteractiveLocationAnnotation;
-import it.auties.whatsapp.model.media.MediaConnection;
+import it.auties.whatsapp.model.media.DownloadResult;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.util.Clock;
@@ -146,7 +146,6 @@ public final class VideoMessage
      * Constructs a new builder to create a VideoMessage that wraps a video.
      * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
      *
-     * @param mediaConnection the media connection to use to upload this message
      * @param media           the non-null video that the new message wraps
      * @param mimeType        the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
      * @param caption         the caption of the new message
@@ -155,19 +154,13 @@ public final class VideoMessage
      * @return a non-null new message
      */
     @Builder(builderClassName = "SimpleVideoMessageBuilder", builderMethodName = "simpleVideoBuilder")
-    private static VideoMessage videoBuilder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media,
+    private static VideoMessage videoBuilder(byte @NonNull [] media,
             String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
         var dimensions = Medias.getDimensions(media, true);
         var duration = Medias.getDuration(media, true);
-        var upload = Medias.upload(media, VIDEO, mediaConnection);
         return VideoMessage.builder()
-                .mediaSha256(upload.fileSha256())
-                .mediaEncryptedSha256(upload.fileEncSha256())
-                .mediaKey(upload.mediaKey())
+                .decodedMedia(DownloadResult.success(media))
                 .mediaKeyTimestamp(Clock.now())
-                .mediaUrl(upload.url())
-                .mediaDirectPath(upload.directPath())
-                .mediaSize(upload.fileLength())
                 .mimetype(requireNonNullElse(mimeType, VIDEO.defaultMimeType()))
                 .thumbnail(thumbnail != null ?
                                    thumbnail :
@@ -187,7 +180,6 @@ public final class VideoMessage
      * This is because Whatsapp doesn't support standard gifs.
      * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
      *
-     * @param mediaConnection the media connection to use to upload this message
      * @param media           the non-null video that the new message wraps
      * @param mimeType        the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
      * @param caption         the caption of the new message
@@ -197,22 +189,16 @@ public final class VideoMessage
      * @return a non-null new message
      */
     @Builder(builderClassName = "SimpleGifBuilder", builderMethodName = "simpleGifBuilder")
-    private static VideoMessage gifBuilder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media,
+    private static VideoMessage gifBuilder(byte @NonNull [] media,
             String mimeType, String caption, VideoMessageAttribution gifAttribution, byte[] thumbnail,
             ContextInfo contextInfo) {
         Validate.isTrue(isNotGif(media, mimeType),
                         "Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
         var dimensions = Medias.getDimensions(media, true);
         var duration = Medias.getDuration(media, true);
-        var upload = Medias.upload(media, VIDEO, mediaConnection);
         return VideoMessage.builder()
-                .mediaSha256(upload.fileSha256())
-                .mediaEncryptedSha256(upload.fileEncSha256())
-                .mediaKey(upload.mediaKey())
+                .decodedMedia(DownloadResult.success(media))
                 .mediaKeyTimestamp(Clock.now())
-                .mediaUrl(upload.url())
-                .mediaDirectPath(upload.directPath())
-                .mediaSize(upload.fileLength())
                 .mimetype(requireNonNullElse(mimeType, VIDEO.defaultMimeType()))
                 .thumbnail(thumbnail != null ?
                                    thumbnail :

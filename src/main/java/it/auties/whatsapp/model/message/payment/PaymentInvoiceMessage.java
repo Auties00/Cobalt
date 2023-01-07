@@ -100,15 +100,14 @@ public final class PaymentInvoiceMessage
         return this;
     }
 
-    /**
-     * This method is not supported
-     *
-     * @return an exception
-     * @throws UnsupportedOperationException always
-     */
     @Override
     public long mediaSize() {
-        throw new UnsupportedOperationException("Invoices don't provide a file size");
+        return 0;
+    }
+
+    @Override
+    public AttachmentProvider mediaSize(long mediaSize) {
+        return this;
     }
 
     /**

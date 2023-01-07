@@ -358,12 +358,12 @@ please check the javadocs if this is what you need.
 
 To access information about the companion device:
 ```java
-var companion = keys.companion();
+var companion = store.userCompanionJid();
 ```
 This object is a jid like any other, but it has the device field filled to distinguish it from the main one.
 Instead, if you only need the phone number:
 ```java
-var phoneNumber = "+%s".formatted(keys.companion().user());
+var phoneNumber = store.userCompanionJid().toPhoneNumber();
 ```
 
 ### How to send messages

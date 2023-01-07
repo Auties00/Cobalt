@@ -10,7 +10,10 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-@AllArgsConstructor
+/**
+ * A model class that represents an option in a {@link it.auties.whatsapp.model.message.standard.PollCreationMessage}
+ */
+@AllArgsConstructor(staticName = "of")
 @Data
 @Accessors(fluent = true)
 @Jacksonized
@@ -18,6 +21,9 @@ import lombok.extern.jackson.Jacksonized;
 @ProtobufName("PollOption")
 public class PollOption
         implements ProtobufMessage {
+    /**
+     * The name of the option
+     */
     @ProtobufProperty(index = 1, name = "name", type = ProtobufType.STRING)
     private String name;
 }

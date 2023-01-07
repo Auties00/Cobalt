@@ -4,7 +4,7 @@ import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.media.MediaConnection;
+import it.auties.whatsapp.model.media.DownloadResult;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.util.Clock;
@@ -131,17 +131,10 @@ public final class StickerMessage
      * @return a non-null new message
      */
     @Builder(builderClassName = "SimpleStickerMessageBuilder", builderMethodName = "simpleBuilder")
-    private static StickerMessage customBuilder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media,
-            String mimeType, byte[] thumbnail, boolean animated, ContextInfo contextInfo) {
-        var upload = Medias.upload(media, STICKER, mediaConnection);
+    private static StickerMessage customBuilder(byte @NonNull [] media, String mimeType, byte[] thumbnail, boolean animated, ContextInfo contextInfo) {
         return StickerMessage.builder()
-                .mediaSha256(upload.fileSha256())
-                .mediaEncryptedSha256(upload.fileEncSha256())
-                .mediaKey(upload.mediaKey())
+                .decodedMedia(DownloadResult.success(media))
                 .mediaKeyTimestamp(Clock.now())
-                .mediaUrl(upload.url())
-                .mediaDirectPath(upload.directPath())
-                .mediaSize(upload.fileLength())
                 .mimetype(requireNonNullElse(mimeType, STICKER.defaultMimeType()))
                 .thumbnail(thumbnail != null ?
                                    thumbnail :

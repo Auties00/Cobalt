@@ -594,8 +594,6 @@ public class RunCITest implements Listener, JacksonProvider {
                 .join();
 
         var document = DocumentMessage.simpleBuilder()
-                .mediaConnection(api.store()
-                        .mediaConnection())
                 .media(MediaUtils.readBytes("http://www.orimi.com/pdf-test.pdf"))
                 .title("Pdf test")
                 .fileName("pdf-test.pdf")
@@ -611,8 +609,6 @@ public class RunCITest implements Listener, JacksonProvider {
                 .join();
 
         var image = ImageMessage.simpleBuilder()
-                .mediaConnection(api.store()
-                        .mediaConnection())
                 .media(MediaUtils.readBytes(
                         "https://2.bp.blogspot.com/-DqXILvtoZFA/Wmmy7gRahnI/AAAAAAAAB0g/59c8l63QlJcqA0591t8-kWF739DiOQLcACEwYBhgL/s1600/pol-venere-botticelli-01.jpg"))
                 .caption("Image test")
@@ -645,8 +641,6 @@ public class RunCITest implements Listener, JacksonProvider {
 
         log("Sending image...");
         var image = ImageMessage.simpleBuilder()
-                .mediaConnection(api.store()
-                        .mediaConnection())
                 .media(MediaUtils.readBytes(
                         "https://2.bp.blogspot.com/-DqXILvtoZFA/Wmmy7gRahnI/AAAAAAAAB0g/59c8l63QlJcqA0591t8-kWF739DiOQLcACEwYBhgL/s1600/pol-venere-botticelli-01.jpg"))
                 .caption("Image test")
@@ -665,8 +659,6 @@ public class RunCITest implements Listener, JacksonProvider {
 
         log("Sending audio...");
         var audio = AudioMessage.simpleBuilder()
-                .mediaConnection(api.store()
-                        .mediaConnection())
                 .media(MediaUtils.readBytes("https://www.kozco.com/tech/organfinale.mp3"))
                 .build();
         var textResponse = api.sendMessage(contact, audio)
@@ -683,8 +675,6 @@ public class RunCITest implements Listener, JacksonProvider {
 
         log("Sending video...");
         var video = VideoMessage.simpleVideoBuilder()
-                .mediaConnection(api.store()
-                        .mediaConnection())
                 .media(MediaUtils.readBytes(VIDEO_URL))
                 .caption("Video")
                 .build();
@@ -702,8 +692,6 @@ public class RunCITest implements Listener, JacksonProvider {
 
         log("Sending gif...");
         var video = VideoMessage.simpleGifBuilder()
-                .mediaConnection(api.store()
-                        .mediaConnection())
                 .media(MediaUtils.readBytes(VIDEO_URL))
                 .caption("Gif")
                 .build();
@@ -722,8 +710,6 @@ public class RunCITest implements Listener, JacksonProvider {
 
         log("Sending pdf...");
         var document = DocumentMessage.simpleBuilder()
-                .mediaConnection(api.store()
-                        .mediaConnection())
                 .media(MediaUtils.readBytes("http://www.orimi.com/pdf-test.pdf"))
                 .title("Pdf test")
                 .fileName("pdf-test.pdf")
@@ -934,7 +920,7 @@ public class RunCITest implements Listener, JacksonProvider {
         var quickReplyButton = HydratedButtonTemplate.of(1, HydratedQuickReplyButton.of("Click me!", "random"));
         var urlButton = HydratedButtonTemplate.of(2, HydratedURLButton.of("Search it", "https://google.com"));
         var callButton = HydratedButtonTemplate.of(3,
-                HydratedCallButton.of("Call me", "+%s".formatted(contact.user())));
+                HydratedCallButton.of("Call me", contact.toPhoneNumber()));
         var fourRowTemplate = HydratedFourRowTemplate.withTextTitleBuilder()
                 .title("A nice title")
                 .body("A nice body")

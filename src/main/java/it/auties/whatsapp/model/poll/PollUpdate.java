@@ -11,6 +11,10 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+/**
+ * A model class that represents metadata about a {@link it.auties.whatsapp.model.message.standard.PollUpdateMessage}
+ * Not currently used, so it's package private
+ */
 @AllArgsConstructor
 @Data
 @Accessors(fluent = true)
@@ -19,12 +23,21 @@ import lombok.extern.jackson.Jacksonized;
 @ProtobufName("PollUpdate")
 public class PollUpdate
         implements ProtobufMessage {
+    /**
+     * The message key
+     */
     @ProtobufProperty(index = 1, name = "pollUpdateMessageKey", type = ProtobufType.MESSAGE)
     private MessageKey pollUpdateMessageKey;
 
+    /**
+     * The vote
+     */
     @ProtobufProperty(index = 2, name = "vote", type = ProtobufType.MESSAGE)
-    private PollVoteMessage vote;
+    private PollUpdateEncryptedOptions vote;
 
+    /**
+     * The timestamp
+     */
     @ProtobufProperty(index = 3, name = "senderTimestampMs", type = ProtobufType.INT64)
     private long senderTimestampMilliseconds;
 }

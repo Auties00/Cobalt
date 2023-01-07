@@ -4,7 +4,7 @@ import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.media.MediaConnection;
+import it.auties.whatsapp.model.media.DownloadResult;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.util.Clock;
@@ -104,7 +104,6 @@ public final class AudioMessage
      * Constructs a new builder to create a AudioMessage.
      * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
      *
-     * @param mediaConnection the media connection to use to upload this message
      * @param media           the non-null image that the new message holds
      * @param mimeType        the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
      * @param contextInfo     the context info that the new message wraps
@@ -112,18 +111,11 @@ public final class AudioMessage
      * @return a non-null new message
      */
     @Builder(builderClassName = "SimpleAudioMessageBuilder", builderMethodName = "simpleBuilder")
-    private static AudioMessage customBuilder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media,
-            ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
+    private static AudioMessage customBuilder(byte @NonNull [] media, ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
         var duration = Medias.getDuration(media, true);
-        var upload = Medias.upload(media, AUDIO, mediaConnection);
         return AudioMessage.builder()
-                .mediaSha256(upload.fileSha256())
-                .mediaEncryptedSha256(upload.fileEncSha256())
-                .mediaKey(upload.mediaKey())
+                .decodedMedia(DownloadResult.success(media))
                 .mediaKeyTimestamp(Clock.now())
-                .mediaUrl(upload.url())
-                .mediaDirectPath(upload.directPath())
-                .mediaSize(upload.fileLength())
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .duration(duration)
                 .mimetype(mimeType)

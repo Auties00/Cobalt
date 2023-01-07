@@ -8,6 +8,7 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.crypto.Hkdf;
+import it.auties.whatsapp.crypto.Sha256;
 import it.auties.whatsapp.listener.*;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.business.BusinessCatalogEntry;
@@ -21,12 +22,12 @@ import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.media.DownloadResult.Status;
 import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
-import it.auties.whatsapp.model.message.standard.GroupInviteMessage;
-import it.auties.whatsapp.model.message.standard.PollCreationMessage;
-import it.auties.whatsapp.model.message.standard.ReactionMessage;
-import it.auties.whatsapp.model.message.standard.TextMessage;
+import it.auties.whatsapp.model.message.standard.*;
+import it.auties.whatsapp.model.poll.PollOption;
+import it.auties.whatsapp.model.poll.PollUpdateEncryptedOptions;
 import it.auties.whatsapp.model.privacy.GdprAccountReport;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
@@ -41,11 +42,8 @@ import it.auties.whatsapp.model.sync.*;
 import it.auties.whatsapp.serialization.ControllerProviderLoader;
 import it.auties.whatsapp.socket.SocketHandler;
 import it.auties.whatsapp.util.*;
-import lombok.Builder;
+import lombok.*;
 import lombok.Builder.Default;
-import lombok.Data;
-import lombok.NonNull;
-import lombok.With;
 import lombok.experimental.Accessors;
 
 import java.io.IOException;
@@ -1216,19 +1214,7 @@ public class Whatsapp {
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull MessageInfo info) {
         store().attribute(info);
-        info.ignore(true);
-        info.key()
-                .chatJid(info.chatJid()
-                                 .toUserJid());
-        info.key()
-                .senderJid(info.senderJid() == null ?
-                                   null :
-                                   info.senderJid()
-                                           .toUserJid());
-        createPreview(info);
-        parseEphemeralMessage(info);
-        fixButtons(info);
-        addMessageSecret(info);
+        attributeMessageMetadata(info);
         var future = info.chat()
                 .hasUnreadMessages() ?
                 markRead(info.chat()).thenComposeAsync(ignored -> socketHandler.sendMessage(info)) :
@@ -1236,16 +1222,143 @@ public class Whatsapp {
         return future.thenApplyAsync(ignored -> info);
     }
 
-    private void addMessageSecret(MessageInfo info) {
-        if (!(info.message().content() instanceof PollCreationMessage pollCreationMessage)) {
+    private void attributeMessageMetadata(MessageInfo info) {
+        info.ignore(true);
+        info.key().chatJid(info.chatJid().toUserJid());
+        info.key().senderJid(info.senderJid() == null ? null : info.senderJid().toUserJid());
+        fixEphemeralMessage(info);
+        switch (info.message().content()){
+            case TextMessage textMessage -> attributeTextMessage(textMessage);
+            case MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
+            case PollCreationMessage pollCreationMessage -> attributePollCreationMessage(info, pollCreationMessage);
+            case PollUpdateMessage pollUpdateMessage -> attributePollUpdateMessage(pollUpdateMessage);
+            case GroupInviteMessage groupInviteMessage -> attributeGroupInviteMessage(info, groupInviteMessage); // This is not needed probably, but Whatsapp uses a text message by default, so maybe it makes sense
+            case ButtonMessage buttonMessage -> info.message(info.message().toViewOnce()); // Credit to Baileys: https://github.com/adiwajshing/Baileys/blob/f0bdb12e56cea8b0bfbb0dff37c01690274e3e31/src/Utils/messages.ts#L781
+            default -> {}
+        }
+    }
+
+    private void attributeGroupInviteMessage(MessageInfo info, GroupInviteMessage groupInviteMessage) {
+        Validate.isTrue(groupInviteMessage.code() != null, "Invalid message code");
+        var url = "https://chat.whatsapp.com/%s".formatted(groupInviteMessage.code());
+        var preview = LinkPreview.createPreview(URI.create(url))
+                .stream()
+                .map(LinkPreviewResult::images)
+                .map(Collection::stream)
+                .map(Stream::findFirst)
+                .flatMap(Optional::stream)
+                .findFirst()
+                .map(LinkPreviewMedia::uri)
+                .orElse(null);
+        var replacement = TextMessage.builder()
+                .text(groupInviteMessage.caption() != null ?
+                              "%s: %s".formatted(groupInviteMessage.caption(), url) :
+                              url)
+                .description("WhatsApp Group Invite")
+                .title(groupInviteMessage.groupName())
+                .previewType(NONE)
+                .thumbnail(readGroupThumbnail(preview))
+                .matchedText(url)
+                .canonicalUrl(url)
+                .build();
+        info.message(MessageContainer.of(replacement));
+    }
+
+    private void attributePollUpdateMessage(PollUpdateMessage pollUpdateMessage) {
+        if(pollUpdateMessage.encryptedMetadata() != null){
             return;
         }
 
-        var pollEncryptionKey = Objects.requireNonNullElseGet(pollCreationMessage.encryptionKey(), KeyHelper::senderKey);
+        try {
+            var iv = ofRandom(12)
+                    .toByteArray();
+            var additionalData = "%s\0%s".formatted(pollUpdateMessage.pollCreationMessageKey().id(), store().userCompanionJid().toUserJid())
+                    .getBytes(StandardCharsets.UTF_8);
+            var encryptedOptions = pollUpdateMessage.votes()
+                    .stream()
+                    .map(PollOption::name)
+                    .map(Sha256::calculate)
+                    .map(input -> AesGmc.encrypt(iv, input, pollUpdateMessage.pollCreationMessage().encryptionKey(), additionalData))
+                    .toList();
+            var pollUpdateEncryptedOptions = PollUpdateEncryptedOptions.of(encryptedOptions);
+            pollUpdateMessage.encryptedMetadata().iv(iv);
+            pollUpdateMessage.encryptedMetadata().iv(PROTOBUF.writeValueAsBytes(pollUpdateEncryptedOptions));
+        }catch (IOException exception) {
+            throw new UncheckedIOException("Cannot encode vote", exception);
+        }
+    }
+
+    private static void attributePollCreationMessage(MessageInfo info, PollCreationMessage pollCreationMessage) {
+        var pollEncryptionKey = requireNonNullElseGet(pollCreationMessage.encryptionKey(), KeyHelper::senderKey);
         pollCreationMessage.encryptionKey(pollEncryptionKey);
         info.message()
                 .deviceInfo()
                 .messageSecret(pollEncryptionKey);
+    }
+
+    private void attributeMediaMessage(MediaMessage mediaMessage) {
+        Validate.isTrue(mediaMessage.decodedMedia().status() == Status.SUCCESS,
+                        "Cannot upload a message whose content isn't available(status: %s)".formatted(
+                                mediaMessage.decodedMedia().status()));
+        var upload = Medias.upload(mediaMessage.decodedMedia().media().get(), mediaMessage.mediaType(), store().mediaConnection());
+        mediaMessage.mediaSha256(upload.fileSha256())
+                .mediaEncryptedSha256(upload.fileEncSha256())
+                .mediaKey(upload.mediaKey())
+                .mediaUrl(upload.url())
+                .mediaDirectPath(upload.directPath())
+                .mediaSize(upload.fileLength());
+    }
+
+    private void attributeTextMessage(TextMessage textMessage) {
+        if (socketHandler.options()
+                .textPreviewSetting() == TextPreviewSetting.DISABLED) {
+            return;
+        }
+
+        var match = LinkPreview.createPreview(textMessage.text())
+                .orElse(null);
+        if (match == null) {
+            return;
+        }
+
+        if (socketHandler.options()
+                .textPreviewSetting() == TextPreviewSetting.ENABLED_WITH_INFERENCE && !match.text()
+                .equals(match.result()
+                                .uri()
+                                .toString())) {
+            var parsed = textMessage.text()
+                    .replace(match.text(), match.result()
+                            .uri()
+                            .toString());
+            textMessage.text(parsed);
+        }
+
+        var imageUri = match.result()
+                .images()
+                .stream()
+                .reduce(Whatsapp::compareDimensions)
+                .map(LinkPreviewMedia::uri)
+                .orElse(null);
+        var videoUri = match.result()
+                .videos()
+                .stream()
+                .reduce(Whatsapp::compareDimensions)
+                .map(LinkPreviewMedia::uri)
+                .orElse(null);
+        textMessage.canonicalUrl(requireNonNullElse(videoUri, match.result()
+                .uri()).toString());
+        textMessage.matchedText(match.result()
+                                        .uri()
+                                        .toString());
+        textMessage.thumbnail(Medias.getPreview(imageUri)
+                                      .orElse(null));
+        textMessage.description(match.result()
+                                        .siteDescription());
+        textMessage.title(match.result()
+                                  .title());
+        textMessage.previewType(videoUri != null ?
+                                        VIDEO :
+                                        NONE);
     }
 
     /**
@@ -1268,111 +1381,6 @@ public class Whatsapp {
         return store().addPendingReply(ReplyHandler.of(id));
     }
 
-    // Credit to Baileys
-    // https://github.com/adiwajshing/Baileys/blob/f0bdb12e56cea8b0bfbb0dff37c01690274e3e31/src/Utils/messages.ts#L781
-    private void fixButtons(MessageInfo info) {
-        if (info.message()
-                .category() != MessageCategory.BUTTON) {
-            return;
-        }
-
-        info.message(info.message()
-                             .toViewOnce());
-    }
-
-    private void createPreview(MessageInfo info) {
-        switch (info.message()
-                .content()) {
-            case TextMessage textMessage -> {
-                if (socketHandler.options()
-                        .textPreviewSetting() == TextPreviewSetting.DISABLED) {
-                    return;
-                }
-
-                var match = LinkPreview.createPreview(textMessage.text())
-                        .orElse(null);
-                if (match == null) {
-                    return;
-                }
-
-                if (socketHandler.options()
-                        .textPreviewSetting() == TextPreviewSetting.ENABLED_WITH_INFERENCE && !match.text()
-                        .equals(match.result()
-                                        .uri()
-                                        .toString())) {
-                    var parsed = textMessage.text()
-                            .replace(match.text(), match.result()
-                                    .uri()
-                                    .toString());
-                    textMessage.text(parsed);
-                }
-
-                var imageUri = match.result()
-                        .images()
-                        .stream()
-                        .reduce(Whatsapp::compareDimensions)
-                        .map(LinkPreviewMedia::uri)
-                        .orElse(null);
-                var videoUri = match.result()
-                        .videos()
-                        .stream()
-                        .reduce(Whatsapp::compareDimensions)
-                        .map(LinkPreviewMedia::uri)
-                        .orElse(null);
-                textMessage.canonicalUrl(Objects.requireNonNullElse(videoUri, match.result()
-                                .uri())
-                                                 .toString());
-                textMessage.matchedText(match.result()
-                                                .uri()
-                                                .toString());
-                textMessage.thumbnail(Medias.getPreview(imageUri)
-                                              .orElse(null));
-                textMessage.description(match.result()
-                                                .siteDescription());
-                textMessage.title(match.result()
-                                          .title());
-                textMessage.previewType(videoUri != null ?
-                                                VIDEO :
-                                                NONE);
-            }
-
-            case GroupInviteMessage inviteMessage -> {
-                if (!(info.message()
-                        .content() instanceof GroupInviteMessage invite)) {
-                    return;
-                }
-
-                // This is not needed probably, but Whatsapp uses a text message by default, so maybe it makes sense
-                Validate.isTrue(invite.code() != null, "Invalid message code");
-                var url = "https://chat.whatsapp.com/%s".formatted(invite.code());
-                var preview = LinkPreview.createPreview(URI.create(url))
-                        .stream()
-                        .map(LinkPreviewResult::images)
-                        .map(Collection::stream)
-                        .map(Stream::findFirst)
-                        .flatMap(Optional::stream)
-                        .findFirst()
-                        .map(LinkPreviewMedia::uri)
-                        .orElse(null);
-                var replacement = TextMessage.builder()
-                        .text(invite.caption() != null ?
-                                      "%s: %s".formatted(invite.caption(), url) :
-                                      url)
-                        .description("WhatsApp Group Invite")
-                        .title(invite.groupName())
-                        .previewType(NONE)
-                        .thumbnail(readGroupThumbnail(preview))
-                        .matchedText(url)
-                        .canonicalUrl(url)
-                        .build();
-                info.message(MessageContainer.of(replacement));
-            }
-
-            default -> {
-            }
-        }
-    }
-
     public byte[] readGroupThumbnail(URI preview) {
         try {
             if (preview == null) {
@@ -1388,18 +1396,15 @@ public class Whatsapp {
         }
     }
 
-    private void parseEphemeralMessage(MessageInfo info) {
+    private void fixEphemeralMessage(MessageInfo info) {
         if (info.message()
                 .hasCategory(MessageCategory.SERVER)) {
             return;
         }
 
-        if (!info.chat()
-                .isEphemeral()) {
-            if (info.message()
-                    .type() == MessageType.EPHEMERAL) {
-                info.message(info.message()
-                                     .unbox());
+        if (!info.chat().isEphemeral()) {
+            if (info.message().type() == MessageType.EPHEMERAL) {
+                info.message(info.message().unbox());
             }
 
             return;
@@ -1432,8 +1437,7 @@ public class Whatsapp {
      */
     public CompletableFuture<List<HasWhatsappResponse>> hasWhatsapp(@NonNull ContactJidProvider @NonNull ... chats) {
         var contactNodes = Arrays.stream(chats)
-                .map(jid -> Node.of("contact", "+%s".formatted(jid.toJid()
-                                                                       .user())))
+                .map(jid -> Node.of("contact", jid.toJid().toPhoneNumber()))
                 .toArray(Node[]::new);
         return socketHandler.sendInteractiveQuery(Node.of("contact"), Node.ofChildren("user", contactNodes))
                 .thenApplyAsync(nodes -> nodes.stream()

@@ -144,7 +144,7 @@ public class ContactCard
     }
 
     private void addPhoneNumber(VCard vcard, String type, ContactJid contact) {
-        var telephone = new Telephone("+%s".formatted(contact.user()));
+        var telephone = new Telephone(contact.toPhoneNumber());
         telephone.getParameters()
                 .setType(type);
         telephone.getParameters()

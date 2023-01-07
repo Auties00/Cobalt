@@ -4,7 +4,7 @@ import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.media.MediaConnection;
+import it.auties.whatsapp.model.media.DownloadResult;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.util.Clock;
@@ -110,7 +110,6 @@ public final class DocumentMessage
      * Constructs a new builder to create a DocumentMessage.
      * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
      *
-     * @param mediaConnection the media connection to use to upload this message
      * @param media           the non-null document that the new message wraps
      * @param mimeType        the mime type of the new message, by default {@link MediaMessageType#defaultMimeType()}
      * @param title           the title of the document that the new message wraps
@@ -121,17 +120,10 @@ public final class DocumentMessage
      * @return a non-null new message
      */
     @Builder(builderClassName = "SimpleDocumentMessageBuilder", builderMethodName = "simpleBuilder")
-    private static DocumentMessage customBuilder(@NonNull MediaConnection mediaConnection, byte @NonNull [] media,
-            String mimeType, String title, int pageCount, String fileName, byte[] thumbnail, ContextInfo contextInfo) {
-        var upload = Medias.upload(media, DOCUMENT, mediaConnection);
+    private static DocumentMessage customBuilder(byte @NonNull [] media, String mimeType, String title, int pageCount, String fileName, byte[] thumbnail, ContextInfo contextInfo) {
         return DocumentMessage.builder()
-                .mediaSha256(upload.fileSha256())
-                .mediaEncryptedSha256(upload.fileEncSha256())
-                .mediaKey(upload.mediaKey())
+                .decodedMedia(DownloadResult.success(media))
                 .mediaKeyTimestamp(Clock.now())
-                .mediaUrl(upload.url())
-                .mediaDirectPath(upload.directPath())
-                .mediaSize(upload.fileLength())
                 .mimetype(Optional.ofNullable(mimeType)
                                   .or(() -> Medias.getMimeType(fileName))
                                   .or(() -> Medias.getMimeType(media))

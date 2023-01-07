@@ -25,7 +25,7 @@ import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.model.message.standard.PollCreationMessage;
 import it.auties.whatsapp.model.message.standard.PollUpdateMessage;
 import it.auties.whatsapp.model.message.standard.ReactionMessage;
-import it.auties.whatsapp.model.poll.PollVoteMessage;
+import it.auties.whatsapp.model.poll.PollUpdateEncryptedOptions;
 import it.auties.whatsapp.model.request.Attributes;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.setting.EphemeralSetting;
@@ -557,7 +557,7 @@ class MessageHandler
             var decrypted = AesGmc.decrypt(pollUpdateMessage.encryptedMetadata()
                                                   .iv(), pollUpdateMessage.encryptedMetadata()
                                                   .payload(), useCaseSecret, additionalData);
-            var pollVoteMessage = PROTOBUF.readMessage(decrypted, PollVoteMessage.class);
+            var pollVoteMessage = PROTOBUF.readMessage(decrypted, PollUpdateEncryptedOptions.class);
             var selectedOptions = pollVoteMessage.selectedOptions()
                     .stream()
                     .map(hash -> Bytes.of(hash)
