@@ -1,5 +1,9 @@
 package it.auties.whatsapp.model.info;
 
+import static it.auties.protobuf.base.ProtobufType.BOOL;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.UINT64;
+
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.business.BusinessActorsType;
@@ -12,8 +16,6 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import static it.auties.protobuf.base.ProtobufType.*;
-
 /**
  * A model class that holds the information related to the identity of a business account.
  */
@@ -24,52 +26,53 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Accessors(fluent = true)
 @ProtobufName("BizIdentityInfo")
 public final class BusinessIdentityInfo
-        implements Info {
-    /**
-     * The level of verification of this account
-     */
-    @ProtobufProperty(index = 1, type = MESSAGE, implementation = BusinessVerifiedLevel.class)
-    private BusinessVerifiedLevel level;
+    implements Info {
 
-    /**
-     * The certificate of this account
-     */
-    @ProtobufProperty(index = 2, type = MESSAGE, implementation = BusinessVerifiedNameCertificate.class)
-    private BusinessVerifiedNameCertificate certificate;
+  /**
+   * The level of verification of this account
+   */
+  @ProtobufProperty(index = 1, type = MESSAGE, implementation = BusinessVerifiedLevel.class)
+  private BusinessVerifiedLevel level;
 
-    /**
-     * Indicates whether this account has a signed certificate
-     */
-    @ProtobufProperty(index = 3, type = BOOL)
-    private boolean signed;
+  /**
+   * The certificate of this account
+   */
+  @ProtobufProperty(index = 2, type = MESSAGE, implementation = BusinessVerifiedNameCertificate.class)
+  private BusinessVerifiedNameCertificate certificate;
 
-    /**
-     * Indicates whether the signed certificate of this account has been revoked
-     */
-    @ProtobufProperty(index = 4, type = BOOL)
-    private boolean revoked;
+  /**
+   * Indicates whether this account has a signed certificate
+   */
+  @ProtobufProperty(index = 3, type = BOOL)
+  private boolean signed;
 
-    /**
-     * Indicates where this account is hosted
-     */
-    @ProtobufProperty(index = 5, type = MESSAGE, implementation = BusinessStorageType.class)
-    private BusinessStorageType hostStorage;
+  /**
+   * Indicates whether the signed certificate of this account has been revoked
+   */
+  @ProtobufProperty(index = 4, type = BOOL)
+  private boolean revoked;
 
-    /**
-     * The actual actors of this account
-     */
-    @ProtobufProperty(index = 6, type = MESSAGE, implementation = BusinessActorsType.class)
-    private BusinessActorsType actualActors;
+  /**
+   * Indicates where this account is hosted
+   */
+  @ProtobufProperty(index = 5, type = MESSAGE, implementation = BusinessStorageType.class)
+  private BusinessStorageType hostStorage;
 
-    /**
-     * The privacy mode of this account
-     */
-    @ProtobufProperty(index = 7, type = UINT64)
-    private long privacyModeTs;
+  /**
+   * The actual actors of this account
+   */
+  @ProtobufProperty(index = 6, type = MESSAGE, implementation = BusinessActorsType.class)
+  private BusinessActorsType actualActors;
 
-    /**
-     * Feature controls
-     */
-    @ProtobufProperty(index = 8, type = UINT64)
-    private long featureControls;
+  /**
+   * The privacy mode of this account
+   */
+  @ProtobufProperty(index = 7, type = UINT64)
+  private long privacyModeTs;
+
+  /**
+   * Feature controls
+   */
+  @ProtobufProperty(index = 8, type = UINT64)
+  private long featureControls;
 }

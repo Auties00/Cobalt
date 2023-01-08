@@ -16,17 +16,18 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @ProtobufName("PrimaryVersionAction")
 public final class PrimaryVersionAction
-        implements Action {
-    @ProtobufProperty(index = 1, name = "version", type = ProtobufType.STRING)
-    private String version;
+    implements Action {
 
-    /**
-     * Always throws an exception as this action cannot be serialized
-     *
-     * @return an exception
-     */
-    @Override
-    public String indexName() {
-        throw new UnsupportedOperationException("Cannot send action: no index name");
-    }
+  @ProtobufProperty(index = 1, name = "version", type = ProtobufType.STRING)
+  private String version;
+
+  /**
+   * Always throws an exception as this action cannot be serialized
+   *
+   * @return an exception
+   */
+  @Override
+  public String indexName() {
+    throw new UnsupportedOperationException("Cannot send action: no index name");
+  }
 }

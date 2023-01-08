@@ -1,5 +1,9 @@
 package it.auties.whatsapp.model.message.standard;
 
+import static it.auties.protobuf.base.ProtobufType.INT64;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.STRING;
+
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.message.model.MessageCategory;
@@ -11,8 +15,6 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import static it.auties.protobuf.base.ProtobufType.*;
-
 /**
  * A model class that represents a message holding an emoji reaction inside
  */
@@ -22,38 +24,39 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Jacksonized
 @Accessors(fluent = true)
 public final class ReactionMessage
-        implements Message {
-    /**
-     * The key of the quoted message
-     */
-    @ProtobufProperty(index = 1, type = MESSAGE, implementation = MessageKey.class)
-    private MessageKey key;
+    implements Message {
 
-    /**
-     * The operation as text
-     */
-    @ProtobufProperty(index = 2, type = STRING)
-    private String content;
+  /**
+   * The key of the quoted message
+   */
+  @ProtobufProperty(index = 1, type = MESSAGE, implementation = MessageKey.class)
+  private MessageKey key;
 
-    /**
-     * The grouping key
-     */
-    @ProtobufProperty(index = 3, type = STRING)
-    private String groupingKey;
+  /**
+   * The operation as text
+   */
+  @ProtobufProperty(index = 2, type = STRING)
+  private String content;
 
-    /**
-     * The timestamp of this message in milliseconds
-     */
-    @ProtobufProperty(index = 4, type = INT64)
-    private Long timestamp;
+  /**
+   * The grouping key
+   */
+  @ProtobufProperty(index = 3, type = STRING)
+  private String groupingKey;
 
-    @Override
-    public MessageType type() {
-        return MessageType.REACTION;
-    }
+  /**
+   * The timestamp of this message in milliseconds
+   */
+  @ProtobufProperty(index = 4, type = INT64)
+  private Long timestamp;
 
-    @Override
-    public MessageCategory category() {
-        return MessageCategory.STANDARD;
-    }
+  @Override
+  public MessageType type() {
+    return MessageType.REACTION;
+  }
+
+  @Override
+  public MessageCategory category() {
+    return MessageCategory.STANDARD;
+  }
 }

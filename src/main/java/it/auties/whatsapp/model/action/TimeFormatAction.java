@@ -16,17 +16,18 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @ProtobufName("TimeFormatAction")
 public final class TimeFormatAction
-        implements Action {
-    @ProtobufProperty(index = 1, name = "isTwentyFourHourFormatEnabled", type = ProtobufType.BOOL)
-    private boolean twentyFourHourFormatEnabled;
+    implements Action {
 
-    /**
-     * Always throws an exception as this action cannot be serialized
-     *
-     * @return an exception
-     */
-    @Override
-    public String indexName() {
-        throw new UnsupportedOperationException("Cannot send action: no index name");
-    }
+  @ProtobufProperty(index = 1, name = "isTwentyFourHourFormatEnabled", type = ProtobufType.BOOL)
+  private boolean twentyFourHourFormatEnabled;
+
+  /**
+   * Always throws an exception as this action cannot be serialized
+   *
+   * @return an exception
+   */
+  @Override
+  public String indexName() {
+    throw new UnsupportedOperationException("Cannot send action: no index name");
+  }
 }

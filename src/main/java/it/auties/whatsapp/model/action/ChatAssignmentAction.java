@@ -16,17 +16,18 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @ProtobufName("ChatAssignmentAction")
 public final class ChatAssignmentAction
-        implements Action {
-    @ProtobufProperty(index = 1, name = "deviceAgentID", type = ProtobufType.STRING)
-    private String deviceAgentID;
+    implements Action {
 
-    /**
-     * Always throws an exception as this action cannot be serialized
-     *
-     * @return an exception
-     */
-    @Override
-    public String indexName() {
-        throw new UnsupportedOperationException("Cannot send action: no index name");
-    }
+  @ProtobufProperty(index = 1, name = "deviceAgentID", type = ProtobufType.STRING)
+  private String deviceAgentID;
+
+  /**
+   * Always throws an exception as this action cannot be serialized
+   *
+   * @return an exception
+   */
+  @Override
+  public String indexName() {
+    throw new UnsupportedOperationException("Cannot send action: no index name");
+  }
 }

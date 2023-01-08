@@ -1,8 +1,9 @@
 package it.auties.whatsapp.model.sync;
 
 public sealed interface Syncable
-        permits RecordSync, MutationSync {
-    RecordSync.Operation operation();
+    permits RecordSync, MutationSync {
 
-    RecordSync record();
+  RecordSync.Operation operation();
+
+  RecordSync record();
 }

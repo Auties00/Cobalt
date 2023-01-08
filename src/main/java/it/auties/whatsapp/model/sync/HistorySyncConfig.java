@@ -17,13 +17,14 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @ProtobufName("HistorySyncConfig")
 public class HistorySyncConfig
-        implements ProtobufMessage {
-    @ProtobufProperty(index = 1, name = "fullSyncDaysLimit", type = ProtobufType.UINT32)
-    private int fullSyncDaysLimit;
+    implements ProtobufMessage {
 
-    @ProtobufProperty(index = 2, name = "fullSyncSizeMbLimit", type = ProtobufType.UINT32)
-    private int fullSyncSizeMbLimit;
+  @ProtobufProperty(index = 1, name = "fullSyncDaysLimit", type = ProtobufType.UINT32)
+  private int fullSyncDaysLimit;
 
-    @ProtobufProperty(index = 3, name = "storageQuotaMb", type = ProtobufType.UINT32)
-    private int storageQuotaMb;
+  @ProtobufProperty(index = 2, name = "fullSyncSizeMbLimit", type = ProtobufType.UINT32)
+  private int fullSyncSizeMbLimit;
+
+  @ProtobufProperty(index = 3, name = "storageQuotaMb", type = ProtobufType.UINT32)
+  private int storageQuotaMb;
 }

@@ -1,18 +1,17 @@
 package it.auties.whatsapp.model.button;
 
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.STRING;
+
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
-import static it.auties.protobuf.base.ProtobufType.STRING;
 
 /**
  * A model class that represents a section of buttons
@@ -23,25 +22,28 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Jacksonized
 @Accessors(fluent = true)
 public class ButtonSection
-        implements ProtobufMessage {
-    /**
-     * The title of the section
-     */
-    @ProtobufProperty(index = 1, type = STRING)
-    private String title;
+    implements ProtobufMessage {
 
-    /**
-     * The rows in this section
-     */
-    @ProtobufProperty(index = 2, type = MESSAGE, implementation = ButtonRow.class, repeated = true)
-    private List<ButtonRow> rows;
+  /**
+   * The title of the section
+   */
+  @ProtobufProperty(index = 1, type = STRING)
+  private String title;
 
-    public static class ButtonSectionBuilder {
-        public ButtonSectionBuilder rows(List<ButtonRow> rows) {
-            if (this.rows == null)
-                this.rows = new ArrayList<>();
-            this.rows.addAll(rows);
-            return this;
-        }
+  /**
+   * The rows in this section
+   */
+  @ProtobufProperty(index = 2, type = MESSAGE, implementation = ButtonRow.class, repeated = true)
+  private List<ButtonRow> rows;
+
+  public static class ButtonSectionBuilder {
+
+    public ButtonSectionBuilder rows(List<ButtonRow> rows) {
+      if (this.rows == null) {
+        this.rows = new ArrayList<>();
+      }
+      this.rows.addAll(rows);
+      return this;
     }
+  }
 }

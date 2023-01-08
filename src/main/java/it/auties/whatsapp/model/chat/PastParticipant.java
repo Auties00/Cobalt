@@ -19,23 +19,24 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @ProtobufName("PastParticipant")
 public class PastParticipant
-        implements ProtobufMessage {
-    @ProtobufProperty(index = 1, name = "userJid", type = ProtobufType.STRING)
-    private ContactJid userJid;
+    implements ProtobufMessage {
 
-    @ProtobufProperty(index = 2, name = "leaveReason", type = ProtobufType.MESSAGE)
-    private LeaveReason leaveReason;
+  @ProtobufProperty(index = 1, name = "userJid", type = ProtobufType.STRING)
+  private ContactJid userJid;
 
-    @ProtobufProperty(index = 3, name = "leaveTs", type = ProtobufType.UINT64)
-    private long leaveTimestamp;
+  @ProtobufProperty(index = 2, name = "leaveReason", type = ProtobufType.MESSAGE)
+  private LeaveReason leaveReason;
 
-    @AllArgsConstructor
-    public enum LeaveReason
-            implements ProtobufMessage {
-        LEFT(0),
-        REMOVED(1);
+  @ProtobufProperty(index = 3, name = "leaveTs", type = ProtobufType.UINT64)
+  private long leaveTimestamp;
 
-        @Getter
-        private final int index;
-    }
+  @AllArgsConstructor
+  public enum LeaveReason
+      implements ProtobufMessage {
+    LEFT(0),
+    REMOVED(1);
+
+    @Getter
+    private final int index;
+  }
 }

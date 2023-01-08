@@ -1,19 +1,18 @@
 package it.auties.whatsapp.model.business;
 
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.UINT32;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
+import java.util.Arrays;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
-
-import java.util.Arrays;
-
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
-import static it.auties.protobuf.base.ProtobufType.UINT32;
 
 /**
  * A model class that represents a time component
@@ -24,128 +23,122 @@ import static it.auties.protobuf.base.ProtobufType.UINT32;
 @Jacksonized
 @Accessors(fluent = true)
 public class BusinessDateTimeComponent
-        implements ProtobufMessage {
+    implements ProtobufMessage {
+
+  /**
+   * The day of the week
+   */
+  @ProtobufProperty(index = 1, type = MESSAGE, implementation = DayOfWeek.class)
+  private DayOfWeek dayOfWeek;
+
+  /**
+   * The year
+   */
+  @ProtobufProperty(index = 2, type = UINT32)
+  private int year;
+
+  /**
+   * The month
+   */
+  @ProtobufProperty(index = 3, type = UINT32)
+  private int month;
+
+  /**
+   * The day of the month
+   */
+  @ProtobufProperty(index = 4, type = UINT32)
+  private int dayOfMonth;
+
+  /**
+   * The hour
+   */
+  @ProtobufProperty(index = 5, type = UINT32)
+  private int hour;
+
+  /**
+   * The minute
+   */
+  @ProtobufProperty(index = 6, type = UINT32)
+  private int minute;
+
+  /**
+   * The type of calendar
+   */
+  @ProtobufProperty(index = 7, type = MESSAGE, implementation = CalendarType.class)
+  private CalendarType calendar;
+
+  /**
+   * The constants of this enumerated type describe the days of the week
+   */
+  @AllArgsConstructor
+  @Accessors(fluent = true)
+  public enum DayOfWeek
+      implements ProtobufMessage {
     /**
-     * The day of the week
+     * Monday
      */
-    @ProtobufProperty(index = 1, type = MESSAGE, implementation = DayOfWeek.class)
-    private DayOfWeek dayOfWeek;
-
+    MONDAY(1),
     /**
-     * The year
+     * Tuesday
      */
-    @ProtobufProperty(index = 2, type = UINT32)
-    private int year;
-
+    TUESDAY(2),
     /**
-     * The month
+     * Wednesday
      */
-    @ProtobufProperty(index = 3, type = UINT32)
-    private int month;
-
+    WEDNESDAY(3),
     /**
-     * The day of the month
+     * Thursday
      */
-    @ProtobufProperty(index = 4, type = UINT32)
-    private int dayOfMonth;
-
+    THURSDAY(4),
     /**
-     * The hour
+     * Friday
      */
-    @ProtobufProperty(index = 5, type = UINT32)
-    private int hour;
-
+    FRIDAY(5),
     /**
-     * The minute
+     * Saturday
      */
-    @ProtobufProperty(index = 6, type = UINT32)
-    private int minute;
-
+    SATURDAY(6),
     /**
-     * The type of calendar
+     * Sunday
      */
-    @ProtobufProperty(index = 7, type = MESSAGE, implementation = CalendarType.class)
-    private CalendarType calendar;
+    SUNDAY(7);
 
-    /**
-     * The constants of this enumerated type describe the days of the week
-     */
-    @AllArgsConstructor
-    @Accessors(fluent = true)
-    public enum DayOfWeek
-            implements ProtobufMessage {
-        /**
-         * Monday
-         */
-        MONDAY(1),
+    @Getter
+    private final int index;
 
-        /**
-         * Tuesday
-         */
-        TUESDAY(2),
-
-        /**
-         * Wednesday
-         */
-        WEDNESDAY(3),
-
-        /**
-         * Thursday
-         */
-        THURSDAY(4),
-
-        /**
-         * Friday
-         */
-        FRIDAY(5),
-
-        /**
-         * Saturday
-         */
-        SATURDAY(6),
-
-        /**
-         * Sunday
-         */
-        SUNDAY(7);
-
-        @Getter
-        private final int index;
-
-        @JsonCreator
-        public static DayOfWeek of(int index) {
-            return Arrays.stream(values())
-                    .filter(entry -> entry.index() == index)
-                    .findFirst()
-                    .orElse(null);
-        }
+    @JsonCreator
+    public static DayOfWeek of(int index) {
+      return Arrays.stream(values())
+          .filter(entry -> entry.index() == index)
+          .findFirst()
+          .orElse(null);
     }
+  }
 
+  /**
+   * The constants of this enumerated type describe the supported calendar types
+   */
+  @AllArgsConstructor
+  @Accessors(fluent = true)
+  public enum CalendarType
+      implements ProtobufMessage {
     /**
-     * The constants of this enumerated type describe the supported calendar types
+     * Gregorian calendar
      */
-    @AllArgsConstructor
-    @Accessors(fluent = true)
-    public enum CalendarType
-            implements ProtobufMessage {
-        /**
-         * Gregorian calendar
-         */
-        GREGORIAN(1),
+    GREGORIAN(1),
+    /**
+     * Solar calendar
+     */
+    SOLAR_HIJRI(2);
 
-        /**
-         * Solar calendar
-         */
-        SOLAR_HIJRI(2);
+    @Getter
+    private final int index;
 
-        @Getter
-        private final int index;
-
-        public static CalendarType of(int index) {
-            return Arrays.stream(values())
-                    .filter(entry -> entry.index() == index)
-                    .findFirst()
-                    .orElse(null);
-        }
+    public static CalendarType of(int index) {
+      return Arrays.stream(values())
+          .filter(entry -> entry.index() == index)
+          .findFirst()
+          .orElse(null);
     }
+  }
 }

@@ -1,5 +1,8 @@
 package it.auties.whatsapp.model.signal.message;
 
+import static it.auties.protobuf.base.ProtobufType.BYTES;
+import static it.auties.protobuf.base.ProtobufType.UINT32;
+
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.util.BytesHelper;
@@ -10,63 +13,62 @@ import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import static it.auties.protobuf.base.ProtobufType.BYTES;
-import static it.auties.protobuf.base.ProtobufType.UINT32;
-
 @AllArgsConstructor
 @Data
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
 public final class SignalPreKeyMessage
-        implements SignalProtocolMessage {
-    private int version;
+    implements SignalProtocolMessage {
 
-    @ProtobufProperty(index = 1, type = UINT32)
-    private Integer preKeyId;
+  private int version;
 
-    @ProtobufProperty(index = 2, type = BYTES)
-    private byte[] baseKey;
+  @ProtobufProperty(index = 1, type = UINT32)
+  private Integer preKeyId;
 
-    @ProtobufProperty(index = 3, type = BYTES)
-    private byte[] identityKey;
+  @ProtobufProperty(index = 2, type = BYTES)
+  private byte[] baseKey;
 
-    @ProtobufProperty(index = 4, type = BYTES)
-    private byte[] serializedSignalMessage;
+  @ProtobufProperty(index = 3, type = BYTES)
+  private byte[] identityKey;
 
-    @ProtobufProperty(index = 5, type = UINT32)
-    private Integer registrationId;
+  @ProtobufProperty(index = 4, type = BYTES)
+  private byte[] serializedSignalMessage;
 
-    @ProtobufProperty(index = 6, type = UINT32)
-    private Integer signedPreKeyId;
+  @ProtobufProperty(index = 5, type = UINT32)
+  private Integer registrationId;
 
-    private byte[] serialized;
+  @ProtobufProperty(index = 6, type = UINT32)
+  private Integer signedPreKeyId;
 
-    @SneakyThrows
-    public SignalPreKeyMessage(int preKeyId, byte[] baseKey, byte[] identityKey, byte[] serializedSignalMessage,
-            int registrationId, int signedPreKeyId) {
-        this.version = CURRENT_VERSION;
-        this.preKeyId = preKeyId;
-        this.baseKey = baseKey;
-        this.identityKey = identityKey;
-        this.serializedSignalMessage = serializedSignalMessage;
-        this.registrationId = registrationId;
-        this.signedPreKeyId = signedPreKeyId;
-        this.serialized = Bytes.of(serializedVersion())
-                .append(PROTOBUF.writeValueAsBytes(this))
-                .toByteArray();
-    }
+  private byte[] serialized;
 
-    @SneakyThrows
-    public static SignalPreKeyMessage ofSerialized(byte[] serialized) {
-        return PROTOBUF.readMessage(Bytes.of(serialized)
-                                            .slice(1)
-                                            .toByteArray(), SignalPreKeyMessage.class)
-                .version(BytesHelper.bytesToVersion(serialized[0]))
-                .serialized(serialized);
-    }
+  @SneakyThrows
+  public SignalPreKeyMessage(int preKeyId, byte[] baseKey, byte[] identityKey,
+      byte[] serializedSignalMessage,
+      int registrationId, int signedPreKeyId) {
+    this.version = CURRENT_VERSION;
+    this.preKeyId = preKeyId;
+    this.baseKey = baseKey;
+    this.identityKey = identityKey;
+    this.serializedSignalMessage = serializedSignalMessage;
+    this.registrationId = registrationId;
+    this.signedPreKeyId = signedPreKeyId;
+    this.serialized = Bytes.of(serializedVersion())
+        .append(PROTOBUF.writeValueAsBytes(this))
+        .toByteArray();
+  }
 
-    public SignalMessage signalMessage() {
-        return SignalMessage.ofSerialized(serializedSignalMessage);
-    }
+  @SneakyThrows
+  public static SignalPreKeyMessage ofSerialized(byte[] serialized) {
+    return PROTOBUF.readMessage(Bytes.of(serialized)
+            .slice(1)
+            .toByteArray(), SignalPreKeyMessage.class)
+        .version(BytesHelper.bytesToVersion(serialized[0]))
+        .serialized(serialized);
+  }
+
+  public SignalMessage signalMessage() {
+    return SignalMessage.ofSerialized(serializedSignalMessage);
+  }
 }

@@ -9,8 +9,8 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- * A model class that represents additional metadata about a {@link it.auties.whatsapp.model.message.standard.PollUpdateMessage}
- * Currently empty
+ * A model class that represents additional metadata about a
+ * {@link it.auties.whatsapp.model.message.standard.PollUpdateMessage} Currently empty
  */
 @AllArgsConstructor
 @Data
@@ -19,6 +19,6 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @ProtobufName("PollUpdateMessageMetadata")
 public class PollUpdateMessageMetadata
-        implements ProtobufMessage {
+    implements ProtobufMessage {
 
 }

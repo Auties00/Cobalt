@@ -16,21 +16,22 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @ProtobufName("AutoDownloadSettings")
 public final class AutoDownloadSettings
-        implements Setting {
-    @ProtobufProperty(index = 1, name = "downloadImages", type = ProtobufType.BOOL)
-    private boolean downloadImages;
+    implements Setting {
 
-    @ProtobufProperty(index = 2, name = "downloadAudio", type = ProtobufType.BOOL)
-    private boolean downloadAudio;
+  @ProtobufProperty(index = 1, name = "downloadImages", type = ProtobufType.BOOL)
+  private boolean downloadImages;
 
-    @ProtobufProperty(index = 3, name = "downloadVideo", type = ProtobufType.BOOL)
-    private boolean downloadVideo;
+  @ProtobufProperty(index = 2, name = "downloadAudio", type = ProtobufType.BOOL)
+  private boolean downloadAudio;
 
-    @ProtobufProperty(index = 4, name = "downloadDocuments", type = ProtobufType.BOOL)
-    private boolean downloadDocuments;
+  @ProtobufProperty(index = 3, name = "downloadVideo", type = ProtobufType.BOOL)
+  private boolean downloadVideo;
 
-    @Override
-    public String indexName() {
-        throw new UnsupportedOperationException("Cannot send setting: no index name");
-    }
+  @ProtobufProperty(index = 4, name = "downloadDocuments", type = ProtobufType.BOOL)
+  private boolean downloadDocuments;
+
+  @Override
+  public String indexName() {
+    throw new UnsupportedOperationException("Cannot send setting: no index name");
+  }
 }

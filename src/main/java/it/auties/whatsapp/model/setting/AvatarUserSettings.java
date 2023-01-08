@@ -16,15 +16,16 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @ProtobufName("AvatarUserSettings")
 public final class AvatarUserSettings
-        implements Setting {
-    @ProtobufProperty(index = 1, name = "fbid", type = ProtobufType.STRING)
-    private String facebookId;
+    implements Setting {
 
-    @ProtobufProperty(index = 2, name = "password", type = ProtobufType.STRING)
-    private String password;
+  @ProtobufProperty(index = 1, name = "fbid", type = ProtobufType.STRING)
+  private String facebookId;
 
-    @Override
-    public String indexName() {
-        throw new UnsupportedOperationException("Cannot send setting: no index name");
-    }
+  @ProtobufProperty(index = 2, name = "password", type = ProtobufType.STRING)
+  private String password;
+
+  @Override
+  public String indexName() {
+    throw new UnsupportedOperationException("Cannot send setting: no index name");
+  }
 }

@@ -16,17 +16,18 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @ProtobufName("NuxAction")
 public final class NuxAction
-        implements Action {
-    @ProtobufProperty(index = 1, name = "acknowledged", type = ProtobufType.BOOL)
-    private boolean acknowledged;
+    implements Action {
 
-    /**
-     * Always throws an exception as this action cannot be serialized
-     *
-     * @return an exception
-     */
-    @Override
-    public String indexName() {
-        throw new UnsupportedOperationException("Cannot send action: no index name");
-    }
+  @ProtobufProperty(index = 1, name = "acknowledged", type = ProtobufType.BOOL)
+  private boolean acknowledged;
+
+  /**
+   * Always throws an exception as this action cannot be serialized
+   *
+   * @return an exception
+   */
+  @Override
+  public String indexName() {
+    throw new UnsupportedOperationException("Cannot send action: no index name");
+  }
 }

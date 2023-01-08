@@ -1,5 +1,9 @@
 package it.auties.whatsapp.model.sync;
 
+import static it.auties.protobuf.base.ProtobufType.BYTES;
+import static it.auties.protobuf.base.ProtobufType.STRING;
+import static it.auties.protobuf.base.ProtobufType.UINT64;
+
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.media.AttachmentProvider;
@@ -9,45 +13,44 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import static it.auties.protobuf.base.ProtobufType.*;
-
 @AllArgsConstructor
 @Data
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
 public final class ExternalBlobReference
-        implements ProtobufMessage, AttachmentProvider {
-    @ProtobufProperty(index = 1, type = BYTES)
-    private byte[] mediaKey;
+    implements ProtobufMessage, AttachmentProvider {
 
-    @ProtobufProperty(index = 2, type = STRING)
-    private String mediaDirectPath;
+  @ProtobufProperty(index = 1, type = BYTES)
+  private byte[] mediaKey;
 
-    @ProtobufProperty(index = 3, type = STRING)
-    private String handle;
+  @ProtobufProperty(index = 2, type = STRING)
+  private String mediaDirectPath;
 
-    @ProtobufProperty(index = 4, type = UINT64)
-    private long mediaSize;
+  @ProtobufProperty(index = 3, type = STRING)
+  private String handle;
 
-    @ProtobufProperty(index = 5, type = BYTES)
-    private byte[] mediaSha256;
+  @ProtobufProperty(index = 4, type = UINT64)
+  private long mediaSize;
 
-    @ProtobufProperty(index = 6, type = BYTES)
-    private byte[] mediaEncryptedSha256;
+  @ProtobufProperty(index = 5, type = BYTES)
+  private byte[] mediaSha256;
 
-    @Override
-    public String mediaUrl() {
-        return null;
-    }
+  @ProtobufProperty(index = 6, type = BYTES)
+  private byte[] mediaEncryptedSha256;
 
-    @Override
-    public AttachmentProvider mediaUrl(String mediaUrl) {
-        return this;
-    }
+  @Override
+  public String mediaUrl() {
+    return null;
+  }
 
-    @Override
-    public String mediaName() {
-        return "WhatsApp App State Keys";
-    }
+  @Override
+  public AttachmentProvider mediaUrl(String mediaUrl) {
+    return this;
+  }
+
+  @Override
+  public String mediaName() {
+    return "WhatsApp App State Keys";
+  }
 }

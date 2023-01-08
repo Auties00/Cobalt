@@ -11,8 +11,9 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- * A model class that represents additional metadata about a {@link it.auties.whatsapp.model.message.standard.PollCreationMessage}
- * Not currently used, so it's package private
+ * A model class that represents additional metadata about a
+ * {@link it.auties.whatsapp.model.message.standard.PollCreationMessage} Not currently used, so it's
+ * package private
  */
 @AllArgsConstructor
 @Data
@@ -21,10 +22,11 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @ProtobufName("PollAdditionalMetadata")
 class PollAdditionalMetadata
-        implements ProtobufMessage {
-    /**
-     * Whether the poll was invalidated
-     */
-    @ProtobufProperty(index = 1, name = "pollInvalidated", type = ProtobufType.BOOL)
-    private boolean pollInvalidated;
+    implements ProtobufMessage {
+
+  /**
+   * Whether the poll was invalidated
+   */
+  @ProtobufProperty(index = 1, name = "pollInvalidated", type = ProtobufType.BOOL)
+  private boolean pollInvalidated;
 }

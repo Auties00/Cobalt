@@ -18,22 +18,23 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @ProtobufName("KeepInChat")
 public class KeepInChat
-        implements ProtobufMessage {
-    @ProtobufProperty(index = 1, name = "keepType", type = ProtobufType.MESSAGE)
-    private KeepInChatType keepType;
+    implements ProtobufMessage {
 
-    @ProtobufProperty(index = 2, name = "serverTimestamp", type = ProtobufType.INT64)
-    private long serverTimestamp;
+  @ProtobufProperty(index = 1, name = "keepType", type = ProtobufType.MESSAGE)
+  private KeepInChatType keepType;
 
-    @ProtobufProperty(index = 3, name = "key", type = ProtobufType.MESSAGE)
-    private MessageKey key;
+  @ProtobufProperty(index = 2, name = "serverTimestamp", type = ProtobufType.INT64)
+  private long serverTimestamp;
 
-    @ProtobufProperty(index = 4, name = "deviceJid", type = ProtobufType.STRING)
-    private ContactJid deviceJid;
+  @ProtobufProperty(index = 3, name = "key", type = ProtobufType.MESSAGE)
+  private MessageKey key;
 
-    @ProtobufProperty(index = 5, name = "clientTimestampMs", type = ProtobufType.INT64)
-    private long clientTimestampMilliseconds;
+  @ProtobufProperty(index = 4, name = "deviceJid", type = ProtobufType.STRING)
+  private ContactJid deviceJid;
 
-    @ProtobufProperty(index = 6, name = "serverTimestampMs", type = ProtobufType.INT64)
-    private long serverTimestampMilliseconds;
+  @ProtobufProperty(index = 5, name = "clientTimestampMs", type = ProtobufType.INT64)
+  private long clientTimestampMilliseconds;
+
+  @ProtobufProperty(index = 6, name = "serverTimestampMs", type = ProtobufType.INT64)
+  private long serverTimestampMilliseconds;
 }

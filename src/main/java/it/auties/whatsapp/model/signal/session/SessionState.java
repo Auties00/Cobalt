@@ -2,98 +2,102 @@ package it.auties.whatsapp.model.signal.session;
 
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
-import lombok.*;
-import lombok.Builder.Default;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
-
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 
 @AllArgsConstructor
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
 public class SessionState {
-    @Getter
-    private final int version;
 
-    @Getter
-    private final int registrationId;
+  @Getter
+  private final int version;
 
-    @Getter
-    private final byte @NonNull [] baseKey;
+  @Getter
+  private final int registrationId;
 
-    @Getter
-    private final byte @NonNull [] remoteIdentityKey;
+  @Getter
+  private final byte @NonNull [] baseKey;
 
-    @NonNull
-    @Default
-    private final ConcurrentHashMap<String, SessionChain> chains = new ConcurrentHashMap<>();
+  @Getter
+  private final byte @NonNull [] remoteIdentityKey;
 
-    @Getter
-    @Setter
-    private byte @NonNull [] rootKey;
+  @NonNull
+  @Default
+  private final ConcurrentHashMap<String, SessionChain> chains = new ConcurrentHashMap<>();
 
-    @Getter
-    @Setter
-    private SessionPreKey pendingPreKey;
+  @Getter
+  @Setter
+  private byte @NonNull [] rootKey;
 
-    @NonNull
-    @Getter
-    @Setter
-    private SignalKeyPair ephemeralKeyPair;
+  @Getter
+  @Setter
+  private SessionPreKey pendingPreKey;
 
-    @Getter
-    @Setter
-    private byte @NonNull [] lastRemoteEphemeralKey;
+  @NonNull
+  @Getter
+  @Setter
+  private SignalKeyPair ephemeralKeyPair;
 
-    @Getter
-    @Setter
-    private int previousCounter;
+  @Getter
+  @Setter
+  private byte @NonNull [] lastRemoteEphemeralKey;
 
-    @Getter
-    @Setter
-    private boolean closed;
+  @Getter
+  @Setter
+  private int previousCounter;
 
-    public boolean hasChain(byte[] senderEphemeral) {
-        return chains.containsKey(Bytes.of(senderEphemeral)
-                                          .toHex());
-    }
+  @Getter
+  @Setter
+  private boolean closed;
 
-    public Optional<SessionChain> findChain(byte[] senderEphemeral) {
-        return Optional.ofNullable(chains.get(Bytes.of(senderEphemeral)
-                                                      .toHex()));
-    }
+  public boolean hasChain(byte[] senderEphemeral) {
+    return chains.containsKey(Bytes.of(senderEphemeral)
+        .toHex());
+  }
 
-    public SessionState addChain(byte[] senderEphemeral, SessionChain chain) {
-        chains.put(Bytes.of(senderEphemeral)
-                           .toHex(), chain);
-        return this;
-    }
+  public Optional<SessionChain> findChain(byte[] senderEphemeral) {
+    return Optional.ofNullable(chains.get(Bytes.of(senderEphemeral)
+        .toHex()));
+  }
 
-    public void removeChain(byte[] senderEphemeral) {
-        var hex = Bytes.of(senderEphemeral)
-                .toHex();
-        Objects.requireNonNull(chains.remove(hex), "Cannot remove chain");
-    }
+  public SessionState addChain(byte[] senderEphemeral, SessionChain chain) {
+    chains.put(Bytes.of(senderEphemeral)
+        .toHex(), chain);
+    return this;
+  }
 
-    public boolean hasPreKey() {
-        return pendingPreKey != null;
-    }
+  public void removeChain(byte[] senderEphemeral) {
+    var hex = Bytes.of(senderEphemeral)
+        .toHex();
+    Objects.requireNonNull(chains.remove(hex), "Cannot remove chain");
+  }
 
-    public boolean contentEquals(int version, byte[] baseKey) {
-        return version() == version && Arrays.equals(baseKey(), baseKey);
-    }
+  public boolean hasPreKey() {
+    return pendingPreKey != null;
+  }
 
-    public boolean equals(Object other) {
-        return other instanceof SessionState that && contentEquals(that.version(), that.baseKey());
-    }
+  public boolean contentEquals(int version, byte[] baseKey) {
+    return version() == version && Arrays.equals(baseKey(), baseKey);
+  }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(version(), Arrays.hashCode(baseKey()));
-    }
+  public boolean equals(Object other) {
+    return other instanceof SessionState that && contentEquals(that.version(), that.baseKey());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(version(), Arrays.hashCode(baseKey()));
+  }
 }

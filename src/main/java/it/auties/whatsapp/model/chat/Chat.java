@@ -1,5 +1,14 @@
 package it.auties.whatsapp.model.chat;
 
+import static it.auties.protobuf.base.ProtobufType.BOOL;
+import static it.auties.protobuf.base.ProtobufType.BYTES;
+import static it.auties.protobuf.base.ProtobufType.INT64;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.STRING;
+import static it.auties.protobuf.base.ProtobufType.UINT32;
+import static it.auties.protobuf.base.ProtobufType.UINT64;
+import static java.util.Objects.requireNonNullElseGet;
+
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
@@ -15,25 +24,35 @@ import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
 import it.auties.whatsapp.util.Clock;
-import lombok.*;
-import lombok.Builder.Default;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
-
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Predicate;
-
-import static it.auties.protobuf.base.ProtobufType.*;
-import static java.util.Objects.requireNonNullElseGet;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
 
 /**
- * A model class that represents a Chat.
- * A chat can be of two types: a conversation with a contact or a group.
- * This class is only a model, this means that changing its values will have no real effect on WhatsappWeb's servers.
- * This class also offers a builder, accessible using {@link Chat#builder()}.
+ * A model class that represents a Chat. A chat can be of two types: a conversation with a contact
+ * or a group. This class is only a model, this means that changing its values will have no real
+ * effect on WhatsappWeb's servers. This class also offers a builder, accessible using
+ * {@link Chat#builder()}.
  */
 @SuppressWarnings("ALL")
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -43,756 +62,769 @@ import static java.util.Objects.requireNonNullElseGet;
 @Accessors(fluent = true)
 @ProtobufName("Conversation")
 public final class Chat
-        implements ProtobufMessage, ContactJidProvider {
-    /**
-     * The non-null unique jid used to identify this chat
-     */
-    @ProtobufProperty(index = 1, type = STRING, implementation = ContactJid.class)
-    @NonNull
-    private final ContactJid jid;
+    implements ProtobufMessage, ContactJidProvider {
 
-    /**
-     * The nullable new unique jid for this Chat.
-     * This field is not null when a contact changes phone number and connects their new phone number with Whatsapp.
-     */
-    @ProtobufProperty(index = 3, type = STRING, implementation = ContactJid.class)
-    private final ContactJid newJid;
+  /**
+   * The non-null unique jid used to identify this chat
+   */
+  @ProtobufProperty(index = 1, type = STRING, implementation = ContactJid.class)
+  @NonNull
+  private final ContactJid jid;
 
-    /**
-     * The nullable old jid for this Chat.
-     * This field is not null when a contact changes phone number and connects their new phone number with Whatsapp.
-     */
-    @ProtobufProperty(index = 4, type = STRING, implementation = ContactJid.class)
-    private final ContactJid oldJid;
+  /**
+   * The nullable new unique jid for this Chat. This field is not null when a contact changes phone
+   * number and connects their new phone number with Whatsapp.
+   */
+  @ProtobufProperty(index = 3, type = STRING, implementation = ContactJid.class)
+  private final ContactJid newJid;
 
-    /**
-     * The timestamp for the creation of this chat in seconds since {@link java.time.Instant#EPOCH}
-     */
-    @ProtobufProperty(index = 12, type = UINT64)
-    private final long timestamp;
+  /**
+   * The nullable old jid for this Chat. This field is not null when a contact changes phone number
+   * and connects their new phone number with Whatsapp.
+   */
+  @ProtobufProperty(index = 4, type = STRING, implementation = ContactJid.class)
+  private final ContactJid oldJid;
 
-    /**
-     * A non-null arrayList of messages in this chat sorted chronologically
-     */
-    @ProtobufProperty(index = 2, type = MESSAGE, implementation = HistorySyncMessage.class, repeated = true)
-    @NonNull
-    @Default
-    @JsonManagedReference
-    private ConcurrentLinkedDeque<MessageInfo> messages = new ConcurrentLinkedDeque<>();
+  /**
+   * The timestamp for the creation of this chat in seconds since {@link java.time.Instant#EPOCH}
+   */
+  @ProtobufProperty(index = 12, type = UINT64)
+  private final long timestamp;
 
-    /**
-     * The number of unread messages in this chat.
-     * If this field is negative, this chat is marked as unread.
-     */
-    @ProtobufProperty(index = 6, type = UINT32)
-    private int unreadMessagesCount;
+  /**
+   * A non-null arrayList of messages in this chat sorted chronologically
+   */
+  @ProtobufProperty(index = 2, type = MESSAGE, implementation = HistorySyncMessage.class, repeated = true)
+  @NonNull
+  @Default
+  @JsonManagedReference
+  private ConcurrentLinkedDeque<MessageInfo> messages = new ConcurrentLinkedDeque<>();
 
-    /**
-     * Whether this chat is read only
-     */
-    @ProtobufProperty(index = 7, name = "readOnly", type = ProtobufType.BOOL)
-    private boolean readOnly;
+  /**
+   * The number of unread messages in this chat. If this field is negative, this chat is marked as
+   * unread.
+   */
+  @ProtobufProperty(index = 6, type = UINT32)
+  private int unreadMessagesCount;
 
-    /**
-     * Whether this chat has been trasfered completely
-     */
-    @ProtobufProperty(index = 8, name = "endOfHistoryTransfer", type = ProtobufType.BOOL)
-    private boolean endOfHistoryTransfer;
+  /**
+   * Whether this chat is read only
+   */
+  @ProtobufProperty(index = 7, name = "readOnly", type = ProtobufType.BOOL)
+  private boolean readOnly;
 
-    /**
-     * The seconds in seconds before a message is automatically deleted from this chat both locally and from WhatsappWeb's servers.
-     * If ephemeral messages aren't enabled, this field has a value of 0
-     */
-    @ProtobufProperty(index = 9, type = UINT32)
-    @Default
-    private ChatEphemeralTimer ephemeralMessageDuration = ChatEphemeralTimer.OFF;
+  /**
+   * Whether this chat has been trasfered completely
+   */
+  @ProtobufProperty(index = 8, name = "endOfHistoryTransfer", type = ProtobufType.BOOL)
+  private boolean endOfHistoryTransfer;
 
-    /**
-     * The seconds in seconds since {@link java.time.Instant#EPOCH} when ephemeral messages were turned on.
-     * If ephemeral messages aren't enabled, this field has a value of 0.
-     */
-    @ProtobufProperty(index = 10, type = INT64)
-    private long ephemeralMessagesToggleTime;
+  /**
+   * The seconds in seconds before a message is automatically deleted from this chat both locally
+   * and from WhatsappWeb's servers. If ephemeral messages aren't enabled, this field has a value of
+   * 0
+   */
+  @ProtobufProperty(index = 9, type = UINT32)
+  @Default
+  private ChatEphemeralTimer ephemeralMessageDuration = ChatEphemeralTimer.OFF;
 
-    /**
-     * The history sync status
-     */
-    @ProtobufProperty(index = 11, name = "endOfHistoryTransferType", type = ProtobufType.MESSAGE)
-    private EndOfHistoryTransferType endOfHistoryTransferType;
+  /**
+   * The seconds in seconds since {@link java.time.Instant#EPOCH} when ephemeral messages were
+   * turned on. If ephemeral messages aren't enabled, this field has a value of 0.
+   */
+  @ProtobufProperty(index = 10, type = INT64)
+  private long ephemeralMessagesToggleTime;
 
-    /**
-     * The non-null display name of this chat
-     */
-    @ProtobufProperty(index = 13, type = STRING)
-    private String name;
+  /**
+   * The history sync status
+   */
+  @ProtobufProperty(index = 11, name = "endOfHistoryTransferType", type = ProtobufType.MESSAGE)
+  private EndOfHistoryTransferType endOfHistoryTransferType;
 
-    /**
-     * This field is used to determine whether a chat was marked as being spam or not.
-     */
-    @ProtobufProperty(index = 15, type = BOOL)
-    private boolean notSpam;
+  /**
+   * The non-null display name of this chat
+   */
+  @ProtobufProperty(index = 13, type = STRING)
+  private String name;
 
-    /**
-     * This field is used to determine whether a chat is archived or not.
-     */
-    @ProtobufProperty(index = 16, type = BOOL)
-    private boolean archived;
+  /**
+   * This field is used to determine whether a chat was marked as being spam or not.
+   */
+  @ProtobufProperty(index = 15, type = BOOL)
+  private boolean notSpam;
 
-    /**
-     * The initiator of disappearing chats
-     */
-    @ProtobufProperty(index = 17, type = MESSAGE, implementation = ChatDisappear.class)
-    private ChatDisappear disappearInitiator;
+  /**
+   * This field is used to determine whether a chat is archived or not.
+   */
+  @ProtobufProperty(index = 16, type = BOOL)
+  private boolean archived;
 
-    /**
-     * Whether this chat was manually marked as unread
-     */
-    @ProtobufProperty(index = 19, name = "markedAsUnread", type = ProtobufType.BOOL)
-    private boolean markedAsUnread;
+  /**
+   * The initiator of disappearing chats
+   */
+  @ProtobufProperty(index = 17, type = MESSAGE, implementation = ChatDisappear.class)
+  private ChatDisappear disappearInitiator;
 
-    /**
-     * The participants of this chat, if it's a group
-     */
-    @ProtobufProperty(implementation = GroupParticipant.class, index = 20, name = "participant", repeated = true, type = ProtobufType.MESSAGE)
-    @Default
-    private List<GroupParticipant> participants = new ArrayList<>();
+  /**
+   * Whether this chat was manually marked as unread
+   */
+  @ProtobufProperty(index = 19, name = "markedAsUnread", type = ProtobufType.BOOL)
+  private boolean markedAsUnread;
 
-    /**
-     * The participants that used to be in this chat, if it's a group
-     */
-    @Default
-    private List<PastParticipant> pastParticipants = new ArrayList<>();
+  /**
+   * The participants of this chat, if it's a group
+   */
+  @ProtobufProperty(implementation = GroupParticipant.class, index = 20, name = "participant", repeated = true, type = ProtobufType.MESSAGE)
+  @Default
+  private List<GroupParticipant> participants = new ArrayList<>();
 
-    /**
-     * The token of this chat
-     */
-    @ProtobufProperty(index = 21, type = BYTES)
-    private byte[] token;
+  /**
+   * The participants that used to be in this chat, if it's a group
+   */
+  @Default
+  private List<PastParticipant> pastParticipants = new ArrayList<>();
 
-    /**
-     * The timestamp of the token of this chat
-     */
-    @ProtobufProperty(index = 22, type = UINT64)
-    private long tokenTimestamp;
+  /**
+   * The token of this chat
+   */
+  @ProtobufProperty(index = 21, type = BYTES)
+  private byte[] token;
 
-    /**
-     * The public identity key of this chat
-     */
-    @ProtobufProperty(index = 23, type = BYTES)
-    private byte[] identityKey;
+  /**
+   * The timestamp of the token of this chat
+   */
+  @ProtobufProperty(index = 22, type = UINT64)
+  private long tokenTimestamp;
 
-    /**
-     * The seconds in seconds since {@link java.time.Instant#EPOCH} when this chat was pinned to the top.
-     * If the chat isn't pinned, this field has a value of 0.
-     */
-    @ProtobufProperty(index = 24, type = UINT32)
-    private long pinned;
+  /**
+   * The public identity key of this chat
+   */
+  @ProtobufProperty(index = 23, type = BYTES)
+  private byte[] identityKey;
 
-    /**
-     * The mute status of this chat
-     */
-    @ProtobufProperty(index = 25, type = UINT64)
-    @NonNull
-    @Default
-    private ChatMute mute = ChatMute.notMuted();
+  /**
+   * The seconds in seconds since {@link java.time.Instant#EPOCH} when this chat was pinned to the
+   * top. If the chat isn't pinned, this field has a value of 0.
+   */
+  @ProtobufProperty(index = 24, type = UINT32)
+  private long pinned;
 
-    /**
-     * The wallpaper of this chat
-     */
-    @ProtobufProperty(index = 26, type = MESSAGE, implementation = ChatWallpaper.class)
-    private ChatWallpaper wallpaper;
+  /**
+   * The mute status of this chat
+   */
+  @ProtobufProperty(index = 25, type = UINT64)
+  @NonNull
+  @Default
+  private ChatMute mute = ChatMute.notMuted();
 
-    /**
-     * The type of this media visibility set for this chat
-     */
-    @ProtobufProperty(index = 27, type = MESSAGE, implementation = ChatMediaVisibility.class)
-    @NonNull
-    @Default
-    private ChatMediaVisibility mediaVisibility = ChatMediaVisibility.OFF;
+  /**
+   * The wallpaper of this chat
+   */
+  @ProtobufProperty(index = 26, type = MESSAGE, implementation = ChatWallpaper.class)
+  private ChatWallpaper wallpaper;
 
-    /**
-     * The timestamp of the sender of the token of this chat
-     */
-    @ProtobufProperty(index = 28, type = UINT64)
-    private long tokenSenderTimestamp;
+  /**
+   * The type of this media visibility set for this chat
+   */
+  @ProtobufProperty(index = 27, type = MESSAGE, implementation = ChatMediaVisibility.class)
+  @NonNull
+  @Default
+  private ChatMediaVisibility mediaVisibility = ChatMediaVisibility.OFF;
 
-    /**
-     * Whether this chat was suspended and therefore cannot be accessed anymore
-     */
-    @ProtobufProperty(index = 29, type = BOOL)
-    private boolean suspended;
+  /**
+   * The timestamp of the sender of the token of this chat
+   */
+  @ProtobufProperty(index = 28, type = UINT64)
+  private long tokenSenderTimestamp;
 
-    /**
-     * Whether this chat was terminated
-     */
-    @ProtobufProperty(index = 30, name = "terminated", type = ProtobufType.BOOL)
-    private boolean terminated;
+  /**
+   * Whether this chat was suspended and therefore cannot be accessed anymore
+   */
+  @ProtobufProperty(index = 29, type = BOOL)
+  private boolean suspended;
 
-    /**
-     * The timestamp at which the chat, if a group, was created
-     */
-    @ProtobufProperty(index = 31, name = "createdAt", type = ProtobufType.UINT64)
-    private long createdAt;
+  /**
+   * Whether this chat was terminated
+   */
+  @ProtobufProperty(index = 30, name = "terminated", type = ProtobufType.BOOL)
+  private boolean terminated;
 
-    /**
-     * The user who created this chat, if a group
-     */
-    @ProtobufProperty(index = 32, name = "createdBy", type = ProtobufType.STRING)
-    private ContactJid createdBy;
+  /**
+   * The timestamp at which the chat, if a group, was created
+   */
+  @ProtobufProperty(index = 31, name = "createdAt", type = ProtobufType.UINT64)
+  private long createdAt;
 
-    /**
-     * The description of this chat, if a group
-     */
-    @ProtobufProperty(index = 33, name = "description", type = ProtobufType.STRING)
-    private String description;
+  /**
+   * The user who created this chat, if a group
+   */
+  @ProtobufProperty(index = 32, name = "createdBy", type = ProtobufType.STRING)
+  private ContactJid createdBy;
 
-    /**
-     * Whether this chat is an official support chat from Whatsapp
-     */
-    @ProtobufProperty(index = 34, name = "support", type = ProtobufType.BOOL)
-    private boolean support;
+  /**
+   * The description of this chat, if a group
+   */
+  @ProtobufProperty(index = 33, name = "description", type = ProtobufType.STRING)
+  private String description;
 
-    /**
-     * Whether this chat is a parent group
-     */
-    @ProtobufProperty(index = 35, name = "isParentGroup", type = ProtobufType.BOOL)
-    private boolean parentGroup;
+  /**
+   * Whether this chat is an official support chat from Whatsapp
+   */
+  @ProtobufProperty(index = 34, name = "support", type = ProtobufType.BOOL)
+  private boolean support;
 
-    /**
-     * Whether this chat is a default sub group
-     */
-    @ProtobufProperty(index = 36, name = "isDefaultSubgroup", type = ProtobufType.BOOL)
-    private boolean defaultSubGroup;
+  /**
+   * Whether this chat is a parent group
+   */
+  @ProtobufProperty(index = 35, name = "isParentGroup", type = ProtobufType.BOOL)
+  private boolean parentGroup;
 
-    /**
-     * The parent group's jid in a community
-     */
-    @ProtobufProperty(index = 37, name = "parentGroupId", type = ProtobufType.STRING)
-    private ContactJid parentGroupJid;
+  /**
+   * Whether this chat is a default sub group
+   */
+  @ProtobufProperty(index = 36, name = "isDefaultSubgroup", type = ProtobufType.BOOL)
+  private boolean defaultSubGroup;
 
-    /**
-     * Experimental
-     */
-    @ProtobufProperty(index = 38, name = "displayName", type = ProtobufType.STRING)
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
-    private String displayName;
+  /**
+   * The parent group's jid in a community
+   */
+  @ProtobufProperty(index = 37, name = "parentGroupId", type = ProtobufType.STRING)
+  private ContactJid parentGroupJid;
 
-    /**
-     * Experimental
-     */
-    @ProtobufProperty(index = 39, name = "pnJid", type = ProtobufType.STRING)
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
-    private String pnJid;
+  /**
+   * Experimental
+   */
+  @ProtobufProperty(index = 38, name = "displayName", type = ProtobufType.STRING)
+  @Getter(AccessLevel.NONE)
+  @Setter(AccessLevel.NONE)
+  private String displayName;
 
-    /**
-     * Experimental
-     */
-    @ProtobufProperty(index = 40, name = "shareOwnPn", type = ProtobufType.BOOL)
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
-    private boolean shareOwnPn;
+  /**
+   * Experimental
+   */
+  @ProtobufProperty(index = 39, name = "pnJid", type = ProtobufType.STRING)
+  @Getter(AccessLevel.NONE)
+  @Setter(AccessLevel.NONE)
+  private String pnJid;
 
-    /**
-     * Experimental
-     */
-    @ProtobufProperty(index = 41, name = "pnhDuplicateLidThread", type = ProtobufType.BOOL)
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
-    private boolean pnhDuplicateLidThread;
+  /**
+   * Experimental
+   */
+  @ProtobufProperty(index = 40, name = "shareOwnPn", type = ProtobufType.BOOL)
+  @Getter(AccessLevel.NONE)
+  @Setter(AccessLevel.NONE)
+  private boolean shareOwnPn;
 
-    /**
-     * Experimental
-     */
-    @ProtobufProperty(index = 42, name = "lidJid", type = ProtobufType.STRING)
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
-    private ContactJid lidJid;
+  /**
+   * Experimental
+   */
+  @ProtobufProperty(index = 41, name = "pnhDuplicateLidThread", type = ProtobufType.BOOL)
+  @Getter(AccessLevel.NONE)
+  @Setter(AccessLevel.NONE)
+  private boolean pnhDuplicateLidThread;
 
-    /**
-     * A map that holds the status of each participant, excluding yourself, for this chat.
-     * If the chat is not a group, this map's size will range from 0 to 1.
-     * Otherwise, it will range from 0 to the number of participants - 1.
-     * It is important to remember that is not guaranteed that every participant will be present as a key.
-     * In this case, if this chat is a group, it can be safely assumed that the user is not available.
-     * Otherwise, it's recommended to use {@link Whatsapp#subscribeToPresence(ContactJidProvider)} to force Whatsapp to send updates regarding the status of the other participant.
-     * It's also possible to listen for updates to a contact's presence in a group or in a conversation by implementing {@link Listener#onContactPresence}.
-     * The presence that this map indicates might not line up with {@link Contact#lastKnownPresence()} if the contact is composing, recording or paused.
-     * This is because a contact can be online on Whatsapp and composing, recording or paused in a specific chat.
-     */
-    @Default
-    @NonNull
-    private Map<ContactJid, ContactStatus> presences = new ConcurrentHashMap<>();
+  /**
+   * Experimental
+   */
+  @ProtobufProperty(index = 42, name = "lidJid", type = ProtobufType.STRING)
+  @Getter(AccessLevel.NONE)
+  @Setter(AccessLevel.NONE)
+  private ContactJid lidJid;
 
-    /**
-     * A set that hold all the jids of the participants in this chat that have received pre keys.
-     * This set is only used if the chat is a group chat.
-     * It's not important for anything other than message ciphering.
-     */
-    @Default
-    @NonNull
-    private Set<ContactJid> participantsPreKeys = new HashSet<>();
+  /**
+   * A map that holds the status of each participant, excluding yourself, for this chat. If the chat
+   * is not a group, this map's size will range from 0 to 1. Otherwise, it will range from 0 to the
+   * number of participants - 1. It is important to remember that is not guaranteed that every
+   * participant will be present as a key. In this case, if this chat is a group, it can be safely
+   * assumed that the user is not available. Otherwise, it's recommended to use
+   * {@link Whatsapp#subscribeToPresence(ContactJidProvider)} to force Whatsapp to send updates
+   * regarding the status of the other participant. It's also possible to listen for updates to a
+   * contact's presence in a group or in a conversation by implementing
+   * {@link Listener#onContactPresence}. The presence that this map indicates might not line up with
+   * {@link Contact#lastKnownPresence()} if the contact is composing, recording or paused. This is
+   * because a contact can be online on Whatsapp and composing, recording or paused in a specific
+   * chat.
+   */
+  @Default
+  @NonNull
+  private Map<ContactJid, ContactStatus> presences = new ConcurrentHashMap<>();
 
-    /**
-     * Constructs a chat from a jid
-     *
-     * @param jid the non-null jid
-     * @return a non-null chat
-     */
-    public static Chat ofJid(@NonNull ContactJid jid) {
-        return Chat.builder()
-                .jid(jid)
-                .build();
+  /**
+   * A set that hold all the jids of the participants in this chat that have received pre keys. This
+   * set is only used if the chat is a group chat. It's not important for anything other than
+   * message ciphering.
+   */
+  @Default
+  @NonNull
+  private Set<ContactJid> participantsPreKeys = new HashSet<>();
+
+  /**
+   * Constructs a chat from a jid
+   *
+   * @param jid the non-null jid
+   * @return a non-null chat
+   */
+  public static Chat ofJid(@NonNull ContactJid jid) {
+    return Chat.builder()
+        .jid(jid)
+        .build();
+  }
+
+  /**
+   * Returns the name of this chat
+   *
+   * @return a non-null string
+   */
+  public String name() {
+    return requireNonNullElseGet(name,
+        () -> requireNonNullElseGet(displayName, () -> this.name = jid.user()));
+  }
+
+  /**
+   * Returns whether this chat has a name. If this method returns false, it doesn't imply that
+   * {@link Chat#name()} will return null.
+   *
+   * @return a boolean
+   */
+  public boolean hasName() {
+    return name != null;
+  }
+
+  /**
+   * Returns a boolean to represent whether this chat is a group or not
+   *
+   * @return true if this chat is a group
+   */
+  public boolean isGroup() {
+    return jid.type() == ContactJid.Type.GROUP;
+  }
+
+  /**
+   * Returns a boolean to represent whether this chat is pinned or not
+   *
+   * @return true if this chat is pinned
+   */
+  public boolean isPinned() {
+    return pinned != 0;
+  }
+
+  /**
+   * Returns a boolean to represent whether ephemeral messages are enabled for this chat
+   *
+   * @return true if ephemeral messages are enabled for this chat
+   */
+  public boolean isEphemeral() {
+    return ephemeralMessageDuration != ChatEphemeralTimer.OFF && ephemeralMessagesToggleTime != 0;
+  }
+
+  /**
+   * Returns a boolean to represent whether this chat has a new jid
+   *
+   * @return true if this chat has a new jid
+   */
+  public boolean hasNewJid() {
+    return newJid != null;
+  }
+
+  /**
+   * Returns a boolean to represent whether this chat has an old jid
+   *
+   * @return true if this chat has an old jid
+   */
+  public boolean hasOldJid() {
+    return oldJid != null;
+  }
+
+  /**
+   * Returns a boolean to represent whether this chat has unread messages
+   *
+   * @return true if this chat has unread messages
+   */
+  public boolean hasUnreadMessages() {
+    return unreadMessagesCount > 0;
+  }
+
+  /**
+   * Returns all the unread messages in this chat
+   *
+   * @return a non-null collection
+   */
+  public Collection<MessageInfo> unreadMessages() {
+    if (!hasUnreadMessages()) {
+      return List.of();
     }
+    var list = new ArrayList<>(messages);
+    return list.subList(list.size() - unreadMessagesCount(), list.size());
+  }
 
-    /**
-     * Returns the name of this chat
-     *
-     * @return a non-null string
-     */
-    public String name() {
-        return requireNonNullElseGet(name, () -> requireNonNullElseGet(displayName, () -> this.name = jid.user()));
-    }
+  /**
+   * Returns an optional value containing the new jid of this chat
+   *
+   * @return a non-empty optional if the new jid is not null
+   */
+  public Optional<ContactJid> newJid() {
+    return Optional.ofNullable(newJid);
+  }
 
-    /**
-     * Returns whether this chat has a name.
-     * If this method returns false, it doesn't imply that {@link Chat#name()} will return null.
-     *
-     * @return a boolean
-     */
-    public boolean hasName() {
-        return name != null;
-    }
+  /**
+   * Returns an optional value containing the old jid of this chat
+   *
+   * @return a non-empty optional if the old jid is not null
+   */
+  public Optional<ContactJid> oldJid() {
+    return Optional.ofNullable(oldJid);
+  }
 
-    /**
-     * Returns a boolean to represent whether this chat is a group or not
-     *
-     * @return true if this chat is a group
-     */
-    public boolean isGroup() {
-        return jid.type() == ContactJid.Type.GROUP;
-    }
+  /**
+   * Returns an optional value containing the disappearing status of this chat
+   *
+   * @return a non-empty optional if the disappearing status of this chat is not null
+   */
+  public Optional<ChatDisappear> disappearInitiator() {
+    return Optional.ofNullable(disappearInitiator);
+  }
 
-    /**
-     * Returns a boolean to represent whether this chat is pinned or not
-     *
-     * @return true if this chat is pinned
-     */
-    public boolean isPinned() {
-        return pinned != 0;
-    }
+  /**
+   * Returns an optional value containing the wallpaper of this chat, if any is set
+   *
+   * @return a non-empty optional if this chat has a custom wallpaper
+   */
+  public Optional<ChatWallpaper> wallpaper() {
+    return Optional.ofNullable(wallpaper);
+  }
 
-    /**
-     * Returns a boolean to represent whether ephemeral messages are enabled for this chat
-     *
-     * @return true if ephemeral messages are enabled for this chat
-     */
-    public boolean isEphemeral() {
-        return ephemeralMessageDuration != ChatEphemeralTimer.OFF && ephemeralMessagesToggleTime != 0;
-    }
+  /**
+   * Returns an optional value containing the seconds this chat was pinned
+   *
+   * @return a non-empty optional if the chat is pinned
+   */
+  public Optional<ZonedDateTime> pinned() {
+    return Clock.parse(pinned);
+  }
 
-    /**
-     * Returns a boolean to represent whether this chat has a new jid
-     *
-     * @return true if this chat has a new jid
-     */
-    public boolean hasNewJid() {
-        return newJid != null;
-    }
+  /**
+   * Returns the timestamp for the creation of this chat in seconds since
+   * {@link java.time.Instant#EPOCH}
+   *
+   * @return a non-empty optional if this field is populated
+   */
+  public Optional<ZonedDateTime> timestamp() {
+    return Clock.parse(timestamp);
+  }
 
-    /**
-     * Returns a boolean to represent whether this chat has an old jid
-     *
-     * @return true if this chat has an old jid
-     */
-    public boolean hasOldJid() {
-        return oldJid != null;
-    }
+  /**
+   * Returns an optional value containing the seconds in seconds since
+   * {@link java.time.Instant#EPOCH} when ephemeral messages were turned on
+   *
+   * @return a non-empty optional if ephemeral messages are enabled for this chat
+   */
+  public Optional<ZonedDateTime> ephemeralMessagesToggleTime() {
+    return Clock.parse(ephemeralMessagesToggleTime);
+  }
 
-    /**
-     * Returns a boolean to represent whether this chat has unread messages
-     *
-     * @return true if this chat has unread messages
-     */
-    public boolean hasUnreadMessages() {
-        return unreadMessagesCount > 0;
-    }
+  /**
+   * Returns an optional value containing the latest message in chronological terms for this chat
+   *
+   * @return an optional
+   */
+  public Optional<MessageInfo> lastMessage() {
+    return messages.isEmpty() ?
+        Optional.empty() :
+        Optional.of(messages.getFirst());
+  }
 
+  /**
+   * Returns an optional value containing the latest message in chronological terms for this chat
+   * with type that isn't server
+   *
+   * @return an optional
+   */
+  public Optional<MessageInfo> lastStandardMessage() {
+    return messages.stream()
+        .filter(info -> !info.message()
+            .hasCategory(MessageCategory.SERVER))
+        .findFirst();
+  }
+
+  /**
+   * Returns an optional value containing the latest message in chronological terms for this chat
+   * sent from you
+   *
+   * @return an optional
+   */
+  public Optional<MessageInfo> lastMessageFromMe() {
+    return messages.stream()
+        .filter(MessageInfo::fromMe)
+        .findFirst();
+  }
+
+  /**
+   * Returns an optional value containing the latest message in chronological terms for this chat
+   * with type server
+   *
+   * @return an optional
+   */
+  public Optional<MessageInfo> lastServerMessage() {
+    return messages.stream()
+        .filter(info -> info.message()
+            .hasCategory(MessageCategory.SERVER))
+        .findFirst();
+  }
+
+  /**
+   * Returns an optional value containing the first message in chronological terms for this chat
+   *
+   * @return an optional
+   */
+  public Optional<MessageInfo> firstMessage() {
+    return messages.isEmpty() ?
+        Optional.empty() :
+        Optional.of(messages.getLast());
+  }
+
+  /**
+   * Returns an optional value containing the first message in chronological terms for this chat
+   * sent from you
+   *
+   * @return an optional
+   */
+  public Optional<MessageInfo> firstMessageFromMe() {
+    return messages.stream()
+        .filter(MessageInfo::fromMe)
+        .reduce((first, second) -> second);
+  }
+
+  /**
+   * Returns an optional value containing the first message in chronological terms for this chat
+   * with type that isn't server
+   *
+   * @return an optional
+   */
+  public Optional<MessageInfo> firstStandardMessage() {
+    return messages.stream()
+        .filter(info -> !info.message()
+            .hasCategory(MessageCategory.SERVER))
+        .reduce((first, second) -> second);
+  }
+
+  /**
+   * Returns an optional value containing the first message in chronological terms for this chat
+   * with type server
+   *
+   * @return an optional
+   */
+  public Optional<MessageInfo> firstServerMessage() {
+    return messages.stream()
+        .filter(info -> info.message()
+            .hasCategory(MessageCategory.SERVER))
+        .reduce((first, second) -> second);
+  }
+
+  /**
+   * Returns all the starred messages in this chat
+   *
+   * @return a non-null list of messages
+   */
+  public Collection<MessageInfo> starredMessages() {
+    return messages.stream()
+        .filter(MessageInfo::starred)
+        .toList();
+  }
+
+  /**
+   * Returns the token for this chat
+   *
+   * @return a non-null optional value
+   */
+  public Optional<byte[]> token() {
+    return Optional.ofNullable(token);
+  }
+
+  /**
+   * Returns the timestamp for the creation of this chat's token
+   *
+   * @return a non-null optional value
+   */
+  public Optional<ZonedDateTime> tokenTimestamp() {
+    return Clock.parse(tokenTimestamp);
+  }
+
+  /**
+   * Returns the identity token for this chat
+   *
+   * @return a non-null optional value
+   */
+  public Optional<byte[]> identityKey() {
+    return Optional.ofNullable(identityKey);
+  }
+
+  /**
+   * Returns the timestamp for the token sender creation of this chat
+   *
+   * @return a non-null optional value
+   */
+  public Optional<ZonedDateTime> tokenSenderTimestamp() {
+    return Clock.parse(tokenTimestamp);
+  }
+
+  /**
+   * Returns the timestamp for the creation of this chat if it's a group
+   *
+   * @return a non-null optional value
+   */
+  public Optional<ZonedDateTime> createdAt() {
+    return Clock.parse(createdAt);
+  }
+
+  /**
+   * Returns the contact who created this chat if it's a group
+   *
+   * @return a non-null optional value
+   */
+  public Optional<ContactJid> createdBy() {
+    return Optional.ofNullable(createdBy);
+  }
+
+  /**
+   * Returns the description of this chat if it's a group
+   *
+   * @return a non-null optional value
+   */
+  public Optional<String> description() {
+    return Optional.ofNullable(description);
+  }
+
+  /**
+   * Adds a message to the chat
+   *
+   * @param info the message to add to the chat
+   * @return whether the message was added
+   */
+  public boolean addMessage(@NonNull MessageInfo info) {
+    return !messages.contains(info) && messages.add(info);
+  }
+
+  /**
+   * Returns an immodifiable list of all the messages in this chat
+   *
+   * @return a non-null collection
+   */
+  public Collection<MessageInfo> messages() {
+    return Collections.unmodifiableCollection(messages);
+  }
+
+  /**
+   * Remove a message from the chat
+   *
+   * @param info the message to remove
+   * @return whether the message was removed
+   */
+  public boolean removeMessage(@NonNull MessageInfo info) {
+    return messages.remove(info);
+  }
+
+  /**
+   * Remove a message from the chat
+   *
+   * @param predicate the predicate that determines if a message should be removed
+   * @return whether the message was removed
+   */
+  public boolean removeMessage(@NonNull Predicate<? super MessageInfo> predicate) {
+    return messages.removeIf(predicate);
+  }
+
+  /**
+   * Removes all messages from the chat
+   */
+  public void removeMessages() {
+    messages.clear();
+  }
+
+  /**
+   * Checks if this chat is equal to another chat
+   *
+   * @param other the chat
+   * @return a boolean
+   */
+  public boolean equals(Object other) {
+    return other instanceof Chat that && Objects.equals(this.jid(), that.jid());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(jid(), messages());
+  }
+
+  /**
+   * Returns this object as a jid
+   *
+   * @return a non-null jid
+   */
+  @Override
+  @NonNull
+  public ContactJid toJid() {
+    return jid();
+  }
+
+
+  /**
+   * The constants of this enumerated type describe the various types of trasnfers that can regard a
+   * chat history sync
+   */
+  @AllArgsConstructor
+  @Accessors(fluent = true)
+  public enum EndOfHistoryTransferType
+      implements ProtobufMessage {
     /**
-     * Returns all the unread messages in this chat
-     *
-     * @return a non-null collection
+     * Complete, but more messages remain on the phone
      */
-    public Collection<MessageInfo> unreadMessages() {
-        if (!hasUnreadMessages()) {
-            return List.of();
+    COMPLETE_BUT_MORE_MESSAGES_REMAIN_ON_PRIMARY(0),
+    /**
+     * Complete and no more messages remain on the phone
+     */
+    COMPLETE_AND_NO_MORE_MESSAGE_REMAIN_ON_PRIMARY(1);
+
+    @Getter
+    private final int index;
+  }
+
+  public static class ChatBuilder {
+
+    public ChatBuilder messages(List<MessageInfo> messages) {
+      if (this.messages$value == null) {
+        this.messages$value = new ConcurrentLinkedDeque<>();
+        this.messages$set = true;
+      }
+      // Kind of abusing the type system of java
+      // If the chat was received from Whatsapp, the actual type of the list is HistorySyncMessage, and it needs to be unwrapped
+      // Though if the message was stored locally it's actually a MessageInfo(unwrapped HistorySyncMessage)
+      // If the type of the messages parameter were to be Object though, Jackson wouldn't be able to deserialize it correctly(would be assumed as a map)
+      // So we need to specify the MessageInfo type so that jackson can use a base type if it's not sure of the content of the list
+      // And loop through the messages as if they were Objects because accessing it in any other way would yield a ClassCastException
+      // I could switch to using a HistorySyncMessage List instead and return a List of MessageInfo through an accessor, but this is very costly as this list might be huge
+      // This looks to be the best approach
+      messages.forEach((Object entry) -> {
+        if (entry instanceof HistorySyncMessage historySyncMessage) {
+          messages$value.add(historySyncMessage.message());
+          return;
         }
-
-        var list = new ArrayList<>(messages);
-        return list.subList(list.size() - unreadMessagesCount(), list.size());
-    }
-
-    /**
-     * Returns an optional value containing the new jid of this chat
-     *
-     * @return a non-empty optional if the new jid is not null
-     */
-    public Optional<ContactJid> newJid() {
-        return Optional.ofNullable(newJid);
-    }
-
-    /**
-     * Returns an optional value containing the old jid of this chat
-     *
-     * @return a non-empty optional if the old jid is not null
-     */
-    public Optional<ContactJid> oldJid() {
-        return Optional.ofNullable(oldJid);
-    }
-
-    /**
-     * Returns an optional value containing the disappearing status of this chat
-     *
-     * @return a non-empty optional if the disappearing status of this chat is not null
-     */
-    public Optional<ChatDisappear> disappearInitiator() {
-        return Optional.ofNullable(disappearInitiator);
-    }
-
-    /**
-     * Returns an optional value containing the wallpaper of this chat, if any is set
-     *
-     * @return a non-empty optional if this chat has a custom wallpaper
-     */
-    public Optional<ChatWallpaper> wallpaper() {
-        return Optional.ofNullable(wallpaper);
-    }
-
-    /**
-     * Returns an optional value containing the seconds this chat was pinned
-     *
-     * @return a non-empty optional if the chat is pinned
-     */
-    public Optional<ZonedDateTime> pinned() {
-        return Clock.parse(pinned);
-    }
-
-    /**
-     * Returns the timestamp for the creation of this chat in seconds since {@link java.time.Instant#EPOCH}
-     *
-     * @return a non-empty optional if this field is populated
-     */
-    public Optional<ZonedDateTime> timestamp() {
-        return Clock.parse(timestamp);
-    }
-
-    /**
-     * Returns an optional value containing the seconds in seconds since {@link java.time.Instant#EPOCH} when ephemeral messages were turned on
-     *
-     * @return a non-empty optional if ephemeral messages are enabled for this chat
-     */
-    public Optional<ZonedDateTime> ephemeralMessagesToggleTime() {
-        return Clock.parse(ephemeralMessagesToggleTime);
-    }
-
-    /**
-     * Returns an optional value containing the latest message in chronological terms for this chat
-     *
-     * @return an optional
-     */
-    public Optional<MessageInfo> lastMessage() {
-        return messages.isEmpty() ?
-                Optional.empty() :
-                Optional.of(messages.getFirst());
-    }
-
-    /**
-     * Returns an optional value containing the latest message in chronological terms for this chat with type that isn't server
-     *
-     * @return an optional
-     */
-    public Optional<MessageInfo> lastStandardMessage() {
-        return messages.stream()
-                .filter(info -> !info.message()
-                        .hasCategory(MessageCategory.SERVER))
-                .findFirst();
-    }
-
-    /**
-     * Returns an optional value containing the latest message in chronological terms for this chat sent from you
-     *
-     * @return an optional
-     */
-    public Optional<MessageInfo> lastMessageFromMe() {
-        return messages.stream()
-                .filter(MessageInfo::fromMe)
-                .findFirst();
-    }
-
-    /**
-     * Returns an optional value containing the latest message in chronological terms for this chat with type server
-     *
-     * @return an optional
-     */
-    public Optional<MessageInfo> lastServerMessage() {
-        return messages.stream()
-                .filter(info -> info.message()
-                        .hasCategory(MessageCategory.SERVER))
-                .findFirst();
-    }
-
-    /**
-     * Returns an optional value containing the first message in chronological terms for this chat
-     *
-     * @return an optional
-     */
-    public Optional<MessageInfo> firstMessage() {
-        return messages.isEmpty() ?
-                Optional.empty() :
-                Optional.of(messages.getLast());
-    }
-
-    /**
-     * Returns an optional value containing the first message in chronological terms for this chat sent from you
-     *
-     * @return an optional
-     */
-    public Optional<MessageInfo> firstMessageFromMe() {
-        return messages.stream()
-                .filter(MessageInfo::fromMe)
-                .reduce((first, second) -> second);
-    }
-
-    /**
-     * Returns an optional value containing the first message in chronological terms for this chat with type that isn't server
-     *
-     * @return an optional
-     */
-    public Optional<MessageInfo> firstStandardMessage() {
-        return messages.stream()
-                .filter(info -> !info.message()
-                        .hasCategory(MessageCategory.SERVER))
-                .reduce((first, second) -> second);
-    }
-
-    /**
-     * Returns an optional value containing the first message in chronological terms for this chat with type server
-     *
-     * @return an optional
-     */
-    public Optional<MessageInfo> firstServerMessage() {
-        return messages.stream()
-                .filter(info -> info.message()
-                        .hasCategory(MessageCategory.SERVER))
-                .reduce((first, second) -> second);
-    }
-
-    /**
-     * Returns all the starred messages in this chat
-     *
-     * @return a non-null list of messages
-     */
-    public Collection<MessageInfo> starredMessages() {
-        return messages.stream()
-                .filter(MessageInfo::starred)
-                .toList();
-    }
-
-    /**
-     * Returns the token for this chat
-     *
-     * @return a non-null optional value
-     */
-    public Optional<byte[]> token() {
-        return Optional.ofNullable(token);
-    }
-
-    /**
-     * Returns the timestamp for the creation of this chat's token
-     *
-     * @return a non-null optional value
-     */
-    public Optional<ZonedDateTime> tokenTimestamp() {
-        return Clock.parse(tokenTimestamp);
-    }
-
-    /**
-     * Returns the identity token for this chat
-     *
-     * @return a non-null optional value
-     */
-    public Optional<byte[]> identityKey() {
-        return Optional.ofNullable(identityKey);
-    }
-
-    /**
-     * Returns the timestamp for the token sender creation of this chat
-     *
-     * @return a non-null optional value
-     */
-    public Optional<ZonedDateTime> tokenSenderTimestamp() {
-        return Clock.parse(tokenTimestamp);
-    }
-
-    /**
-     * Returns the timestamp for the creation of this chat if it's a group
-     *
-     * @return a non-null optional value
-     */
-    public Optional<ZonedDateTime> createdAt() {
-        return Clock.parse(createdAt);
-    }
-
-    /**
-     * Returns the contact who created this chat if it's a group
-     *
-     * @return a non-null optional value
-     */
-    public Optional<ContactJid> createdBy() {
-        return Optional.ofNullable(createdBy);
-    }
-
-    /**
-     * Returns the description of this chat if it's a group
-     *
-     * @return a non-null optional value
-     */
-    public Optional<String> description() {
-        return Optional.ofNullable(description);
-    }
-
-    /**
-     * Adds a message to the chat
-     *
-     * @param info the message to add to the chat
-     * @return whether the message was added
-     */
-    public boolean addMessage(@NonNull MessageInfo info) {
-        return !messages.contains(info) && messages.add(info);
-    }
-
-    /**
-     * Returns an immodifiable list of all the messages in this chat
-     *
-     * @return a non-null collection
-     */
-    public Collection<MessageInfo> messages(){
-        return Collections.unmodifiableCollection(messages);
-    }
-
-    /**
-     * Remove a message from the chat
-     *
-     * @param info the message to remove
-     * @return whether the message was removed
-     */
-    public boolean removeMessage(@NonNull MessageInfo info) {
-        return messages.remove(info);
-    }
-
-    /**
-     * Remove a message from the chat
-     *
-     * @param predicate the predicate that determines if a message should be removed
-     * @return whether the message was removed
-     */
-    public boolean removeMessage(@NonNull Predicate<? super MessageInfo> predicate) {
-        return messages.removeIf(predicate);
-    }
-
-    /**
-     * Removes all messages from the chat
-     */
-    public void removeMessages() {
-        messages.clear();
-    }
-
-    /**
-     * Checks if this chat is equal to another chat
-     *
-     * @param other the chat
-     * @return a boolean
-     */
-    public boolean equals(Object other) {
-        return other instanceof Chat that && Objects.equals(this.jid(), that.jid());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(jid(), messages());
-    }
-
-    /**
-     * Returns this object as a jid
-     *
-     * @return a non-null jid
-     */
-    @Override
-    @NonNull
-    public ContactJid toJid() {
-        return jid();
-    }
-
-
-    /**
-     * The constants of this enumerated type describe the various types of trasnfers that can regard a chat history sync
-     */
-    @AllArgsConstructor
-    @Accessors(fluent = true)
-    public enum EndOfHistoryTransferType
-            implements ProtobufMessage {
-        /**
-         * Complete, but more messages remain on the phone
-         */
-        COMPLETE_BUT_MORE_MESSAGES_REMAIN_ON_PRIMARY(0),
-
-        /**
-         * Complete and no more messages remain on the phone
-         */
-        COMPLETE_AND_NO_MORE_MESSAGE_REMAIN_ON_PRIMARY(1);
-
-        @Getter
-        private final int index;
-    }
-
-    public static class ChatBuilder {
-        public ChatBuilder messages(List<MessageInfo> messages) {
-            if (this.messages$value == null) {
-                this.messages$value = new ConcurrentLinkedDeque<>();
-                this.messages$set = true;
-            }
-            // Kind of abusing the type system of java
-            // If the chat was received from Whatsapp, the actual type of the list is HistorySyncMessage, and it needs to be unwrapped
-            // Though if the message was stored locally it's actually a MessageInfo(unwrapped HistorySyncMessage)
-            // If the type of the messages parameter were to be Object though, Jackson wouldn't be able to deserialize it correctly(would be assumed as a map)
-            // So we need to specify the MessageInfo type so that jackson can use a base type if it's not sure of the content of the list
-            // And loop through the messages as if they were Objects because accessing it in any other way would yield a ClassCastException
-            // I could switch to using a HistorySyncMessage List instead and return a List of MessageInfo through an accessor, but this is very costly as this list might be huge
-            // This looks to be the best approach
-            messages.forEach((Object entry) -> {
-                if (entry instanceof HistorySyncMessage historySyncMessage) {
-                    messages$value.add(historySyncMessage.message());
-                    return;
-                }
-                if (entry instanceof MessageInfo messageInfo) {
-                    messages$value.add(messageInfo);
-                    return;
-                }
-                throw new IllegalArgumentException("Unexpected value: " + entry.getClass()
-                        .getName());
-            });
-            return this;
+        if (entry instanceof MessageInfo messageInfo) {
+          messages$value.add(messageInfo);
+          return;
         }
-
-        public ChatBuilder participants(List<GroupParticipant> participants) {
-            if (this.participants$value == null) {
-                this.participants$value = new ArrayList<>();
-                this.participants$set = true;
-            }
-
-            participants$value.addAll(participants);
-            return this;
-        }
+        throw new IllegalArgumentException("Unexpected value: " + entry.getClass()
+            .getName());
+      });
+      return this;
     }
+
+    public ChatBuilder participants(List<GroupParticipant> participants) {
+      if (this.participants$value == null) {
+        this.participants$value = new ArrayList<>();
+        this.participants$set = true;
+      }
+      participants$value.addAll(participants);
+      return this;
+    }
+  }
 }

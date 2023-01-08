@@ -6,15 +6,16 @@ import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.SignalSpecification;
 
 public sealed interface SignalProtocolMessage
-        extends ProtobufMessage, JacksonProvider, SignalSpecification
-        permits SignalPreKeyMessage, SignalDistributionMessage, SignalMessage {
-    int version();
+    extends ProtobufMessage, JacksonProvider, SignalSpecification
+    permits SignalPreKeyMessage, SignalDistributionMessage, SignalMessage {
 
-    byte[] serialized();
+  int version();
 
-    default byte serializedVersion() {
-        return BytesHelper.versionToBytes(version() == 0 ?
-                                                  CURRENT_VERSION :
-                                                  version());
-    }
+  byte[] serialized();
+
+  default byte serializedVersion() {
+    return BytesHelper.versionToBytes(version() == 0 ?
+        CURRENT_VERSION :
+        version());
+  }
 }

@@ -1,5 +1,8 @@
 package it.auties.whatsapp.model.action;
 
+import static it.auties.protobuf.base.ProtobufType.BOOL;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.sync.ActionMessageRangeSync;
 import lombok.AccessLevel;
@@ -8,9 +11,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
-
-import static it.auties.protobuf.base.ProtobufType.BOOL;
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
 /**
  * A model clas that represents a new read status for a chat
@@ -21,26 +21,27 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Jacksonized
 @Accessors(fluent = true)
 public final class MarkChatAsReadAction
-        implements Action {
-    /**
-     * Whether this action marks the chat as read
-     */
-    @ProtobufProperty(index = 1, type = BOOL)
-    private boolean read;
+    implements Action {
 
-    /**
-     * The message range on which this action has effect
-     */
-    @ProtobufProperty(index = 2, type = MESSAGE, implementation = ActionMessageRangeSync.class)
-    private ActionMessageRangeSync messageRange;
+  /**
+   * Whether this action marks the chat as read
+   */
+  @ProtobufProperty(index = 1, type = BOOL)
+  private boolean read;
 
-    /**
-     * The name of this action
-     *
-     * @return a non-null string
-     */
-    @Override
-    public String indexName() {
-        return "markChatAsRead";
-    }
+  /**
+   * The message range on which this action has effect
+   */
+  @ProtobufProperty(index = 2, type = MESSAGE, implementation = ActionMessageRangeSync.class)
+  private ActionMessageRangeSync messageRange;
+
+  /**
+   * The name of this action
+   *
+   * @return a non-null string
+   */
+  @Override
+  public String indexName() {
+    return "markChatAsRead";
+  }
 }

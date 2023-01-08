@@ -16,23 +16,24 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @ProtobufName("AgentAction")
 public final class AgentAction
-        implements Action {
-    @ProtobufProperty(index = 1, name = "name", type = ProtobufType.STRING)
-    private String name;
+    implements Action {
 
-    @ProtobufProperty(index = 2, name = "deviceID", type = ProtobufType.INT32)
-    private Integer deviceId;
+  @ProtobufProperty(index = 1, name = "name", type = ProtobufType.STRING)
+  private String name;
 
-    @ProtobufProperty(index = 3, name = "isDeleted", type = ProtobufType.BOOL)
-    private boolean deleted;
+  @ProtobufProperty(index = 2, name = "deviceID", type = ProtobufType.INT32)
+  private Integer deviceId;
 
-    /**
-     * Always throws an exception as this action cannot be serialized
-     *
-     * @return an exception
-     */
-    @Override
-    public String indexName() {
-        throw new UnsupportedOperationException("Cannot send action: no index name");
-    }
+  @ProtobufProperty(index = 3, name = "isDeleted", type = ProtobufType.BOOL)
+  private boolean deleted;
+
+  /**
+   * Always throws an exception as this action cannot be serialized
+   *
+   * @return an exception
+   */
+  @Override
+  public String indexName() {
+    throw new UnsupportedOperationException("Cannot send action: no index name");
+  }
 }

@@ -24,24 +24,25 @@ import lombok.extern.jackson.Jacksonized;
 @EqualsAndHashCode(callSuper = true)
 @ProtobufName("InteractiveResponseMessage")
 public final class InteractiveResponseMessage
-        extends ContextualMessage {
-    @ProtobufProperty(index = 1, name = "body", type = ProtobufType.MESSAGE)
-    private ProductBody body;
+    extends ContextualMessage {
 
-    @ProtobufProperty(index = 2, name = "nativeFlowResponseMessage", type = ProtobufType.MESSAGE)
-    private NativeFlowResponseMessage nativeFlowResponseMessage;
+  @ProtobufProperty(index = 1, name = "body", type = ProtobufType.MESSAGE)
+  private ProductBody body;
 
-    @ProtobufProperty(index = 15, name = "contextInfo", type = ProtobufType.MESSAGE)
-    @Default
-    private ContextInfo contextInfo = new ContextInfo();
+  @ProtobufProperty(index = 2, name = "nativeFlowResponseMessage", type = ProtobufType.MESSAGE)
+  private NativeFlowResponseMessage nativeFlowResponseMessage;
 
-    @Override
-    public MessageType type() {
-        return MessageType.INTERACTIVE_RESPONSE;
-    }
+  @ProtobufProperty(index = 15, name = "contextInfo", type = ProtobufType.MESSAGE)
+  @Default
+  private ContextInfo contextInfo = new ContextInfo();
 
-    @Override
-    public MessageCategory category() {
-        return MessageCategory.BUTTON;
-    }
+  @Override
+  public MessageType type() {
+    return MessageType.INTERACTIVE_RESPONSE;
+  }
+
+  @Override
+  public MessageCategory category() {
+    return MessageCategory.BUTTON;
+  }
 }

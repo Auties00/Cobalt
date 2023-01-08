@@ -18,36 +18,37 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @ProtobufName("BizAccountLinkInfo")
 public class BusinessAccountLinkInfo
-        implements ProtobufMessage {
-    @ProtobufProperty(index = 1, name = "whatsappBizAcctFbid", type = ProtobufType.UINT64)
-    private long whatsappBizAccountFacebookId;
+    implements ProtobufMessage {
 
-    @ProtobufProperty(index = 2, name = "whatsappAcctNumber", type = ProtobufType.STRING)
-    private String whatsappAcctNumber;
+  @ProtobufProperty(index = 1, name = "whatsappBizAcctFbid", type = ProtobufType.UINT64)
+  private long whatsappBizAccountFacebookId;
 
-    @ProtobufProperty(index = 3, name = "issueTime", type = ProtobufType.UINT64)
-    private long issueTime;
+  @ProtobufProperty(index = 2, name = "whatsappAcctNumber", type = ProtobufType.STRING)
+  private String whatsappAcctNumber;
 
-    @ProtobufProperty(index = 4, name = "hostStorage", type = ProtobufType.MESSAGE)
-    private HostStorageType hostStorage;
+  @ProtobufProperty(index = 3, name = "issueTime", type = ProtobufType.UINT64)
+  private long issueTime;
 
-    @ProtobufProperty(index = 5, name = "accountType", type = ProtobufType.MESSAGE)
-    private AccountType accountType;
+  @ProtobufProperty(index = 4, name = "hostStorage", type = ProtobufType.MESSAGE)
+  private HostStorageType hostStorage;
 
-    @AllArgsConstructor
-    public enum AccountType
-            implements ProtobufMessage {
-        ENTERPRISE(0);
-        @Getter
-        private final int index;
-    }
+  @ProtobufProperty(index = 5, name = "accountType", type = ProtobufType.MESSAGE)
+  private AccountType accountType;
 
-    @AllArgsConstructor
-    public enum HostStorageType
-            implements ProtobufMessage {
-        ON_PREMISE(0),
-        FACEBOOK(1);
-        @Getter
-        private final int index;
-    }
+  @AllArgsConstructor
+  public enum AccountType
+      implements ProtobufMessage {
+    ENTERPRISE(0);
+    @Getter
+    private final int index;
+  }
+
+  @AllArgsConstructor
+  public enum HostStorageType
+      implements ProtobufMessage {
+    ON_PREMISE(0),
+    FACEBOOK(1);
+    @Getter
+    private final int index;
+  }
 }
