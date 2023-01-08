@@ -19,6 +19,7 @@ import it.auties.whatsapp.model.message.standard.ProductMessage;
 import it.auties.whatsapp.model.message.standard.RequestPhoneNumberMessage;
 import it.auties.whatsapp.model.message.standard.TextMessage;
 import lombok.AllArgsConstructor;
+import lombok.Builder.Default;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
@@ -48,6 +49,7 @@ public sealed abstract class ContextualMessage
    * The context info of this message
    */
   @ProtobufProperty(index = 17, type = MESSAGE, implementation = ContextInfo.class)
+  @Default
   private ContextInfo contextInfo = new ContextInfo();
 
   public ContextInfo contextInfo() {
