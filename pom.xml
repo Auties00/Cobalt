@@ -85,7 +85,7 @@
         <maven.nexus.plugin.version>1.6.13</maven.nexus.plugin.version>
         <bouncy.castle.version>1.70</bouncy.castle.version>
         <zxing.version>3.5.1</zxing.version>
-        <protoc.version>1.18</protoc.version>
+        <protoc.version>1.19</protoc.version>
         <tyrus.version>2.1.0</tyrus.version>
         <lombok.version>1.18.24</lombok.version>
         <junit.version>5.9.0</junit.version>
@@ -257,12 +257,7 @@
         </dependency>
         <dependency>
             <groupId>com.github.auties00</groupId>
-            <artifactId>protobuf-base</artifactId>
-            <version>${protoc.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.auties00</groupId>
-            <artifactId>protobuf-serializer</artifactId>
+            <artifactId>protobuf-serializer-jackson</artifactId>
             <version>${protoc.version}</version>
         </dependency>
         <dependency>

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import it.auties.protobuf.base.ProtobufConverter;
 import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.serializer.exception.ProtobufSerializationException;
+import it.auties.protobuf.serialization.exception.ProtobufSerializationException;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 import java.util.Arrays;
 import java.util.Objects;

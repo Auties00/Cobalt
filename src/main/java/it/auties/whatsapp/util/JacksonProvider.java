@@ -17,7 +17,7 @@ import com.fasterxml.jackson.dataformat.smile.databind.SmileMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import it.auties.map.SimpleMapModule;
-import it.auties.protobuf.serializer.jackson.ProtobufMapper;
+import it.auties.protobuf.serialization.jackson.ProtobufMapper;
 
 public interface JacksonProvider {
 

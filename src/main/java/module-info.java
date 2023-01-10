@@ -11,7 +11,7 @@ open module it.auties.whatsappweb4j {
   requires com.fasterxml.jackson.datatype.jsr310;
   requires com.fasterxml.jackson.dataformat.smile;
   requires it.auties.protobuf.base;
-  requires it.auties.protobuf.serializer;
+  requires it.auties.protobuf.serializer.jackson;
   requires it.auties.map;
   requires com.google.zxing;
   requires com.google.zxing.javase;
@@ -23,6 +23,7 @@ open module it.auties.whatsappweb4j {
   requires com.github.benmanes.caffeine;
   requires it.auties.linkpreview;
   requires ez.vcard;
+  requires it.auties.protobuf.serializer.base;
   exports it.auties.whatsapp.api;
   exports it.auties.whatsapp.controller;
   exports it.auties.whatsapp.model.action;

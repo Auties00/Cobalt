@@ -6,7 +6,7 @@ import ezvcard.VCardVersion;
 import ezvcard.property.Telephone;
 import it.auties.protobuf.base.ProtobufConverter;
 import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.serializer.exception.ProtobufSerializationException;
+import it.auties.protobuf.serialization.exception.ProtobufSerializationException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
