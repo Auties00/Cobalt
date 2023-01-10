@@ -9,6 +9,7 @@ import it.auties.whatsapp.model.message.button.InteractiveMessage;
 import it.auties.whatsapp.model.message.button.InteractiveResponseMessage;
 import it.auties.whatsapp.model.message.button.ListMessage;
 import it.auties.whatsapp.model.message.button.TemplateMessage;
+import it.auties.whatsapp.model.message.payment.PaymentOrderMessage;
 import it.auties.whatsapp.model.message.standard.ContactMessage;
 import it.auties.whatsapp.model.message.standard.ContactsArrayMessage;
 import it.auties.whatsapp.model.message.standard.GroupInviteMessage;
@@ -39,20 +40,13 @@ public sealed abstract class ContextualMessage
     implements Message
     permits ButtonsMessage, InteractiveMessage, InteractiveResponseMessage, ListMessage,
     TemplateMessage, ButtonReplyMessage, MediaMessage,
-    it.auties.whatsapp.model.message.payment.PaymentOrderMessage, ContactMessage,
+    PaymentOrderMessage, ContactMessage,
     ContactsArrayMessage, GroupInviteMessage, LiveLocationMessage, LocationMessage,
     PollCreationMessage, ProductMessage, RequestPhoneNumberMessage, TextMessage {
-
-  private static final ContextInfo EMPTY_CONTEXT = new ContextInfo();
-
   /**
    * The context info of this message
    */
   @ProtobufProperty(index = 17, type = MESSAGE, implementation = ContextInfo.class)
   @Default
   private ContextInfo contextInfo = new ContextInfo();
-
-  public ContextInfo contextInfo() {
-    return contextInfo == null ? EMPTY_CONTEXT : contextInfo;
-  }
 }
