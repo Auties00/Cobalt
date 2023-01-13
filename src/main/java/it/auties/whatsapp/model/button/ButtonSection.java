@@ -5,7 +5,6 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,15 +34,4 @@ public class ButtonSection
    */
   @ProtobufProperty(index = 2, type = MESSAGE, implementation = ButtonRow.class, repeated = true)
   private List<ButtonRow> rows;
-
-  public static class ButtonSectionBuilder {
-
-    public ButtonSectionBuilder rows(List<ButtonRow> rows) {
-      if (this.rows == null) {
-        this.rows = new ArrayList<>();
-      }
-      this.rows.addAll(rows);
-      return this;
-    }
-  }
 }

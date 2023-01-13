@@ -761,34 +761,4 @@ public final class MessageInfo
           .findFirst();
     }
   }
-
-  public static class MessageInfoBuilder {
-
-    public MessageInfoBuilder stubParameters(List<String> stubParameters) {
-      if (!stubParameters$set) {
-        this.stubParameters$value = new ArrayList<>();
-        this.stubParameters$set = true;
-      }
-      this.stubParameters$value.addAll(stubParameters);
-      return this;
-    }
-
-    public MessageInfoBuilder reactions(List<ReactionMessage> reactions) {
-      if (!reactions$set) {
-        this.reactions$value = new ArrayList<>();
-        this.reactions$set = true;
-      }
-      this.reactions$value.addAll(reactions);
-      return this;
-    }
-
-    public MessageInfoBuilder labels(List<String> labels) {
-      if (!labels$set) {
-        this.labels$value = new ArrayList<>();
-        this.labels$set = true;
-      }
-      this.labels$value.addAll(labels);
-      return this;
-    }
-  }
 }

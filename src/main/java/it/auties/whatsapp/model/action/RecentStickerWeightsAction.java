@@ -39,15 +39,4 @@ public final class RecentStickerWeightsAction
   public String indexName() {
     throw new UnsupportedOperationException("Cannot send action: no index name");
   }
-
-  public static class RecentStickerWeightsActionBuilder {
-
-    public RecentStickerWeightsActionBuilder weights(List<RecentStickerWeight> weights) {
-      if (this.weights == null) {
-        this.weights = new ArrayList<>();
-      }
-      this.weights.addAll(weights);
-      return this;
-    }
-  }
 }

@@ -130,25 +130,4 @@ public class MessageReceipt
     this.playedTimestamp = playedTimestamp;
     return this;
   }
-
-  public static class MessageReceiptBuilder {
-
-    public MessageReceiptBuilder deliveredJids(List<ContactJid> deliveredJids) {
-      if (!this.deliveredJids$set) {
-        this.deliveredJids$value = new ArrayList<>();
-        this.deliveredJids$set = true;
-      }
-      this.deliveredJids$value.addAll(deliveredJids);
-      return this;
-    }
-
-    public MessageReceiptBuilder readJids(List<ContactJid> readJids) {
-      if (!this.readJids$set) {
-        this.readJids$value = new ArrayList<>();
-        this.readJids$set = true;
-      }
-      this.readJids$value.addAll(readJids);
-      return this;
-    }
-  }
 }

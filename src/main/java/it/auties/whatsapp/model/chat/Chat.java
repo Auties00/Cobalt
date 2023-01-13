@@ -817,14 +817,5 @@ public final class Chat
       });
       return this;
     }
-
-    public ChatBuilder participants(List<GroupParticipant> participants) {
-      if (this.participants$value == null) {
-        this.participants$value = new ArrayList<>();
-        this.participants$set = true;
-      }
-      participants$value.addAll(participants);
-      return this;
-    }
   }
 }

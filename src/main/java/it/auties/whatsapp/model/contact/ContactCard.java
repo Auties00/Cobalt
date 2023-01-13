@@ -174,12 +174,12 @@ public class ContactCard
   }
 
   public static class ContactCardBuilder {
-
     @SuppressWarnings("ConstantConditions")
     public ContactCardBuilder phoneNumber(@NonNull ContactJid contact) {
       if (phoneNumbers == null) {
         this.phoneNumbers = new HashMap<>();
       }
+
       phoneNumbers.put(DEFAULT_NUMBER_TYPE, contact);
       return this;
     }

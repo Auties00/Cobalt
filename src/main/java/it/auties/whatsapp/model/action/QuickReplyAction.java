@@ -5,7 +5,6 @@ import static it.auties.protobuf.base.ProtobufType.INT32;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 
 import it.auties.protobuf.base.ProtobufProperty;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -62,16 +61,5 @@ public final class QuickReplyAction
   @Override
   public String indexName() {
     return "quick_reply";
-  }
-
-  public static class QuickReplyActionBuilder {
-
-    public QuickReplyActionBuilder keywords(List<String> keywords) {
-      if (this.keywords == null) {
-        this.keywords = new ArrayList<>();
-      }
-      this.keywords.addAll(keywords);
-      return this;
-    }
   }
 }

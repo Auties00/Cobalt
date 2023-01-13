@@ -39,15 +39,4 @@ public final class RecentEmojiWeightsAction
   public String indexName() {
     throw new UnsupportedOperationException("Cannot send action: no index name");
   }
-
-  public static class RecentEmojiWeightsActionBuilder {
-
-    public RecentEmojiWeightsActionBuilder weights(List<RecentEmojiWeight> weights) {
-      if (this.weights == null) {
-        this.weights = new ArrayList<>();
-      }
-      this.weights.addAll(weights);
-      return this;
-    }
-  }
 }

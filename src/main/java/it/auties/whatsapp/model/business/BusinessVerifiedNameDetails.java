@@ -6,7 +6,6 @@ import static it.auties.protobuf.base.ProtobufType.UINT64;
 
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -54,16 +53,4 @@ public class BusinessVerifiedNameDetails
    */
   @ProtobufProperty(index = 10, type = UINT64)
   private long issueTime;
-
-  public static class BusinessVerifiedNameDetailsBuilder {
-
-    public BusinessVerifiedNameDetailsBuilder localizedNames(
-        List<BusinessLocalizedName> localizedNames) {
-      if (this.localizedNames == null) {
-        this.localizedNames = new ArrayList<>();
-      }
-      this.localizedNames.addAll(localizedNames);
-      return this;
-    }
-  }
 }

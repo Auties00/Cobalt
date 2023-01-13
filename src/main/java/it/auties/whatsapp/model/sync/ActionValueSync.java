@@ -41,7 +41,6 @@ import it.auties.whatsapp.model.setting.SecurityNotificationSetting;
 import it.auties.whatsapp.model.setting.Setting;
 import it.auties.whatsapp.model.setting.UnarchiveChatsSetting;
 import it.auties.whatsapp.util.Clock;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -358,17 +357,6 @@ public class ActionValueSync
 
     @ProtobufProperty(index = 1, type = STRING, repeated = true)
     private List<String> flags;
-
-    public static class PrimaryFeatureBuilder {
-
-      public PrimaryFeatureBuilder flags(List<String> flags) {
-        if (this.flags == null) {
-          this.flags = new ArrayList<>();
-        }
-        this.flags.addAll(flags);
-        return this;
-      }
-    }
   }
   //</editor-fold>
 }

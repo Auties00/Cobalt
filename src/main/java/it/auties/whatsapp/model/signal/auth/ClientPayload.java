@@ -14,7 +14,6 @@ import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.protobuf.base.ProtobufType;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -240,24 +239,5 @@ public class ClientPayload
     INBOX(2);
     @Getter
     private final int index;
-  }
-
-  public static class ClientPayloadBuilder {
-
-    public ClientPayloadBuilder clientFeatures(List<ClientPayloadClientFeature> clientFeatures) {
-      if (this.clientFeatures == null) {
-        this.clientFeatures = new ArrayList<>();
-      }
-      this.clientFeatures.addAll(clientFeatures);
-      return this;
-    }
-
-    public ClientPayloadBuilder shards(List<Integer> shards) {
-      if (this.shards == null) {
-        this.shards = new ArrayList<>();
-      }
-      this.shards.addAll(shards);
-      return this;
-    }
   }
 }

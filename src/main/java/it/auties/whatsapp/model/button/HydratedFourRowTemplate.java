@@ -275,15 +275,4 @@ public final class HydratedFourRowTemplate
           .orElse(TitleType.NONE);
     }
   }
-
-  public static class HydratedFourRowTemplateBuilder {
-
-    public HydratedFourRowTemplateBuilder buttons(List<HydratedButtonTemplate> hydratedButtons) {
-      if (this.buttons == null) {
-        this.buttons = new ArrayList<>();
-      }
-      this.buttons.addAll(hydratedButtons);
-      return this;
-    }
-  }
 }

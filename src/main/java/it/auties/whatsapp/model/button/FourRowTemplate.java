@@ -10,7 +10,6 @@ import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import it.auties.whatsapp.model.message.standard.LocationMessage;
 import it.auties.whatsapp.model.message.standard.VideoMessage;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -265,17 +264,6 @@ public final class FourRowTemplate
           .filter(entry -> entry.index() == index)
           .findFirst()
           .orElse(TitleType.NONE);
-    }
-  }
-
-  public static class FourRowTemplateBuilder {
-
-    public FourRowTemplateBuilder buttons(List<ButtonTemplate> buttons) {
-      if (this.buttons == null) {
-        this.buttons = new ArrayList<>();
-      }
-      this.buttons.addAll(buttons);
-      return this;
     }
   }
 }

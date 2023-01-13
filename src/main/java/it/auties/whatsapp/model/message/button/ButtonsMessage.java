@@ -18,7 +18,6 @@ import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import it.auties.whatsapp.model.message.standard.LocationMessage;
 import it.auties.whatsapp.model.message.standard.VideoMessage;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -277,17 +276,6 @@ public final class ButtonsMessage
           .filter(entry -> entry.index() == index)
           .findFirst()
           .orElse(HeaderType.UNKNOWN);
-    }
-  }
-
-  public static class ButtonsMessageBuilder {
-
-    public ButtonsMessageBuilder buttons(List<Button> buttons) {
-      if (this.buttons == null) {
-        this.buttons = new ArrayList<>();
-      }
-      this.buttons.addAll(buttons);
-      return this;
     }
   }
 }

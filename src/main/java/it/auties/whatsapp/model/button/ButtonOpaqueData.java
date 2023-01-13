@@ -10,7 +10,6 @@ import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.poll.PollOption;
 import it.auties.whatsapp.model.poll.PollUpdateEncryptedMetadata;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -134,15 +133,4 @@ public class ButtonOpaqueData
 
   @ProtobufProperty(index = 27, name = "encReactionEncIv", type = ProtobufType.BYTES)
   private byte[] encReactionEncIv;
-
-  public static class ButtonOpaqueDataBuilder {
-
-    public ButtonOpaqueData.ButtonOpaqueDataBuilder pollOptions(List<PollOption> pollOptions) {
-      if (this.pollOptions == null) {
-        this.pollOptions = new ArrayList<>();
-      }
-      this.pollOptions.addAll(pollOptions);
-      return this;
-    }
-  }
 }

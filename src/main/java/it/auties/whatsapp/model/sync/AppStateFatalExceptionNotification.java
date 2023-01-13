@@ -26,15 +26,4 @@ public class AppStateFatalExceptionNotification
 
   @ProtobufProperty(index = 2, type = INT64)
   private Long timestamp;
-
-  public static class AppStateFatalExceptionNotificationBuilder {
-
-    public AppStateFatalExceptionNotificationBuilder collectionNames(List<String> collectionNames) {
-      if (this.collectionNames == null) {
-        this.collectionNames = new ArrayList<>();
-      }
-      this.collectionNames.addAll(collectionNames);
-      return this;
-    }
-  }
 }

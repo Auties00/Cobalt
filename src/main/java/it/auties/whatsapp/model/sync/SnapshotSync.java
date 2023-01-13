@@ -34,15 +34,4 @@ public class SnapshotSync
 
   @ProtobufProperty(index = 4, type = MESSAGE, implementation = KeyId.class)
   private KeyId keyId;
-
-  public static class SnapshotSyncBuilder {
-
-    public SnapshotSyncBuilder records(List<RecordSync> records) {
-      if (this.records == null) {
-        this.records = new ArrayList<>();
-      }
-      this.records.addAll(records);
-      return this;
-    }
-  }
 }

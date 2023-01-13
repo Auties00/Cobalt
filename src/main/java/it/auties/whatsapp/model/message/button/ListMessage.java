@@ -122,15 +122,4 @@ public final class ListMessage
           .orElse(null);
     }
   }
-
-  public static class ListMessageBuilder {
-
-    public ListMessageBuilder sections(List<ButtonSection> sections) {
-      if (this.sections == null) {
-        this.sections = new ArrayList<>();
-      }
-      this.sections.addAll(sections);
-      return this;
-    }
-  }
 }

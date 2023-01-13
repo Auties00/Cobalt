@@ -34,15 +34,4 @@ public class KeyIndexList
 
   @ProtobufProperty(index = 4, type = UINT32, repeated = true, packed = true)
   private List<Integer> validIndexes;
-
-  public static class KeyIndexListBuilder {
-
-    public KeyIndexListBuilder clientFeatures(List<Integer> validIndexes) {
-      if (this.validIndexes == null) {
-        this.validIndexes = new ArrayList<>();
-      }
-      this.validIndexes.addAll(validIndexes);
-      return this;
-    }
-  }
 }

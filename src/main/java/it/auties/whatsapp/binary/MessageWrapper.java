@@ -48,8 +48,12 @@ public class MessageWrapper {
   }
 
   private Node toNode(Bytes encoded, Keys keys) {
-    var plainText = AesGmc.decrypt(keys.readCounter(true), encoded.toByteArray(),
-        keys.readKey().toByteArray());
-    return DECODER.decode(plainText);
+    try {
+      var plainText = AesGmc.decrypt(keys.readCounter(true), encoded.toByteArray(),
+          keys.readKey().toByteArray());
+      return DECODER.decode(plainText);
+    }catch (Throwable throwable) {
+      throw new RuntimeException("Cannot decode", throwable);
+    }
   }
 }

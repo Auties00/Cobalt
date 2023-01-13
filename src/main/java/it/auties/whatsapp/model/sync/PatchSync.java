@@ -65,17 +65,4 @@ public class PatchSync
   public boolean hasExternalMutations() {
     return externalMutations != null;
   }
-
-  public static class PatchSyncBuilder {
-
-    public PatchSyncBuilder mutations(List<MutationSync> mutations) {
-      if (!mutations$set) {
-        this.mutations$value = mutations;
-        this.mutations$set = true;
-        return this;
-      }
-      this.mutations$value.addAll(mutations);
-      return this;
-    }
-  }
 }

@@ -26,15 +26,4 @@ public class ProductSection
 
   @ProtobufProperty(index = 2, type = MESSAGE, implementation = Product.class, repeated = true)
   private List<Product> products;
-
-  public static class ProductSectionBuilder {
-
-    public ProductSectionBuilder products(List<Product> products) {
-      if (this.products == null) {
-        this.products = new ArrayList<>();
-      }
-      this.products.addAll(products);
-      return this;
-    }
-  }
 }

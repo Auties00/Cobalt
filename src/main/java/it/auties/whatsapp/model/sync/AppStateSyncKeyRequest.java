@@ -22,15 +22,4 @@ public class AppStateSyncKeyRequest
 
   @ProtobufProperty(index = 1, type = MESSAGE, implementation = AppStateSyncKeyId.class, repeated = true)
   private List<AppStateSyncKeyId> keyIds;
-
-  public static class AppStateSyncKeyRequestBuilder {
-
-    public AppStateSyncKeyRequestBuilder keyIds(List<AppStateSyncKeyId> keyIds) {
-      if (this.keyIds == null) {
-        this.keyIds = new ArrayList<>();
-      }
-      this.keyIds.addAll(keyIds);
-      return this;
-    }
-  }
 }

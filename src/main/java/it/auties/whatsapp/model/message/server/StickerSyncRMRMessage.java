@@ -35,15 +35,4 @@ public final class StickerSyncRMRMessage
   public MessageType type() {
     return MessageType.STICKER_SYNC;
   }
-
-  public static class StickerSyncRMRMessageBuilder {
-
-    public StickerSyncRMRMessageBuilder hash(List<String> hash) {
-      if (this.hash == null) {
-        this.hash = new ArrayList<>();
-      }
-      this.hash.addAll(hash);
-      return this;
-    }
-  }
 }

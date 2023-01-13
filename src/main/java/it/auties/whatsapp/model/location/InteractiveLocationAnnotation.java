@@ -80,15 +80,4 @@ public class InteractiveLocationAnnotation
           .orElse(Action.UNKNOWN);
     }
   }
-
-  public static class InteractiveLocationAnnotationBuilder {
-
-    public InteractiveLocationAnnotationBuilder polygonVertices(List<Point> polygonVertices) {
-      if (this.polygonVertices == null) {
-        this.polygonVertices = new ArrayList<>();
-      }
-      this.polygonVertices.addAll(polygonVertices);
-      return this;
-    }
-  }
 }

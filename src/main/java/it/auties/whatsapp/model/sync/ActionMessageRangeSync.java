@@ -70,14 +70,4 @@ public class ActionMessageRangeSync
         .ifPresent(jid -> key.senderJid(jid.toUserJid()));
     return key;
   }
-
-  public static class ActionMessageRangeSyncBuilder {
-    public ActionMessageRangeSyncBuilder messages(List<SyncActionMessage> messages) {
-      if (this.messages == null) {
-        this.messages = new ArrayList<>();
-      }
-      this.messages.addAll(messages);
-      return this;
-    }
-  }
 }
