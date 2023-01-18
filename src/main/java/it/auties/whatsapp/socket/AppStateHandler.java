@@ -203,13 +203,9 @@ class AppStateHandler
   }
 
   protected CompletableFuture<Void> pullInitial() {
-    return pullInitial(PatchType.CRITICAL_BLOCK, PatchType.CRITICAL_UNBLOCK_LOW)
-        .thenComposeAsync(ignored -> pullInitial(PatchType.REGULAR, PatchType.REGULAR_LOW, PatchType.REGULAR_HIGH))
-        .thenComposeAsync(ignored -> pullInitial(PatchType.CRITICAL_BLOCK, PatchType.CRITICAL_UNBLOCK_LOW));
-  }
-
-  private CompletableFuture<Void> pullInitial(PatchType... patchTypes) {
-    return pullUninterruptedly(Arrays.asList(patchTypes))
+    return pullUninterruptedly(List.of(PatchType.CRITICAL_BLOCK, PatchType.CRITICAL_UNBLOCK_LOW))
+        .thenComposeAsync(ignored -> pullUninterruptedly(List.of(PatchType.REGULAR, PatchType.REGULAR_LOW, PatchType.REGULAR_HIGH)))
+        .thenComposeAsync(ignored -> pullUninterruptedly(List.of(PatchType.CRITICAL_BLOCK, PatchType.CRITICAL_UNBLOCK_LOW)))
         .thenRunAsync(this::onPull)
         .exceptionallyAsync(exception -> onPullError(true, exception));
   }
