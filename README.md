@@ -14,6 +14,13 @@ Considering that support for legacy WhatsappWeb has been dropped by Whatsapp, th
 the latter.
 If, for whatever reason, you'd like to use a version that supports the legacy version, use any release before 3.0.
 
+### Can this library get my device banned?
+
+While there is no risk in using this library with your main account, keep in mind that Whatsapp has anti-spam measures for their web client.
+If you add a participant from a brand-new number to a group, it will most likely get you banned.
+If you compile the library yourself, don't run the CI on a brand-new number, or it will get banned for spamming to many requests(the CI has to test that all the library works).
+In short, if you use this library without a malicious intent, you will never get banned.
+
 ### How to install
 
 #### Maven
