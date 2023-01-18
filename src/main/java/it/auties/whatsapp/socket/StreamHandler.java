@@ -84,7 +84,8 @@ class StreamHandler
   private static final int REQUIRED_PRE_KEYS_SIZE = 5;
   private static final int PRE_KEYS_UPLOAD_CHUNK = 30;
   private static final int PING_INTERVAL = 30;
-  private static final int MAX_ATTEMPTS = 5;
+  private static final int MEDIA_CONNECTION_DEFAULT_INTERVAL = 60;
+  private static final int MAX_ATTEMPTS = 3;
 
   private final SocketHandler socketHandler;
   private final Map<String, Integer> retries;
@@ -463,6 +464,7 @@ class StreamHandler
           .handleFailure(CRYPTOGRAPHY, new UnknownStreamException("Detected a bad mac"));
       return;
     }
+
     var statusCode = node.attributes()
         .getInt("code");
     switch (statusCode) {
@@ -494,7 +496,7 @@ class StreamHandler
       sendPreKeys();
     }
     createPingTask();
-    createMediaConnection();
+    createMediaConnection(0, null);
     sendStatusUpdate();
     socketHandler.onLoggedIn();
     if (!socketHandler.store()
@@ -647,19 +649,33 @@ class StreamHandler
     socketHandler.onSocketEvent(SocketEvent.PING);
   }
 
-  @SneakyThrows
-  private void createMediaConnection() {
+  private void createMediaConnection(int tries, Throwable error) {
     if (socketHandler.state() != SocketState.CONNECTED) {
       return;
     }
+
+    if(tries >= MAX_ATTEMPTS){
+      socketHandler.store().mediaConnection((MediaConnection) null);
+      socketHandler.errorHandler().handleFailure(MEDIA_CONNECTION, error);
+      scheduleMediaConnection(MEDIA_CONNECTION_DEFAULT_INTERVAL);
+      return;
+    }
+
     socketHandler.sendQuery("set", "w:m", Node.of("media_conn"))
         .thenApplyAsync(MediaConnection::of)
-        .thenApplyAsync(result -> socketHandler.store()
-            .mediaConnection(result))
-        .exceptionallyAsync(throwable -> socketHandler.errorHandler()
-            .handleFailure(MEDIA_CONNECTION, throwable))
-        .thenRunAsync(() -> runAsync(this::createMediaConnection,
-            delayedExecutor(socketHandler.store().mediaConnection().ttl(), TimeUnit.SECONDS)));
+        .thenAcceptAsync(result -> {
+          socketHandler.store().mediaConnection(result);
+          scheduleMediaConnection(result.ttl());
+        })
+        .exceptionallyAsync(throwable -> {
+          createMediaConnection(tries + 1, throwable);
+          return null;
+        });
+  }
+
+  private void scheduleMediaConnection(int seconds) {
+    var executor = delayedExecutor(seconds, TimeUnit.SECONDS);
+    runAsync(() -> createMediaConnection(0, null), executor);
   }
 
   private void digestIq(Node node) {

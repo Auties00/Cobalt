@@ -57,7 +57,6 @@ public class ListenerScanner {
           "Cannot initialize listener at %s: an error occurred while initializing the class(check its constructor)".formatted(
               listener.getName()), instantiationException);
     }
-
   }
 
   private Object[] createArguments(Whatsapp whatsapp) {

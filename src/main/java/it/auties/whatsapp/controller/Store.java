@@ -22,6 +22,7 @@ import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.serialization.ControllerProviderLoader;
 import it.auties.whatsapp.util.Clock;
 import java.net.URI;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -33,6 +34,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -684,13 +686,25 @@ public final class Store
    * @return the media connection
    */
   public MediaConnection mediaConnection() {
+    return mediaConnection(Duration.ofMinutes(2));
+  }
+
+  /**
+   * The media connection associated with this store
+   *
+   * @param timeout the non-null timeout for the connection to be filled
+   * @return the media connection
+   */
+  public MediaConnection mediaConnection(@NonNull Duration timeout) {
     try {
-      mediaConnectionLatch.await();
+      var result = mediaConnectionLatch.await(timeout.toMillis(), TimeUnit.MILLISECONDS);
+      if(!result){
+        throw new RuntimeException("Cannot get media connection");
+      }
+
       return mediaConnection;
     } catch (InterruptedException exception) {
-      throw new RuntimeException(
-          "Cannot lock on media connection. An error occurred previously while creating it probably",
-          exception);
+      throw new RuntimeException("Cannot lock on media connection", exception);
     }
   }
 

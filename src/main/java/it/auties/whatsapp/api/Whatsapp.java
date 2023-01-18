@@ -1428,8 +1428,7 @@ public class Whatsapp {
     Validate.isTrue(mediaMessage.decodedMedia().status() == Status.SUCCESS,
         "Cannot upload a message whose content isn't available(status: %s)".formatted(
             mediaMessage.decodedMedia().status()));
-    var upload = Medias.upload(mediaMessage.decodedMedia().media().get(), mediaMessage.mediaType(),
-        store().mediaConnection());
+    var upload = Medias.upload(mediaMessage.decodedMedia().media().get(), mediaMessage.mediaType(), store().mediaConnection());
     mediaMessage.mediaSha256(upload.fileSha256())
         .mediaEncryptedSha256(upload.fileEncSha256())
         .mediaKey(upload.mediaKey())

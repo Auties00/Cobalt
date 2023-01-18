@@ -332,11 +332,11 @@ public class SocketHandler
   }
 
   public CompletableFuture<Void> pullInitialPatches() {
-    return appStateHandler.pull(true, PatchType.values());
+    return appStateHandler.pullInitial();
   }
 
   public void pullPatch(PatchType... patchTypes) {
-    appStateHandler.pull(false, patchTypes);
+    appStateHandler.pull(patchTypes);
   }
 
   public void decodeMessage(Node node) {

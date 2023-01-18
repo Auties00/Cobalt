@@ -83,6 +83,8 @@ class AppStateHandler
   private static final int PULL_ATTEMPTS = 3;
   private final SocketHandler socketHandler;
   private final Semaphore semaphore;
+  private final Map<PatchType, Long> versions;
+  private final Map<PatchType, Integer> attempts;
   private CountDownLatch countDownLatch;
 
   @SneakyThrows
@@ -90,11 +92,13 @@ class AppStateHandler
     this.socketHandler = socketHandler;
     this.semaphore = new Semaphore(1);
     this.countDownLatch = new CountDownLatch(1);
+    this.versions = new HashMap<>();
+    this.attempts = new HashMap<>();
   }
 
   protected CompletableFuture<Void> push(@NonNull PatchRequest patch) {
-    return CompletableFuture.runAsync(() -> acquireLock(true))
-        .thenComposeAsync(result -> sendPullRequest(patch.type()))
+    return CompletableFuture.runAsync(this::acquireLock)
+        .thenComposeAsync(result -> pullUninterruptedly(List.of(patch.type())))
         .thenApplyAsync(result -> createPushRequest(patch))
         .thenComposeAsync(this::sendPush)
         .thenRunAsync(semaphore::release)
@@ -174,76 +178,94 @@ class AppStateHandler
           Node.of("patch", PROTOBUF.writeValueAsBytes(request.sync())));
       return socketHandler.sendQuery("set", "w:sync:app:state", Node.ofChildren("sync", body))
           .thenAcceptAsync(this::parseSyncRequest)
-          .thenRunAsync(() -> socketHandler.keys()
-              .putState(request.patch()
-                  .type(), request.newState()))
-          .thenRunAsync(() -> handleSyncRequest(request.patch()
-                  .type(), request.sync(), request.oldState(),
-              request.newState()
-                  .version()));
+          .thenRunAsync(() -> socketHandler.keys().putState(request.patch().type(), request.newState()))
+          .thenRunAsync(() -> handleSyncRequest(request.patch().type(), request.sync(), request.oldState(), request.newState().version()));
     } catch (Throwable throwable) {
       throw new RuntimeException("Cannot push patch", throwable);
     }
   }
 
-  private void handleSyncRequest(PatchType patchType, PatchSync patch, LTHashState oldState,
-      long newVersion) {
-    decodePatches(patchType, 0, List.of(patch.withVersion(new VersionSync(newVersion))),
-        oldState).records()
-        .forEach(this::processActions);
+  private void handleSyncRequest(PatchType patchType, PatchSync patch, LTHashState oldState, long newVersion) {
+    var patches = List.of(patch.withVersion(new VersionSync(newVersion)));
+    var results = decodePatches(patchType, 0, patches, oldState);
+    results.records().forEach(this::processActions);
   }
 
-  @SuppressWarnings("UnusedReturnValue")
-  protected CompletableFuture<Void> pull(boolean initial, PatchType... patchTypes) {
-    return CompletableFuture.runAsync(() -> acquireLock(!initial))
-        .thenComposeAsync(ignored -> sendPullRequest(patchTypes))
-        .thenRunAsync(() -> {
-          countDownLatch.countDown();
-          socketHandler.store()
-              .initialAppSync(true);
-          semaphore.release();
-        })
-        .exceptionallyAsync(exception -> {
-          if (initial) {
-            countDownLatch.countDown();
-            return socketHandler.errorHandler()
-                .handleFailure(INITIAL_APP_STATE_SYNC, exception);
-          }
-          return socketHandler.errorHandler()
-              .handleFailure(PULL_APP_STATE, exception);
-        })
+  protected void pull(PatchType... patchTypes) {
+    if(patchTypes == null || patchTypes.length == 0){
+      return;
+    }
+
+    CompletableFuture.runAsync(this::acquireLock)
+        .thenComposeAsync(ignored -> pullUninterruptedly(Arrays.asList(patchTypes)))
+        .thenRunAsync(this::onPull)
+        .exceptionallyAsync(exception -> onPullError(false, exception));
+  }
+
+  protected CompletableFuture<Void> pullInitial() {
+    return pullInitial(PatchType.CRITICAL_BLOCK, PatchType.CRITICAL_UNBLOCK_LOW)
+        .thenComposeAsync(ignored -> pullInitial(PatchType.REGULAR, PatchType.REGULAR_LOW, PatchType.REGULAR_HIGH))
+        .thenComposeAsync(ignored -> pullInitial(PatchType.CRITICAL_BLOCK, PatchType.CRITICAL_UNBLOCK_LOW));
+  }
+
+  private CompletableFuture<Void> pullInitial(PatchType... patchTypes) {
+    return pullUninterruptedly(Arrays.asList(patchTypes))
+        .thenRunAsync(this::onPull)
+        .exceptionallyAsync(exception -> onPullError(true, exception));
+  }
+
+  private void onPull() {
+    countDownLatch.countDown();
+    socketHandler.store()
+        .initialAppSync(true);
+    semaphore.release();
+    versions.clear();
+    attempts.clear();
+  }
+
+  private Void onPullError(boolean initial, Throwable exception) {
+    versions.clear();
+    attempts.clear();
+    if (initial) {
+      countDownLatch.countDown();
+      return socketHandler.errorHandler()
+          .handleFailure(INITIAL_APP_STATE_SYNC, exception);
+    }
+    return socketHandler.errorHandler()
+        .handleFailure(PULL_APP_STATE, exception);
+  }
+
+  private CompletableFuture<Void> pullUninterruptedly(List<PatchType> patchTypes) {
+    var tempStates = new HashMap<PatchType, LTHashState>();
+    var nodes = getPullNodes(patchTypes, tempStates);
+    return socketHandler.sendQuery("set", "w:sync:app:state", Node.ofChildren("sync", nodes))
+        .thenApplyAsync(this::parseSyncRequest)
+        .thenApplyAsync(records -> decodeSyncs(tempStates, records))
+        .thenComposeAsync(remaining -> remaining.isEmpty() ? completedFuture(null) : pullUninterruptedly(remaining))
         .orTimeout(PULL_TIMEOUT, TimeUnit.SECONDS);
   }
 
-  private CompletableFuture<Void> sendPullRequest(PatchType... patchTypes) {
-    Validate.isTrue(patchTypes.length != 0, "Cannot pull no patches",
-        IllegalArgumentException.class);
-    var versions = new HashMap<PatchType, Long>();
-    var attempts = new HashMap<PatchType, Integer>();
-    return pull(Arrays.asList(patchTypes), versions, attempts);
-  }
-
-  private CompletableFuture<Void> pull(List<PatchType> patchTypes, Map<PatchType, Long> versions,
-      Map<PatchType, Integer> attempts) {
-    var tempStates = new HashMap<PatchType, LTHashState>();
-    var nodes = patchTypes.stream()
-        .map(patchType -> createStateWithVersion(patchType, versions))
+  private List<Node> getPullNodes(List<PatchType> patchTypes, HashMap<PatchType, LTHashState> tempStates) {
+    return patchTypes.stream()
+        .map(this::createStateWithVersion)
         .peek(state -> tempStates.put(state.name(), state))
         .map(LTHashState::toNode)
         .toList();
-    return socketHandler.sendQuery("set", "w:sync:app:state", Node.ofChildren("sync", nodes))
-        .thenApplyAsync(this::parseSyncRequest)
-        .thenApplyAsync(records -> decodeSyncs(versions, attempts, tempStates, records))
-        .thenComposeAsync(remaining -> remaining.isEmpty() ?
-            completedFuture(null) :
-            pull(remaining, versions, attempts));
   }
 
-  private List<PatchType> decodeSyncs(Map<PatchType, Long> versions,
-      Map<PatchType, Integer> attempts,
-      Map<PatchType, LTHashState> tempStates, List<SnapshotSyncRecord> records) {
+  private LTHashState createStateWithVersion(PatchType name) {
+    return socketHandler.keys()
+        .findHashStateByName(name)
+        .orElseGet(() -> {
+          var result = new LTHashState(name);
+          versions.put(name, result.version());
+          return result;
+        });
+  }
+
+  private List<PatchType> decodeSyncs(Map<PatchType, LTHashState> tempStates, List<SnapshotSyncRecord> records) {
     return records.stream()
-        .map(record -> decodeSync(record, versions, attempts, tempStates))
+        .map(record -> decodeSync(record, tempStates))
         .peek(chunk -> chunk.records()
             .forEach(this::processActions))
         .filter(PatchChunk::hasMore)
@@ -251,18 +273,17 @@ class AppStateHandler
         .toList();
   }
 
-  private PatchChunk decodeSync(SnapshotSyncRecord record, Map<PatchType, Long> versions,
-      Map<PatchType, Integer> attempts, Map<PatchType, LTHashState> tempStates) {
+  private PatchChunk decodeSync(SnapshotSyncRecord record, Map<PatchType, LTHashState> tempStates) {
     try {
       var results = new ArrayList<ActionDataSync>();
       if (record.hasSnapshot()) {
-        decodeSnapshot(record.patchType(), versions.get(record.patchType()), record.snapshot())
-            .ifPresent(decodedSnapshot -> {
-              results.addAll(decodedSnapshot.records());
-              tempStates.put(record.patchType(), decodedSnapshot.state());
-              socketHandler.keys()
-                  .putState(record.patchType(), decodedSnapshot.state());
-            });
+        var snapshot = decodeSnapshot(record.patchType(), versions.get(record.patchType()), record.snapshot());
+        snapshot.ifPresent(decodedSnapshot -> {
+          results.addAll(decodedSnapshot.records());
+          tempStates.put(record.patchType(), decodedSnapshot.state());
+          socketHandler.keys()
+              .putState(record.patchType(), decodedSnapshot.state());
+        });
       }
       if (record.hasPatches()) {
         var decodedPatches = decodePatches(record.patchType(), versions.get(record.patchType()),
@@ -281,22 +302,8 @@ class AppStateHandler
         throw new RuntimeException("Cannot parse patch(%s tries)".formatted(PULL_ATTEMPTS),
             throwable);
       }
-      return decodeSync(record, versions, attempts, tempStates);
+      return decodeSync(record, tempStates);
     }
-  }
-
-  private LTHashState createStateWithVersion(PatchType name, Map<PatchType, Long> versions) {
-    var state = socketHandler.keys()
-        .findHashStateByName(name)
-        .orElse(null);
-    if (state == null) {
-      versions.put(name, 0L);
-      return new LTHashState(name);
-    }
-    if (!versions.containsKey(name)) {
-      versions.put(name, state.version());
-    }
-    return state;
   }
 
   private List<SnapshotSyncRecord> parseSyncRequest(Node node) {
@@ -637,17 +644,6 @@ class AppStateHandler
     return Hmac.calculateSha256(total, key);
   }
 
-  private void acquireLock(boolean necessary) {
-    try {
-      if (!necessary) {
-        return;
-      }
-      semaphore.acquire();
-    } catch (InterruptedException exception) {
-      throw new RuntimeException("Cannot lock", exception);
-    }
-  }
-
   protected void awaitReady() {
     try {
       if (socketHandler.store().initialAppSync()) {
@@ -662,6 +658,14 @@ class AppStateHandler
   protected void dispose() {
     semaphore.release();
     this.countDownLatch = new CountDownLatch(1);
+  }
+
+  private void acquireLock() {
+    try {
+      semaphore.acquire();
+    } catch (InterruptedException exception) {
+      throw new RuntimeException("Cannot acquire lock for pull", exception);
+    }
   }
 
   private record SyncRecord(LTHashState state, List<ActionDataSync> records) {
