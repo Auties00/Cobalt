@@ -250,13 +250,19 @@ class AppStateHandler
   }
 
   private LTHashState createStateWithVersion(PatchType name) {
-    return socketHandler.keys()
+    var state = socketHandler.keys()
         .findHashStateByName(name)
-        .orElseGet(() -> {
-          var result = new LTHashState(name);
-          versions.put(name, result.version());
-          return result;
-        });
+        .orElse(null);
+    if (state == null) {
+      versions.put(name, 0L);
+      return new LTHashState(name);
+    }
+
+    if (!versions.containsKey(name)) {
+      versions.put(name, state.version());
+    }
+
+    return state;
   }
 
   private List<PatchType> decodeSyncs(Map<PatchType, LTHashState> tempStates, List<SnapshotSyncRecord> records) {
@@ -273,7 +279,7 @@ class AppStateHandler
     try {
       var results = new ArrayList<ActionDataSync>();
       if (record.hasSnapshot()) {
-        var snapshot = decodeSnapshot(record.patchType(), versions.get(record.patchType()), record.snapshot());
+        var snapshot = decodeSnapshot(record.patchType(), versions.getOrDefault(record.patchType(), 0L), record.snapshot());
         snapshot.ifPresent(decodedSnapshot -> {
           results.addAll(decodedSnapshot.records());
           tempStates.put(record.patchType(), decodedSnapshot.state());
@@ -282,7 +288,7 @@ class AppStateHandler
         });
       }
       if (record.hasPatches()) {
-        var decodedPatches = decodePatches(record.patchType(), versions.get(record.patchType()),
+        var decodedPatches = decodePatches(record.patchType(), versions.getOrDefault(record.patchType(), 0L),
             record.patches(), tempStates.get(record.patchType()));
         results.addAll(decodedPatches.records());
         socketHandler.keys()
