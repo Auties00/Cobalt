@@ -465,6 +465,13 @@ class StreamHandler
       return;
     }
 
+    var conflict = node.findNode("conflict");
+    if(conflict.isPresent()){
+      socketHandler.changeKeys();
+      socketHandler.disconnect(true);
+      return;
+    }
+
     var statusCode = node.attributes()
         .getInt("code");
     switch (statusCode) {
@@ -484,9 +491,7 @@ class StreamHandler
     var reason = child.attributes()
         .getString("reason", type);
     socketHandler.errorHandler()
-        .handleFailure(Objects.equals(reason, "device_removed") ?
-            LOGGED_OUT :
-            STREAM, new RuntimeException(reason));
+        .handleFailure(Objects.equals(reason, "device_removed") ? LOGGED_OUT : STREAM, new RuntimeException(reason));
   }
 
   private void digestSuccess() {

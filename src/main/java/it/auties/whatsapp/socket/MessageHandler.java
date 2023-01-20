@@ -81,8 +81,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 class MessageHandler
@@ -98,8 +99,8 @@ class MessageHandler
   private final Cache<ContactJid, GroupMetadata> groupsCache;
   private final Cache<String, List<ContactJid>> devicesCache;
   private final Set<Chat> historyCache;
-  private final AtomicBoolean sentInitialPatch;
   private final Semaphore encodeSemaphore;
+  private final Executor decodeExecutor;
 
   protected MessageHandler(SocketHandler socketHandler) {
     this.socketHandler = socketHandler;
@@ -108,7 +109,7 @@ class MessageHandler
     this.devicesCache = createCache(Duration.ofMinutes(5));
     this.historyCache = new HashSet<>();
     this.encodeSemaphore = new Semaphore(1);
-    this.sentInitialPatch = new AtomicBoolean(false);
+    this.decodeExecutor = Executors.newSingleThreadExecutor();
   }
 
   private <K, V> Cache<K, V> createCache(Duration duration) {
@@ -420,19 +421,22 @@ class MessageHandler
     builder.createOutgoing(registrationId, identity, signedKey, key);
   }
 
-  public synchronized void decode(Node node) {
-    try {
-      var businessName = getBusinessName(node);
-      var encrypted = node.findNodes("enc");
-      if (node.hasNode("unavailable") && !node.hasNode("enc")) {
-        decode(node, null, businessName);
-        return;
+  public void decode(Node node) {
+    decodeExecutor.execute(() -> {
+      try {
+        var businessName = getBusinessName(node);
+        var encrypted = node.findNodes("enc");
+        if (node.hasNode("unavailable") && !node.hasNode("enc")) {
+          decode(node, null, businessName);
+          return;
+        }
+
+        encrypted.forEach(message -> decode(node, message, businessName));
+      } catch (Throwable throwable) {
+        socketHandler.errorHandler()
+            .handleFailure(MESSAGE, throwable);
       }
-      encrypted.forEach(message -> decode(node, message, businessName));
-    } catch (Throwable throwable) {
-      socketHandler.errorHandler()
-          .handleFailure(MESSAGE, throwable);
-    }
+    });
   }
 
   private String getBusinessName(Node node) {
@@ -776,9 +780,13 @@ class MessageHandler
         }
         socketHandler.sendSyncReceipt(info, "hist_sync");
       }
-      case APP_STATE_SYNC_KEY_SHARE -> socketHandler.keys()
-          .addAppKeys(protocolMessage.appStateSyncKeyShare()
-              .keys());
+      case APP_STATE_SYNC_KEY_SHARE -> {
+        socketHandler.keys()
+            .addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
+        socketHandler.pullInitialPatches()
+            .thenRunAsync(this::subscribeToAllPresences)
+            .thenRunAsync(socketHandler::onContacts);
+      }
       case REVOKE -> socketHandler.store()
           .findMessageById(info.chat(), protocolMessage.key()
               .id())
@@ -835,14 +843,7 @@ class MessageHandler
       }
       case PUSH_NAME -> history.pushNames()
           .forEach(this::handNewPushName);
-      case RECENT, FULL -> {
-        handleRecentMessagesListener(history);
-        if (!sentInitialPatch.getAndSet(true)) {
-          socketHandler.pullInitialPatches()
-              .thenRunAsync(this::subscribeToAllPresences)
-              .thenRunAsync(socketHandler::onContacts);
-        }
-      }
+      case RECENT, FULL -> handleRecentMessagesListener(history);
       case NON_BLOCKING_DATA -> history.pastParticipants()
           .forEach(pastParticipants -> socketHandler.store()
               .findChatByJid(pastParticipants.groupJid())
@@ -910,7 +911,6 @@ class MessageHandler
     groupsCache.invalidateAll();
     devicesCache.invalidateAll();
     historyCache.clear();
-    sentInitialPatch.set(false);
     encodeSemaphore.release();
   }
 

@@ -272,8 +272,9 @@ public class SocketHandler
 
   @OnClose
   public void onClose() {
-    if (authHandler.future() != null && !authHandler.future()
-        .isDone() && state == SocketState.DISCONNECTED) {
+    if (authHandler.future() != null
+        && !authHandler.future().isDone()
+        && state == SocketState.DISCONNECTED) {
       authHandler.future()
           .complete(null);
     }
@@ -282,18 +283,18 @@ public class SocketHandler
       disconnect(true);
       return;
     }
-    onDisconnected(DisconnectReason.DISCONNECTED);
+    onDisconnected(state == SocketState.RECONNECTING ? DisconnectReason.RECONNECTING : DisconnectReason.DISCONNECTED);
     onShutdown(state == SocketState.RECONNECTING);
   }
 
   @OnError
   public void onError(Throwable throwable) {
     if (throwable instanceof IllegalStateException stateException
-        && stateException.getMessage()
-        .equals("The connection has been closed.")) { // FIXME: is this a good way to check this?
+        && stateException.getMessage().equals("The connection has been closed.")) {
       onClose();
       return;
     }
+
     onSocketEvent(SocketEvent.ERROR);
     errorHandler.handleFailure(UNKNOWN, throwable);
   }
