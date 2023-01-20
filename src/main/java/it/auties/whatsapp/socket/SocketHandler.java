@@ -209,7 +209,7 @@ public class SocketHandler
         .isEmpty()) {
       return;
     }
-    if (state != SocketState.CONNECTED) {
+    if (state != SocketState.CONNECTED && !errorHandler.failure().get())  {
       var header = message.decoded()
           .getFirst()
           .toByteArray();
