@@ -9,10 +9,12 @@ import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.model.signal.auth.ClientFinish;
 import it.auties.whatsapp.model.signal.auth.ClientPayload;
 import it.auties.whatsapp.model.signal.auth.Companion;
+import it.auties.whatsapp.model.signal.auth.Companion.CompanionPropsPlatformType;
 import it.auties.whatsapp.model.signal.auth.CompanionData;
 import it.auties.whatsapp.model.signal.auth.HandshakeMessage;
 import it.auties.whatsapp.model.signal.auth.UserAgent;
 import it.auties.whatsapp.model.signal.auth.WebInfo;
+import it.auties.whatsapp.model.signal.auth.WebInfo.WebInfoWebSubPlatform;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.SignalSpecification;
@@ -73,23 +75,25 @@ class AuthHandler
         .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
         .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
         .userAgent(createUserAgent())
-        .passive(true)
-        .webInfo(new WebInfo(WebInfo.WebInfoWebSubPlatform.WEB_BROWSER));
+        .webInfo(new WebInfo(socketHandler.options().historyLength() == HistoryLength.ONE_YEAR
+            ? WebInfoWebSubPlatform.WIN_STORE : WebInfo.WebInfoWebSubPlatform.WEB_BROWSER));
     return PROTOBUF.writeValueAsBytes(finishUserPayload(builder));
   }
 
   private ClientPayload finishUserPayload(ClientPayload.ClientPayloadBuilder builder) {
-    if (socketHandler.store()
-        .userCompanionJid() != null) {
+    if (socketHandler.store().userCompanionJid() != null) {
       return builder.username(parseLong(socketHandler.store()
               .userCompanionJid()
               .user()))
+          .passive(true)
           .device(socketHandler.store()
               .userCompanionJid()
               .device())
           .build();
     }
+
     return builder.regData(createRegisterData())
+        .passive(false)
         .build();
   }
 
@@ -130,11 +134,9 @@ class AuthHandler
 
   private Companion createCompanionProps() {
     return Companion.builder()
-        .os(socketHandler.options()
-            .description())
-        .platformType(Companion.CompanionPropsPlatformType.DESKTOP)
-        .requireFullSync(socketHandler.options()
-            .historyLength() == HistoryLength.ONE_YEAR)
+        .os(socketHandler.options().description())
+        .platformType(socketHandler.options().historyLength() == HistoryLength.ONE_YEAR ? Companion.CompanionPropsPlatformType.DESKTOP : CompanionPropsPlatformType.CHROME)
+        .requireFullSync(socketHandler.options().historyLength() == HistoryLength.ONE_YEAR)
         .build();
   }
 

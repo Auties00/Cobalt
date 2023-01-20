@@ -423,19 +423,19 @@ class MessageHandler
 
   public void decode(Node node) {
     decodeExecutor.execute(() -> {
-      try {
-        var businessName = getBusinessName(node);
-        var encrypted = node.findNodes("enc");
-        if (node.hasNode("unavailable") && !node.hasNode("enc")) {
-          decode(node, null, businessName);
-          return;
-        }
-
-        encrypted.forEach(message -> decode(node, message, businessName));
-      } catch (Throwable throwable) {
-        socketHandler.errorHandler()
-            .handleFailure(MESSAGE, throwable);
+    try {
+      var businessName = getBusinessName(node);
+      var encrypted = node.findNodes("enc");
+      if (node.hasNode("unavailable") && !node.hasNode("enc")) {
+        decode(node, null, businessName);
+        return;
       }
+
+      encrypted.forEach(message -> decode(node, message, businessName));
+    } catch (Throwable throwable) {
+      socketHandler.errorHandler()
+          .handleFailure(MESSAGE, throwable);
+    }
     });
   }
 
@@ -785,7 +785,8 @@ class MessageHandler
             .addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
         socketHandler.pullInitialPatches()
             .thenRunAsync(this::subscribeToAllPresences)
-            .thenRunAsync(socketHandler::onContacts);
+            .thenRunAsync(socketHandler::onContacts)
+            .thenRunAsync(() -> socketHandler.store().initialSnapshot(true));
       }
       case REVOKE -> socketHandler.store()
           .findMessageById(info.chat(), protocolMessage.key()
@@ -837,8 +838,6 @@ class MessageHandler
         historyCache.addAll(history.conversations());
         history.conversations()
             .forEach(this::updateChatMessages);
-        socketHandler.store()
-            .initialSnapshot(true);
         socketHandler.onChats();
       }
       case PUSH_NAME -> history.pushNames()
