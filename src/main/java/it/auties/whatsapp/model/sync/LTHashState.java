@@ -53,7 +53,7 @@ public class LTHashState {
         .put("name", name)
         .put("version", version)
         .put("return_snapshot", version == 0)
-        .map();
+        .toMap();
     return ofAttributes("collection", attributes);
   }
 

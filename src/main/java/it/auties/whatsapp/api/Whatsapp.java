@@ -1111,7 +1111,7 @@ public class Whatsapp {
         .put("name", type.data())
         .put("last", value.data())
         .put("dhash", "none", () -> value == PrivacySettingValue.CONTACT_EXCEPT)
-        .map();
+        .toMap();
     var children = value != PrivacySettingValue.CONTACT_EXCEPT ?
         null :
         Arrays.stream(excluded)
@@ -1857,7 +1857,7 @@ public class Whatsapp {
         .put("id", MessageKey.randomId(), () -> description != null)
         .put("delete", true, () -> description == null)
         .put("prev", descriptionId, () -> descriptionId != null)
-        .map();
+        .toMap();
     var body = Node.ofChildren("description", attributes, descriptionNode);
     return socketHandler.sendQuery(group.toJid(), "set", "w:g2", body);
   }
@@ -2592,7 +2592,7 @@ public class Whatsapp {
         .put("from_me", String.valueOf(info.fromMe()))
         .put("participant", info.senderJid(),
             () -> !Objects.equals(info.chatJid(), info.senderJid()))
-        .map();
+        .toMap();
     var node = Node.ofChildren("receipt", Map.of("id", info.key()
             .id(), "to", socketHandler.store()
             .userCompanionJid()

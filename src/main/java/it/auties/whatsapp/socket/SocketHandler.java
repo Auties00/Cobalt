@@ -376,7 +376,7 @@ public class SocketHandler
         .put("type", method)
         .put("to", to)
         .put("xmlns", category, Objects::nonNull)
-        .map();
+        .toMap();
     return send(ofChildren("iq", attributes, body));
   }
 
@@ -388,7 +388,7 @@ public class SocketHandler
         .put("type", method)
         .put("to", to)
         .put("xmlns", category, Objects::nonNull)
-        .map();
+        .toMap();
     return sendWithNoResponse(ofChildren("iq", attributes, body));
   }
 
@@ -489,7 +489,7 @@ public class SocketHandler
         .put("to", jid)
         .put("type", type, Objects::nonNull)
         .put("participant", participant, Objects::nonNull, value -> !Objects.equals(jid, value));
-    var receipt = Node.ofChildren("receipt", attributes.map(), toMessagesNode(messages));
+    var receipt = Node.ofChildren("receipt", attributes.toMap(), toMessagesNode(messages));
     sendWithNoResponse(receipt);
   }
 
@@ -522,7 +522,7 @@ public class SocketHandler
         .put("participant", participant, Objects::nonNull)
         .put("recipient", recipient, Objects::nonNull)
         .put("type", type, Objects::nonNull)
-        .map();
+        .toMap();
     var receipt = ofAttributes("ack", attributes);
     sendWithNoResponse(receipt);
   }

@@ -36,13 +36,13 @@ public final class LocationMessage
    * The latitude of the location that this message wraps
    */
   @ProtobufProperty(index = 1, type = DOUBLE)
-  private Double latitude;
+  private double latitude;
 
   /**
    * The longitude of the location that this message wraps
    */
   @ProtobufProperty(index = 2, type = DOUBLE)
-  private Double longitude;
+  private double longitude;
 
   /**
    * The name of the location that this message wraps
@@ -72,19 +72,19 @@ public final class LocationMessage
    * The accuracy in meters of the location that this message wraps
    */
   @ProtobufProperty(index = 7, type = UINT32)
-  private Integer accuracy;
+  private int accuracy;
 
   /**
    * The speed in meters per second of the device that sent this live location message
    */
   @ProtobufProperty(index = 8, type = FLOAT)
-  private Float speed;
+  private float speed;
 
   /**
    * Degrees Clockwise from Magnetic North
    */
   @ProtobufProperty(index = 9, type = UINT32)
-  private Integer magneticNorthOffset;
+  private int magneticNorthOffset;
 
   /**
    * The caption of this message

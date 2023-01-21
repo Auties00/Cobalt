@@ -36,31 +36,31 @@ public final class LiveLocationMessage
    * The latitude of the location that this message wraps
    */
   @ProtobufProperty(index = 1, type = DOUBLE)
-  private Double latitude;
+  private double latitude;
 
   /**
    * The longitude of the location that this message wraps
    */
   @ProtobufProperty(index = 2, type = DOUBLE)
-  private Double longitude;
+  private double longitude;
 
   /**
    * The accuracy in meters of the location that this message wraps
    */
   @ProtobufProperty(index = 3, type = UINT32)
-  private Integer accuracy;
+  private int accuracy;
 
   /**
    * The speed in meters per second of the device that sent this live location message
    */
   @ProtobufProperty(index = 4, type = FLOAT)
-  private Float speed;
+  private float speed;
 
   /**
    * Degrees Clockwise from Magnetic North
    */
   @ProtobufProperty(index = 5, type = UINT32)
-  private Integer magneticNorthOffset;
+  private int magneticNorthOffset;
 
   /**
    * The caption of this message
@@ -72,14 +72,14 @@ public final class LiveLocationMessage
    * This property probably refers to the number of updates that this live location message.
    */
   @ProtobufProperty(index = 7, type = UINT64)
-  private Long sequenceNumber;
+  private long sequenceNumber;
 
   /**
    * This offset probably refers to the seconds since the last update to this live location message.
    * In addition, it is measured in seconds since {@link java.time.Instant#EPOCH}.
    */
   @ProtobufProperty(index = 8, type = UINT32)
-  private Integer timeOffset;
+  private int timeOffset;
 
   /**
    * The thumbnail for this live location message encoded as jpeg in an array of bytes

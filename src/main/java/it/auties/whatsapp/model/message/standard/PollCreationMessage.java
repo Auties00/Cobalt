@@ -76,7 +76,7 @@ public final class PollCreationMessage
   private Map<String, PollOption> selectableOptionsHashesMap = new ConcurrentHashMap<>();
 
   /**
-   * The map of the options selected by each person that can vote in this poll
+   * The toMap of the options selected by each person that can vote in this poll
    */
   @Default
   private Map<ContactJid, List<PollOption>> selectedOptionsMap = new ConcurrentHashMap<>();
@@ -117,7 +117,7 @@ public final class PollCreationMessage
    * Returns an unmodifiable list of the options that a contact voted in this poll
    *
    * @param contact the non-null contact that voted in this poll
-   * @return a non-null unmodifiable map
+   * @return a non-null unmodifiable toMap
    */
   public List<PollOption> getSelectedOptions(@NonNull ContactJidProvider contact) {
     return Optional.of(selectedOptionsMap.get(contact.toJid()))

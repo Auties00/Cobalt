@@ -166,7 +166,7 @@ public class Encoder {
 
   private void writeAttributes(Node input) {
     input.attributes()
-        .map()
+        .toMap()
         .forEach((key, value) -> {
           writeString(key);
           write(value);

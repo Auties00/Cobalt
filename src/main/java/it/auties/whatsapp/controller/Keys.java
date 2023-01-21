@@ -120,7 +120,7 @@ public final class Keys
   private ConcurrentLinkedDeque<AppStateSyncKey> appStateKeys = new ConcurrentLinkedDeque<>();
 
   /**
-   * Sessions map
+   * Sessions toMap
    */
   @NonNull
   @Default

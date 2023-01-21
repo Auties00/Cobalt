@@ -332,15 +332,15 @@ public final class Chat
   private ContactJid lidJid;
 
   /**
-   * A map that holds the status of each participant, excluding yourself, for this chat. If the chat
-   * is not a group, this map's size will range from 0 to 1. Otherwise, it will range from 0 to the
+   * A toMap that holds the status of each participant, excluding yourself, for this chat. If the chat
+   * is not a group, this toMap's size will range from 0 to 1. Otherwise, it will range from 0 to the
    * number of participants - 1. It is important to remember that is not guaranteed that every
    * participant will be present as a key. In this case, if this chat is a group, it can be safely
    * assumed that the user is not available. Otherwise, it's recommended to use
    * {@link Whatsapp#subscribeToPresence(ContactJidProvider)} to force Whatsapp to send updates
    * regarding the status of the other participant. It's also possible to listen for updates to a
    * contact's presence in a group or in a conversation by implementing
-   * {@link Listener#onContactPresence}. The presence that this map indicates might not line up with
+   * {@link Listener#onContactPresence}. The presence that this toMap indicates might not line up with
    * {@link Contact#lastKnownPresence()} if the contact is composing, recording or paused. This is
    * because a contact can be online on Whatsapp and composing, recording or paused in a specific
    * chat.
@@ -798,7 +798,7 @@ public final class Chat
       // Kind of abusing the type system of java
       // If the chat was received from Whatsapp, the actual type of the list is HistorySyncMessage, and it needs to be unwrapped
       // Though if the message was stored locally it's actually a MessageInfo(unwrapped HistorySyncMessage)
-      // If the type of the messages parameter were to be Object though, Jackson wouldn't be able to deserialize it correctly(would be assumed as a map)
+      // If the type of the messages parameter were to be Object though, Jackson wouldn't be able to deserialize it correctly(would be assumed as a toMap)
       // So we need to specify the MessageInfo type so that jackson can use a base type if it's not sure of the content of the list
       // And loop through the messages as if they were Objects because accessing it in any other way would yield a ClassCastException
       // I could switch to using a HistorySyncMessage List instead and return a List of MessageInfo through an accessor, but this is very costly as this list might be huge

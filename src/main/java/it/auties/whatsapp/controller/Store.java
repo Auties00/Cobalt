@@ -118,7 +118,7 @@ public final class Store
   private ContactJid userCompanionJid;
 
   /**
-   * The non-null map of chats
+   * The non-null toMap of chats
    */
   @NonNull
   @Default
@@ -126,7 +126,7 @@ public final class Store
   private ConcurrentHashMap<ContactJid, Chat> chats = new ConcurrentHashMap<>();
 
   /**
-   * The non-null map of contacts
+   * The non-null toMap of contacts
    */
   @NonNull
   @Default
@@ -140,7 +140,7 @@ public final class Store
   private ConcurrentHashMap<ContactJid, ConcurrentLinkedDeque<MessageInfo>> status = new ConcurrentHashMap<>();
 
   /**
-   * The non-null map of privacy settings
+   * The non-null toMap of privacy settings
    */
   @NonNull
   @Default

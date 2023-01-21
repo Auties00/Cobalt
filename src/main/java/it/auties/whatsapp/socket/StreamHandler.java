@@ -198,7 +198,7 @@ class StreamHandler
     var attributes = Attributes.of()
         .put("class", "receipt")
         .put("type", type, Objects::nonNull)
-        .map();
+        .toMap();
     socketHandler.sendMessageAck(node, attributes);
   }
 
@@ -283,7 +283,7 @@ class StreamHandler
 
   private void digestNotification(Node node) {
     socketHandler.sendMessageAck(node, node.attributes()
-        .map());
+        .toMap());
     var type = node.attributes()
         .getString("type", null);
     switch (type) {
@@ -800,7 +800,7 @@ class StreamHandler
         .put("id", node.id())
         .put("type", "result")
         .put("to", Server.WHATSAPP.toJid())
-        .map();
+        .toMap();
     var request = ofChildren("iq", attributes, content);
     socketHandler.sendWithNoResponse(request);
   }

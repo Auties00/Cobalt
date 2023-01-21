@@ -35,17 +35,31 @@ import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.DownloadResult;
+import it.auties.whatsapp.model.message.button.ButtonsResponseMessage;
+import it.auties.whatsapp.model.message.button.ListMessage;
+import it.auties.whatsapp.model.message.button.ListResponseMessage;
+import it.auties.whatsapp.model.message.button.NativeFlowResponseMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.message.model.MessageType;
+import it.auties.whatsapp.model.message.payment.PaymentOrderMessage;
 import it.auties.whatsapp.model.message.server.DeviceSentMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
+import it.auties.whatsapp.model.message.standard.ContactMessage;
+import it.auties.whatsapp.model.message.standard.ContactsArrayMessage;
+import it.auties.whatsapp.model.message.standard.DocumentMessage;
+import it.auties.whatsapp.model.message.standard.ImageMessage;
+import it.auties.whatsapp.model.message.standard.LiveLocationMessage;
 import it.auties.whatsapp.model.message.standard.PollCreationMessage;
 import it.auties.whatsapp.model.message.standard.PollUpdateMessage;
+import it.auties.whatsapp.model.message.standard.ProductMessage;
 import it.auties.whatsapp.model.message.standard.ReactionMessage;
+import it.auties.whatsapp.model.message.standard.StickerMessage;
+import it.auties.whatsapp.model.message.standard.TextMessage;
+import it.auties.whatsapp.model.message.standard.VideoMessage;
 import it.auties.whatsapp.model.poll.PollUpdateEncryptedOptions;
 import it.auties.whatsapp.model.request.Attributes;
 import it.auties.whatsapp.model.request.MessageSendRequest;
@@ -214,11 +228,42 @@ class MessageHandler
           .put("id", info.id())
           .put("type", "text")
           .put("to", info.chatJid())
-          .map();
+          .put("type", getMessageType(info), Objects::nonNull)
+          .put("mediatype", getMediaType(info), Objects::nonNull)
+          .put("duration", "900", () -> info.message().type() == MessageType.LIVE_LOCATION)
+          .toMap();
       return ofChildren("message", attributes, body);
     } catch (IOException exception) {
       throw new UncheckedIOException("Cannot create encoded message node", exception);
     }
+  }
+
+  private String getMessageType(MessageInfo info){
+    return switch (info.message().type()){
+      case POLL_CREATION -> "poll";
+      case REACTION -> "reaction";
+      default -> null;
+    };
+  }
+
+  private String getMediaType(MessageInfo info) {
+    return switch (info.message().content()){
+      case ImageMessage ignored -> "image";
+      case VideoMessage message -> message.gifPlayback() ? "gif" : "video";
+      case ContactMessage ignored -> "vcard";
+      case DocumentMessage ignored -> "document";
+      case ContactsArrayMessage ignored -> "contact_array";
+      case LiveLocationMessage ignored -> "livelocation";
+      case StickerMessage ignored -> "sticker";
+      case ListMessage ignored -> "list";
+      case ListResponseMessage ignored -> "list_response";
+      case ButtonsResponseMessage ignored -> "buttons_response";
+      case PaymentOrderMessage ignored -> "order";
+      case ProductMessage ignored -> "product";
+      case TextMessage message -> message.canonicalUrl() != null ? "url" : "";
+      case NativeFlowResponseMessage ignored -> "native_flow_response";
+      default -> null;
+    };
   }
 
   private boolean hasPreKeyMessage(List<Node> participants) {
@@ -536,7 +581,7 @@ class MessageHandler
       socketHandler.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.key()
           .id()), null);
       socketHandler.sendMessageAck(infoNode, infoNode.attributes()
-          .map());
+          .toMap());
       socketHandler.onReply(info);
     } catch (Throwable throwable) {
       socketHandler.errorHandler()
@@ -553,8 +598,7 @@ class MessageHandler
           handlePollCreation(messageContainer, pollCreationMessage);
       case PollUpdateMessage pollUpdateMessage -> handlePollUpdate(info, pollUpdateMessage);
       case ReactionMessage reactionMessage -> handleReactionMessage(info, reactionMessage);
-      default -> {
-      }
+      default -> {}
     }
   }
 
@@ -645,7 +689,7 @@ class MessageHandler
         .put("to", from)
         .put("recipient", recipient, () -> !Objects.equals(recipient, from))
         .put("participant", participant, Objects::nonNull)
-        .map();
+        .toMap();
     var retryNode = Node.ofChildren("receipt", retryAttributes, Node.ofAttributes("retry",
             Map.of("count", attempts, "id",
                 id, "t", timestamp, "v",
@@ -783,6 +827,10 @@ class MessageHandler
       case APP_STATE_SYNC_KEY_SHARE -> {
         socketHandler.keys()
             .addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
+        if(socketHandler.store().initialSnapshot()){
+          return;
+        }
+
         socketHandler.pullInitialPatches()
             .thenRunAsync(this::subscribeToAllPresences)
             .thenRunAsync(socketHandler::onContacts)
