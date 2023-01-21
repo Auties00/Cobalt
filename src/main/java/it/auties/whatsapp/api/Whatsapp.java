@@ -1213,7 +1213,7 @@ public class Whatsapp {
    * @return a CompletableFuture
    */
   public CompletableFuture<MessageInfo> removeReaction(@NonNull MessageMetadataProvider message) {
-    return sendReaction(message, null);
+    return sendReaction(message, (String) null);
   }
 
   /**
@@ -1223,18 +1223,31 @@ public class Whatsapp {
    * @param reaction the reaction to send, null if you want to remove the reaction
    * @return a CompletableFuture
    */
+  public CompletableFuture<MessageInfo> sendReaction(@NonNull MessageMetadataProvider message, Emojy reaction) {
+    return sendReaction(message, Objects.toString(reaction));
+  }
+
+  /**
+   * Send a reaction to a message
+   *
+   * @param message  the non-null message
+   * @param reaction the reaction to send, null if you want to remove the reaction.
+   *                 If a string that isn't an emoji supported by Whatsapp is used, it will not get displayed correctly.
+   *                 Use {@link Whatsapp#sendReaction(MessageMetadataProvider, Emojy)} if you need a typed emojy enum.
+   * @return a CompletableFuture
+   */
   public CompletableFuture<MessageInfo> sendReaction(@NonNull MessageMetadataProvider message,
       String reaction) {
     var key = MessageKey.builder()
-        .chatJid(message.chat()
-            .jid())
+        .chatJid(message.chat().jid())
+        .senderJid(message.senderJid())
+        .fromMe(Objects.equals(message.senderJid().toUserJid(), store().userCompanionJid().toUserJid()))
         .id(message.id())
         .build();
     var reactionMessage = ReactionMessage.builder()
         .key(key)
         .content(reaction)
-        .timestamp(Instant.now()
-            .toEpochMilli())
+        .timestamp(Instant.now().toEpochMilli())
         .build();
     return sendMessage(message.chat(), reactionMessage);
   }
@@ -1317,17 +1330,13 @@ public class Whatsapp {
    */
   public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJidProvider chat,
       @NonNull MessageContainer message) {
-    var sender = chat.toJid()
-        .hasServer(GROUP) ?
-        store().userCompanionJid() :
-        null;
     var key = MessageKey.builder()
         .chatJid(chat.toJid())
         .fromMe(true)
-        .senderJid(sender)
+        .senderJid(store().userCompanionJid())
         .build();
     var info = MessageInfo.builder()
-        .senderJid(sender)
+        .senderJid(store().userCompanionJid())
         .key(key)
         .message(message)
         .timestampInSeconds(Clock.now())
@@ -1366,8 +1375,7 @@ public class Whatsapp {
           groupInviteMessage); // This is not needed probably, but Whatsapp uses a text message by default, so maybe it makes sense
       case ButtonMessage buttonMessage -> info.message(info.message()
           .toViewOnce()); // Credit to Baileys: https://github.com/adiwajshing/Baileys/blob/f0bdb12e56cea8b0bfbb0dff37c01690274e3e31/src/Utils/messages.ts#L781
-      default -> {
-      }
+      default -> {}
     }
   }
 

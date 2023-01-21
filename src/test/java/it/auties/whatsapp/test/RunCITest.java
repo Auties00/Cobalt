@@ -31,6 +31,7 @@ import it.auties.whatsapp.model.message.button.ButtonsMessage;
 import it.auties.whatsapp.model.message.button.InteractiveMessage;
 import it.auties.whatsapp.model.message.button.ListMessage;
 import it.auties.whatsapp.model.message.button.TemplateMessage;
+import it.auties.whatsapp.api.Emojy;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.standard.AudioMessage;
 import it.auties.whatsapp.model.message.standard.ContactMessage;
@@ -915,9 +916,9 @@ public class RunCITest implements Listener, JacksonProvider {
     var example = api.sendMessage(contact, "Hello")
         .join();
     log("Sending heart reaction...");
-    var simple = api.sendReaction(example, "💖")
+    var simple = api.sendReaction(example, Emojy.FIRST_QUARTER_MOON)
         .join();
-    log("Sent heart reaction: %s", simple);
+    log("Sent heart reaction: %s", simple.toJson());
   }
 
   @Test

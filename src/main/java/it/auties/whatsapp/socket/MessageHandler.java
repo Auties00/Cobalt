@@ -226,9 +226,8 @@ class MessageHandler
       }
       var attributes = Attributes.ofNullable(metadata)
           .put("id", info.id())
-          .put("type", "text")
+          .put("type", getMessageType(info))
           .put("to", info.chatJid())
-          .put("type", getMessageType(info), Objects::nonNull)
           .put("mediatype", getMediaType(info), Objects::nonNull)
           .put("duration", "900", () -> info.message().type() == MessageType.LIVE_LOCATION)
           .toMap();
@@ -240,6 +239,7 @@ class MessageHandler
 
   private String getMessageType(MessageInfo info){
     return switch (info.message().type()){
+      case TEXT -> "text";
       case POLL_CREATION -> "poll";
       case REACTION -> "reaction";
       default -> null;
@@ -260,7 +260,7 @@ class MessageHandler
       case ButtonsResponseMessage ignored -> "buttons_response";
       case PaymentOrderMessage ignored -> "order";
       case ProductMessage ignored -> "product";
-      case TextMessage message -> message.canonicalUrl() != null ? "url" : "";
+      case TextMessage message -> message.canonicalUrl() != null ? "url" : null;
       case NativeFlowResponseMessage ignored -> "native_flow_response";
       default -> null;
     };

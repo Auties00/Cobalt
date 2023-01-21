@@ -2,7 +2,9 @@ package it.auties.whatsapp.model.message.model;
 
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
+import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.ContextInfo;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
@@ -48,6 +50,7 @@ public class QuotedMessage
     if (!contextInfo.hasQuotedMessage()) {
       return Optional.empty();
     }
+
     var id = contextInfo.quotedMessageId()
         .get();
     var chat = contextInfo.quotedMessageChat()
@@ -66,5 +69,15 @@ public class QuotedMessage
    */
   public Optional<Contact> sender() {
     return Optional.ofNullable(sender);
+  }
+
+  /**
+   * Returns the sender's jid
+   *
+   * @return a jid
+   */
+  @Override
+  public ContactJid senderJid() {
+    return Objects.requireNonNullElseGet(sender.jid(), chat::jid);
   }
 }

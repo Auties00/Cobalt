@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.message.model;
 
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
+import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.MessageInfo;
 import java.util.Optional;
 
@@ -24,6 +25,13 @@ public sealed interface MessageMetadataProvider
    * @return a chat
    */
   Chat chat();
+
+  /**
+   * Returns the sender's jid
+   *
+   * @return a jid
+   */
+  ContactJid senderJid();
 
   /**
    * Returns the sender of the message

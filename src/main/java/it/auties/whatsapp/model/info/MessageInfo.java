@@ -45,7 +45,6 @@ import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Data;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -55,7 +54,6 @@ import lombok.extern.jackson.Jacksonized;
  * A model class that holds the information related to a {@link Message}.
  */
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
 @Builder
 @Jacksonized
@@ -63,7 +61,6 @@ import lombok.extern.jackson.Jacksonized;
 @ProtobufName("WebMessageInfo")
 public final class MessageInfo
     implements Info, MessageMetadataProvider, JacksonProvider {
-
   /**
    * The MessageKey of this message
    */
