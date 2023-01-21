@@ -14,14 +14,14 @@ import java.util.function.Function;
 import lombok.NonNull;
 
 /**
- * A utility class that wraps a map and provides easy methods to interact with its content
+ * A utility class that wraps a toMap and provides easy methods to interact with its content
  *
- * @param map the non-null wrapped map
+ * @param toMap the non-null wrapped toMap
  */
-public record Attributes(@NonNull Map<String, Object> map) {
+public record Attributes(@NonNull Map<String, Object> toMap) {
 
   /**
-   * Constructs a new map using the non-null provided entries
+   * Constructs a new toMap using the non-null provided entries
    *
    * @param entries the non-null entries
    * @return a new instance of Attributes
@@ -32,9 +32,9 @@ public record Attributes(@NonNull Map<String, Object> map) {
   }
 
   /**
-   * Constructs a new map using the provided non-null map
+   * Constructs a new toMap using the provided non-null toMap
    *
-   * @param map the non-null existing map
+   * @param map the non-null existing toMap
    * @return a new instance of Attributes
    */
   public static Attributes of(@NonNull Map<String, Object> map) {
@@ -42,9 +42,9 @@ public record Attributes(@NonNull Map<String, Object> map) {
   }
 
   /**
-   * Constructs a new map using the provided nullable map
+   * Constructs a new toMap using the provided nullable toMap
    *
-   * @param map the nullable existing map
+   * @param map the nullable existing toMap
    * @return a new instance of Attributes
    */
   public static Attributes ofNullable(Map<String, Object> map) {
@@ -55,17 +55,17 @@ public record Attributes(@NonNull Map<String, Object> map) {
   }
 
   /**
-   * Checks whether a non-null key exists in this map
+   * Checks whether a non-null key exists in this toMap
    *
    * @param key the non-null key
    * @return a boolean
    */
   public boolean hasKey(@NonNull String key) {
-    return map.containsKey(key);
+    return toMap.containsKey(key);
   }
 
   /**
-   * Inserts a key-value pair in the wrapped map
+   * Inserts a key-value pair in the wrapped toMap
    *
    * @param key        the non-null key
    * @param value      the nullable value
@@ -83,7 +83,7 @@ public record Attributes(@NonNull Map<String, Object> map) {
   }
 
   /**
-   * Inserts a key-value pair in the wrapped map
+   * Inserts a key-value pair in the wrapped toMap
    *
    * @param key        the non-null key
    * @param value      the nullable value
@@ -93,25 +93,25 @@ public record Attributes(@NonNull Map<String, Object> map) {
   public Attributes put(@NonNull String key, Object value, @NonNull BooleanSupplier... conditions) {
     if (Arrays.stream(conditions)
         .allMatch(BooleanSupplier::getAsBoolean)) {
-      map.put(key, value);
+      toMap.put(key, value);
     }
     return this;
   }
 
   /**
-   * Inserts a key-value pair in the wrapped map
+   * Inserts a key-value pair in the wrapped toMap
    *
    * @param key   the non-null key
    * @param value the nullable value
    * @return the calling instance
    */
   public Attributes put(@NonNull String key, Object value) {
-    map.put(key, value);
+    toMap.put(key, value);
     return this;
   }
 
   /**
-   * Gets a value by key in the wrapped map
+   * Gets a value by key in the wrapped toMap
    *
    * @param key          the non-null key
    * @param defaultValue the non-null default value
@@ -124,7 +124,7 @@ public record Attributes(@NonNull Map<String, Object> map) {
   }
 
   /**
-   * Gets a value by key in the wrapped map
+   * Gets a value by key in the wrapped toMap
    *
    * @param key   the non-null key
    * @param clazz the non-null type of the value that is returned
@@ -132,12 +132,12 @@ public record Attributes(@NonNull Map<String, Object> map) {
    * @return the non-null value
    */
   public <T> Optional<T> get(@NonNull String key, @NonNull Class<T> clazz) {
-    return Optional.ofNullable(map.get(key))
+    return Optional.ofNullable(toMap.get(key))
         .map(clazz::cast);
   }
 
   /**
-   * Gets a value as an int by key in the wrapped map
+   * Gets a value as an int by key in the wrapped toMap
    *
    * @param key the non-null key
    * @return the non-null value
@@ -156,7 +156,7 @@ public record Attributes(@NonNull Map<String, Object> map) {
   }
 
   /**
-   * Gets a value as a long by key in the wrapped map
+   * Gets a value as a long by key in the wrapped toMap
    *
    * @param key the non-null key
    * @return the non-null value
@@ -175,7 +175,7 @@ public record Attributes(@NonNull Map<String, Object> map) {
   }
 
   /**
-   * Gets a non-null value as a string by key in the wrapped map. If the key doesn't exist, unknown
+   * Gets a non-null value as a string by key in the wrapped toMap. If the key doesn't exist, unknown
    * is returned.
    *
    * @param key the non-null key
@@ -186,7 +186,7 @@ public record Attributes(@NonNull Map<String, Object> map) {
   }
 
   /**
-   * Gets a nullable value as a string by key in the wrapped map
+   * Gets a nullable value as a string by key in the wrapped toMap
    *
    * @param key the non-null key
    * @return the nullable value
@@ -196,7 +196,7 @@ public record Attributes(@NonNull Map<String, Object> map) {
   }
 
   /**
-   * Gets a non-null value as a string by key in the wrapped map. Throws an exception if the key
+   * Gets a non-null value as a string by key in the wrapped toMap. Throws an exception if the key
    * doesn't exist.
    *
    * @param key the non-null key
@@ -207,7 +207,7 @@ public record Attributes(@NonNull Map<String, Object> map) {
   }
 
   /**
-   * Gets an optional value as a string by key in the wrapped map
+   * Gets an optional value as a string by key in the wrapped toMap
    *
    * @param key the non-null key
    * @return a non-null optional
@@ -217,7 +217,7 @@ public record Attributes(@NonNull Map<String, Object> map) {
   }
 
   /**
-   * Gets a value as a string by key in the wrapped map. If the value is null, defaultValue is
+   * Gets a value as a string by key in the wrapped toMap. If the value is null, defaultValue is
    * returned.
    *
    * @param key the non-null key
@@ -229,7 +229,7 @@ public record Attributes(@NonNull Map<String, Object> map) {
   }
 
   /**
-   * Gets a value as a boolean by key in the wrapped map
+   * Gets a value as a boolean by key in the wrapped toMap
    *
    * @param key the non-null key
    * @return a boolean
@@ -248,7 +248,7 @@ public record Attributes(@NonNull Map<String, Object> map) {
   }
 
   /**
-   * Gets an optional value as a ContactJid by key in the wrapped map
+   * Gets an optional value as a ContactJid by key in the wrapped toMap
    *
    * @param key the non-null key
    * @return a non-null optional
