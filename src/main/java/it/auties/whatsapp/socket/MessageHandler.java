@@ -35,31 +35,17 @@ import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.DownloadResult;
-import it.auties.whatsapp.model.message.button.ButtonsResponseMessage;
-import it.auties.whatsapp.model.message.button.ListMessage;
-import it.auties.whatsapp.model.message.button.ListResponseMessage;
-import it.auties.whatsapp.model.message.button.NativeFlowResponseMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.message.model.MessageType;
-import it.auties.whatsapp.model.message.payment.PaymentOrderMessage;
 import it.auties.whatsapp.model.message.server.DeviceSentMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
-import it.auties.whatsapp.model.message.standard.ContactMessage;
-import it.auties.whatsapp.model.message.standard.ContactsArrayMessage;
-import it.auties.whatsapp.model.message.standard.DocumentMessage;
-import it.auties.whatsapp.model.message.standard.ImageMessage;
-import it.auties.whatsapp.model.message.standard.LiveLocationMessage;
 import it.auties.whatsapp.model.message.standard.PollCreationMessage;
 import it.auties.whatsapp.model.message.standard.PollUpdateMessage;
-import it.auties.whatsapp.model.message.standard.ProductMessage;
 import it.auties.whatsapp.model.message.standard.ReactionMessage;
-import it.auties.whatsapp.model.message.standard.StickerMessage;
-import it.auties.whatsapp.model.message.standard.TextMessage;
-import it.auties.whatsapp.model.message.standard.VideoMessage;
 import it.auties.whatsapp.model.poll.PollUpdateEncryptedOptions;
 import it.auties.whatsapp.model.request.Attributes;
 import it.auties.whatsapp.model.request.MessageSendRequest;
@@ -97,7 +83,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
 import java.util.stream.Stream;
 
 class MessageHandler
@@ -113,7 +98,7 @@ class MessageHandler
   private final Cache<ContactJid, GroupMetadata> groupsCache;
   private final Cache<String, List<ContactJid>> devicesCache;
   private final Set<Chat> historyCache;
-  private final Semaphore encodeSemaphore;
+  private final Executor encodeExecutor;
   private final Executor decodeExecutor;
 
   protected MessageHandler(SocketHandler socketHandler) {
@@ -122,7 +107,7 @@ class MessageHandler
     this.groupsCache = createCache(Duration.ofMinutes(5));
     this.devicesCache = createCache(Duration.ofMinutes(5));
     this.historyCache = new HashSet<>();
-    this.encodeSemaphore = new Semaphore(1);
+    this.encodeExecutor = Executors.newSingleThreadExecutor();
     this.decodeExecutor = Executors.newSingleThreadExecutor();
   }
 
@@ -133,20 +118,16 @@ class MessageHandler
   }
 
   protected final CompletableFuture<Void> encode(MessageSendRequest request) {
-    return CompletableFuture.runAsync(this::prepareEncoding)
-        .thenComposeAsync(ignored -> isConversation(request.info()) ? encodeConversation(request)
-            : encodeGroup(request))
-        .thenRunAsync(encodeSemaphore::release)
+    return CompletableFuture.runAsync(() -> encodeSync(request), encodeExecutor)
         .exceptionallyAsync(throwable -> handleMessageFailure(throwable, request.info()));
   }
 
-  private void prepareEncoding() {
-    try {
-      socketHandler.awaitAppReady();
-      encodeSemaphore.acquire();
-    } catch (InterruptedException exception) {
-      throw new RuntimeException("Cannot acquire lock", exception);
-    }
+  private void encodeSync(MessageSendRequest request) {
+    socketHandler.awaitAppReady();
+    var resultRequest = isConversation(request.info()) ? encodeConversation(request) : encodeGroup(request);
+    resultRequest.join();
+    saveMessage(request.info(), "unknown");
+    attributeMessageReceipt(request.info());
   }
 
   private CompletableFuture<Node> encodeGroup(MessageSendRequest request) {
@@ -198,7 +179,6 @@ class MessageHandler
 
   private <T> T handleMessageFailure(Throwable throwable, MessageInfo info) {
     info.status(MessageStatus.ERROR);
-    encodeSemaphore.release();
     return socketHandler.errorHandler()
         .handleFailure(MESSAGE, throwable);
   }
@@ -226,44 +206,14 @@ class MessageHandler
       }
       var attributes = Attributes.ofNullable(metadata)
           .put("id", info.id())
-          .put("type", getMessageType(info))
           .put("to", info.chatJid())
-          .put("mediatype", getMediaType(info), Objects::nonNull)
+          .put("type", "text")
           .put("duration", "900", () -> info.message().type() == MessageType.LIVE_LOCATION)
           .toMap();
       return ofChildren("message", attributes, body);
     } catch (IOException exception) {
       throw new UncheckedIOException("Cannot create encoded message node", exception);
     }
-  }
-
-  private String getMessageType(MessageInfo info){
-    return switch (info.message().type()){
-      case TEXT -> "text";
-      case POLL_CREATION -> "poll";
-      case REACTION -> "reaction";
-      default -> null;
-    };
-  }
-
-  private String getMediaType(MessageInfo info) {
-    return switch (info.message().content()){
-      case ImageMessage ignored -> "image";
-      case VideoMessage message -> message.gifPlayback() ? "gif" : "video";
-      case ContactMessage ignored -> "vcard";
-      case DocumentMessage ignored -> "document";
-      case ContactsArrayMessage ignored -> "contact_array";
-      case LiveLocationMessage ignored -> "livelocation";
-      case StickerMessage ignored -> "sticker";
-      case ListMessage ignored -> "list";
-      case ListResponseMessage ignored -> "list_response";
-      case ButtonsResponseMessage ignored -> "buttons_response";
-      case PaymentOrderMessage ignored -> "order";
-      case ProductMessage ignored -> "product";
-      case TextMessage message -> message.canonicalUrl() != null ? "url" : null;
-      case NativeFlowResponseMessage ignored -> "native_flow_response";
-      default -> null;
-    };
   }
 
   private boolean hasPreKeyMessage(List<Node> participants) {
@@ -565,16 +515,8 @@ class MessageHandler
           .timestampInSeconds(timestamp)
           .message(messageContainer)
           .build();
-      var self = socketHandler.store().userCompanionJid();
-      if (info.fromMe() && info.chatJid().equals(self.toUserJid())) {
-        info.receipt().readTimestamp(timestamp);
-        info.receipt().deliveredJids().add(self);
-        info.receipt().readJids().add(self);
-        info.status(MessageStatus.READ);
-      }
-      socketHandler.store()
-          .attribute(info);
-      handleMessageContent(info, messageContainer);
+      attributeMessageReceipt(info);
+      socketHandler.store().attribute(info);
       var category = infoNode.attributes()
           .getString("category");
       saveMessage(info, category);
@@ -589,17 +531,16 @@ class MessageHandler
     }
   }
 
-  private void handleMessageContent(MessageInfo info, MessageContainer messageContainer) {
-    switch (info.message()
-        .content()) {
-      case SenderKeyDistributionMessage distributionMessage ->
-          handleDistributionMessage(distributionMessage, info.senderJid());
-      case PollCreationMessage pollCreationMessage ->
-          handlePollCreation(messageContainer, pollCreationMessage);
-      case PollUpdateMessage pollUpdateMessage -> handlePollUpdate(info, pollUpdateMessage);
-      case ReactionMessage reactionMessage -> handleReactionMessage(info, reactionMessage);
-      default -> {}
+  private void attributeMessageReceipt(MessageInfo info) {
+    var self = socketHandler.store().userCompanionJid().toUserJid();
+    if (!info.fromMe() || !info.chatJid().equals(self)) {
+      return;
     }
+
+    info.receipt().readTimestamp(info.timestampInSeconds());
+    info.receipt().deliveredJids().add(self);
+    info.receipt().readJids().add(self);
+    info.status(MessageStatus.READ);
   }
 
   private void handleReactionMessage(MessageInfo info, ReactionMessage reactionMessage) {
@@ -765,6 +706,7 @@ class MessageHandler
   }
 
   private void saveMessage(MessageInfo info, String category) {
+    processMessage(info);
     if (info.chatJid().type() == Type.STATUS) {
       socketHandler.store()
           .addStatus(info);
@@ -798,6 +740,19 @@ class MessageHandler
               .unreadMessagesCount() + 1);
     }
     socketHandler.onNewMessage(info);
+  }
+
+  private void processMessage(MessageInfo info) {
+    switch (info.message()
+        .content()) {
+      case SenderKeyDistributionMessage distributionMessage ->
+          handleDistributionMessage(distributionMessage, info.senderJid());
+      case PollCreationMessage pollCreationMessage ->
+          handlePollCreation(info.message(), pollCreationMessage);
+      case PollUpdateMessage pollUpdateMessage -> handlePollUpdate(info, pollUpdateMessage);
+      case ReactionMessage reactionMessage -> handleReactionMessage(info, reactionMessage);
+      default -> {}
+    }
   }
 
   private boolean isTyping(Contact sender) {
@@ -958,7 +913,6 @@ class MessageHandler
     groupsCache.invalidateAll();
     devicesCache.invalidateAll();
     historyCache.clear();
-    encodeSemaphore.release();
   }
 
   private record MessageDecodeResult(byte[] message, Throwable error) {

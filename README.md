@@ -471,13 +471,13 @@ All types of messages supported by Whatsapp are supported by this library:
 
 - Button
    
-   To create any number of messages to attach to a buttons message use the Button class:
+   Here is how you create a button:
    ```java
-   var button = Button.ofTextResponse("A nice button!"); // Create a button
-   var anotherButton = Button.ofTextResponse("Another button :)"); // Create another button with different text
+   var button = Button.of("A nice button!"); // Create a button
+   var anotherButton = Button.of("Another button :)"); // Create another button with different text
    ```
   
-   There are many types of buttons:
+   Buttons can be used in several messages:
    
    - Response button
 
@@ -583,9 +583,9 @@ All types of messages supported by Whatsapp are supported by this library:
 
   - Template button
      ```java
-     var quickReplyButton = HydratedButtonTemplate.of(1, HydratedQuickReplyButton.of("Click me!", "random")); // Create a quick reply button
-     var urlButton = HydratedButtonTemplate.of(2, HydratedURLButton.of("Search it", "https://google.com")); // Create an url button
-     var callButton = HydratedButtonTemplate.of(3, HydratedCallButton.of("Call me", "some_phone_number")); // Create a call button
+     var quickReplyButton = HydratedButtonTemplate.of(HydratedQuickReplyButton.of("Click me!")); // Create a quick reply button
+     var urlButton = HydratedButtonTemplate.of(HydratedURLButton.of("Search it", "https://google.com")); // Create an url button
+     var callButton = HydratedButtonTemplate.of(HydratedCallButton.of("Call me", "some_phone_number")); // Create a call button
      var fourRowTemplate = HydratedFourRowTemplate.withTextTitleBuilder() // Create a new template builder
            .title("A nice title") // Set the title
            .body("A nice body") // Set the body
@@ -667,13 +667,27 @@ All types of messages supported by Whatsapp are supported by this library:
            .build(); // Create the message
      api.sendMessage(chat,  document);
      ```
-     
+- Reaction
+
+    - Send a reaction
+
+    ```java
+    var someMessage = ...; // The message to react to
+    api.sendReaction(someMessage, Emojy.RED_HEART); // Use the Emojy class for a list of all Emojys
+    ```
+
+    - Remove a reaction
+
+    ```java
+    var someMessage = ...; // The message to react to
+    api.removeReaction(someMessage); // Use the Emojy class for a list of all Emojys
+    ```
+
 ### How to wait for replies
 
 If you want to wait for a single reply, use:
 ``` java
-var response = api.awaitReply(info)
-    .join(); 
+var response = api.awaitReply(info).join(); 
 ```
 
 You can also register a listener, but in many cases the async/await paradigm is easier to use then callback based listeners.
@@ -681,14 +695,7 @@ You can also register a listener, but in many cases the async/await paradigm is 
 ### How to delete messages
 
 ``` java
-var result = api.delete(someMessage, everyone).join(); // Deletes a message for yourself or everyone
-```
-
-### How to send or remove reactions
-
-``` java
-var sendResult = api.sendReaction(someMessage, "💖").join(); // Send a reaction to a message
-var removeResult = api.removeReaction(someMessage).join(); // Removes your reaction from a message
+var result = api.delete(someMessage, everyone); // Deletes a message for yourself or everyone
 ```
 
 ### How to change your status
@@ -783,70 +790,60 @@ var starredMessages = chat.starredMessages(); // All the starred messages in a c
 
 ``` java
 var future = api.mute(chat);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ```
 
 ##### Unmute a chat
 
 ``` java
 var future = api.mute(chat);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ```
 
 ##### Archive a chat
 
 ``` java
 var future = api.archive(chat);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ```
 
 ##### Unarchive a chat
 
 ``` java
 var future = api.unarchive(chat);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ```
 
 ##### Change ephemeral message status in a chat
 
 ``` java
 var future = api.changeEphemeralTimer(chat,  ChatEphemeralTimer.ONE_WEEK);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ```   
 
 ##### Mark a chat as read
 
 ``` java
 var future = api.markAsRead(chat);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ```   
 
 ##### Mark a chat as unread
 
 ``` java
 var future = api.markAsUnread(chat);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ```   
 
 ##### Pin a chat
 
 ``` java
 var future = api.pin(chat);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ``` 
 
 ##### Unpin a chat
 
 ``` java
 var future = api.unpin(chat);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ```
 
 ##### Clear a chat
 
 ``` java
 var future = api.clear(chat);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ```
 
 > **_IMPORTANT:_** This method is experimental and may not work
@@ -855,7 +852,6 @@ var response = future.join(); // Wait for the future to complete
 
 ``` java
 var future = api.delete(chat);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ```
 
 > **_IMPORTANT:_** This method is experimental and may not work
@@ -866,28 +862,24 @@ var response = future.join(); // Wait for the future to complete
 
 ``` java
 var future = api.addGroupParticipant(group, contact);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ```
 
 ##### Remove a contact from a group
 
 ``` java
 var future = api.removeGroupParticipant(group, contact);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ```
 
 ##### Promote a contact to admin in a group
 
 ``` java
 var future = api.promoteGroupParticipant(group, contact);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ```
 
 ##### Demote a contact to user in a group
 
 ``` java
 var future = api.demoteGroupParticipant(group, contact);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ```
 
 ### Change the metadata or settings of a group
@@ -896,35 +888,30 @@ var response = future.join(); // Wait for the future to complete
 
 ``` java
 var future = api.changeGroupSubject(group, newName);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ```
 
 ##### Change or remove group's description
 
 ``` java
 var future = api.changeGroupDescription(group, newDescription);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ```
 
 ##### Change who can send messages in a group
 
 ``` java
 var future = api.changeWhoCanSendMessages(group, GroupPolicy.ANYONE);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ```
 
 ##### Change who can edit the metadata/settings in a group
 
 ``` java
 var future = api.changeWhoCanEditInfo(group, GroupPolicy.ANYONE);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ```
 
 ##### Change or remove the picture of a group
 
 ``` java
 var future = api.changeGroupPicture(group, img);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ```
 
 ### Other group related methods
@@ -933,33 +920,30 @@ var response = future.join(); // Wait for the future to complete
 
 ``` java
 var future = api.createGroup("A nice name :)", friend, friend2);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ```
 
 ##### Leave a group
 
 ``` java
 var future = api.leaveGroup(group);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ```
 
 ##### Query a group's invite code
 
 ``` java
 var future = api.queryGroupInviteCode(group);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ```
 
 ##### Revoke a group's invite code
 
 ``` java
 var future = api.revokeGroupInviteCode(group);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ```
 
 ##### Query a group's invite code
 
 ``` java
 var future = api.acceptGroupInvite(inviteCode);  // A future for the request
-var response = future.join(); // Wait for the future to complete
 ```
+
+Some methods may not be listed here, all contributions are welcomed to this documentation!

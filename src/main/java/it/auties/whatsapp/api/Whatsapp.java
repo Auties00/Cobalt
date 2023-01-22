@@ -367,8 +367,7 @@ public class Whatsapp {
         .toList();
   }
 
-  private static void attributePollCreationMessage(MessageInfo info,
-      PollCreationMessage pollCreationMessage) {
+  private void attributePollCreationMessage(MessageInfo info, PollCreationMessage pollCreationMessage) {
     var pollEncryptionKey = requireNonNullElseGet(pollCreationMessage.encryptionKey(),
         KeyHelper::senderKey);
     pollCreationMessage.encryptionKey(pollEncryptionKey);
@@ -1353,10 +1352,9 @@ public class Whatsapp {
   public CompletableFuture<MessageInfo> sendMessage(@NonNull MessageInfo info) {
     store().attribute(info);
     attributeMessageMetadata(info);
-    var future = info.chat().hasUnreadMessages() ?
-        markRead(info.chat()).thenComposeAsync(
-            ignored -> socketHandler.sendMessage(MessageSendRequest.of(info))) :
-        socketHandler.sendMessage(MessageSendRequest.of(info));
+    var future = info.chat().hasUnreadMessages()
+        ? markRead(info.chat()).thenComposeAsync(ignored -> socketHandler.sendMessage(MessageSendRequest.of(info)))
+        : socketHandler.sendMessage(MessageSendRequest.of(info));
     return future.thenApplyAsync(ignored -> info);
   }
 
@@ -1371,10 +1369,8 @@ public class Whatsapp {
       case PollCreationMessage pollCreationMessage ->
           attributePollCreationMessage(info, pollCreationMessage);
       case PollUpdateMessage pollUpdateMessage -> attributePollUpdateMessage(pollUpdateMessage);
-      case GroupInviteMessage groupInviteMessage -> attributeGroupInviteMessage(info,
-          groupInviteMessage); // This is not needed probably, but Whatsapp uses a text message by default, so maybe it makes sense
-      case ButtonMessage buttonMessage -> info.message(info.message()
-          .toViewOnce()); // Credit to Baileys: https://github.com/adiwajshing/Baileys/blob/f0bdb12e56cea8b0bfbb0dff37c01690274e3e31/src/Utils/messages.ts#L781
+      case GroupInviteMessage groupInviteMessage -> attributeGroupInviteMessage(info, groupInviteMessage); // This is not needed probably, but Whatsapp uses a text message by default, so maybe it makes sense
+      case ButtonMessage buttonMessage -> info.message(info.message().toViewOnce()); // Credit to Baileys: https://github.com/adiwajshing/Baileys/blob/f0bdb12e56cea8b0bfbb0dff37c01690274e3e31/src/Utils/messages.ts#L781
       default -> {}
     }
   }
@@ -1455,11 +1451,8 @@ public class Whatsapp {
     if (match == null) {
       return;
     }
-    if (socketHandler.options()
-        .textPreviewSetting() == TextPreviewSetting.ENABLED_WITH_INFERENCE && !match.text()
-        .equals(match.result()
-            .uri()
-            .toString())) {
+    if (socketHandler.options().textPreviewSetting() == TextPreviewSetting.ENABLED_WITH_INFERENCE
+        && !match.text().equals(match.result().uri().toString())) {
       var parsed = textMessage.text()
           .replace(match.text(), match.result()
               .uri()

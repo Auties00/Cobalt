@@ -913,12 +913,12 @@ public class RunCITest implements Listener, JacksonProvider {
     if (skip) {
       return;
     }
-    var example = api.sendMessage(contact, "Hello")
-        .join();
-    log("Sending heart reaction...");
-    var simple = api.sendReaction(example, Emojy.FIRST_QUARTER_MOON)
-        .join();
-    log("Sent heart reaction: %s", simple.toJson());
+
+    for (var emojy : Emojy.values()) {
+      api.sendMessage(contact, emojy.name())
+          .thenAcceptAsync(message -> api.sendReaction(message, emojy))
+          .join();
+    }
   }
 
   @Test
