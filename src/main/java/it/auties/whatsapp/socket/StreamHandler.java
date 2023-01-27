@@ -1,6 +1,5 @@
 package it.auties.whatsapp.socket;
 
-import static it.auties.whatsapp.api.ErrorHandler.Location.CRYPTOGRAPHY;
 import static it.auties.whatsapp.api.ErrorHandler.Location.LOGGED_OUT;
 import static it.auties.whatsapp.api.ErrorHandler.Location.LOGIN;
 import static it.auties.whatsapp.api.ErrorHandler.Location.MEDIA_CONNECTION;
@@ -11,17 +10,17 @@ import static it.auties.whatsapp.model.request.Node.ofChildren;
 import static java.util.Map.of;
 import static java.util.concurrent.CompletableFuture.delayedExecutor;
 import static java.util.concurrent.CompletableFuture.runAsync;
-import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
+import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.ErrorHandler.Location;
 import it.auties.whatsapp.api.SocketEvent;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.exception.ErroneousNodeRequestException;
 import it.auties.whatsapp.exception.HmacValidationException;
-import it.auties.whatsapp.exception.UnknownStreamException;
+import it.auties.whatsapp.listener.OnNodeReceived;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.contact.Contact;
@@ -39,7 +38,6 @@ import it.auties.whatsapp.model.privacy.PrivacySettingValue;
 import it.auties.whatsapp.model.request.Attributes;
 import it.auties.whatsapp.model.request.MessageSendRequest;
 import it.auties.whatsapp.model.request.Node;
-import it.auties.whatsapp.model.request.NodeHandler;
 import it.auties.whatsapp.model.response.ContactStatusResponse;
 import it.auties.whatsapp.model.signal.auth.DeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
@@ -64,19 +62,16 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 
 @Accessors(fluent = true)
-class StreamHandler
+class StreamHandler extends Handler
     implements JacksonProvider {
 
   private static final byte[] MESSAGE_HEADER = {6, 0};
@@ -89,8 +84,6 @@ class StreamHandler
 
   private final SocketHandler socketHandler;
   private final Map<String, Integer> retries;
-  @Getter(AccessLevel.PROTECTED)
-  private ScheduledExecutorService pingService;
 
   public StreamHandler(SocketHandler socketHandler) {
     this.socketHandler = socketHandler;
@@ -459,23 +452,16 @@ class StreamHandler
   }
 
   private void digestError(Node node) {
-    if (node.hasNode("bad-mac")) {
-      socketHandler.errorHandler()
-          .handleFailure(CRYPTOGRAPHY, new UnknownStreamException("Detected a bad mac"));
-      return;
-    }
-
     var conflict = node.findNode("conflict");
     if(conflict.isPresent()){
-      socketHandler.changeKeys();
-      socketHandler.disconnect(true);
+      socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
       return;
     }
 
     var statusCode = node.attributes()
         .getInt("code");
     switch (statusCode) {
-      case 515, 503 -> socketHandler.disconnect(true);
+      case 515, 503 -> socketHandler.disconnect(DisconnectReason.RECONNECTING);
       case 401 -> handleStreamError(node);
       default -> node.children()
           .forEach(error -> socketHandler.store()
@@ -500,7 +486,7 @@ class StreamHandler
         .hasPreKeys()) {
       sendPreKeys();
     }
-    createPingTask();
+    getOrCreateScheduledService().scheduleAtFixedRate(this::sendPing, PING_INTERVAL, PING_INTERVAL, TimeUnit.SECONDS);
     createMediaConnection(0, null);
     sendStatusUpdate();
     socketHandler.onLoggedIn();
@@ -524,30 +510,19 @@ class StreamHandler
   }
 
   private void subscribeToAllPresences(Executor delayedExecutor) {
-    var future = CompletableFuture.runAsync(() -> socketHandler.store()
-        .contacts()
-        .forEach(socketHandler::subscribeToPresence), delayedExecutor);
-    socketHandler.store()
-        .addNodeHandler(NodeHandler.of(node -> node.hasDescription("message") && node.attributes()
-            .hasKey("offline")))
-        .thenRunAsync(() -> rescheduleSubscriptionFuture(delayedExecutor, future));
-  }
-
-  private void rescheduleSubscriptionFuture(Executor delayedExecutor,
-      CompletableFuture<Void> future) {
-    if (future.isDone()) {
-      return;
-    }
-    future.cancel(true);
-    subscribeToAllPresences(delayedExecutor);
-  }
-
-  private void createPingTask() {
-    if (pingService != null && !pingService.isShutdown()) {
-      return;
-    }
-    this.pingService = newSingleThreadScheduledExecutor();
-    pingService.scheduleAtFixedRate(this::sendPing, PING_INTERVAL, PING_INTERVAL, TimeUnit.SECONDS);
+    var future = CompletableFuture.runAsync(() -> socketHandler.store().contacts().forEach(socketHandler::subscribeToPresence), delayedExecutor);
+    OnNodeReceived listener = node -> {
+      if (!node.hasDescription("message") || !node.attributes().hasKey("offline")) {
+        return;
+      }
+      if (future.isDone()) {
+        return;
+      }
+      future.cancel(true);
+      subscribeToAllPresences(delayedExecutor);
+    };
+    socketHandler.store().listeners().add(listener);
+    future.thenRunAsync(() -> socketHandler.store().listeners().remove(listener));
   }
 
   private void sendStatusUpdate() {
@@ -645,7 +620,6 @@ class StreamHandler
 
   private void sendPing() {
     if (socketHandler.state() != SocketState.CONNECTED) {
-      pingService.shutdownNow();
       return;
     }
     socketHandler.store()
@@ -819,10 +793,9 @@ class StreamHandler
             .toUserJid()));
   }
 
+  @Override
   public void dispose() {
-    if (pingService == null) {
-      return;
-    }
-    pingService.shutdownNow();
+    super.dispose();
+    retries.clear();
   }
 }

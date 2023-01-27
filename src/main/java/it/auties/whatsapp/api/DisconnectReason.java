@@ -16,5 +16,9 @@ public enum DisconnectReason {
   /**
    * Logged out
    */
-  LOGGED_OUT
+  LOGGED_OUT,
+  /**
+   * Session restore
+   */
+  RESTORE
 }

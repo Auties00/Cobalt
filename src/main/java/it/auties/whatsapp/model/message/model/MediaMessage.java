@@ -3,7 +3,6 @@ package it.auties.whatsapp.model.message.model;
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.AttachmentProvider;
-import it.auties.whatsapp.model.media.DownloadResult;
 import it.auties.whatsapp.model.message.payment.PaymentInvoiceMessage;
 import it.auties.whatsapp.model.message.standard.AudioMessage;
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
@@ -18,6 +17,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -47,7 +47,7 @@ public abstract sealed class MediaMessage
   /**
    * The cached decoded media, by default null
    */
-  private DownloadResult decodedMedia;
+  private byte[] decodedMedia;
 
   @Override
   public MessageType type() {
@@ -67,11 +67,13 @@ public abstract sealed class MediaMessage
    *
    * @return a non-null result
    */
-  public DownloadResult decodedMedia() {
-    if (decodedMedia == null || decodedMedia.status() != DownloadResult.Status.SUCCESS) {
-      this.decodedMedia = Medias.download(this);
+  public Optional<byte[]> decodedMedia() {
+    if (decodedMedia == null) {
+      this.decodedMedia = Medias.download(this)
+          .orElse(null);
     }
-    return decodedMedia;
+
+    return Optional.ofNullable(decodedMedia);
   }
 
   /**
@@ -95,12 +97,10 @@ public abstract sealed class MediaMessage
    */
   public Path save(@NonNull Path path) {
     var result = decodedMedia();
-    Validate.isTrue(result.status() == DownloadResult.Status.SUCCESS,
-        "Cannot save media: %s".formatted(result.status()));
+    Validate.isTrue(result.isEmpty(), "Cannot save media");
     try {
       Files.createDirectories(path.getParent());
-      Files.write(path, result.media()
-          .get(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+      Files.write(path, result.get(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
     } catch (IOException exception) {
       throw new UncheckedIOException("Cannot write media to file", exception);
     }

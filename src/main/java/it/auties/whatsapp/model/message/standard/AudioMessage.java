@@ -12,7 +12,6 @@ import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.media.DownloadResult;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.util.Clock;
@@ -132,7 +131,7 @@ public final class AudioMessage
       String mimeType, boolean voiceMessage) {
     var duration = Medias.getDuration(media, true);
     return AudioMessage.builder()
-        .decodedMedia(DownloadResult.success(media))
+        .decodedMedia(media)
         .mediaKeyTimestamp(Clock.now())
         .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
         .duration(duration)

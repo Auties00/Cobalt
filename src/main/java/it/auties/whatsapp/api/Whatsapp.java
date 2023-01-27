@@ -99,7 +99,6 @@ import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.media.DownloadResult.Status;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MediaMessage;
@@ -125,7 +124,6 @@ import it.auties.whatsapp.model.privacy.PrivacySettingValue;
 import it.auties.whatsapp.model.request.Attributes;
 import it.auties.whatsapp.model.request.MessageSendRequest;
 import it.auties.whatsapp.model.request.Node;
-import it.auties.whatsapp.model.request.NodeHandler;
 import it.auties.whatsapp.model.request.ReplyHandler;
 import it.auties.whatsapp.model.response.ContactStatusResponse;
 import it.auties.whatsapp.model.response.HasWhatsappResponse;
@@ -1038,8 +1036,7 @@ public class Whatsapp {
    * @return a future that will only be completed when the connection is closed
    */
   public CompletableFuture<Void> connect() {
-    return socketHandler.connect()
-        .thenRunAsync(socketHandler::join);
+    return socketHandler.connect();
   }
 
   /**
@@ -1048,7 +1045,7 @@ public class Whatsapp {
    * @return a future
    */
   public CompletableFuture<Void> disconnect() {
-    return socketHandler.disconnect(false);
+    return socketHandler.disconnect(DisconnectReason.DISCONNECTED);
   }
 
   /**
@@ -1057,7 +1054,7 @@ public class Whatsapp {
    * @return a future
    */
   public CompletableFuture<Void> reconnect() {
-    return socketHandler.disconnect(true);
+    return socketHandler.disconnect(DisconnectReason.RECONNECTING);
   }
 
   /**
@@ -1074,8 +1071,7 @@ public class Whatsapp {
     var metadata = Map.of("jid", store().userCompanionJid(), "reason", "user_initiated");
     var device = Node.ofAttributes("remove-companion-device", metadata);
     return socketHandler.sendQuery("set", "md", device)
-        .thenComposeAsync(ignored -> socketHandler.disconnect(false))
-        .thenRunAsync(() -> LocalFileSystem.delete(String.valueOf(keys().id())));
+        .thenComposeAsync(ignored -> socketHandler.disconnect(DisconnectReason.LOGGED_OUT));
   }
 
   /**
@@ -1429,10 +1425,9 @@ public class Whatsapp {
   }
 
   private void attributeMediaMessage(MediaMessage mediaMessage) {
-    Validate.isTrue(mediaMessage.decodedMedia().status() == Status.SUCCESS,
-        "Cannot upload a message whose content isn't available(status: %s)".formatted(
-            mediaMessage.decodedMedia().status()));
-    var upload = Medias.upload(mediaMessage.decodedMedia().media().get(), mediaMessage.mediaType(), store().mediaConnection());
+    Validate.isTrue(mediaMessage.decodedMedia().isPresent(),
+        "Cannot upload a message whose content isn't available");
+    var upload = Medias.upload(mediaMessage.decodedMedia().get(), mediaMessage.mediaType(), store().mediaConnection());
     mediaMessage.mediaSha256(upload.fileSha256())
         .mediaEncryptedSha256(upload.fileEncSha256())
         .mediaKey(upload.mediaKey())
@@ -2553,16 +2548,12 @@ public class Whatsapp {
     var mediaMessage = (MediaMessage) info.message()
         .content();
     var result = mediaMessage.decodedMedia();
-    return switch (result.status()) {
-      case SUCCESS -> CompletableFuture.completedFuture(result.media()
-          .get());
-      case MISSING -> {
-        Validate.isTrue(!retried, "Media reupload failed");
-        yield requireMediaReupload(info).thenComposeAsync(entry -> downloadMedia(entry, true));
-      }
-      case ERROR -> throw new IllegalArgumentException("Cannot download media", result.error()
-          .get());
-    };
+    if(result.isEmpty()){
+      Validate.isTrue(!retried, "Media reupload failed");
+      return requireMediaReupload(info)
+          .thenComposeAsync(entry -> downloadMedia(entry, true));
+    }
+    return CompletableFuture.completedFuture(result.get());
   }
 
   /**
@@ -2600,14 +2591,8 @@ public class Whatsapp {
             .toUserJid(), "type", "server-error"),
         Node.ofChildren("encrypt", Node.of("enc_p", ciphertext), Node.of("enc_iv", retryIv)),
         Node.ofAttributes("rmr", rmrAttributes));
-    var handler = NodeHandler.of(entry -> entry.hasDescription("notification") && entry.attributes()
-        .getString("type")
-        .equals("mediaretry"));
-    return socketHandler.send(node)
-        .thenApplyAsync(ignored -> this.store()
-            .addNodeHandler(handler))
-        .thenApplyAsync(
-            result -> parseMediaReupload(info, mediaMessage, retryKey, retryIdData, node));
+    return socketHandler.send(node, result -> result.hasDescription("notification"))
+        .thenApplyAsync(result -> parseMediaReupload(info, mediaMessage, retryKey, retryIdData, result));
   }
 
   private byte[] createReceipt(MessageInfo info) {
@@ -2618,17 +2603,9 @@ public class Whatsapp {
     }
   }
 
-  private MessageInfo parseMediaReupload(MessageInfo info, MediaMessage mediaMessage,
-      byte[] retryKey,
-      byte[] retryIdData, Node node) {
-    var actualId = node.attributes()
-        .getString("id");
-    Validate.isTrue(Objects.equals(info.id(), actualId),
-        "Wrong id in media reupload: expected %s, got %s",
-        info.id(), actualId);
-    var rmrNode = node.findNode("rmr")
-        .orElseThrow(() -> new NoSuchElementException("Missing rmr node in media reupload"));
-    Validate.isTrue(!rmrNode.hasNode("error"), "Erroneous response from media reupload");
+  private MessageInfo parseMediaReupload(MessageInfo info, MediaMessage mediaMessage, byte[] retryKey, byte[] retryIdData, Node node) {
+    Validate.isTrue(!node.hasNode("error"), "Erroneous response from media reupload: %s",
+        node.attributes().getInt("code"));
     var encryptNode = node.findNode("encrypt")
         .orElseThrow(() -> new NoSuchElementException("Missing encrypt node in media reupload"));
     var mediaPayload = encryptNode.findNode("enc_p")

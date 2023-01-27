@@ -14,7 +14,6 @@ import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.location.InteractiveLocationAnnotation;
-import it.auties.whatsapp.model.media.DownloadResult;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.util.Clock;
@@ -184,7 +183,7 @@ public final class ImageMessage
       byte[] thumbnail, ContextInfo contextInfo) {
     var dimensions = Medias.getDimensions(media, false);
     return ImageMessage.builder()
-        .decodedMedia(DownloadResult.success(media))
+        .decodedMedia(media)
         .mediaKeyTimestamp(Clock.now())
         .mimetype(requireNonNullElse(mimeType, IMAGE.defaultMimeType()))
         .caption(caption)

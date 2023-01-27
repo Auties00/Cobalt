@@ -1,6 +1,8 @@
 package it.auties.whatsapp.test;
 
 import it.auties.bytes.Bytes;
+import it.auties.whatsapp.api.DisconnectReason;
+import it.auties.whatsapp.api.Emojy;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
@@ -31,7 +33,6 @@ import it.auties.whatsapp.model.message.button.ButtonsMessage;
 import it.auties.whatsapp.model.message.button.InteractiveMessage;
 import it.auties.whatsapp.model.message.button.ListMessage;
 import it.auties.whatsapp.model.message.button.TemplateMessage;
-import it.auties.whatsapp.api.Emojy;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.standard.AudioMessage;
 import it.auties.whatsapp.model.message.standard.ContactMessage;
@@ -57,6 +58,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.SneakyThrows;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -937,14 +939,11 @@ public class RunCITest implements Listener, JacksonProvider {
         .flatMap(Collection::stream)
         .filter(info -> !info.fromMe() && info.message().category() == MessageCategory.MEDIA)
         .limit(30)
-        .forEach(info -> {
-          try {
-            api.downloadMedia(info).join();
-            success.incrementAndGet();
-          } catch (Throwable throwable) {
-            fail.incrementAndGet();
-          }
-        });
+        .map(info -> api.downloadMedia(info)
+            .thenApply(ignored -> success.incrementAndGet())
+            .exceptionallyAsync(ignored -> fail.incrementAndGet()))
+        .collect(Collectors.collectingAndThen(Collectors.toUnmodifiableList(), list -> CompletableFuture.allOf(list.toArray(CompletableFuture[]::new))))
+        .join();
     log("Decoded %s/%s medias!", success.get(), success.get() + fail.get());
   }
 
@@ -978,6 +977,11 @@ public class RunCITest implements Listener, JacksonProvider {
     }
     System.out.printf("%s is ready with %s messages%n", chat.name(), chat.messages()
         .size());
+  }
+
+  @Override
+  public void onDisconnected(DisconnectReason reason) {
+    System.out.printf("Disconnected: %s%n", reason);
   }
 
   @Override

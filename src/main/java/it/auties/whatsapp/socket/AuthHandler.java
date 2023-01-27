@@ -24,12 +24,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
 @RequiredArgsConstructor
-class AuthHandler
+class AuthHandler extends Handler
     implements JacksonProvider {
 
   private final SocketHandler socketHandler;
   private Handshake handshake;
-  private CompletableFuture<Void> future;
 
   protected void createHandshake() {
     this.handshake = new Handshake(socketHandler.keys());
@@ -140,11 +139,9 @@ class AuthHandler
         .build();
   }
 
-  protected void createFuture() {
-    this.future = new CompletableFuture<>();
-  }
-
-  protected CompletableFuture<Void> future() {
-    return future;
+  @Override
+  protected void dispose() {
+    super.dispose();
+    handshake = null;
   }
 }

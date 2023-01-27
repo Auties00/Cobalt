@@ -16,7 +16,6 @@ import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
 import it.auties.whatsapp.model.request.Node;
-import it.auties.whatsapp.model.request.NodeHandler;
 import it.auties.whatsapp.model.request.ReplyHandler;
 import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.serialization.ControllerProviderLoader;
@@ -184,14 +183,6 @@ public final class Store
   @JsonIgnore
   @Default
   private ConcurrentLinkedDeque<Request> requests = new ConcurrentLinkedDeque<>();
-
-  /**
-   * The non-null list of all the predicates awaiting a result
-   */
-  @NonNull
-  @JsonIgnore
-  @Default
-  private ConcurrentLinkedDeque<NodeHandler> pendingHandlers = new ConcurrentLinkedDeque<>();
 
   /**
    * The non-null list of replies waiting to be fulfilled
@@ -469,9 +460,17 @@ public final class Store
    * @return a boolean
    */
   public boolean resolvePendingRequest(@NonNull Node response, boolean exceptionally) {
-    return findPendingRequest(response.id()).map(
-            request -> deleteAndComplete(response, request, exceptionally))
+    return findPendingRequest(response.id())
+        .map(request -> deleteAndComplete(request, response, exceptionally))
         .isPresent();
+  }
+
+  private Request deleteAndComplete(Request request, Node response, boolean exceptionally) {
+    if(request.complete(response, exceptionally)) {
+      requests.remove(request);
+    }
+
+    return request;
   }
 
   /**
@@ -500,25 +499,6 @@ public final class Store
     result.ifPresent(reply -> {
       replyHandlers.remove(reply);
       reply.future()
-          .complete(response);
-    });
-    return result.isPresent();
-  }
-
-  /**
-   * Queries the first handler that matches a handler in memory and uses its consumer
-   *
-   * @param response the response to test the handler with
-   * @return a boolean
-   */
-  public boolean resolvePendingHandler(@NonNull Node response) {
-    var result = pendingHandlers.stream()
-        .filter(predicate -> predicate.predicate()
-            .test(response))
-        .findFirst();
-    result.ifPresent(nodeHandler -> {
-      pendingHandlers.remove(nodeHandler);
-      nodeHandler.future()
           .complete(response);
     });
     return result.isPresent();
@@ -664,13 +644,6 @@ public final class Store
     requests.forEach(request -> request.complete(null, false));
     requests.clear();
   }
-
-  private Request deleteAndComplete(Node response, Request request, boolean exceptionally) {
-    requests.remove(request);
-    request.complete(response, exceptionally);
-    return request;
-  }
-
   /**
    * Returns a request tag
    *
@@ -785,17 +758,6 @@ public final class Store
   public CompletableFuture<Node> addRequest(@NonNull Request request) {
     requests.add(request);
     return request.future();
-  }
-
-  /**
-   * Adds a pending request to this store
-   *
-   * @param handler the non-null handler to add
-   * @return the non-null completable result of the handler
-   */
-  public CompletableFuture<Node> addNodeHandler(@NonNull NodeHandler handler) {
-    pendingHandlers.add(handler);
-    return handler.future();
   }
 
   /**

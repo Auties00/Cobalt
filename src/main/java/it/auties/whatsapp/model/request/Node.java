@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 
@@ -300,12 +301,12 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
    * @return a non null request
    * @throws NullPointerException if no valid jid can be found
    */
-  public Request toRequest(String id) {
+  public Request toRequest(String id, Function<Node, Boolean> filter) {
     if (id() == null) {
       attributes.toMap()
           .put("id", requireNonNull(id, "No valid jid can be used to create a request"));
     }
-    return Request.of(this);
+    return Request.of(this, filter);
   }
 
   /**

@@ -11,7 +11,6 @@ import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.Sha256;
 import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.model.media.AttachmentProvider;
-import it.auties.whatsapp.model.media.DownloadResult;
 import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.media.MediaDimensions;
 import it.auties.whatsapp.model.media.MediaFile;
@@ -130,7 +129,7 @@ public class Medias
     }
   }
 
-  public DownloadResult download(AttachmentProvider provider) {
+  public Optional<byte[]> download(AttachmentProvider provider) {
     try {
       Validate.isTrue(provider.mediaUrl() != null || provider.mediaDirectPath() != null,
           "Missing url and path from media");
@@ -144,7 +143,7 @@ public class Medias
       var response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
       if (response.statusCode() == HttpURLConnection.HTTP_NOT_FOUND
           || response.statusCode() == HttpURLConnection.HTTP_GONE) {
-        return DownloadResult.missing();
+        return Optional.empty();
       }
       var stream = Bytes.of(response.body());
       var sha256 = Sha256.calculate(stream.toByteArray());
@@ -159,11 +158,9 @@ public class Medias
       Validate.isTrue(Arrays.equals(hmac, mediaMac), "media_decryption",
           HmacValidationException.class);
       var decrypted = AesCbc.decrypt(keys.iv(), encryptedMedia, keys.cipherKey());
-      Validate.isTrue(provider.mediaSize() <= 0 || provider.mediaSize() == decrypted.length,
-          "Cannot decode media: invalid size");
-      return DownloadResult.success(decrypted);
+      return Optional.of(decrypted);
     } catch (Throwable error) {
-      return DownloadResult.error(error);
+      return Optional.empty();
     }
   }
 

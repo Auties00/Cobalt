@@ -34,7 +34,6 @@ import it.auties.whatsapp.model.contact.ContactJid.Type;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.media.DownloadResult;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageKey;
@@ -81,11 +80,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.stream.Stream;
 
-class MessageHandler
+class MessageHandler extends Handler
     implements JacksonProvider {
 
   private static final String SKMSG = "skmsg";
@@ -98,8 +95,6 @@ class MessageHandler
   private final Cache<ContactJid, GroupMetadata> groupsCache;
   private final Cache<String, List<ContactJid>> devicesCache;
   private final Set<Chat> historyCache;
-  private final Executor encodeExecutor;
-  private final Executor decodeExecutor;
 
   protected MessageHandler(SocketHandler socketHandler) {
     this.socketHandler = socketHandler;
@@ -107,8 +102,6 @@ class MessageHandler
     this.groupsCache = createCache(Duration.ofMinutes(5));
     this.devicesCache = createCache(Duration.ofMinutes(5));
     this.historyCache = new HashSet<>();
-    this.encodeExecutor = Executors.newSingleThreadExecutor();
-    this.decodeExecutor = Executors.newSingleThreadExecutor();
   }
 
   private <K, V> Cache<K, V> createCache(Duration duration) {
@@ -118,7 +111,7 @@ class MessageHandler
   }
 
   protected final CompletableFuture<Void> encode(MessageSendRequest request) {
-    return CompletableFuture.runAsync(() -> encodeSync(request), encodeExecutor)
+    return CompletableFuture.runAsync(() -> encodeSync(request), getOrCreateService())
         .exceptionallyAsync(throwable -> handleMessageFailure(throwable, request.info()));
   }
 
@@ -417,7 +410,7 @@ class MessageHandler
   }
 
   public void decode(Node node) {
-    decodeExecutor.execute(() -> {
+    getOrCreateService().execute(() -> {
     try {
       var businessName = getBusinessName(node);
       var encrypted = node.findNodes("enc");
@@ -820,10 +813,9 @@ class MessageHandler
   private HistorySync downloadHistorySync(ProtocolMessage protocolMessage) {
     try {
       var compressed = Medias.download(protocolMessage.historySyncNotification());
-      Validate.isTrue(compressed.status() == DownloadResult.Status.SUCCESS,
+      Validate.isTrue(compressed.isPresent(),
           "Cannot download history sync");
-      var decompressed = BytesHelper.deflate(compressed.media()
-          .get());
+      var decompressed = BytesHelper.deflate(compressed.get());
       return PROTOBUF.readMessage(decompressed, HistorySync.class);
     } catch (IOException exception) {
       throw new UncheckedIOException("Cannot read history sync", exception);
@@ -908,7 +900,9 @@ class MessageHandler
         .toList();
   }
 
+  @Override
   public void dispose() {
+    super.dispose();
     retries.clear();
     groupsCache.invalidateAll();
     devicesCache.invalidateAll();

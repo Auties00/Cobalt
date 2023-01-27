@@ -29,7 +29,6 @@ import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatMute;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.info.MessageInfo;
-import it.auties.whatsapp.model.media.DownloadResult;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.setting.EphemeralSetting;
 import it.auties.whatsapp.model.setting.LocaleSetting;
@@ -69,45 +68,38 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 
-class AppStateHandler
+class AppStateHandler extends Handler
     implements JacksonProvider {
-
-  public static final int PULL_TIMEOUT = 30;
-  public static final int PUSH_TIMEOUT = 120;
+  public static final int TIMEOUT = 120;
   private static final int PULL_ATTEMPTS = 3;
   private final SocketHandler socketHandler;
-  private final Semaphore semaphore;
   private final Map<PatchType, Long> versions;
   private final Map<PatchType, Integer> attempts;
   private CountDownLatch countDownLatch;
 
-  @SneakyThrows
   protected AppStateHandler(SocketHandler socketHandler) {
     this.socketHandler = socketHandler;
-    this.semaphore = new Semaphore(1);
-    this.countDownLatch = new CountDownLatch(1);
     this.versions = new HashMap<>();
     this.attempts = new HashMap<>();
+    this.countDownLatch = new CountDownLatch(1);
   }
 
   protected CompletableFuture<Void> push(@NonNull PatchRequest patch) {
-    return CompletableFuture.runAsync(this::acquireLock)
-        .thenComposeAsync(result -> pullUninterruptedly(List.of(patch.type())))
-        .thenApplyAsync(result -> createPushRequest(patch))
-        .thenComposeAsync(this::sendPush)
-        .thenRunAsync(semaphore::release)
-        .exceptionallyAsync(throwable -> {
-          semaphore.release();
-          return socketHandler.errorHandler()
-              .handleFailure(PUSH_APP_STATE, throwable);
-        })
-        .orTimeout(PUSH_TIMEOUT, TimeUnit.SECONDS);
+    return CompletableFuture.runAsync(() -> pushSync(patch), getOrCreateService())
+        .exceptionallyAsync(throwable -> socketHandler.errorHandler().handleFailure(PUSH_APP_STATE, throwable))
+        .orTimeout(TIMEOUT, TimeUnit.SECONDS);
+  }
+
+  private void pushSync(@NonNull PatchRequest patch) {
+    awaitReady();
+    pullUninterruptedly(List.of(patch.type())).join();
+    var request = createPushRequest(patch);
+    sendPush(request).join();
   }
 
   private PushRequest createPushRequest(PatchRequest patch) {
@@ -196,25 +188,34 @@ class AppStateHandler
       return;
     }
 
-    CompletableFuture.runAsync(this::acquireLock)
-        .thenComposeAsync(ignored -> pullUninterruptedly(Arrays.asList(patchTypes)))
-        .thenRunAsync(this::onPull)
+    CompletableFuture.runAsync(this::pullSync, getOrCreateService())
         .exceptionallyAsync(exception -> onPullError(false, exception));
   }
 
+  private void pullSync(PatchType... patchTypes){
+    pullUninterruptedly(Arrays.asList(patchTypes)).join();
+    onPull();
+  }
+
   protected CompletableFuture<Void> pullInitial() {
-    return pullUninterruptedly(List.of(PatchType.CRITICAL_BLOCK, PatchType.CRITICAL_UNBLOCK_LOW))
-        .thenComposeAsync(ignored -> pullUninterruptedly(List.of(PatchType.REGULAR, PatchType.REGULAR_LOW, PatchType.REGULAR_HIGH)))
-        .thenComposeAsync(ignored -> pullUninterruptedly(List.of(PatchType.CRITICAL_BLOCK, PatchType.CRITICAL_UNBLOCK_LOW)))
-        .thenRunAsync(this::onPull)
+    return CompletableFuture.runAsync(this::pullInitialSync, getOrCreateService())
         .exceptionallyAsync(exception -> onPullError(true, exception));
+  }
+
+  private void pullInitialSync() {
+    pullUninterruptedly(List.of(PatchType.CRITICAL_BLOCK, PatchType.CRITICAL_UNBLOCK_LOW))
+        .join();
+    pullUninterruptedly(List.of(PatchType.REGULAR, PatchType.REGULAR_LOW, PatchType.REGULAR_HIGH))
+        .join();
+    pullUninterruptedly(List.of(PatchType.CRITICAL_BLOCK, PatchType.CRITICAL_UNBLOCK_LOW))
+        .join();
+    onPull();
   }
 
   private void onPull() {
     countDownLatch.countDown();
     socketHandler.store()
         .initialAppSync(true);
-    semaphore.release();
     versions.clear();
     attempts.clear();
   }
@@ -238,7 +239,7 @@ class AppStateHandler
         .thenApplyAsync(this::parseSyncRequest)
         .thenApplyAsync(records -> decodeSyncs(tempStates, records))
         .thenComposeAsync(remaining -> remaining.isEmpty() ? completedFuture(null) : pullUninterruptedly(remaining))
-        .orTimeout(PULL_TIMEOUT, TimeUnit.SECONDS);
+        .orTimeout(TIMEOUT, TimeUnit.SECONDS);
   }
 
   private List<Node> getPullNodes(List<PatchType> patchTypes, HashMap<PatchType, LTHashState> tempStates) {
@@ -352,10 +353,9 @@ class AppStateHandler
     var blob = PROTOBUF.readMessage(snapshot.contentAsBytes()
         .orElseThrow(), ExternalBlobReference.class);
     var syncedData = Medias.download(blob);
-    Validate.isTrue(syncedData.status() == DownloadResult.Status.SUCCESS,
+    Validate.isTrue(syncedData.isPresent(),
         "Cannot download snapshot");
-    return PROTOBUF.readMessage(syncedData.media()
-        .get(), SnapshotSync.class);
+    return PROTOBUF.readMessage(syncedData.get(), SnapshotSync.class);
   }
 
   @SneakyThrows
@@ -495,9 +495,8 @@ class AppStateHandler
       PatchSync patch) {
     if (patch.hasExternalMutations()) {
       var blob = Medias.download(patch.externalMutations());
-      Validate.isTrue(blob.status() == DownloadResult.Status.SUCCESS, "Cannot download mutations");
-      var mutationsSync = PROTOBUF.readMessage(blob.media()
-          .get(), MutationsSync.class);
+      Validate.isTrue(blob.isPresent(), "Cannot download mutations");
+      var mutationsSync = PROTOBUF.readMessage(blob.get(), MutationsSync.class);
       patch.mutations()
           .addAll(mutationsSync.mutations());
     }
@@ -657,17 +656,12 @@ class AppStateHandler
     }
   }
 
+  @Override
   protected void dispose() {
-    semaphore.release();
-    this.countDownLatch = new CountDownLatch(1);
-  }
-
-  private void acquireLock() {
-    try {
-      semaphore.acquire();
-    } catch (InterruptedException exception) {
-      throw new RuntimeException("Cannot acquire lock for pull", exception);
-    }
+    super.dispose();
+    versions.clear();
+    attempts.clear();
+    countDownLatch = new CountDownLatch(1);
   }
 
   private record SyncRecord(LTHashState state, List<ActionDataSync> records) {

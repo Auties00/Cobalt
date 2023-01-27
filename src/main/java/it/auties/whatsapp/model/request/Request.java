@@ -18,14 +18,14 @@ import jakarta.websocket.Session;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.function.Function;
 import lombok.NonNull;
 
 /**
  * An abstract model class that represents a request made from the client to the server.
  */
 @SuppressWarnings("UnusedReturnValue")
-public record Request(String id, @NonNull Object body, @NonNull CompletableFuture<Node> future,
-                      Throwable caller)
+public record Request(String id, @NonNull Object body, @NonNull CompletableFuture<Node> future, Function<Node, Boolean> filter, Throwable caller)
     implements JacksonProvider {
 
   /**
@@ -43,16 +43,16 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
    */
   private static final Executor EXECUTOR = delayedExecutor(TIMEOUT, SECONDS);
 
-  private Request(String id, @NonNull Object body) {
-    this(id, body, new CompletableFuture<>(), Exceptions.current());
+  private Request(String id, Function<Node, Boolean> filter, @NonNull Object body) {
+    this(id, body, new CompletableFuture<>(), filter, Exceptions.current());
     EXECUTOR.execute(this::cancelTimedFuture);
   }
 
   /**
    * Constructs a new request with the provided body expecting a response
    */
-  public static Request of(@NonNull Node body) {
-    return new Request(body.id(), body);
+  public static Request of(@NonNull Node body, Function<Node, Boolean> filter) {
+    return new Request(body.id(), filter, body);
   }
 
   /**
@@ -60,7 +60,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
    */
   public static Request of(@NonNull Object body) {
     try {
-      return new Request(null, PROTOBUF.writeValueAsBytes(body));
+      return new Request(null, null, PROTOBUF.writeValueAsBytes(body));
     } catch (IOException exception) {
       throw new IllegalArgumentException("Cannot encode %s".formatted(body), exception);
     }
@@ -112,8 +112,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
   public CompletableFuture<Void> sendWithNoResponse(@NonNull Session session, @NonNull Keys keys,
       @NonNull Store store) {
     return send(session, keys, store, false, false)
-        .thenRunAsync(() -> {
-        });
+        .thenRunAsync(() -> {});
   }
 
   /**
@@ -152,18 +151,22 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
    *
    * @param response the response used to complete {@link Request#future}
    */
-  public void complete(Node response, boolean exceptionally) {
+  public boolean complete(Node response, boolean exceptionally) {
     if (response == null) {
       future.complete(Node.of("xmlstreamend"));
-      return;
+      return true;
     }
     if (exceptionally) {
       future.completeExceptionally(
           new ErroneousNodeRequestException(
               "Cannot process request %s with %s".formatted(this, response), response, caller));
-      return;
+      return true;
+    }
+    if(filter != null && !filter.apply(response)){
+      return false;
     }
     future.complete(response);
+    return true;
   }
 
   private void handleSendResult(Store store, SendResult result, boolean response) {
@@ -174,7 +177,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
       return;
     }
     if (!response) {
-      future.complete(null);
+      future.complete(Node.of("stream-error"));
       return;
     }
     store.addRequest(this);
