@@ -137,10 +137,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
     var results = nodes.stream()
         .filter(Objects::nonNull)
         .toList();
-    if (results.isEmpty()) {
-      return null;
-    }
-    return results;
+    return results.isEmpty() ? null : results;
   }
 
   /**

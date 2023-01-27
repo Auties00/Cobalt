@@ -185,7 +185,7 @@ class AppStateHandler extends Handler
       return;
     }
 
-    CompletableFuture.runAsync(this::pullSync, getOrCreateService())
+    CompletableFuture.runAsync(() -> pullSync(patchTypes), getOrCreateService())
         .exceptionallyAsync(exception -> onPullError(false, exception));
   }
 
