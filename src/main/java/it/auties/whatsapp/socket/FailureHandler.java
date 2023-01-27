@@ -12,7 +12,7 @@ class FailureHandler extends Handler
   }
 
   protected <T> T handleFailure(ErrorHandler.Location location, Throwable throwable) {
-    if (socketHandler.state() == SocketState.RESTORE) {
+    if (socketHandler.state() == SocketState.RESTORE || socketHandler.state() == SocketState.LOGGED_OUT) {
       return null;
     }
     var result = socketHandler.options()

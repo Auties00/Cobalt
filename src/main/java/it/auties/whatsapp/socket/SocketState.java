@@ -10,6 +10,10 @@ enum SocketState {
   LOGGED_OUT,
   RESTORE;
 
+  boolean isDisconnected(){
+    return this == DISCONNECTED || this == LOGGED_OUT;
+  }
+
   static SocketState of(DisconnectReason reason){
     return switch (reason){
       case DISCONNECTED -> DISCONNECTED;

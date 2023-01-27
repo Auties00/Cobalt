@@ -5,9 +5,8 @@ import it.auties.whatsapp.util.JacksonProvider;
 
 // Just used for testing locally
 public class WaitTest implements JacksonProvider {
-
   public static void main(String[] args) {
-    Whatsapp.lastConnection()
+    var whatsapp = Whatsapp.lastConnection()
         .addLoggedInListener(() -> System.out.println("Connected"))
         .addNewMessageListener(message -> System.out.println(message.toJson()))
         .addContactsListener(
@@ -24,8 +23,8 @@ public class WaitTest implements JacksonProvider {
         .addAnyMessageStatusListener((chat, contact, info, status) -> System.out.printf(
             "Message %s in chat %s now has status %s for %s %n", info.id(), info.chatName(), status,
             contact.name()))
-        .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason))
-        .connect()
-        .join();
+        .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason));
+    whatsapp.connect().join();
+    System.out.println("Done");
   }
 }

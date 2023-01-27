@@ -69,7 +69,7 @@ public final class Store
    */
   @JsonIgnore
   @Default
-  private final CountDownLatch mediaConnectionLatch = new CountDownLatch(1);
+  private CountDownLatch mediaConnectionLatch = new CountDownLatch(1);
 
 
   /**
@@ -474,6 +474,13 @@ public final class Store
   }
 
   /**
+   * Clears all the data that this object holds and closes the pending requests
+   */
+  public void resolveAllPendingRequests() {
+    requests.forEach(request -> request.complete(null, false));
+  }
+
+  /**
    * Queries the first reply waiting and completes it with the input message
    *
    * @param response the response to complete the reply with
@@ -633,18 +640,6 @@ public final class Store
   }
 
   /**
-   * Clears all the data that this object holds and closes the pending requests
-   */
-  @Override
-  public void clear() {
-    chats.clear();
-    contacts.clear();
-    status.clear();
-    listeners.clear();
-    requests.forEach(request -> request.complete(null, false));
-    requests.clear();
-  }
-  /**
    * Returns a request tag
    *
    * @return a non-null String
@@ -782,6 +777,8 @@ public final class Store
 
   public void dispose() {
     serialize(false);
+    mediaConnectionLatch.countDown();
+    mediaConnectionLatch = new CountDownLatch(1);
   }
 
   @Override

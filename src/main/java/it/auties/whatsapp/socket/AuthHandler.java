@@ -64,7 +64,7 @@ class AuthHandler extends Handler
     var handshakeMessage = new HandshakeMessage(clientFinish);
     return Request.of(handshakeMessage)
         .sendWithNoResponse(session, socketHandler.keys(), socketHandler.store())
-        .thenRunAsync(socketHandler.keys()::clear)
+        .thenRunAsync(socketHandler.keys()::clearReadWriteKey)
         .thenRunAsync(handshake::finish);
   }
 

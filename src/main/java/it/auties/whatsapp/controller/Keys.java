@@ -196,8 +196,7 @@ public final class Keys
   /**
    * Clears the signal keys associated with this object
    */
-  @Override
-  public void clear() {
+  public void clearReadWriteKey() {
     this.readKey = null;
     this.writeKey = null;
     this.writeCounter.set(0);

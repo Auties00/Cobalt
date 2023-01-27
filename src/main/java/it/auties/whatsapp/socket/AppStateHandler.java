@@ -67,7 +67,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -80,13 +79,11 @@ class AppStateHandler extends Handler
   private final SocketHandler socketHandler;
   private final Map<PatchType, Long> versions;
   private final Map<PatchType, Integer> attempts;
-  private CountDownLatch countDownLatch;
 
   protected AppStateHandler(SocketHandler socketHandler) {
     this.socketHandler = socketHandler;
     this.versions = new HashMap<>();
     this.attempts = new HashMap<>();
-    this.countDownLatch = new CountDownLatch(1);
   }
 
   protected CompletableFuture<Void> push(@NonNull PatchRequest patch) {
@@ -213,7 +210,7 @@ class AppStateHandler extends Handler
   }
 
   private void onPull() {
-    countDownLatch.countDown();
+    getOrCreateLatch().countDown();
     socketHandler.store()
         .initialAppSync(true);
     versions.clear();
@@ -224,7 +221,7 @@ class AppStateHandler extends Handler
     versions.clear();
     attempts.clear();
     if (initial) {
-      countDownLatch.countDown();
+      getOrCreateLatch().countDown();
       return socketHandler.errorHandler()
           .handleFailure(INITIAL_APP_STATE_SYNC, exception);
     }
@@ -646,14 +643,11 @@ class AppStateHandler extends Handler
   }
 
   protected void awaitReady() {
-    try {
-      if (socketHandler.store().initialAppSync()) {
-        return;
-      }
-      countDownLatch.await();
-    } catch (InterruptedException exception) {
-      throw new RuntimeException("Cannot await app state", exception);
+    if (socketHandler.store().initialAppSync()) {
+      return;
     }
+
+    awaitLatch();
   }
 
   @Override
@@ -661,7 +655,7 @@ class AppStateHandler extends Handler
     super.dispose();
     versions.clear();
     attempts.clear();
-    countDownLatch = new CountDownLatch(1);
+    completeLatch();
   }
 
   private record SyncRecord(LTHashState state, List<ActionDataSync> records) {

@@ -20,11 +20,6 @@ public sealed interface Controller<T extends Controller<T>>
   int id();
 
   /**
-   * Clears some or all fields of this object
-   */
-  void clear();
-
-  /**
    * Disposes this object
    */
   void dispose();

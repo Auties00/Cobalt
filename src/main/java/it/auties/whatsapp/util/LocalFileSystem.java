@@ -31,9 +31,9 @@ public class LocalFileSystem {
   }
 
   @SuppressWarnings("ResultOfMethodCallIgnored")
-  public void delete(String folder) {
+  public void delete(int id) {
     try {
-      var folderPath = Path.of(folder);
+      var folderPath = LocalFileSystem.of(String.valueOf(id));
       if (Files.notExists(folderPath)) {
         return;
       }
@@ -42,6 +42,7 @@ public class LocalFileSystem {
             .map(Path::toFile)
             .forEach(File::delete);
       }
+      folderPath.toFile().delete();
     } catch (IOException exception) {
       throw new UncheckedIOException("Cannot delete folder", exception);
     }

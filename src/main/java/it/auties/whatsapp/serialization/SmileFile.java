@@ -10,6 +10,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Optional;
@@ -59,15 +60,13 @@ final class SmileFile
     CompletableFuture.runAsync(() -> writeSync(input));
   }
 
+  @SuppressWarnings("ResultOfMethodCallIgnored")
   private void writeSync(Object input) {
-    try {
+    try (var channel = FileChannel.open(file, StandardOpenOption.WRITE)) {
       if (Files.notExists(file)) {
         Files.createFile(file);
       }
-    } catch (IOException exception) {
-      throw new UncheckedIOException("Cannot prepare file for write", exception);
-    }
-    try (var channel = FileChannel.open(file, StandardOpenOption.WRITE)) {
+
       var lock = channel.lock();
       var result = new ByteArrayOutputStream();
       var gzipOutputStream = new GZIPOutputStream(result);
@@ -75,9 +74,10 @@ final class SmileFile
       gzipOutputStream.finish();
       channel.write(ByteBuffer.wrap(result.toByteArray()));
       lock.release();
+    } catch (NoSuchFileException | OverlappingFileLockException ignored) {
+
     } catch (IOException | NonWritableChannelException exception) {
       throw new RuntimeException("Cannot write to file", exception);
-    } catch (OverlappingFileLockException ignored) {
     }
   }
 }

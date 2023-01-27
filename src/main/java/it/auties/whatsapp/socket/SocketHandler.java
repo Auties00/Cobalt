@@ -156,22 +156,20 @@ public class SocketHandler extends Handler
   }
 
   private void onShutdown(boolean reconnect) {
-    keys.dispose();
-    store.dispose();
-    if (reconnect) {
-      return;
+    if(state != SocketState.LOGGED_OUT && state != SocketState.RESTORE) {
+      keys.dispose();
+      store.dispose();
     }
-    authHandler.dispose();
-    streamHandler.dispose();
-    messageHandler.dispose();
-    appStateHandler.dispose();
-    dispose();
-    onSocketEvent(SocketEvent.CLOSE);
-  }
 
-  @NonNull
-  public Session session() {
-    return session;
+    if (!reconnect) {
+      onSocketEvent(SocketEvent.CLOSE);
+      authHandler.dispose();
+      streamHandler.dispose();
+      messageHandler.dispose();
+      appStateHandler.dispose();
+      errorHandler.dispose();
+      dispose();
+    }
   }
 
   @OnOpen
@@ -184,8 +182,7 @@ public class SocketHandler extends Handler
     this.state = SocketState.WAITING;
     onSocketEvent(SocketEvent.OPEN);
     authHandler.createHandshake();
-    var clientHello = new ClientHello(keys.ephemeralKeyPair()
-        .publicKey());
+    var clientHello = new ClientHello(keys.ephemeralKeyPair().publicKey());
     var handshakeMessage = new HandshakeMessage(clientHello);
     Request.of(handshakeMessage)
         .sendWithPrologue(session, keys, store)
@@ -199,14 +196,16 @@ public class SocketHandler extends Handler
         .isEmpty()) {
       return;
     }
+
     if (state != SocketState.CONNECTED && state != SocketState.RESTORE)  {
       var header = message.decoded()
           .getFirst()
           .toByteArray();
-      authHandler.login(session(), header)
+      authHandler.login(session, header)
           .thenRunAsync(() -> state(SocketState.CONNECTED));
       return;
     }
+
     message.toNodes(keys)
         .forEach(this::handleNode);
   }
@@ -239,7 +238,7 @@ public class SocketHandler extends Handler
   public CompletableFuture<Void> disconnect(DisconnectReason reason) {
     try {
       state(SocketState.of(reason));
-      keys.clear();
+      keys.clearReadWriteKey();
       return switch (reason){
         case DISCONNECTED -> {
           session.close();
@@ -250,20 +249,20 @@ public class SocketHandler extends Handler
           yield connect();
         }
         case LOGGED_OUT -> {
-          store.clear();
-          LocalFileSystem.delete(String.valueOf(keys().id()));
+          store.resolveAllPendingRequests();
           session.close();
+          LocalFileSystem.delete(keys().id());
           yield CompletableFuture.completedFuture(null);
         }
         case RESTORE -> {
+          store.resolveAllPendingRequests();
           var oldListeners = new ArrayList<>(store.listeners());
-          store.clear();
-          LocalFileSystem.delete(String.valueOf(keys().id()));
+          session.close();
+          LocalFileSystem.delete(keys().id());
           var newId = KeyHelper.registrationId();
           this.keys = Keys.random(newId, options.defaultSerialization());
           this.store = Store.random(newId, options.defaultSerialization());
           store.listeners().addAll(oldListeners);
-          session.close();
           yield connect();
         }
       };
@@ -274,18 +273,16 @@ public class SocketHandler extends Handler
 
   @OnClose
   public void onClose() {
-    if (future != null
-        && !future.isDone()
-        && (state == SocketState.DISCONNECTED || state == SocketState.LOGGED_OUT)) {
-      future.complete(null);
-    }
-    if (state == SocketState.CONNECTED) {
-      onDisconnected(DisconnectReason.RECONNECTING);
+    if(state == SocketState.CONNECTED){
       disconnect(DisconnectReason.RECONNECTING);
       return;
     }
+
     onDisconnected(state.toReason());
     onShutdown(state == SocketState.RECONNECTING);
+    if (future != null && !future.isDone() && state.isDisconnected()) {
+      future.complete(null);
+    }
   }
 
   @OnError
@@ -751,6 +748,10 @@ public class SocketHandler extends Handler
   }
   
   public void callListenersSync(Consumer<Listener> consumer) {
+    if(state == SocketState.DISCONNECTED || state == SocketState.LOGGED_OUT){
+      return;
+    }
+
     var service = getOrCreatePooledService();
     var futures = store.listeners()
         .stream()
@@ -761,6 +762,10 @@ public class SocketHandler extends Handler
   }
 
   private void callListenersAsync(Consumer<Listener> consumer) {
+    if(state == SocketState.DISCONNECTED || state == SocketState.LOGGED_OUT){
+      return;
+    }
+
     var service = getOrCreatePooledService();
     store.listeners()
         .forEach(listener -> service.execute(() -> consumer.accept(listener)));

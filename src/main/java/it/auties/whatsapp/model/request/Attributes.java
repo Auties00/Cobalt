@@ -5,10 +5,10 @@ import static java.util.Objects.requireNonNull;
 
 import it.auties.whatsapp.model.contact.ContactJid;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import lombok.NonNull;
@@ -18,7 +18,7 @@ import lombok.NonNull;
  *
  * @param toMap the non-null wrapped toMap
  */
-public record Attributes(@NonNull Map<String, Object> toMap) {
+public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
 
   /**
    * Constructs a new toMap using the non-null provided entries
@@ -49,8 +49,8 @@ public record Attributes(@NonNull Map<String, Object> toMap) {
    */
   public static Attributes ofNullable(Map<String, Object> map) {
     var modifiableMap = Optional.ofNullable(map)
-        .map(HashMap::new)
-        .orElseGet(HashMap::new);
+        .map(ConcurrentHashMap::new)
+        .orElseGet(ConcurrentHashMap::new);
     return new Attributes(modifiableMap);
   }
 

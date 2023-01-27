@@ -328,7 +328,8 @@ public class Whatsapp {
    * Deletes all the known connections from memory
    */
   public static void deleteConnections() {
-    streamConnections().forEach(entry -> LocalFileSystem.delete(String.valueOf(entry.keys().id())));
+    streamConnections()
+        .forEach(entry -> LocalFileSystem.delete(entry.keys().id()));
   }
 
   private static LinkPreviewMedia compareDimensions(LinkPreviewMedia first,
@@ -1065,8 +1066,7 @@ public class Whatsapp {
    */
   public CompletableFuture<Void> logout() {
     if (store().userCompanionJid() == null) {
-      return disconnect()
-          .thenRunAsync(() -> LocalFileSystem.delete(String.valueOf(keys().id())));
+      return socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
     }
     var metadata = Map.of("jid", store().userCompanionJid(), "reason", "user_initiated");
     var device = Node.ofAttributes("remove-companion-device", metadata);
