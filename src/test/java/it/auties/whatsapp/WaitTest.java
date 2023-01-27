@@ -22,7 +22,7 @@ public class WaitTest implements JacksonProvider {
                 contact.name(), chat.name(), status.name()))
         .addAnyMessageStatusListener((chat, contact, info, status) -> System.out.printf(
             "Message %s in chat %s now has status %s for %s %n", info.id(), info.chatName(), status,
-            contact.name()))
+            contact == null ? null : contact.name()))
         .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason));
     whatsapp.connect().join();
     System.out.println("Done");
