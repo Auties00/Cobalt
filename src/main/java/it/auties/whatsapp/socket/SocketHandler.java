@@ -137,11 +137,22 @@ public class SocketHandler extends Handler
     this.messageHandler = new MessageHandler(this);
     this.appStateHandler = new AppStateHandler(this);
     this.errorHandler = new FailureHandler(this);
-    if (options.automaticallySubscribeToPresences()) {
-      store().listeners()
-          .add((OnNewContact) whatsapp::subscribeToPresence);
-    }
+    onContactSubscribeToPresence(whatsapp, options);
     getRuntime().addShutdownHook(new Thread(() -> onShutdown(false)));
+  }
+
+  private void onContactSubscribeToPresence(Whatsapp whatsapp, Options options) {
+    if (!options.automaticallySubscribeToPresences()) {
+      return;
+    }
+
+    store().listeners().add((OnNewContact) contact -> {
+      if(!store().initialAppSync()){
+        return;
+      }
+
+      whatsapp.subscribeToPresence(contact);
+    });
   }
 
   private void onShutdown(boolean reconnect) {

@@ -1,5 +1,6 @@
 package it.auties.whatsapp.socket;
 
+import static it.auties.whatsapp.api.ErrorHandler.Location.CRYPTOGRAPHY;
 import static it.auties.whatsapp.api.ErrorHandler.Location.LOGGED_OUT;
 import static it.auties.whatsapp.api.ErrorHandler.Location.LOGIN;
 import static it.auties.whatsapp.api.ErrorHandler.Location.MEDIA_CONNECTION;
@@ -20,6 +21,7 @@ import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.exception.ErroneousNodeRequestException;
 import it.auties.whatsapp.exception.HmacValidationException;
+import it.auties.whatsapp.exception.UnknownStreamException;
 import it.auties.whatsapp.listener.OnNodeReceived;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
@@ -425,8 +427,7 @@ class StreamHandler extends Handler
       return;
     }
     node.findNode("collection")
-        .map(entry -> entry.attributes()
-            .getRequiredString("name"))
+        .map(entry -> entry.attributes().getRequiredString("name"))
         .map(PatchType::of)
         .ifPresent(socketHandler::pullPatch);
   }
@@ -452,6 +453,12 @@ class StreamHandler extends Handler
   }
 
   private void digestError(Node node) {
+    if (node.hasNode("bad-mac")) {
+      socketHandler.errorHandler()
+          .handleFailure(CRYPTOGRAPHY, new UnknownStreamException("Detected a bad mac"));
+      return;
+    }
+
     var conflict = node.findNode("conflict");
     if(conflict.isPresent()){
       socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
