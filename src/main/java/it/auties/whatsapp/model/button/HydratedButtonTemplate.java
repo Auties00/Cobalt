@@ -1,6 +1,8 @@
 package it.auties.whatsapp.model.button;
+
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.UINT32;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
@@ -12,12 +14,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
-import import it.auties.protobuf.base.ProtobufName;;
-import import it.auties.protobuf.base.ProtobufType;;
-import import lombok.*;;
-import import lombok.experimental.*;;
-import import static it.auties.protobuf.base.ProtobufType.*;;
-import import java.util.*;;
+
 /**
  * A model class that represents a hydrated template for a button
  */
@@ -26,10 +23,11 @@ import import java.util.*;;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-@ProtobufName("HydratedTemplateButton")
-public class HydratedButtonTemplate implements ProtobufMessage {
-    @ProtobufProperty(index = 1, type = MESSAGE, implementation = it.auties.whatsapp.model.button.HydratedQuickReplyButton.class)
-    private it.auties.whatsapp.model.button.HydratedQuickReplyButton quickReplyButton;
+public class HydratedButtonTemplate
+    implements ProtobufMessage {
+
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = HydratedQuickReplyButton.class)
+    private HydratedQuickReplyButton quickReplyButton;
 
     @ProtobufProperty(index = 2, type = MESSAGE, implementation = HydratedURLButton.class)
     private HydratedURLButton urlButton;
@@ -43,37 +41,37 @@ public class HydratedButtonTemplate implements ProtobufMessage {
     /**
      * Constructs a new template from a quick reply
      *
-     * @param quickReplyButton
-     * 		the non-null quick reply
+     * @param quickReplyButton the non-null quick reply
      * @return a non-null button template
      */
-    public static HydratedButtonTemplate of(@NonNull
-    it.auties.whatsapp.model.button.HydratedQuickReplyButton quickReplyButton) {
-        return HydratedButtonTemplate.builder().quickReplyButton(quickReplyButton).build();
+    public static HydratedButtonTemplate of(@NonNull HydratedQuickReplyButton quickReplyButton) {
+        return HydratedButtonTemplate.builder()
+            .quickReplyButton(quickReplyButton)
+            .build();
     }
 
     /**
      * Constructs a new template from an url button
      *
-     * @param urlButton
-     * 		the non-null url button
+     * @param urlButton the non-null url button
      * @return a non-null button template
      */
-    public static HydratedButtonTemplate of(@NonNull
-    HydratedURLButton urlButton) {
-        return HydratedButtonTemplate.builder().urlButton(urlButton).build();
+    public static HydratedButtonTemplate of(@NonNull HydratedURLButton urlButton) {
+        return HydratedButtonTemplate.builder()
+            .urlButton(urlButton)
+            .build();
     }
 
     /**
      * Constructs a new template from a call button
      *
-     * @param callButton
-     * 		the non-null call button
+     * @param callButton the non-null call button
      * @return a non-null button template
      */
-    public static HydratedButtonTemplate of(@NonNull
-    HydratedCallButton callButton) {
-        return HydratedButtonTemplate.builder().callButton(callButton).build();
+    public static HydratedButtonTemplate of(@NonNull HydratedCallButton callButton) {
+        return HydratedButtonTemplate.builder()
+            .callButton(callButton)
+            .build();
     }
 
     /**
@@ -100,8 +98,8 @@ public class HydratedButtonTemplate implements ProtobufMessage {
      */
     @AllArgsConstructor
     @Accessors(fluent = true)
-    public enum ButtonType implements ProtobufMessage {
-
+    public enum ButtonType
+        implements ProtobufMessage {
         /**
          * No button
          */
@@ -118,25 +116,16 @@ public class HydratedButtonTemplate implements ProtobufMessage {
          * Call button
          */
         CALL_BUTTON(3);
+
         @Getter
         private final int index;
 
         @JsonCreator
         public static ButtonType of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(ButtonType.NONE);
+            return Arrays.stream(values())
+                .filter(entry -> entry.index() == index)
+                .findFirst()
+                .orElse(ButtonType.NONE);
         }
-    }
-
-    @AllArgsConstructor
-    @Data
-    @Jacksonized
-    @Builder
-    @ProtobufName("HydratedQuickReplyButton")
-    public static class HydratedQuickReplyButton implements ProtobufMessage {
-        @ProtobufProperty(index = 1, name = "displayText", type = ProtobufType.STRING)
-        private String displayText;
-
-        @ProtobufProperty(index = 2, name = "id", type = ProtobufType.STRING)
-        private String id;
     }
 }
