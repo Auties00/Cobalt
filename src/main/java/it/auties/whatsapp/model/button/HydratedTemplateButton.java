@@ -23,7 +23,7 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class HydratedButtonTemplate
+public class HydratedTemplateButton
     implements ProtobufMessage {
 
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = HydratedQuickReplyButton.class)
@@ -44,8 +44,8 @@ public class HydratedButtonTemplate
      * @param quickReplyButton the non-null quick reply
      * @return a non-null button template
      */
-    public static HydratedButtonTemplate of(@NonNull HydratedQuickReplyButton quickReplyButton) {
-        return HydratedButtonTemplate.builder()
+    public static HydratedTemplateButton of(@NonNull HydratedQuickReplyButton quickReplyButton) {
+        return HydratedTemplateButton.builder()
             .quickReplyButton(quickReplyButton)
             .build();
     }
@@ -56,8 +56,8 @@ public class HydratedButtonTemplate
      * @param urlButton the non-null url button
      * @return a non-null button template
      */
-    public static HydratedButtonTemplate of(@NonNull HydratedURLButton urlButton) {
-        return HydratedButtonTemplate.builder()
+    public static HydratedTemplateButton of(@NonNull HydratedURLButton urlButton) {
+        return HydratedTemplateButton.builder()
             .urlButton(urlButton)
             .build();
     }
@@ -68,8 +68,8 @@ public class HydratedButtonTemplate
      * @param callButton the non-null call button
      * @return a non-null button template
      */
-    public static HydratedButtonTemplate of(@NonNull HydratedCallButton callButton) {
-        return HydratedButtonTemplate.builder()
+    public static HydratedTemplateButton of(@NonNull HydratedCallButton callButton) {
+        return HydratedTemplateButton.builder()
             .callButton(callButton)
             .build();
     }

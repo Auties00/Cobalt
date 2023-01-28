@@ -14,7 +14,7 @@ import it.auties.whatsapp.model.business.BusinessShop;
 import it.auties.whatsapp.model.button.Button;
 import it.auties.whatsapp.model.button.ButtonRow;
 import it.auties.whatsapp.model.button.ButtonSection;
-import it.auties.whatsapp.model.button.HydratedButtonTemplate;
+import it.auties.whatsapp.model.button.HydratedTemplateButton;
 import it.auties.whatsapp.model.button.HydratedCallButton;
 import it.auties.whatsapp.model.button.HydratedFourRowTemplate;
 import it.auties.whatsapp.model.button.HydratedQuickReplyButton;
@@ -866,10 +866,10 @@ public class RunCITest implements Listener, JacksonProvider {
       return;
     }
     log("Sending template message...");
-    var quickReplyButton = HydratedButtonTemplate.of(HydratedQuickReplyButton.of("Click me"));
-    var urlButton = HydratedButtonTemplate.of(
+    var quickReplyButton = HydratedTemplateButton.of(HydratedQuickReplyButton.of("Click me"));
+    var urlButton = HydratedTemplateButton.of(
         HydratedURLButton.of("Search it", "https://google.com"));
-    var callButton = HydratedButtonTemplate.of(
+    var callButton = HydratedTemplateButton.of(
         HydratedCallButton.of("Call me", contact.toPhoneNumber()));
     var fourRowTemplate = HydratedFourRowTemplate.withTextTitleBuilder()
         .body("A nice body")

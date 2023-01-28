@@ -90,8 +90,8 @@ public final class HydratedFourRowTemplate
   /**
    * The buttons of this row
    */
-  @ProtobufProperty(index = 8, type = MESSAGE, implementation = HydratedButtonTemplate.class, repeated = true)
-  private List<HydratedButtonTemplate> buttons;
+  @ProtobufProperty(index = 8, type = MESSAGE, implementation = HydratedTemplateButton.class, repeated = true)
+  private List<HydratedTemplateButton> buttons;
 
   /**
    * Constructs a new builder to create a four row template without a title
@@ -103,7 +103,7 @@ public final class HydratedFourRowTemplate
    */
   @Builder(builderClassName = "EmptyFourRowTemplateBuilder", builderMethodName = "withoutTitleBuilder")
   private static HydratedFourRowTemplate emptyBuilder(String body, String footer,
-      List<HydratedButtonTemplate> buttons, String id) {
+      List<HydratedTemplateButton> buttons, String id) {
     return createBuilder(body, footer, buttons, id).build();
 
   }
@@ -120,7 +120,7 @@ public final class HydratedFourRowTemplate
   @Builder(builderClassName = "DocumentHydratedFourRowTemplateBuilder", builderMethodName = "withDocumentTitleBuilder")
   private static HydratedFourRowTemplate documentBuilder(DocumentMessage title, String body,
       String footer,
-      List<HydratedButtonTemplate> buttons, String id) {
+      List<HydratedTemplateButton> buttons, String id) {
     return createBuilder(body, footer, buttons, id).documentTitle(title)
         .build();
 
@@ -137,7 +137,7 @@ public final class HydratedFourRowTemplate
    */
   @Builder(builderClassName = "HighlyStructuredHydratedFourRowTemplateBuilder", builderMethodName = "withTextTitleBuilder")
   private static HydratedFourRowTemplate textBuilder(String title, String body, String footer,
-      List<HydratedButtonTemplate> buttons, String id) {
+      List<HydratedTemplateButton> buttons, String id) {
     return createBuilder(body, footer, buttons, id).textTitle(title)
         .build();
   }
@@ -154,7 +154,7 @@ public final class HydratedFourRowTemplate
   @Builder(builderClassName = "ImageHydratedFourRowTemplateBuilder", builderMethodName = "withImageTitleBuilder")
   private static HydratedFourRowTemplate imageBuilder(ImageMessage title, String body,
       String footer,
-      List<HydratedButtonTemplate> buttons, String id) {
+      List<HydratedTemplateButton> buttons, String id) {
     return createBuilder(body, footer, buttons, id).imageTitle(title)
         .build();
 
@@ -172,7 +172,7 @@ public final class HydratedFourRowTemplate
   @Builder(builderClassName = "VideoHydratedFourRowTemplateBuilder", builderMethodName = "withVideoTitleBuilder")
   private static HydratedFourRowTemplate videoBuilder(VideoMessage title, String body,
       String footer,
-      List<HydratedButtonTemplate> buttons, String id) {
+      List<HydratedTemplateButton> buttons, String id) {
     return createBuilder(body, footer, buttons, id).videoTitle(title)
         .build();
 
@@ -190,14 +190,14 @@ public final class HydratedFourRowTemplate
   @Builder(builderClassName = "LocationHydratedFourRowTemplateBuilder", builderMethodName = "withLocationTitleBuilder")
   private static HydratedFourRowTemplate locationBuilder(LocationMessage title, String body,
       String footer,
-      List<HydratedButtonTemplate> buttons, String id) {
+      List<HydratedTemplateButton> buttons, String id) {
     return createBuilder(body, footer, buttons, id).locationTitle(title)
         .build();
 
   }
 
   private static HydratedFourRowTemplateBuilder createBuilder(String body, String footer,
-      List<HydratedButtonTemplate> buttons, String id) {
+      List<HydratedTemplateButton> buttons, String id) {
     IntStream.range(0, buttons.size())
         .forEach(index -> buttons.get(index).index(index + 1));
     return HydratedFourRowTemplate.builder()
@@ -278,7 +278,7 @@ public final class HydratedFourRowTemplate
 
   public static class HydratedFourRowTemplateBuilder {
 
-    public HydratedFourRowTemplateBuilder buttons(List<HydratedButtonTemplate> hydratedButtons) {
+    public HydratedFourRowTemplateBuilder buttons(List<HydratedTemplateButton> hydratedButtons) {
       if (this.buttons == null) {
         this.buttons = new ArrayList<>();
       }
