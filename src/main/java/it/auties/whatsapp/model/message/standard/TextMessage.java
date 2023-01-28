@@ -32,7 +32,7 @@ import lombok.extern.jackson.Jacksonized;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-@ProtobufName("ExtendedTextName")
+@ProtobufName("ExtendedTextMessage")
 public final class TextMessage
     extends ContextualMessage {
 
