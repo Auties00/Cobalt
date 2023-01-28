@@ -3,6 +3,7 @@ package it.auties.whatsapp.test;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
 import it.auties.whatsapp.github.GithubActions;
+import it.auties.whatsapp.util.Specification.Whatsapp;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -88,10 +89,10 @@ public class TokensCollectorTest {
   }
 
   private String getJavascriptSource() throws IOException, InterruptedException {
-    var whatsappRequest = createRequest("https://web.whatsapp.com");
+    var whatsappRequest = createRequest(Whatsapp.WEB_ORIGIN);
     var whatsappResponse = HTTP_CLIENT.send(whatsappRequest, ofString());
     var token = findResult(whatsappResponse.body(), TOKEN_REGEX);
-    var sourceRequest = createRequest("https://web.whatsapp.com/app.%s.js".formatted(token));
+    var sourceRequest = createRequest("%s/app.%s.js".formatted(Whatsapp.WEB_ORIGIN, token));
     return HTTP_CLIENT.send(sourceRequest, ofString())
         .body();
   }

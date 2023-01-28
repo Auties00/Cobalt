@@ -6,8 +6,7 @@ import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
 @UtilityClass
-public class KeyHelper
-    implements SignalSpecification {
+public class KeyHelper {
 
   private final String SHA_PRNG = "SHA1PRNG";
 

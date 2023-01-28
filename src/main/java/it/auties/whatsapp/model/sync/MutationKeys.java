@@ -1,14 +1,14 @@
 package it.auties.whatsapp.model.sync;
 
+import static it.auties.whatsapp.util.Specification.Signal.KEY_LENGTH;
+
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.crypto.Hkdf;
-import it.auties.whatsapp.util.SignalSpecification;
 import java.nio.charset.StandardCharsets;
 import lombok.NonNull;
 
 public record MutationKeys(byte[] indexKey, byte[] encKey, byte[] macKey, byte[] snapshotMacKey,
-                           byte[] patchMacKey)
-    implements SignalSpecification {
+                           byte[] patchMacKey) {
 
   private static final int EXPANDED_SIZE = 160;
   private static final byte[] MUTATION_KEYS = "WhatsApp Mutation Keys".getBytes(

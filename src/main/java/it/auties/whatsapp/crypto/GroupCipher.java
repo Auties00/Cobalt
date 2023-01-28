@@ -8,12 +8,10 @@ import it.auties.whatsapp.model.signal.message.SenderKeyMessage;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
 import it.auties.whatsapp.model.signal.sender.SenderKeyState;
 import it.auties.whatsapp.model.signal.sender.SenderMessageKey;
-import it.auties.whatsapp.util.SignalSpecification;
 import java.util.NoSuchElementException;
 import lombok.NonNull;
 
-public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys)
-    implements SignalSpecification {
+public record GroupCipher(@NonNull SenderKeyName name, @NonNull Keys keys) {
 
   public Node encrypt(byte[] data) {
     var currentState = keys.findSenderKeyByName(name)

@@ -46,7 +46,7 @@ import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.LocalFileSystem;
-import it.auties.whatsapp.util.SignalSpecification;
+import it.auties.whatsapp.util.Specification;
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.ClientEndpointConfig.Configurator;
 import jakarta.websocket.DeploymentException;
@@ -77,10 +77,7 @@ import lombok.experimental.Accessors;
 @ClientEndpoint(configurator = SocketHandler.OriginPatcher.class)
 @SuppressWarnings("unused")
 public class SocketHandler extends Handler
-    implements JacksonProvider, SignalSpecification {
-
-  private static final String WHATSAPP_URL = "wss://web.whatsapp.com/ws/chat";
-
+    implements JacksonProvider {
   static {
     getWebSocketContainer().setDefaultMaxSessionIdleTimeout(0);
   }
@@ -228,7 +225,7 @@ public class SocketHandler extends Handler
       if (future == null || future.isDone()) {
         this.future = new CompletableFuture<>();
       }
-      getWebSocketContainer().connectToServer(this, URI.create(WHATSAPP_URL));
+      getWebSocketContainer().connectToServer(this, URI.create(Specification.Whatsapp.WEB_ENDPOINT));
       return future;
     } catch (IOException | DeploymentException exception) {
       throw new RuntimeException("Cannot connect to socket", exception);
@@ -780,8 +777,8 @@ public class SocketHandler extends Handler
 
     @Override
     public void beforeRequest(@NonNull Map<String, List<String>> headers) {
-      headers.put("Origin", List.of("https://web.whatsapp.com"));
-      headers.put("Host", List.of("web.whatsapp.com"));
+      headers.put("Origin", List.of(Specification.Whatsapp.WEB_ORIGIN));
+      headers.put("Host", List.of(Specification.Whatsapp.WEB_HOST));
     }
   }
 }

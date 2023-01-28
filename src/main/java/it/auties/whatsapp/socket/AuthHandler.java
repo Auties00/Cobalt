@@ -17,7 +17,7 @@ import it.auties.whatsapp.model.signal.auth.WebInfo;
 import it.auties.whatsapp.model.signal.auth.WebInfo.WebInfoWebSubPlatform;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.JacksonProvider;
-import it.auties.whatsapp.util.SignalSpecification;
+import it.auties.whatsapp.util.Specification;
 import jakarta.websocket.Session;
 import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
@@ -114,7 +114,7 @@ class AuthHandler extends Handler
         .companion(PROTOBUF.writeValueAsBytes(createCompanionProps()))
         .id(BytesHelper.intToBytes(socketHandler.keys()
             .id(), 4))
-        .keyType(BytesHelper.intToBytes(SignalSpecification.KEY_TYPE, 1))
+        .keyType(BytesHelper.intToBytes(Specification.Signal.KEY_TYPE, 1))
         .identifier(socketHandler.keys()
             .identityKeyPair()
             .publicKey())

@@ -55,7 +55,7 @@ import it.auties.whatsapp.model.sync.VersionSync;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.Medias;
-import it.auties.whatsapp.util.SignalSpecification;
+import it.auties.whatsapp.util.Specification;
 import it.auties.whatsapp.util.Validate;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -533,7 +533,7 @@ class AppStateHandler extends Handler
             .value()
             .blob())
         .map(Bytes::of)
-        .map(binary -> binary.slice(-SignalSpecification.KEY_LENGTH))
+        .map(binary -> binary.slice(-Specification.Signal.KEY_LENGTH))
         .reduce(Bytes.newBuffer(), Bytes::append)
         .toByteArray();
   }
@@ -588,9 +588,9 @@ class AppStateHandler extends Handler
     }
     var blob = Bytes.of(sync.value()
         .blob());
-    var encryptedBlob = blob.cut(-SignalSpecification.KEY_LENGTH)
+    var encryptedBlob = blob.cut(-Specification.Signal.KEY_LENGTH)
         .toByteArray();
-    var encryptedMac = blob.slice(-SignalSpecification.KEY_LENGTH)
+    var encryptedMac = blob.slice(-Specification.Signal.KEY_LENGTH)
         .toByteArray();
     Validate.isTrue(Arrays.equals(encryptedMac,
             generateMac(operation, encryptedBlob, sync.keyId().id(), mutationKeys.get().macKey())),
@@ -611,13 +611,13 @@ class AppStateHandler extends Handler
     var keyData = Bytes.of(operation.content())
         .append(keyId)
         .toByteArray();
-    var last = Bytes.newBuffer(SignalSpecification.MAC_LENGTH - 1)
+    var last = Bytes.newBuffer(Specification.Signal.MAC_LENGTH - 1)
         .append(keyData.length)
         .toByteArray();
     var total = Bytes.of(keyData, data, last)
         .toByteArray();
     return Bytes.of(Hmac.calculateSha512(total, key))
-        .cut(SignalSpecification.KEY_LENGTH)
+        .cut(Specification.Signal.KEY_LENGTH)
         .toByteArray();
   }
 

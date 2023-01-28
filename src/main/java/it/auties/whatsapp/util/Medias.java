@@ -17,6 +17,7 @@ import it.auties.whatsapp.model.media.MediaFile;
 import it.auties.whatsapp.model.media.MediaKeys;
 import it.auties.whatsapp.model.media.MediaUpload;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
+import it.auties.whatsapp.util.Specification.Whatsapp;
 import java.awt.AlphaComposite;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
@@ -115,7 +116,7 @@ public class Medias
           .uri(uri)
           .header("Content-Type", "application/octet-stream")
           .header("Accept", "application/json")
-          .header("Origin", "https://web.whatsapp.com")
+          .header("Origin", Whatsapp.WEB_ORIGIN)
           .build();
       var response = client.send(request, ofString());
       Validate.isTrue(response.statusCode() == 200, "Invalid status code: %s",

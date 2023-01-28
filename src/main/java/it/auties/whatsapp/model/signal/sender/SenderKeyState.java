@@ -2,7 +2,6 @@ package it.auties.whatsapp.model.signal.sender;
 
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
-import it.auties.whatsapp.util.SignalSpecification;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,7 +17,7 @@ import lombok.extern.jackson.Jacksonized;
 @Data
 @Accessors(fluent = true)
 public class SenderKeyState
-    implements ProtobufMessage, SignalSpecification {
+    implements ProtobufMessage {
 
   private final int id;
   private final SignalKeyPair signingKey;

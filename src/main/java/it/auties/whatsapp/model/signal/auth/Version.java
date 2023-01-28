@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.signal.auth;
 
 import static it.auties.protobuf.base.ProtobufType.UINT32;
+import static it.auties.whatsapp.util.Specification.Whatsapp.WEB_UPDATE_URL;
 import static java.lang.Integer.parseInt;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
@@ -32,6 +33,7 @@ import lombok.extern.jackson.Jacksonized;
 @Accessors(fluent = true)
 public class Version
     implements ProtobufMessage, JacksonProvider {
+  private static final Version DEFAULT_VERSION = new Version(2, 2245, 9);
 
   @ProtobufProperty(index = 1, type = UINT32)
   private Integer primary;
@@ -50,8 +52,8 @@ public class Version
 
   public Version(@NonNull String version) {
     var tokens = version.split("\\.", 5);
-    Validate.isTrue(tokens.length <= 5, "Invalid number of tokens for version %s: %s", version,
-        tokens);
+    Validate.isTrue(tokens.length <= 5, "Invalid number of tokens for version %s: %s",
+        version, tokens);
     if (tokens.length > 0) {
       this.primary = parseInt(tokens[0]);
     }
@@ -79,23 +81,19 @@ public class Version
     this.tertiary = tertiary;
   }
 
-  public static Version ofLatest(@NonNull Version defaultValue) {
+  public static Version latest() {
     try {
       var client = HttpClient.newHttpClient();
       var request = HttpRequest.newBuilder()
           .GET()
-          .uri(URI.create(
-              "https://web.whatsapp.com/check-update?version=%s&platform=web".formatted(
-                  defaultValue)))
+          .uri(URI.create(WEB_UPDATE_URL.formatted(DEFAULT_VERSION)))
           .build();
       var response = client.send(request, ofString());
       var model = JSON.readValue(response.body(), AppVersionResponse.class);
-      if (model.currentVersion() == null) {
-        return defaultValue;
-      }
-      return new Version(model.currentVersion());
+      return model.currentVersion() == null ? DEFAULT_VERSION
+          : new Version(model.currentVersion());
     } catch (Throwable throwable) {
-      return defaultValue;
+      return DEFAULT_VERSION;
     }
   }
 

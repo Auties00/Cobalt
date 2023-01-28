@@ -49,7 +49,7 @@ import it.auties.whatsapp.serialization.ControllerProviderLoader;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.JacksonProvider;
-import it.auties.whatsapp.util.SignalSpecification;
+import it.auties.whatsapp.util.Specification;
 import it.auties.whatsapp.util.Validate;
 import java.net.URI;
 import java.time.ZonedDateTime;
@@ -697,7 +697,7 @@ class StreamHandler extends Handler
     socketHandler.sendQuery("set", "encrypt",
         Node.of("registration", BytesHelper.intToBytes(socketHandler.keys()
             .id(), 4)),
-        Node.of("type", SignalSpecification.KEY_BUNDLE_TYPE), Node.of("identity",
+        Node.of("type", Specification.Signal.KEY_BUNDLE_TYPE), Node.of("identity",
             socketHandler.keys()
                 .identityKeyPair()
                 .publicKey()),

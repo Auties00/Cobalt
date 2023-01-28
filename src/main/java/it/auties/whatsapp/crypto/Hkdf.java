@@ -1,7 +1,8 @@
 package it.auties.whatsapp.crypto;
 
+import static it.auties.whatsapp.util.Specification.Signal.KEY_LENGTH;
+
 import it.auties.bytes.Bytes;
-import it.auties.whatsapp.util.SignalSpecification;
 import it.auties.whatsapp.util.Validate;
 import java.io.ByteArrayOutputStream;
 import javax.crypto.Mac;
@@ -10,12 +11,11 @@ import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
 @UtilityClass
-public class Hkdf
-    implements SignalSpecification {
+public class Hkdf {
 
   private final int ITERATION_START_OFFSET = 1; // v3
   private final int HASH_OUTPUT_SIZE = 32;
-  public final byte[] DEFAULT_SALT = new byte[HASH_OUTPUT_SIZE];
+  private final byte[] DEFAULT_SALT = new byte[HASH_OUTPUT_SIZE];
   private final String HMAC_SHA_256 = "HmacSHA256";
 
   public byte[][] deriveSecrets(byte[] input, byte[] info) {

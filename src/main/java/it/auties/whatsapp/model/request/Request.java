@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.request;
 
-import static it.auties.whatsapp.crypto.Handshake.PROLOGUE;
+import static it.auties.whatsapp.util.Specification.Whatsapp.WEB_PROLOGUE;
 import static java.util.concurrent.CompletableFuture.delayedExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -130,7 +130,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     try {
       var ciphered = encryptMessage(keys);
       var buffer = Bytes.of(prologue ?
-              PROLOGUE :
+              WEB_PROLOGUE :
               new byte[0])
           .appendInt(ciphered.length >> 16)
           .appendShort(65535 & ciphered.length)

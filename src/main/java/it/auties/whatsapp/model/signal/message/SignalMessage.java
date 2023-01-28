@@ -2,6 +2,8 @@ package it.auties.whatsapp.model.signal.message;
 
 import static it.auties.protobuf.base.ProtobufType.BYTES;
 import static it.auties.protobuf.base.ProtobufType.UINT32;
+import static it.auties.whatsapp.util.Specification.Signal.CURRENT_VERSION;
+import static it.auties.whatsapp.util.Specification.Signal.MAC_LENGTH;
 
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufProperty;

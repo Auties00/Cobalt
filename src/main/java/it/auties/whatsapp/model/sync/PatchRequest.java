@@ -3,7 +3,7 @@ package it.auties.whatsapp.model.sync;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.model.sync.RecordSync.Operation;
 import it.auties.whatsapp.util.JacksonProvider;
-import it.auties.whatsapp.util.SignalSpecification;
+import it.auties.whatsapp.util.Specification;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -11,7 +11,7 @@ import lombok.SneakyThrows;
 
 public record PatchRequest(PatchType type, ActionValueSync sync, String index, int version,
                            Operation operation)
-    implements JacksonProvider, SignalSpecification {
+    implements JacksonProvider {
 
   @SneakyThrows
   public static PatchRequest of(PatchType type, ActionValueSync sync, Operation operation,
@@ -22,7 +22,7 @@ public record PatchRequest(PatchType type, ActionValueSync sync, String index, i
   }
 
   public static PatchRequest of(PatchType type, ActionValueSync sync, Operation operation) {
-    return of(type, sync, operation, CURRENT_VERSION);
+    return of(type, sync, operation, Specification.Signal.CURRENT_VERSION);
   }
 
   private static List<String> createArguments(ActionValueSync sync, String... args) {

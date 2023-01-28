@@ -1,13 +1,14 @@
 package it.auties.whatsapp.model.media;
 
+import static it.auties.whatsapp.util.Specification.Signal.IV_LENGTH;
+import static it.auties.whatsapp.util.Specification.Signal.KEY_LENGTH;
+
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.crypto.Hkdf;
-import it.auties.whatsapp.util.SignalSpecification;
 import java.nio.charset.StandardCharsets;
 import lombok.NonNull;
 
-public record MediaKeys(byte[] mediaKey, byte[] iv, byte[] cipherKey, byte[] macKey, byte[] ref)
-    implements SignalSpecification {
+public record MediaKeys(byte[] mediaKey, byte[] iv, byte[] cipherKey, byte[] macKey, byte[] ref) {
 
   private static final int EXPANDED_SIZE = 112;
 

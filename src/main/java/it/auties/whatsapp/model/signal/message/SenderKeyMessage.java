@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.signal.message;
 
 import static it.auties.protobuf.base.ProtobufType.BYTES;
 import static it.auties.protobuf.base.ProtobufType.UINT32;
+import static it.auties.whatsapp.util.Specification.Signal.SIGNATURE_LENGTH;
 
 import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
@@ -9,7 +10,7 @@ import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.JacksonProvider;
-import it.auties.whatsapp.util.SignalSpecification;
+import it.auties.whatsapp.util.Specification;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import lombok.AllArgsConstructor;
@@ -25,7 +26,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Accessors(fluent = true)
 public class SenderKeyMessage
-    implements ProtobufMessage, JacksonProvider, SignalSpecification {
+    implements ProtobufMessage, JacksonProvider {
 
   private int version;
 
@@ -47,7 +48,7 @@ public class SenderKeyMessage
   public SenderKeyMessage(int id, int iteration, byte @NonNull [] cipherText,
       byte @NonNull [] signingKey) {
     try {
-      this.version = CURRENT_VERSION;
+      this.version = Specification.Signal.CURRENT_VERSION;
       this.id = id;
       this.iteration = iteration;
       this.cipherText = cipherText;

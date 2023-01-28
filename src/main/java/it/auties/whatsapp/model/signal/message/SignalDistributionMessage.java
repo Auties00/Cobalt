@@ -6,6 +6,7 @@ import static it.auties.protobuf.base.ProtobufType.UINT32;
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.Specification;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -59,7 +60,7 @@ public final class SignalDistributionMessage
   @SneakyThrows
   public SignalDistributionMessage(int id, int iteration, byte @NonNull [] chainKey,
       byte @NonNull [] signingKey) {
-    this.version = CURRENT_VERSION;
+    this.version = Specification.Signal.CURRENT_VERSION;
     this.id = id;
     this.iteration = iteration;
     this.chainKey = chainKey;

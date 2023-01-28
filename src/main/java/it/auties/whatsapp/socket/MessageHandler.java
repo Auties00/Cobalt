@@ -4,6 +4,9 @@ import static it.auties.whatsapp.api.ErrorHandler.Location.MESSAGE;
 import static it.auties.whatsapp.model.request.Node.ofAttributes;
 import static it.auties.whatsapp.model.request.Node.ofChildren;
 import static it.auties.whatsapp.model.sync.HistorySync.HistorySyncHistorySyncType.RECENT;
+import static it.auties.whatsapp.util.Specification.Signal.MSG;
+import static it.auties.whatsapp.util.Specification.Signal.PKMSG;
+import static it.auties.whatsapp.util.Specification.Signal.SKMSG;
 import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
@@ -62,7 +65,7 @@ import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.Medias;
-import it.auties.whatsapp.util.SignalSpecification;
+import it.auties.whatsapp.util.Specification;
 import it.auties.whatsapp.util.Validate;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -85,9 +88,6 @@ import java.util.stream.Stream;
 class MessageHandler extends Handler
     implements JacksonProvider {
 
-  private static final String SKMSG = "skmsg";
-  private static final String PKMSG = "pkmsg";
-  private static final String MSG = "msg";
   private static final int MAX_ATTEMPTS = 3;
 
   private final SocketHandler socketHandler;
@@ -643,7 +643,7 @@ class MessageHandler extends Handler
           .lastPreKeyId() + 1);
       var identity = PROTOBUF.writeValueAsBytes(socketHandler.keys()
           .companionIdentity());
-      return Node.ofChildren("keys", Node.of("type", SignalSpecification.KEY_BUNDLE_TYPE),
+      return Node.ofChildren("keys", Node.of("type", Specification.Signal.KEY_BUNDLE_TYPE),
           Node.of("identity",
               socketHandler.keys()
                   .identityKeyPair()

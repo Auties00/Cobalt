@@ -1,6 +1,9 @@
 package it.auties.whatsapp.crypto;
 
 import static it.auties.curve25519.Curve25519.sharedKey;
+import static it.auties.whatsapp.util.Specification.Signal.IV_LENGTH;
+import static it.auties.whatsapp.util.Specification.Signal.MAC_LENGTH;
+import static it.auties.whatsapp.util.Specification.Signal.MAX_MESSAGES;
 import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 
@@ -16,7 +19,6 @@ import it.auties.whatsapp.model.signal.session.SessionAddress;
 import it.auties.whatsapp.model.signal.session.SessionChain;
 import it.auties.whatsapp.model.signal.session.SessionState;
 import it.auties.whatsapp.util.KeyHelper;
-import it.auties.whatsapp.util.SignalSpecification;
 import it.auties.whatsapp.util.Validate;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -25,8 +27,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import lombok.NonNull;
 
-public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
-    implements SignalSpecification {
+public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys) {
 
   public Node encrypt(byte @NonNull [] data) {
     var currentState = loadSession().currentState();

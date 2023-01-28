@@ -6,6 +6,7 @@ import static it.auties.protobuf.base.ProtobufType.UINT32;
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.Specification;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -47,7 +48,7 @@ public final class SignalPreKeyMessage
   public SignalPreKeyMessage(int preKeyId, byte[] baseKey, byte[] identityKey,
       byte[] serializedSignalMessage,
       int registrationId, int signedPreKeyId) {
-    this.version = CURRENT_VERSION;
+    this.version = Specification.Signal.CURRENT_VERSION;
     this.preKeyId = preKeyId;
     this.baseKey = baseKey;
     this.identityKey = identityKey;

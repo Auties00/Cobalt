@@ -2668,11 +2668,6 @@ public class Whatsapp {
   public static class Options {
 
     /**
-     * Last known version of Whatsapp
-     */
-    private static final Version WHATSAPP_VERSION = new Version(2, 2245, 9);
-
-    /**
      * Constant for unlimited listeners size
      */
     private static final int UNLIMITED_LISTENERS = -1;
@@ -2717,7 +2712,7 @@ public class Whatsapp {
      * connect.
      */
     @Default
-    private final Version version = Version.ofLatest(WHATSAPP_VERSION);
+    private final Version version = Version.latest();
 
     /**
      * The description provided to Whatsapp during the authentication process. This should be, for
@@ -2754,6 +2749,13 @@ public class Whatsapp {
      */
     @Default
     private int listenersLimit = UNLIMITED_LISTENERS;
+
+    /**
+     * Determines the type of API to use, by default the web multi device one is used.
+     * Select the {@link ClientType#APP_CLIENT} if you need to develop a solution that doesn't depend on a companion.
+     */
+    @Default
+    private ClientType clientType = ClientType.WEB_CLIENT;
 
     /**
      * Constructs a new instance of WhatsappConfiguration with default options

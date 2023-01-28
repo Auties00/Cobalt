@@ -12,15 +12,14 @@ import it.auties.whatsapp.model.signal.session.SessionChain;
 import it.auties.whatsapp.model.signal.session.SessionPreKey;
 import it.auties.whatsapp.model.signal.session.SessionState;
 import it.auties.whatsapp.util.KeyHelper;
-import it.auties.whatsapp.util.SignalSpecification;
+import it.auties.whatsapp.util.Specification;
 import it.auties.whatsapp.util.Validate;
 import java.nio.charset.StandardCharsets;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import lombok.NonNull;
 
-public record SessionBuilder(@NonNull SessionAddress address, @NonNull Keys keys)
-    implements SignalSpecification {
+public record SessionBuilder(@NonNull SessionAddress address, @NonNull Keys keys) {
 
   public void createOutgoing(int id, byte[] identityKey, SignalSignedKeyPair signedPreKey,
       SignalSignedKeyPair preKey) {
@@ -34,7 +33,7 @@ public record SessionBuilder(@NonNull SessionAddress address, @NonNull Keys keys
         null :
         preKey.keyPair()
             .encodedPublicKey(), signedPreKey.keyPair()
-        .encodedPublicKey(), id, CURRENT_VERSION);
+        .encodedPublicKey(), id, Specification.Signal.CURRENT_VERSION);
     var pendingPreKey = new SessionPreKey(preKey == null ?
         0 :
         preKey.id(), baseKey.encodedPublicKey(), signedPreKey.id());

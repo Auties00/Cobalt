@@ -1,5 +1,7 @@
 package it.auties.whatsapp.util;
 
+import static it.auties.whatsapp.util.Specification.Signal.CURRENT_VERSION;
+
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.message.model.MessageContainer;
@@ -13,7 +15,7 @@ public class BytesHelper
     implements JacksonProvider {
 
   public byte versionToBytes(int version) {
-    return (byte) (version << 4 | SignalSpecification.CURRENT_VERSION);
+    return (byte) (version << 4 | CURRENT_VERSION);
   }
 
   public int bytesToVersion(byte version) {
