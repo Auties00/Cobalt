@@ -1,5 +1,5 @@
 syntax = "proto2";
-package it.auties.whatsapp.model.updates;
+package it.auties.whatsapp.model.generated;
 
 message ADVDeviceIdentity {
   optional uint32 rawId = 1;
