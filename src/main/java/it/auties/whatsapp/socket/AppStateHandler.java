@@ -94,7 +94,7 @@ class AppStateHandler extends Handler
   }
 
   private void pushSync(@NonNull PatchRequest patch) {
-    awaitReady();
+    awaitLatch();
     pullUninterruptedly(List.of(patch.type())).join();
     var request = createPushRequest(patch);
     sendPush(request).join();
@@ -215,8 +215,6 @@ class AppStateHandler extends Handler
 
   private void onPull() {
     getOrCreateLatch().countDown();
-    socketHandler.store()
-        .initialAppSync(true);
     versions.clear();
     attempts.clear();
   }
@@ -430,9 +428,7 @@ class AppStateHandler extends Handler
         case LocaleSetting localeSetting -> socketHandler.updateLocale(localeSetting.locale(),
             socketHandler.store()
                 .userLocale());
-        case PushNameSetting pushNameSetting -> socketHandler.updateUserName(pushNameSetting.name(),
-            socketHandler.store()
-                .userName());
+        case PushNameSetting pushNameSetting -> socketHandler.updateUserName(pushNameSetting.name(), socketHandler.store().userName());
         case UnarchiveChatsSetting unarchiveChatsSetting -> socketHandler.store()
             .unarchiveChats(unarchiveChatsSetting.unarchiveChats());
         default -> {
@@ -647,13 +643,6 @@ class AppStateHandler extends Handler
             .getBytes(StandardCharsets.UTF_8))
         .toByteArray();
     return Hmac.calculateSha256(total, key);
-  }
-
-  protected void awaitReady() {
-    if (socketHandler.store().initialAppSync()) {
-      return;
-    }
-    awaitLatch();
   }
 
   @Override

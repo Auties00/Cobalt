@@ -54,6 +54,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import lombok.AccessLevel;
@@ -108,7 +109,9 @@ public class SocketHandler extends Handler
   @NonNull
   private Store store;
 
-  private CompletableFuture<Void> future;
+  private CompletableFuture<Void> authFuture;
+
+  private CompletableFuture<?> pullFuture;
 
   public SocketHandler(@NonNull Whatsapp whatsapp, @NonNull Options options, @NonNull Store store,
       @NonNull Keys keys) {
@@ -122,7 +125,7 @@ public class SocketHandler extends Handler
     this.messageHandler = new MessageHandler(this);
     this.appStateHandler = new AppStateHandler(this);
     this.errorHandler = new FailureHandler(this);
-    onContactSubscribeToPresence(whatsapp, options);
+
     getRuntime().addShutdownHook(new Thread(() -> onShutdown(false)));
   }
 
@@ -130,12 +133,7 @@ public class SocketHandler extends Handler
     if (!options.automaticallySubscribeToPresences()) {
       return;
     }
-    store().listeners().add((OnNewContact) contact -> {
-      if (!store().initialAppSync()) {
-        return;
-      }
-      whatsapp.subscribeToPresence(contact);
-    });
+    store().listeners().add((OnNewContact) whatsapp::subscribeToPresence);
   }
 
   private void onShutdown(boolean reconnect) {
@@ -203,13 +201,13 @@ public class SocketHandler extends Handler
   }
 
   public CompletableFuture<Void> connect() {
-    if (future == null || future.isDone()) {
-      this.future = new CompletableFuture<>();
+    if (authFuture == null || authFuture.isDone()) {
+      this.authFuture = new CompletableFuture<>();
     }
 
     this.session = SocketSession.of(options.clientType());
     return session.connect(this)
-        .thenCompose(ignored -> future);
+        .thenCompose(ignored -> authFuture);
   }
 
   public CompletableFuture<Void> disconnect(DisconnectReason reason) {
@@ -252,8 +250,8 @@ public class SocketHandler extends Handler
     }
     onDisconnected(state.toReason());
     onShutdown(state == SocketState.RECONNECTING);
-    if (future != null && !future.isDone() && state.isDisconnected()) {
-      future.complete(null);
+    if (authFuture != null && !authFuture.isDone() && state.isDisconnected()) {
+      authFuture.complete(null);
     }
   }
 
@@ -301,8 +299,23 @@ public class SocketHandler extends Handler
     return appStateHandler.push(request);
   }
 
-  public CompletableFuture<Void> pullInitialPatches() {
-    return appStateHandler.pullInitial();
+  protected void schedulePullInitialPatches() {
+    this.pullFuture = CompletableFuture.runAsync(this::doInitialPull, CompletableFuture.delayedExecutor(10, TimeUnit.SECONDS));
+  }
+
+  protected void pullInitialPatches() {
+    if(pullFuture != null){
+      return;
+    }
+
+    doInitialPull();
+  }
+
+  private void doInitialPull() {
+    appStateHandler.pullInitial()
+        .thenRunAsync(this::onContacts)
+        .thenRunAsync(() -> store.initialSync(true))
+        .exceptionallyAsync(throwable -> errorHandler.handleFailure(UNKNOWN, throwable));
   }
 
   public void pullPatch(PatchType... patchTypes) {
@@ -627,8 +640,9 @@ public class SocketHandler extends Handler
     });
   }
 
-  protected void awaitAppReady() {
-    appStateHandler.awaitReady();
+  @Override
+  protected void awaitLatch() {
+    appStateHandler.awaitLatch();
   }
 
   protected void onReply(MessageInfo info) {

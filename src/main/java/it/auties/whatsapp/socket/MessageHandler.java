@@ -116,7 +116,7 @@ class MessageHandler extends Handler
   }
 
   private void encodeSync(MessageSendRequest request) {
-    socketHandler.awaitAppReady();
+    socketHandler.awaitLatch();
     var resultRequest =
         isConversation(request.info()) ? encodeConversation(request) : encodeGroup(request);
     resultRequest.join();
@@ -773,15 +773,9 @@ class MessageHandler extends Handler
         socketHandler.sendSyncReceipt(info, "hist_sync");
       }
       case APP_STATE_SYNC_KEY_SHARE -> {
+        socketHandler.schedulePullInitialPatches();
         socketHandler.keys()
             .addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
-        if (socketHandler.store().initialSnapshot()) {
-          return;
-        }
-        socketHandler.pullInitialPatches()
-            .thenRunAsync(this::subscribeToAllPresences)
-            .thenRunAsync(socketHandler::onContacts)
-            .thenRunAsync(() -> socketHandler.store().initialSnapshot(true));
       }
       case REVOKE -> socketHandler.store()
           .findMessageById(info.chat(), protocolMessage.key()
@@ -801,8 +795,7 @@ class MessageHandler extends Handler
       }
     }
     // Save data to prevent session termination from messing up the cypher
-    socketHandler.store()
-        .serialize(true);
+    socketHandler.store().serialize(true);
     if (!peer) {
       return;
     }

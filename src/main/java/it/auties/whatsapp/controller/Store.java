@@ -152,14 +152,7 @@ public final class Store
    */
   @Getter
   @Setter
-  private boolean initialSnapshot;
-
-  /**
-   * Whether the initial app sync has already been sent
-   */
-  @Getter
-  @Setter
-  private boolean initialAppSync;
+  private boolean initialSync;
 
   /**
    * Whether chats should be unarchived if a new message arrives

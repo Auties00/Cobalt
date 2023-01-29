@@ -420,14 +420,17 @@ class StreamHandler extends Handler
   }
 
   private void handleServerSyncNotification(Node node) {
-    if (!socketHandler.store()
-        .initialAppSync()) {
+    if (!socketHandler.store().initialSync()) {
+      socketHandler.pullInitialPatches();
       return;
     }
-    node.findNode("collection")
+
+    var patches = node.findNodes("collection")
+        .stream()
         .map(entry -> entry.attributes().getRequiredString("name"))
         .map(PatchType::of)
-        .ifPresent(socketHandler::pullPatch);
+        .toArray(PatchType[]::new);
+    socketHandler.pullPatch(patches);
   }
 
   private void digestIb(Node node) {
@@ -496,7 +499,7 @@ class StreamHandler extends Handler
     sendStatusUpdate();
     socketHandler.onLoggedIn();
     if (!socketHandler.store()
-        .initialSnapshot()) {
+        .initialSync()) {
       return;
     }
     ControllerProviderLoader.findOnlyDeserializer(socketHandler.options()

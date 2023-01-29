@@ -20,11 +20,6 @@ abstract class Handler {
   }
 
   protected void dispose() {
-    var latchValue = latch.getAndSet(null);
-    if(latchValue != null) {
-      latchValue.countDown();
-    }
-
     var serviceValue = service.getAndSet(null);
     if (serviceValue != null) {
       serviceValue.shutdownNow();
@@ -47,20 +42,12 @@ abstract class Handler {
   }
 
   protected void completeLatch() {
-    var value = latch.get();
-    if (value == null) {
-      return;
-    }
-    value.countDown();
+    getOrCreateLatch().countDown();
   }
 
   protected void awaitLatch() {
     try {
-      var value = latch.get();
-      if (value == null) {
-        return;
-      }
-      value.await();
+      getOrCreateLatch().await();
     } catch (InterruptedException exception) {
       throw new RuntimeException("Cannot await latch", exception);
     }
