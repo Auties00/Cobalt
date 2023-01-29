@@ -1,8 +1,10 @@
 package it.auties.whatsapp.model.message.standard;
 
+import static it.auties.protobuf.base.ProtobufType.INT64;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -45,7 +47,7 @@ public final class PollUpdateMessage implements Message {
   /**
    * The MessageKey of the poll where the user voted
    */
-  @ProtobufProperty(index = 1, name = "pollCreationMessageKey", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 1, name = "pollCreationMessageKey", type = MESSAGE)
   private MessageKey pollCreationMessageKey;
 
   /**
@@ -62,22 +64,22 @@ public final class PollUpdateMessage implements Message {
   /**
    * The encryption data necessary to decipher this message
    */
-  @ProtobufProperty(index = 2, name = "vote", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 2, name = "vote", type = MESSAGE)
   private PollUpdateEncryptedMetadata encryptedMetadata;
 
   /**
    * Metadata about this message
    */
-  @ProtobufProperty(index = 3, name = "metadata", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 3, name = "metadata", type = MESSAGE)
   @Default
   private PollUpdateMessageMetadata metadata = new PollUpdateMessageMetadata();
 
   /**
    * The timestamp of this message
    */
-  @ProtobufProperty(index = 4, name = "senderTimestampMs", type = ProtobufType.INT64)
+  @ProtobufProperty(index = 4, name = "senderTimestampMs", type = INT64)
   @Default
-  private long senderTimestampMilliseconds = Clock.now();
+  private long senderTimestampMilliseconds = Clock.nowInSeconds();
 
   /**
    * Constructs a new builder to create a PollCreationMessage The result can be later sent using
@@ -105,7 +107,7 @@ public final class PollUpdateMessage implements Message {
    * @return a non-empty optional
    */
   public Optional<ZonedDateTime> senderTimestamp() {
-    return Clock.parse(senderTimestampMilliseconds);
+    return Clock.parseSeconds(senderTimestampMilliseconds);
   }
 
   public String secretName() {

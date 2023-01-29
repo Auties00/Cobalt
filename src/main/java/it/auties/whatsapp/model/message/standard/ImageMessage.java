@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
+import static it.auties.protobuf.base.ProtobufType.BOOL;
 import static it.auties.protobuf.base.ProtobufType.BYTES;
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.STRING;
@@ -10,7 +11,6 @@ import static it.auties.whatsapp.util.Medias.Format.JPG;
 import static java.util.Objects.requireNonNullElse;
 
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -164,19 +164,19 @@ public final class ImageMessage extends MediaMessage {
   @ProtobufProperty(index = 24, type = BYTES)
   private byte[] midQualityFileEncSha256;
 
-  @ProtobufProperty(index = 25, name = "viewOnce", type = ProtobufType.BOOL)
-  private Boolean viewOnce;
+  @ProtobufProperty(index = 25, name = "viewOnce", type = BOOL)
+  private boolean viewOnce;
 
-  @ProtobufProperty(index = 26, name = "thumbnailDirectPath", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 26, name = "thumbnailDirectPath", type = STRING)
   private String thumbnailDirectPath;
 
-  @ProtobufProperty(index = 27, name = "thumbnailSha256", type = ProtobufType.BYTES)
+  @ProtobufProperty(index = 27, name = "thumbnailSha256", type = BYTES)
   private byte[] thumbnailSha256;
 
-  @ProtobufProperty(index = 28, name = "thumbnailEncSha256", type = ProtobufType.BYTES)
+  @ProtobufProperty(index = 28, name = "thumbnailEncSha256", type = BYTES)
   private byte[] thumbnailEncSha256;
 
-  @ProtobufProperty(index = 29, name = "staticUrl", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 29, name = "staticUrl", type = STRING)
   private String staticUrl;
 
   /**
@@ -195,7 +195,7 @@ public final class ImageMessage extends MediaMessage {
   private static ImageMessage customBuilder(byte[] media, String mimeType, String caption,
       byte[] thumbnail, ContextInfo contextInfo) {
     var dimensions = Medias.getDimensions(media, false);
-    return ImageMessage.builder().decodedMedia(media).mediaKeyTimestamp(Clock.now())
+    return ImageMessage.builder().decodedMedia(media).mediaKeyTimestamp(Clock.nowInSeconds())
         .mimetype(requireNonNullElse(mimeType, IMAGE.defaultMimeType())).caption(caption)
         .width(dimensions.width()).height(dimensions.height())
         .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, JPG).orElse(null))

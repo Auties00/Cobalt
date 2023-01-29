@@ -1,12 +1,14 @@
 package it.auties.whatsapp.model.sync;
 
 import static it.auties.protobuf.base.ProtobufType.BOOL;
+import static it.auties.protobuf.base.ProtobufType.FLOAT;
+import static it.auties.protobuf.base.ProtobufType.INT64;
 import static it.auties.protobuf.base.ProtobufType.STRING;
+import static it.auties.protobuf.base.ProtobufType.UINT64;
 
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -43,15 +45,15 @@ public class RecentStickerMetadata
   @ProtobufProperty(index = 7, type = BOOL)
   private boolean sentByMe;
 
-  @ProtobufProperty(index = 8, name = "directPath", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 8, name = "directPath", type = STRING)
   private String directPath;
 
-  @ProtobufProperty(index = 9, name = "fileLength", type = ProtobufType.UINT64)
+  @ProtobufProperty(index = 9, name = "fileLength", type = UINT64)
   private Long fileLength;
 
-  @ProtobufProperty(index = 10, name = "weight", type = ProtobufType.FLOAT)
+  @ProtobufProperty(index = 10, name = "weight", type = FLOAT)
   private Float weight;
 
-  @ProtobufProperty(index = 11, name = "lastStickerSentTs", type = ProtobufType.INT64)
+  @ProtobufProperty(index = 11, name = "lastStickerSentTs", type = INT64)
   private Long lastStickerSentTs;
 }

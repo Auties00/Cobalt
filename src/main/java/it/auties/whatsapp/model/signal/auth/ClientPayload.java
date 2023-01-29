@@ -13,7 +13,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -95,28 +94,28 @@ public class ClientPayload
   @ProtobufProperty(index = 30, type = MESSAGE, implementation = ClientPayload.ClientPayloadIOSAppExtension.class)
   private ClientPayloadIOSAppExtension iosAppExtension;
 
-  @ProtobufProperty(index = 24, name = "lc", type = ProtobufType.INT32)
+  @ProtobufProperty(index = 24, name = "lc", type = INT32)
   private Integer lc;
 
-  @ProtobufProperty(index = 31, name = "fbAppId", type = ProtobufType.UINT64)
+  @ProtobufProperty(index = 31, name = "fbAppId", type = UINT64)
   private Long fbAppId;
 
-  @ProtobufProperty(index = 32, name = "fbDeviceId", type = ProtobufType.BYTES)
+  @ProtobufProperty(index = 32, name = "fbDeviceId", type = BYTES)
   private byte[] fbDeviceId;
 
-  @ProtobufProperty(index = 33, name = "pull", type = ProtobufType.BOOL)
+  @ProtobufProperty(index = 33, name = "pull", type = BOOL)
   private Boolean pull;
 
-  @ProtobufProperty(index = 34, name = "paddingBytes", type = ProtobufType.BYTES)
+  @ProtobufProperty(index = 34, name = "paddingBytes", type = BYTES)
   private byte[] paddingBytes;
 
-  @ProtobufProperty(index = 35, name = "bizMarketSegment", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 35, name = "bizMarketSegment", type = MESSAGE)
   private BizMarketSegment bizMarketSegment;
 
-  @ProtobufProperty(index = 36, name = "yearClass", type = ProtobufType.INT32)
+  @ProtobufProperty(index = 36, name = "yearClass", type = INT32)
   private Integer yearClass;
 
-  @ProtobufProperty(index = 37, name = "memClass", type = ProtobufType.INT32)
+  @ProtobufProperty(index = 37, name = "memClass", type = INT32)
   private Integer memClass;
 
   @AllArgsConstructor

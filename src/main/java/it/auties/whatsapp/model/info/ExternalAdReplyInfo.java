@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.info;
 
+import static it.auties.protobuf.base.ProtobufType.BOOL;
 import static it.auties.protobuf.base.ProtobufType.BYTES;
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.STRING;
@@ -7,7 +8,6 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import java.util.Arrays;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -79,16 +79,16 @@ public final class ExternalAdReplyInfo implements Info {
   @ProtobufProperty(index = 9, type = STRING)
   private String sourceUrl;
 
-  @ProtobufProperty(index = 10, name = "containsAutoReply", type = ProtobufType.BOOL)
-  private Boolean containsAutoReply;
+  @ProtobufProperty(index = 10, name = "containsAutoReply", type = BOOL)
+  private boolean containsAutoReply;
 
-  @ProtobufProperty(index = 11, name = "renderLargerThumbnail", type = ProtobufType.BOOL)
-  private Boolean renderLargerThumbnail;
+  @ProtobufProperty(index = 11, name = "renderLargerThumbnail", type = BOOL)
+  private boolean renderLargerThumbnail;
 
-  @ProtobufProperty(index = 12, name = "showAdAttribution", type = ProtobufType.BOOL)
-  private Boolean showAdAttribution;
+  @ProtobufProperty(index = 12, name = "showAdAttribution", type = BOOL)
+  private boolean showAdAttribution;
 
-  @ProtobufProperty(index = 13, name = "ctwaClid", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 13, name = "ctwaClid", type = STRING)
   private String ctwaClid;
 
   /**

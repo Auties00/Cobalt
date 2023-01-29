@@ -232,9 +232,9 @@ class StreamHandler extends Handler
     }
     switch (status) {
       case READ -> message.receipt()
-          .readTimestamp(Clock.now());
+          .readTimestamp(Clock.nowInSeconds());
       case PLAYED -> message.receipt()
-          .playedTimestamp(Clock.now());
+          .playedTimestamp(Clock.nowInSeconds());
     }
   }
 

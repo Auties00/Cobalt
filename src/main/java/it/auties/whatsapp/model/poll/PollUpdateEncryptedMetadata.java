@@ -1,9 +1,10 @@
 package it.auties.whatsapp.model.poll;
 
+import static it.auties.protobuf.base.ProtobufType.BYTES;
+
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,12 +28,12 @@ public class PollUpdateEncryptedMetadata
   /**
    * The bytes of the payload, decoded internally by the message handler
    */
-  @ProtobufProperty(index = 1, name = "encPayload", type = ProtobufType.BYTES)
+  @ProtobufProperty(index = 1, name = "encPayload", type = BYTES)
   private byte[] payload;
 
   /**
    * The bytes of the iv, used to decode the payload internally in the message handler
    */
-  @ProtobufProperty(index = 2, name = "encIv", type = ProtobufType.BYTES)
+  @ProtobufProperty(index = 2, name = "encIv", type = BYTES)
   private byte[] iv;
 }

@@ -1,8 +1,10 @@
 package it.auties.whatsapp.model.message.standard;
 
+import static it.auties.protobuf.base.ProtobufType.INT64;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.message.model.KeepInChatType;
 import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.message.model.MessageCategory;
@@ -23,13 +25,13 @@ import lombok.extern.jackson.Jacksonized;
 public final class KeepInChatMessage
     implements Message {
 
-  @ProtobufProperty(index = 1, name = "key", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 1, name = "key", type = MESSAGE)
   private MessageKey key;
 
-  @ProtobufProperty(index = 2, name = "keepType", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 2, name = "keepType", type = MESSAGE)
   private KeepInChatType keepType;
 
-  @ProtobufProperty(index = 3, name = "timestampMs", type = ProtobufType.INT64)
+  @ProtobufProperty(index = 3, name = "timestampMs", type = INT64)
   private long timestampMilliseconds;
 
   @Override

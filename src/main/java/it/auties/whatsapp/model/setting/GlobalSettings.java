@@ -1,10 +1,12 @@
 package it.auties.whatsapp.model.setting;
 
+import static it.auties.protobuf.base.ProtobufType.BOOL;
+import static it.auties.protobuf.base.ProtobufType.INT32;
+import static it.auties.protobuf.base.ProtobufType.INT64;
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.chat.ChatMediaVisibility;
 import it.auties.whatsapp.model.chat.ChatWallpaper;
 import lombok.AllArgsConstructor;
@@ -30,27 +32,27 @@ public class GlobalSettings
   @ProtobufProperty(index = 3, type = MESSAGE, implementation = ChatWallpaper.class)
   private ChatWallpaper darkThemeWallpaper;
 
-  @ProtobufProperty(index = 4, name = "autoDownloadWiFi", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 4, name = "autoDownloadWiFi", type = MESSAGE)
   private AutoDownloadSettings autoDownloadWiFi;
 
-  @ProtobufProperty(index = 5, name = "autoDownloadCellular", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 5, name = "autoDownloadCellular", type = MESSAGE)
   private AutoDownloadSettings autoDownloadCellular;
 
-  @ProtobufProperty(index = 6, name = "autoDownloadRoaming", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 6, name = "autoDownloadRoaming", type = MESSAGE)
   private AutoDownloadSettings autoDownloadRoaming;
 
-  @ProtobufProperty(index = 7, name = "showIndividualNotificationsPreview", type = ProtobufType.BOOL)
+  @ProtobufProperty(index = 7, name = "showIndividualNotificationsPreview", type = BOOL)
   private boolean showIndividualNotificationsPreview;
 
-  @ProtobufProperty(index = 8, name = "showGroupNotificationsPreview", type = ProtobufType.BOOL)
+  @ProtobufProperty(index = 8, name = "showGroupNotificationsPreview", type = BOOL)
   private boolean showGroupNotificationsPreview;
 
-  @ProtobufProperty(index = 9, name = "disappearingModeDuration", type = ProtobufType.INT32)
+  @ProtobufProperty(index = 9, name = "disappearingModeDuration", type = INT32)
   private int disappearingModeDuration;
 
-  @ProtobufProperty(index = 10, name = "disappearingModeTimestamp", type = ProtobufType.INT64)
+  @ProtobufProperty(index = 10, name = "disappearingModeTimestamp", type = INT64)
   private long disappearingModeTimestamp;
 
-  @ProtobufProperty(index = 11, name = "avatarUserSettings", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 11, name = "avatarUserSettings", type = MESSAGE)
   private AvatarUserSettings avatarUserSettings;
 }

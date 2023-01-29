@@ -79,7 +79,7 @@ public class MessageReceipt
    * @return a non-null optional
    */
   public Optional<ZonedDateTime> deliveredTimestamp() {
-    return Clock.parse(deliveredTimestamp);
+    return Clock.parseSeconds(deliveredTimestamp);
   }
 
   /**
@@ -88,7 +88,7 @@ public class MessageReceipt
    * @return a non-null optional
    */
   public Optional<ZonedDateTime> readTimestamp() {
-    return Clock.parse(readTimestamp);
+    return Clock.parseSeconds(readTimestamp);
   }
 
   /**
@@ -97,7 +97,7 @@ public class MessageReceipt
    * @return a non-null optional
    */
   public Optional<ZonedDateTime> playedTimestamp() {
-    return Clock.parse(playedTimestamp);
+    return Clock.parseSeconds(playedTimestamp);
   }
 
   /**

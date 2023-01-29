@@ -224,7 +224,7 @@ public final class Store
    */
   @Default
   @Getter
-  private long initializationTimeStamp = Clock.now();
+  private long initializationTimeStamp = Clock.nowInSeconds();
 
   /**
    * The media connection associated with this store

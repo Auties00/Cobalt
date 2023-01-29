@@ -1,9 +1,13 @@
 package it.auties.whatsapp.model.message.standard;
 
+import static it.auties.protobuf.base.ProtobufType.BYTES;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.STRING;
+import static it.auties.protobuf.base.ProtobufType.UINT32;
+
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.crypto.Sha256;
 import it.auties.whatsapp.model.contact.ContactJid;
@@ -50,19 +54,19 @@ public final class PollCreationMessage extends ContextualMessage {
   /**
    * The title of the poll
    */
-  @ProtobufProperty(index = 2, name = "name", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 2, name = "name", type = STRING)
   private String title;
 
   /**
    * A list of options that can be selected in the poll
    */
-  @ProtobufProperty(implementation = PollOption.class, index = 3, name = "options", repeated = true, type = ProtobufType.MESSAGE)
+  @ProtobufProperty(implementation = PollOption.class, index = 3, name = "options", repeated = true, type = MESSAGE)
   private List<PollOption> selectableOptions;
 
   /**
    * Internal field required by the protobuf to count the number of selectable options
    */
-  @ProtobufProperty(index = 4, name = "selectableOptionsCount", type = ProtobufType.UINT32)
+  @ProtobufProperty(index = 4, name = "selectableOptionsCount", type = UINT32)
   @Getter(AccessLevel.NONE)
   @Setter(AccessLevel.NONE)
   private int selectableOptionsCount;
@@ -82,14 +86,14 @@ public final class PollCreationMessage extends ContextualMessage {
   /**
    * The encryption key of this poll
    */
-  @ProtobufProperty(index = 1, name = "encKey", type = ProtobufType.BYTES)
+  @ProtobufProperty(index = 1, name = "encKey", type = BYTES)
   @Default
   private byte[] encryptionKey = KeyHelper.senderKey();
 
   /**
    * The context of this message
    */
-  @ProtobufProperty(index = 5, name = "contextInfo", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 5, name = "contextInfo", type = MESSAGE)
   @Default
   private ContextInfo contextInfo = new ContextInfo();
 

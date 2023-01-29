@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.sync.HistorySyncConfig;
 import java.util.Arrays;
 import lombok.AllArgsConstructor;
@@ -39,7 +38,7 @@ public class Companion
   @ProtobufProperty(index = 4, type = BOOL)
   private boolean requireFullSync;
 
-  @ProtobufProperty(index = 5, name = "historySyncConfig", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 5, name = "historySyncConfig", type = MESSAGE)
   private HistorySyncConfig historySyncConfig;
 
   @AllArgsConstructor

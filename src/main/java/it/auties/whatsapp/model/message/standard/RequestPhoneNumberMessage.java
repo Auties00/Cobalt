@@ -1,8 +1,9 @@
 package it.auties.whatsapp.model.message.standard;
 
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
@@ -30,7 +31,7 @@ public final class RequestPhoneNumberMessage
   /**
    * The context of this message
    */
-  @ProtobufProperty(index = 1, name = "contextInfo", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 1, name = "contextInfo", type = MESSAGE)
   @Default
   private ContextInfo contextInfo = new ContextInfo();
 

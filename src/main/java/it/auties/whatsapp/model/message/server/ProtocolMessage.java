@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.server;
 
+import static it.auties.protobuf.base.ProtobufType.INT64;
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.UINT64;
 
@@ -7,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.chat.ChatDisappear;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageKey;
@@ -98,20 +98,14 @@ public final class ProtocolMessage implements ServerMessage {
   @ProtobufProperty(index = 10, type = MESSAGE, implementation = AppStateFatalExceptionNotification.class)
   private AppStateFatalExceptionNotification appStateFatalExceptionNotification;
 
-  @ProtobufProperty(index = 11, name = "disappearingMode", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 11, name = "disappearingMode", type = MESSAGE)
   private ChatDisappear disappearingMode;
 
-  @ProtobufProperty(index = 14, name = "editedMessage", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 14, name = "editedMessage", type = MESSAGE)
   private MessageContainer editedMessage;
 
-  @ProtobufProperty(index = 15, name = "timestampMs", type = ProtobufType.INT64)
-  private Long timestampMs;
-
-  @ProtobufProperty(index = 16, name = "peerDataOperationRequestMessage", type = ProtobufType.MESSAGE)
-  private PeerDataOperationRequestMessage peerDataOperationRequestMessage;
-
-  @ProtobufProperty(index = 17, name = "peerDataOperationRequestResponseMessage", type = ProtobufType.MESSAGE)
-  private PeerDataOperationRequestResponseMessage peerDataOperationRequestResponseMessage;
+  @ProtobufProperty(index = 15, name = "timestampMs", type = INT64)
+  private long timestampMs;
 
   @Override
   public MessageType type() {

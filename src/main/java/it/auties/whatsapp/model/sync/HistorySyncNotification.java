@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.sync;
 
 import static it.auties.protobuf.base.ProtobufType.BYTES;
+import static it.auties.protobuf.base.ProtobufType.INT64;
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 import static it.auties.protobuf.base.ProtobufType.UINT32;
@@ -10,7 +11,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.media.AttachmentProvider;
 import java.util.Arrays;
 import lombok.AllArgsConstructor;
@@ -50,10 +50,10 @@ public final class HistorySyncNotification implements ProtobufMessage, Attachmen
   @ProtobufProperty(index = 8, type = STRING)
   private String originalMessageId;
 
-  @ProtobufProperty(index = 9, name = "progress", type = ProtobufType.UINT32)
+  @ProtobufProperty(index = 9, name = "progress", type = UINT32)
   private Integer progress;
 
-  @ProtobufProperty(index = 10, name = "oldestMsgInChunkTimestampSec", type = ProtobufType.INT64)
+  @ProtobufProperty(index = 10, name = "oldestMsgInChunkTimestampSec", type = INT64)
   private Long oldestMsgInChunkTimestampSec;
 
   @Override

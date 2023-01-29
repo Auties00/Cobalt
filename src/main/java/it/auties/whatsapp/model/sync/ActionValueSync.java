@@ -7,7 +7,6 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.action.AgentAction;
 import it.auties.whatsapp.model.action.AndroidUnsupportedActions;
@@ -53,20 +52,21 @@ import lombok.ToString;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-// editor-fold>
 @AllArgsConstructor
 @Builder
 @Jacksonized
 @ToString
 @Accessors(fluent = true)
 @ProtobufName("SyncActionValue")
-public class ActionValueSync implements ProtobufMessage {
+public class ActionValueSync
+    implements ProtobufMessage {
+
   // <editor-fold desc="Metadata">
   @ProtobufProperty(index = 1, type = INT64)
   @Getter
   private long timestamp;
+  //</editor-fold>
 
-  // editor-fold>
   // <editor-fold desc="Actions">
   @ProtobufProperty(index = 2, type = MESSAGE, implementation = StarAction.class)
   private StarAction starAction;
@@ -116,37 +116,37 @@ public class ActionValueSync implements ProtobufMessage {
   @ProtobufProperty(index = 26, type = MESSAGE, implementation = AndroidUnsupportedActions.class)
   private AndroidUnsupportedActions androidUnsupportedActions;
 
-  @ProtobufProperty(index = 27, name = "agentAction", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 27, name = "agentAction", type = MESSAGE)
   private AgentAction agentAction;
 
-  @ProtobufProperty(index = 28, name = "subscriptionAction", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 28, name = "subscriptionAction", type = MESSAGE)
   private SubscriptionAction subscriptionAction;
 
-  @ProtobufProperty(index = 29, name = "userStatusMuteAction", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 29, name = "userStatusMuteAction", type = MESSAGE)
   private UserStatusMuteAction userStatusMuteAction;
 
-  @ProtobufProperty(index = 30, name = "timeFormatAction", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 30, name = "timeFormatAction", type = MESSAGE)
   private TimeFormatAction timeFormatAction;
 
-  @ProtobufProperty(index = 31, name = "nuxAction", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 31, name = "nuxAction", type = MESSAGE)
   private NuxAction nuxAction;
 
-  @ProtobufProperty(index = 32, name = "primaryVersionAction", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 32, name = "primaryVersionAction", type = MESSAGE)
   private PrimaryVersionAction primaryVersionAction;
 
-  @ProtobufProperty(index = 33, name = "stickerAction", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 33, name = "stickerAction", type = MESSAGE)
   private StickerAction stickerAction;
 
-  @ProtobufProperty(index = 34, name = "removeRecentStickerAction", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 34, name = "removeRecentStickerAction", type = MESSAGE)
   private RemoveRecentStickerAction removeRecentStickerAction;
 
-  @ProtobufProperty(index = 35, name = "chatAssignment", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 35, name = "chatAssignment", type = MESSAGE)
   private ChatAssignmentAction chatAssignmentAction;
 
-  @ProtobufProperty(index = 36, name = "chatAssignmentOpenedStatus", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 36, name = "chatAssignmentOpenedStatus", type = MESSAGE)
   private ChatAssignmentOpenedStatusAction chatAssignmentOpenedStatusAction;
-
   // editor-fold>
+
   // <editor-fold desc="Settings">
   @ProtobufProperty(index = 6, type = MESSAGE, implementation = SecurityNotificationSetting.class)
   private SecurityNotificationSetting securityNotificationSetting;
@@ -159,8 +159,8 @@ public class ActionValueSync implements ProtobufMessage {
 
   @ProtobufProperty(index = 23, type = MESSAGE, implementation = UnarchiveChatsSetting.class)
   private UnarchiveChatsSetting unarchiveChatsSetting;
+  //</editor-fold>
 
-  // editor-fold>
   // <editor-fold desc="Misc">
   @ProtobufProperty(index = 10, type = MESSAGE, implementation = RecentStickerMetadata.class)
   @Getter
@@ -173,99 +173,79 @@ public class ActionValueSync implements ProtobufMessage {
   @ProtobufProperty(index = 24, type = MESSAGE, implementation = ActionValueSync.PrimaryFeature.class)
   @Getter
   private PrimaryFeature primaryFeature;
+  //</editor-fold>
 
-  // editor-fold>
-  // <editor-fold desc="Constructors">
+  //<editor-fold desc="Constructors">
   @SuppressWarnings("PatternVariableHidesField")
-  private ActionValueSync(@NonNull
-  Action action) {
-    this.timestamp = Clock.now();
+  private ActionValueSync(@NonNull Action action) {
+    this.timestamp = Clock.nowInSeconds();
     switch (action) {
-      default -> StarAction starAction;
-      this.starAction = starAction;
-      default -> ContactAction contactAction;
-      this.contactAction = contactAction;
-      default -> MuteAction muteAction;
-      this.muteAction = muteAction;
-      default -> PinAction pinAction;
-      this.pinAction = pinAction;
-      default -> QuickReplyAction quickReplyAction;
-      this.quickReplyAction = quickReplyAction;
-      default -> RecentStickerWeightsAction recentStickerWeightsAction;
-      this.recentStickerWeightsAction = recentStickerWeightsAction;
-      default -> RecentEmojiWeightsAction recentEmojiWeightsAction;
-      this.recentEmojiWeightsAction = recentEmojiWeightsAction;
-      default -> LabelEditAction labelEditAction;
-      this.labelEditAction = labelEditAction;
-      default -> LabelAssociationAction labelAssociationAction;
-      this.labelAssociationAction = labelAssociationAction;
-      default -> ArchiveChatAction archiveChatAction;
-      this.archiveChatAction = archiveChatAction;
-      default -> DeleteMessageForMeAction deleteMessageForMeAction;
-      this.deleteMessageForMeAction = deleteMessageForMeAction;
-      default -> MarkChatAsReadAction markChatAsReadAction;
-      this.markChatAsReadAction = markChatAsReadAction;
-      default -> ClearChatAction clearChatAction;
-      this.clearChatAction = clearChatAction;
-      default -> DeleteChatAction deleteChatAction;
-      this.deleteChatAction = deleteChatAction;
-      default -> FavoriteStickerAction favoriteStickerAction;
-      this.favoriteStickerAction = favoriteStickerAction;
-      default -> AndroidUnsupportedActions androidUnsupportedActions;
-      this.androidUnsupportedActions = androidUnsupportedActions;
-      default -> AgentAction agentAction;
-      this.agentAction = agentAction;
-      default -> ChatAssignmentAction chatAssignmentAction;
-      this.chatAssignmentAction = chatAssignmentAction;
-      default -> ChatAssignmentOpenedStatusAction chatAssignmentOpenedStatusAction;
-      this.chatAssignmentOpenedStatusAction = chatAssignmentOpenedStatusAction;
-      default -> NuxAction nuxAction;
-      this.nuxAction = nuxAction;
-      default -> PrimaryVersionAction primaryVersionAction;
-      this.primaryVersionAction = primaryVersionAction;
-      default -> RemoveRecentStickerAction removeRecentStickerAction;
-      this.removeRecentStickerAction = removeRecentStickerAction;
-      default -> StickerAction stickerAction;
-      this.stickerAction = stickerAction;
-      default -> SubscriptionAction subscriptionAction;
-      this.subscriptionAction = subscriptionAction;
-      default -> TimeFormatAction timeFormatAction;
-      this.timeFormatAction = timeFormatAction;
-      default -> UserStatusMuteAction userStatusMuteAction;
-      this.userStatusMuteAction = userStatusMuteAction;
+      case StarAction starAction -> this.starAction = starAction;
+      case ContactAction contactAction -> this.contactAction = contactAction;
+      case MuteAction muteAction -> this.muteAction = muteAction;
+      case PinAction pinAction -> this.pinAction = pinAction;
+      case QuickReplyAction quickReplyAction -> this.quickReplyAction = quickReplyAction;
+      case RecentStickerWeightsAction recentStickerWeightsAction ->
+          this.recentStickerWeightsAction = recentStickerWeightsAction;
+      case RecentEmojiWeightsAction recentEmojiWeightsAction ->
+          this.recentEmojiWeightsAction = recentEmojiWeightsAction;
+      case LabelEditAction labelEditAction -> this.labelEditAction = labelEditAction;
+      case LabelAssociationAction labelAssociationAction ->
+          this.labelAssociationAction = labelAssociationAction;
+      case ArchiveChatAction archiveChatAction -> this.archiveChatAction = archiveChatAction;
+      case DeleteMessageForMeAction deleteMessageForMeAction ->
+          this.deleteMessageForMeAction = deleteMessageForMeAction;
+      case MarkChatAsReadAction markChatAsReadAction ->
+          this.markChatAsReadAction = markChatAsReadAction;
+      case ClearChatAction clearChatAction -> this.clearChatAction = clearChatAction;
+      case DeleteChatAction deleteChatAction -> this.deleteChatAction = deleteChatAction;
+      case FavoriteStickerAction favoriteStickerAction ->
+          this.favoriteStickerAction = favoriteStickerAction;
+      case AndroidUnsupportedActions androidUnsupportedActions ->
+          this.androidUnsupportedActions = androidUnsupportedActions;
+      case AgentAction agentAction -> this.agentAction = agentAction;
+      case ChatAssignmentAction chatAssignmentAction ->
+          this.chatAssignmentAction = chatAssignmentAction;
+      case ChatAssignmentOpenedStatusAction chatAssignmentOpenedStatusAction ->
+          this.chatAssignmentOpenedStatusAction = chatAssignmentOpenedStatusAction;
+      case NuxAction nuxAction -> this.nuxAction = nuxAction;
+      case PrimaryVersionAction primaryVersionAction ->
+          this.primaryVersionAction = primaryVersionAction;
+      case RemoveRecentStickerAction removeRecentStickerAction ->
+          this.removeRecentStickerAction = removeRecentStickerAction;
+      case StickerAction stickerAction -> this.stickerAction = stickerAction;
+      case SubscriptionAction subscriptionAction -> this.subscriptionAction = subscriptionAction;
+      case TimeFormatAction timeFormatAction -> this.timeFormatAction = timeFormatAction;
+      case UserStatusMuteAction userStatusMuteAction ->
+          this.userStatusMuteAction = userStatusMuteAction;
     }
   }
 
   @SuppressWarnings("PatternVariableHidesField")
-  private ActionValueSync(@NonNull
-  Setting setting) {
-    this.timestamp = Clock.now();
+  private ActionValueSync(@NonNull Setting setting) {
+    this.timestamp = Clock.nowInSeconds();
     switch (setting) {
-      default -> SecurityNotificationSetting securityNotificationSetting;
-      this.securityNotificationSetting = securityNotificationSetting;
-      default -> PushNameSetting pushNameSetting;
-      this.pushNameSetting = pushNameSetting;
-      default -> LocaleSetting localeSetting;
-      this.localeSetting = localeSetting;
-      default -> UnarchiveChatsSetting unarchiveChatsSetting;
-      this.unarchiveChatsSetting = unarchiveChatsSetting;
+      case SecurityNotificationSetting securityNotificationSetting ->
+          this.securityNotificationSetting = securityNotificationSetting;
+      case PushNameSetting pushNameSetting -> this.pushNameSetting = pushNameSetting;
+      case LocaleSetting localeSetting -> this.localeSetting = localeSetting;
+      case UnarchiveChatsSetting unarchiveChatsSetting ->
+          this.unarchiveChatsSetting = unarchiveChatsSetting;
       default -> throw new UnsupportedOperationException(
           "Cannot wrap %s in action value sync".formatted(setting));
     }
   }
 
-  public static ActionValueSync of(@NonNull
-  Action action) {
+  public static ActionValueSync of(@NonNull Action action) {
     return new ActionValueSync(action);
   }
 
-  public static ActionValueSync of(@NonNull
-  Setting setting) {
+  public static ActionValueSync of(@NonNull Setting setting) {
     return new ActionValueSync(setting);
   }
+  //</editor-fold>
 
-  // editor-fold>
-  // <editor-fold desc="Accessors">
+  //<editor-fold desc="Accessors">
   public Action action() {
     if (starAction != null) {
       return starAction;
@@ -363,20 +343,23 @@ public class ActionValueSync implements ProtobufMessage {
     }
     return null;
   }
+  //</editor-fold>
 
-  // editor-fold>
-  // <editor-fold desc="Members">
+  //<editor-fold desc="Members">
   @AllArgsConstructor
   @NoArgsConstructor
   @Data
   @Jacksonized
   @Builder
   @Accessors(fluent = true)
-  public static class PrimaryFeature implements ProtobufMessage {
+  public static class PrimaryFeature
+      implements ProtobufMessage {
+
     @ProtobufProperty(index = 1, type = STRING, repeated = true)
     private List<String> flags;
 
     public static class PrimaryFeatureBuilder {
+
       public PrimaryFeatureBuilder flags(List<String> flags) {
         if (this.flags == null) {
           this.flags = new ArrayList<>();
@@ -386,4 +369,5 @@ public class ActionValueSync implements ProtobufMessage {
       }
     }
   }
+  //</editor-fold>
 }

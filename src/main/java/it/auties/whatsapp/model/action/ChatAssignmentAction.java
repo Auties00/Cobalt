@@ -1,8 +1,9 @@
 package it.auties.whatsapp.model.action;
 
+import static it.auties.protobuf.base.ProtobufType.STRING;
+
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,7 +19,7 @@ import lombok.extern.jackson.Jacksonized;
 public final class ChatAssignmentAction
     implements Action {
 
-  @ProtobufProperty(index = 1, name = "deviceAgentID", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 1, name = "deviceAgentID", type = STRING)
   private String deviceAgentID;
 
   /**

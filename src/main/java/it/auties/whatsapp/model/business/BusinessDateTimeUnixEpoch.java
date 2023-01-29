@@ -37,6 +37,6 @@ public class BusinessDateTimeUnixEpoch
    * @return an optional
    */
   public Optional<ZonedDateTime> time() {
-    return Clock.parse(timestamp);
+    return Clock.parseSeconds(timestamp);
   }
 }

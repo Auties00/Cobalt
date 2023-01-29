@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.message.standard;
 
 import static it.auties.protobuf.base.ProtobufType.BOOL;
 import static it.auties.protobuf.base.ProtobufType.BYTES;
+import static it.auties.protobuf.base.ProtobufType.FIXED32;
 import static it.auties.protobuf.base.ProtobufType.INT64;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 import static it.auties.protobuf.base.ProtobufType.UINT32;
@@ -9,7 +10,6 @@ import static it.auties.protobuf.base.ProtobufType.UINT64;
 import static it.auties.whatsapp.model.message.model.MediaMessageType.AUDIO;
 
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -112,10 +112,10 @@ public final class AudioMessage extends MediaMessage {
   @ProtobufProperty(index = 18, type = BYTES)
   private byte[] streamingSidecar;
 
-  @ProtobufProperty(index = 19, name = "waveform", type = ProtobufType.BYTES)
+  @ProtobufProperty(index = 19, name = "waveform", type = BYTES)
   private byte[] waveform;
 
-  @ProtobufProperty(index = 20, name = "backgroundArgb", type = ProtobufType.FIXED32)
+  @ProtobufProperty(index = 20, name = "backgroundArgb", type = FIXED32)
   private Integer backgroundArgb;
 
   /**
@@ -134,7 +134,7 @@ public final class AudioMessage extends MediaMessage {
   private static AudioMessage customBuilder(byte[] media, ContextInfo contextInfo,
       String mimeType, boolean voiceMessage) {
     var duration = Medias.getDuration(media, true);
-    return AudioMessage.builder().decodedMedia(media).mediaKeyTimestamp(Clock.now())
+    return AudioMessage.builder().decodedMedia(media).mediaKeyTimestamp(Clock.nowInSeconds())
         .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
         .duration(duration).mimetype(mimeType).voiceMessage(voiceMessage).build();
   }

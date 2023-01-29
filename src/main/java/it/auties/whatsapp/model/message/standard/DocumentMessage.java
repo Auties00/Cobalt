@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.standard;
 
+import static it.auties.protobuf.base.ProtobufType.BOOL;
 import static it.auties.protobuf.base.ProtobufType.BYTES;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 import static it.auties.protobuf.base.ProtobufType.UINT32;
@@ -8,7 +9,6 @@ import static it.auties.whatsapp.model.message.model.MediaMessageType.DOCUMENT;
 import static it.auties.whatsapp.util.Medias.Format.FILE;
 
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -112,25 +112,25 @@ public final class DocumentMessage extends MediaMessage {
   @ProtobufProperty(index = 16, type = BYTES)
   private byte[] thumbnail;
 
-  @ProtobufProperty(index = 12, name = "contactVcard", type = ProtobufType.BOOL)
+  @ProtobufProperty(index = 12, name = "contactVcard", type = BOOL)
   private Boolean contactVcard;
 
-  @ProtobufProperty(index = 13, name = "thumbnailDirectPath", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 13, name = "thumbnailDirectPath", type = STRING)
   private String thumbnailDirectPath;
 
-  @ProtobufProperty(index = 14, name = "thumbnailSha256", type = ProtobufType.BYTES)
+  @ProtobufProperty(index = 14, name = "thumbnailSha256", type = BYTES)
   private byte[] thumbnailSha256;
 
-  @ProtobufProperty(index = 15, name = "thumbnailEncSha256", type = ProtobufType.BYTES)
+  @ProtobufProperty(index = 15, name = "thumbnailEncSha256", type = BYTES)
   private byte[] thumbnailEncSha256;
 
-  @ProtobufProperty(index = 18, name = "thumbnailHeight", type = ProtobufType.UINT32)
+  @ProtobufProperty(index = 18, name = "thumbnailHeight", type = UINT32)
   private Integer thumbnailHeight;
 
-  @ProtobufProperty(index = 19, name = "thumbnailWidth", type = ProtobufType.UINT32)
+  @ProtobufProperty(index = 19, name = "thumbnailWidth", type = UINT32)
   private Integer thumbnailWidth;
 
-  @ProtobufProperty(index = 20, name = "caption", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 20, name = "caption", type = STRING)
   private String caption;
 
   /**
@@ -150,7 +150,8 @@ public final class DocumentMessage extends MediaMessage {
   @Builder(builderClassName = "SimpleDocumentMessageBuilder", builderMethodName = "simpleBuilder")
   private static DocumentMessage customBuilder(byte[] media, String mimeType, String title,
       int pageCount, String fileName, byte[] thumbnail, ContextInfo contextInfo) {
-    return DocumentMessage.builder().decodedMedia(media).mediaKeyTimestamp(Clock.now()).mimetype(
+    return DocumentMessage.builder().decodedMedia(media).mediaKeyTimestamp(Clock.nowInSeconds())
+        .mimetype(
             Optional.ofNullable(mimeType).or(() -> Medias.getMimeType(fileName))
                 .or(() -> Medias.getMimeType(media)).orElse(DOCUMENT.defaultMimeType()))
         .fileName(fileName).pageCount(pageCount).title(title)

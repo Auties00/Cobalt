@@ -1,9 +1,10 @@
 package it.auties.whatsapp.model.poll;
 
+import static it.auties.protobuf.base.ProtobufType.STRING;
+
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -26,6 +27,6 @@ public class PollOption
   /**
    * The name of the option
    */
-  @ProtobufProperty(index = 1, name = "name", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 1, name = "name", type = STRING)
   private String name;
 }

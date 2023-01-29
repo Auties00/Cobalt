@@ -1,8 +1,9 @@
 package it.auties.whatsapp.model.action;
 
+import static it.auties.protobuf.base.ProtobufType.BOOL;
+
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,7 +19,7 @@ import lombok.extern.jackson.Jacksonized;
 public final class ChatAssignmentOpenedStatusAction
     implements Action {
 
-  @ProtobufProperty(index = 1, name = "chatOpened", type = ProtobufType.BOOL)
+  @ProtobufProperty(index = 1, name = "chatOpened", type = BOOL)
   private boolean chatOpened;
 
   /**

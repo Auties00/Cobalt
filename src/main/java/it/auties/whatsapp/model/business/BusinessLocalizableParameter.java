@@ -104,8 +104,8 @@ public class BusinessLocalizableParameter implements ProtobufMessage {
     /**
      * Date time parameter
      */
-    DATE_TIME(3),
-    CURRENCY(1);
+    DATE_TIME(3);
+
     @Getter
     private final int index;
 

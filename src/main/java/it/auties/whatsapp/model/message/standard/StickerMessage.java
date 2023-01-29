@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.message.standard;
 
 import static it.auties.protobuf.base.ProtobufType.BOOL;
 import static it.auties.protobuf.base.ProtobufType.BYTES;
+import static it.auties.protobuf.base.ProtobufType.INT64;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 import static it.auties.protobuf.base.ProtobufType.UINT32;
 import static it.auties.protobuf.base.ProtobufType.UINT64;
@@ -10,7 +11,6 @@ import static it.auties.whatsapp.util.Medias.Format.PNG;
 import static java.util.Objects.requireNonNullElse;
 
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -125,11 +125,11 @@ public final class StickerMessage extends MediaMessage {
   @ProtobufProperty(index = 16, type = BYTES)
   private byte[] thumbnail;
 
-  @ProtobufProperty(index = 18, name = "stickerSentTs", type = ProtobufType.INT64)
-  private Long stickerSentTs;
+  @ProtobufProperty(index = 18, name = "stickerSentTs", type = INT64)
+  private long stickerSentTimestamp;
 
-  @ProtobufProperty(index = 19, name = "isAvatar", type = ProtobufType.BOOL)
-  private Boolean isAvatar;
+  @ProtobufProperty(index = 19, name = "isAvatar", type = BOOL)
+  private boolean isAvatar;
 
   /**
    * Constructs a new builder to create a StickerMessage. The result can be later sent using
@@ -147,7 +147,7 @@ public final class StickerMessage extends MediaMessage {
   @Builder(builderClassName = "SimpleStickerMessageBuilder", builderMethodName = "simpleBuilder")
   private static StickerMessage customBuilder(byte[] media, String mimeType, byte[] thumbnail,
       boolean animated, ContextInfo contextInfo) {
-    return StickerMessage.builder().decodedMedia(media).mediaKeyTimestamp(Clock.now())
+    return StickerMessage.builder().decodedMedia(media).mediaKeyTimestamp(Clock.nowInSeconds())
         .mimetype(requireNonNullElse(mimeType, STICKER.defaultMimeType()))
         .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, PNG).orElse(null))
         .animated(animated)

@@ -1,9 +1,11 @@
 package it.auties.whatsapp.model.chat;
 
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.STRING;
+
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.contact.ContactJid;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,10 +24,10 @@ import lombok.extern.jackson.Jacksonized;
 public class PastParticipants
     implements ProtobufMessage {
 
-  @ProtobufProperty(index = 1, name = "groupJid", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 1, name = "groupJid", type = STRING)
   private ContactJid groupJid;
 
-  @ProtobufProperty(implementation = PastParticipant.class, index = 2, name = "pastParticipants", repeated = true, type = ProtobufType.MESSAGE)
+  @ProtobufProperty(implementation = PastParticipant.class, index = 2, name = "pastParticipants", repeated = true, type = MESSAGE)
   private List<PastParticipant> pastParticipants;
 
   public static class PastParticipantsBuilder {

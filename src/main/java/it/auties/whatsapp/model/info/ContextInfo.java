@@ -9,7 +9,6 @@ import static it.auties.protobuf.base.ProtobufType.UINT32;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatDisappear;
 import it.auties.whatsapp.model.contact.Contact;
@@ -202,13 +201,13 @@ public final class ContextInfo
   /**
    * Trust banner type
    */
-  @ProtobufProperty(index = 37, name = "trustBannerType", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 37, name = "trustBannerType", type = STRING)
   private String trustBannerType;
 
   /**
    * Trust banner action
    */
-  @ProtobufProperty(index = 38, name = "trustBannerAction", type = ProtobufType.UINT32)
+  @ProtobufProperty(index = 38, name = "trustBannerAction", type = UINT32)
   private Integer trustBannerAction;
 
   private ContextInfo(@NonNull MessageMetadataProvider quotedMessage) {

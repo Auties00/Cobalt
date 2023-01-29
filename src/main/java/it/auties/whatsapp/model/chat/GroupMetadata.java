@@ -84,10 +84,10 @@ public class GroupMetadata
         .orElseThrow(() -> new NoSuchElementException("Missing group jid"));
     var subject = node.attributes()
         .getString("subject");
-    var subjectTimestamp = Clock.parse(node.attributes()
+    var subjectTimestamp = Clock.parseSeconds(node.attributes()
             .getLong("s_t"))
         .orElse(ZonedDateTime.now());
-    var foundationTimestamp = Clock.parse(node.attributes()
+    var foundationTimestamp = Clock.parseSeconds(node.attributes()
             .getLong("creation"))
         .orElse(ZonedDateTime.now());
     var founder = node.attributes()
@@ -106,7 +106,7 @@ public class GroupMetadata
     var ephemeral = node.findNode("ephemeral")
         .map(Node::attributes)
         .map(attributes -> attributes.getLong("expiration"))
-        .flatMap(Clock::parse)
+        .flatMap(Clock::parseSeconds)
         .orElse(null);
     var participants = node.findNodes("participant")
         .stream()

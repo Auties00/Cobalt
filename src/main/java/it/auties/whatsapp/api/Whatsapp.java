@@ -1338,7 +1338,7 @@ public class Whatsapp {
         .senderJid(store().userCompanionJid())
         .key(key)
         .message(message)
-        .timestampInSeconds(Clock.now())
+        .timestampInSeconds(Clock.nowInSeconds())
         .build();
     return sendMessage(info);
   }
@@ -1982,9 +1982,13 @@ public class Whatsapp {
    */
   public <T extends ContactJidProvider> CompletableFuture<T> mute(@NonNull T chat,
       @NonNull ChatMute mute) {
-    var muteAction = MuteAction.of(true, mute.type() == ChatMute.Type.MUTED_FOR_TIMEFRAME ?
-        mute.endTimeStamp() * 1000L :
-        mute.endTimeStamp());
+    var muteAction = MuteAction.of(
+        true,
+        mute.type() == ChatMute.Type.MUTED_FOR_TIMEFRAME
+            ? mute.endTimeStamp() * 1000L
+            : mute.endTimeStamp(),
+        false
+    );
     var syncAction = ActionValueSync.of(muteAction);
     var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 2, chat.toJid()
         .toString());
@@ -1999,7 +2003,7 @@ public class Whatsapp {
    * @return a CompletableFuture
    */
   public <T extends ContactJidProvider> CompletableFuture<T> unmute(@NonNull T chat) {
-    var muteAction = MuteAction.of(false, null);
+    var muteAction = MuteAction.of(false, null, false);
     var syncAction = ActionValueSync.of(muteAction);
     var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 2, chat.toJid()
         .toString());
@@ -2251,7 +2255,7 @@ public class Whatsapp {
           .senderJid(sender)
           .key(key)
           .message(MessageContainer.of(message))
-          .timestampInSeconds(Clock.now())
+          .timestampInSeconds(Clock.nowInSeconds())
           .build();
       var request = MessageSendRequest.builder()
           .info(revokeInfo)

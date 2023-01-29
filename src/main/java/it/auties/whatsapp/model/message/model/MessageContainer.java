@@ -6,7 +6,6 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.info.CallInfo;
 import it.auties.whatsapp.model.info.DeviceContextInfo;
 import it.auties.whatsapp.model.message.button.ButtonsMessage;
@@ -306,34 +305,34 @@ public class MessageContainer
   @ProtobufProperty(index = 47, type = MESSAGE, implementation = StickerSyncRMRMessage.class)
   private StickerSyncRMRMessage stickerSync;
 
-  @ProtobufProperty(index = 48, name = "interactiveResponseMessage", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 48, name = "interactiveResponseMessage", type = MESSAGE)
   private InteractiveResponseMessage interactiveResponse;
 
-  @ProtobufProperty(index = 49, name = "pollCreationMessage", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 49, name = "pollCreationMessage", type = MESSAGE)
   private PollCreationMessage pollCreation;
 
-  @ProtobufProperty(index = 50, name = "pollUpdateMessage", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 50, name = "pollUpdateMessage", type = MESSAGE)
   private PollUpdateMessage pollUpdate;
 
-  @ProtobufProperty(index = 51, name = "keepInChatMessage", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 51, name = "keepInChatMessage", type = MESSAGE)
   private KeepInChatMessage keepInChat;
 
-  @ProtobufProperty(index = 53, name = "documentWithCaptionMessage", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 53, name = "documentWithCaptionMessage", type = MESSAGE)
   private FutureMessageContainer documentWithCaption;
 
-  @ProtobufProperty(index = 54, name = "requestPhoneNumberMessage", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 54, name = "requestPhoneNumberMessage", type = MESSAGE)
   private RequestPhoneNumberMessage requestPhoneNumber;
 
-  @ProtobufProperty(index = 55, name = "viewOnceMessageV2", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 55, name = "viewOnceMessageV2", type = MESSAGE)
   private FutureMessageContainer viewOnceV2;
 
-  @ProtobufProperty(index = 56, name = "encReactionMessage", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 56, name = "encReactionMessage", type = MESSAGE)
   private EncryptedReactionMessage encryptedReaction;
 
-  @ProtobufProperty(index = 58, name = "editedMessage", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 58, name = "editedMessage", type = MESSAGE)
   private FutureMessageContainer edited;
 
-  @ProtobufProperty(index = 59, name = "viewOnceMessageV2Extension", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 59, name = "viewOnceMessageV2Extension", type = MESSAGE)
   private FutureMessageContainer viewOnceV2Extension;
 
   /**

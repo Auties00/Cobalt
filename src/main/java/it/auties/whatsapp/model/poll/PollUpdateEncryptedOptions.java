@@ -1,9 +1,10 @@
 package it.auties.whatsapp.model.poll;
 
+import static it.auties.protobuf.base.ProtobufType.BYTES;
+
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -26,7 +27,7 @@ import lombok.extern.jackson.Jacksonized;
 public class PollUpdateEncryptedOptions
     implements ProtobufMessage {
 
-  @ProtobufProperty(implementation = byte[].class, index = 1, name = "selectedOptions", repeated = true, type = ProtobufType.BYTES)
+  @ProtobufProperty(implementation = byte[].class, index = 1, name = "selectedOptions", repeated = true, type = BYTES)
   @Default
   private List<byte[]> selectedOptions = new ArrayList<>();
 

@@ -11,13 +11,13 @@ import static java.util.Objects.requireNonNullElseGet;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.business.BusinessPrivacyStatus;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.media.MediaData;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
+import it.auties.whatsapp.model.message.model.KeepInChat;
 import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageKey;
@@ -29,6 +29,8 @@ import it.auties.whatsapp.model.message.model.QuotedMessage;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.standard.LiveLocationMessage;
 import it.auties.whatsapp.model.message.standard.ReactionMessage;
+import it.auties.whatsapp.model.poll.PollAdditionalMetadata;
+import it.auties.whatsapp.model.poll.PollUpdate;
 import it.auties.whatsapp.model.sync.PhotoChange;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.JacksonProvider;
@@ -329,32 +331,32 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
   @ProtobufProperty(index = 44, type = MESSAGE, implementation = PublicServiceAnnouncementStatus.class)
   private PublicServiceAnnouncementStatus psaStatus;
 
-  @ProtobufProperty(index = 6, name = "messageC2STimestamp", type = ProtobufType.UINT64)
-  private Long messageC2STimestamp;
+  @ProtobufProperty(index = 6, name = "messageC2STimestamp", type = UINT64)
+  private long messageC2STimestamp;
 
-  @ProtobufProperty(implementation = PollUpdate.class, index = 45, name = "pollUpdates", repeated = true, type = ProtobufType.MESSAGE)
+  @ProtobufProperty(implementation = PollUpdate.class, index = 45, name = "pollUpdates", repeated = true, type = MESSAGE)
   private List<PollUpdate> pollUpdates;
 
-  @ProtobufProperty(index = 46, name = "pollAdditionalMetadata", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 46, name = "pollAdditionalMetadata", type = MESSAGE)
   private PollAdditionalMetadata pollAdditionalMetadata;
 
-  @ProtobufProperty(index = 47, name = "agentId", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 47, name = "agentId", type = STRING)
   private String agentId;
 
-  @ProtobufProperty(index = 48, name = "statusAlreadyViewed", type = ProtobufType.BOOL)
-  private Boolean statusAlreadyViewed;
+  @ProtobufProperty(index = 48, name = "statusAlreadyViewed", type = BOOL)
+  private boolean statusAlreadyViewed;
 
-  @ProtobufProperty(index = 49, name = "messageSecret", type = ProtobufType.BYTES)
+  @ProtobufProperty(index = 49, name = "messageSecret", type = BYTES)
   private byte[] messageSecret;
 
-  @ProtobufProperty(index = 50, name = "keepInChat", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 50, name = "keepInChat", type = MESSAGE)
   private KeepInChat keepInChat;
 
-  @ProtobufProperty(index = 51, name = "originalSelfAuthorUserJidString", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 51, name = "originalSelfAuthorUserJidString", type = STRING)
   private String originalSelfAuthorUserJidString;
 
-  @ProtobufProperty(index = 52, name = "revokeMessageTimestamp", type = ProtobufType.UINT64)
-  private Long revokeMessageTimestamp;
+  @ProtobufProperty(index = 52, name = "revokeMessageTimestamp", type = UINT64)
+  private long revokeMessageTimestamp;
 
   /**
    * Constructs a new MessageInfo from a MessageKey and a MessageContainer
@@ -362,11 +364,9 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
    * @param key       the key of the message
    * @param container the container of the message
    */
-  public MessageInfo(@NonNull
-  MessageKey key, @NonNull
-  MessageContainer container) {
+  public MessageInfo(@NonNull MessageKey key, @NonNull MessageContainer container) {
     this.key = key;
-    this.timestampInSeconds = Clock.now();
+    this.timestampInSeconds = Clock.nowInSeconds();
     this.status = MessageStatus.PENDING;
     this.message = container;
   }
@@ -531,7 +531,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
    * @return a non-null optional
    */
   public Optional<ZonedDateTime> timestamp() {
-    return Clock.parse(timestampInSeconds);
+    return Clock.parseSeconds(timestampInSeconds);
   }
 
   /**

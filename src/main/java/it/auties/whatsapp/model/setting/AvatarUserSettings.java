@@ -1,8 +1,9 @@
 package it.auties.whatsapp.model.setting;
 
+import static it.auties.protobuf.base.ProtobufType.STRING;
+
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,10 +19,10 @@ import lombok.extern.jackson.Jacksonized;
 public final class AvatarUserSettings
     implements Setting {
 
-  @ProtobufProperty(index = 1, name = "fbid", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 1, name = "fbid", type = STRING)
   private String facebookId;
 
-  @ProtobufProperty(index = 2, name = "password", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 2, name = "password", type = STRING)
   private String password;
 
   @Override

@@ -3,14 +3,15 @@ package it.auties.whatsapp.model.message.standard;
 import static it.auties.protobuf.base.ProtobufType.BOOL;
 import static it.auties.protobuf.base.ProtobufType.BYTES;
 import static it.auties.protobuf.base.ProtobufType.FIXED32;
+import static it.auties.protobuf.base.ProtobufType.INT64;
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.STRING;
+import static it.auties.protobuf.base.ProtobufType.UINT32;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
@@ -105,40 +106,40 @@ public final class TextMessage extends ContextualMessage {
   @ProtobufProperty(index = 18, type = BOOL)
   private boolean doNotPlayInline;
 
-  @ProtobufProperty(index = 19, name = "thumbnailDirectPath", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 19, name = "thumbnailDirectPath", type = STRING)
   private String thumbnailDirectPath;
 
-  @ProtobufProperty(index = 20, name = "thumbnailSha256", type = ProtobufType.BYTES)
+  @ProtobufProperty(index = 20, name = "thumbnailSha256", type = BYTES)
   private byte[] thumbnailSha256;
 
-  @ProtobufProperty(index = 21, name = "thumbnailEncSha256", type = ProtobufType.BYTES)
+  @ProtobufProperty(index = 21, name = "thumbnailEncSha256", type = BYTES)
   private byte[] thumbnailEncSha256;
 
-  @ProtobufProperty(index = 22, name = "mediaKey", type = ProtobufType.BYTES)
+  @ProtobufProperty(index = 22, name = "mediaKey", type = BYTES)
   private byte[] mediaKey;
 
-  @ProtobufProperty(index = 23, name = "mediaKeyTimestamp", type = ProtobufType.INT64)
+  @ProtobufProperty(index = 23, name = "mediaKeyTimestamp", type = INT64)
   private Long mediaKeyTimestamp;
 
-  @ProtobufProperty(index = 24, name = "thumbnailHeight", type = ProtobufType.UINT32)
+  @ProtobufProperty(index = 24, name = "thumbnailHeight", type = UINT32)
   private Integer thumbnailHeight;
 
-  @ProtobufProperty(index = 25, name = "thumbnailWidth", type = ProtobufType.UINT32)
+  @ProtobufProperty(index = 25, name = "thumbnailWidth", type = UINT32)
   private Integer thumbnailWidth;
 
-  @ProtobufProperty(index = 26, name = "inviteLinkGroupType", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 26, name = "inviteLinkGroupType", type = MESSAGE)
   private InviteLinkGroupType inviteLinkGroupType;
 
-  @ProtobufProperty(index = 27, name = "inviteLinkParentGroupSubjectV2", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 27, name = "inviteLinkParentGroupSubjectV2", type = STRING)
   private String inviteLinkParentGroupSubjectV2;
 
-  @ProtobufProperty(index = 28, name = "inviteLinkParentGroupThumbnailV2", type = ProtobufType.BYTES)
+  @ProtobufProperty(index = 28, name = "inviteLinkParentGroupThumbnailV2", type = BYTES)
   private byte[] inviteLinkParentGroupThumbnailV2;
 
-  @ProtobufProperty(index = 29, name = "inviteLinkGroupTypeV2", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 29, name = "inviteLinkGroupTypeV2", type = MESSAGE)
   private InviteLinkGroupType inviteLinkGroupTypeV2;
 
-  @ProtobufProperty(index = 30, name = "viewOnce", type = ProtobufType.BOOL)
+  @ProtobufProperty(index = 30, name = "viewOnce", type = BOOL)
   private Boolean viewOnce;
 
   /**

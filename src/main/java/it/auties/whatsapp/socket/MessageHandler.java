@@ -887,7 +887,7 @@ class MessageHandler extends Handler
           return contact;
         })
         .chosenName(pushName.name());
-    var action = ContactAction.of(pushName.name(), null);
+    var action = ContactAction.of(pushName.name(), null, null);
     socketHandler.onAction(action, MessageIndexInfo.of("contact", null, null, true));
   }
 

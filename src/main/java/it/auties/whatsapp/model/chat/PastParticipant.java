@@ -1,9 +1,12 @@
 package it.auties.whatsapp.model.chat;
 
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.STRING;
+import static it.auties.protobuf.base.ProtobufType.UINT64;
+
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.contact.ContactJid;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,13 +24,13 @@ import lombok.extern.jackson.Jacksonized;
 public class PastParticipant
     implements ProtobufMessage {
 
-  @ProtobufProperty(index = 1, name = "userJid", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 1, name = "userJid", type = STRING)
   private ContactJid userJid;
 
-  @ProtobufProperty(index = 2, name = "leaveReason", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 2, name = "leaveReason", type = MESSAGE)
   private LeaveReason leaveReason;
 
-  @ProtobufProperty(index = 3, name = "leaveTs", type = ProtobufType.UINT64)
+  @ProtobufProperty(index = 3, name = "leaveTs", type = UINT64)
   private long leaveTimestamp;
 
   @AllArgsConstructor

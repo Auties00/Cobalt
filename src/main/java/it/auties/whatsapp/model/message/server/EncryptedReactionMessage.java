@@ -1,8 +1,10 @@
 package it.auties.whatsapp.model.message.server;
 
+import static it.auties.protobuf.base.ProtobufType.BYTES;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.ServerMessage;
@@ -23,13 +25,13 @@ public final class EncryptedReactionMessage
 
   private static final String ENC_REACTION = "Enc Reaction";
 
-  @ProtobufProperty(index = 1, name = "targetMessageKey", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 1, name = "targetMessageKey", type = MESSAGE)
   private MessageKey targetMessageKey;
 
-  @ProtobufProperty(index = 2, name = "encPayload", type = ProtobufType.BYTES)
+  @ProtobufProperty(index = 2, name = "encPayload", type = BYTES)
   private byte[] encPayload;
 
-  @ProtobufProperty(index = 3, name = "encIv", type = ProtobufType.BYTES)
+  @ProtobufProperty(index = 3, name = "encIv", type = BYTES)
   private byte[] encIv;
 
   public String secretName() {

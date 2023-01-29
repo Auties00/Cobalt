@@ -1,10 +1,10 @@
 package it.auties.whatsapp.model.info;
 
+import static it.auties.protobuf.base.ProtobufType.BYTES;
 import static it.auties.protobuf.base.ProtobufType.INT32;
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.sync.DeviceListMetadata;
 import java.util.Optional;
 import lombok.AllArgsConstructor;
@@ -30,10 +30,10 @@ public final class DeviceContextInfo
   @Default
   private int deviceListMetadataVersion = 2;
 
-  @ProtobufProperty(index = 3, name = "messageSecret", type = ProtobufType.BYTES)
+  @ProtobufProperty(index = 3, name = "messageSecret", type = BYTES)
   private byte[] messageSecret;
 
-  @ProtobufProperty(index = 4, name = "paddingBytes", type = ProtobufType.BYTES)
+  @ProtobufProperty(index = 4, name = "paddingBytes", type = BYTES)
   private byte[] paddingBytes;
 
   public static DeviceContextInfo of() {

@@ -1,8 +1,10 @@
 package it.auties.whatsapp.model.action;
 
+import static it.auties.protobuf.base.ProtobufType.BOOL;
+import static it.auties.protobuf.base.ProtobufType.INT64;
+
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,13 +20,13 @@ import lombok.extern.jackson.Jacksonized;
 public final class SubscriptionAction
     implements Action {
 
-  @ProtobufProperty(index = 1, name = "isDeactivated", type = ProtobufType.BOOL)
+  @ProtobufProperty(index = 1, name = "isDeactivated", type = BOOL)
   private boolean deactivated;
 
-  @ProtobufProperty(index = 2, name = "isAutoRenewing", type = ProtobufType.BOOL)
+  @ProtobufProperty(index = 2, name = "isAutoRenewing", type = BOOL)
   private boolean autoRenewing;
 
-  @ProtobufProperty(index = 3, name = "expirationDate", type = ProtobufType.INT64)
+  @ProtobufProperty(index = 3, name = "expirationDate", type = INT64)
   private long expirationDate;
 
   /**

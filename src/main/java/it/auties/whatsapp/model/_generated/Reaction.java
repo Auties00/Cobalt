@@ -1,9 +1,13 @@
 package it.auties.whatsapp.model._generated;
 
+import static it.auties.protobuf.base.ProtobufType.BOOL;
+import static it.auties.protobuf.base.ProtobufType.INT64;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+import static it.auties.protobuf.base.ProtobufType.STRING;
+
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,18 +20,18 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @ProtobufName("Reaction")
 public class Reaction implements ProtobufMessage {
-  @ProtobufProperty(index = 1, name = "key", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 1, name = "key", type = MESSAGE)
   private MessageKey key;
 
-  @ProtobufProperty(index = 2, name = "text", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 2, name = "text", type = STRING)
   private String text;
 
-  @ProtobufProperty(index = 3, name = "groupingKey", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 3, name = "groupingKey", type = STRING)
   private String groupingKey;
 
-  @ProtobufProperty(index = 4, name = "senderTimestampMs", type = ProtobufType.INT64)
+  @ProtobufProperty(index = 4, name = "senderTimestampMs", type = INT64)
   private Long senderTimestampMs;
 
-  @ProtobufProperty(index = 5, name = "unread", type = ProtobufType.BOOL)
+  @ProtobufProperty(index = 5, name = "unread", type = BOOL)
   private Boolean unread;
 }

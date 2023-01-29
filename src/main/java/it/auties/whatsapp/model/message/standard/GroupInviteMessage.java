@@ -107,7 +107,7 @@ public final class GroupInviteMessage extends ContextualMessage {
    * @return a non-null optional wrapping a zoned date time
    */
   private Optional<ZonedDateTime> expiration() {
-    return Clock.parse(expiration);
+    return Clock.parseSeconds(expiration);
   }
 
   @AllArgsConstructor

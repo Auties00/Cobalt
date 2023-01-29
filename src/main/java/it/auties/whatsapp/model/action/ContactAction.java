@@ -3,7 +3,6 @@ package it.auties.whatsapp.model.action;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -32,7 +31,10 @@ public final class ContactAction implements Action {
   @ProtobufProperty(index = 2, type = STRING)
   private String firstName;
 
-  @ProtobufProperty(index = 3, name = "lidJid", type = ProtobufType.STRING)
+  /**
+   * The lid jid
+   */
+  @ProtobufProperty(index = 3, name = "lidJid", type = STRING)
   private String lidJid;
 
   /**

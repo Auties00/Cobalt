@@ -13,7 +13,6 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.contact.Contact;
@@ -108,13 +107,13 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
   /**
    * Whether this chat is read only
    */
-  @ProtobufProperty(index = 7, name = "readOnly", type = ProtobufType.BOOL)
+  @ProtobufProperty(index = 7, name = "readOnly", type = BOOL)
   private boolean readOnly;
 
   /**
    * Whether this chat has been trasfered completely
    */
-  @ProtobufProperty(index = 8, name = "endOfHistoryTransfer", type = ProtobufType.BOOL)
+  @ProtobufProperty(index = 8, name = "endOfHistoryTransfer", type = BOOL)
   private boolean endOfHistoryTransfer;
 
   /**
@@ -136,7 +135,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
   /**
    * The history sync status
    */
-  @ProtobufProperty(index = 11, name = "endOfHistoryTransferType", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 11, name = "endOfHistoryTransferType", type = MESSAGE)
   private EndOfHistoryTransferType endOfHistoryTransferType;
 
   /**
@@ -166,13 +165,13 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
   /**
    * Whether this chat was manually marked as unread
    */
-  @ProtobufProperty(index = 19, name = "markedAsUnread", type = ProtobufType.BOOL)
+  @ProtobufProperty(index = 19, name = "markedAsUnread", type = BOOL)
   private boolean markedAsUnread;
 
   /**
    * The participants of this chat, if it's a group
    */
-  @ProtobufProperty(implementation = GroupParticipant.class, index = 20, name = "participant", repeated = true, type = ProtobufType.MESSAGE)
+  @ProtobufProperty(implementation = GroupParticipant.class, index = 20, name = "participant", repeated = true, type = MESSAGE)
   @Default
   private List<GroupParticipant> participants = new ArrayList<>();
 
@@ -244,55 +243,55 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
   /**
    * Whether this chat was terminated
    */
-  @ProtobufProperty(index = 30, name = "terminated", type = ProtobufType.BOOL)
+  @ProtobufProperty(index = 30, name = "terminated", type = BOOL)
   private boolean terminated;
 
   /**
    * The timestamp at which the chat, if a group, was created
    */
-  @ProtobufProperty(index = 31, name = "createdAt", type = ProtobufType.UINT64)
+  @ProtobufProperty(index = 31, name = "createdAt", type = UINT64)
   private long createdAt;
 
   /**
    * The user who created this chat, if a group
    */
-  @ProtobufProperty(index = 32, name = "createdBy", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 32, name = "createdBy", type = STRING)
   private ContactJid createdBy;
 
   /**
    * The description of this chat, if a group
    */
-  @ProtobufProperty(index = 33, name = "description", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 33, name = "description", type = STRING)
   private String description;
 
   /**
    * Whether this chat is an official support chat from Whatsapp
    */
-  @ProtobufProperty(index = 34, name = "support", type = ProtobufType.BOOL)
+  @ProtobufProperty(index = 34, name = "support", type = BOOL)
   private boolean support;
 
   /**
    * Whether this chat is a parent group
    */
-  @ProtobufProperty(index = 35, name = "isParentGroup", type = ProtobufType.BOOL)
+  @ProtobufProperty(index = 35, name = "isParentGroup", type = BOOL)
   private boolean parentGroup;
 
   /**
    * Whether this chat is a default sub group
    */
-  @ProtobufProperty(index = 36, name = "isDefaultSubgroup", type = ProtobufType.BOOL)
+  @ProtobufProperty(index = 36, name = "isDefaultSubgroup", type = BOOL)
   private boolean defaultSubGroup;
 
   /**
    * The parent group's jid in a community
    */
-  @ProtobufProperty(index = 37, name = "parentGroupId", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 37, name = "parentGroupId", type = STRING)
   private ContactJid parentGroupJid;
 
   /**
    * Experimental
    */
-  @ProtobufProperty(index = 38, name = "displayName", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 38, name = "displayName", type = STRING)
   @Getter(AccessLevel.NONE)
   @Setter(AccessLevel.NONE)
   private String displayName;
@@ -300,7 +299,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
   /**
    * Experimental
    */
-  @ProtobufProperty(index = 39, name = "pnJid", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 39, name = "pnJid", type = STRING)
   @Getter(AccessLevel.NONE)
   @Setter(AccessLevel.NONE)
   private String pnJid;
@@ -308,7 +307,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
   /**
    * Experimental
    */
-  @ProtobufProperty(index = 40, name = "shareOwnPn", type = ProtobufType.BOOL)
+  @ProtobufProperty(index = 40, name = "shareOwnPn", type = BOOL)
   @Getter(AccessLevel.NONE)
   @Setter(AccessLevel.NONE)
   private boolean shareOwnPn;
@@ -316,7 +315,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
   /**
    * Experimental
    */
-  @ProtobufProperty(index = 41, name = "pnhDuplicateLidThread", type = ProtobufType.BOOL)
+  @ProtobufProperty(index = 41, name = "pnhDuplicateLidThread", type = BOOL)
   @Getter(AccessLevel.NONE)
   @Setter(AccessLevel.NONE)
   private boolean pnhDuplicateLidThread;
@@ -324,7 +323,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
   /**
    * Experimental
    */
-  @ProtobufProperty(index = 42, name = "lidJid", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 42, name = "lidJid", type = STRING)
   @Getter(AccessLevel.NONE)
   @Setter(AccessLevel.NONE)
   private ContactJid lidJid;
@@ -356,13 +355,13 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
   @NonNull
   private Set<ContactJid> participantsPreKeys = new HashSet<>();
 
-  @ProtobufProperty(index = 5, name = "lastMsgTimestamp", type = ProtobufType.UINT64)
+  @ProtobufProperty(index = 5, name = "lastMsgTimestamp", type = UINT64)
   private Long lastMsgTimestamp;
 
-  @ProtobufProperty(index = 14, name = "pHash", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 14, name = "pHash", type = STRING)
   private String pHash;
 
-  @ProtobufProperty(index = 18, name = "unreadMentionCount", type = ProtobufType.UINT32)
+  @ProtobufProperty(index = 18, name = "unreadMentionCount", type = UINT32)
   private Integer unreadMentionCount;
 
   /**
@@ -506,7 +505,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
    * @return a non-empty optional if the chat is pinned
    */
   public Optional<ZonedDateTime> pinned() {
-    return Clock.parse(pinned);
+    return Clock.parseSeconds(pinned);
   }
 
   /**
@@ -516,7 +515,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
    * @return a non-empty optional if this field is populated
    */
   public Optional<ZonedDateTime> timestamp() {
-    return Clock.parse(timestamp);
+    return Clock.parseSeconds(timestamp);
   }
 
   /**
@@ -526,7 +525,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
    * @return a non-empty optional if ephemeral messages are enabled for this chat
    */
   public Optional<ZonedDateTime> ephemeralMessagesToggleTime() {
-    return Clock.parse(ephemeralMessagesToggleTime);
+    return Clock.parseSeconds(ephemeralMessagesToggleTime);
   }
 
   /**
@@ -635,7 +634,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
    * @return a non-null optional value
    */
   public Optional<ZonedDateTime> tokenTimestamp() {
-    return Clock.parse(tokenTimestamp);
+    return Clock.parseSeconds(tokenTimestamp);
   }
 
   /**
@@ -653,7 +652,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
    * @return a non-null optional value
    */
   public Optional<ZonedDateTime> tokenSenderTimestamp() {
-    return Clock.parse(tokenTimestamp);
+    return Clock.parseSeconds(tokenTimestamp);
   }
 
   /**
@@ -662,7 +661,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
    * @return a non-null optional value
    */
   public Optional<ZonedDateTime> createdAt() {
-    return Clock.parse(createdAt);
+    return Clock.parseSeconds(createdAt);
   }
 
   /**

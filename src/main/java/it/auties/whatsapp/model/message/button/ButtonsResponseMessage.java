@@ -5,7 +5,6 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.button.Button;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -54,8 +53,8 @@ public final class ButtonsResponseMessage extends ButtonReplyMessage {
   @Default
   private ContextInfo contextInfo = new ContextInfo();
 
-  @ProtobufProperty(index = 4, name = "type", type = ProtobufType.MESSAGE)
-  private ChatDisappear.Type type;
+  @ProtobufProperty(index = 4, name = "type", type = MESSAGE)
+  private ResponseType type;
 
   /**
    * Constructs a response message from a buttons message and a selected button
@@ -64,9 +63,7 @@ public final class ButtonsResponseMessage extends ButtonReplyMessage {
    * @param button the non-null button to select
    * @return a non-null buttons response message
    */
-  public static ButtonsResponseMessage of(@NonNull
-  MessageInfo quoted, @NonNull
-  Button button) {
+  public static ButtonsResponseMessage of(@NonNull MessageInfo quoted, @NonNull Button button) {
     Validate.isTrue(quoted.message().content() instanceof ButtonsMessage,
         "Cannot select buttons message, erroneous type: %s" + quoted.message().content());
     return ButtonsResponseMessage.builder().buttonId(button.id())
@@ -79,12 +76,14 @@ public final class ButtonsResponseMessage extends ButtonReplyMessage {
   }
 
   public ButtonsResponseMessage.ResponseType responseType() {
-    return ButtonsResponseMessage.ResponseType.SELECTED_DISPLAY_TEXT;
+    if (buttonText != null) {
+      return ButtonsResponseMessage.ResponseType.SELECTED_DISPLAY_TEXT;
+    }
+    return ResponseType.UNKNOWN;
   }
 
   @AllArgsConstructor
   public enum ResponseType implements ProtobufMessage {
-
     UNKNOWN(0),
     SELECTED_DISPLAY_TEXT(1);
     @Getter

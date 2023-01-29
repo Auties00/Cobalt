@@ -14,10 +14,10 @@ import it.auties.whatsapp.model.business.BusinessShop;
 import it.auties.whatsapp.model.button.Button;
 import it.auties.whatsapp.model.button.ButtonRow;
 import it.auties.whatsapp.model.button.ButtonSection;
-import it.auties.whatsapp.model.button.HydratedTemplateButton;
 import it.auties.whatsapp.model.button.HydratedCallButton;
 import it.auties.whatsapp.model.button.HydratedFourRowTemplate;
 import it.auties.whatsapp.model.button.HydratedQuickReplyButton;
+import it.auties.whatsapp.model.button.HydratedTemplateButton;
 import it.auties.whatsapp.model.button.HydratedURLButton;
 import it.auties.whatsapp.model.button.NativeFlowButton;
 import it.auties.whatsapp.model.chat.Chat;
@@ -915,7 +915,6 @@ public class RunCITest implements Listener, JacksonProvider {
     if (skip) {
       return;
     }
-
     for (var emojy : Emojy.values()) {
       api.sendMessage(contact, emojy.name())
           .thenAcceptAsync(message -> api.sendReaction(message, emojy))
@@ -942,7 +941,8 @@ public class RunCITest implements Listener, JacksonProvider {
         .map(info -> api.downloadMedia(info)
             .thenApply(ignored -> success.incrementAndGet())
             .exceptionallyAsync(ignored -> fail.incrementAndGet()))
-        .collect(Collectors.collectingAndThen(Collectors.toUnmodifiableList(), list -> CompletableFuture.allOf(list.toArray(CompletableFuture[]::new))))
+        .collect(Collectors.collectingAndThen(Collectors.toUnmodifiableList(),
+            list -> CompletableFuture.allOf(list.toArray(CompletableFuture[]::new))))
         .join();
     log("Decoded %s/%s medias!", success.get(), success.get() + fail.get());
   }

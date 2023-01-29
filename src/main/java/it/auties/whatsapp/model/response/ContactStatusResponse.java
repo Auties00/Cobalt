@@ -12,7 +12,7 @@ public record ContactStatusResponse(@NonNull String status, @NonNull ZonedDateTi
   public ContactStatusResponse(@NonNull Node source) {
     this(source.contentAsString()
             .orElseThrow(() -> new NoSuchElementException("Missing status")),
-        Clock.parse(source.attributes()
+        Clock.parseSeconds(source.attributes()
                 .getLong(
                     "t"))
             .orElse(ZonedDateTime.now()));

@@ -175,7 +175,6 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
   @AllArgsConstructor
   @Accessors(fluent = true)
   @ProtobufName("InteractiveMessageType")
-  @ProtobufName("InteractiveResponseMessageType")
   public enum ContentType implements ProtobufMessage {
 
     /**

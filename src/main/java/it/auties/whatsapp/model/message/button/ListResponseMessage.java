@@ -4,7 +4,6 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.button.SingleSelectReplyButton;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonReplyMessage;
@@ -53,7 +52,7 @@ public final class ListResponseMessage extends ButtonReplyMessage {
   @ProtobufProperty(index = 5, type = STRING)
   private String description;
 
-  @ProtobufProperty(index = 2, name = "listType", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 2, name = "listType", type = MESSAGE)
   private ListMessage.Type listType;
 
   @Override

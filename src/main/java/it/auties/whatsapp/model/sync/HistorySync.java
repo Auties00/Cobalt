@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.PastParticipants;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -62,11 +61,11 @@ public class HistorySync
   @ProtobufProperty(index = 10, type = UINT32)
   private Integer threadDsTimeframeOffset;
 
-  @ProtobufProperty(implementation = RecentStickerMetadata.class, index = 11, name = "recentStickers", repeated = true, type = ProtobufType.MESSAGE)
+  @ProtobufProperty(implementation = RecentStickerMetadata.class, index = 11, name = "recentStickers", repeated = true, type = MESSAGE)
   @Default
   private List<RecentStickerMetadata> recentStickers = new ArrayList<>();
 
-  @ProtobufProperty(implementation = PastParticipants.class, index = 12, name = "pastParticipants", repeated = true, type = ProtobufType.MESSAGE)
+  @ProtobufProperty(implementation = PastParticipants.class, index = 12, name = "pastParticipants", repeated = true, type = MESSAGE)
   @Default
   private List<PastParticipants> pastParticipants = new ArrayList<>();
 

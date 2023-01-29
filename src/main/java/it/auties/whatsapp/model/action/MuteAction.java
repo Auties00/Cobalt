@@ -4,7 +4,9 @@ import static it.auties.protobuf.base.ProtobufType.BOOL;
 import static it.auties.protobuf.base.ProtobufType.INT64;
 
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
+import it.auties.whatsapp.util.Clock;
+import java.time.ZonedDateTime;
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,8 +35,20 @@ public final class MuteAction implements Action {
   @ProtobufProperty(index = 2, type = INT64)
   private Long muteEndTimestamp;
 
-  @ProtobufProperty(index = 3, name = "autoMuted", type = ProtobufType.BOOL)
-  private Boolean autoMuted;
+  /**
+   * Auto mute
+   */
+  @ProtobufProperty(index = 3, name = "autoMuted", type = BOOL)
+  private boolean autoMuted;
+
+  /**
+   * Returns when the mute ends
+   *
+   * @return an optional
+   */
+  public Optional<ZonedDateTime> muteEnd() {
+    return Clock.parseSeconds(muteEndTimestamp);
+  }
 
   /**
    * The name of this action

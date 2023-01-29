@@ -121,7 +121,7 @@ public record ChatMute(long endTimeStamp)
    * @return a non-empty optional date if {@link ChatMute#endTimeStamp} > 0
    */
   public Optional<ZonedDateTime> end() {
-    return Clock.parse(endTimeStamp);
+    return Clock.parseSeconds(endTimeStamp);
   }
 
   @Override

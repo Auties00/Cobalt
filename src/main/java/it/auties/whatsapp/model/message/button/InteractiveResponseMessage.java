@@ -1,8 +1,9 @@
 package it.auties.whatsapp.model.message.button;
 
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
@@ -24,13 +25,13 @@ import lombok.extern.jackson.Jacksonized;
 @EqualsAndHashCode(callSuper = true)
 @ProtobufName("InteractiveResponseMessage")
 public final class InteractiveResponseMessage extends ContextualMessage {
-  @ProtobufProperty(index = 1, name = "body", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 1, name = "body", type = MESSAGE)
   private ProductBody body;
 
-  @ProtobufProperty(index = 2, name = "nativeFlowResponseMessage", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 2, name = "nativeFlowResponseMessage", type = MESSAGE)
   private NativeFlowResponseMessage nativeFlowResponseMessage;
 
-  @ProtobufProperty(index = 15, name = "contextInfo", type = ProtobufType.MESSAGE)
+  @ProtobufProperty(index = 15, name = "contextInfo", type = MESSAGE)
   @Default
   private ContextInfo contextInfo = new ContextInfo();
 

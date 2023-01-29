@@ -13,7 +13,6 @@ import static java.util.Objects.requireNonNullElse;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -153,19 +152,19 @@ public final class VideoMessage extends MediaMessage {
   @ProtobufProperty(index = 19, type = MESSAGE, implementation = VideoMessage.VideoMessageAttribution.class)
   private VideoMessageAttribution gifAttribution;
 
-  @ProtobufProperty(index = 20, name = "viewOnce", type = ProtobufType.BOOL)
+  @ProtobufProperty(index = 20, name = "viewOnce", type = BOOL)
   private Boolean viewOnce;
 
-  @ProtobufProperty(index = 21, name = "thumbnailDirectPath", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 21, name = "thumbnailDirectPath", type = STRING)
   private String thumbnailDirectPath;
 
-  @ProtobufProperty(index = 22, name = "thumbnailSha256", type = ProtobufType.BYTES)
+  @ProtobufProperty(index = 22, name = "thumbnailSha256", type = BYTES)
   private byte[] thumbnailSha256;
 
-  @ProtobufProperty(index = 23, name = "thumbnailEncSha256", type = ProtobufType.BYTES)
+  @ProtobufProperty(index = 23, name = "thumbnailEncSha256", type = BYTES)
   private byte[] thumbnailEncSha256;
 
-  @ProtobufProperty(index = 24, name = "staticUrl", type = ProtobufType.STRING)
+  @ProtobufProperty(index = 24, name = "staticUrl", type = STRING)
   private String staticUrl;
 
   /**
@@ -185,7 +184,7 @@ public final class VideoMessage extends MediaMessage {
       byte[] thumbnail, ContextInfo contextInfo) {
     var dimensions = Medias.getDimensions(media, true);
     var duration = Medias.getDuration(media, true);
-    return VideoMessage.builder().decodedMedia(media).mediaKeyTimestamp(Clock.now())
+    return VideoMessage.builder().decodedMedia(media).mediaKeyTimestamp(Clock.nowInSeconds())
         .mimetype(requireNonNullElse(mimeType, VIDEO.defaultMimeType())).thumbnail(
             thumbnail != null ? thumbnail
                 : Medias.getThumbnail(media, Medias.Format.VIDEO).orElse(null)).caption(caption)
@@ -215,7 +214,7 @@ public final class VideoMessage extends MediaMessage {
         "Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
     var dimensions = Medias.getDimensions(media, true);
     var duration = Medias.getDuration(media, true);
-    return VideoMessage.builder().decodedMedia(media).mediaKeyTimestamp(Clock.now())
+    return VideoMessage.builder().decodedMedia(media).mediaKeyTimestamp(Clock.nowInSeconds())
         .mimetype(requireNonNullElse(mimeType, VIDEO.defaultMimeType())).thumbnail(
             thumbnail != null ? thumbnail
                 : Medias.getThumbnail(media, Medias.Format.VIDEO).orElse(null)).caption(caption)
