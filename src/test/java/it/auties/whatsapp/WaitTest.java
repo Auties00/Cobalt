@@ -1,12 +1,14 @@
 package it.auties.whatsapp;
 
+import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.api.Whatsapp.Options;
 import it.auties.whatsapp.util.JacksonProvider;
 
 // Just used for testing locally
 public class WaitTest implements JacksonProvider {
   public static void main(String[] args) {
-    var whatsapp = Whatsapp.lastConnection()
+    var whatsapp = Whatsapp.lastConnection(Options.defaultOptions().withClientType(ClientType.WEB_CLIENT))
         .addLoggedInListener(() -> System.out.println("Connected"))
         .addNewMessageListener(message -> System.out.println(message.toJson()))
         .addContactsListener(

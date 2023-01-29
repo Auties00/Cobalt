@@ -1,4 +1,4 @@
-package it.auties.whatsapp.exception;
+package it.auties.whatsapp.util;
 
 import lombok.NonNull;
 

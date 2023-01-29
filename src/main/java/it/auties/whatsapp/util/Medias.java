@@ -9,7 +9,6 @@ import it.auties.bytes.Bytes;
 import it.auties.whatsapp.crypto.AesCbc;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.Sha256;
-import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.model.media.AttachmentProvider;
 import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.media.MediaDimensions;

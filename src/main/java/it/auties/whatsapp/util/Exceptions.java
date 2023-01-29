@@ -11,8 +11,8 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class Exceptions {
 
-  public Throwable current() {
-    var result = new RuntimeException();
+  public Throwable current(String message) {
+    var result = new RuntimeException(message);
     result.setStackTrace(currentStackTrace());
     return result;
   }

@@ -140,6 +140,7 @@ import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.ListenerScanner;
 import it.auties.whatsapp.util.LocalFileSystem;
 import it.auties.whatsapp.util.Medias;
+import it.auties.whatsapp.util.Specification;
 import it.auties.whatsapp.util.Validate;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -181,7 +182,14 @@ public class Whatsapp {
 
   private Whatsapp(Options options) {
     this(options, Store.of(options.id(), options.defaultSerialization()),
-        Keys.of(options.id(), options.defaultSerialization()));
+        Keys.of(options.id(), getPrologue(options.clientType()), options.defaultSerialization()));
+  }
+
+  private static byte[] getPrologue(ClientType type){
+    return switch (type){
+      case WEB_CLIENT -> Specification.Whatsapp.WEB_PROLOGUE;
+      case APP_CLIENT -> Specification.Whatsapp.APP_PROLOGUE;
+    };
   }
 
   private Whatsapp(Options options, Store store, Keys keys) {

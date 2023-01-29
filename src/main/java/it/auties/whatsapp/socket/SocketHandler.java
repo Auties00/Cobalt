@@ -18,7 +18,6 @@ import it.auties.whatsapp.binary.MessageWrapper;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.exception.ErroneousNodeRequestException;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.listener.OnNewContact;
 import it.auties.whatsapp.model.action.Action;
@@ -46,16 +45,6 @@ import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.LocalFileSystem;
-import it.auties.whatsapp.util.Specification;
-import jakarta.websocket.ClientEndpoint;
-import jakarta.websocket.ClientEndpointConfig.Configurator;
-import jakarta.websocket.DeploymentException;
-import jakarta.websocket.OnClose;
-import jakarta.websocket.OnError;
-import jakarta.websocket.OnMessage;
-import jakarta.websocket.OnOpen;
-import jakarta.websocket.Session;
-import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -74,10 +63,9 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 
 @Accessors(fluent = true)
-@ClientEndpoint(configurator = SocketHandler.OriginPatcher.class)
 @SuppressWarnings("unused")
 public class SocketHandler extends Handler
-    implements JacksonProvider {
+    implements SocketListener, JacksonProvider {
   static {
     getWebSocketContainer().setDefaultMaxSessionIdleTimeout(0);
   }
@@ -105,7 +93,7 @@ public class SocketHandler extends Handler
   @Getter(AccessLevel.PROTECTED)
   private final FailureHandler errorHandler;
 
-  private Session session;
+  private SocketSession session;
 
   @NonNull
   @Getter(AccessLevel.PROTECTED)
@@ -166,8 +154,8 @@ public class SocketHandler extends Handler
     }
   }
 
-  @OnOpen
-  public void onOpen(@NonNull Session session) {
+  @Override
+  public void onOpen(SocketSession session) {
     this.session = session;
     if (state == SocketState.CONNECTED) {
       return;
@@ -182,8 +170,8 @@ public class SocketHandler extends Handler
         .exceptionallyAsync(throwable -> errorHandler.handleFailure(CRYPTOGRAPHY, throwable));
   }
 
-  @OnMessage
-  public void onBinary(byte @NonNull [] raw) {
+  @Override
+  public void onMessage(byte[] raw) {
     var message = new MessageWrapper(raw);
     if (message.decoded()
         .isEmpty()) {
@@ -215,55 +203,48 @@ public class SocketHandler extends Handler
   }
 
   public CompletableFuture<Void> connect() {
-    try {
-      if (future == null || future.isDone()) {
-        this.future = new CompletableFuture<>();
-      }
-      getWebSocketContainer().connectToServer(this,
-          URI.create(Specification.Whatsapp.WEB_ENDPOINT));
-      return future;
-    } catch (IOException | DeploymentException exception) {
-      throw new RuntimeException("Cannot connect to socket", exception);
+    if (future == null || future.isDone()) {
+      this.future = new CompletableFuture<>();
     }
+
+    this.session = SocketSession.of(options.clientType());
+    return session.connect(this)
+        .thenCompose(ignored -> future);
   }
 
   public CompletableFuture<Void> disconnect(DisconnectReason reason) {
-    try {
-      state(SocketState.of(reason));
-      keys.clearReadWriteKey();
-      return switch (reason) {
-        case DISCONNECTED -> {
-          session.close();
-          yield CompletableFuture.completedFuture(null);
-        }
-        case RECONNECTING -> {
-          session.close();
-          yield connect();
-        }
-        case LOGGED_OUT -> {
-          store.resolveAllPendingRequests();
-          session.close();
-          LocalFileSystem.delete(keys().id());
-          yield CompletableFuture.completedFuture(null);
-        }
-        case RESTORE -> {
-          store.resolveAllPendingRequests();
-          var oldListeners = new ArrayList<>(store.listeners());
-          session.close();
-          LocalFileSystem.delete(keys().id());
-          var newId = KeyHelper.registrationId();
-          this.keys = Keys.random(newId, options.defaultSerialization());
-          this.store = Store.random(newId, options.defaultSerialization());
-          store.listeners().addAll(oldListeners);
-          yield connect();
-        }
-      };
-    } catch (IOException exception) {
-      throw new RuntimeException("Cannot disconnect socket", exception);
-    }
+    state(SocketState.of(reason));
+    keys.clearReadWriteKey();
+    return switch (reason) {
+      case DISCONNECTED -> {
+        session.close();
+        yield CompletableFuture.completedFuture(null);
+      }
+      case RECONNECTING -> {
+        session.close();
+        yield connect();
+      }
+      case LOGGED_OUT -> {
+        store.resolveAllPendingRequests();
+        session.close();
+        LocalFileSystem.delete(keys().id());
+        yield CompletableFuture.completedFuture(null);
+      }
+      case RESTORE -> {
+        store.resolveAllPendingRequests();
+        var oldListeners = new ArrayList<>(store.listeners());
+        session.close();
+        LocalFileSystem.delete(keys().id());
+        var newId = KeyHelper.registrationId();
+        this.keys = Keys.random(newId, keys.prologue(), options.defaultSerialization());
+        this.store = Store.random(newId, options.defaultSerialization());
+        store.listeners().addAll(oldListeners);
+        yield connect();
+      }
+    };
   }
 
-  @OnClose
+  @Override
   public void onClose() {
     if (state == SocketState.CONNECTED) {
       disconnect(DisconnectReason.RECONNECTING);
@@ -276,7 +257,7 @@ public class SocketHandler extends Handler
     }
   }
 
-  @OnError
+  @Override
   public void onError(Throwable throwable) {
     if (throwable instanceof IllegalStateException stateException
         && stateException.getMessage().equals("The connection has been closed.")) {
@@ -451,7 +432,7 @@ public class SocketHandler extends Handler
   public CompletableFuture<GroupMetadata> queryGroupMetadata(ContactJid group) {
     var body = ofAttributes("query", of("request", "interactive"));
     return sendQuery(group, "get", "w:g2", body).thenApplyAsync(node -> node.findNode("group")
-            .orElseThrow(() -> new ErroneousNodeRequestException("Missing group node", node)))
+            .orElseThrow(() -> new NoSuchElementException("Missing group node: %s".formatted(node))))
         .thenApplyAsync(GroupMetadata::of);
   }
 
@@ -761,15 +742,5 @@ public class SocketHandler extends Handler
 
   protected void querySessionsForcefully(ContactJid contactJid) {
     messageHandler.querySessions(List.of(contactJid), true);
-  }
-
-  public static class OriginPatcher
-      extends Configurator {
-
-    @Override
-    public void beforeRequest(@NonNull Map<String, List<String>> headers) {
-      headers.put("Origin", List.of(Specification.Whatsapp.WEB_ORIGIN));
-      headers.put("Host", List.of(Specification.Whatsapp.WEB_HOST));
-    }
   }
 }

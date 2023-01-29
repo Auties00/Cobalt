@@ -3,6 +3,7 @@ package it.auties.whatsapp.socket;
 import static java.lang.Long.parseLong;
 
 import it.auties.curve25519.Curve25519;
+import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.HistoryLength;
 import it.auties.whatsapp.crypto.Handshake;
 import it.auties.whatsapp.model.request.Request;
@@ -18,7 +19,6 @@ import it.auties.whatsapp.model.signal.auth.WebInfo.WebInfoWebSubPlatform;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.Specification;
-import jakarta.websocket.Session;
 import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -38,7 +38,7 @@ class AuthHandler extends Handler
   }
 
   @SneakyThrows
-  protected CompletableFuture<Void> login(Session session, byte[] message) {
+  protected CompletableFuture<Void> login(SocketSession session, byte[] message) {
     var serverHello = PROTOBUF.readMessage(message, HandshakeMessage.class)
         .serverHello();
     handshake.updateHash(serverHello.ephemeral());
@@ -106,11 +106,10 @@ class AuthHandler extends Handler
 
   @SneakyThrows
   private CompanionData createRegisterData() {
-    return CompanionData.builder()
+    var companion = CompanionData.builder()
         .buildHash(socketHandler.options()
             .version()
             .toHash())
-        .companion(PROTOBUF.writeValueAsBytes(createCompanionProps()))
         .id(BytesHelper.intToBytes(socketHandler.keys()
             .id(), 4))
         .keyType(BytesHelper.intToBytes(Specification.Signal.KEY_TYPE, 1))
@@ -126,8 +125,13 @@ class AuthHandler extends Handler
             .publicKey())
         .signature(socketHandler.keys()
             .signedKeyPair()
-            .signature())
-        .build();
+            .signature());
+    if(socketHandler.options().clientType() == ClientType.WEB_CLIENT){
+      var props = PROTOBUF.writeValueAsBytes(createCompanionProps());
+      companion.companion(props);
+    }
+
+    return companion.build();
   }
 
   private Companion createCompanionProps() {

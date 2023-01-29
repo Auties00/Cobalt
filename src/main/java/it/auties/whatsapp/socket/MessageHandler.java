@@ -411,7 +411,7 @@ class MessageHandler extends Handler
   }
 
   public void decode(Node node) {
-    getOrCreateService().execute(() -> {
+    getOrCreateFallbackService().execute(() -> {
       try {
         var businessName = getBusinessName(node);
         var encrypted = node.findNodes("enc");

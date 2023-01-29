@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.request;
 
-import static it.auties.whatsapp.util.Specification.Whatsapp.WEB_PROLOGUE;
 import static java.util.concurrent.CompletableFuture.delayedExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -9,12 +8,9 @@ import it.auties.whatsapp.binary.Encoder;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGmc;
-import it.auties.whatsapp.exception.ErroneousBinaryRequestException;
-import it.auties.whatsapp.exception.ErroneousNodeRequestException;
+import it.auties.whatsapp.socket.SocketSession;
 import it.auties.whatsapp.util.Exceptions;
 import it.auties.whatsapp.util.JacksonProvider;
-import jakarta.websocket.SendResult;
-import jakarta.websocket.Session;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -45,8 +41,14 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
   private static final Executor EXECUTOR = delayedExecutor(TIMEOUT, SECONDS);
 
   private Request(String id, Function<Node, Boolean> filter, @NonNull Object body) {
-    this(id, body, new CompletableFuture<>(), filter, Exceptions.current());
+    this(id, body, new CompletableFuture<>(), filter,
+        Exceptions.current(getTimeoutMessage(body)));
     EXECUTOR.execute(this::cancelTimedFuture);
+  }
+
+  private static String getTimeoutMessage(Object body) {
+    return body instanceof Node node ? "Node timed out(%s), no response from WhatsApp".formatted(node)
+        : "Binary timed out, no response from WhatsApp";
   }
 
   /**
@@ -71,13 +73,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     if (future.isDone()) {
       return;
     }
-    var exception = body instanceof Node node ?
-        new ErroneousNodeRequestException(
-            "Node timed out(%s), no response from WhatsApp".formatted(node), node,
-            caller) :
-        new ErroneousBinaryRequestException("Binary timed out, no response from WhatsApp", body,
-            caller);
-    future.completeExceptionally(exception);
+    future.completeExceptionally(caller);
   }
 
   /**
@@ -86,7 +82,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
    * @param session the WhatsappWeb's WebSocket session
    * @param store   the store
    */
-  public CompletableFuture<Node> sendWithPrologue(@NonNull Session session, @NonNull Keys keys,
+  public CompletableFuture<Node> sendWithPrologue(@NonNull SocketSession session, @NonNull Keys keys,
       @NonNull Store store) {
     return send(session, keys, store, true, false);
   }
@@ -98,7 +94,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
    * @param session the WhatsappWeb's WebSocket session
    * @return this request
    */
-  public CompletableFuture<Node> send(@NonNull Session session, @NonNull Keys keys,
+  public CompletableFuture<Node> send(@NonNull SocketSession session, @NonNull Keys keys,
       @NonNull Store store) {
     return send(session, keys, store, false, true);
   }
@@ -110,7 +106,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
    * @param session the WhatsappWeb's WebSocket session
    * @return this request
    */
-  public CompletableFuture<Void> sendWithNoResponse(@NonNull Session session, @NonNull Keys keys,
+  public CompletableFuture<Void> sendWithNoResponse(@NonNull SocketSession session, @NonNull Keys keys,
       @NonNull Store store) {
     return send(session, keys, store, false, false)
         .thenRunAsync(() -> {
@@ -126,25 +122,26 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
    * @param response whether the request expects a response
    * @return this request
    */
-  public CompletableFuture<Node> send(@NonNull Session session, @NonNull Keys keys,
-      @NonNull Store store,
-      boolean prologue, boolean response) {
-    try {
-      var ciphered = encryptMessage(keys);
-      var buffer = Bytes.of(prologue ?
-              WEB_PROLOGUE :
-              new byte[0])
-          .appendInt(ciphered.length >> 16)
-          .appendShort(65535 & ciphered.length)
-          .append(ciphered)
-          .toNioBuffer();
-      session.getAsyncRemote()
-          .sendBinary(buffer, result -> handleSendResult(store, result, response));
-    } catch (Exception exception) {
-      future.completeExceptionally(
-          new IOException("Cannot send %s, an unknown exception occurred".formatted(this),
-              exception));
-    }
+  public CompletableFuture<Node> send(@NonNull SocketSession session, @NonNull Keys keys, @NonNull Store store, boolean prologue, boolean response) {
+    var ciphered = encryptMessage(keys);
+    var buffer = Bytes.of(prologue ? keys.prologue() : new byte[0])
+        .appendInt(ciphered.length >> 16)
+        .appendShort(65535 & ciphered.length)
+        .append(ciphered)
+        .toByteArray();
+    session.sendBinary(buffer)
+        .thenRunAsync(() -> {
+          if (!response) {
+            future.complete(null);
+            return;
+          }
+
+          store.addRequest(this);
+        })
+        .exceptionallyAsync(throwable -> {
+          future.completeExceptionally(new IOException("Cannot send %s, an unknown exception occurred".formatted(this), throwable));
+          return null;
+        });
     return future;
   }
 
@@ -159,9 +156,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
       return true;
     }
     if (exceptionally) {
-      future.completeExceptionally(
-          new ErroneousNodeRequestException(
-              "Cannot process request %s with %s".formatted(this, response), response, caller));
+      future.completeExceptionally(new RuntimeException("Cannot process request %s with %s".formatted(this, response), caller));
       return true;
     }
     if (filter != null && !filter.apply(response)) {
@@ -169,20 +164,6 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     }
     future.complete(response);
     return true;
-  }
-
-  private void handleSendResult(Store store, SendResult result, boolean response) {
-    if (!result.isOK()) {
-      future.completeExceptionally(
-          new IOException("Cannot send request %s, erroneous send result".formatted(this),
-              result.getException()));
-      return;
-    }
-    if (!response) {
-      future.complete(Node.of("stream-error"));
-      return;
-    }
-    store.addRequest(this);
   }
 
   private byte[] encryptMessage(Keys keys) {

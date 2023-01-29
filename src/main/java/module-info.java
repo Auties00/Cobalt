@@ -44,7 +44,6 @@ open module it.auties.whatsappweb4j {
   exports it.auties.whatsapp.model.message.button;
   exports it.auties.whatsapp.listener;
   exports it.auties.whatsapp.serialization;
-  exports it.auties.whatsapp.exception;
   exports it.auties.whatsapp.util;
   exports it.auties.whatsapp.model.privacy;
   exports it.auties.whatsapp.model.location;

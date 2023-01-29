@@ -1,24 +1,27 @@
 package it.auties.whatsapp.util;
 
 import it.auties.bytes.Bytes;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 @SuppressWarnings("unused")
 public class Specification {
   public final static class Whatsapp {
-    public static final Bytes WEB_PROTOCOL = Bytes.of("Noise_XX_25519_AESGCM_SHA256\0\0\0\0");
+    public static final Bytes PROTOCOL = Bytes.of("Noise_XX_25519_AESGCM_SHA256\0\0\0\0");
     public static final String WEB_ORIGIN = "https://web.whatsapp.com";
     public static final String WEB_HOST = "web.whatsapp.com";
-    public static final String MOBILE_ORIGIN = "<todo>";
-    public static final String WEB_ENDPOINT = "wss://web.whatsapp.com/ws/chat";
-    public static final String MOBILE_ENDPOINT = "g.whatsapp.net";
+    public static final URI WEB_ENDPOINT = URI.create("wss://web.whatsapp.com/ws/chat");
+    public static final String APP_ENDPOINT_HOST = "g.whatsapp.net";
+    public static final int APP_ENDPOINT_PORT = 443;
     public static final String WEB_UPDATE_URL = "https://web.whatsapp.com/check-update?version=%s&platform=web";
     private static final byte[] WHATSAPP_HEADER = "WA".getBytes(StandardCharsets.UTF_8);
     private static final byte[] WEB_VERSION = new byte[]{5, 2};
-    public static final byte[] WEB_PROLOGUE = Bytes.of(WHATSAPP_HEADER).append(WEB_VERSION)
+    public static final byte[] WEB_PROLOGUE = Bytes.of(WHATSAPP_HEADER)
+        .append(WEB_VERSION)
         .toByteArray();
     private static final byte[] MOBILE_VERSION = new byte[]{4, 0};
-    public static final byte[] MOBILE_PROLOGUE = Bytes.of(WHATSAPP_HEADER).append(MOBILE_VERSION)
+    public static final byte[] APP_PROLOGUE = Bytes.of(WHATSAPP_HEADER)
+        .append(MOBILE_VERSION)
         .toByteArray();
   }
 

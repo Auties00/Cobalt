@@ -4,66 +4,105 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicReference;
 
 abstract class Handler {
   private static final int DEFAULT_CORES = 10;
 
-  private ExecutorService service;
-  private CountDownLatch latch;
+  private final AtomicReference<ExecutorService> service;
+  private final AtomicReference<ExecutorService> fallbackService;
+  private final AtomicReference<CountDownLatch> latch;
+
+  public Handler(){
+    this.service = new AtomicReference<>();
+    this.fallbackService = new AtomicReference<>();
+    this.latch = new AtomicReference<>();
+  }
 
   protected void dispose() {
-    latch = null;
-    if (service == null) {
-      return;
+    var latchValue = latch.getAndSet(null);
+    if(latchValue != null) {
+      latchValue.countDown();
     }
-    service.shutdownNow();
+
+    var serviceValue = service.getAndSet(null);
+    if (serviceValue != null) {
+      serviceValue.shutdownNow();
+    }
+
+    var fallbackServiceValue = fallbackService.getAndSet(null);
+    if (fallbackServiceValue != null) {
+      fallbackServiceValue.shutdownNow();
+    }
   }
 
   protected CountDownLatch getOrCreateLatch() {
-    if (latch != null) {
-      return latch;
+    var value = latch.get();
+    if (value != null) {
+      return value;
     }
-    return this.latch = new CountDownLatch(1);
+    var newValue = new CountDownLatch(1);
+    latch.set(newValue);
+    return newValue;
   }
 
   protected void completeLatch() {
-    if (latch == null) {
+    var value = latch.get();
+    if (value == null) {
       return;
     }
-    latch.countDown();
+    value.countDown();
   }
 
   protected void awaitLatch() {
     try {
-      if (latch == null) {
+      var value = latch.get();
+      if (value == null) {
         return;
       }
-      latch.await();
+      value.await();
     } catch (InterruptedException exception) {
       throw new RuntimeException("Cannot await latch", exception);
     }
   }
 
   protected ExecutorService getOrCreateService() {
-    if (service != null && !service.isShutdown()) {
-      return service;
+    var value = service.get();
+    if (value != null && !value.isShutdown()) {
+      return value;
     }
-    return this.service = Executors.newSingleThreadExecutor();
+    var newValue = Executors.newSingleThreadExecutor();
+    service.set(newValue);
+    return newValue;
+  }
+
+  protected ExecutorService getOrCreateFallbackService() {
+    var value = fallbackService.get();
+    if (value != null && !value.isShutdown()) {
+      return value;
+    }
+    var newValue = Executors.newSingleThreadExecutor();
+    fallbackService.set(newValue);
+    return newValue;
   }
 
   protected ExecutorService getOrCreatePooledService() {
-    if (service != null && !service.isShutdown()) {
-      return service;
+    var value = service.get();
+    if (value != null && !value.isShutdown()) {
+      return value;
     }
-    return this.service = Executors.newFixedThreadPool(DEFAULT_CORES);
+    var newValue = Executors.newFixedThreadPool(DEFAULT_CORES);
+    service.set(newValue);
+    return newValue;
   }
 
   protected ScheduledExecutorService getOrCreateScheduledService() {
-    if (service != null && !service.isShutdown()) {
-      return (ScheduledExecutorService) service;
+    var value = service.get();
+    if (value != null && !value.isShutdown()) {
+      return (ScheduledExecutorService) value;
     }
-    var result = Executors.newSingleThreadScheduledExecutor();
-    this.service = result;
-    return result;
+    var newValue = Executors.newSingleThreadScheduledExecutor();
+    service.set(newValue);
+    return newValue;
   }
 }

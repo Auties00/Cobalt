@@ -53,6 +53,9 @@ public final class Keys
   @Getter
   private int id;
 
+  @Getter
+  private byte @NonNull [] prologue;
+
   /**
    * The secret key pair used for buffer messages
    */
@@ -166,13 +169,15 @@ public final class Keys
    * Returns a new instance of random keys
    *
    * @param id                   the unsigned id of these keys
+   * @param prologue             the prologue to use
    * @param useDefaultSerializer whether the default serializer should be used
    * @return a non-null instance of WhatsappKeys
    */
-  public static Keys random(int id, boolean useDefaultSerializer) {
+  public static Keys random(int id, byte[] prologue, boolean useDefaultSerializer) {
     var result = Keys.builder()
         .id(id)
         .useDefaultSerializer(useDefaultSerializer)
+        .prologue(prologue)
         .build();
     result.signedKeyPair(SignalSignedKeyPair.of(result.id(), result.identityKeyPair()));
     result.serialize(true);
@@ -183,14 +188,15 @@ public final class Keys
    * Returns the keys saved in memory or constructs a new clean instance
    *
    * @param id                   the id of this session
+   * @param prologue             the prologue to use
    * @param useDefaultSerializer whether the default serializer should be used
    * @return a non-null instance of WhatsappKeys
    */
-  public static Keys of(int id, boolean useDefaultSerializer) {
+  public static Keys of(int id, byte[] prologue, boolean useDefaultSerializer) {
     var deserializer = ControllerProviderLoader.findOnlyDeserializer(useDefaultSerializer);
     return deserializer.deserializeKeys(id)
         .map(store -> store.useDefaultSerializer(useDefaultSerializer))
-        .orElseGet(() -> random(id, useDefaultSerializer));
+        .orElseGet(() -> random(id, prologue, useDefaultSerializer));
   }
 
   /**

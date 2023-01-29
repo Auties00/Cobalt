@@ -1,8 +1,7 @@
 package it.auties.whatsapp.crypto;
 
 import static it.auties.bytes.Bytes.of;
-import static it.auties.whatsapp.util.Specification.Whatsapp.WEB_PROLOGUE;
-import static it.auties.whatsapp.util.Specification.Whatsapp.WEB_PROTOCOL;
+import static it.auties.whatsapp.util.Specification.Whatsapp.PROTOCOL;
 
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.controller.Keys;
@@ -17,11 +16,11 @@ public class Handshake {
 
   public Handshake(Keys keys) {
     this.keys = keys;
-    this.hash = WEB_PROTOCOL;
-    this.salt = WEB_PROTOCOL;
-    this.cryptoKey = WEB_PROTOCOL;
+    this.hash = PROTOCOL;
+    this.salt = PROTOCOL;
+    this.cryptoKey = PROTOCOL;
     this.counter = 0;
-    updateHash(WEB_PROLOGUE);
+    updateHash(keys.prologue());
   }
 
   public void updateHash(byte @NonNull [] data) {

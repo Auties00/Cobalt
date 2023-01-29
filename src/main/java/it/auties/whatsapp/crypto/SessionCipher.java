@@ -9,7 +9,7 @@ import static java.util.Objects.requireNonNull;
 
 import it.auties.bytes.Bytes;
 import it.auties.whatsapp.controller.Keys;
-import it.auties.whatsapp.exception.HmacValidationException;
+import it.auties.whatsapp.util.HmacValidationException;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
 import it.auties.whatsapp.model.signal.message.SignalMessage;

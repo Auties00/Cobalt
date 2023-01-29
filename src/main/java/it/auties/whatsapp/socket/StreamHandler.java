@@ -19,9 +19,6 @@ import it.auties.whatsapp.api.ErrorHandler.Location;
 import it.auties.whatsapp.api.SocketEvent;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.crypto.Hmac;
-import it.auties.whatsapp.exception.ErroneousNodeRequestException;
-import it.auties.whatsapp.exception.HmacValidationException;
-import it.auties.whatsapp.exception.UnknownStreamException;
 import it.auties.whatsapp.listener.OnNodeReceived;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
@@ -48,6 +45,7 @@ import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.serialization.ControllerProviderLoader;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Clock;
+import it.auties.whatsapp.util.HmacValidationException;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.Specification;
 import it.auties.whatsapp.util.Validate;
@@ -124,7 +122,7 @@ class StreamHandler extends Handler
     }
     socketHandler.errorHandler()
         .handleFailure(Location.STREAM,
-            new ErroneousNodeRequestException("Stream error(%s)".formatted(node), node));
+            new RuntimeException("Stream error: %s".formatted(node)));
   }
 
   private void digestChatState(Node node) {
@@ -455,7 +453,7 @@ class StreamHandler extends Handler
   private void digestError(Node node) {
     if (node.hasNode("bad-mac")) {
       socketHandler.errorHandler()
-          .handleFailure(CRYPTOGRAPHY, new UnknownStreamException("Detected a bad mac"));
+          .handleFailure(CRYPTOGRAPHY, new RuntimeException("Detected a bad mac"));
       return;
     }
     var conflict = node.findNode("conflict");

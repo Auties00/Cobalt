@@ -9,7 +9,7 @@ import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
 
 import it.auties.whatsapp.api.ErrorHandler.Location;
-import it.auties.whatsapp.exception.HmacValidationException;
+import it.auties.whatsapp.util.HmacValidationException;
 import it.auties.whatsapp.util.Exceptions;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;

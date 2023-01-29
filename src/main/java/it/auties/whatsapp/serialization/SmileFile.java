@@ -62,10 +62,15 @@ final class SmileFile
 
   @SuppressWarnings("ResultOfMethodCallIgnored")
   private void writeSync(Object input) {
-    try (var channel = FileChannel.open(file, StandardOpenOption.WRITE)) {
+    try {
       if (Files.notExists(file)) {
         Files.createFile(file);
       }
+    }catch (IOException ignored){
+
+    }
+
+    try (var channel = FileChannel.open(file, StandardOpenOption.WRITE)) {
       var lock = channel.lock();
       var result = new ByteArrayOutputStream();
       var gzipOutputStream = new GZIPOutputStream(result);
@@ -74,6 +79,7 @@ final class SmileFile
       channel.write(ByteBuffer.wrap(result.toByteArray()));
       lock.release();
     } catch (NoSuchFileException | OverlappingFileLockException ignored) {
+      
     } catch (IOException | NonWritableChannelException exception) {
       throw new RuntimeException("Cannot write to file", exception);
     }

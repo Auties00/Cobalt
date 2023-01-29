@@ -13,6 +13,9 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+/**
+ * A model class that holds a payload about a business link info.
+ */
 @AllArgsConstructor
 @Data
 @Accessors(fluent = true)
@@ -22,18 +25,33 @@ import lombok.extern.jackson.Jacksonized;
 public class BusinessAccountLinkInfo
     implements ProtobufMessage {
 
+  /**
+   * The business id for this link
+   */
   @ProtobufProperty(index = 1, name = "whatsappBizAcctFbid", type = UINT64)
-  private long whatsappBizAccountFacebookId;
+  private long businessId;
 
+  /**
+   * The phone number of this link
+   */
   @ProtobufProperty(index = 2, name = "whatsappAcctNumber", type = STRING)
-  private String whatsappAcctNumber;
+  private String phoneNumber;
 
+  /**
+   * The issue time of this link
+   */
   @ProtobufProperty(index = 3, name = "issueTime", type = UINT64)
   private long issueTime;
 
+  /**
+   * The type of storage
+   */
   @ProtobufProperty(index = 4, name = "hostStorage", type = MESSAGE)
   private BusinessStorageType hostStorage;
 
+  /**
+   * The type of account
+   */
   @ProtobufProperty(index = 5, name = "accountType", type = MESSAGE)
   private BusinessAccountType accountType;
 }
