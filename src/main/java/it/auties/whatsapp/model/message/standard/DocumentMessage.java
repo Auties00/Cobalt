@@ -8,6 +8,7 @@ import static it.auties.whatsapp.model.message.model.MediaMessageType.DOCUMENT;
 import static it.auties.whatsapp.util.Medias.Format.FILE;
 
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -22,7 +23,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
@@ -37,9 +37,7 @@ import lombok.extern.jackson.Jacksonized;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class DocumentMessage
-    extends MediaMessage {
-
+public final class DocumentMessage extends MediaMessage {
   /**
    * The upload url of the encoded document that this object wraps
    */
@@ -114,6 +112,27 @@ public final class DocumentMessage
   @ProtobufProperty(index = 16, type = BYTES)
   private byte[] thumbnail;
 
+  @ProtobufProperty(index = 12, name = "contactVcard", type = ProtobufType.BOOL)
+  private Boolean contactVcard;
+
+  @ProtobufProperty(index = 13, name = "thumbnailDirectPath", type = ProtobufType.STRING)
+  private String thumbnailDirectPath;
+
+  @ProtobufProperty(index = 14, name = "thumbnailSha256", type = ProtobufType.BYTES)
+  private byte[] thumbnailSha256;
+
+  @ProtobufProperty(index = 15, name = "thumbnailEncSha256", type = ProtobufType.BYTES)
+  private byte[] thumbnailEncSha256;
+
+  @ProtobufProperty(index = 18, name = "thumbnailHeight", type = ProtobufType.UINT32)
+  private Integer thumbnailHeight;
+
+  @ProtobufProperty(index = 19, name = "thumbnailWidth", type = ProtobufType.UINT32)
+  private Integer thumbnailWidth;
+
+  @ProtobufProperty(index = 20, name = "caption", type = ProtobufType.STRING)
+  private String caption;
+
   /**
    * Constructs a new builder to create a DocumentMessage. The result can be later sent using
    * {@link Whatsapp#sendMessage(MessageInfo)}
@@ -129,24 +148,14 @@ public final class DocumentMessage
    * @return a non-null new message
    */
   @Builder(builderClassName = "SimpleDocumentMessageBuilder", builderMethodName = "simpleBuilder")
-  private static DocumentMessage customBuilder(byte @NonNull [] media, String mimeType,
-      String title, int pageCount, String fileName, byte[] thumbnail, ContextInfo contextInfo) {
-    return DocumentMessage.builder()
-        .decodedMedia(media)
-        .mediaKeyTimestamp(Clock.now())
-        .mimetype(Optional.ofNullable(mimeType)
-            .or(() -> Medias.getMimeType(fileName))
-            .or(() -> Medias.getMimeType(media))
-            .orElse(DOCUMENT.defaultMimeType()))
-        .fileName(fileName)
-        .pageCount(pageCount)
-        .title(title)
-        .thumbnail(thumbnail != null ?
-            thumbnail :
-            Medias.getThumbnail(media, FILE)
-                .orElse(null))
-        .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
-        .build();
+  private static DocumentMessage customBuilder(byte[] media, String mimeType, String title,
+      int pageCount, String fileName, byte[] thumbnail, ContextInfo contextInfo) {
+    return DocumentMessage.builder().decodedMedia(media).mediaKeyTimestamp(Clock.now()).mimetype(
+            Optional.ofNullable(mimeType).or(() -> Medias.getMimeType(fileName))
+                .or(() -> Medias.getMimeType(media)).orElse(DOCUMENT.defaultMimeType()))
+        .fileName(fileName).pageCount(pageCount).title(title)
+        .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, FILE).orElse(null))
+        .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new)).build();
   }
 
   /**

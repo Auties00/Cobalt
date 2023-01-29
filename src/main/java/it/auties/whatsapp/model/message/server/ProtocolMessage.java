@@ -5,7 +5,11 @@ import static it.auties.protobuf.base.ProtobufType.UINT64;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufType;
+import it.auties.whatsapp.model.chat.ChatDisappear;
+import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.ServerMessage;
@@ -32,9 +36,7 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class ProtocolMessage
-    implements ServerMessage {
-
+public final class ProtocolMessage implements ServerMessage {
   /**
    * The key of message that this server message regards
    */
@@ -44,7 +46,7 @@ public final class ProtocolMessage
   /**
    * The type of this server message
    */
-  @ProtobufProperty(index = 2, type = MESSAGE, implementation = ProtocolMessageType.class)
+  @ProtobufProperty(index = 2, type = MESSAGE, implementation = ProtocolMessage.ProtocolMessageType.class)
   private ProtocolMessageType protocolType;
 
   /**
@@ -96,6 +98,21 @@ public final class ProtocolMessage
   @ProtobufProperty(index = 10, type = MESSAGE, implementation = AppStateFatalExceptionNotification.class)
   private AppStateFatalExceptionNotification appStateFatalExceptionNotification;
 
+  @ProtobufProperty(index = 11, name = "disappearingMode", type = ProtobufType.MESSAGE)
+  private ChatDisappear disappearingMode;
+
+  @ProtobufProperty(index = 14, name = "editedMessage", type = ProtobufType.MESSAGE)
+  private MessageContainer editedMessage;
+
+  @ProtobufProperty(index = 15, name = "timestampMs", type = ProtobufType.INT64)
+  private Long timestampMs;
+
+  @ProtobufProperty(index = 16, name = "peerDataOperationRequestMessage", type = ProtobufType.MESSAGE)
+  private PeerDataOperationRequestMessage peerDataOperationRequestMessage;
+
+  @ProtobufProperty(index = 17, name = "peerDataOperationRequestResponseMessage", type = ProtobufType.MESSAGE)
+  private PeerDataOperationRequestResponseMessage peerDataOperationRequestResponseMessage;
+
   @Override
   public MessageType type() {
     return MessageType.PROTOCOL;
@@ -107,8 +124,9 @@ public final class ProtocolMessage
    */
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum ProtocolMessageType
-      implements ProtobufMessage {
+  @ProtobufName("Type")
+  public enum ProtocolMessageType implements ProtobufMessage {
+
     /**
      * A {@link ProtocolMessage} that notifies that a message was deleted for everyone in a chat
      */
@@ -145,15 +163,12 @@ public final class ProtocolMessage
      * App state fatal exception notification
      */
     EXCEPTION_NOTIFICATION(10);
-
     @Getter
     private final int index;
 
     @JsonCreator
     public static ProtocolMessageType of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
   }

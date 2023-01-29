@@ -34,9 +34,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @ProtobufName("PollUpdateMessage")
-public final class PollUpdateMessage
-    implements Message {
-
+public final class PollUpdateMessage implements Message {
   private static final String POLL_NAME = "Poll Vote";
 
   /**
@@ -91,14 +89,13 @@ public final class PollUpdateMessage
    * @return a non-null new message
    */
   @Builder(builderClassName = "SimplePollUpdateMessageBuilder", builderMethodName = "simpleBuilder")
-  private static PollUpdateMessage customBuilder(@NonNull MessageInfo poll,
-      @NonNull List<PollOption> votes) {
+  private static PollUpdateMessage customBuilder(@NonNull
+  MessageInfo poll, @NonNull
+  List<PollOption> votes) {
     Validate.isTrue(poll.message().type() == MessageType.POLL_CREATION,
         "Expected a poll, got %s".formatted(poll.message().type()));
-    return PollUpdateMessage.builder()
-        .pollCreationMessageKey(poll.key())
-        .pollCreationMessage((PollCreationMessage) poll.message().content())
-        .votes(votes)
+    return PollUpdateMessage.builder().pollCreationMessageKey(poll.key())
+        .pollCreationMessage(((PollCreationMessage) (poll.message().content()))).votes(votes)
         .build();
   }
 

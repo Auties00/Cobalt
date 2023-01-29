@@ -5,6 +5,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import java.util.Arrays;
 import lombok.AllArgsConstructor;
@@ -19,10 +20,8 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class UserAgent
-    implements ProtobufMessage {
-
-  @ProtobufProperty(index = 1, type = MESSAGE, implementation = UserAgentPlatform.class)
+public class UserAgent implements ProtobufMessage {
+  @ProtobufProperty(index = 1, type = MESSAGE, implementation = UserAgent.UserAgentPlatform.class)
   private UserAgentPlatform platform;
 
   @ProtobufProperty(index = 2, type = MESSAGE, implementation = Version.class)
@@ -49,7 +48,7 @@ public class UserAgent
   @ProtobufProperty(index = 9, type = STRING)
   private String phoneId;
 
-  @ProtobufProperty(index = 10, type = MESSAGE, implementation = UserAgentReleaseChannel.class)
+  @ProtobufProperty(index = 10, type = MESSAGE, implementation = UserAgent.UserAgentReleaseChannel.class)
   private UserAgentReleaseChannel releaseChannel;
 
   @ProtobufProperty(index = 11, type = STRING)
@@ -63,8 +62,9 @@ public class UserAgent
 
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum UserAgentPlatform
-      implements ProtobufMessage {
+  @ProtobufName("Platform")
+  public enum UserAgentPlatform implements ProtobufMessage {
+
     ANDROID(0),
     IOS(1),
     WINDOWS_PHONE(2),
@@ -90,36 +90,37 @@ public class UserAgent
     IG_LITE_ANDROID(22),
     PAGE(23),
     MACOS(24),
-    VR(25);
-
+    VR(25),
+    OCULUS_CALL(26),
+    MILAN(27),
+    CAPI(28),
+    WEAROS(29),
+    ARDEVICE(30),
+    VRDEVICE(31);
     @Getter
     private final int index;
 
     @JsonCreator
     public static UserAgentPlatform of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
   }
 
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum UserAgentReleaseChannel
-      implements ProtobufMessage {
+  @ProtobufName("ReleaseChannel")
+  public enum UserAgentReleaseChannel implements ProtobufMessage {
+
     RELEASE(0),
     BETA(1),
     ALPHA(2),
     DEBUG(3);
-
     @Getter
     private final int index;
 
     public static UserAgentReleaseChannel of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
   }

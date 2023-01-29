@@ -25,9 +25,7 @@ import lombok.extern.jackson.Jacksonized;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Accessors(fluent = true)
-public final class ContactMessage
-    extends ContextualMessage {
-
+public final class ContactMessage extends ContextualMessage {
   /**
    * The name of the contact that this message wraps
    */

@@ -4,6 +4,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.button.ButtonSection;
 import it.auties.whatsapp.model.info.ContextInfo;
@@ -34,10 +35,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class ListMessage
-    extends ContextualMessage
-    implements ButtonMessage {
-
+public final class ListMessage extends ContextualMessage implements ButtonMessage {
   /**
    * The title of this message
    */
@@ -59,7 +57,7 @@ public final class ListMessage
   /**
    * The type of this message
    */
-  @ProtobufProperty(index = 4, type = MESSAGE, implementation = Type.class)
+  @ProtobufProperty(index = 4, type = MESSAGE, implementation = ListMessage.Type.class)
   private Type type;
 
   /**
@@ -97,7 +95,9 @@ public final class ListMessage
    */
   @AllArgsConstructor
   @Accessors(fluent = true)
+  @ProtobufName("ListType")
   public enum Type {
+
     /**
      * Unknown
      */
@@ -110,21 +110,17 @@ public final class ListMessage
      * A list of products
      */
     PRODUCT_LIST(2);
-
     @Getter
     private final int index;
 
     @JsonCreator
     public static Type of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
   }
 
   public static class ListMessageBuilder {
-
     public ListMessageBuilder sections(List<ButtonSection> sections) {
       if (this.sections == null) {
         this.sections = new ArrayList<>();

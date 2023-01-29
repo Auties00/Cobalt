@@ -72,7 +72,6 @@ public abstract sealed class MediaMessage
       this.decodedMedia = Medias.download(this)
           .orElse(null);
     }
-
     return Optional.ofNullable(decodedMedia);
   }
 
@@ -100,7 +99,8 @@ public abstract sealed class MediaMessage
     Validate.isTrue(result.isEmpty(), "Cannot save media");
     try {
       Files.createDirectories(path.getParent());
-      Files.write(path, result.get(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+      Files.write(path, result.get(), StandardOpenOption.CREATE,
+          StandardOpenOption.TRUNCATE_EXISTING);
     } catch (IOException exception) {
       throw new UncheckedIOException("Cannot write media to file", exception);
     }

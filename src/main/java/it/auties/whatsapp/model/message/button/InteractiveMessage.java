@@ -5,6 +5,7 @@ import static java.util.Objects.requireNonNullElseGet;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.business.BusinessCollection;
 import it.auties.whatsapp.model.business.BusinessNativeFlow;
@@ -40,10 +41,8 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @EqualsAndHashCode(callSuper = true)
 @Accessors(fluent = true)
-public final class InteractiveMessage
-    extends ContextualMessage
-    implements ButtonMessage, TemplateFormatter {
-
+public final class InteractiveMessage extends ContextualMessage implements ButtonMessage,
+    TemplateFormatter {
   /**
    * Product header
    */
@@ -100,13 +99,9 @@ public final class InteractiveMessage
   @Builder(builderClassName = "ShopInteractiveMessageBuilder", builderMethodName = "withShopMessageBuilder")
   private static InteractiveMessage shopBuilder(ProductHeader header, String body, String footer,
       BusinessShop content, ContextInfo contextInfo) {
-    return InteractiveMessage.builder()
-        .header(header)
-        .body(ProductBody.of(body))
-        .footer(ProductFooter.of(footer))
-        .shopContent(content)
-        .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new))
-        .build();
+    return InteractiveMessage.builder().header(header).body(ProductBody.of(body))
+        .footer(ProductFooter.of(footer)).shopContent(content)
+        .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new)).build();
   }
 
   /**
@@ -121,15 +116,10 @@ public final class InteractiveMessage
    */
   @Builder(builderClassName = "CollectionInteractiveMessageBuilder", builderMethodName = "withCollectionMessageBuilder")
   private static InteractiveMessage collectionBuilder(ProductHeader header, String body,
-      String footer,
-      BusinessCollection content, ContextInfo contextInfo) {
-    return InteractiveMessage.builder()
-        .header(header)
-        .body(ProductBody.of(body))
-        .footer(ProductFooter.of(footer))
-        .collectionContent(content)
-        .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new))
-        .build();
+      String footer, BusinessCollection content, ContextInfo contextInfo) {
+    return InteractiveMessage.builder().header(header).body(ProductBody.of(body))
+        .footer(ProductFooter.of(footer)).collectionContent(content)
+        .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new)).build();
   }
 
   /**
@@ -144,15 +134,10 @@ public final class InteractiveMessage
    */
   @Builder(builderClassName = "NativeFlowInteractiveMessageBuilder", builderMethodName = "withNativeFlowMessageBuilder")
   private static InteractiveMessage nativeFlowBuilder(ProductHeader header, String body,
-      String footer,
-      BusinessNativeFlow content, ContextInfo contextInfo) {
-    return InteractiveMessage.builder()
-        .header(header)
-        .body(ProductBody.of(body))
-        .footer(ProductFooter.of(footer))
-        .nativeFlowContent(content)
-        .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new))
-        .build();
+      String footer, BusinessNativeFlow content, ContextInfo contextInfo) {
+    return InteractiveMessage.builder().header(header).body(ProductBody.of(body))
+        .footer(ProductFooter.of(footer)).nativeFlowContent(content)
+        .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new)).build();
   }
 
   /**
@@ -189,8 +174,10 @@ public final class InteractiveMessage
    */
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum ContentType
-      implements ProtobufMessage {
+  @ProtobufName("InteractiveMessageType")
+  @ProtobufName("InteractiveResponseMessageType")
+  public enum ContentType implements ProtobufMessage {
+
     /**
      * No content
      */
@@ -207,15 +194,12 @@ public final class InteractiveMessage
      * Native flow
      */
     NATIVE_FLOW_MESSAGE(3);
-
     @Getter
     private final int index;
 
     @JsonCreator
     public static ContentType of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(NONE);
     }
   }

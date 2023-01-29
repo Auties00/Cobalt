@@ -119,7 +119,7 @@ public class SocketHandler extends Handler
   @Getter
   @NonNull
   private Store store;
-  
+
   private CompletableFuture<Void> future;
 
   public SocketHandler(@NonNull Whatsapp whatsapp, @NonNull Options options, @NonNull Store store,
@@ -142,22 +142,19 @@ public class SocketHandler extends Handler
     if (!options.automaticallySubscribeToPresences()) {
       return;
     }
-
     store().listeners().add((OnNewContact) contact -> {
-      if(!store().initialAppSync()){
+      if (!store().initialAppSync()) {
         return;
       }
-
       whatsapp.subscribeToPresence(contact);
     });
   }
 
   private void onShutdown(boolean reconnect) {
-    if(state != SocketState.LOGGED_OUT && state != SocketState.RESTORE) {
+    if (state != SocketState.LOGGED_OUT && state != SocketState.RESTORE) {
       keys.dispose();
       store.dispose();
     }
-
     if (!reconnect) {
       onSocketEvent(SocketEvent.CLOSE);
       authHandler.dispose();
@@ -175,7 +172,6 @@ public class SocketHandler extends Handler
     if (state == SocketState.CONNECTED) {
       return;
     }
-
     this.state = SocketState.WAITING;
     onSocketEvent(SocketEvent.OPEN);
     authHandler.createHandshake();
@@ -193,8 +189,7 @@ public class SocketHandler extends Handler
         .isEmpty()) {
       return;
     }
-
-    if (state != SocketState.CONNECTED && state != SocketState.RESTORE)  {
+    if (state != SocketState.CONNECTED && state != SocketState.RESTORE) {
       var header = message.decoded()
           .getFirst()
           .toByteArray();
@@ -202,7 +197,6 @@ public class SocketHandler extends Handler
           .thenRunAsync(() -> state(SocketState.CONNECTED));
       return;
     }
-
     message.toNodes(keys)
         .forEach(this::handleNode);
   }
@@ -225,7 +219,8 @@ public class SocketHandler extends Handler
       if (future == null || future.isDone()) {
         this.future = new CompletableFuture<>();
       }
-      getWebSocketContainer().connectToServer(this, URI.create(Specification.Whatsapp.WEB_ENDPOINT));
+      getWebSocketContainer().connectToServer(this,
+          URI.create(Specification.Whatsapp.WEB_ENDPOINT));
       return future;
     } catch (IOException | DeploymentException exception) {
       throw new RuntimeException("Cannot connect to socket", exception);
@@ -236,7 +231,7 @@ public class SocketHandler extends Handler
     try {
       state(SocketState.of(reason));
       keys.clearReadWriteKey();
-      return switch (reason){
+      return switch (reason) {
         case DISCONNECTED -> {
           session.close();
           yield CompletableFuture.completedFuture(null);
@@ -270,11 +265,10 @@ public class SocketHandler extends Handler
 
   @OnClose
   public void onClose() {
-    if(state == SocketState.CONNECTED){
+    if (state == SocketState.CONNECTED) {
       disconnect(DisconnectReason.RECONNECTING);
       return;
     }
-
     onDisconnected(state.toReason());
     onShutdown(state == SocketState.RECONNECTING);
     if (future != null && !future.isDone() && state.isDisconnected()) {
@@ -289,7 +283,6 @@ public class SocketHandler extends Handler
       onClose();
       return;
     }
-
     onSocketEvent(SocketEvent.ERROR);
     errorHandler.handleFailure(UNKNOWN, throwable);
   }
@@ -659,7 +652,7 @@ public class SocketHandler extends Handler
 
   protected void onReply(MessageInfo info) {
     var quoted = info.quotedMessage().orElse(null);
-    if(quoted == null){
+    if (quoted == null) {
       return;
     }
     store.resolvePendingReply(info);
@@ -743,12 +736,11 @@ public class SocketHandler extends Handler
       listener.onNewContact(contact);
     });
   }
-  
+
   public void callListenersSync(Consumer<Listener> consumer) {
-    if(state == SocketState.DISCONNECTED || state == SocketState.LOGGED_OUT){
+    if (state == SocketState.DISCONNECTED || state == SocketState.LOGGED_OUT) {
       return;
     }
-
     var service = getOrCreatePooledService();
     var futures = store.listeners()
         .stream()
@@ -759,10 +751,9 @@ public class SocketHandler extends Handler
   }
 
   private void callListenersAsync(Consumer<Listener> consumer) {
-    if(state == SocketState.DISCONNECTED || state == SocketState.LOGGED_OUT){
+    if (state == SocketState.DISCONNECTED || state == SocketState.LOGGED_OUT) {
       return;
     }
-
     var service = getOrCreatePooledService();
     store.listeners()
         .forEach(listener -> service.execute(() -> consumer.accept(listener)));

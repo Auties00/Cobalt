@@ -25,7 +25,8 @@ import lombok.NonNull;
  * An abstract model class that represents a request made from the client to the server.
  */
 @SuppressWarnings("UnusedReturnValue")
-public record Request(String id, @NonNull Object body, @NonNull CompletableFuture<Node> future, Function<Node, Boolean> filter, Throwable caller)
+public record Request(String id, @NonNull Object body, @NonNull CompletableFuture<Node> future,
+                      Function<Node, Boolean> filter, Throwable caller)
     implements JacksonProvider {
 
   /**
@@ -112,7 +113,8 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
   public CompletableFuture<Void> sendWithNoResponse(@NonNull Session session, @NonNull Keys keys,
       @NonNull Store store) {
     return send(session, keys, store, false, false)
-        .thenRunAsync(() -> {});
+        .thenRunAsync(() -> {
+        });
   }
 
   /**
@@ -162,7 +164,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
               "Cannot process request %s with %s".formatted(this, response), response, caller));
       return true;
     }
-    if(filter != null && !filter.apply(response)){
+    if (filter != null && !filter.apply(response)) {
       return false;
     }
     future.complete(response);

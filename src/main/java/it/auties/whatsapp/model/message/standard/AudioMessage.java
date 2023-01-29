@@ -9,6 +9,7 @@ import static it.auties.protobuf.base.ProtobufType.UINT64;
 import static it.auties.whatsapp.model.message.model.MediaMessageType.AUDIO;
 
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -22,7 +23,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
@@ -37,9 +37,7 @@ import lombok.extern.jackson.Jacksonized;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class AudioMessage
-    extends MediaMessage {
-
+public final class AudioMessage extends MediaMessage {
   /**
    * The upload url of the encoded media that this object wraps
    */
@@ -114,6 +112,12 @@ public final class AudioMessage
   @ProtobufProperty(index = 18, type = BYTES)
   private byte[] streamingSidecar;
 
+  @ProtobufProperty(index = 19, name = "waveform", type = ProtobufType.BYTES)
+  private byte[] waveform;
+
+  @ProtobufProperty(index = 20, name = "backgroundArgb", type = ProtobufType.FIXED32)
+  private Integer backgroundArgb;
+
   /**
    * Constructs a new builder to create a AudioMessage. The result can be later sent using
    * {@link Whatsapp#sendMessage(MessageInfo)}
@@ -127,17 +131,12 @@ public final class AudioMessage
    * @return a non-null new message
    */
   @Builder(builderClassName = "SimpleAudioMessageBuilder", builderMethodName = "simpleBuilder")
-  private static AudioMessage customBuilder(byte @NonNull [] media, ContextInfo contextInfo,
+  private static AudioMessage customBuilder(byte[] media, ContextInfo contextInfo,
       String mimeType, boolean voiceMessage) {
     var duration = Medias.getDuration(media, true);
-    return AudioMessage.builder()
-        .decodedMedia(media)
-        .mediaKeyTimestamp(Clock.now())
+    return AudioMessage.builder().decodedMedia(media).mediaKeyTimestamp(Clock.now())
         .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
-        .duration(duration)
-        .mimetype(mimeType)
-        .voiceMessage(voiceMessage)
-        .build();
+        .duration(duration).mimetype(mimeType).voiceMessage(voiceMessage).build();
   }
 
   /**

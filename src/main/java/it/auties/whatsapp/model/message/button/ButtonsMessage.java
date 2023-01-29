@@ -40,10 +40,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class ButtonsMessage
-    extends ContextualMessage
-    implements ButtonMessage {
-
+public final class ButtonsMessage extends ContextualMessage implements ButtonMessage {
   /**
    * The text attached to this message
    */
@@ -102,7 +99,7 @@ public final class ButtonsMessage
   /**
    * The type of header
    */
-  @ProtobufProperty(index = 10, type = MESSAGE, implementation = HeaderType.class)
+  @ProtobufProperty(index = 10, type = MESSAGE, implementation = ButtonsMessage.HeaderType.class)
   private HeaderType headerType;
 
   /**
@@ -134,8 +131,7 @@ public final class ButtonsMessage
    */
   @Builder(builderClassName = "TextButtonsMessageBuilder", builderMethodName = "withTextHeaderBuilder")
   private static ButtonsMessage textBuilder(String header, String body, String footer,
-      ContextInfo contextInfo,
-      List<Button> buttons) {
+      ContextInfo contextInfo, List<Button> buttons) {
     return createBuilder(HeaderType.TEXT, body, footer, contextInfo, buttons).headerText(header)
         .build();
   }
@@ -155,8 +151,7 @@ public final class ButtonsMessage
   private static ButtonsMessage documentBuilder(DocumentMessage header, String body, String footer,
       ContextInfo contextInfo, List<Button> buttons) {
     return createBuilder(HeaderType.DOCUMENT, body, footer, contextInfo, buttons).headerDocument(
-            header)
-        .build();
+        header).build();
   }
 
   /**
@@ -172,8 +167,7 @@ public final class ButtonsMessage
    */
   @Builder(builderClassName = "ImageButtonsMessageBuilder", builderMethodName = "withImageHeaderBuilder")
   private static ButtonsMessage imageBuilder(ImageMessage header, String body, String footer,
-      ContextInfo contextInfo,
-      List<Button> buttons) {
+      ContextInfo contextInfo, List<Button> buttons) {
     return createBuilder(HeaderType.IMAGE, body, footer, contextInfo, buttons).headerImage(header)
         .build();
   }
@@ -191,8 +185,7 @@ public final class ButtonsMessage
    */
   @Builder(builderClassName = "VideoButtonsMessageBuilder", builderMethodName = "withVideoHeaderBuilder")
   private static ButtonsMessage videoBuilder(VideoMessage header, String body, String footer,
-      ContextInfo contextInfo,
-      List<Button> buttons) {
+      ContextInfo contextInfo, List<Button> buttons) {
     return createBuilder(HeaderType.VIDEO, body, footer, contextInfo, buttons).headerVideo(header)
         .build();
   }
@@ -212,16 +205,12 @@ public final class ButtonsMessage
   private static ButtonsMessage locationBuilder(LocationMessage header, String body, String footer,
       ContextInfo contextInfo, List<Button> buttons) {
     return createBuilder(HeaderType.LOCATION, body, footer, contextInfo, buttons).headerLocation(
-            header)
-        .build();
+        header).build();
   }
 
   private static ButtonsMessageBuilder createBuilder(HeaderType image, String body, String footer,
       ContextInfo contextInfo, List<Button> buttons) {
-    return ButtonsMessage.builder()
-        .headerType(image)
-        .body(body)
-        .footer(footer)
+    return ButtonsMessage.builder().headerType(image).body(body).footer(footer)
         .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new))
         .buttons(requireNonNullElseGet(buttons, List::of));
   }
@@ -231,14 +220,30 @@ public final class ButtonsMessage
     return MessageType.BUTTONS;
   }
 
+  public ButtonsMessage.HeaderType headerType() {
+    if (headerText != null) {
+      return ButtonsMessage.HeaderType.EMPTY;
+    }
+    if (headerDocument != null) {
+      return ButtonsMessage.HeaderType.TEXT;
+    }
+    if (headerImage != null) {
+      return ButtonsMessage.HeaderType.DOCUMENT;
+    }
+    if (headerVideo != null) {
+      return ButtonsMessage.HeaderType.IMAGE;
+    }
+    return ButtonsMessage.HeaderType.VIDEO;
+  }
+
   /**
    * The constants of this enumerated type describe the various of types of headers that a
    * {@link ButtonsMessage} can have
    */
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum HeaderType
-      implements ProtobufMessage {
+  public enum HeaderType implements ProtobufMessage {
+
     /**
      * Unknown
      */
@@ -267,21 +272,17 @@ public final class ButtonsMessage
      * Location message
      */
     LOCATION(6);
-
     @Getter
     private final int index;
 
     @JsonCreator
     public static HeaderType of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(HeaderType.UNKNOWN);
     }
   }
 
   public static class ButtonsMessageBuilder {
-
     public ButtonsMessageBuilder buttons(List<Button> buttons) {
       if (this.buttons == null) {
         this.buttons = new ArrayList<>();

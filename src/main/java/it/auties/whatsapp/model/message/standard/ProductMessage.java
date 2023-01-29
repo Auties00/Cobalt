@@ -29,10 +29,7 @@ import lombok.extern.jackson.Jacksonized;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class ProductMessage
-    extends ContextualMessage
-    implements ButtonMessage {
-
+public final class ProductMessage extends ContextualMessage implements ButtonMessage {
   /**
    * The product that this message wraps
    */

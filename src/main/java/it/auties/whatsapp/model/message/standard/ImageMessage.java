@@ -10,6 +10,7 @@ import static it.auties.whatsapp.util.Medias.Format.JPG;
 import static java.util.Objects.requireNonNullElse;
 
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -26,7 +27,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
@@ -41,9 +41,7 @@ import lombok.extern.jackson.Jacksonized;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class ImageMessage
-    extends MediaMessage {
-
+public final class ImageMessage extends MediaMessage {
   /**
    * The upload url of the encoded image that this object wraps
    */
@@ -166,6 +164,21 @@ public final class ImageMessage
   @ProtobufProperty(index = 24, type = BYTES)
   private byte[] midQualityFileEncSha256;
 
+  @ProtobufProperty(index = 25, name = "viewOnce", type = ProtobufType.BOOL)
+  private Boolean viewOnce;
+
+  @ProtobufProperty(index = 26, name = "thumbnailDirectPath", type = ProtobufType.STRING)
+  private String thumbnailDirectPath;
+
+  @ProtobufProperty(index = 27, name = "thumbnailSha256", type = ProtobufType.BYTES)
+  private byte[] thumbnailSha256;
+
+  @ProtobufProperty(index = 28, name = "thumbnailEncSha256", type = ProtobufType.BYTES)
+  private byte[] thumbnailEncSha256;
+
+  @ProtobufProperty(index = 29, name = "staticUrl", type = ProtobufType.STRING)
+  private String staticUrl;
+
   /**
    * Constructs a new builder to create a ImageMessage. The result can be later sent using
    * {@link Whatsapp#sendMessage(MessageInfo)}
@@ -179,22 +192,14 @@ public final class ImageMessage
    * @return a non-null new message
    */
   @Builder(builderClassName = "SimpleImageBuilder", builderMethodName = "simpleBuilder")
-  private static ImageMessage customBuilder(byte @NonNull [] media, String mimeType, String caption,
+  private static ImageMessage customBuilder(byte[] media, String mimeType, String caption,
       byte[] thumbnail, ContextInfo contextInfo) {
     var dimensions = Medias.getDimensions(media, false);
-    return ImageMessage.builder()
-        .decodedMedia(media)
-        .mediaKeyTimestamp(Clock.now())
-        .mimetype(requireNonNullElse(mimeType, IMAGE.defaultMimeType()))
-        .caption(caption)
-        .width(dimensions.width())
-        .height(dimensions.height())
-        .thumbnail(thumbnail != null ?
-            thumbnail :
-            Medias.getThumbnail(media, JPG)
-                .orElse(null))
-        .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
-        .build();
+    return ImageMessage.builder().decodedMedia(media).mediaKeyTimestamp(Clock.now())
+        .mimetype(requireNonNullElse(mimeType, IMAGE.defaultMimeType())).caption(caption)
+        .width(dimensions.width()).height(dimensions.height())
+        .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, JPG).orElse(null))
+        .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new)).build();
   }
 
   /**
@@ -207,10 +212,10 @@ public final class ImageMessage
     return MediaMessageType.IMAGE;
   }
 
-  public static abstract class ImageMessageBuilder<C extends ImageMessage, B extends ImageMessageBuilder<C, B>>
-      extends MediaMessageBuilder<C, B> {
-
-    public B interactiveAnnotations(List<InteractiveLocationAnnotation> interactiveAnnotations) {
+  public abstract static class ImageMessageBuilder<C extends ImageMessage, B extends ImageMessageBuilder<C, B>> extends
+      MediaMessageBuilder<C, B> {
+    public B interactiveAnnotations(
+        List<InteractiveLocationAnnotation> interactiveAnnotations) {
       if (this.interactiveAnnotations == null) {
         this.interactiveAnnotations = new ArrayList<>();
       }

@@ -20,9 +20,7 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class HydratedQuickReplyButton
-    implements ProtobufMessage {
-
+public class HydratedQuickReplyButton implements ProtobufMessage {
   /**
    * The text of this button
    */
@@ -41,7 +39,8 @@ public class HydratedQuickReplyButton
    * @param text the non-null text
    * @return a non-null HydratedQuickReplyButton
    */
-  public static HydratedQuickReplyButton of(@NonNull String text) {
+  public static HydratedQuickReplyButton of(@NonNull
+  String text) {
     return new HydratedQuickReplyButton(text, Bytes.ofRandom(6).toHex());
   }
 }

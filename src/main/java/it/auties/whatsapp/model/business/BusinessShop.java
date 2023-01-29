@@ -5,6 +5,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import java.util.Arrays;
 import lombok.AllArgsConstructor;
@@ -22,9 +23,8 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class BusinessShop
-    implements ProtobufMessage {
-
+@ProtobufName("InteractiveMessage.ShopMessage")
+public final class BusinessShop implements ProtobufMessage {
   /**
    * The id of the shop
    */
@@ -34,7 +34,7 @@ public final class BusinessShop
   /**
    * The surface of the shop
    */
-  @ProtobufProperty(index = 2, type = MESSAGE, implementation = SurfaceType.class)
+  @ProtobufProperty(index = 2, type = MESSAGE, implementation = BusinessShop.SurfaceType.class)
   private SurfaceType surfaceType;
 
   /**
@@ -49,7 +49,9 @@ public final class BusinessShop
    */
   @AllArgsConstructor
   @Accessors(fluent = true)
+  @ProtobufName("Surface")
   public enum SurfaceType {
+
     /**
      * Unknown
      */
@@ -66,14 +68,11 @@ public final class BusinessShop
      * Whatsapp
      */
     WHATSAPP(3);
-
     @Getter
     private final int index;
 
     public static SurfaceType of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
   }

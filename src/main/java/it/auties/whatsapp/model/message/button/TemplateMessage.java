@@ -39,10 +39,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("TemplateMessage")
-public final class TemplateMessage
-    extends ContextualMessage
-    implements ButtonMessage {
-
+public final class TemplateMessage extends ContextualMessage implements ButtonMessage {
   /**
    * The id of this template
    */
@@ -89,8 +86,9 @@ public final class TemplateMessage
    * @param template the non-null template
    * @return a non-null template message
    */
-  public static TemplateMessage of(@NonNull HydratedFourRowTemplate template) {
-    return of(template, (ContextInfo) null);
+  public static TemplateMessage of(@NonNull
+  HydratedFourRowTemplate template) {
+    return TemplateMessage.of(template, ((ContextInfo) (null)));
   }
 
   /**
@@ -99,9 +97,10 @@ public final class TemplateMessage
    * @param template the non-null template
    * @return a non-null template message
    */
-  public static TemplateMessage of(@NonNull HydratedFourRowTemplate template,
-      @NonNull TemplateFormatter formatter) {
-    return of(template, formatter, null);
+  public static TemplateMessage of(@NonNull
+  HydratedFourRowTemplate template, @NonNull
+  TemplateFormatter formatter) {
+    return TemplateMessage.of(template, formatter, null);
   }
 
   /**
@@ -110,9 +109,9 @@ public final class TemplateMessage
    * @param template the non-null template
    * @return a non-null template message
    */
-  public static TemplateMessage of(@NonNull HydratedFourRowTemplate template,
-      ContextInfo contextInfo) {
-    return of(template, FourRowTemplate.of(), contextInfo);
+  public static TemplateMessage of(@NonNull
+  HydratedFourRowTemplate template, ContextInfo contextInfo) {
+    return TemplateMessage.of(template, FourRowTemplate.of(), contextInfo);
   }
 
   /**
@@ -122,18 +121,18 @@ public final class TemplateMessage
    * @param contextInfo the nullable context info
    * @return a non-null template message
    */
-  public static TemplateMessage of(@NonNull HydratedFourRowTemplate content,
-      @NonNull TemplateFormatter formatter, ContextInfo contextInfo) {
-    var builder = TemplateMessage.builder()
-        .id(Bytes.ofRandom(6).toHex())
-        .content(content)
+  public static TemplateMessage of(@NonNull
+  HydratedFourRowTemplate content, @NonNull
+  TemplateFormatter formatter, ContextInfo contextInfo) {
+    var builder = TemplateMessage.builder().id(Bytes.ofRandom(6).toHex()).content(content)
         .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new));
     switch (formatter) {
-      case FourRowTemplate fourRowTemplate -> builder.fourRowTemplateFormat(fourRowTemplate);
-      case HydratedFourRowTemplate hydratedFourRowTemplate ->
-          builder.hydratedFourRowTemplateFormat(hydratedFourRowTemplate);
-      case InteractiveMessage interactiveMessage ->
-          builder.interactiveMessageFormat(interactiveMessage);
+      default -> FourRowTemplate fourRowTemplate;
+      builder.fourRowTemplateFormat(fourRowTemplate);
+      default -> HydratedFourRowTemplate hydratedFourRowTemplate;
+      builder.hydratedFourRowTemplateFormat(hydratedFourRowTemplate);
+      default -> InteractiveMessage interactiveMessage;
+      builder.interactiveMessageFormat(interactiveMessage);
     }
     return builder.build();
   }
@@ -167,7 +166,9 @@ public final class TemplateMessage
    */
   @AllArgsConstructor
   @Accessors(fluent = true)
+  @ProtobufName("FormatType")
   public enum Format {
+
     /**
      * No format
      */
@@ -184,15 +185,12 @@ public final class TemplateMessage
      * Interactive message
      */
     INTERACTIVE_MESSAGE(3);
-
     @Getter
     private final int index;
 
     @JsonCreator
     public static Format of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(Format.NONE);
     }
   }

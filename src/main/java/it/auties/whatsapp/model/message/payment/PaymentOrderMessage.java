@@ -7,6 +7,7 @@ import static it.auties.protobuf.base.ProtobufType.UINT32;
 import static it.auties.protobuf.base.ProtobufType.UINT64;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
@@ -32,10 +33,8 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class PaymentOrderMessage
-    extends ContextualMessage
-    implements PaymentMessage {
-
+@ProtobufName("OrderMessage")
+public final class PaymentOrderMessage extends ContextualMessage implements PaymentMessage {
   /**
    * The jid of this order
    */
@@ -57,13 +56,13 @@ public final class PaymentOrderMessage
   /**
    * The status of this order
    */
-  @ProtobufProperty(index = 4, type = MESSAGE, implementation = OrderMessageOrderStatus.class)
+  @ProtobufProperty(index = 4, type = MESSAGE, implementation = PaymentOrderMessage.OrderMessageOrderStatus.class)
   private OrderMessageOrderStatus status;
 
   /**
    * The surface of this order
    */
-  @ProtobufProperty(index = 5, type = MESSAGE, implementation = OrderSurface.class)
+  @ProtobufProperty(index = 5, type = MESSAGE, implementation = PaymentOrderMessage.OrderSurface.class)
   private OrderSurface surface;
 
   /**
@@ -113,20 +112,19 @@ public final class PaymentOrderMessage
    */
   @AllArgsConstructor
   @Accessors(fluent = true)
+  @ProtobufName("OrderStatus")
   public enum OrderMessageOrderStatus {
+
     /**
      * Inquiry
      */
     INQUIRY(1);
-
     @Getter
     private final int index;
 
     @JsonCreator
     public static OrderMessageOrderStatus of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
   }
@@ -137,19 +135,17 @@ public final class PaymentOrderMessage
   @AllArgsConstructor
   @Accessors(fluent = true)
   public enum OrderSurface {
+
     /**
      * Catalog
      */
     CATALOG(1);
-
     @Getter
     private final int index;
 
     @JsonCreator
     public static OrderSurface of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
   }

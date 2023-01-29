@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.business;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import java.util.Arrays;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,8 +14,9 @@ import lombok.experimental.Accessors;
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum BusinessVerifiedLevel
-    implements ProtobufMessage {
+@ProtobufName("VerifiedLevelValue")
+public enum BusinessVerifiedLevel implements ProtobufMessage {
+
   /**
    * Unknown
    */
@@ -27,15 +29,11 @@ public enum BusinessVerifiedLevel
    * High
    */
   HIGH(2);
-
   @Getter
   private final int index;
 
   @JsonCreator
   public static BusinessVerifiedLevel of(int index) {
-    return Arrays.stream(values())
-        .filter(entry -> entry.index() == index)
-        .findFirst()
-        .orElse(null);
+    return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
   }
 }

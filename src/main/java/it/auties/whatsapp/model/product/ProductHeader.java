@@ -7,6 +7,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
@@ -27,9 +28,8 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class ProductHeader
-    implements ProtobufMessage {
-
+@ProtobufName("Header")
+public class ProductHeader implements ProtobufMessage {
   /**
    * The title of this header
    */
@@ -83,12 +83,8 @@ public class ProductHeader
   @Builder(builderClassName = "DocumentProductHeaderBuilder", builderMethodName = "withDocumentMessageBuilder")
   private static ProductHeader documentBuilder(String title, String subtitle,
       DocumentMessage attachment) {
-    return ProductHeader.builder()
-        .title(title)
-        .subtitle(subtitle)
-        .documentAttachment(attachment)
-        .hasMediaAttachment(true)
-        .build();
+    return ProductHeader.builder().title(title).subtitle(subtitle)
+        .documentAttachment(attachment).hasMediaAttachment(true).build();
   }
 
   /**
@@ -102,12 +98,8 @@ public class ProductHeader
   @Builder(builderClassName = "ImageProductHeaderBuilder", builderMethodName = "withImageMessageBuilder")
   private static ProductHeader imageBuilder(String title, String subtitle,
       ImageMessage attachment) {
-    return ProductHeader.builder()
-        .title(title)
-        .subtitle(subtitle)
-        .imageAttachment(attachment)
-        .hasMediaAttachment(true)
-        .build();
+    return ProductHeader.builder().title(title).subtitle(subtitle).imageAttachment(attachment)
+        .hasMediaAttachment(true).build();
   }
 
   /**
@@ -119,13 +111,10 @@ public class ProductHeader
    * @return a non-null new header
    */
   @Builder(builderClassName = "ThumbnailProductHeaderBuilder", builderMethodName = "withThumbnailMessageBuilder")
-  private static ProductHeader thumbnailBuilder(String title, String subtitle, byte[] attachment) {
-    return ProductHeader.builder()
-        .title(title)
-        .subtitle(subtitle)
-        .thumbnailAttachment(attachment)
-        .hasMediaAttachment(true)
-        .build();
+  private static ProductHeader thumbnailBuilder(String title, String subtitle,
+      byte[] attachment) {
+    return ProductHeader.builder().title(title).subtitle(subtitle)
+        .thumbnailAttachment(attachment).hasMediaAttachment(true).build();
   }
 
   /**
@@ -139,12 +128,8 @@ public class ProductHeader
   @Builder(builderClassName = "VideoProductHeaderBuilder", builderMethodName = "withVideoMessageBuilder")
   private static ProductHeader videoBuilder(String title, String subtitle,
       VideoMessage attachment) {
-    return ProductHeader.builder()
-        .title(title)
-        .subtitle(subtitle)
-        .videoAttachment(attachment)
-        .hasMediaAttachment(true)
-        .build();
+    return ProductHeader.builder().title(title).subtitle(subtitle).videoAttachment(attachment)
+        .hasMediaAttachment(true).build();
   }
 
   /**
@@ -175,6 +160,7 @@ public class ProductHeader
   @AllArgsConstructor
   @Accessors(fluent = true)
   public enum AttachmentType {
+
     /**
      * No attachment
      */
@@ -195,15 +181,12 @@ public class ProductHeader
      * Video attachment
      */
     VIDEO_MESSAGE(7);
-
     @Getter
     private final int index;
 
     @JsonCreator
     public static AttachmentType of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(AttachmentType.NONE);
     }
   }

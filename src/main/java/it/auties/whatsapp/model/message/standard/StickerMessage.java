@@ -10,6 +10,7 @@ import static it.auties.whatsapp.util.Medias.Format.PNG;
 import static java.util.Objects.requireNonNullElse;
 
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -23,7 +24,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
@@ -38,9 +38,7 @@ import lombok.extern.jackson.Jacksonized;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class StickerMessage
-    extends MediaMessage {
-
+public final class StickerMessage extends MediaMessage {
   /**
    * The upload url of the encoded sticker that this object wraps
    */
@@ -127,6 +125,12 @@ public final class StickerMessage
   @ProtobufProperty(index = 16, type = BYTES)
   private byte[] thumbnail;
 
+  @ProtobufProperty(index = 18, name = "stickerSentTs", type = ProtobufType.INT64)
+  private Long stickerSentTs;
+
+  @ProtobufProperty(index = 19, name = "isAvatar", type = ProtobufType.BOOL)
+  private Boolean isAvatar;
+
   /**
    * Constructs a new builder to create a StickerMessage. The result can be later sent using
    * {@link Whatsapp#sendMessage(MessageInfo)}
@@ -141,19 +145,13 @@ public final class StickerMessage
    * @return a non-null new message
    */
   @Builder(builderClassName = "SimpleStickerMessageBuilder", builderMethodName = "simpleBuilder")
-  private static StickerMessage customBuilder(byte @NonNull [] media, String mimeType,
-      byte[] thumbnail, boolean animated, ContextInfo contextInfo) {
-    return StickerMessage.builder()
-        .decodedMedia(media)
-        .mediaKeyTimestamp(Clock.now())
+  private static StickerMessage customBuilder(byte[] media, String mimeType, byte[] thumbnail,
+      boolean animated, ContextInfo contextInfo) {
+    return StickerMessage.builder().decodedMedia(media).mediaKeyTimestamp(Clock.now())
         .mimetype(requireNonNullElse(mimeType, STICKER.defaultMimeType()))
-        .thumbnail(thumbnail != null ?
-            thumbnail :
-            Medias.getThumbnail(media, PNG)
-                .orElse(null))
+        .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, PNG).orElse(null))
         .animated(animated)
-        .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
-        .build();
+        .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new)).build();
   }
 
   /**

@@ -18,8 +18,8 @@ import lombok.experimental.Accessors;
 @AllArgsConstructor
 @Accessors(fluent = true)
 @ProtobufName("Rank")
-public enum GroupRole
-    implements ProtobufMessage {
+public enum GroupRole implements ProtobufMessage {
+
   /**
    * A participant of the group with no special powers
    */
@@ -32,7 +32,6 @@ public enum GroupRole
    * The founder of the group, also known as super admin
    */
   FOUNDER(2, "superadmin");
-
   /**
    * The name of the role according to Whatsapp
    */
@@ -52,18 +51,13 @@ public enum GroupRole
    * @return a non-null GroupRole
    */
   public static GroupRole of(String input) {
-    return Arrays.stream(values())
-        .filter(entry -> Objects.equals(entry.data(), input))
-        .findFirst()
+    return Arrays.stream(values()).filter(entry -> Objects.equals(entry.data(), input)).findFirst()
         .orElseThrow(
             () -> new NoSuchElementException("Cannot find GroupRole for %s".formatted(input)));
   }
 
   @JsonCreator
   public static GroupRole of(int index) {
-    return Arrays.stream(values())
-        .filter(entry -> entry.index() == index)
-        .findFirst()
-        .orElse(null);
+    return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
   }
 }

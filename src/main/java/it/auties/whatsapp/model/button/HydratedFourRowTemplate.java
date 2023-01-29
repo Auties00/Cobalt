@@ -5,6 +5,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
@@ -31,9 +32,8 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class HydratedFourRowTemplate
-    implements TemplateFormatter {
-
+@ProtobufName("TemplateMessage.HydratedFourRowTemplate")
+public final class HydratedFourRowTemplate implements TemplateFormatter {
   /**
    * The id of the template
    */
@@ -105,7 +105,6 @@ public final class HydratedFourRowTemplate
   private static HydratedFourRowTemplate emptyBuilder(String body, String footer,
       List<HydratedTemplateButton> buttons, String id) {
     return createBuilder(body, footer, buttons, id).build();
-
   }
 
   /**
@@ -119,11 +118,8 @@ public final class HydratedFourRowTemplate
    */
   @Builder(builderClassName = "DocumentHydratedFourRowTemplateBuilder", builderMethodName = "withDocumentTitleBuilder")
   private static HydratedFourRowTemplate documentBuilder(DocumentMessage title, String body,
-      String footer,
-      List<HydratedTemplateButton> buttons, String id) {
-    return createBuilder(body, footer, buttons, id).documentTitle(title)
-        .build();
-
+      String footer, List<HydratedTemplateButton> buttons, String id) {
+    return createBuilder(body, footer, buttons, id).documentTitle(title).build();
   }
 
   /**
@@ -138,8 +134,7 @@ public final class HydratedFourRowTemplate
   @Builder(builderClassName = "HighlyStructuredHydratedFourRowTemplateBuilder", builderMethodName = "withTextTitleBuilder")
   private static HydratedFourRowTemplate textBuilder(String title, String body, String footer,
       List<HydratedTemplateButton> buttons, String id) {
-    return createBuilder(body, footer, buttons, id).textTitle(title)
-        .build();
+    return createBuilder(body, footer, buttons, id).textTitle(title).build();
   }
 
   /**
@@ -153,11 +148,8 @@ public final class HydratedFourRowTemplate
    */
   @Builder(builderClassName = "ImageHydratedFourRowTemplateBuilder", builderMethodName = "withImageTitleBuilder")
   private static HydratedFourRowTemplate imageBuilder(ImageMessage title, String body,
-      String footer,
-      List<HydratedTemplateButton> buttons, String id) {
-    return createBuilder(body, footer, buttons, id).imageTitle(title)
-        .build();
-
+      String footer, List<HydratedTemplateButton> buttons, String id) {
+    return createBuilder(body, footer, buttons, id).imageTitle(title).build();
   }
 
   /**
@@ -171,11 +163,8 @@ public final class HydratedFourRowTemplate
    */
   @Builder(builderClassName = "VideoHydratedFourRowTemplateBuilder", builderMethodName = "withVideoTitleBuilder")
   private static HydratedFourRowTemplate videoBuilder(VideoMessage title, String body,
-      String footer,
-      List<HydratedTemplateButton> buttons, String id) {
-    return createBuilder(body, footer, buttons, id).videoTitle(title)
-        .build();
-
+      String footer, List<HydratedTemplateButton> buttons, String id) {
+    return createBuilder(body, footer, buttons, id).videoTitle(title).build();
   }
 
   /**
@@ -189,21 +178,14 @@ public final class HydratedFourRowTemplate
    */
   @Builder(builderClassName = "LocationHydratedFourRowTemplateBuilder", builderMethodName = "withLocationTitleBuilder")
   private static HydratedFourRowTemplate locationBuilder(LocationMessage title, String body,
-      String footer,
-      List<HydratedTemplateButton> buttons, String id) {
-    return createBuilder(body, footer, buttons, id).locationTitle(title)
-        .build();
-
+      String footer, List<HydratedTemplateButton> buttons, String id) {
+    return createBuilder(body, footer, buttons, id).locationTitle(title).build();
   }
 
   private static HydratedFourRowTemplateBuilder createBuilder(String body, String footer,
       List<HydratedTemplateButton> buttons, String id) {
-    IntStream.range(0, buttons.size())
-        .forEach(index -> buttons.get(index).index(index + 1));
-    return HydratedFourRowTemplate.builder()
-        .body(body)
-        .footer(footer)
-        .buttons(buttons)
+    IntStream.range(0, buttons.size()).forEach(index -> buttons.get(index).index(index + 1));
+    return HydratedFourRowTemplate.builder().body(body).footer(footer).buttons(buttons)
         .templateId(id);
   }
 
@@ -237,8 +219,8 @@ public final class HydratedFourRowTemplate
    */
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum TitleType
-      implements ProtobufMessage {
+  public enum TitleType implements ProtobufMessage {
+
     /**
      * No title
      */
@@ -263,21 +245,17 @@ public final class HydratedFourRowTemplate
      * Location title
      */
     LOCATION_MESSAGE(5);
-
     @Getter
     private final int index;
 
     @JsonCreator
     public static TitleType of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(TitleType.NONE);
     }
   }
 
   public static class HydratedFourRowTemplateBuilder {
-
     public HydratedFourRowTemplateBuilder buttons(List<HydratedTemplateButton> hydratedButtons) {
       if (this.buttons == null) {
         this.buttons = new ArrayList<>();

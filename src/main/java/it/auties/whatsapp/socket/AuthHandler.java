@@ -90,7 +90,6 @@ class AuthHandler extends Handler
               .device())
           .build();
     }
-
     return builder.regData(createRegisterData())
         .passive(false)
         .build();
@@ -134,7 +133,8 @@ class AuthHandler extends Handler
   private Companion createCompanionProps() {
     return Companion.builder()
         .os(socketHandler.options().description())
-        .platformType(socketHandler.options().historyLength() == HistoryLength.ONE_YEAR ? Companion.CompanionPropsPlatformType.DESKTOP : CompanionPropsPlatformType.CHROME)
+        .platformType(socketHandler.options().historyLength() == HistoryLength.ONE_YEAR
+            ? Companion.CompanionPropsPlatformType.DESKTOP : CompanionPropsPlatformType.CHROME)
         .requireFullSync(socketHandler.options().historyLength() == HistoryLength.ONE_YEAR)
         .build();
   }

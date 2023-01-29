@@ -29,9 +29,7 @@ import lombok.extern.jackson.Jacksonized;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class LiveLocationMessage
-    extends ContextualMessage {
-
+public final class LiveLocationMessage extends ContextualMessage {
   /**
    * The latitude of the location that this message wraps
    */

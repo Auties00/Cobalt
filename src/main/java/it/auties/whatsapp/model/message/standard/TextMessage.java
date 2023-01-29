@@ -7,8 +7,10 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
@@ -33,9 +35,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("ExtendedTextMessage")
-public final class TextMessage
-    extends ContextualMessage {
-
+public final class TextMessage extends ContextualMessage {
   /**
    * The text that this message wraps
    */
@@ -82,7 +82,7 @@ public final class TextMessage
   /**
    * The type of font used for the text message.
    */
-  @ProtobufProperty(index = 9, type = MESSAGE, implementation = TextMessageFontType.class)
+  @ProtobufProperty(index = 9, type = MESSAGE, implementation = TextMessage.TextMessageFontType.class)
   private TextMessageFontType font;
 
   /**
@@ -90,7 +90,7 @@ public final class TextMessage
    * value will probably be {@link TextMessagePreviewType#VIDEO}. Not all links, though, produce a
    * preview.
    */
-  @ProtobufProperty(index = 10, type = MESSAGE, implementation = TextMessagePreviewType.class)
+  @ProtobufProperty(index = 10, type = MESSAGE, implementation = TextMessage.TextMessagePreviewType.class)
   private TextMessagePreviewType previewType;
 
   /**
@@ -104,6 +104,42 @@ public final class TextMessage
    */
   @ProtobufProperty(index = 18, type = BOOL)
   private boolean doNotPlayInline;
+
+  @ProtobufProperty(index = 19, name = "thumbnailDirectPath", type = ProtobufType.STRING)
+  private String thumbnailDirectPath;
+
+  @ProtobufProperty(index = 20, name = "thumbnailSha256", type = ProtobufType.BYTES)
+  private byte[] thumbnailSha256;
+
+  @ProtobufProperty(index = 21, name = "thumbnailEncSha256", type = ProtobufType.BYTES)
+  private byte[] thumbnailEncSha256;
+
+  @ProtobufProperty(index = 22, name = "mediaKey", type = ProtobufType.BYTES)
+  private byte[] mediaKey;
+
+  @ProtobufProperty(index = 23, name = "mediaKeyTimestamp", type = ProtobufType.INT64)
+  private Long mediaKeyTimestamp;
+
+  @ProtobufProperty(index = 24, name = "thumbnailHeight", type = ProtobufType.UINT32)
+  private Integer thumbnailHeight;
+
+  @ProtobufProperty(index = 25, name = "thumbnailWidth", type = ProtobufType.UINT32)
+  private Integer thumbnailWidth;
+
+  @ProtobufProperty(index = 26, name = "inviteLinkGroupType", type = ProtobufType.MESSAGE)
+  private InviteLinkGroupType inviteLinkGroupType;
+
+  @ProtobufProperty(index = 27, name = "inviteLinkParentGroupSubjectV2", type = ProtobufType.STRING)
+  private String inviteLinkParentGroupSubjectV2;
+
+  @ProtobufProperty(index = 28, name = "inviteLinkParentGroupThumbnailV2", type = ProtobufType.BYTES)
+  private byte[] inviteLinkParentGroupThumbnailV2;
+
+  @ProtobufProperty(index = 29, name = "inviteLinkGroupTypeV2", type = ProtobufType.MESSAGE)
+  private InviteLinkGroupType inviteLinkGroupTypeV2;
+
+  @ProtobufProperty(index = 30, name = "viewOnce", type = ProtobufType.BOOL)
+  private Boolean viewOnce;
 
   /**
    * Constructs a TextMessage from a text
@@ -141,7 +177,9 @@ public final class TextMessage
    */
   @AllArgsConstructor
   @Accessors(fluent = true)
+  @ProtobufName("FontType")
   public enum TextMessageFontType {
+
     /**
      * Sans Serif
      */
@@ -166,14 +204,11 @@ public final class TextMessage
      * Oswald Heavy
      */
     OSWALD_HEAVY(5);
-
     @Getter
     private final int index;
 
     public static TextMessageFontType of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
   }
@@ -184,7 +219,9 @@ public final class TextMessage
    */
   @AllArgsConstructor
   @Accessors(fluent = true)
+  @ProtobufName("PreviewType")
   public enum TextMessagePreviewType {
+
     /**
      * No preview
      */
@@ -193,15 +230,23 @@ public final class TextMessage
      * Video preview
      */
     VIDEO(1);
-
     @Getter
     private final int index;
 
     public static TextMessagePreviewType of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
+  }
+
+  @AllArgsConstructor
+  public enum InviteLinkGroupType implements ProtobufMessage {
+
+    DEFAULT(0),
+    PARENT(1),
+    SUB(2),
+    DEFAULT_SUB(3);
+    @Getter
+    private final int index;
   }
 }

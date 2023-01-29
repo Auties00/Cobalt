@@ -27,9 +27,7 @@ import lombok.extern.jackson.Jacksonized;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class ContactsArrayMessage
-    extends ContextualMessage {
-
+public final class ContactsArrayMessage extends ContextualMessage {
   /**
    * The name of the contact the first contact that this message wraps
    */
@@ -52,9 +50,8 @@ public final class ContactsArrayMessage
     return MessageCategory.STANDARD;
   }
 
-  public static abstract class ContactsArrayMessageBuilder<C extends ContactsArrayMessage, B extends ContactsArrayMessageBuilder<C, B>>
-      extends ContextualMessageBuilder<C, B> {
-
+  public abstract static class ContactsArrayMessageBuilder<C extends ContactsArrayMessage, B extends ContactsArrayMessageBuilder<C, B>> extends
+      ContextualMessageBuilder<C, B> {
     public B contacts(List<ContactMessage> contacts) {
       if (this.contacts == null) {
         this.contacts = new ArrayList<>();

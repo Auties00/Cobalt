@@ -4,6 +4,7 @@ import static it.auties.protobuf.base.ProtobufType.BOOL;
 import static it.auties.protobuf.base.ProtobufType.INT64;
 
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufType;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,9 +20,7 @@ import lombok.extern.jackson.Jacksonized;
 @Builder(access = AccessLevel.PROTECTED)
 @Jacksonized
 @Accessors(fluent = true)
-public final class MuteAction
-    implements Action {
-
+public final class MuteAction implements Action {
   /**
    * Whether this action marks the chat as muted
    */
@@ -33,6 +32,9 @@ public final class MuteAction
    */
   @ProtobufProperty(index = 2, type = INT64)
   private Long muteEndTimestamp;
+
+  @ProtobufProperty(index = 3, name = "autoMuted", type = ProtobufType.BOOL)
+  private Boolean autoMuted;
 
   /**
    * The name of this action

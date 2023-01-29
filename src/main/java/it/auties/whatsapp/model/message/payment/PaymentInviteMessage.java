@@ -4,6 +4,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.UINT64;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.model.PaymentMessage;
@@ -16,7 +17,6 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-
 /**
  * A model class that represents a message to decline a {@link RequestPaymentMessage}.
  */
@@ -26,13 +26,11 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class PaymentInviteMessage
-    implements PaymentMessage {
-
+public final class PaymentInviteMessage implements PaymentMessage {
   /**
    * The type of service used for this payment
    */
-  @ProtobufProperty(index = 1, type = MESSAGE, implementation = PaymentInviteMessageServiceType.class)
+  @ProtobufProperty(index = 1, type = MESSAGE, implementation = PaymentInviteMessage.PaymentInviteMessageServiceType.class)
   private PaymentInviteMessageServiceType serviceType;
 
   /**
@@ -48,7 +46,9 @@ public final class PaymentInviteMessage
 
   @AllArgsConstructor
   @Accessors(fluent = true)
+  @ProtobufName("ServiceType")
   public enum PaymentInviteMessageServiceType {
+
     /**
      * Unknown service provider
      */
@@ -65,15 +65,12 @@ public final class PaymentInviteMessage
      * Upi
      */
     UPI(3);
-
     @Getter
     private final int index;
 
     @JsonCreator
     public static PaymentInviteMessageServiceType of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
   }

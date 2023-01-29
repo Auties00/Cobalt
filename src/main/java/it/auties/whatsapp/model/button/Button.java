@@ -6,6 +6,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.info.NativeFlowInfo;
 import java.util.Arrays;
@@ -25,9 +26,7 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class Button
-    implements ProtobufMessage {
-
+public class Button implements ProtobufMessage {
   /**
    * The id of this button
    */
@@ -51,7 +50,7 @@ public class Button
   /**
    * The type of this message
    */
-  @ProtobufProperty(index = 3, type = MESSAGE, implementation = ButtonType.class)
+  @ProtobufProperty(index = 3, type = MESSAGE, implementation = Button.ButtonType.class)
   private ButtonType type;
 
   /**
@@ -60,8 +59,9 @@ public class Button
    * @param text the non-null text of this button
    * @return a non-null button
    */
-  public static Button of(@NonNull String text) {
-    return of(Bytes.ofRandom(6).toHex(), text);
+  public static Button of(@NonNull
+  String text) {
+    return Button.of(Bytes.ofRandom(6).toHex(), text);
   }
 
   /**
@@ -71,12 +71,10 @@ public class Button
    * @param text the non-null text of this button
    * @return a non-null button
    */
-  public static Button of(@NonNull String id, @NonNull String text) {
-    return Button.builder()
-        .id(id)
-        .text(ButtonText.of(text))
-        .type(ButtonType.TEXT)
-        .build();
+  public static Button of(@NonNull
+  String id, @NonNull
+  String text) {
+    return Button.builder().id(id).text(ButtonText.of(text)).type(ButtonType.TEXT).build();
   }
 
   /**
@@ -85,8 +83,9 @@ public class Button
    * @param info the non-null native flow
    * @return a non-null button
    */
-  public static Button of(@NonNull NativeFlowInfo info) {
-    return of(Bytes.ofRandom(6).toHex(), info);
+  public static Button of(@NonNull
+  NativeFlowInfo info) {
+    return Button.of(Bytes.ofRandom(6).toHex(), info);
   }
 
   /**
@@ -96,30 +95,27 @@ public class Button
    * @param info the non-null native flow
    * @return a non-null button
    */
-  public static Button of(@NonNull String id, @NonNull NativeFlowInfo info) {
-    return Button.builder()
-        .id(id)
-        .nativeFlowInfo(info)
-        .type(ButtonType.NATIVE_FLOW)
-        .build();
+  public static Button of(@NonNull
+  String id, @NonNull
+  NativeFlowInfo info) {
+    return Button.builder().id(id).nativeFlowInfo(info).type(ButtonType.NATIVE_FLOW).build();
   }
 
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum ButtonType
-      implements ProtobufMessage {
+  @ProtobufName("HydratedButtonType")
+  public enum ButtonType implements ProtobufMessage {
+
     UNKNOWN(0),
     TEXT(1),
-    NATIVE_FLOW(2);
-
+    NATIVE_FLOW(2),
+    CALL_BUTTON(3);
     @Getter
     private final int index;
 
     @JsonCreator
     public static ButtonType of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
   }

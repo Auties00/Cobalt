@@ -458,13 +458,11 @@ class StreamHandler extends Handler
           .handleFailure(CRYPTOGRAPHY, new UnknownStreamException("Detected a bad mac"));
       return;
     }
-
     var conflict = node.findNode("conflict");
-    if(conflict.isPresent()){
+    if (conflict.isPresent()) {
       socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
       return;
     }
-
     var statusCode = node.attributes()
         .getInt("code");
     switch (statusCode) {
@@ -484,7 +482,8 @@ class StreamHandler extends Handler
     var reason = child.attributes()
         .getString("reason", type);
     socketHandler.errorHandler()
-        .handleFailure(Objects.equals(reason, "device_removed") ? LOGGED_OUT : STREAM, new RuntimeException(reason));
+        .handleFailure(Objects.equals(reason, "device_removed") ? LOGGED_OUT : STREAM,
+            new RuntimeException(reason));
   }
 
   private void digestSuccess() {
@@ -493,7 +492,8 @@ class StreamHandler extends Handler
         .hasPreKeys()) {
       sendPreKeys();
     }
-    getOrCreateScheduledService().scheduleAtFixedRate(this::sendPing, PING_INTERVAL, PING_INTERVAL, TimeUnit.SECONDS);
+    getOrCreateScheduledService().scheduleAtFixedRate(this::sendPing, PING_INTERVAL, PING_INTERVAL,
+        TimeUnit.SECONDS);
     createMediaConnection(0, null);
     sendStatusUpdate();
     socketHandler.onLoggedIn();
@@ -517,7 +517,9 @@ class StreamHandler extends Handler
   }
 
   private void subscribeToAllPresences(Executor delayedExecutor) {
-    var future = CompletableFuture.runAsync(() -> socketHandler.store().contacts().forEach(socketHandler::subscribeToPresence), delayedExecutor);
+    var future = CompletableFuture.runAsync(
+        () -> socketHandler.store().contacts().forEach(socketHandler::subscribeToPresence),
+        delayedExecutor);
     OnNodeReceived listener = node -> {
       if (!node.hasDescription("message") || !node.attributes().hasKey("offline")) {
         return;
@@ -639,14 +641,12 @@ class StreamHandler extends Handler
     if (socketHandler.state() != SocketState.CONNECTED) {
       return;
     }
-
-    if(tries >= MAX_ATTEMPTS){
+    if (tries >= MAX_ATTEMPTS) {
       socketHandler.store().mediaConnection((MediaConnection) null);
       socketHandler.errorHandler().handleFailure(MEDIA_CONNECTION, error);
       scheduleMediaConnection(MEDIA_CONNECTION_DEFAULT_INTERVAL);
       return;
     }
-
     socketHandler.sendQuery("set", "w:m", Node.of("media_conn"))
         .thenApplyAsync(MediaConnection::of)
         .thenAcceptAsync(result -> {

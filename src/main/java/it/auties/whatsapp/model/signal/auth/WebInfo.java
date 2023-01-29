@@ -5,6 +5,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import java.util.Arrays;
 import lombok.AllArgsConstructor;
@@ -20,9 +21,7 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class WebInfo
-    implements ProtobufMessage {
-
+public class WebInfo implements ProtobufMessage {
   @ProtobufProperty(index = 1, type = STRING)
   private String refToken;
 
@@ -32,31 +31,30 @@ public class WebInfo
   @ProtobufProperty(index = 3, type = MESSAGE, implementation = WebPayload.class)
   private WebPayload payload;
 
-  @ProtobufProperty(index = 4, type = MESSAGE, implementation = WebInfoWebSubPlatform.class)
+  @ProtobufProperty(index = 4, type = MESSAGE, implementation = WebInfo.WebInfoWebSubPlatform.class)
   private WebInfoWebSubPlatform platform;
 
-  public WebInfo(@NonNull WebInfoWebSubPlatform platform) {
+  public WebInfo(@NonNull
+  WebInfoWebSubPlatform platform) {
     this.platform = platform;
   }
 
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum WebInfoWebSubPlatform
-      implements ProtobufMessage {
+  @ProtobufName("WebSubPlatform")
+  public enum WebInfoWebSubPlatform implements ProtobufMessage {
+
     WEB_BROWSER(0),
     APP_STORE(1),
     WIN_STORE(2),
     DARWIN(3),
     WIN32(4);
-
     @Getter
     private final int index;
 
     @JsonCreator
     public static WebInfoWebSubPlatform of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
   }

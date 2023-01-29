@@ -61,9 +61,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("Conversation")
-public final class Chat
-    implements ProtobufMessage, ContactJidProvider {
-
+public final class Chat implements ProtobufMessage, ContactJidProvider {
   /**
    * The non-null unique jid used to identify this chat
    */
@@ -332,17 +330,17 @@ public final class Chat
   private ContactJid lidJid;
 
   /**
-   * A toMap that holds the status of each participant, excluding yourself, for this chat. If the chat
-   * is not a group, this toMap's size will range from 0 to 1. Otherwise, it will range from 0 to the
-   * number of participants - 1. It is important to remember that is not guaranteed that every
-   * participant will be present as a key. In this case, if this chat is a group, it can be safely
-   * assumed that the user is not available. Otherwise, it's recommended to use
+   * A toMap that holds the status of each participant, excluding yourself, for this chat. If the
+   * chat is not a group, this toMap's size will range from 0 to 1. Otherwise, it will range from 0
+   * to the number of participants - 1. It is important to remember that is not guaranteed that
+   * every participant will be present as a key. In this case, if this chat is a group, it can be
+   * safely assumed that the user is not available. Otherwise, it's recommended to use
    * {@link Whatsapp#subscribeToPresence(ContactJidProvider)} to force Whatsapp to send updates
    * regarding the status of the other participant. It's also possible to listen for updates to a
    * contact's presence in a group or in a conversation by implementing
-   * {@link Listener#onContactPresence}. The presence that this toMap indicates might not line up with
-   * {@link Contact#lastKnownPresence()} if the contact is composing, recording or paused. This is
-   * because a contact can be online on Whatsapp and composing, recording or paused in a specific
+   * {@link Listener#onContactPresence}. The presence that this toMap indicates might not line up
+   * with {@link Contact#lastKnownPresence()} if the contact is composing, recording or paused. This
+   * is because a contact can be online on Whatsapp and composing, recording or paused in a specific
    * chat.
    */
   @Default
@@ -358,16 +356,24 @@ public final class Chat
   @NonNull
   private Set<ContactJid> participantsPreKeys = new HashSet<>();
 
+  @ProtobufProperty(index = 5, name = "lastMsgTimestamp", type = ProtobufType.UINT64)
+  private Long lastMsgTimestamp;
+
+  @ProtobufProperty(index = 14, name = "pHash", type = ProtobufType.STRING)
+  private String pHash;
+
+  @ProtobufProperty(index = 18, name = "unreadMentionCount", type = ProtobufType.UINT32)
+  private Integer unreadMentionCount;
+
   /**
    * Constructs a chat from a jid
    *
    * @param jid the non-null jid
    * @return a non-null chat
    */
-  public static Chat ofJid(@NonNull ContactJid jid) {
-    return Chat.builder()
-        .jid(jid)
-        .build();
+  public static Chat ofJid(@NonNull
+  ContactJid jid) {
+    return Chat.builder().jid(jid).build();
   }
 
   /**
@@ -414,7 +420,8 @@ public final class Chat
    * @return true if ephemeral messages are enabled for this chat
    */
   public boolean isEphemeral() {
-    return ephemeralMessageDuration != ChatEphemeralTimer.OFF && ephemeralMessagesToggleTime != 0;
+    return (ephemeralMessageDuration != ChatEphemeralTimer.OFF) && (ephemeralMessagesToggleTime
+        != 0);
   }
 
   /**
@@ -528,9 +535,7 @@ public final class Chat
    * @return an optional
    */
   public Optional<MessageInfo> lastMessage() {
-    return messages.isEmpty() ?
-        Optional.empty() :
-        Optional.of(messages.getFirst());
+    return messages.isEmpty() ? Optional.empty() : Optional.of(messages.getFirst());
   }
 
   /**
@@ -540,9 +545,7 @@ public final class Chat
    * @return an optional
    */
   public Optional<MessageInfo> lastStandardMessage() {
-    return messages.stream()
-        .filter(info -> !info.message()
-            .hasCategory(MessageCategory.SERVER))
+    return messages.stream().filter(info -> !info.message().hasCategory(MessageCategory.SERVER))
         .findFirst();
   }
 
@@ -553,9 +556,7 @@ public final class Chat
    * @return an optional
    */
   public Optional<MessageInfo> lastMessageFromMe() {
-    return messages.stream()
-        .filter(MessageInfo::fromMe)
-        .findFirst();
+    return messages.stream().filter(MessageInfo::fromMe).findFirst();
   }
 
   /**
@@ -565,9 +566,7 @@ public final class Chat
    * @return an optional
    */
   public Optional<MessageInfo> lastServerMessage() {
-    return messages.stream()
-        .filter(info -> info.message()
-            .hasCategory(MessageCategory.SERVER))
+    return messages.stream().filter(info -> info.message().hasCategory(MessageCategory.SERVER))
         .findFirst();
   }
 
@@ -577,9 +576,7 @@ public final class Chat
    * @return an optional
    */
   public Optional<MessageInfo> firstMessage() {
-    return messages.isEmpty() ?
-        Optional.empty() :
-        Optional.of(messages.getLast());
+    return messages.isEmpty() ? Optional.empty() : Optional.of(messages.getLast());
   }
 
   /**
@@ -589,9 +586,7 @@ public final class Chat
    * @return an optional
    */
   public Optional<MessageInfo> firstMessageFromMe() {
-    return messages.stream()
-        .filter(MessageInfo::fromMe)
-        .reduce((first, second) -> second);
+    return messages.stream().filter(MessageInfo::fromMe).reduce((first, second) -> second);
   }
 
   /**
@@ -601,9 +596,7 @@ public final class Chat
    * @return an optional
    */
   public Optional<MessageInfo> firstStandardMessage() {
-    return messages.stream()
-        .filter(info -> !info.message()
-            .hasCategory(MessageCategory.SERVER))
+    return messages.stream().filter(info -> !info.message().hasCategory(MessageCategory.SERVER))
         .reduce((first, second) -> second);
   }
 
@@ -614,9 +607,7 @@ public final class Chat
    * @return an optional
    */
   public Optional<MessageInfo> firstServerMessage() {
-    return messages.stream()
-        .filter(info -> info.message()
-            .hasCategory(MessageCategory.SERVER))
+    return messages.stream().filter(info -> info.message().hasCategory(MessageCategory.SERVER))
         .reduce((first, second) -> second);
   }
 
@@ -626,9 +617,7 @@ public final class Chat
    * @return a non-null list of messages
    */
   public Collection<MessageInfo> starredMessages() {
-    return messages.stream()
-        .filter(MessageInfo::starred)
-        .toList();
+    return messages.stream().filter(MessageInfo::starred).toList();
   }
 
   /**
@@ -700,8 +689,9 @@ public final class Chat
    * @param info the message to add to the chat
    * @return whether the message was added
    */
-  public boolean addMessage(@NonNull MessageInfo info) {
-    return !messages.contains(info) && messages.add(info);
+  public boolean addMessage(@NonNull
+  MessageInfo info) {
+    return (!messages.contains(info)) && messages.add(info);
   }
 
   /**
@@ -719,7 +709,8 @@ public final class Chat
    * @param info the message to remove
    * @return whether the message was removed
    */
-  public boolean removeMessage(@NonNull MessageInfo info) {
+  public boolean removeMessage(@NonNull
+  MessageInfo info) {
     return messages.remove(info);
   }
 
@@ -729,7 +720,8 @@ public final class Chat
    * @param predicate the predicate that determines if a message should be removed
    * @return whether the message was removed
    */
-  public boolean removeMessage(@NonNull Predicate<? super MessageInfo> predicate) {
+  public boolean removeMessage(@NonNull
+  Predicate<? super MessageInfo> predicate) {
     return messages.removeIf(predicate);
   }
 
@@ -747,7 +739,7 @@ public final class Chat
    * @return a boolean
    */
   public boolean equals(Object other) {
-    return other instanceof Chat that && Objects.equals(this.jid(), that.jid());
+    return (other instanceof Chat that) && Objects.equals(this.jid(), that.jid());
   }
 
   @Override
@@ -766,15 +758,14 @@ public final class Chat
     return jid();
   }
 
-
   /**
    * The constants of this enumerated type describe the various types of trasnfers that can regard a
    * chat history sync
    */
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum EndOfHistoryTransferType
-      implements ProtobufMessage {
+  public enum EndOfHistoryTransferType implements ProtobufMessage {
+
     /**
      * Complete, but more messages remain on the phone
      */
@@ -783,13 +774,11 @@ public final class Chat
      * Complete and no more messages remain on the phone
      */
     COMPLETE_AND_NO_MORE_MESSAGE_REMAIN_ON_PRIMARY(1);
-
     @Getter
     private final int index;
   }
 
   public static class ChatBuilder {
-
     public ChatBuilder messages(List<MessageInfo> messages) {
       if (this.messages$value == null) {
         this.messages$value = new ConcurrentLinkedDeque<>();
@@ -812,8 +801,7 @@ public final class Chat
           messages$value.add(messageInfo);
           return;
         }
-        throw new IllegalArgumentException("Unexpected value: " + entry.getClass()
-            .getName());
+        throw new IllegalArgumentException("Unexpected value: " + entry.getClass().getName());
       });
       return this;
     }

@@ -4,6 +4,7 @@ import static it.auties.protobuf.base.ProtobufType.BYTES;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 import static it.auties.protobuf.base.ProtobufType.UINT32;
 
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,9 +20,8 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class CallInfo
-    implements Info {
-
+@ProtobufName("Call")
+public final class CallInfo implements Info {
   /**
    * The key of this call
    */

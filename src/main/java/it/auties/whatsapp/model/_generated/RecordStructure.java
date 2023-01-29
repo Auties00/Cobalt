@@ -9,15 +9,16 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.jackson.Jacksonized;
+
 @AllArgsConstructor
 @Data
 @Jacksonized
 @Builder
 @ProtobufName("RecordStructure")
 public class RecordStructure implements ProtobufMessage {
-    @ProtobufProperty(index = 1, name = "currentSession", type = ProtobufType.MESSAGE)
-    private SessionStructure currentSession;
+  @ProtobufProperty(index = 1, name = "currentSession", type = ProtobufType.MESSAGE)
+  private SessionStructure currentSession;
 
-    @ProtobufProperty(implementation = SessionStructure.class, index = 2, name = "previousSessions", repeated = true, type = ProtobufType.MESSAGE)
-    private List<SessionStructure> previousSessions;
+  @ProtobufProperty(implementation = SessionStructure.class, index = 2, name = "previousSessions", repeated = true, type = ProtobufType.MESSAGE)
+  private List<SessionStructure> previousSessions;
 }

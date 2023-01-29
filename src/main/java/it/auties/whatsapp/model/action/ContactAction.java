@@ -3,6 +3,7 @@ package it.auties.whatsapp.model.action;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufType;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,9 +19,7 @@ import lombok.extern.jackson.Jacksonized;
 @Builder(access = AccessLevel.PROTECTED)
 @Jacksonized
 @Accessors(fluent = true)
-public final class ContactAction
-    implements Action {
-
+public final class ContactAction implements Action {
   /**
    * The full name of the contact
    */
@@ -32,6 +31,9 @@ public final class ContactAction
    */
   @ProtobufProperty(index = 2, type = STRING)
   private String firstName;
+
+  @ProtobufProperty(index = 3, name = "lidJid", type = ProtobufType.STRING)
+  private String lidJid;
 
   /**
    * The name of this action

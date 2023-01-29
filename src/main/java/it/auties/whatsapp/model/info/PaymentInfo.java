@@ -27,9 +27,7 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class PaymentInfo
-    implements Info {
-
+public final class PaymentInfo implements Info {
   /**
    * The currency of this transaction
    */
@@ -128,15 +126,12 @@ public final class PaymentInfo
      * Indian rupees
      */
     INR(1);
-
     @Getter
     private final int index;
 
     @JsonCreator
     public static PaymentInfoCurrency of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
   }
@@ -202,9 +197,7 @@ public final class PaymentInfo
     private final int index;
 
     public static PaymentInfoStatus of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
   }
@@ -250,9 +243,7 @@ public final class PaymentInfo
     private final int index;
 
     public static PaymentInfoTxnStatus of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
   }

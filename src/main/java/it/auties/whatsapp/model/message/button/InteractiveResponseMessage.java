@@ -23,9 +23,7 @@ import lombok.extern.jackson.Jacksonized;
 @Accessors(fluent = true)
 @EqualsAndHashCode(callSuper = true)
 @ProtobufName("InteractiveResponseMessage")
-public final class InteractiveResponseMessage
-    extends ContextualMessage {
-
+public final class InteractiveResponseMessage extends ContextualMessage {
   @ProtobufProperty(index = 1, name = "body", type = ProtobufType.MESSAGE)
   private ProductBody body;
 
@@ -44,5 +42,9 @@ public final class InteractiveResponseMessage
   @Override
   public MessageCategory category() {
     return MessageCategory.BUTTON;
+  }
+
+  public InteractiveMessage.ContentType interactiveResponseMessageType() {
+    return InteractiveMessage.ContentType.COLLECTION_MESSAGE;
   }
 }

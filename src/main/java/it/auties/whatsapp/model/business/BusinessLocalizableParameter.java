@@ -5,6 +5,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import java.util.Arrays;
 import lombok.AllArgsConstructor;
@@ -23,9 +24,7 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class BusinessLocalizableParameter
-    implements ProtobufMessage {
-
+public class BusinessLocalizableParameter implements ProtobufMessage {
   /**
    * The default value
    */
@@ -51,12 +50,10 @@ public class BusinessLocalizableParameter
    * @param currencyParameter the non-null currency
    * @return a non-null localizable parameter
    */
-  public static BusinessLocalizableParameter of(String defaultValue,
-      @NonNull BusinessCurrency currencyParameter) {
-    return BusinessLocalizableParameter.builder()
-        .defaultValue(defaultValue)
-        .currencyParameter(currencyParameter)
-        .build();
+  public static BusinessLocalizableParameter of(String defaultValue, @NonNull
+  BusinessCurrency currencyParameter) {
+    return BusinessLocalizableParameter.builder().defaultValue(defaultValue)
+        .currencyParameter(currencyParameter).build();
   }
 
   /**
@@ -66,12 +63,10 @@ public class BusinessLocalizableParameter
    * @param dateTimeParameter the non-null date time
    * @return a non-null localizable parameter
    */
-  public static BusinessLocalizableParameter of(String defaultValue,
-      @NonNull BusinessDateTime dateTimeParameter) {
-    return BusinessLocalizableParameter.builder()
-        .defaultValue(defaultValue)
-        .dateTimeParameter(dateTimeParameter)
-        .build();
+  public static BusinessLocalizableParameter of(String defaultValue, @NonNull
+  BusinessDateTime dateTimeParameter) {
+    return BusinessLocalizableParameter.builder().defaultValue(defaultValue)
+        .dateTimeParameter(dateTimeParameter).build();
   }
 
   /**
@@ -95,8 +90,9 @@ public class BusinessLocalizableParameter
    */
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum ParameterType
-      implements ProtobufMessage {
+  @ProtobufName("ParamOneofType")
+  public enum ParameterType implements ProtobufMessage {
+
     /**
      * No parameter
      */
@@ -108,16 +104,14 @@ public class BusinessLocalizableParameter
     /**
      * Date time parameter
      */
-    DATE_TIME(3);
-
+    DATE_TIME(3),
+    CURRENCY(1);
     @Getter
     private final int index;
 
     @JsonCreator
     public static ParameterType of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(ParameterType.NONE);
     }
   }

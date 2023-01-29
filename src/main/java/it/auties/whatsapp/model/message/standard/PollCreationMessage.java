@@ -46,9 +46,7 @@ import lombok.extern.jackson.Jacksonized;
 @Accessors(fluent = true)
 @EqualsAndHashCode(callSuper = true)
 @ProtobufName("PollCreationMessage")
-public final class PollCreationMessage
-    extends ContextualMessage {
-
+public final class PollCreationMessage extends ContextualMessage {
   /**
    * The title of the poll
    */
@@ -104,12 +102,11 @@ public final class PollCreationMessage
    * @return a non-null new message
    */
   @Builder(builderClassName = "SimplePollCreationMessageBuilder", builderMethodName = "simpleBuilder")
-  private static PollCreationMessage customBuilder(@NonNull String title,
-      @NonNull List<PollOption> selectableOptions) {
+  private static PollCreationMessage customBuilder(@NonNull
+  String title, @NonNull
+  List<PollOption> selectableOptions) {
     Validate.isTrue(!selectableOptions.isEmpty(), "Options cannot be empty");
-    return PollCreationMessage.builder()
-        .title(title)
-        .selectableOptions(selectableOptions)
+    return PollCreationMessage.builder().title(title).selectableOptions(selectableOptions)
         .build();
   }
 
@@ -119,10 +116,10 @@ public final class PollCreationMessage
    * @param contact the non-null contact that voted in this poll
    * @return a non-null unmodifiable toMap
    */
-  public List<PollOption> getSelectedOptions(@NonNull ContactJidProvider contact) {
+  public List<PollOption> getSelectedOptions(@NonNull
+  ContactJidProvider contact) {
     return Optional.of(selectedOptionsMap.get(contact.toJid()))
-        .map(Collections::unmodifiableList)
-        .orElseGet(List::of);
+        .map(Collections::unmodifiableList).orElseGet(List::of);
   }
 
   @Override
@@ -135,10 +132,10 @@ public final class PollCreationMessage
     return MessageCategory.STANDARD;
   }
 
-  public static abstract class PollCreationMessageBuilder<C extends PollCreationMessage, B extends PollCreationMessageBuilder<C, B>>
-      extends ContextualMessageBuilder<C, B> {
-
-    public PollCreationMessageBuilder<C, B> selectableOptions(List<PollOption> selectableOptions) {
+  public abstract static class PollCreationMessageBuilder<C extends PollCreationMessage, B extends PollCreationMessageBuilder<C, B>> extends
+      ContextualMessageBuilder<C, B> {
+    public PollCreationMessageBuilder<C, B> selectableOptions(
+        List<PollOption> selectableOptions) {
       if (this.selectableOptions == null) {
         this.selectableOptions = new ArrayList<>();
       }
@@ -147,8 +144,7 @@ public final class PollCreationMessage
         selectableOptionsHashesMap$value = new HashMap<>();
       }
       selectableOptions.forEach(entry -> {
-        var sha256 = Bytes.of(Sha256.calculate(entry.name()))
-            .toHex();
+        var sha256 = Bytes.of(Sha256.calculate(entry.name())).toHex();
         selectableOptionsHashesMap$value.put(sha256, entry);
       });
       this.selectableOptions.addAll(selectableOptions);

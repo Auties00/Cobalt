@@ -3,6 +3,7 @@ package it.auties.whatsapp.model.signal.auth;
 import static it.auties.protobuf.base.ProtobufType.BYTES;
 
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,9 +16,8 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class CompanionData
-    implements ProtobufMessage {
-
+@ProtobufName("DevicePairingRegistrationData")
+public class CompanionData implements ProtobufMessage {
   @ProtobufProperty(index = 1, type = BYTES)
   private byte[] id;
 

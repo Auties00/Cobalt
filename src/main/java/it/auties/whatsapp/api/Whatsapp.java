@@ -366,7 +366,8 @@ public class Whatsapp {
         .toList();
   }
 
-  private void attributePollCreationMessage(MessageInfo info, PollCreationMessage pollCreationMessage) {
+  private void attributePollCreationMessage(MessageInfo info,
+      PollCreationMessage pollCreationMessage) {
     var pollEncryptionKey = requireNonNullElseGet(pollCreationMessage.encryptionKey(),
         KeyHelper::senderKey);
     pollCreationMessage.encryptionKey(pollEncryptionKey);
@@ -1218,7 +1219,8 @@ public class Whatsapp {
    * @param reaction the reaction to send, null if you want to remove the reaction
    * @return a CompletableFuture
    */
-  public CompletableFuture<MessageInfo> sendReaction(@NonNull MessageMetadataProvider message, Emojy reaction) {
+  public CompletableFuture<MessageInfo> sendReaction(@NonNull MessageMetadataProvider message,
+      Emojy reaction) {
     return sendReaction(message, Objects.toString(reaction));
   }
 
@@ -1226,9 +1228,10 @@ public class Whatsapp {
    * Send a reaction to a message
    *
    * @param message  the non-null message
-   * @param reaction the reaction to send, null if you want to remove the reaction.
-   *                 If a string that isn't an emoji supported by Whatsapp is used, it will not get displayed correctly.
-   *                 Use {@link Whatsapp#sendReaction(MessageMetadataProvider, Emojy)} if you need a typed emojy enum.
+   * @param reaction the reaction to send, null if you want to remove the reaction. If a string that
+   *                 isn't an emoji supported by Whatsapp is used, it will not get displayed
+   *                 correctly. Use {@link Whatsapp#sendReaction(MessageMetadataProvider, Emojy)} if
+   *                 you need a typed emojy enum.
    * @return a CompletableFuture
    */
   public CompletableFuture<MessageInfo> sendReaction(@NonNull MessageMetadataProvider message,
@@ -1236,7 +1239,8 @@ public class Whatsapp {
     var key = MessageKey.builder()
         .chatJid(message.chat().jid())
         .senderJid(message.senderJid())
-        .fromMe(Objects.equals(message.senderJid().toUserJid(), store().userCompanionJid().toUserJid()))
+        .fromMe(
+            Objects.equals(message.senderJid().toUserJid(), store().userCompanionJid().toUserJid()))
         .id(message.id())
         .build();
     var reactionMessage = ReactionMessage.builder()
@@ -1349,7 +1353,8 @@ public class Whatsapp {
     store().attribute(info);
     attributeMessageMetadata(info);
     var future = info.chat().hasUnreadMessages()
-        ? markRead(info.chat()).thenComposeAsync(ignored -> socketHandler.sendMessage(MessageSendRequest.of(info)))
+        ? markRead(info.chat()).thenComposeAsync(
+        ignored -> socketHandler.sendMessage(MessageSendRequest.of(info)))
         : socketHandler.sendMessage(MessageSendRequest.of(info));
     return future.thenApplyAsync(ignored -> info);
   }
@@ -1365,9 +1370,12 @@ public class Whatsapp {
       case PollCreationMessage pollCreationMessage ->
           attributePollCreationMessage(info, pollCreationMessage);
       case PollUpdateMessage pollUpdateMessage -> attributePollUpdateMessage(pollUpdateMessage);
-      case GroupInviteMessage groupInviteMessage -> attributeGroupInviteMessage(info, groupInviteMessage); // This is not needed probably, but Whatsapp uses a text message by default, so maybe it makes sense
-      case ButtonMessage buttonMessage -> info.message(info.message().toViewOnce()); // Credit to Baileys: https://github.com/adiwajshing/Baileys/blob/f0bdb12e56cea8b0bfbb0dff37c01690274e3e31/src/Utils/messages.ts#L781
-      default -> {}
+      case GroupInviteMessage groupInviteMessage -> attributeGroupInviteMessage(info,
+          groupInviteMessage); // This is not needed probably, but Whatsapp uses a text message by default, so maybe it makes sense
+      case ButtonMessage buttonMessage -> info.message(info.message()
+          .toViewOnce()); // Credit to Baileys: https://github.com/adiwajshing/Baileys/blob/f0bdb12e56cea8b0bfbb0dff37c01690274e3e31/src/Utils/messages.ts#L781
+      default -> {
+      }
     }
   }
 
@@ -1427,7 +1435,8 @@ public class Whatsapp {
   private void attributeMediaMessage(MediaMessage mediaMessage) {
     Validate.isTrue(mediaMessage.decodedMedia().isPresent(),
         "Cannot upload a message whose content isn't available");
-    var upload = Medias.upload(mediaMessage.decodedMedia().get(), mediaMessage.mediaType(), store().mediaConnection());
+    var upload = Medias.upload(mediaMessage.decodedMedia().get(), mediaMessage.mediaType(),
+        store().mediaConnection());
     mediaMessage.mediaSha256(upload.fileSha256())
         .mediaEncryptedSha256(upload.fileEncSha256())
         .mediaKey(upload.mediaKey())
@@ -2548,7 +2557,7 @@ public class Whatsapp {
     var mediaMessage = (MediaMessage) info.message()
         .content();
     var result = mediaMessage.decodedMedia();
-    if(result.isEmpty()){
+    if (result.isEmpty()) {
       Validate.isTrue(!retried, "Media reupload failed");
       return requireMediaReupload(info)
           .thenComposeAsync(entry -> downloadMedia(entry, true));
@@ -2592,7 +2601,8 @@ public class Whatsapp {
         Node.ofChildren("encrypt", Node.of("enc_p", ciphertext), Node.of("enc_iv", retryIv)),
         Node.ofAttributes("rmr", rmrAttributes));
     return socketHandler.send(node, result -> result.hasDescription("notification"))
-        .thenApplyAsync(result -> parseMediaReupload(info, mediaMessage, retryKey, retryIdData, result));
+        .thenApplyAsync(
+            result -> parseMediaReupload(info, mediaMessage, retryKey, retryIdData, result));
   }
 
   private byte[] createReceipt(MessageInfo info) {
@@ -2603,7 +2613,8 @@ public class Whatsapp {
     }
   }
 
-  private MessageInfo parseMediaReupload(MessageInfo info, MediaMessage mediaMessage, byte[] retryKey, byte[] retryIdData, Node node) {
+  private MessageInfo parseMediaReupload(MessageInfo info, MediaMessage mediaMessage,
+      byte[] retryKey, byte[] retryIdData, Node node) {
     Validate.isTrue(!node.hasNode("error"), "Erroneous response from media reupload: %s",
         node.attributes().getInt("code"));
     var encryptNode = node.findNode("encrypt")
@@ -2751,8 +2762,9 @@ public class Whatsapp {
     private int listenersLimit = UNLIMITED_LISTENERS;
 
     /**
-     * Determines the type of API to use, by default the web multi device one is used.
-     * Select the {@link ClientType#APP_CLIENT} if you need to develop a solution that doesn't depend on a companion.
+     * Determines the type of API to use, by default the web multi device one is used. Select the
+     * {@link ClientType#APP_CLIENT} if you need to develop a solution that doesn't depend on a
+     * companion.
      */
     @Default
     private ClientType clientType = ClientType.WEB_CLIENT;

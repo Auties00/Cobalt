@@ -4,6 +4,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import lombok.AllArgsConstructor;
@@ -17,9 +18,8 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class ProductCatalog
-    implements ProtobufMessage {
-
+@ProtobufName("CatalogSnapshot")
+public class ProductCatalog implements ProtobufMessage {
   @ProtobufProperty(index = 1, type = MESSAGE, implementation = ImageMessage.class)
   private ImageMessage catalogImage;
 

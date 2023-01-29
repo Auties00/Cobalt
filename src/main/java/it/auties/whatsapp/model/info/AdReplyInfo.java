@@ -5,6 +5,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import java.util.Arrays;
 import lombok.AllArgsConstructor;
@@ -24,9 +25,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class AdReplyInfo
-    implements Info {
-
+public final class AdReplyInfo implements Info {
   /**
    * The name of the advertiser that served the original companion
    */
@@ -36,7 +35,7 @@ public final class AdReplyInfo
   /**
    * The type of original companion
    */
-  @ProtobufProperty(index = 2, type = MESSAGE, implementation = AdReplyInfoMediaType.class)
+  @ProtobufProperty(index = 2, type = MESSAGE, implementation = AdReplyInfo.AdReplyInfoMediaType.class)
   private AdReplyInfoMediaType mediaType;
 
   /**
@@ -57,7 +56,9 @@ public final class AdReplyInfo
    */
   @AllArgsConstructor
   @Accessors(fluent = true)
+  @ProtobufName("MediaType")
   public enum AdReplyInfoMediaType {
+
     /**
      * Unknown type
      */
@@ -70,15 +71,12 @@ public final class AdReplyInfo
      * Video type
      */
     VIDEO(2);
-
     @Getter
     private final int index;
 
     @JsonCreator
     public static AdReplyInfoMediaType of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
   }

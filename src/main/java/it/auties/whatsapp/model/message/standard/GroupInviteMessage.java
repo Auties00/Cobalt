@@ -7,6 +7,7 @@ import static it.auties.protobuf.base.ProtobufType.UINT64;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.info.ContextInfo;
@@ -37,9 +38,7 @@ import lombok.extern.jackson.Jacksonized;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class GroupInviteMessage
-    extends ContextualMessage {
-
+public final class GroupInviteMessage extends ContextualMessage {
   /**
    * The jid of the group that this invite regards
    */
@@ -88,7 +87,7 @@ public final class GroupInviteMessage
   /**
    * The type of this invite
    */
-  @ProtobufProperty(index = 8, type = MESSAGE, implementation = Type.class)
+  @ProtobufProperty(index = 8, type = MESSAGE, implementation = GroupInviteMessage.Type.class)
   @Default
   private Type groupType = Type.DEFAULT;
 
@@ -113,19 +112,17 @@ public final class GroupInviteMessage
 
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum Type
-      implements ProtobufMessage {
+  @ProtobufName("GroupType")
+  public enum Type implements ProtobufMessage {
+
     DEFAULT(0),
     PARENT(1);
-
     @Getter
     private final int index;
 
     @JsonCreator
     public static Type of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
   }

@@ -6,6 +6,7 @@ import static java.lang.Integer.parseInt;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.response.AppVersionResponse;
 import it.auties.whatsapp.util.JacksonProvider;
@@ -31,8 +32,8 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class Version
-    implements ProtobufMessage, JacksonProvider {
+@ProtobufName("AppVersion")
+public class Version implements ProtobufMessage, JacksonProvider {
   private static final Version DEFAULT_VERSION = new Version(2, 2245, 9);
 
   @ProtobufProperty(index = 1, type = UINT32)
@@ -50,10 +51,11 @@ public class Version
   @ProtobufProperty(index = 5, type = UINT32)
   private Integer quinary;
 
-  public Version(@NonNull String version) {
+  public Version(@NonNull
+  String version) {
     var tokens = version.split("\\.", 5);
-    Validate.isTrue(tokens.length <= 5, "Invalid number of tokens for version %s: %s",
-        version, tokens);
+    Validate.isTrue(tokens.length <= 5, "Invalid number of tokens for version %s: %s", version,
+        tokens);
     if (tokens.length > 0) {
       this.primary = parseInt(tokens[0]);
     }
@@ -84,10 +86,8 @@ public class Version
   public static Version latest() {
     try {
       var client = HttpClient.newHttpClient();
-      var request = HttpRequest.newBuilder()
-          .GET()
-          .uri(URI.create(WEB_UPDATE_URL.formatted(DEFAULT_VERSION)))
-          .build();
+      var request = HttpRequest.newBuilder().GET()
+          .uri(URI.create(WEB_UPDATE_URL.formatted(DEFAULT_VERSION))).build();
       var response = client.send(request, ofString());
       var model = JSON.readValue(response.body(), AppVersionResponse.class);
       return model.currentVersion() == null ? DEFAULT_VERSION
@@ -106,9 +106,7 @@ public class Version
 
   @Override
   public String toString() {
-    return Stream.of(primary, secondary, tertiary, quaternary, quinary)
-        .filter(Objects::nonNull)
-        .map(String::valueOf)
-        .collect(Collectors.joining("."));
+    return Stream.of(primary, secondary, tertiary, quaternary, quinary).filter(Objects::nonNull)
+        .map(String::valueOf).collect(Collectors.joining("."));
   }
 }

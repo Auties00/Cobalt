@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.business;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import java.util.Arrays;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -12,8 +13,9 @@ import lombok.experimental.Accessors;
  */
 @AllArgsConstructor
 @Accessors(fluent = true)
-public enum BusinessPrivacyStatus
-    implements ProtobufMessage {
+@ProtobufName("BizPrivacyStatus")
+public enum BusinessPrivacyStatus implements ProtobufMessage {
+
   /**
    * End-to-end encryption
    */
@@ -30,15 +32,11 @@ public enum BusinessPrivacyStatus
    * Facebook and bsp encryption
    */
   BSP_AND_FB(3);
-
   @Getter
   private final int index;
 
   @JsonCreator
   public static BusinessPrivacyStatus of(int index) {
-    return Arrays.stream(values())
-        .filter(entry -> entry.index() == index)
-        .findFirst()
-        .orElse(null);
+    return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
   }
 }

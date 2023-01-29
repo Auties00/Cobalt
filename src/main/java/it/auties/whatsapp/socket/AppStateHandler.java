@@ -88,7 +88,8 @@ class AppStateHandler extends Handler
 
   protected CompletableFuture<Void> push(@NonNull PatchRequest patch) {
     return CompletableFuture.runAsync(() -> pushSync(patch), getOrCreateService())
-        .exceptionallyAsync(throwable -> socketHandler.errorHandler().handleFailure(PUSH_APP_STATE, throwable))
+        .exceptionallyAsync(
+            throwable -> socketHandler.errorHandler().handleFailure(PUSH_APP_STATE, throwable))
         .orTimeout(TIMEOUT, TimeUnit.SECONDS);
   }
 
@@ -167,29 +168,32 @@ class AppStateHandler extends Handler
           Node.of("patch", PROTOBUF.writeValueAsBytes(request.sync())));
       return socketHandler.sendQuery("set", "w:sync:app:state", Node.ofChildren("sync", body))
           .thenAcceptAsync(this::parseSyncRequest)
-          .thenRunAsync(() -> socketHandler.keys().putState(request.patch().type(), request.newState()))
-          .thenRunAsync(() -> handleSyncRequest(request.patch().type(), request.sync(), request.oldState(), request.newState().version()));
+          .thenRunAsync(
+              () -> socketHandler.keys().putState(request.patch().type(), request.newState()))
+          .thenRunAsync(
+              () -> handleSyncRequest(request.patch().type(), request.sync(), request.oldState(),
+                  request.newState().version()));
     } catch (Throwable throwable) {
       throw new RuntimeException("Cannot push patch", throwable);
     }
   }
 
-  private void handleSyncRequest(PatchType patchType, PatchSync patch, LTHashState oldState, long newVersion) {
+  private void handleSyncRequest(PatchType patchType, PatchSync patch, LTHashState oldState,
+      long newVersion) {
     var patches = List.of(patch.withVersion(new VersionSync(newVersion)));
     var results = decodePatches(patchType, 0, patches, oldState);
     results.records().forEach(this::processActions);
   }
 
   protected void pull(PatchType... patchTypes) {
-    if(patchTypes == null || patchTypes.length == 0){
+    if (patchTypes == null || patchTypes.length == 0) {
       return;
     }
-
     CompletableFuture.runAsync(() -> pullSync(patchTypes), getOrCreateService())
         .exceptionallyAsync(exception -> onPullError(false, exception));
   }
 
-  private void pullSync(PatchType... patchTypes){
+  private void pullSync(PatchType... patchTypes) {
     pullUninterruptedly(Arrays.asList(patchTypes)).join();
     onPull();
   }
@@ -235,11 +239,13 @@ class AppStateHandler extends Handler
     return socketHandler.sendQuery("set", "w:sync:app:state", Node.ofChildren("sync", nodes))
         .thenApplyAsync(this::parseSyncRequest)
         .thenApplyAsync(records -> decodeSyncs(tempStates, records))
-        .thenComposeAsync(remaining -> remaining.isEmpty() ? completedFuture(null) : pullUninterruptedly(remaining))
+        .thenComposeAsync(remaining -> remaining.isEmpty() ? completedFuture(null)
+            : pullUninterruptedly(remaining))
         .orTimeout(TIMEOUT, TimeUnit.SECONDS);
   }
 
-  private List<Node> getPullNodes(List<PatchType> patchTypes, HashMap<PatchType, LTHashState> tempStates) {
+  private List<Node> getPullNodes(List<PatchType> patchTypes,
+      HashMap<PatchType, LTHashState> tempStates) {
     return patchTypes.stream()
         .map(this::createStateWithVersion)
         .peek(state -> tempStates.put(state.name(), state))
@@ -255,15 +261,14 @@ class AppStateHandler extends Handler
       versions.put(name, 0L);
       return new LTHashState(name);
     }
-
     if (!versions.containsKey(name)) {
       versions.put(name, state.version());
     }
-
     return state;
   }
 
-  private List<PatchType> decodeSyncs(Map<PatchType, LTHashState> tempStates, List<SnapshotSyncRecord> records) {
+  private List<PatchType> decodeSyncs(Map<PatchType, LTHashState> tempStates,
+      List<SnapshotSyncRecord> records) {
     return records.stream()
         .map(record -> decodeSync(record, tempStates))
         .peek(chunk -> chunk.records()
@@ -277,7 +282,8 @@ class AppStateHandler extends Handler
     try {
       var results = new ArrayList<ActionDataSync>();
       if (record.hasSnapshot()) {
-        var snapshot = decodeSnapshot(record.patchType(), versions.getOrDefault(record.patchType(), 0L), record.snapshot());
+        var snapshot = decodeSnapshot(record.patchType(),
+            versions.getOrDefault(record.patchType(), 0L), record.snapshot());
         snapshot.ifPresent(decodedSnapshot -> {
           results.addAll(decodedSnapshot.records());
           tempStates.put(record.patchType(), decodedSnapshot.state());
@@ -286,7 +292,8 @@ class AppStateHandler extends Handler
         });
       }
       if (record.hasPatches()) {
-        var decodedPatches = decodePatches(record.patchType(), versions.getOrDefault(record.patchType(), 0L),
+        var decodedPatches = decodePatches(record.patchType(),
+            versions.getOrDefault(record.patchType(), 0L),
             record.patches(), tempStates.get(record.patchType()));
         results.addAll(decodedPatches.records());
         socketHandler.keys()
@@ -646,7 +653,6 @@ class AppStateHandler extends Handler
     if (socketHandler.store().initialAppSync()) {
       return;
     }
-
     awaitLatch();
   }
 

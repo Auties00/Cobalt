@@ -4,6 +4,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import java.util.Arrays;
 import lombok.AllArgsConstructor;
@@ -18,9 +19,8 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class RecordSync
-    implements ProtobufMessage, Syncable {
-
+@ProtobufName("SyncdRecord")
+public final class RecordSync implements ProtobufMessage, Syncable {
   @ProtobufProperty(index = 1, type = MESSAGE, implementation = IndexSync.class)
   private IndexSync index;
 
@@ -42,11 +42,11 @@ public final class RecordSync
 
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum Operation
-      implements ProtobufMessage {
-    SET(0, (byte) 0x01),
-    REMOVE(1, (byte) 0x02);
+  @ProtobufName("SyncdOperation")
+  public enum Operation implements ProtobufMessage {
 
+    SET(0, ((byte) (0x1))),
+    REMOVE(1, ((byte) (0x2)));
     @Getter
     private final int index;
 
@@ -55,9 +55,7 @@ public final class RecordSync
 
     @JsonCreator
     public static Operation of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
   }

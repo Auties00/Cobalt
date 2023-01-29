@@ -466,10 +466,9 @@ public final class Store
   }
 
   private Request deleteAndComplete(Request request, Node response, boolean exceptionally) {
-    if(request.complete(response, exceptionally)) {
+    if (request.complete(response, exceptionally)) {
       requests.remove(request);
     }
-
     return request;
   }
 
@@ -666,10 +665,9 @@ public final class Store
   public MediaConnection mediaConnection(@NonNull Duration timeout) {
     try {
       var result = mediaConnectionLatch.await(timeout.toMillis(), TimeUnit.MILLISECONDS);
-      if(!result){
+      if (!result) {
         throw new RuntimeException("Cannot get media connection");
       }
-
       return mediaConnection;
     } catch (InterruptedException exception) {
       throw new RuntimeException("Cannot lock on media connection", exception);

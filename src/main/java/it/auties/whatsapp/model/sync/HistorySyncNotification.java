@@ -8,7 +8,9 @@ import static it.auties.protobuf.base.ProtobufType.UINT64;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.media.AttachmentProvider;
 import java.util.Arrays;
 import lombok.AllArgsConstructor;
@@ -23,9 +25,7 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class HistorySyncNotification
-    implements ProtobufMessage, AttachmentProvider {
-
+public final class HistorySyncNotification implements ProtobufMessage, AttachmentProvider {
   @ProtobufProperty(index = 1, type = BYTES)
   private byte[] mediaSha256;
 
@@ -41,7 +41,7 @@ public final class HistorySyncNotification
   @ProtobufProperty(index = 5, type = STRING)
   private String mediaDirectPath;
 
-  @ProtobufProperty(index = 6, type = MESSAGE, implementation = HistorySyncNotificationHistorySyncType.class)
+  @ProtobufProperty(index = 6, type = MESSAGE, implementation = HistorySyncNotification.HistorySyncNotificationHistorySyncType.class)
   private HistorySyncNotificationHistorySyncType syncType;
 
   @ProtobufProperty(index = 7, type = UINT32)
@@ -49,6 +49,12 @@ public final class HistorySyncNotification
 
   @ProtobufProperty(index = 8, type = STRING)
   private String originalMessageId;
+
+  @ProtobufProperty(index = 9, name = "progress", type = ProtobufType.UINT32)
+  private Integer progress;
+
+  @ProtobufProperty(index = 10, name = "oldestMsgInChunkTimestampSec", type = ProtobufType.INT64)
+  private Long oldestMsgInChunkTimestampSec;
 
   @Override
   public String mediaUrl() {
@@ -67,21 +73,20 @@ public final class HistorySyncNotification
 
   @AllArgsConstructor
   @Accessors(fluent = true)
+  @ProtobufName("HistorySyncType")
   public enum HistorySyncNotificationHistorySyncType {
+
     INITIAL_BOOTSTRAP(0),
     INITIAL_STATUS_V3(1),
     FULL(2),
     RECENT(3),
     PUSH_NAME(4);
-
     @Getter
     private final int index;
 
     @JsonCreator
     public static HistorySyncNotificationHistorySyncType of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
   }

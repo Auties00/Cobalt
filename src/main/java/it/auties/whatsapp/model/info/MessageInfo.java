@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNullElseGet;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.business.BusinessPrivacyStatus;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
@@ -59,8 +60,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("WebMessageInfo")
-public final class MessageInfo
-    implements Info, MessageMetadataProvider, JacksonProvider {
+public final class MessageInfo implements Info, MessageMetadataProvider, JacksonProvider {
   /**
    * The MessageKey of this message
    */
@@ -329,13 +329,42 @@ public final class MessageInfo
   @ProtobufProperty(index = 44, type = MESSAGE, implementation = PublicServiceAnnouncementStatus.class)
   private PublicServiceAnnouncementStatus psaStatus;
 
+  @ProtobufProperty(index = 6, name = "messageC2STimestamp", type = ProtobufType.UINT64)
+  private Long messageC2STimestamp;
+
+  @ProtobufProperty(implementation = PollUpdate.class, index = 45, name = "pollUpdates", repeated = true, type = ProtobufType.MESSAGE)
+  private List<PollUpdate> pollUpdates;
+
+  @ProtobufProperty(index = 46, name = "pollAdditionalMetadata", type = ProtobufType.MESSAGE)
+  private PollAdditionalMetadata pollAdditionalMetadata;
+
+  @ProtobufProperty(index = 47, name = "agentId", type = ProtobufType.STRING)
+  private String agentId;
+
+  @ProtobufProperty(index = 48, name = "statusAlreadyViewed", type = ProtobufType.BOOL)
+  private Boolean statusAlreadyViewed;
+
+  @ProtobufProperty(index = 49, name = "messageSecret", type = ProtobufType.BYTES)
+  private byte[] messageSecret;
+
+  @ProtobufProperty(index = 50, name = "keepInChat", type = ProtobufType.MESSAGE)
+  private KeepInChat keepInChat;
+
+  @ProtobufProperty(index = 51, name = "originalSelfAuthorUserJidString", type = ProtobufType.STRING)
+  private String originalSelfAuthorUserJidString;
+
+  @ProtobufProperty(index = 52, name = "revokeMessageTimestamp", type = ProtobufType.UINT64)
+  private Long revokeMessageTimestamp;
+
   /**
    * Constructs a new MessageInfo from a MessageKey and a MessageContainer
    *
    * @param key       the key of the message
    * @param container the container of the message
    */
-  public MessageInfo(@NonNull MessageKey key, @NonNull MessageContainer container) {
+  public MessageInfo(@NonNull
+  MessageKey key, @NonNull
+  MessageContainer container) {
     this.key = key;
     this.timestampInSeconds = Clock.now();
     this.status = MessageStatus.PENDING;
@@ -375,8 +404,7 @@ public final class MessageInfo
    * @return a non-null ContactJid
    */
   public ContactJid senderJid() {
-    return requireNonNullElseGet(senderJid, () -> key.senderJid()
-        .orElseGet(key::chatJid));
+    return requireNonNullElseGet(senderJid, () -> key.senderJid().orElseGet(key::chatJid));
   }
 
   /**
@@ -394,8 +422,7 @@ public final class MessageInfo
    * @return a non-null String
    */
   public String senderName() {
-    return sender().map(Contact::name)
-        .orElseGet(senderJid()::user);
+    return sender().map(Contact::name).orElseGet(senderJid()::user);
   }
 
   /**
@@ -413,8 +440,7 @@ public final class MessageInfo
    * @return an optional
    */
   public Optional<Contact> sender() {
-    return Optional.ofNullable(sender)
-        .or(key::sender);
+    return Optional.ofNullable(sender).or(key::sender);
   }
 
   /**
@@ -423,10 +449,8 @@ public final class MessageInfo
    * @return a non-empty optional {@link MessageInfo} if this message quotes a message in memory
    */
   public Optional<QuotedMessage> quotedMessage() {
-    return Optional.of(message)
-        .flatMap(MessageContainer::contentWithContext)
-        .map(ContextualMessage::contextInfo)
-        .flatMap(QuotedMessage::of);
+    return Optional.of(message).flatMap(MessageContainer::contentWithContext)
+        .map(ContextualMessage::contextInfo).flatMap(QuotedMessage::of);
   }
 
   /**
@@ -517,8 +541,7 @@ public final class MessageInfo
    */
   public String toJson() {
     try {
-      return JSON.writerWithDefaultPrettyPrinter()
-          .writeValueAsString(this);
+      return JSON.writerWithDefaultPrettyPrinter().writeValueAsString(this);
     } catch (IOException exception) {
       throw new UncheckedIOException("Cannot convert message to json", exception);
     }
@@ -534,7 +557,7 @@ public final class MessageInfo
   }
 
   public boolean equals(Object object) {
-    return object instanceof MessageInfo that && Objects.equals(this.id(), that.id());
+    return (object instanceof MessageInfo that) && Objects.equals(this.id(), that.id());
   }
 
   @Override
@@ -549,6 +572,7 @@ public final class MessageInfo
   @AllArgsConstructor
   @Accessors(fluent = true)
   public enum StubType {
+
     UNKNOWN(0, List.of("unknown")),
     REVOKE(1, List.of("revoked")),
     CIPHERTEXT(2, List.of("ciphertext")),
@@ -610,7 +634,8 @@ public final class MessageInfo
         List.of("payment_transaction_status_receiver_success_after_hiccup")),
     PAYMENT_ACTION_ACCOUNT_SETUP_REMINDER(54, List.of("payment_action_account_setup_reminder")),
     PAYMENT_ACTION_SEND_PAYMENT_REMINDER(55, List.of("payment_action_send_payment_reminder")),
-    PAYMENT_ACTION_SEND_PAYMENT_INVITATION(56, List.of("payment_action_send_payment_invitation")),
+    PAYMENT_ACTION_SEND_PAYMENT_INVITATION(56,
+        List.of("payment_action_send_payment_invitation")),
     PAYMENT_ACTION_REQUEST_DECLINED(57, List.of("payment_action_request_declined")),
     PAYMENT_ACTION_REQUEST_EXPIRED(58, List.of("payment_action_request_expired")),
     PAYMENT_ACTION_REQUEST_CANCELLED(59, List.of("payment_transaction_request_cancelled")),
@@ -647,10 +672,12 @@ public final class MessageInfo
     BLUE_MSG_BSP_PREMISE_VERIFIED(86, List.of("blue_msg_bsp_premise_verified")),
     BLUE_MSG_BSP_PREMISE_VERIFIED_TO_SELF_PREMISE_UNVERIFIED(87,
         List.of("blue_msg_bsp_premise_verified_to_self_premise_unverified")),
-    BLUE_MSG_CONSUMER_TO_BSP_FB_UNVERIFIED(88, List.of("blue_msg_consumer_to_bsp_fb_unverified")),
+    BLUE_MSG_CONSUMER_TO_BSP_FB_UNVERIFIED(88,
+        List.of("blue_msg_consumer_to_bsp_fb_unverified")),
     BLUE_MSG_CONSUMER_TO_BSP_PREMISE_UNVERIFIED(89,
         List.of("blue_msg_consumer_to_bsp_premise_unverified")),
-    BLUE_MSG_CONSUMER_TO_SELF_FB_UNVERIFIED(90, List.of("blue_msg_consumer_to_self_fb_unverified")),
+    BLUE_MSG_CONSUMER_TO_SELF_FB_UNVERIFIED(90,
+        List.of("blue_msg_consumer_to_self_fb_unverified")),
     BLUE_MSG_CONSUMER_TO_SELF_PREMISE_UNVERIFIED(91,
         List.of("blue_msg_consumer_to_self_premise_unverified")),
     BLUE_MSG_SELF_FB_TO_BSP_PREMISE(92, List.of("blue_msg_self_fb_to_bsp_premise")),
@@ -667,13 +694,15 @@ public final class MessageInfo
     BLUE_MSG_TO_BSP_FB(101, List.of("blue_msg_to_bsp_fb")),
     BLUE_MSG_TO_CONSUMER(102, List.of("blue_msg_to_consumer")),
     BLUE_MSG_TO_SELF_FB(103, List.of("blue_msg_to_self_fb")),
-    BLUE_MSG_UNVERIFIED_TO_BSP_FB_VERIFIED(104, List.of("blue_msg_unverified_to_bsp_fb_verified")),
+    BLUE_MSG_UNVERIFIED_TO_BSP_FB_VERIFIED(104,
+        List.of("blue_msg_unverified_to_bsp_fb_verified")),
     BLUE_MSG_UNVERIFIED_TO_BSP_PREMISE_VERIFIED(105,
         List.of("blue_msg_unverified_to_bsp_premise_verified")),
     BLUE_MSG_UNVERIFIED_TO_SELF_FB_VERIFIED(106,
         List.of("blue_msg_unverified_to_self_fb_verified")),
     BLUE_MSG_UNVERIFIED_TO_VERIFIED(107, List.of("blue_msg_unverified_to_verified")),
-    BLUE_MSG_VERIFIED_TO_BSP_FB_UNVERIFIED(108, List.of("blue_msg_verified_to_bsp_fb_unverified")),
+    BLUE_MSG_VERIFIED_TO_BSP_FB_UNVERIFIED(108,
+        List.of("blue_msg_verified_to_bsp_fb_unverified")),
     BLUE_MSG_VERIFIED_TO_BSP_PREMISE_UNVERIFIED(109,
         List.of("blue_msg_verified_to_bsp_premise_unverified")),
     BLUE_MSG_VERIFIED_TO_SELF_FB_UNVERIFIED(110,
@@ -736,7 +765,6 @@ public final class MessageInfo
     CAG_INVITE_AUTO_ADD(159, List.of("invite_auto_add")),
     BIZ_CHAT_ASSIGNMENT_UNASSIGN(160, List.of("chat_assignment_unassign")),
     CAG_INVITE_AUTO_JOINED(161, List.of("invite_auto_add"));
-
     @Getter
     private final int index;
 
@@ -745,22 +773,17 @@ public final class MessageInfo
 
     @JsonCreator
     public static StubType of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
 
     public static Optional<StubType> of(String symbol) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.symbols()
-              .contains(symbol))
+      return Arrays.stream(values()).filter(entry -> entry.symbols().contains(symbol))
           .findFirst();
     }
   }
 
   public static class MessageInfoBuilder {
-
     public MessageInfoBuilder stubParameters(List<String> stubParameters) {
       if (!stubParameters$set) {
         this.stubParameters$value = new ArrayList<>();

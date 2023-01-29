@@ -11,7 +11,9 @@ import static it.auties.whatsapp.model.message.model.MediaMessageType.VIDEO;
 import static java.util.Objects.requireNonNullElse;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -31,7 +33,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
@@ -46,9 +47,7 @@ import lombok.extern.jackson.Jacksonized;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class VideoMessage
-    extends MediaMessage {
-
+public final class VideoMessage extends MediaMessage {
   /**
    * The upload url of the encoded video that this object wraps
    */
@@ -151,8 +150,23 @@ public final class VideoMessage
    * The source from where the gif that this message wraps comes from. This property is defined only
    * if {@link VideoMessage#gifPlayback}.
    */
-  @ProtobufProperty(index = 19, type = MESSAGE, implementation = VideoMessageAttribution.class)
+  @ProtobufProperty(index = 19, type = MESSAGE, implementation = VideoMessage.VideoMessageAttribution.class)
   private VideoMessageAttribution gifAttribution;
+
+  @ProtobufProperty(index = 20, name = "viewOnce", type = ProtobufType.BOOL)
+  private Boolean viewOnce;
+
+  @ProtobufProperty(index = 21, name = "thumbnailDirectPath", type = ProtobufType.STRING)
+  private String thumbnailDirectPath;
+
+  @ProtobufProperty(index = 22, name = "thumbnailSha256", type = ProtobufType.BYTES)
+  private byte[] thumbnailSha256;
+
+  @ProtobufProperty(index = 23, name = "thumbnailEncSha256", type = ProtobufType.BYTES)
+  private byte[] thumbnailEncSha256;
+
+  @ProtobufProperty(index = 24, name = "staticUrl", type = ProtobufType.STRING)
+  private String staticUrl;
 
   /**
    * Constructs a new builder to create a VideoMessage that wraps a video. The result can be later
@@ -167,24 +181,16 @@ public final class VideoMessage
    * @return a non-null new message
    */
   @Builder(builderClassName = "SimpleVideoMessageBuilder", builderMethodName = "simpleVideoBuilder")
-  private static VideoMessage videoBuilder(byte @NonNull [] media,
-      String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
+  private static VideoMessage videoBuilder(byte[] media, String mimeType, String caption,
+      byte[] thumbnail, ContextInfo contextInfo) {
     var dimensions = Medias.getDimensions(media, true);
     var duration = Medias.getDuration(media, true);
-    return VideoMessage.builder()
-        .decodedMedia(media)
-        .mediaKeyTimestamp(Clock.now())
-        .mimetype(requireNonNullElse(mimeType, VIDEO.defaultMimeType()))
-        .thumbnail(thumbnail != null ?
-            thumbnail :
-            Medias.getThumbnail(media, Medias.Format.VIDEO)
-                .orElse(null))
-        .caption(caption)
-        .width(dimensions.width())
-        .height(dimensions.height())
-        .duration(duration)
-        .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
-        .build();
+    return VideoMessage.builder().decodedMedia(media).mediaKeyTimestamp(Clock.now())
+        .mimetype(requireNonNullElse(mimeType, VIDEO.defaultMimeType())).thumbnail(
+            thumbnail != null ? thumbnail
+                : Medias.getThumbnail(media, Medias.Format.VIDEO).orElse(null)).caption(caption)
+        .width(dimensions.width()).height(dimensions.height()).duration(duration)
+        .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new)).build();
   }
 
   /**
@@ -203,35 +209,25 @@ public final class VideoMessage
    * @return a non-null new message
    */
   @Builder(builderClassName = "SimpleGifBuilder", builderMethodName = "simpleGifBuilder")
-  private static VideoMessage gifBuilder(byte @NonNull [] media,
-      String mimeType, String caption, VideoMessageAttribution gifAttribution, byte[] thumbnail,
-      ContextInfo contextInfo) {
+  private static VideoMessage gifBuilder(byte[] media, String mimeType, String caption,
+      VideoMessageAttribution gifAttribution, byte[] thumbnail, ContextInfo contextInfo) {
     Validate.isTrue(isNotGif(media, mimeType),
         "Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
     var dimensions = Medias.getDimensions(media, true);
     var duration = Medias.getDuration(media, true);
-    return VideoMessage.builder()
-        .decodedMedia(media)
-        .mediaKeyTimestamp(Clock.now())
-        .mimetype(requireNonNullElse(mimeType, VIDEO.defaultMimeType()))
-        .thumbnail(thumbnail != null ?
-            thumbnail :
-            Medias.getThumbnail(media, Medias.Format.VIDEO)
-                .orElse(null))
-        .caption(caption)
-        .width(dimensions.width())
-        .height(dimensions.height())
-        .duration(duration)
+    return VideoMessage.builder().decodedMedia(media).mediaKeyTimestamp(Clock.now())
+        .mimetype(requireNonNullElse(mimeType, VIDEO.defaultMimeType())).thumbnail(
+            thumbnail != null ? thumbnail
+                : Medias.getThumbnail(media, Medias.Format.VIDEO).orElse(null)).caption(caption)
+        .width(dimensions.width()).height(dimensions.height()).duration(duration)
         .gifPlayback(true)
         .gifAttribution(requireNonNullElse(gifAttribution, VideoMessageAttribution.NONE))
-        .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
-        .build();
+        .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new)).build();
   }
 
   private static boolean isNotGif(byte[] media, String mimeType) {
-    return Medias.getMimeType(media)
-        .filter("image/gif"::equals)
-        .isEmpty() && !Objects.equals(mimeType, "image/gif");
+    return Medias.getMimeType(media).filter("image/gif"::equals).isEmpty() && (!Objects.equals(
+        mimeType, "image/gif"));
   }
 
   /**
@@ -250,7 +246,9 @@ public final class VideoMessage
    */
   @AllArgsConstructor
   @Accessors(fluent = true)
+  @ProtobufName("Attribution")
   public enum VideoMessageAttribution {
+
     /**
      * No source was specified
      */
@@ -263,23 +261,20 @@ public final class VideoMessage
      * Tenor
      */
     TENOR(2);
-
     @Getter
     private final int index;
 
     @JsonCreator
     public static VideoMessageAttribution of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
   }
 
-  public static abstract class VideoMessageBuilder<C extends VideoMessage, B extends VideoMessageBuilder<C, B>>
-      extends MediaMessageBuilder<C, B> {
-
-    public B interactiveAnnotations(List<InteractiveLocationAnnotation> interactiveAnnotations) {
+  public abstract static class VideoMessageBuilder<C extends VideoMessage, B extends VideoMessageBuilder<C, B>> extends
+      MediaMessageBuilder<C, B> {
+    public B interactiveAnnotations(
+        List<InteractiveLocationAnnotation> interactiveAnnotations) {
       if (this.interactiveAnnotations == null) {
         this.interactiveAnnotations = new ArrayList<>();
       }

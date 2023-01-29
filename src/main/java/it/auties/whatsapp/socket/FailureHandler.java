@@ -7,12 +7,14 @@ import it.auties.whatsapp.util.JacksonProvider;
 class FailureHandler extends Handler
     implements JacksonProvider {
   private final SocketHandler socketHandler;
+
   public FailureHandler(SocketHandler socketHandler) {
     this.socketHandler = socketHandler;
   }
 
   protected <T> T handleFailure(ErrorHandler.Location location, Throwable throwable) {
-    if (socketHandler.state() == SocketState.RESTORE || socketHandler.state() == SocketState.LOGGED_OUT) {
+    if (socketHandler.state() == SocketState.RESTORE
+        || socketHandler.state() == SocketState.LOGGED_OUT) {
       return null;
     }
     var result = socketHandler.options()

@@ -3,7 +3,9 @@ package it.auties.whatsapp.model.message.button;
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 
+import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.button.Button;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -14,6 +16,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder.Default;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -31,9 +34,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @SuperBuilder
 @Accessors(fluent = true)
-public final class ButtonsResponseMessage
-    extends ButtonReplyMessage {
-
+public final class ButtonsResponseMessage extends ButtonReplyMessage {
   /**
    * The id of the button that was selected
    */
@@ -53,6 +54,9 @@ public final class ButtonsResponseMessage
   @Default
   private ContextInfo contextInfo = new ContextInfo();
 
+  @ProtobufProperty(index = 4, name = "type", type = ProtobufType.MESSAGE)
+  private ChatDisappear.Type type;
+
   /**
    * Constructs a response message from a buttons message and a selected button
    *
@@ -60,21 +64,30 @@ public final class ButtonsResponseMessage
    * @param button the non-null button to select
    * @return a non-null buttons response message
    */
-  public static ButtonsResponseMessage of(@NonNull MessageInfo quoted, @NonNull Button button) {
-    Validate.isTrue(quoted.message()
-            .content() instanceof ButtonsMessage,
-        "Cannot select buttons message, erroneous type: %s" + quoted.message()
-            .content());
-    return ButtonsResponseMessage.builder()
-        .buttonId(button.id())
-        .buttonText(button.text()
-            .content())
-        .contextInfo(ContextInfo.of(quoted))
-        .build();
+  public static ButtonsResponseMessage of(@NonNull
+  MessageInfo quoted, @NonNull
+  Button button) {
+    Validate.isTrue(quoted.message().content() instanceof ButtonsMessage,
+        "Cannot select buttons message, erroneous type: %s" + quoted.message().content());
+    return ButtonsResponseMessage.builder().buttonId(button.id())
+        .buttonText(button.text().content()).contextInfo(ContextInfo.of(quoted)).build();
   }
 
   @Override
   public MessageType type() {
     return MessageType.BUTTONS_RESPONSE;
+  }
+
+  public ButtonsResponseMessage.ResponseType responseType() {
+    return ButtonsResponseMessage.ResponseType.SELECTED_DISPLAY_TEXT;
+  }
+
+  @AllArgsConstructor
+  public enum ResponseType implements ProtobufMessage {
+
+    UNKNOWN(0),
+    SELECTED_DISPLAY_TEXT(1);
+    @Getter
+    private final int index;
   }
 }

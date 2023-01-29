@@ -3,6 +3,7 @@ package it.auties.whatsapp.model.message.payment;
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.base.ProtobufType;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.MessageType;
@@ -23,9 +24,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @Accessors(fluent = true)
-public final class SendPaymentMessage
-    implements PaymentMessage {
-
+public final class SendPaymentMessage implements PaymentMessage {
   /**
    * The caption message, that is the message below the payment confirmation
    */
@@ -37,6 +36,9 @@ public final class SendPaymentMessage
    */
   @ProtobufProperty(index = 3, type = MESSAGE, implementation = MessageKey.class)
   private MessageKey requestMessageKey;
+
+  @ProtobufProperty(index = 4, name = "background", type = ProtobufType.MESSAGE)
+  private PaymentBackground background;
 
   @Override
   public MessageType type() {

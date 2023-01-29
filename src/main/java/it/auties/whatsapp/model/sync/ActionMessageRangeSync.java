@@ -4,6 +4,7 @@ import static it.auties.protobuf.base.ProtobufType.INT64;
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.info.MessageInfo;
@@ -22,9 +23,8 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class ActionMessageRangeSync
-    implements ProtobufMessage {
-
+@ProtobufName("SyncActionMessageRange")
+public class ActionMessageRangeSync implements ProtobufMessage {
   @ProtobufProperty(index = 1, type = INT64)
   private Long lastMessageTimestamp;
 
@@ -34,7 +34,8 @@ public class ActionMessageRangeSync
   @ProtobufProperty(index = 3, type = MESSAGE, implementation = SyncActionMessage.class, repeated = true)
   private List<SyncActionMessage> messages;
 
-  public ActionMessageRangeSync(@NonNull Chat chat, boolean allMessages) {
+  public ActionMessageRangeSync(@NonNull
+  Chat chat, boolean allMessages) {
     chat.lastMessage()
         .ifPresent(message -> this.lastMessageTimestamp = message.timestampInSeconds());
     chat.lastServerMessage()
@@ -43,31 +44,18 @@ public class ActionMessageRangeSync
   }
 
   private List<SyncActionMessage> createMessages(Chat chat, boolean allMessages) {
-    return allMessages ?
-        chat.messages()
-            .stream()
-            .map(this::createActionMessage)
-            .toList() :
-        chat.lastMessage()
-            .map(this::createActionMessage)
-            .stream()
-            .toList();
+    return allMessages ? chat.messages().stream().map(this::createActionMessage).toList()
+        : chat.lastMessage().map(this::createActionMessage).stream().toList();
   }
 
   private SyncActionMessage createActionMessage(MessageInfo info) {
-    var timestamp = info != null ?
-        info.timestampInSeconds() :
-        null;
-    var key = info != null ?
-        checkSenderKey(info.key()
-            .copy()) :
-        null;
+    var timestamp = (info != null) ? info.timestampInSeconds() : null;
+    var key = (info != null) ? checkSenderKey(info.key().copy()) : null;
     return new SyncActionMessage(key, timestamp);
   }
 
   private MessageKey checkSenderKey(MessageKey key) {
-    key.senderJid()
-        .ifPresent(jid -> key.senderJid(jid.toUserJid()));
+    key.senderJid().ifPresent(jid -> key.senderJid(jid.toUserJid()));
     return key;
   }
 

@@ -10,12 +10,8 @@ enum SocketState {
   LOGGED_OUT,
   RESTORE;
 
-  boolean isDisconnected(){
-    return this == DISCONNECTED || this == LOGGED_OUT;
-  }
-
-  static SocketState of(DisconnectReason reason){
-    return switch (reason){
+  static SocketState of(DisconnectReason reason) {
+    return switch (reason) {
       case DISCONNECTED -> DISCONNECTED;
       case RECONNECTING -> RECONNECTING;
       case LOGGED_OUT -> LOGGED_OUT;
@@ -23,8 +19,12 @@ enum SocketState {
     };
   }
 
-  DisconnectReason toReason(){
-    return switch (this){
+  boolean isDisconnected() {
+    return this == DISCONNECTED || this == LOGGED_OUT;
+  }
+
+  DisconnectReason toReason() {
+    return switch (this) {
       case WAITING, CONNECTED, RECONNECTING -> DisconnectReason.RECONNECTING;
       case DISCONNECTED -> DisconnectReason.DISCONNECTED;
       case LOGGED_OUT -> DisconnectReason.LOGGED_OUT;

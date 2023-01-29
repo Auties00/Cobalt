@@ -175,8 +175,8 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
   }
 
   /**
-   * Gets a non-null value as a string by key in the wrapped toMap. If the key doesn't exist, unknown
-   * is returned.
+   * Gets a non-null value as a string by key in the wrapped toMap. If the key doesn't exist,
+   * unknown is returned.
    *
    * @param key the non-null key
    * @return the non-null value

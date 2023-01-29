@@ -6,6 +6,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 import static it.auties.protobuf.base.ProtobufType.UINT64;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.media.AttachmentProvider;
 import it.auties.whatsapp.model.message.model.MediaMessage;
@@ -32,10 +33,8 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @SuperBuilder
 @Accessors(fluent = true)
-public final class PaymentInvoiceMessage
-    extends MediaMessage
-    implements PaymentMessage {
-
+@ProtobufName("InvoiceMessage")
+public final class PaymentInvoiceMessage extends MediaMessage implements PaymentMessage {
   /**
    * The note of this invoice
    */
@@ -51,7 +50,7 @@ public final class PaymentInvoiceMessage
   /**
    * The type of attachment that this invoice provides
    */
-  @ProtobufProperty(index = 3, type = MESSAGE, implementation = AttachmentType.class)
+  @ProtobufProperty(index = 3, type = MESSAGE, implementation = PaymentInvoiceMessage.AttachmentType.class)
   private AttachmentType type;
 
   /**
@@ -96,7 +95,6 @@ public final class PaymentInvoiceMessage
   @ProtobufProperty(index = 10, type = BYTES)
   private byte[] thumbnail;
 
-
   @Override
   public String mediaUrl() {
     return null;
@@ -124,9 +122,7 @@ public final class PaymentInvoiceMessage
    */
   @Override
   public MediaMessageType mediaType() {
-    return type == AttachmentType.IMAGE ?
-        MediaMessageType.IMAGE :
-        MediaMessageType.DOCUMENT;
+    return type == AttachmentType.IMAGE ? MediaMessageType.IMAGE : MediaMessageType.DOCUMENT;
   }
 
   @Override
@@ -141,6 +137,7 @@ public final class PaymentInvoiceMessage
   @AllArgsConstructor
   @Accessors(fluent = true)
   public enum AttachmentType {
+
     /**
      * Image
      */
@@ -149,15 +146,12 @@ public final class PaymentInvoiceMessage
      * PDF
      */
     PDF(1);
-
     @Getter
     private final int index;
 
     @JsonCreator
     public static AttachmentType of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
   }

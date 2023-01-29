@@ -3,6 +3,7 @@ package it.auties.whatsapp.model.product;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -19,9 +20,8 @@ import lombok.extern.jackson.Jacksonized;
 @Builder(access = AccessLevel.PROTECTED)
 @Jacksonized
 @Accessors(fluent = true)
-public class ProductBody
-    implements ProtobufMessage {
-
+@ProtobufName("Body")
+public class ProductBody implements ProtobufMessage {
   /**
    * The body of this product
    */

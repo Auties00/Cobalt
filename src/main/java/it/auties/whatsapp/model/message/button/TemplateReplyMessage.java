@@ -4,6 +4,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 import static it.auties.protobuf.base.ProtobufType.UINT32;
 
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonReplyMessage;
@@ -28,9 +29,8 @@ import lombok.extern.jackson.Jacksonized;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class TemplateReplyMessage
-    extends ButtonReplyMessage {
-
+@ProtobufName("TemplateButtonReplyMessage")
+public final class TemplateReplyMessage extends ButtonReplyMessage {
   /**
    * The id of the button that was selected from the previous template message
    */

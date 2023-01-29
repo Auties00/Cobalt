@@ -4,6 +4,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.button.HighlyStructuredMessage;
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
@@ -31,9 +32,8 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class FourRowTemplate
-    implements TemplateFormatter {
-
+@ProtobufName("TemplateMessage.FourRowTemplate")
+public final class FourRowTemplate implements TemplateFormatter {
   /**
    * The document title of this row. This property is defined only if
    * {@link FourRowTemplate#titleType()} == {@link TitleType#DOCUMENT_MESSAGE}.
@@ -97,8 +97,7 @@ public final class FourRowTemplate
    */
   @Builder(builderClassName = "EmptyFourRowTemplateBuilder", builderMethodName = "withoutTitleBuilder")
   private static FourRowTemplate emptyBuilder(HighlyStructuredMessage content,
-      HighlyStructuredMessage footer,
-      List<ButtonTemplate> buttons) {
+      HighlyStructuredMessage footer, List<ButtonTemplate> buttons) {
     return createBuilder(content, footer, buttons).build();
   }
 
@@ -113,11 +112,9 @@ public final class FourRowTemplate
    */
   @Builder(builderClassName = "DocumentFourRowTemplateBuilder", builderMethodName = "withDocumentTitleBuilder")
   private static FourRowTemplate documentBuilder(DocumentMessage title,
-      HighlyStructuredMessage content,
-      HighlyStructuredMessage footer, List<ButtonTemplate> buttons) {
-    return createBuilder(content, footer, buttons).documentTitle(title)
-        .build();
-
+      HighlyStructuredMessage content, HighlyStructuredMessage footer,
+      List<ButtonTemplate> buttons) {
+    return createBuilder(content, footer, buttons).documentTitle(title).build();
   }
 
   /**
@@ -133,8 +130,7 @@ public final class FourRowTemplate
   private static FourRowTemplate highlyStructuredBuilder(HighlyStructuredMessage title,
       HighlyStructuredMessage content, HighlyStructuredMessage footer,
       List<ButtonTemplate> buttons) {
-    return createBuilder(content, footer, buttons).highlyStructuredTitle(title)
-        .build();
+    return createBuilder(content, footer, buttons).highlyStructuredTitle(title).build();
   }
 
   /**
@@ -149,9 +145,7 @@ public final class FourRowTemplate
   @Builder(builderClassName = "ImageFourRowTemplateBuilder", builderMethodName = "withImageTitleBuilder")
   private static FourRowTemplate imageBuilder(ImageMessage title, HighlyStructuredMessage content,
       HighlyStructuredMessage footer, List<ButtonTemplate> buttons) {
-    return createBuilder(content, footer, buttons).imageTitle(title)
-        .build();
-
+    return createBuilder(content, footer, buttons).imageTitle(title).build();
   }
 
   /**
@@ -166,8 +160,7 @@ public final class FourRowTemplate
   @Builder(builderClassName = "VideoFourRowTemplateBuilder", builderMethodName = "withVideoTitleBuilder")
   private static FourRowTemplate videoBuilder(VideoMessage title, HighlyStructuredMessage content,
       HighlyStructuredMessage footer, List<ButtonTemplate> buttons) {
-    return createBuilder(content, footer, buttons).videoTitle(title)
-        .build();
+    return createBuilder(content, footer, buttons).videoTitle(title).build();
   }
 
   /**
@@ -181,22 +174,15 @@ public final class FourRowTemplate
    */
   @Builder(builderClassName = "LocationFourRowTemplateBuilder", builderMethodName = "withLocationTitleBuilder")
   private static FourRowTemplate locationBuilder(LocationMessage title,
-      HighlyStructuredMessage content,
-      HighlyStructuredMessage footer, List<ButtonTemplate> buttons) {
-    return createBuilder(content, footer, buttons).locationTitle(title)
-        .build();
-
+      HighlyStructuredMessage content, HighlyStructuredMessage footer,
+      List<ButtonTemplate> buttons) {
+    return createBuilder(content, footer, buttons).locationTitle(title).build();
   }
 
   private static FourRowTemplateBuilder createBuilder(HighlyStructuredMessage content,
-      HighlyStructuredMessage footer,
-      List<ButtonTemplate> buttons) {
-    IntStream.range(0, buttons.size())
-        .forEach(index -> buttons.get(index).index(index + 1));
-    return FourRowTemplate.builder()
-        .content(content)
-        .footer(footer)
-        .buttons(buttons);
+      HighlyStructuredMessage footer, List<ButtonTemplate> buttons) {
+    IntStream.range(0, buttons.size()).forEach(index -> buttons.get(index).index(index + 1));
+    return FourRowTemplate.builder().content(content).footer(footer).buttons(buttons);
   }
 
   /**
@@ -229,8 +215,8 @@ public final class FourRowTemplate
    */
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum TitleType
-      implements ProtobufMessage {
+  public enum TitleType implements ProtobufMessage {
+
     /**
      * No title
      */
@@ -255,21 +241,17 @@ public final class FourRowTemplate
      * Location title
      */
     LOCATION_MESSAGE(5);
-
     @Getter
     private final int index;
 
     @JsonCreator
     public static TitleType of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(TitleType.NONE);
     }
   }
 
   public static class FourRowTemplateBuilder {
-
     public FourRowTemplateBuilder buttons(List<ButtonTemplate> buttons) {
       if (this.buttons == null) {
         this.buttons = new ArrayList<>();

@@ -1883,9 +1883,9 @@ public enum Emojy {
   FLAG_ENGLAND("🏴󠁧󠁢󠁥󠁮󠁧󠁿"),
   FLAG_SCOTLAND("🏴󠁧󠁢󠁳󠁣󠁴󠁿"),
   FLAG_WALES("🏴󠁧󠁢󠁷󠁬󠁳󠁿");
-  
+
   private final String value;
-  
+
   @Override
   public String toString() {
     return value;

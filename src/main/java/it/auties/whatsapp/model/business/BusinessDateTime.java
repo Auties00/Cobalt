@@ -4,6 +4,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import java.util.Arrays;
 import lombok.AllArgsConstructor;
@@ -22,9 +23,8 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class BusinessDateTime
-    implements ProtobufMessage {
-
+@ProtobufName("HighlyStructuredMessage.HSMLocalizableParameter.HSMDateTime")
+public class BusinessDateTime implements ProtobufMessage {
   /**
    * The date as a component
    */
@@ -43,10 +43,9 @@ public class BusinessDateTime
    * @param componentDate the non-null component
    * @return a non-null date time
    */
-  public static BusinessDateTime of(@NonNull BusinessDateTimeComponent componentDate) {
-    return BusinessDateTime.builder()
-        .componentDate(componentDate)
-        .build();
+  public static BusinessDateTime of(@NonNull
+  BusinessDateTimeComponent componentDate) {
+    return BusinessDateTime.builder().componentDate(componentDate).build();
   }
 
   /**
@@ -55,10 +54,9 @@ public class BusinessDateTime
    * @param unixEpochDate the non-null unix epoch
    * @return a non-null date time
    */
-  public static BusinessDateTime of(@NonNull BusinessDateTimeUnixEpoch unixEpochDate) {
-    return BusinessDateTime.builder()
-        .unixEpochDate(unixEpochDate)
-        .build();
+  public static BusinessDateTime of(@NonNull
+  BusinessDateTimeUnixEpoch unixEpochDate) {
+    return BusinessDateTime.builder().unixEpochDate(unixEpochDate).build();
   }
 
   /**
@@ -82,8 +80,9 @@ public class BusinessDateTime
    */
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum DateType
-      implements ProtobufMessage {
+  @ProtobufName("DatetimeOneofType")
+  public enum DateType implements ProtobufMessage {
+
     /**
      * No date
      */
@@ -96,15 +95,12 @@ public class BusinessDateTime
      * Unix epoch date
      */
     UNIX_EPOCH(2);
-
     @Getter
     private final int index;
 
     @JsonCreator
     public static DateType of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(DateType.NONE);
     }
   }

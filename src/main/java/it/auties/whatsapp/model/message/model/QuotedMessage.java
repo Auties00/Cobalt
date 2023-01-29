@@ -50,7 +50,6 @@ public class QuotedMessage
     if (!contextInfo.hasQuotedMessage()) {
       return Optional.empty();
     }
-
     var id = contextInfo.quotedMessageId()
         .get();
     var chat = contextInfo.quotedMessageChat()

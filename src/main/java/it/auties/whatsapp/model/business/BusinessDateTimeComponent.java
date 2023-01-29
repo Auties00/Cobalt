@@ -5,6 +5,7 @@ import static it.auties.protobuf.base.ProtobufType.UINT32;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import java.util.Arrays;
 import lombok.AllArgsConstructor;
@@ -22,13 +23,12 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class BusinessDateTimeComponent
-    implements ProtobufMessage {
-
+@ProtobufName("HighlyStructuredMessage.HSMLocalizableParameter.HSMDateTime.HSMDateTimeComponent")
+public class BusinessDateTimeComponent implements ProtobufMessage {
   /**
    * The day of the week
    */
-  @ProtobufProperty(index = 1, type = MESSAGE, implementation = DayOfWeek.class)
+  @ProtobufProperty(index = 1, type = MESSAGE, implementation = BusinessDateTimeComponent.DayOfWeek.class)
   private DayOfWeek dayOfWeek;
 
   /**
@@ -64,7 +64,7 @@ public class BusinessDateTimeComponent
   /**
    * The type of calendar
    */
-  @ProtobufProperty(index = 7, type = MESSAGE, implementation = CalendarType.class)
+  @ProtobufProperty(index = 7, type = MESSAGE, implementation = BusinessDateTimeComponent.CalendarType.class)
   private CalendarType calendar;
 
   /**
@@ -72,8 +72,9 @@ public class BusinessDateTimeComponent
    */
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum DayOfWeek
-      implements ProtobufMessage {
+  @ProtobufName("DayOfWeekType")
+  public enum DayOfWeek implements ProtobufMessage {
+
     /**
      * Monday
      */
@@ -102,15 +103,12 @@ public class BusinessDateTimeComponent
      * Sunday
      */
     SUNDAY(7);
-
     @Getter
     private final int index;
 
     @JsonCreator
     public static DayOfWeek of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
   }
@@ -120,8 +118,8 @@ public class BusinessDateTimeComponent
    */
   @AllArgsConstructor
   @Accessors(fluent = true)
-  public enum CalendarType
-      implements ProtobufMessage {
+  public enum CalendarType implements ProtobufMessage {
+
     /**
      * Gregorian calendar
      */
@@ -130,14 +128,11 @@ public class BusinessDateTimeComponent
      * Solar calendar
      */
     SOLAR_HIJRI(2);
-
     @Getter
     private final int index;
 
     public static CalendarType of(int index) {
-      return Arrays.stream(values())
-          .filter(entry -> entry.index() == index)
-          .findFirst()
+      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
   }

@@ -4,6 +4,7 @@ import static it.auties.protobuf.base.ProtobufType.BYTES;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,9 +17,8 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class ProductListHeaderImage
-    implements ProtobufMessage {
-
+@ProtobufName("ListMessage.ProductListHeaderImage")
+public class ProductListHeaderImage implements ProtobufMessage {
   @ProtobufProperty(index = 1, type = STRING)
   private String productId;
 

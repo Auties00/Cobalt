@@ -66,7 +66,6 @@ final class SmileFile
       if (Files.notExists(file)) {
         Files.createFile(file);
       }
-
       var lock = channel.lock();
       var result = new ByteArrayOutputStream();
       var gzipOutputStream = new GZIPOutputStream(result);
@@ -75,7 +74,6 @@ final class SmileFile
       channel.write(ByteBuffer.wrap(result.toByteArray()));
       lock.release();
     } catch (NoSuchFileException | OverlappingFileLockException ignored) {
-
     } catch (IOException | NonWritableChannelException exception) {
       throw new RuntimeException("Cannot write to file", exception);
     }

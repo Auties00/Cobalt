@@ -117,7 +117,8 @@ class MessageHandler extends Handler
 
   private void encodeSync(MessageSendRequest request) {
     socketHandler.awaitAppReady();
-    var resultRequest = isConversation(request.info()) ? encodeConversation(request) : encodeGroup(request);
+    var resultRequest =
+        isConversation(request.info()) ? encodeConversation(request) : encodeGroup(request);
     resultRequest.join();
     saveMessage(request.info(), "unknown");
     attributeMessageReceipt(request.info());
@@ -411,19 +412,18 @@ class MessageHandler extends Handler
 
   public void decode(Node node) {
     getOrCreateService().execute(() -> {
-    try {
-      var businessName = getBusinessName(node);
-      var encrypted = node.findNodes("enc");
-      if (node.hasNode("unavailable") && !node.hasNode("enc")) {
-        decode(node, null, businessName);
-        return;
+      try {
+        var businessName = getBusinessName(node);
+        var encrypted = node.findNodes("enc");
+        if (node.hasNode("unavailable") && !node.hasNode("enc")) {
+          decode(node, null, businessName);
+          return;
+        }
+        encrypted.forEach(message -> decode(node, message, businessName));
+      } catch (Throwable throwable) {
+        socketHandler.errorHandler()
+            .handleFailure(MESSAGE, throwable);
       }
-
-      encrypted.forEach(message -> decode(node, message, businessName));
-    } catch (Throwable throwable) {
-      socketHandler.errorHandler()
-          .handleFailure(MESSAGE, throwable);
-    }
     });
   }
 
@@ -529,7 +529,6 @@ class MessageHandler extends Handler
     if (!info.fromMe() || !info.chatJid().equals(self)) {
       return;
     }
-
     info.receipt().readTimestamp(info.timestampInSeconds());
     info.receipt().deliveredJids().add(self);
     info.receipt().readJids().add(self);
@@ -744,7 +743,8 @@ class MessageHandler extends Handler
           handlePollCreation(info.message(), pollCreationMessage);
       case PollUpdateMessage pollUpdateMessage -> handlePollUpdate(info, pollUpdateMessage);
       case ReactionMessage reactionMessage -> handleReactionMessage(info, reactionMessage);
-      default -> {}
+      default -> {
+      }
     }
   }
 
@@ -775,10 +775,9 @@ class MessageHandler extends Handler
       case APP_STATE_SYNC_KEY_SHARE -> {
         socketHandler.keys()
             .addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
-        if(socketHandler.store().initialSnapshot()){
+        if (socketHandler.store().initialSnapshot()) {
           return;
         }
-
         socketHandler.pullInitialPatches()
             .thenRunAsync(this::subscribeToAllPresences)
             .thenRunAsync(socketHandler::onContacts)
