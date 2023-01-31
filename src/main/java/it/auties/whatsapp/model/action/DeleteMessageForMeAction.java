@@ -4,6 +4,9 @@ import static it.auties.protobuf.base.ProtobufType.BOOL;
 import static it.auties.protobuf.base.ProtobufType.INT64;
 
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.whatsapp.util.Clock;
+import java.time.ZonedDateTime;
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -32,7 +35,16 @@ public final class DeleteMessageForMeAction
    * The timestamp of the message
    */
   @ProtobufProperty(index = 2, type = INT64)
-  private Long messageTimestamp;
+  private long messageTimestampInSeconds;
+
+  /**
+   * Returns when the deleted message was sent
+   *
+   * @return an optional
+   */
+  public Optional<ZonedDateTime> messageTimestamp() {
+    return Clock.parseSeconds(messageTimestampInSeconds);
+  }
 
   /**
    * The name of this action

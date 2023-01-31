@@ -14,6 +14,9 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+/**
+ * A model clas that represents a sticker
+ */
 @AllArgsConstructor
 @Data
 @Accessors(fluent = true)

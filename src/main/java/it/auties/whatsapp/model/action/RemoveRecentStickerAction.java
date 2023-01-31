@@ -10,6 +10,9 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+/**
+ * A model class that represents the deletion of a sticker from the recent list
+ */
 @AllArgsConstructor
 @Data
 @Accessors(fluent = true)

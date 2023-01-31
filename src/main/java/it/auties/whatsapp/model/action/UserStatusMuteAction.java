@@ -10,6 +10,9 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+/**
+ * A model clas that represents whether a user was muted
+ */
 @AllArgsConstructor
 @Data
 @Accessors(fluent = true)

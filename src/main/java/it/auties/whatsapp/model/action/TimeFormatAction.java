@@ -10,6 +10,9 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+/**
+ * A model clas that represents the time format used by the companion
+ */
 @AllArgsConstructor
 @Data
 @Accessors(fluent = true)

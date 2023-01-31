@@ -5,12 +5,18 @@ import static it.auties.protobuf.base.ProtobufType.INT64;
 
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.whatsapp.util.Clock;
+import java.time.ZonedDateTime;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+/**
+ * A model clas that represents a subscription
+ */
 @AllArgsConstructor
 @Data
 @Accessors(fluent = true)
@@ -27,7 +33,16 @@ public final class SubscriptionAction
   private boolean autoRenewing;
 
   @ProtobufProperty(index = 3, name = "expirationDate", type = INT64)
-  private long expirationDate;
+  private long expirationDateInSeconds;
+
+  /**
+   * Returns when the subscription ends
+   *
+   * @return an optional
+   */
+  public Optional<ZonedDateTime> messageTimestamp() {
+    return Clock.parseSeconds(expirationDateInSeconds);
+  }
 
   /**
    * Always throws an exception as this action cannot be serialized

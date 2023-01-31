@@ -5,6 +5,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.sync.ActionMessageRangeSync;
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,9 +32,19 @@ public final class ArchiveChatAction
 
   /**
    * The message range on which this action has effect
+   * If this field is empty, all messages should be considered as affected
    */
   @ProtobufProperty(index = 2, type = MESSAGE, implementation = ActionMessageRangeSync.class)
   private ActionMessageRangeSync messageRange;
+
+  /**
+   * Returns the range of messages that were archived
+   *
+   * @return an optional
+   */
+  public Optional<ActionMessageRangeSync> messageRange(){
+    return Optional.ofNullable(messageRange);
+  }
 
   /**
    * The name of this action

@@ -12,6 +12,9 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+/**
+ * A model clas that represents an agent
+ */
 @AllArgsConstructor
 @Data
 @Accessors(fluent = true)
@@ -21,12 +24,21 @@ import lombok.extern.jackson.Jacksonized;
 public final class AgentAction
     implements Action {
 
+  /**
+   * The agent's name
+   */
   @ProtobufProperty(index = 1, name = "name", type = STRING)
   private String name;
 
+  /**
+   * The agent's device id
+   */
   @ProtobufProperty(index = 2, name = "deviceID", type = INT32)
-  private Integer deviceId;
+  private int deviceId;
 
+  /**
+   * Whether the agent was deleted
+   */
   @ProtobufProperty(index = 3, name = "isDeleted", type = BOOL)
   private boolean deleted;
 

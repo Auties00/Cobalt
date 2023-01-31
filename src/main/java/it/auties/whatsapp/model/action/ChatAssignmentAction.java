@@ -10,6 +10,9 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+/**
+ * A model clas that represents the assignment of a chat
+ */
 @AllArgsConstructor
 @Data
 @Accessors(fluent = true)
@@ -19,8 +22,11 @@ import lombok.extern.jackson.Jacksonized;
 public final class ChatAssignmentAction
     implements Action {
 
+  /**
+   * The device agent id
+   */
   @ProtobufProperty(index = 1, name = "deviceAgentID", type = STRING)
-  private String deviceAgentID;
+  private String deviceAgentId;
 
   /**
    * Always throws an exception as this action cannot be serialized

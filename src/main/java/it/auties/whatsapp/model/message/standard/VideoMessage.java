@@ -153,7 +153,7 @@ public final class VideoMessage extends MediaMessage {
   private VideoMessageAttribution gifAttribution;
 
   @ProtobufProperty(index = 20, name = "viewOnce", type = BOOL)
-  private Boolean viewOnce;
+  private boolean viewOnce;
 
   @ProtobufProperty(index = 21, name = "thumbnailDirectPath", type = STRING)
   private String thumbnailDirectPath;

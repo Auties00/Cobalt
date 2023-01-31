@@ -6,7 +6,6 @@ import static it.auties.whatsapp.api.ErrorHandler.Location.PUSH_APP_STATE;
 import static it.auties.whatsapp.model.request.Node.ofChildren;
 import static java.lang.System.Logger.Level.WARNING;
 import static java.util.Map.of;
-import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 import it.auties.bytes.Bytes;
@@ -14,7 +13,6 @@ import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.crypto.AesCbc;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.crypto.LTHash;
-import it.auties.whatsapp.util.HmacValidationException;
 import it.auties.whatsapp.model.action.ArchiveChatAction;
 import it.auties.whatsapp.model.action.ClearChatAction;
 import it.auties.whatsapp.model.action.ContactAction;
@@ -35,6 +33,7 @@ import it.auties.whatsapp.model.setting.LocaleSetting;
 import it.auties.whatsapp.model.setting.PushNameSetting;
 import it.auties.whatsapp.model.setting.UnarchiveChatsSetting;
 import it.auties.whatsapp.model.sync.ActionDataSync;
+import it.auties.whatsapp.model.sync.ActionMessageRangeSync;
 import it.auties.whatsapp.model.sync.AppStateSyncKey;
 import it.auties.whatsapp.model.sync.AppStateSyncKeyData;
 import it.auties.whatsapp.model.sync.ExternalBlobReference;
@@ -53,6 +52,7 @@ import it.auties.whatsapp.model.sync.Syncable;
 import it.auties.whatsapp.model.sync.ValueSync;
 import it.auties.whatsapp.model.sync.VersionSync;
 import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.HmacValidationException;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.Medias;
 import it.auties.whatsapp.util.Specification;
@@ -395,7 +395,7 @@ class AppStateHandler extends Handler
                     0 :
                     -1));
         case MuteAction muteAction ->
-            targetChat.ifPresent(chat -> chat.mute(ChatMute.muted(muteAction.muteEndTimestamp())));
+            targetChat.ifPresent(chat -> chat.mute(ChatMute.muted(muteAction.muteEndTimestampInSeconds())));
         case PinAction pinAction -> targetChat.ifPresent(chat -> chat.pinned(pinAction.pinned() ?
             mutation.value()
                 .timestamp() :
@@ -442,24 +442,25 @@ class AppStateHandler extends Handler
   }
 
   private void clearMessages(Chat targetChat, ClearChatAction clearChatAction) {
-    if (targetChat == null || clearChatAction.messageRange() == null
-        || clearChatAction.messageRange()
-        .messages() == null) {
+    if (targetChat == null || clearChatAction.messageRange().isEmpty()) {
       return;
     }
+
     clearChatAction.messageRange()
-        .messages()
         .stream()
+        .map(ActionMessageRangeSync::messages)
+        .flatMap(Collection::stream)
         .map(SyncActionMessage::key)
         .filter(Objects::nonNull)
         .forEach(key -> targetChat.removeMessage(entry -> Objects.equals(entry.id(), key.id())));
   }
 
   private void updateName(Contact contact, Chat chat, ContactAction contactAction) {
-    contact.fullName(contactAction.fullName());
-    contact.shortName(contactAction.firstName());
-    var name = requireNonNullElse(contactAction.firstName(), contactAction.fullName());
-    chat.name(name);
+    contactAction.fullName()
+        .ifPresent(contact::fullName);
+    contactAction.firstName()
+        .ifPresent(contact::shortName);
+    chat.name(contactAction.name());
   }
 
   private void deleteMessage(MessageInfo message, Chat chat) {

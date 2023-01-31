@@ -10,6 +10,9 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+/**
+ * A model clas that represents the assignment of a chat as opened
+ */
 @AllArgsConstructor
 @Data
 @Accessors(fluent = true)
@@ -19,6 +22,9 @@ import lombok.extern.jackson.Jacksonized;
 public final class ChatAssignmentOpenedStatusAction
     implements Action {
 
+  /**
+   * Whether the chat was opened
+   */
   @ProtobufProperty(index = 1, name = "chatOpened", type = BOOL)
   private boolean chatOpened;
 

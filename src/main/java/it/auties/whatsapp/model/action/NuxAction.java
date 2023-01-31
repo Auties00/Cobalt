@@ -10,6 +10,9 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+/**
+ * Unknown
+ */
 @AllArgsConstructor
 @Data
 @Accessors(fluent = true)

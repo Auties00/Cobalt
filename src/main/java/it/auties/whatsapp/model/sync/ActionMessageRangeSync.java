@@ -10,6 +10,7 @@ import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -41,6 +42,18 @@ public class ActionMessageRangeSync implements ProtobufMessage {
     chat.lastServerMessage()
         .ifPresent(message -> this.lastSystemMessageTimestamp = message.timestampInSeconds());
     this.messages = createMessages(chat, allMessages);
+  }
+
+  public long lastMessageTimestamp(){
+    return lastMessageTimestamp == null ? 0 : lastMessageTimestamp;
+  }
+
+  public long lastSystemMessageTimestamp(){
+    return lastSystemMessageTimestamp == null ? 0 : lastSystemMessageTimestamp;
+  }
+
+  public List<SyncActionMessage> messages(){
+    return Collections.unmodifiableList(messages == null ? List.of() : messages);
   }
 
   private List<SyncActionMessage> createMessages(Chat chat, boolean allMessages) {

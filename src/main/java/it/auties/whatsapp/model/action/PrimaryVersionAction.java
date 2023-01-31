@@ -10,6 +10,9 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+/**
+ * A model class that contains the main Whatsapp version being used
+ */
 @AllArgsConstructor
 @Data
 @Accessors(fluent = true)
