@@ -413,7 +413,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
    * @return a non-null String
    */
   public String chatName() {
-    return chat().name();
+    return chat() == null ? chatJid().user() : chat().name();
   }
 
   /**

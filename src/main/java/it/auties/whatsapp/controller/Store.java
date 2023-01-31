@@ -117,6 +117,13 @@ public final class Store
   private ContactJid userCompanionJid;
 
   /**
+   * The lid user linked to this account. This field will be null while the user hasn't logged in yet.
+   */
+  @Getter
+  @Setter
+  private ContactJid userCompanionLid;
+
+  /**
    * The non-null toMap of chats
    */
   @NonNull
@@ -522,13 +529,12 @@ public final class Store
   public Chat addChat(@NonNull Chat chat) {
     chat.messages()
         .forEach(this::attribute);
-    if (chat.hasName()) {
-      if (chat.jid()
-          .hasServer(ContactJid.Server.WHATSAPP)) {
-        findContactByJid(chat.jid()).orElseGet(() -> addContact(Contact.ofJid(chat.jid())))
-            .fullName(chat.name());
-      }
+    if (chat.hasName() && chat.jid().hasServer(ContactJid.Server.WHATSAPP)) {
+      findContactByJid(chat.jid())
+          .orElseGet(() -> addContact(Contact.ofJid(chat.jid())))
+          .fullName(chat.name());
     }
+
     return addChatDirect(chat);
   }
 
@@ -571,7 +577,8 @@ public final class Store
    * @return the same incoming message
    */
   public MessageInfo attribute(@NonNull MessageInfo info) {
-    var chat = findChatByJid(info.chatJid()).orElseGet(() -> addChat(Chat.ofJid(info.chatJid())));
+    var chat = findChatByJid(info.chatJid())
+        .orElseGet(() -> addChat(Chat.ofJid(info.chatJid())));
     info.key()
         .chat(chat);
     info.key()
@@ -585,7 +592,8 @@ public final class Store
   }
 
   private MessageKey attributeSender(MessageInfo info, ContactJid senderJid) {
-    var contact = findContactByJid(senderJid).orElseGet(() -> addContact(Contact.ofJid(senderJid)));
+    var contact = findContactByJid(senderJid)
+        .orElseGet(() -> addContact(Contact.ofJid(senderJid)));
     return info.sender(contact)
         .key()
         .sender(contact);

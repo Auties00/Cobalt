@@ -100,7 +100,7 @@ class StreamHandler extends Handler
       case "iq" -> digestIq(node);
       case "receipt" -> digestReceipt(node);
       case "stream:error" -> digestError(node);
-      case "success" -> digestSuccess();
+      case "success" -> digestSuccess(node);
       case "message" -> socketHandler.decodeMessage(node);
       case "notification" -> digestNotification(node);
       case "presence", "chatstate" -> digestChatState(node);
@@ -294,8 +294,7 @@ class StreamHandler extends Handler
         .orElseThrow(() -> new NoSuchElementException("Missing from in notification"));
     var fromChat = socketHandler.store()
         .findChatByJid(fromJid)
-        .orElseGet(() -> socketHandler.store()
-            .addChat(fromJid));
+        .orElseGet(() -> socketHandler.store().addChat(fromJid));
     var timestamp = node.attributes()
         .getLong("t");
     if (fromChat.isGroup()) {
@@ -420,11 +419,6 @@ class StreamHandler extends Handler
   }
 
   private void handleServerSyncNotification(Node node) {
-    if (!socketHandler.store().initialSync()) {
-      socketHandler.pullInitialPatches();
-      return;
-    }
-
     var patches = node.findNodes("collection")
         .stream()
         .map(entry -> entry.attributes().getRequiredString("name"))
@@ -487,7 +481,10 @@ class StreamHandler extends Handler
             new RuntimeException(reason));
   }
 
-  private void digestSuccess() {
+  private void digestSuccess(Node node) {
+    node.attributes()
+        .getJid("lid")
+        .ifPresent(socketHandler.store()::userCompanionJid);
     confirmConnection();
     if (!socketHandler.keys()
         .hasPreKeys()) {
@@ -796,9 +793,7 @@ class StreamHandler extends Handler
     socketHandler.store()
         .userCompanionJid(companion);
     socketHandler.store()
-        .addContact(Contact.ofJid(socketHandler.store()
-            .userCompanionJid()
-            .toUserJid()));
+        .addContact(Contact.ofJid(socketHandler.store().userCompanionJid().toUserJid()));
   }
 
   @Override

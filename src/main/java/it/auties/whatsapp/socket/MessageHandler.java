@@ -1,6 +1,7 @@
 package it.auties.whatsapp.socket;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.MESSAGE;
+import static it.auties.whatsapp.api.ErrorHandler.Location.UNKNOWN;
 import static it.auties.whatsapp.model.request.Node.ofAttributes;
 import static it.auties.whatsapp.model.request.Node.ofChildren;
 import static it.auties.whatsapp.model.sync.HistorySync.HistorySyncHistorySyncType.RECENT;
@@ -31,6 +32,7 @@ import it.auties.whatsapp.model.business.BusinessVerifiedNameDetails;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.chat.GroupMetadata;
+import it.auties.whatsapp.model.chat.PastParticipant;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJid.Type;
@@ -83,6 +85,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 class MessageHandler extends Handler
@@ -94,6 +97,7 @@ class MessageHandler extends Handler
   private final Map<String, Integer> retries;
   private final Cache<ContactJid, GroupMetadata> groupsCache;
   private final Cache<String, List<ContactJid>> devicesCache;
+  private final Map<ContactJid, List<PastParticipant>> pastParticipantsQueue;
   private final Set<Chat> historyCache;
 
   protected MessageHandler(SocketHandler socketHandler) {
@@ -101,6 +105,7 @@ class MessageHandler extends Handler
     this.retries = new HashMap<>();
     this.groupsCache = createCache(Duration.ofMinutes(5));
     this.devicesCache = createCache(Duration.ofMinutes(5));
+    this.pastParticipantsQueue = new ConcurrentHashMap<>();
     this.historyCache = new HashSet<>();
   }
 
@@ -773,9 +778,16 @@ class MessageHandler extends Handler
         socketHandler.sendSyncReceipt(info, "hist_sync");
       }
       case APP_STATE_SYNC_KEY_SHARE -> {
-        socketHandler.schedulePullInitialPatches();
         socketHandler.keys()
             .addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
+        if(socketHandler.store().initialSync()){
+          return;
+        }
+
+        socketHandler.pullInitialPatches()
+            .thenRunAsync(socketHandler::onContacts)
+            .thenRunAsync(this::subscribeToAllPresences)
+            .exceptionallyAsync(throwable -> socketHandler.errorHandler().handleFailure(UNKNOWN, throwable));
       }
       case REVOKE -> socketHandler.store()
           .findMessageById(info.chat(), protocolMessage.key()
@@ -833,10 +845,8 @@ class MessageHandler extends Handler
       case NON_BLOCKING_DATA -> history.pastParticipants()
           .forEach(pastParticipants -> socketHandler.store()
               .findChatByJid(pastParticipants.groupJid())
-              .orElseGet(() -> socketHandler.store()
-                  .addChat(pastParticipants.groupJid()))
-              .pastParticipants()
-              .addAll(pastParticipants.pastParticipants()));
+              .ifPresentOrElse(chat -> chat.pastParticipants().addAll(pastParticipants.pastParticipants()),
+                  () -> pastParticipantsQueue.put(pastParticipants.groupJid(), pastParticipants.pastParticipants())));
     }
   }
 
@@ -861,12 +871,22 @@ class MessageHandler extends Handler
   }
 
   private void updateChatMessages(Chat carrier) {
-    socketHandler.store()
-        .findChatByJid(carrier.jid())
-        .ifPresentOrElse(chat -> carrier.messages()
-            .stream()
-            .map(socketHandler.store()::attribute)
-            .forEach(chat::addMessage), () -> socketHandler.store().addChat(carrier));
+    var chatJid = carrier.jid();
+    var chat = socketHandler.store().findChatByJid(chatJid);
+    if(chat.isEmpty()){
+      socketHandler.store().addChat(carrier);
+      var pastParticipants = pastParticipantsQueue.remove(chatJid);
+      if(pastParticipants != null){
+        carrier.pastParticipants().addAll(pastParticipants);
+      }
+
+      return;
+    }
+
+    carrier.messages()
+        .stream()
+        .map(socketHandler.store()::attribute)
+        .forEach(chat.get()::addMessage);
   }
 
   private void handNewPushName(PushName pushName) {

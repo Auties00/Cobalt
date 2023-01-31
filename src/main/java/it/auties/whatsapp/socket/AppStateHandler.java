@@ -57,6 +57,8 @@ import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.Medias;
 import it.auties.whatsapp.util.Specification;
 import it.auties.whatsapp.util.Validate;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -69,6 +71,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 
@@ -77,12 +80,10 @@ class AppStateHandler extends Handler
   public static final int TIMEOUT = 120;
   private static final int PULL_ATTEMPTS = 3;
   private final SocketHandler socketHandler;
-  private final Map<PatchType, Long> versions;
   private final Map<PatchType, Integer> attempts;
 
   protected AppStateHandler(SocketHandler socketHandler) {
     this.socketHandler = socketHandler;
-    this.versions = new HashMap<>();
     this.attempts = new HashMap<>();
   }
 
@@ -94,7 +95,7 @@ class AppStateHandler extends Handler
   }
 
   private void pushSync(@NonNull PatchRequest patch) {
-    awaitLatch();
+    socketHandler.awaitLatch();
     pullUninterruptedly(List.of(patch.type())).join();
     var request = createPushRequest(patch);
     sendPush(request).join();
@@ -181,7 +182,7 @@ class AppStateHandler extends Handler
   private void handleSyncRequest(PatchType patchType, PatchSync patch, LTHashState oldState,
       long newVersion) {
     var patches = List.of(patch.withVersion(new VersionSync(newVersion)));
-    var results = decodePatches(patchType, 0, patches, oldState);
+    var results = decodePatches(patchType, patches, oldState);
     results.records().forEach(this::processActions);
   }
 
@@ -199,28 +200,18 @@ class AppStateHandler extends Handler
   }
 
   protected CompletableFuture<Void> pullInitial() {
-    return CompletableFuture.runAsync(this::pullInitialSync, getOrCreateService())
+    return pullUninterruptedly(List.of(PatchType.values()))
+        .thenRunAsync(this::onPull)
         .exceptionallyAsync(exception -> onPullError(true, exception));
   }
 
-  private void pullInitialSync() {
-    pullUninterruptedly(List.of(PatchType.CRITICAL_BLOCK, PatchType.CRITICAL_UNBLOCK_LOW))
-        .join();
-    pullUninterruptedly(List.of(PatchType.REGULAR, PatchType.REGULAR_LOW, PatchType.REGULAR_HIGH))
-        .join();
-    pullUninterruptedly(List.of(PatchType.CRITICAL_BLOCK, PatchType.CRITICAL_UNBLOCK_LOW))
-        .join();
-    onPull();
-  }
-
   private void onPull() {
+    socketHandler.store().initialSync(true);
     getOrCreateLatch().countDown();
-    versions.clear();
     attempts.clear();
   }
 
   private Void onPullError(boolean initial, Throwable exception) {
-    versions.clear();
     attempts.clear();
     if (initial) {
       getOrCreateLatch().countDown();
@@ -252,17 +243,9 @@ class AppStateHandler extends Handler
   }
 
   private LTHashState createStateWithVersion(PatchType name) {
-    var state = socketHandler.keys()
+    return socketHandler.keys()
         .findHashStateByName(name)
-        .orElse(null);
-    if (state == null) {
-      versions.put(name, 0L);
-      return new LTHashState(name);
-    }
-    if (!versions.containsKey(name)) {
-      versions.put(name, state.version());
-    }
-    return state;
+        .orElseGet(() -> new LTHashState(name));
   }
 
   private List<PatchType> decodeSyncs(Map<PatchType, LTHashState> tempStates,
@@ -280,8 +263,7 @@ class AppStateHandler extends Handler
     try {
       var results = new ArrayList<ActionDataSync>();
       if (record.hasSnapshot()) {
-        var snapshot = decodeSnapshot(record.patchType(),
-            versions.getOrDefault(record.patchType(), 0L), record.snapshot());
+        var snapshot = decodeSnapshot(record.patchType(), record.snapshot());
         snapshot.ifPresent(decodedSnapshot -> {
           results.addAll(decodedSnapshot.records());
           tempStates.put(record.patchType(), decodedSnapshot.state());
@@ -290,9 +272,7 @@ class AppStateHandler extends Handler
         });
       }
       if (record.hasPatches()) {
-        var decodedPatches = decodePatches(record.patchType(),
-            versions.getOrDefault(record.patchType(), 0L),
-            record.patches(), tempStates.get(record.patchType()));
+        var decodedPatches = decodePatches(record.patchType(), record.patches(), tempStates.get(record.patchType()));
         results.addAll(decodedPatches.records());
         socketHandler.keys()
             .putState(record.patchType(), decodedPatches.state());
@@ -312,10 +292,10 @@ class AppStateHandler extends Handler
   }
 
   private List<SnapshotSyncRecord> parseSyncRequest(Node node) {
-    return Optional.ofNullable(node)
-        .flatMap(sync -> sync.findNode("sync"))
+    return Stream.ofNullable(node)
+        .map(sync -> sync.findNodes("sync"))
+        .flatMap(Collection::stream)
         .map(sync -> sync.findNodes("collection"))
-        .stream()
         .flatMap(Collection::stream)
         .map(this::parseSync)
         .flatMap(Optional::stream)
@@ -333,7 +313,7 @@ class AppStateHandler extends Handler
     var more = sync.attributes()
         .getBoolean("has_more_patches");
     var snapshotSync = sync.findNode("snapshot")
-        .map(this::decodeSnapshot)
+        .flatMap(this::decodeSnapshot)
         .orElse(null);
     var versionCode = sync.attributes()
         .getInt("version");
@@ -347,31 +327,41 @@ class AppStateHandler extends Handler
     return Optional.of(new SnapshotSyncRecord(name, snapshotSync, patches, more));
   }
 
-  @SneakyThrows
-  private SnapshotSync decodeSnapshot(Node snapshot) {
-    if (snapshot == null) {
-      return null;
-    }
-    var blob = PROTOBUF.readMessage(snapshot.contentAsBytes()
-        .orElseThrow(), ExternalBlobReference.class);
-    var syncedData = Medias.download(blob);
-    Validate.isTrue(syncedData.isPresent(),
-        "Cannot download snapshot");
-    return PROTOBUF.readMessage(syncedData.get(), SnapshotSync.class);
-  }
-
-  @SneakyThrows
-  private Optional<PatchSync> decodePatch(Node patch, long versionCode) {
-    if (!patch.hasContent()) {
+  private Optional<SnapshotSync> decodeSnapshot(Node snapshot) {
+    try {
+      if (snapshot == null) {
+        return Optional.empty();
+      }
+      var bytes = snapshot.contentAsBytes();
+      if(bytes.isEmpty()){
+        return Optional.empty();
+      }
+      var blob = PROTOBUF.readMessage(bytes.get(), ExternalBlobReference.class);
+      var syncedData = Medias.download(blob);
+      if(syncedData.isEmpty()){
+        return Optional.empty();
+      }
+      return Optional.of(PROTOBUF.readMessage(syncedData.get(), SnapshotSync.class));
+    }catch (IOException exception){
       return Optional.empty();
     }
-    var patchSync = PROTOBUF.readMessage(patch.contentAsBytes()
-        .orElseThrow(), PatchSync.class);
-    if (!patchSync.hasVersion()) {
-      var version = new VersionSync(versionCode + 1);
-      patchSync.version(version);
+  }
+
+  private Optional<PatchSync> decodePatch(Node patch, long versionCode) {
+    try {
+      if (!patch.hasContent()) {
+        return Optional.empty();
+      }
+      var patchSync = PROTOBUF.readMessage(patch.contentAsBytes()
+          .orElseThrow(), PatchSync.class);
+      if (!patchSync.hasVersion()) {
+        var version = new VersionSync(versionCode + 1);
+        patchSync.version(version);
+      }
+      return Optional.of(patchSync);
+    }catch (IOException exception){
+      return Optional.empty();
     }
-    return Optional.of(patchSync);
   }
 
   private void processActions(ActionDataSync mutation) {
@@ -477,29 +467,29 @@ class AppStateHandler extends Handler
     socketHandler.onMessageDeleted(message, false);
   }
 
-  private SyncRecord decodePatches(PatchType name, long minimumVersion, List<PatchSync> patches,
+  private SyncRecord decodePatches(PatchType name, List<PatchSync> patches,
       LTHashState state) {
     var newState = state.copy();
     var results = patches.stream()
-        .map(patch -> decodePatch(name, minimumVersion, newState, patch))
-        .flatMap(Optional::stream)
+        .map(patch -> decodePatch(name, newState, patch))
         .map(MutationsRecord::records)
         .flatMap(Collection::stream)
         .toList();
     return new SyncRecord(newState, results);
   }
 
-  @SneakyThrows
-  private Optional<MutationsRecord> decodePatch(PatchType patchType, long minimumVersion,
-      LTHashState newState,
-      PatchSync patch) {
+  private MutationsRecord decodePatch(PatchType patchType, LTHashState newState, PatchSync patch) {
     if (patch.hasExternalMutations()) {
-      var blob = Medias.download(patch.externalMutations());
-      Validate.isTrue(blob.isPresent(), "Cannot download mutations");
-      var mutationsSync = PROTOBUF.readMessage(blob.get(), MutationsSync.class);
-      patch.mutations()
-          .addAll(mutationsSync.mutations());
+      Medias.download(patch.externalMutations()).ifPresent(blob -> {
+        try {
+          var mutationsSync = PROTOBUF.readMessage(blob, MutationsSync.class);
+          patch.mutations().addAll(mutationsSync.mutations());
+        }catch (IOException exception){
+          throw new UncheckedIOException("Cannot read mutation sync", exception);
+        }
+      });
     }
+
     newState.version(patch.version());
     var syncMac = calculateSyncMac(patch, patchType);
     Validate.isTrue(syncMac.isEmpty() || Arrays.equals(syncMac.get(), patch.patchMac()), "sync_mac",
@@ -513,8 +503,7 @@ class AppStateHandler extends Handler
     Validate.isTrue(snapshotMac.isEmpty() || Arrays.equals(snapshotMac.get(), patch.snapshotMac()),
         "patch_mac",
         HmacValidationException.class);
-    return Optional.of(mutations)
-        .filter(ignored -> minimumVersion == 0 || newState.version() > minimumVersion);
+    return mutations;
   }
 
   private Optional<byte[]> generatePatchMac(PatchType name, LTHashState newState, PatchSync patch) {
@@ -541,8 +530,7 @@ class AppStateHandler extends Handler
         .toByteArray();
   }
 
-  private Optional<SyncRecord> decodeSnapshot(PatchType name, long minimumVersion,
-      SnapshotSync snapshot) {
+  private Optional<SyncRecord> decodeSnapshot(PatchType name, SnapshotSync snapshot) {
     var mutationKeys = getMutationKeys(snapshot.keyId());
     if (mutationKeys.isEmpty()) {
       return Optional.empty();
@@ -558,10 +546,6 @@ class AppStateHandler extends Handler
         Arrays.equals(snapshot.mac(), generateSnapshotMac(newState.hash(), newState.version(), name,
             mutationKeys.get().snapshotMacKey())),
         "decode_snapshot", HmacValidationException.class);
-    if (minimumVersion == 0 || newState.version() > minimumVersion) {
-      mutations.records()
-          .clear();
-    }
     return Optional.of(new SyncRecord(newState, mutations.records()));
   }
 
@@ -646,9 +630,17 @@ class AppStateHandler extends Handler
   }
 
   @Override
+  protected void awaitLatch() {
+    if(socketHandler.store().initialSync()){
+      return;
+    }
+
+    super.awaitLatch();
+  }
+
+  @Override
   protected void dispose() {
     super.dispose();
-    versions.clear();
     attempts.clear();
     completeLatch();
   }

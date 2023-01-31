@@ -7,7 +7,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.STRING;
 import static it.auties.protobuf.base.ProtobufType.UINT32;
 import static it.auties.protobuf.base.ProtobufType.UINT64;
-import static java.util.Objects.requireNonNullElseGet;
+import static java.util.Objects.requireNonNullElse;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import it.auties.protobuf.base.ProtobufMessage;
@@ -381,8 +381,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
    * @return a non-null string
    */
   public String name() {
-    return requireNonNullElseGet(name,
-        () -> requireNonNullElseGet(displayName, () -> this.name = jid.user()));
+    return requireNonNullElse(name, requireNonNullElse(displayName, jid.user()));
   }
 
   /**

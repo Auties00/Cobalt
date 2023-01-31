@@ -19,7 +19,6 @@ import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.listener.Listener;
-import it.auties.whatsapp.listener.OnNewContact;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.GroupMetadata;
@@ -54,7 +53,6 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import lombok.AccessLevel;
@@ -67,6 +65,8 @@ import lombok.experimental.Accessors;
 @SuppressWarnings("unused")
 public class SocketHandler extends Handler
     implements SocketListener, JacksonProvider {
+  private static final int MANUAL_INITIAL_PULL_TIMEOUT = 5;
+
   static {
     getWebSocketContainer().setDefaultMaxSessionIdleTimeout(0);
   }
@@ -111,8 +111,6 @@ public class SocketHandler extends Handler
 
   private CompletableFuture<Void> authFuture;
 
-  private CompletableFuture<?> pullFuture;
-
   public SocketHandler(@NonNull Whatsapp whatsapp, @NonNull Options options, @NonNull Store store,
       @NonNull Keys keys) {
     this.whatsapp = whatsapp;
@@ -125,15 +123,7 @@ public class SocketHandler extends Handler
     this.messageHandler = new MessageHandler(this);
     this.appStateHandler = new AppStateHandler(this);
     this.errorHandler = new FailureHandler(this);
-
     getRuntime().addShutdownHook(new Thread(() -> onShutdown(false)));
-  }
-
-  private void onContactSubscribeToPresence(Whatsapp whatsapp, Options options) {
-    if (!options.automaticallySubscribeToPresences()) {
-      return;
-    }
-    store().listeners().add((OnNewContact) whatsapp::subscribeToPresence);
   }
 
   private void onShutdown(boolean reconnect) {
@@ -142,12 +132,6 @@ public class SocketHandler extends Handler
       store.dispose();
     }
     if (!reconnect) {
-      onSocketEvent(SocketEvent.CLOSE);
-      authHandler.dispose();
-      streamHandler.dispose();
-      messageHandler.dispose();
-      appStateHandler.dispose();
-      errorHandler.dispose();
       dispose();
     }
   }
@@ -299,27 +283,12 @@ public class SocketHandler extends Handler
     return appStateHandler.push(request);
   }
 
-  protected void schedulePullInitialPatches() {
-    this.pullFuture = CompletableFuture.runAsync(this::doInitialPull, CompletableFuture.delayedExecutor(10, TimeUnit.SECONDS));
-  }
-
-  protected void pullInitialPatches() {
-    if(pullFuture != null){
-      return;
-    }
-
-    doInitialPull();
-  }
-
-  private void doInitialPull() {
-    appStateHandler.pullInitial()
-        .thenRunAsync(this::onContacts)
-        .thenRunAsync(() -> store.initialSync(true))
-        .exceptionallyAsync(throwable -> errorHandler.handleFailure(UNKNOWN, throwable));
-  }
-
   public void pullPatch(PatchType... patchTypes) {
     appStateHandler.pull(patchTypes);
+  }
+
+  protected CompletableFuture<Void> pullInitialPatches() {
+    return appStateHandler.pullInitial();
   }
 
   public void decodeMessage(Node node) {
@@ -686,10 +655,7 @@ public class SocketHandler extends Handler
   }
 
   public void updateUserName(String newName, String oldName) {
-    if (newName == null || Objects.equals(newName, oldName)) {
-      return;
-    }
-    if (oldName != null) {
+    if (oldName != null && !Objects.equals(newName, oldName)) {
       sendWithNoResponse(
           Node.ofAttributes("presence", Map.of("name", oldName, "type", "unavailable")));
       sendWithNoResponse(
@@ -699,9 +665,10 @@ public class SocketHandler extends Handler
         listener.onUserStatusChange(oldName, newName);
       });
     }
-    store().findContactByJid(store().userCompanionJid()
-            .toUserJid())
-        .ifPresent(entry -> entry.chosenName(newName));
+    var self = store().userCompanionJid().toUserJid();
+    store().findContactByJid(self)
+        .orElseGet(() -> store().addContact(self))
+        .chosenName(newName);
     store().userName(newName);
   }
 
@@ -756,5 +723,16 @@ public class SocketHandler extends Handler
 
   protected void querySessionsForcefully(ContactJid contactJid) {
     messageHandler.querySessions(List.of(contactJid), true);
+  }
+
+  @Override
+  protected void dispose() {
+    onSocketEvent(SocketEvent.CLOSE);
+    authHandler.dispose();
+    streamHandler.dispose();
+    messageHandler.dispose();
+    appStateHandler.dispose();
+    errorHandler.dispose();
+    super.dispose();
   }
 }
