@@ -31,6 +31,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import lombok.NonNull;
 
+@SuppressWarnings({"unused", "UnusedReturnValue"})
 public sealed interface SocketSession permits WebSocketSession, AppSocketSession {
   CompletableFuture<Void> connect(SocketListener listener);
   CompletableFuture<Void> close();
@@ -100,26 +101,22 @@ public sealed interface SocketSession permits WebSocketSession, AppSocketSession
     }
 
     @OnOpen
-    @SuppressWarnings("unused")
     public void onOpen(Session session) {
       this.session = session;
       listener.onOpen(this);
     }
 
     @OnClose
-    @SuppressWarnings("unused")
     public void onClose() {
       listener.onClose();
     }
 
     @OnError
-    @SuppressWarnings("unused")
     public void onError(Throwable throwable) {
       listener.onError(throwable);
     }
 
     @OnMessage
-    @SuppressWarnings("unused")
     public void onBinary(byte[] message){
       listener.onMessage(message);
     }
