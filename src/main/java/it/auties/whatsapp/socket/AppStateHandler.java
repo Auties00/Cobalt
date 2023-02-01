@@ -442,7 +442,12 @@ class AppStateHandler extends Handler
   }
 
   private void clearMessages(Chat targetChat, ClearChatAction clearChatAction) {
-    if (targetChat == null || clearChatAction.messageRange().isEmpty()) {
+    if (targetChat == null) {
+      return;
+    }
+
+    if(clearChatAction.messageRange().isEmpty()){
+      targetChat.messages().clear();
       return;
     }
 

@@ -140,7 +140,7 @@ public final class TextMessage extends ContextualMessage {
   private InviteLinkGroupType inviteLinkGroupTypeV2;
 
   @ProtobufProperty(index = 30, name = "viewOnce", type = BOOL)
-  private Boolean viewOnce;
+  private boolean viewOnce;
 
   /**
    * Constructs a TextMessage from a text

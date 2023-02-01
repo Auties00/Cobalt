@@ -419,6 +419,11 @@ class StreamHandler extends Handler
   }
 
   private void handleServerSyncNotification(Node node) {
+    var version = node.attributes().getLong("version");
+    if(version <= 1){
+      return;
+    }
+
     var patches = node.findNodes("collection")
         .stream()
         .map(entry -> entry.attributes().getRequiredString("name"))

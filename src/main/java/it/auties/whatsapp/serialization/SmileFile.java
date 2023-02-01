@@ -2,25 +2,22 @@ package it.auties.whatsapp.serialization;
 
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.LocalFileSystem;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.NonWritableChannelException;
-import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import lombok.NonNull;
 
 final class SmileFile
     implements JacksonProvider {
+  private static final Map<Path, CompletableFuture<?>> futures = new ConcurrentHashMap<>();
 
   @NonNull
   private final Path file;
@@ -53,34 +50,32 @@ final class SmileFile
   }
 
   public void write(Object input, boolean async) {
+    var oldFuture = futures.get(file);
+    if(oldFuture != null && !async){
+      oldFuture.cancel(true);
+    }
+
     if (!async) {
       writeSync(input);
       return;
     }
-    CompletableFuture.runAsync(() -> writeSync(input));
+
+    Runnable worker = () -> writeSync(input);
+    var future = oldFuture != null ? oldFuture.thenRunAsync(worker) : CompletableFuture.runAsync(worker);
+    futures.put(file, future.exceptionallyAsync(this::onError));
   }
 
-  @SuppressWarnings("ResultOfMethodCallIgnored")
+  private Void onError(Throwable exception) {
+    exception.printStackTrace();
+    return null;
+  }
+
   private void writeSync(Object input) {
     try {
-      if (Files.notExists(file)) {
-        Files.createFile(file);
-      }
-    }catch (IOException ignored){
-
-    }
-
-    try (var channel = FileChannel.open(file, StandardOpenOption.WRITE)) {
-      var lock = channel.lock();
-      var result = new ByteArrayOutputStream();
-      var gzipOutputStream = new GZIPOutputStream(result);
+      var gzipOutputStream = new GZIPOutputStream(Files.newOutputStream(file, StandardOpenOption.CREATE));
       gzipOutputStream.write(SMILE.writeValueAsBytes(input));
       gzipOutputStream.finish();
-      channel.write(ByteBuffer.wrap(result.toByteArray()));
-      lock.release();
-    } catch (NoSuchFileException | OverlappingFileLockException ignored) {
-      
-    } catch (IOException | NonWritableChannelException exception) {
+    } catch (Throwable exception) {
       throw new RuntimeException("Cannot write to file", exception);
     }
   }

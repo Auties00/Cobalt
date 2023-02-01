@@ -8,6 +8,7 @@ import it.auties.whatsapp.util.JacksonProvider;
 // Just used for testing locally
 public class WaitTest implements JacksonProvider {
   public static void main(String[] args) {
+    Thread.setDefaultUncaughtExceptionHandler((t, e) -> e.printStackTrace());
     var whatsapp = Whatsapp.lastConnection(Options.defaultOptions().withClientType(ClientType.WEB_CLIENT))
         .addLoggedInListener(() -> System.out.println("Connected"))
         .addNewMessageListener(message -> System.out.println(message.toJson()))
