@@ -32,11 +32,16 @@ import java.util.concurrent.Executors;
 import lombok.NonNull;
 
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public sealed interface SocketSession permits WebSocketSession, AppSocketSession {
-  CompletableFuture<Void> connect(SocketListener listener);
-  CompletableFuture<Void> close();
-  CompletableFuture<Void> sendBinary(byte[] bytes);
-  boolean isOpen();
+public abstract sealed class SocketSession permits WebSocketSession, AppSocketSession {
+  protected SocketListener listener;
+
+  CompletableFuture<Void> connect(SocketListener listener){
+    this.listener = listener;
+    return null;
+  }
+  abstract CompletableFuture<Void> close();
+  abstract boolean isOpen();
+  public abstract CompletableFuture<Void> sendBinary(byte[] bytes);
 
   static SocketSession of(ClientType type){
     return switch (type){
@@ -46,20 +51,19 @@ public sealed interface SocketSession permits WebSocketSession, AppSocketSession
   }
 
   @ClientEndpoint(configurator = OriginPatcher.class)
-  final class WebSocketSession implements SocketSession {
+  public final static class WebSocketSession extends SocketSession {
     private Session session;
-    private SocketListener listener;
 
     @Override
     public CompletableFuture<Void> connect(SocketListener listener) {
-      return CompletableFuture.runAsync(() ->{
+      return CompletableFuture.runAsync(() -> {
         try {
-          this.listener = listener;
+          super.connect(listener);
           ContainerProvider.getWebSocketContainer()
               .connectToServer(this, WEB_ENDPOINT);
-        }catch (IOException exception){
+        } catch (IOException exception) {
           throw new UncheckedIOException("Cannot connect to host", exception);
-        }catch (DeploymentException exception){
+        } catch (DeploymentException exception) {
           throw new RuntimeException(exception);
         }
       });
@@ -70,7 +74,7 @@ public sealed interface SocketSession permits WebSocketSession, AppSocketSession
       return CompletableFuture.runAsync(() -> {
         try {
           session.close();
-        }catch (IOException exception){
+        } catch (IOException exception) {
           throw new UncheckedIOException("Cannot close connection to host", exception);
         }
       });
@@ -81,17 +85,15 @@ public sealed interface SocketSession permits WebSocketSession, AppSocketSession
       var future = new CompletableFuture<Void>();
       try {
         session.getAsyncRemote().sendBinary(ByteBuffer.wrap(bytes), result -> {
-          if(result.isOK()){
+          if (result.isOK()) {
             future.complete(null);
             return;
           }
-
           future.completeExceptionally(result.getException());
         });
-      }catch (Throwable throwable){
+      } catch (Throwable throwable) {
         future.completeExceptionally(throwable);
       }
-
       return future;
     }
 
@@ -117,7 +119,7 @@ public sealed interface SocketSession permits WebSocketSession, AppSocketSession
     }
 
     @OnMessage
-    public void onBinary(byte[] message){
+    public void onBinary(byte[] message) {
       listener.onMessage(message);
     }
 
@@ -130,18 +132,17 @@ public sealed interface SocketSession permits WebSocketSession, AppSocketSession
     }
   }
 
-  final class AppSocketSession implements SocketSession{
+  public final static class AppSocketSession extends SocketSession{
     private static final int MAX_READ_SIZE = 65535;
 
     private Socket socket;
     private ExecutorService service;
-    private SocketListener listener;
 
     @Override
     public CompletableFuture<Void> connect(SocketListener listener) {
       return CompletableFuture.runAsync(() -> {
         try {
-          this.listener = listener;
+          super.connect(listener);
           this.socket = new Socket();
           socket.setKeepAlive(true);
           socket.connect(new InetSocketAddress(APP_ENDPOINT_HOST, APP_ENDPOINT_PORT));
