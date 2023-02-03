@@ -489,7 +489,7 @@ class StreamHandler extends Handler
   private void digestSuccess(Node node) {
     node.attributes()
         .getJid("lid")
-        .ifPresent(socketHandler.store()::userCompanionJid);
+        .ifPresent(socketHandler.store()::userCompanionLid);
     confirmConnection();
     if (!socketHandler.keys()
         .hasPreKeys()) {
