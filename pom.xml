@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.auties00</groupId>
     <artifactId>whatsappweb4j</artifactId>
-    <version>3.0.4</version>
+    <version>3.0.6</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Standalone fully-featured Whatsapp Web API for Java and Kotlin</description>
     <url>https://github.com/Auties00/WhatsappWeb4j</url>
@@ -100,7 +100,7 @@
         <reflection.version>1.2</reflection.version>
         <caffeine.version>3.1.2</caffeine.version>
         <lazysodium.version>5.1.4</lazysodium.version>
-        <linkpreview.version>1.7</linkpreview.version>
+        <linkpreview.version>2.1</linkpreview.version>
         <vcard.version>0.11.3</vcard.version>
         <qr.terminal.version>2.2</qr.terminal.version>
         <delombok.plugin.version>1.18.24.1</delombok.plugin.version>

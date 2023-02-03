@@ -296,6 +296,7 @@ public class SocketHandler extends Handler
   }
 
   public final CompletableFuture<Void> sendMessage(MessageSendRequest request) {
+    store.attribute(request.info());
     return messageHandler.encode(request);
   }
 

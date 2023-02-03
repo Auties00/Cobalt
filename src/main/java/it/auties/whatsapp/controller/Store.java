@@ -370,10 +370,13 @@ public final class Store
    * @return a non-null optional
    */
   public Optional<MessageInfo> findMessageById(ContactJidProvider provider, String id) {
+    if(provider == null || id == null){
+      return Optional.empty();
+    }
     var chat = provider instanceof Chat value ?
         value :
         findChatByJid(provider.toJid()).orElse(null);
-    if (chat == null || id == null) {
+    if (chat == null) {
       return Optional.empty();
     }
     return chat.messages()

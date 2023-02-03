@@ -1463,13 +1463,9 @@ public class Whatsapp {
     if (match == null) {
       return;
     }
-    if (socketHandler.options().textPreviewSetting() == TextPreviewSetting.ENABLED_WITH_INFERENCE
-        && !match.text().equals(match.result().uri().toString())) {
-      var parsed = textMessage.text()
-          .replace(match.text(), match.result()
-              .uri()
-              .toString());
-      textMessage.text(parsed);
+    var uri = match.result().uri().toString();
+    if (socketHandler.options().textPreviewSetting() == TextPreviewSetting.ENABLED_WITH_INFERENCE && !match.text().equals(uri)) {
+      textMessage.text(textMessage.text().replace(match.text(), uri));
     }
     var imageUri = match.result()
         .images()
@@ -1483,20 +1479,12 @@ public class Whatsapp {
         .reduce(Whatsapp::compareDimensions)
         .map(LinkPreviewMedia::uri)
         .orElse(null);
-    textMessage.canonicalUrl(requireNonNullElse(videoUri, match.result()
-        .uri()).toString());
-    textMessage.matchedText(match.result()
-        .uri()
-        .toString());
-    textMessage.thumbnail(Medias.getPreview(imageUri)
-        .orElse(null));
-    textMessage.description(match.result()
-        .siteDescription());
-    textMessage.title(match.result()
-        .title());
-    textMessage.previewType(videoUri != null ?
-        VIDEO :
-        NONE);
+    textMessage.matchedText(uri);
+    textMessage.canonicalUrl(requireNonNullElse(videoUri, match.result().uri()).toString());
+    textMessage.thumbnail(Medias.getPreview(imageUri).orElse(null));
+    textMessage.description(match.result().siteDescription());
+    textMessage.title(match.result().title());
+    textMessage.previewType(videoUri != null ? VIDEO : NONE);
   }
 
   /**
