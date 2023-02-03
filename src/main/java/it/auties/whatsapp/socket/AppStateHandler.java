@@ -88,17 +88,14 @@ class AppStateHandler extends Handler
   }
 
   protected CompletableFuture<Void> push(@NonNull PatchRequest patch) {
-    return CompletableFuture.runAsync(() -> pushSync(patch), getOrCreateService())
-        .exceptionallyAsync(
-            throwable -> socketHandler.errorHandler().handleFailure(PUSH_APP_STATE, throwable))
+    return CompletableFuture.runAsync(() -> {
+          socketHandler.awaitLatch();
+          pullUninterruptedly(List.of(patch.type()))
+              .thenCompose(ignored -> sendPush(createPushRequest(patch)))
+              .join();
+        }, getOrCreateService())
+        .exceptionallyAsync(throwable -> socketHandler.errorHandler().handleFailure(PUSH_APP_STATE, throwable))
         .orTimeout(TIMEOUT, TimeUnit.SECONDS);
-  }
-
-  private void pushSync(@NonNull PatchRequest patch) {
-    socketHandler.awaitLatch();
-    pullUninterruptedly(List.of(patch.type())).join();
-    var request = createPushRequest(patch);
-    sendPush(request).join();
   }
 
   private PushRequest createPushRequest(PatchRequest patch) {
@@ -190,13 +187,10 @@ class AppStateHandler extends Handler
     if (patchTypes == null || patchTypes.length == 0) {
       return;
     }
-    CompletableFuture.runAsync(() -> pullSync(patchTypes), getOrCreateService())
+    CompletableFuture.runAsync(() -> pullUninterruptedly(Arrays.asList(patchTypes))
+            .thenRunAsync(this::onPull)
+            .join(), getOrCreateService())
         .exceptionallyAsync(exception -> onPullError(false, exception));
-  }
-
-  private void pullSync(PatchType... patchTypes) {
-    pullUninterruptedly(Arrays.asList(patchTypes)).join();
-    onPull();
   }
 
   protected CompletableFuture<Void> pullInitial() {

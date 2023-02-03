@@ -51,27 +51,30 @@ final class SmileFile
 
   public void write(Object input, boolean async) {
     var oldFuture = futures.get(file);
-    if(oldFuture != null && !async){
-      oldFuture.join();
-    }
-
     if (!async) {
+      if(oldFuture != null){
+        oldFuture.join();
+      }
+
       writeSync(input);
       return;
     }
 
     Runnable worker = () -> writeSync(input);
     var future = oldFuture != null ? oldFuture.thenRunAsync(worker) : CompletableFuture.runAsync(worker);
-    futures.put(file, future.exceptionallyAsync(exception -> {
-      exception.printStackTrace();
-      return null;
-    }));
+    futures.put(file, future.exceptionallyAsync(this::onError));
+  }
+
+  private Void onError(Throwable exception) {
+    exception.printStackTrace();
+    return null;
   }
 
   private void writeSync(Object input) {
     try {
       var gzipOutputStream = new GZIPOutputStream(Files.newOutputStream(file, StandardOpenOption.CREATE));
       gzipOutputStream.write(SMILE.writeValueAsBytes(input));
+      gzipOutputStream.flush();
       gzipOutputStream.finish();
     } catch (Throwable exception) {
       throw new RuntimeException("Cannot write to file", exception);
