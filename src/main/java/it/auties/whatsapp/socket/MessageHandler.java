@@ -416,7 +416,7 @@ class MessageHandler extends Handler
   }
 
   public void decode(Node node) {
-    CompletableFuture.runAsync(() -> {
+    getOrCreateFallbackService().execute(() -> {
       try {
         var businessName = getBusinessName(node);
         var encrypted = node.findNodes("enc");

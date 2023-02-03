@@ -10,10 +10,12 @@ abstract class Handler {
   private static final int DEFAULT_CORES = 10;
 
   private final AtomicReference<ExecutorService> service;
+  private final AtomicReference<ExecutorService> fallbackService;
   private final AtomicReference<CountDownLatch> latch;
 
   public Handler(){
     this.service = new AtomicReference<>();
+    this.fallbackService = new AtomicReference<>();
     this.latch = new AtomicReference<>();
   }
 
@@ -21,6 +23,11 @@ abstract class Handler {
     var serviceValue = service.getAndSet(null);
     if (serviceValue != null) {
       serviceValue.shutdownNow();
+    }
+
+    var fallbackServiceValue = fallbackService.getAndSet(null);
+    if (fallbackServiceValue != null) {
+      fallbackServiceValue.shutdownNow();
     }
   }
 
@@ -53,6 +60,16 @@ abstract class Handler {
     }
     var newValue = Executors.newSingleThreadExecutor();
     service.set(newValue);
+    return newValue;
+  }
+
+  protected ExecutorService getOrCreateFallbackService() {
+    var value = fallbackService.get();
+    if (value != null && !value.isShutdown()) {
+      return value;
+    }
+    var newValue = Executors.newScheduledThreadPool(DEFAULT_CORES);
+    fallbackService.set(newValue);
     return newValue;
   }
 
