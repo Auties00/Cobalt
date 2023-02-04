@@ -4,6 +4,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 
 abstract class Handler {
@@ -12,11 +13,13 @@ abstract class Handler {
   private final AtomicReference<ExecutorService> service;
   private final AtomicReference<ExecutorService> fallbackService;
   private final AtomicReference<CountDownLatch> latch;
+  private final AtomicReference<Semaphore> semaphore;
 
   public Handler(){
     this.service = new AtomicReference<>();
     this.fallbackService = new AtomicReference<>();
     this.latch = new AtomicReference<>();
+    this.semaphore = new AtomicReference<>();
   }
 
   protected void dispose() {
@@ -91,5 +94,16 @@ abstract class Handler {
     var newValue = Executors.newSingleThreadScheduledExecutor();
     service.set(newValue);
     return newValue;
+  }
+
+  protected AutoCloseable getOrCreateSemaphore() throws InterruptedException{
+    var value = semaphore.get();
+    if (value != null) {
+      value.acquire();
+      return value::release;
+    }
+    var newValue = new Semaphore(1);
+    semaphore.set(newValue);
+    return newValue::release;
   }
 }

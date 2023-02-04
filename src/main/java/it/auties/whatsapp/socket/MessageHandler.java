@@ -116,15 +116,16 @@ class MessageHandler extends Handler
   }
 
   protected final CompletableFuture<Void> encode(MessageSendRequest request) {
-    return CompletableFuture.runAsync(() -> encodeSync(request), getOrCreateService())
-        .exceptionallyAsync(throwable -> handleMessageFailure(throwable, request.info()));
+    try(var ignored = getOrCreateSemaphore()) {
+      var future = isConversation(request.info()) ? encodeConversation(request) : encodeGroup(request);
+      return future.thenRunAsync(() -> attributeOutgoingMessage(request))
+          .exceptionallyAsync(throwable -> handleMessageFailure(throwable, request.info()));
+    } catch (Exception exception) {
+      return CompletableFuture.failedFuture(exception);
+    }
   }
 
-  private void encodeSync(MessageSendRequest request) {
-    socketHandler.awaitLatch();
-    var resultRequest =
-        isConversation(request.info()) ? encodeConversation(request) : encodeGroup(request);
-    resultRequest.join();
+  private void attributeOutgoingMessage(MessageSendRequest request) {
     saveMessage(request.info(), "unknown");
     attributeMessageReceipt(request.info());
   }
