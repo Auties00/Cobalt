@@ -1,11 +1,6 @@
 package it.auties.whatsapp.socket;
 
-import static it.auties.whatsapp.api.ErrorHandler.Location.CRYPTOGRAPHY;
-import static it.auties.whatsapp.api.ErrorHandler.Location.LOGGED_OUT;
-import static it.auties.whatsapp.api.ErrorHandler.Location.LOGIN;
-import static it.auties.whatsapp.api.ErrorHandler.Location.MEDIA_CONNECTION;
-import static it.auties.whatsapp.api.ErrorHandler.Location.MESSAGE;
-import static it.auties.whatsapp.api.ErrorHandler.Location.STREAM;
+import static it.auties.whatsapp.api.ErrorHandler.Location.*;
 import static it.auties.whatsapp.model.request.Node.ofAttributes;
 import static it.auties.whatsapp.model.request.Node.ofChildren;
 import static java.util.Map.of;
@@ -62,6 +57,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -495,8 +493,8 @@ class StreamHandler extends Handler
         .hasPreKeys()) {
       sendPreKeys();
     }
-    getOrCreateScheduledService().scheduleAtFixedRate(this::sendPing, PING_INTERVAL, PING_INTERVAL,
-        TimeUnit.SECONDS);
+    var executor = (ScheduledExecutorService) getOrCreateService();
+    executor.scheduleAtFixedRate(this::sendPing, PING_INTERVAL, PING_INTERVAL, TimeUnit.SECONDS);
     createMediaConnection(0, null);
     sendStatusUpdate();
     socketHandler.onLoggedIn();
@@ -805,5 +803,10 @@ class StreamHandler extends Handler
   public void dispose() {
     super.dispose();
     retries.clear();
+  }
+
+  @Override
+  protected ExecutorService createService() {
+    return Executors.newSingleThreadScheduledExecutor();
   }
 }

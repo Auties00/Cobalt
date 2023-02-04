@@ -53,6 +53,8 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import lombok.AccessLevel;
@@ -66,6 +68,7 @@ import lombok.experimental.Accessors;
 public class SocketHandler extends Handler
     implements SocketListener, JacksonProvider {
   private static final int MANUAL_INITIAL_PULL_TIMEOUT = 5;
+  private static final int DEFAULT_THREADS = 10;
 
   static {
     getWebSocketContainer().setDefaultMaxSessionIdleTimeout(0);
@@ -704,7 +707,7 @@ public class SocketHandler extends Handler
     if (state == SocketState.DISCONNECTED || state == SocketState.LOGGED_OUT) {
       return;
     }
-    var service = getOrCreatePooledService();
+    var service = getOrCreateService();
     var futures = store.listeners()
         .stream()
         .map(listener -> runAsync(() -> consumer.accept(listener), service))
@@ -717,7 +720,7 @@ public class SocketHandler extends Handler
     if (state == SocketState.DISCONNECTED || state == SocketState.LOGGED_OUT) {
       return;
     }
-    var service = getOrCreatePooledService();
+    var service = getOrCreateService();
     store.listeners()
         .forEach(listener -> service.execute(() -> consumer.accept(listener)));
   }
@@ -735,5 +738,10 @@ public class SocketHandler extends Handler
     appStateHandler.dispose();
     errorHandler.dispose();
     super.dispose();
+  }
+
+  @Override
+  protected ExecutorService createService() {
+    return Executors.newFixedThreadPool(DEFAULT_THREADS);
   }
 }
