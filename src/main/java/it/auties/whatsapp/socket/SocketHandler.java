@@ -68,7 +68,6 @@ import lombok.experimental.Accessors;
 public class SocketHandler extends Handler
     implements SocketListener, JacksonProvider {
   private static final int MANUAL_INITIAL_PULL_TIMEOUT = 5;
-  private static final int DEFAULT_THREADS = 10;
 
   static {
     getWebSocketContainer().setDefaultMaxSessionIdleTimeout(0);
@@ -558,7 +557,7 @@ public class SocketHandler extends Handler
   }
 
   protected void onSocketEvent(SocketEvent event) {
-    callListenersSync(listener -> {
+    callListenersAsync(listener -> {
       listener.onSocketEvent(whatsapp, event);
       listener.onSocketEvent(event);
     });
@@ -586,7 +585,7 @@ public class SocketHandler extends Handler
   }
 
   protected void onMediaStatus() {
-    callListenersSync(listener -> {
+    callListenersAsync(listener -> {
       listener.onMediaStatus(whatsapp, store().status());
       listener.onMediaStatus(store().status());
     });
@@ -600,22 +599,17 @@ public class SocketHandler extends Handler
   }
 
   protected void onPrivacySettings() {
-    callListenersSync(listener -> {
+    callListenersAsync(listener -> {
       listener.onPrivacySettings(whatsapp, store().privacySettings());
       listener.onPrivacySettings(store().privacySettings());
     });
   }
 
   protected void onHistorySyncProgress(Integer progress, boolean recent) {
-    callListenersSync(listener -> {
+    callListenersAsync(listener -> {
       listener.onHistorySyncProgress(whatsapp, progress, recent);
       listener.onHistorySyncProgress(progress, recent);
     });
-  }
-
-  @Override
-  protected void awaitLatch() {
-    appStateHandler.awaitLatch();
   }
 
   protected void onReply(MessageInfo info) {
@@ -742,6 +736,6 @@ public class SocketHandler extends Handler
 
   @Override
   protected ExecutorService createService() {
-    return Executors.newFixedThreadPool(DEFAULT_THREADS);
+    return Executors.newCachedThreadPool();
   }
 }

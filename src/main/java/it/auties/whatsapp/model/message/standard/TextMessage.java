@@ -180,7 +180,6 @@ public final class TextMessage extends ContextualMessage {
   @Accessors(fluent = true)
   @ProtobufName("FontType")
   public enum TextMessageFontType {
-
     /**
      * Sans Serif
      */
@@ -205,11 +204,14 @@ public final class TextMessage extends ContextualMessage {
      * Oswald Heavy
      */
     OSWALD_HEAVY(5);
+
     @Getter
     private final int index;
 
+    @JsonCreator
     public static TextMessageFontType of(int index) {
-      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
+      return Arrays.stream(values())
+          .filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
   }
@@ -222,11 +224,11 @@ public final class TextMessage extends ContextualMessage {
   @Accessors(fluent = true)
   @ProtobufName("PreviewType")
   public enum TextMessagePreviewType {
-
     /**
      * No preview
      */
     NONE(0),
+
     /**
      * Video preview
      */
@@ -234,20 +236,29 @@ public final class TextMessage extends ContextualMessage {
     @Getter
     private final int index;
 
+    @JsonCreator
     public static TextMessagePreviewType of(int index) {
-      return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst()
+      return Arrays.stream(values())
+          .filter(entry -> entry.index() == index).findFirst()
           .orElse(null);
     }
   }
 
   @AllArgsConstructor
   public enum InviteLinkGroupType implements ProtobufMessage {
-
     DEFAULT(0),
     PARENT(1),
     SUB(2),
     DEFAULT_SUB(3);
+
     @Getter
     private final int index;
+
+    @JsonCreator
+    public static InviteLinkGroupType of(int index) {
+      return Arrays.stream(values())
+          .filter(entry -> entry.index() == index).findFirst()
+          .orElse(null);
+    }
   }
 }

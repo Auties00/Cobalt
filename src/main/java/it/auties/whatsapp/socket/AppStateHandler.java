@@ -26,6 +26,7 @@ import it.auties.whatsapp.model.action.TimeFormatAction;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatMute;
 import it.auties.whatsapp.model.contact.Contact;
+import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.setting.EphemeralSetting;
@@ -89,7 +90,7 @@ class AppStateHandler extends Handler
 
   protected CompletableFuture<Void> push(@NonNull PatchRequest patch) {
     return CompletableFuture.runAsync(() -> {
-          socketHandler.awaitLatch();
+          awaitLatch();
           pullUninterruptedly(List.of(patch.type()))
               .thenCompose(ignored -> sendPush(createPushRequest(patch)))
               .join();
@@ -187,9 +188,11 @@ class AppStateHandler extends Handler
     if (patchTypes == null || patchTypes.length == 0) {
       return;
     }
-    CompletableFuture.runAsync(() -> pullUninterruptedly(Arrays.asList(patchTypes))
-            .thenRunAsync(this::onPull)
-            .join(), getOrCreateService())
+    CompletableFuture.runAsync(() -> {
+          pullUninterruptedly(Arrays.asList(patchTypes))
+              .thenRunAsync(this::onPull)
+              .join();
+        }, getOrCreateService())
         .exceptionallyAsync(exception -> onPullError(false, exception));
   }
 
@@ -331,7 +334,7 @@ class AppStateHandler extends Handler
         return Optional.empty();
       }
       var blob = PROTOBUF.readMessage(bytes.get(), ExternalBlobReference.class);
-      var syncedData = Medias.download(blob);
+      var syncedData = Medias.download(blob).join();
       if(syncedData.isEmpty()){
         return Optional.empty();
       }
@@ -366,66 +369,76 @@ class AppStateHandler extends Handler
     var action = value.action();
     if (action != null) {
       var messageIndex = mutation.messageIndex();
-      var targetContact = messageIndex.chatJid().flatMap(socketHandler.store()::findContactByJid);
-      var targetChat = messageIndex.chatJid().flatMap(socketHandler.store()::findChatByJid);
+      var targetContact = messageIndex.chatJid()
+          .flatMap(socketHandler.store()::findContactByJid);
+      var targetChat = messageIndex.chatJid()
+          .flatMap(socketHandler.store()::findChatByJid);
       var targetMessage = targetChat.flatMap(chat -> socketHandler.store()
           .findMessageById(chat, mutation.messageIndex().messageId().orElse(null)));
       switch (action) {
         case ClearChatAction clearChatAction ->
             clearMessages(targetChat.orElse(null), clearChatAction);
-        case ContactAction contactAction -> updateName(targetContact.orElseGet(() -> {
-          var contact = socketHandler.store()
-              .addContact(messageIndex.chatJid().orElseThrow());
-          socketHandler.onNewContact(contact);
-          return contact;
-        }), targetChat.orElseGet(() -> socketHandler.store()
-            .addChat(messageIndex.chatJid().orElseThrow())), contactAction);
-        case DeleteChatAction ignored -> targetChat.ifPresent(Chat::removeMessages);
-        case DeleteMessageForMeAction ignored -> targetMessage.ifPresent(
-            message -> targetChat.ifPresent(chat -> deleteMessage(message, chat)));
+        case ContactAction contactAction ->
+            updateName(
+                targetContact.orElseGet(() -> createContact(messageIndex)),
+                targetChat.orElseGet(() -> createChat(messageIndex)),
+                contactAction
+            );
+        case DeleteChatAction ignored ->
+            targetChat.ifPresent(Chat::removeMessages);
+        case DeleteMessageForMeAction ignored ->
+            targetMessage.ifPresent(message -> targetChat.ifPresent(chat -> deleteMessage(message, chat)));
         case MarkChatAsReadAction markAction ->
-            targetChat.ifPresent(chat -> chat.unreadMessagesCount(
-                markAction.read() ?
-                    0 :
-                    -1));
+            targetChat.ifPresent(chat -> chat.unreadMessagesCount(markAction.read() ? 0 : -1));
         case MuteAction muteAction ->
             targetChat.ifPresent(chat -> chat.mute(ChatMute.muted(muteAction.muteEndTimestampInSeconds())));
-        case PinAction pinAction -> targetChat.ifPresent(chat -> chat.pinned(pinAction.pinned() ?
-            mutation.value()
-                .timestamp() :
-            0));
+        case PinAction pinAction ->
+            targetChat.ifPresent(chat -> chat.pinnedTimestampInSeconds(pinAction.pinned() ? mutation.value().timestamp() : 0));
         case StarAction starAction ->
             targetMessage.ifPresent(message -> message.starred(starAction.starred()));
         case ArchiveChatAction archiveChatAction ->
             targetChat.ifPresent(chat -> chat.archived(archiveChatAction.archived()));
-        case TimeFormatAction timeFormatAction -> socketHandler.store()
-            .twentyFourHourFormat(timeFormatAction.twentyFourHourFormatEnabled());
-        default -> {
-        }
+        case TimeFormatAction timeFormatAction ->
+            socketHandler.store().twentyFourHourFormat(timeFormatAction.twentyFourHourFormatEnabled());
+        default -> {}
       }
       socketHandler.onAction(action, messageIndex);
     }
     var setting = value.setting();
     if (setting != null) {
       switch (setting) {
-        case EphemeralSetting ephemeralSetting -> showEphemeralMessageWarning(ephemeralSetting);
-        case LocaleSetting localeSetting -> socketHandler.updateLocale(localeSetting.locale(),
-            socketHandler.store()
-                .userLocale());
-        case PushNameSetting pushNameSetting -> socketHandler.updateUserName(pushNameSetting.name(), socketHandler.store().userName());
-        case UnarchiveChatsSetting unarchiveChatsSetting -> socketHandler.store()
-            .unarchiveChats(unarchiveChatsSetting.unarchiveChats());
-        default -> {
-        }
+        case EphemeralSetting ephemeralSetting ->
+            showEphemeralMessageWarning(ephemeralSetting);
+        case LocaleSetting localeSetting ->
+            socketHandler.updateLocale(localeSetting.locale(), socketHandler.store().userLocale());
+        case PushNameSetting pushNameSetting ->
+            socketHandler.updateUserName(pushNameSetting.name(), socketHandler.store().userName());
+        case UnarchiveChatsSetting unarchiveChatsSetting ->
+            socketHandler.store().unarchiveChats(unarchiveChatsSetting.unarchiveChats());
+        default -> {}
       }
       socketHandler.onSetting(setting);
     }
-    var features = mutation.value()
-        .primaryFeature();
-    if (features != null && !features.flags()
-        .isEmpty()) {
+    var features = mutation.value().primaryFeature();
+    if (features != null && !features.flags().isEmpty()) {
       socketHandler.onFeatures(features);
     }
+  }
+
+  private Chat createChat(MessageIndexInfo messageIndex) {
+    var chat = messageIndex.chatJid()
+        .orElseThrow();
+    return socketHandler.store()
+        .addChat(chat);
+  }
+
+  private Contact createContact(MessageIndexInfo messageIndex) {
+    var chatJid = messageIndex.chatJid()
+        .orElseThrow();
+    var contact = socketHandler.store()
+        .addContact(chatJid);
+    socketHandler.onNewContact(contact);
+    return contact;
   }
 
   private void showEphemeralMessageWarning(EphemeralSetting ephemeralSetting) {
@@ -441,7 +454,7 @@ class AppStateHandler extends Handler
     }
 
     if(clearChatAction.messageRange().isEmpty()){
-      targetChat.messages().clear();
+      targetChat.removeMessages();
       return;
     }
 
@@ -480,14 +493,9 @@ class AppStateHandler extends Handler
 
   private MutationsRecord decodePatch(PatchType patchType, LTHashState newState, PatchSync patch) {
     if (patch.hasExternalMutations()) {
-      Medias.download(patch.externalMutations()).ifPresent(blob -> {
-        try {
-          var mutationsSync = PROTOBUF.readMessage(blob, MutationsSync.class);
-          patch.mutations().addAll(mutationsSync.mutations());
-        }catch (IOException exception){
-          throw new UncheckedIOException("Cannot read mutation sync", exception);
-        }
-      });
+      Medias.download(patch.externalMutations())
+          .join()
+          .ifPresent(blob -> handleExternalMutation(patch, blob));
     }
 
     newState.version(patch.version());
@@ -504,6 +512,15 @@ class AppStateHandler extends Handler
         "patch_mac",
         HmacValidationException.class);
     return mutations;
+  }
+
+  private void handleExternalMutation(PatchSync patch, byte[] blob) {
+    try {
+      var mutationsSync = PROTOBUF.readMessage(blob, MutationsSync.class);
+      patch.mutations().addAll(mutationsSync.mutations());
+    }catch (IOException exception){
+      throw new UncheckedIOException("Cannot read mutation sync", exception);
+    }
   }
 
   private Optional<byte[]> generatePatchMac(PatchType name, LTHashState newState, PatchSync patch) {

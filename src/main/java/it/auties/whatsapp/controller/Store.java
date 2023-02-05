@@ -24,6 +24,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -342,11 +343,9 @@ public final class Store
   public Optional<Chat> findChatByJid(ContactJidProvider jid) {
     return jid == null ?
         Optional.empty() :
-        chats().parallelStream()
-            .filter(chat -> chat.jid()
-                .user()
-                .equals(jid.toJid()
-                    .user()))
+        chats.values()
+            .parallelStream()
+            .filter(chat -> chat.jid().user().equals(jid.toJid().user()))
             .findAny();
   }
 
@@ -409,9 +408,9 @@ public final class Store
   private Stream<Chat> findChatsStream(String name) {
     return name == null ?
         Stream.empty() :
-        chats().parallelStream()
-            .filter(chat -> chat.name()
-                .equalsIgnoreCase(name));
+        chats.values()
+            .parallelStream()
+            .filter(chat -> chat.name().equalsIgnoreCase(name));
   }
 
   /**
@@ -530,8 +529,7 @@ public final class Store
    * @return the input chat
    */
   public Chat addChat(@NonNull Chat chat) {
-    chat.messages()
-        .forEach(this::attribute);
+    chat.messages().forEach(this::attribute);
     if (chat.hasName() && chat.jid().hasServer(ContactJid.Server.WHATSAPP)) {
       findContactByJid(chat.jid())
           .orElseGet(() -> addContact(Contact.ofJid(chat.jid())))
@@ -620,13 +618,15 @@ public final class Store
   }
 
   /**
-   * Returns the chats pinned to the top
+   * Returns the chats pinned to the top sorted new to old
    *
    * @return a non-null list of chats
    */
   public List<Chat> pinnedChats() {
-    return chats().parallelStream()
+    return chats.values()
+        .parallelStream()
         .filter(Chat::isPinned)
+        .sorted(Comparator.comparingLong((Chat chat) -> chat.pinnedTimestampInSeconds()).reversed())
         .toList();
   }
 
@@ -691,12 +691,15 @@ public final class Store
   }
 
   /**
-   * Returns all the chats
+   * Returns all the chats sorted from newest to oldest
    *
    * @return an immutable collection
    */
   public Collection<Chat> chats() {
-    return Collections.unmodifiableCollection(chats.values());
+    return chats.values()
+        .stream()
+        .sorted(Comparator.comparingLong(Chat::timestampInSeconds).reversed())
+        .toList();
   }
 
   /**

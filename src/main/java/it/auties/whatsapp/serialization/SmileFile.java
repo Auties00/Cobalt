@@ -2,6 +2,8 @@ package it.auties.whatsapp.serialization;
 
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.LocalFileSystem;
+import lombok.NonNull;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -13,7 +15,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-import lombok.NonNull;
 
 final class SmileFile
     implements JacksonProvider {
@@ -72,9 +73,8 @@ final class SmileFile
 
   private void writeSync(Object input) {
     try {
-      var gzipOutputStream = new GZIPOutputStream(Files.newOutputStream(file, StandardOpenOption.CREATE));
+      var gzipOutputStream = new GZIPOutputStream(Files.newOutputStream(file, StandardOpenOption.CREATE, StandardOpenOption.DSYNC));
       gzipOutputStream.write(SMILE.writeValueAsBytes(input));
-      gzipOutputStream.flush();
       gzipOutputStream.finish();
     } catch (Throwable exception) {
       throw new RuntimeException("Cannot write to file", exception);

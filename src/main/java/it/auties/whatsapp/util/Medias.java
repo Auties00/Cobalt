@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
@@ -129,7 +130,7 @@ public class Medias
     }
   }
 
-  public Optional<byte[]> download(AttachmentProvider provider) {
+  public CompletableFuture<Optional<byte[]>> download(AttachmentProvider provider) {
     try {
       Validate.isTrue(provider.mediaUrl() != null || provider.mediaDirectPath() != null,
           "Missing url and path from media");
@@ -140,28 +141,31 @@ public class Medias
           .uri(URI.create(url))
           .GET()
           .build();
-      var response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
-      if (response.statusCode() == HttpURLConnection.HTTP_NOT_FOUND
-          || response.statusCode() == HttpURLConnection.HTTP_GONE) {
-        return Optional.empty();
-      }
-      var stream = Bytes.of(response.body());
-      var sha256 = Sha256.calculate(stream.toByteArray());
-      Validate.isTrue(Arrays.equals(sha256, provider.mediaEncryptedSha256()),
-          "Cannot decode media: Invalid sha256 signature", SecurityException.class);
-      var encryptedMedia = stream.cut(-10)
-          .toByteArray();
-      var mediaMac = stream.slice(-10)
-          .toByteArray();
-      var keys = MediaKeys.of(provider.mediaKey(), provider.mediaName());
-      var hmac = calculateMac(encryptedMedia, keys);
-      Validate.isTrue(Arrays.equals(hmac, mediaMac), "media_decryption",
-          HmacValidationException.class);
-      var decrypted = AesCbc.decrypt(keys.iv(), encryptedMedia, keys.cipherKey());
-      return Optional.of(decrypted);
+      return client.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray())
+          .thenApplyAsync(response -> handleResponse(provider, response));
     } catch (Throwable error) {
+      return CompletableFuture.failedFuture(error);
+    }
+  }
+
+  private Optional<byte[]> handleResponse(AttachmentProvider provider, HttpResponse<byte[]> response) {
+    if (response.statusCode() == HttpURLConnection.HTTP_NOT_FOUND || response.statusCode() == HttpURLConnection.HTTP_GONE) {
       return Optional.empty();
     }
+    var stream = Bytes.of(response.body());
+    var sha256 = Sha256.calculate(stream.toByteArray());
+    Validate.isTrue(Arrays.equals(sha256, provider.mediaEncryptedSha256()),
+        "Cannot decode media: Invalid sha256 signature", SecurityException.class);
+    var encryptedMedia = stream.cut(-10)
+        .toByteArray();
+    var mediaMac = stream.slice(-10)
+        .toByteArray();
+    var keys = MediaKeys.of(provider.mediaKey(), provider.mediaName());
+    var hmac = calculateMac(encryptedMedia, keys);
+    Validate.isTrue(Arrays.equals(hmac, mediaMac), "media_decryption",
+        HmacValidationException.class);
+    var decrypted = AesCbc.decrypt(keys.iv(), encryptedMedia, keys.cipherKey());
+    return Optional.of(decrypted);
   }
 
   private byte[] calculateMac(byte[] encryptedMedia, MediaKeys keys) {

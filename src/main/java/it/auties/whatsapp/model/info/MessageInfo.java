@@ -1,13 +1,5 @@
 package it.auties.whatsapp.model.info;
 
-import static it.auties.protobuf.base.ProtobufType.BOOL;
-import static it.auties.protobuf.base.ProtobufType.BYTES;
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
-import static it.auties.protobuf.base.ProtobufType.STRING;
-import static it.auties.protobuf.base.ProtobufType.UINT32;
-import static it.auties.protobuf.base.ProtobufType.UINT64;
-import static java.util.Objects.requireNonNullElseGet;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
@@ -16,16 +8,7 @@ import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.media.MediaData;
-import it.auties.whatsapp.model.message.model.ContextualMessage;
-import it.auties.whatsapp.model.message.model.KeepInChat;
-import it.auties.whatsapp.model.message.model.Message;
-import it.auties.whatsapp.model.message.model.MessageContainer;
-import it.auties.whatsapp.model.message.model.MessageKey;
-import it.auties.whatsapp.model.message.model.MessageMetadataProvider;
-import it.auties.whatsapp.model.message.model.MessageReceipt;
-import it.auties.whatsapp.model.message.model.MessageStatus;
-import it.auties.whatsapp.model.message.model.PublicServiceAnnouncementStatus;
-import it.auties.whatsapp.model.message.model.QuotedMessage;
+import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.standard.LiveLocationMessage;
 import it.auties.whatsapp.model.message.standard.ReactionMessage;
@@ -34,24 +17,18 @@ import it.auties.whatsapp.model.poll.PollUpdate;
 import it.auties.whatsapp.model.sync.PhotoChange;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.JacksonProvider;
+import lombok.*;
+import lombok.Builder.Default;
+import lombok.experimental.Accessors;
+import lombok.extern.jackson.Jacksonized;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-import lombok.experimental.Accessors;
-import lombok.extern.jackson.Jacksonized;
+import java.util.*;
+
+import static it.auties.protobuf.base.ProtobufType.*;
+import static java.util.Objects.requireNonNullElseGet;
 
 /**
  * A model class that holds the information related to a {@link Message}.
@@ -62,7 +39,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("WebMessageInfo")
-public final class MessageInfo implements Info, MessageMetadataProvider, JacksonProvider {
+public final class MessageInfo implements Info, Comparable<MessageInfo>, MessageMetadataProvider, JacksonProvider {
   /**
    * The MessageKey of this message
    */
@@ -563,6 +540,11 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
   @Override
   public int hashCode() {
     return Objects.hashCode(id());
+  }
+
+  @Override
+  public int compareTo(@NonNull MessageInfo o) {
+    return Long.compare(timestampInSeconds(), o.timestampInSeconds());
   }
 
   /**

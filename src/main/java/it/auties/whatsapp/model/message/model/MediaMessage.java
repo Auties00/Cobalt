@@ -70,6 +70,7 @@ public abstract sealed class MediaMessage
   public Optional<byte[]> decodedMedia() {
     if (decodedMedia == null) {
       this.decodedMedia = Medias.download(this)
+          .join()
           .orElse(null);
     }
     return Optional.ofNullable(decodedMedia);

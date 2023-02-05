@@ -632,8 +632,7 @@ class StreamHandler extends Handler
     if (socketHandler.state() != SocketState.CONNECTED) {
       return;
     }
-    socketHandler.store()
-        .serialize(true);
+    socketHandler.store().serialize(true);
     socketHandler.sendQueryWithNoResponse("get", "w:p", Node.of("ping"));
     socketHandler.onSocketEvent(SocketEvent.PING);
   }

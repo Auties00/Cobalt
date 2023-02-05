@@ -109,8 +109,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
   public CompletableFuture<Void> sendWithNoResponse(@NonNull SocketSession session, @NonNull Keys keys,
       @NonNull Store store) {
     return send(session, keys, store, false, false)
-        .thenRunAsync(() -> {
-        });
+        .thenRunAsync(() -> {});
   }
 
   /**

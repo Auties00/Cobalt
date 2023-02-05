@@ -305,33 +305,63 @@ public class MessageContainer
   @ProtobufProperty(index = 47, type = MESSAGE, implementation = StickerSyncRMRMessage.class)
   private StickerSyncRMRMessage stickerSync;
 
+  /**
+   * Interactive response
+   */
   @ProtobufProperty(index = 48, name = "interactiveResponseMessage", type = MESSAGE)
   private InteractiveResponseMessage interactiveResponse;
 
+  /**
+   * Poll creation
+   */
   @ProtobufProperty(index = 49, name = "pollCreationMessage", type = MESSAGE)
   private PollCreationMessage pollCreation;
 
+  /**
+   * Poll update
+   */
   @ProtobufProperty(index = 50, name = "pollUpdateMessage", type = MESSAGE)
   private PollUpdateMessage pollUpdate;
 
+  /**
+   * Keep in chat
+   */
   @ProtobufProperty(index = 51, name = "keepInChatMessage", type = MESSAGE)
   private KeepInChatMessage keepInChat;
 
+  /**
+   * Document with caption
+   */
   @ProtobufProperty(index = 53, name = "documentWithCaptionMessage", type = MESSAGE)
   private FutureMessageContainer documentWithCaption;
 
+  /**
+   * Request phone number
+   */
   @ProtobufProperty(index = 54, name = "requestPhoneNumberMessage", type = MESSAGE)
   private RequestPhoneNumberMessage requestPhoneNumber;
 
+  /**
+   * View once v2
+   */
   @ProtobufProperty(index = 55, name = "viewOnceMessageV2", type = MESSAGE)
   private FutureMessageContainer viewOnceV2;
 
+  /**
+   * Encrypted reaction
+   */
   @ProtobufProperty(index = 56, name = "encReactionMessage", type = MESSAGE)
   private EncryptedReactionMessage encryptedReaction;
 
+  /**
+   * Edited
+   */
   @ProtobufProperty(index = 58, name = "editedMessage", type = MESSAGE)
   private FutureMessageContainer edited;
 
+  /**
+   * View once v2 extension
+   */
   @ProtobufProperty(index = 59, name = "viewOnceMessageV2Extension", type = MESSAGE)
   private FutureMessageContainer viewOnceV2Extension;
 

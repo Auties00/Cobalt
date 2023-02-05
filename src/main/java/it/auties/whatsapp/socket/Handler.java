@@ -7,8 +7,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 
 abstract class Handler {
-  private static final int DEFAULT_CORES = 10;
-
   private final AtomicReference<ExecutorService> service;
   private final AtomicReference<CountDownLatch> latch;
   private final AtomicReference<Semaphore> semaphore;
@@ -58,6 +56,7 @@ abstract class Handler {
     }
     var newValue = new Semaphore(1);
     semaphore.set(newValue);
+    newValue.acquire();
     return newValue::release;
   }
 

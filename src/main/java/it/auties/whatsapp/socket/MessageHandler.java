@@ -417,7 +417,7 @@ class MessageHandler extends Handler
   }
 
   public void decode(Node node) {
-    getOrCreateService().execute(() -> {
+    CompletableFuture.runAsync(() -> {
       try {
         var businessName = getBusinessName(node);
         var encrypted = node.findNodes("enc");
@@ -425,12 +425,14 @@ class MessageHandler extends Handler
           decode(node, null, businessName);
           return;
         }
-        encrypted.forEach(message -> decode(node, message, businessName));
+        for (var message : encrypted) {
+          decode(node, message, businessName);
+        }
       } catch (Throwable throwable) {
         socketHandler.errorHandler()
             .handleFailure(MESSAGE, throwable);
       }
-    });
+    }, getOrCreateService());
   }
 
   private String getBusinessName(Node node) {
@@ -519,8 +521,7 @@ class MessageHandler extends Handler
       var category = infoNode.attributes()
           .getString("category");
       saveMessage(info, category);
-      socketHandler.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.key()
-          .id()), null);
+      socketHandler.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.key().id()), null);
       socketHandler.sendMessageAck(infoNode, infoNode.attributes()
           .toMap());
       socketHandler.onReply(info);
@@ -706,8 +707,7 @@ class MessageHandler extends Handler
   private void saveMessage(MessageInfo info, String category) {
     processMessage(info);
     if (info.chatJid().type() == Type.STATUS) {
-      socketHandler.store()
-          .addStatus(info);
+      socketHandler.store().addStatus(info);
       socketHandler.onNewStatus(info);
       return;
     }
@@ -721,11 +721,8 @@ class MessageHandler extends Handler
     if (!result || info.timestampInSeconds() <= socketHandler.store().initializationTimeStamp()) {
       return;
     }
-    if (info.chat()
-        .archived() && socketHandler.store()
-        .unarchiveChats()) {
-      info.chat()
-          .archived(false);
+    if (info.chat().archived() && socketHandler.store().unarchiveChats()) {
+      info.chat().archived(false);
     }
     info.sender()
         .ifPresent(sender -> sender.lastSeen(ZonedDateTime.now()));
@@ -734,8 +731,7 @@ class MessageHandler extends Handler
         .ifPresent(sender -> sender.lastKnownPresence(ContactStatus.AVAILABLE));
     if (!info.ignore()) {
       info.chat()
-          .unreadMessagesCount(info.chat()
-              .unreadMessagesCount() + 1);
+          .unreadMessagesCount(info.chat().unreadMessagesCount() + 1);
     }
     socketHandler.onNewMessage(info);
   }
@@ -749,8 +745,7 @@ class MessageHandler extends Handler
           handlePollCreation(info.message(), pollCreationMessage);
       case PollUpdateMessage pollUpdateMessage -> handlePollUpdate(info, pollUpdateMessage);
       case ReactionMessage reactionMessage -> handleReactionMessage(info, reactionMessage);
-      default -> {
-      }
+      default -> {}
     }
   }
 
@@ -770,14 +765,9 @@ class MessageHandler extends Handler
   private void handleProtocolMessage(MessageInfo info, ProtocolMessage protocolMessage,
       boolean peer) {
     switch (protocolMessage.protocolType()) {
-      case HISTORY_SYNC_NOTIFICATION -> {
-        var history = downloadHistorySync(protocolMessage);
-        handleHistorySync(history);
-        if (history.progress() != null) {
-          socketHandler.onHistorySyncProgress(history.progress(), history.syncType() == RECENT);
-        }
-        socketHandler.sendSyncReceipt(info, "hist_sync");
-      }
+      case HISTORY_SYNC_NOTIFICATION -> downloadHistorySync(protocolMessage)
+          .thenAcceptAsync(history -> onHistoryNotification(info, history))
+          .exceptionallyAsync(throwable -> socketHandler.errorHandler().handleFailure(MESSAGE, throwable));
       case APP_STATE_SYNC_KEY_SHARE -> {
         socketHandler.keys()
             .addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
@@ -786,18 +776,12 @@ class MessageHandler extends Handler
         }
 
         socketHandler.pullInitialPatches()
-            .thenRunAsync(socketHandler::onContacts)
             .thenRunAsync(this::subscribeToAllPresences)
             .exceptionallyAsync(throwable -> socketHandler.errorHandler().handleFailure(UNKNOWN, throwable));
       }
       case REVOKE -> socketHandler.store()
-          .findMessageById(info.chat(), protocolMessage.key()
-              .id())
-          .ifPresent(message -> {
-            info.chat()
-                .removeMessage(message);
-            socketHandler.onMessageDeleted(message, true);
-          });
+          .findMessageById(info.chat(), protocolMessage.key().id())
+          .ifPresent(message -> onMessageDeleted(info, message));
       case EPHEMERAL_SETTING -> {
         info.chat()
             .ephemeralMessagesToggleTime(info.timestampInSeconds())
@@ -815,14 +799,29 @@ class MessageHandler extends Handler
     socketHandler.sendSyncReceipt(info, "peer_msg");
   }
 
-  private HistorySync downloadHistorySync(ProtocolMessage protocolMessage) {
+  private void onMessageDeleted(MessageInfo info, MessageInfo message) {
+    info.chat().removeMessage(message);
+    socketHandler.onMessageDeleted(message, true);
+  }
+
+  private void onHistoryNotification(MessageInfo info, HistorySync history) {
+    handleHistorySync(history);
+    if (history.progress() != null) {
+      socketHandler.onHistorySyncProgress(history.progress(), history.syncType() == RECENT);
+    }
+    socketHandler.sendSyncReceipt(info, "hist_sync");
+  }
+
+  private CompletableFuture<HistorySync> downloadHistorySync(ProtocolMessage protocolMessage) {
+    return Medias.download(protocolMessage.historySyncNotification())
+        .thenApplyAsync(entry -> entry.orElseThrow(() -> new NoSuchElementException("Cannot download history sync")))
+        .thenApplyAsync(this::readHistorySync);
+  }
+
+  private HistorySync readHistorySync(byte[] entry) {
     try {
-      var compressed = Medias.download(protocolMessage.historySyncNotification());
-      Validate.isTrue(compressed.isPresent(),
-          "Cannot download history sync");
-      var decompressed = BytesHelper.deflate(compressed.get());
-      return PROTOBUF.readMessage(decompressed, HistorySync.class);
-    } catch (IOException exception) {
+      return PROTOBUF.readMessage(BytesHelper.deflate(entry), HistorySync.class);
+    }catch (IOException exception){
       throw new UncheckedIOException("Cannot read history sync", exception);
     }
   }
@@ -840,8 +839,11 @@ class MessageHandler extends Handler
             .forEach(this::updateChatMessages);
         socketHandler.onChats();
       }
-      case PUSH_NAME -> history.pushNames()
-          .forEach(this::handNewPushName);
+      case PUSH_NAME -> {
+        history.pushNames()
+            .forEach(this::handNewPushName);
+        socketHandler.onContacts();
+      }
       case RECENT, FULL -> handleRecentMessagesListener(history);
       case NON_BLOCKING_DATA -> history.pastParticipants()
           .forEach(pastParticipants -> socketHandler.store()
@@ -885,9 +887,9 @@ class MessageHandler extends Handler
     }
 
     carrier.messages()
-        .stream()
-        .map(socketHandler.store()::attribute)
-        .forEach(chat.get()::addMessage);
+            .stream()
+            .map(socketHandler.store()::attribute)
+            .forEach(chat.get()::addMessage);
   }
 
   private void handNewPushName(PushName pushName) {

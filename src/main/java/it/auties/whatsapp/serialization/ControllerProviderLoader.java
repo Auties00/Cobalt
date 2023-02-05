@@ -15,10 +15,10 @@ import lombok.experimental.UtilityClass;
  */
 @UtilityClass
 public class ControllerProviderLoader {
-
-  private final ServiceLoader<ControllerProvider> LOADER = ServiceLoader.load(
-      ControllerProvider.class);
+  private final ServiceLoader<ControllerProvider> LOADER = ServiceLoader.load(ControllerProvider.class);
   private final DefaultControllerProvider DEFAULT_SERIALIZER = new DefaultControllerProvider();
+  private List<ControllerSerializerProvider> cachedSerializers;
+  private ControllerDeserializerProvider cachedDeserializer;
 
   /**
    * Streams all the providers loaded in the class loader
@@ -53,6 +53,11 @@ public class ControllerProviderLoader {
    * @return a non-null list
    */
   public List<ControllerSerializerProvider> findAllSerializers(boolean useDefault) {
+    return cachedSerializers != null ? cachedSerializers
+        : (cachedSerializers = findAllSerializersInternal(useDefault));
+  }
+
+  private List<ControllerSerializerProvider> findAllSerializersInternal(boolean useDefault) {
     return ControllerProviderLoader.stream(useDefault)
         .filter(entry -> entry instanceof ControllerSerializerProvider)
         .map(entry -> (ControllerSerializerProvider) entry)
@@ -66,6 +71,11 @@ public class ControllerProviderLoader {
    * @return a non-null list
    */
   public ControllerDeserializerProvider findOnlyDeserializer(boolean useDefault) {
+    return cachedDeserializer != null ? cachedDeserializer
+        : (cachedDeserializer = findOnlyDeserializerInternal(useDefault));
+  }
+
+  private ControllerDeserializerProvider findOnlyDeserializerInternal(boolean useDefault) {
     var providers = ControllerProviderLoader.stream(useDefault)
         .filter(entry -> entry instanceof ControllerDeserializerProvider)
         .map(entry -> (ControllerDeserializerProvider) entry)
@@ -76,8 +86,7 @@ public class ControllerProviderLoader {
         .filter(ControllerDeserializerProvider::isBest)
         .collect(Collectors.toCollection(LinkedList::new));
     if (best.isEmpty()) {
-      checkProviders(providers,
-          "Cannot resolve conflicts between serializers, more than one serializer with default priority exists: %s");
+      checkProviders(providers, "Cannot resolve conflicts between serializers, more than one serializer with default priority exists: %s");
       return providers.getFirst();
     }
     checkProviders(best,
