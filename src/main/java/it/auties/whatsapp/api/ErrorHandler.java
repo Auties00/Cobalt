@@ -2,15 +2,14 @@ package it.auties.whatsapp.api;
 
 import static it.auties.whatsapp.api.ErrorHandler.Location.CRYPTOGRAPHY;
 import static it.auties.whatsapp.api.ErrorHandler.Location.INITIAL_APP_STATE_SYNC;
-import static it.auties.whatsapp.api.ErrorHandler.Location.LOGGED_OUT;
 import static it.auties.whatsapp.api.ErrorHandler.Location.MESSAGE;
 import static it.auties.whatsapp.api.ErrorHandler.Location.SOCKET;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
 
 import it.auties.whatsapp.api.ErrorHandler.Location;
-import it.auties.whatsapp.util.HmacValidationException;
 import it.auties.whatsapp.util.Exceptions;
+import it.auties.whatsapp.util.HmacValidationException;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.util.function.BiConsumer;
@@ -114,9 +113,6 @@ public interface ErrorHandler
       if (location == SOCKET) {
         return Result.RECONNECT;
       }
-      if (location == LOGGED_OUT) {
-        return Result.RESTORE;
-      }
       if (loggingLevel != null) {
         logger.log(loggingLevel, "Socket failure at %s".formatted(location));
       }
@@ -162,10 +158,6 @@ public interface ErrorHandler
      * Called when a malformed node is sent
      */
     ERRONEOUS_NODE,
-    /**
-     * The client was manually disconnected from whatsapp
-     */
-    LOGGED_OUT,
     /**
      * Called when the media connection cannot be renewed
      */

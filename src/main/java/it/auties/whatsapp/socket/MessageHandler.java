@@ -76,8 +76,6 @@ import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -102,11 +100,11 @@ class MessageHandler extends Handler
 
   protected MessageHandler(SocketHandler socketHandler) {
     this.socketHandler = socketHandler;
-    this.retries = new HashMap<>();
     this.groupsCache = createCache(Duration.ofMinutes(5));
     this.devicesCache = createCache(Duration.ofMinutes(5));
     this.pastParticipantsQueue = new ConcurrentHashMap<>();
-    this.historyCache = new HashSet<>();
+    this.retries = new ConcurrentHashMap<>();
+    this.historyCache = ConcurrentHashMap.newKeySet();
   }
 
   private <K, V> Cache<K, V> createCache(Duration duration) {
@@ -189,8 +187,7 @@ class MessageHandler extends Handler
         .type() == ContactJid.Type.STATUS;
   }
 
-  private Node createEncodedMessageNode(MessageInfo info, List<Node> preKeys, Node descriptor,
-      Map<String, Object> metadata) {
+  private Node createEncodedMessageNode(MessageInfo info, List<Node> preKeys, Node descriptor, Map<String, Object> metadata) {
     try {
       var body = new ArrayList<Node>();
       if (!preKeys.isEmpty()) {
@@ -417,7 +414,7 @@ class MessageHandler extends Handler
   }
 
   public void decode(Node node) {
-    CompletableFuture.runAsync(() -> {
+    getOrCreateService().execute(() -> {
       try {
         var businessName = getBusinessName(node);
         var encrypted = node.findNodes("enc");
@@ -425,14 +422,12 @@ class MessageHandler extends Handler
           decode(node, null, businessName);
           return;
         }
-        for (var message : encrypted) {
-          decode(node, message, businessName);
-        }
+        encrypted.forEach(message -> decode(node, message, businessName));
       } catch (Throwable throwable) {
         socketHandler.errorHandler()
             .handleFailure(MESSAGE, throwable);
       }
-    }, getOrCreateService());
+    });
   }
 
   private String getBusinessName(Node node) {
@@ -717,7 +712,7 @@ class MessageHandler extends Handler
       }
       return;
     }
-    var result = info.chat().addMessage(info);
+    var result = info.chat().addNewMessage(info);
     if (!result || info.timestampInSeconds() <= socketHandler.store().initializationTimeStamp()) {
       return;
     }
@@ -886,10 +881,11 @@ class MessageHandler extends Handler
       return;
     }
 
-    carrier.messages()
-            .stream()
-            .map(socketHandler.store()::attribute)
-            .forEach(chat.get()::addMessage);
+    var messages = carrier.messages()
+        .stream()
+        .peek(socketHandler.store()::attribute)
+        .toList();
+    chat.get().addOldMessages(messages);
   }
 
   private void handNewPushName(PushName pushName) {
@@ -904,7 +900,7 @@ class MessageHandler extends Handler
         })
         .chosenName(pushName.name());
     var action = ContactAction.of(pushName.name(), null, null);
-    socketHandler.onAction(action, MessageIndexInfo.of("contact", null, null, true));
+    socketHandler.onAction(action, MessageIndexInfo.of("contact", jid, null, true));
   }
 
   @SafeVarargs

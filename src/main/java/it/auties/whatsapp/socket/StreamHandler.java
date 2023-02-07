@@ -1,6 +1,10 @@
 package it.auties.whatsapp.socket;
 
-import static it.auties.whatsapp.api.ErrorHandler.Location.*;
+import static it.auties.whatsapp.api.ErrorHandler.Location.CRYPTOGRAPHY;
+import static it.auties.whatsapp.api.ErrorHandler.Location.LOGIN;
+import static it.auties.whatsapp.api.ErrorHandler.Location.MEDIA_CONNECTION;
+import static it.auties.whatsapp.api.ErrorHandler.Location.MESSAGE;
+import static it.auties.whatsapp.api.ErrorHandler.Location.STREAM;
 import static it.auties.whatsapp.model.request.Node.ofAttributes;
 import static it.auties.whatsapp.model.request.Node.ofChildren;
 import static java.util.Map.of;
@@ -106,21 +110,14 @@ class StreamHandler extends Handler
   }
 
   private void digestFailure(Node node) {
-    var location = node.attributes()
-        .getOptionalString("location")
-        .orElse("unknown");
-    var reason = node.attributes()
-        .getInt("reason");
+    var reason = node.attributes().getInt("reason");
     if (reason == 401) {
-      socketHandler.errorHandler()
-          .handleFailure(LOGGED_OUT, new RuntimeException(
-              "The socket was closed from Whatsapp because of a failure at %s with status code %s".formatted(
-                  location, reason)));
+      socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
       return;
     }
+
     socketHandler.errorHandler()
-        .handleFailure(Location.STREAM,
-            new RuntimeException("Stream error: %s".formatted(node)));
+        .handleFailure(Location.STREAM, new RuntimeException("Stream error: %s".formatted(node)));
   }
 
   private void digestChatState(Node node) {
@@ -342,7 +339,7 @@ class StreamHandler extends Handler
         .stubType(stubType)
         .stubParameters(List.of())
         .build();
-    chat.addMessage(socketHandler.store().attribute(message));
+    chat.addNewMessage(socketHandler.store().attribute(message));
   }
 
   private void handleEncryptNotification(Node node) {
@@ -417,11 +414,6 @@ class StreamHandler extends Handler
   }
 
   private void handleServerSyncNotification(Node node) {
-    var version = node.attributes().getLong("version");
-    if(version <= 1){
-      return;
-    }
-
     var patches = node.findNodes("collection")
         .stream()
         .map(entry -> entry.attributes().getRequiredString("name"))
@@ -456,11 +448,6 @@ class StreamHandler extends Handler
           .handleFailure(CRYPTOGRAPHY, new RuntimeException("Detected a bad mac"));
       return;
     }
-    var conflict = node.findNode("conflict");
-    if (conflict.isPresent()) {
-      socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
-      return;
-    }
     var statusCode = node.attributes()
         .getInt("code");
     switch (statusCode) {
@@ -479,9 +466,13 @@ class StreamHandler extends Handler
         .getString("type");
     var reason = child.attributes()
         .getString("reason", type);
-    socketHandler.errorHandler()
-        .handleFailure(Objects.equals(reason, "device_removed") ? LOGGED_OUT : STREAM,
-            new RuntimeException(reason));
+    if (!Objects.equals(reason, "device_removed")) {
+      socketHandler.errorHandler()
+          .handleFailure(STREAM, new RuntimeException(reason));
+      return;
+    }
+
+    socketHandler.onDisconnected(DisconnectReason.LOGGED_OUT);
   }
 
   private void digestSuccess(Node node) {
@@ -498,19 +489,15 @@ class StreamHandler extends Handler
     createMediaConnection(0, null);
     sendStatusUpdate();
     socketHandler.onLoggedIn();
-    if (!socketHandler.store()
-        .initialSync()) {
+    if (!socketHandler.store().initialSync()) {
       return;
     }
-    ControllerProviderLoader.findOnlyDeserializer(socketHandler.options()
-            .defaultSerialization())
+    ControllerProviderLoader.findOnlyDeserializer(socketHandler.options().defaultSerialization())
         .attributeStore(socketHandler.store())
         .thenRun(socketHandler::onChats)
-        .exceptionallyAsync(exception -> socketHandler.errorHandler()
-            .handleFailure(MESSAGE, exception));
+        .exceptionallyAsync(exception -> socketHandler.errorHandler().handleFailure(MESSAGE, exception));
     socketHandler.onContacts();
-    if (!socketHandler.options()
-        .automaticallySubscribeToPresences()) {
+    if (!socketHandler.options().automaticallySubscribeToPresences()) {
       return;
     }
     var delayedExecutor = CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS);

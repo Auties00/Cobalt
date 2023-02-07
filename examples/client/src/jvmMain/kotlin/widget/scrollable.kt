@@ -14,9 +14,10 @@ import androidx.compose.ui.Modifier
 @Composable
 fun ScrollBox(
         modifier: Modifier = Modifier,
+        firstVisibleIndex: Int = 0,
         content: LazyListScope.() -> Unit
 ) {
-    val verticalScrollState = rememberLazyListState(0)
+    val verticalScrollState = rememberLazyListState(firstVisibleIndex)
     Box(modifier.fillMaxHeight()) {
         LazyColumn(state = verticalScrollState) {
             content()

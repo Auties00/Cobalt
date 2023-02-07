@@ -300,8 +300,7 @@ public record Node(@NonNull String description, @NonNull Attributes attributes, 
    */
   public Request toRequest(String id, Function<Node, Boolean> filter) {
     if (id() == null) {
-      attributes.toMap()
-          .put("id", requireNonNull(id, "No valid jid can be used to create a request"));
+      attributes.put("id", requireNonNull(id));
     }
     return Request.of(this, filter);
   }

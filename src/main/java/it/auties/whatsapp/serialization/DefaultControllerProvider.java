@@ -86,7 +86,7 @@ class DefaultControllerProvider
     store.chats()
         .stream()
         .filter(this::updateHash)
-        .forEach(chat -> serializeChat(store, chat));
+        .forEach(chat -> serializeChat(store, chat, async));
   }
 
   private boolean updateHash(Chat entry) {
@@ -102,9 +102,9 @@ class DefaultControllerProvider
     return true;
   }
 
-  private void serializeChat(Store store, Chat chat) {
+  private void serializeChat(Store store, Chat chat, boolean async) {
     var preferences = SmileFile.of("%s/%s%s.smile", store.id(), CHAT_PREFIX, chat.jid());
-    preferences.write(chat, true);
+    preferences.write(chat, async);
   }
 
   @Override

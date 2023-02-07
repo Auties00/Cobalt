@@ -3,6 +3,7 @@ package screen
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.Icon
 import androidx.compose.material.ListItem
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
@@ -14,6 +15,7 @@ import it.auties.whatsapp.model.chat.Chat
 import it.auties.whatsapp.model.message.standard.TextMessage
 import org.succlz123.lib.screen.LocalScreenNavigator
 import widget.ScrollBox
+import kotlin.math.max
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -29,14 +31,14 @@ fun Chat(chat: Chat) = Column {
                 IconButton(onClick = {
                     navigator.remove(screenName = "chat")
                 }) {
-                    androidx.compose.material.Icon(
+                    Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = null
                     )
                 }
             }
     )
-    ScrollBox {
+    ScrollBox(firstVisibleIndex = max(messages.size - 1, 0)) {
         items(messages) {
             ListItem(
                     text = {

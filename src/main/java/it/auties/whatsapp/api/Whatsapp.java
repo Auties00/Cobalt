@@ -1080,7 +1080,7 @@ public class Whatsapp {
     var metadata = Map.of("jid", store().userCompanionJid(), "reason", "user_initiated");
     var device = Node.ofAttributes("remove-companion-device", metadata);
     return socketHandler.sendQuery("set", "md", device)
-        .thenComposeAsync(ignored -> socketHandler.disconnect(DisconnectReason.LOGGED_OUT));
+        .thenRunAsync(() -> {});
   }
 
   /**
@@ -1123,8 +1123,7 @@ public class Whatsapp {
             .toList();
     var node = Node.ofChildren("privacy", Node.ofChildren("category", attributes, children));
     return socketHandler.sendQuery("set", "privacy", node)
-        .thenRunAsync(() -> store().privacySettings()
-            .put(type, value))
+        .thenRunAsync(() -> store().privacySettings().put(type, value))
         .thenApplyAsync(ignored -> this);
   }
 
@@ -1167,8 +1166,7 @@ public class Whatsapp {
   public CompletableFuture<GdprAccountReport> getGdprAccountInfoStatus() {
     return socketHandler.sendQuery("get", "urn:xmpp:whatsapp:account",
             Node.ofAttributes("gdpr", Map.of("gdpr", "status")))
-        .thenApplyAsync(result -> GdprAccountReport.ofPending(result.attributes()
-            .getLong("timestamp")));
+        .thenApplyAsync(result -> GdprAccountReport.ofPending(result.attributes().getLong("timestamp")));
   }
 
   /**
@@ -1681,8 +1679,7 @@ public class Whatsapp {
         .flatMap(group -> group.attributes()
             .getJid("jid"))
         .map(jid -> store().findChatByJid(jid)
-            .orElseGet(() -> socketHandler.store()
-                .addChat(jid)));
+            .orElseGet(() -> socketHandler.store().addChat(jid)));
   }
 
   /**
@@ -2646,8 +2643,7 @@ public class Whatsapp {
 
   private ActionMessageRangeSync createRange(ContactJidProvider chat, boolean allMessages) {
     var known = store().findChatByJid(chat.toJid())
-        .orElseGet(() -> socketHandler.store()
-            .addChat(chat.toJid()));
+        .orElseGet(() -> socketHandler.store().addChat(chat.toJid()));
     return new ActionMessageRangeSync(known, allMessages);
   }
 

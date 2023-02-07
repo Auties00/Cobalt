@@ -184,28 +184,44 @@ class AppStateHandler extends Handler
     results.records().forEach(this::processActions);
   }
 
+  @SuppressWarnings("CodeBlock2Expr")
   protected void pull(PatchType... patchTypes) {
     if (patchTypes == null || patchTypes.length == 0) {
       return;
     }
     CompletableFuture.runAsync(() -> {
           pullUninterruptedly(Arrays.asList(patchTypes))
-              .thenRunAsync(this::onPull)
+              .thenAcceptAsync(success -> onPull(false, success))
               .join();
         }, getOrCreateService())
         .exceptionallyAsync(exception -> onPullError(false, exception));
   }
 
   protected CompletableFuture<Void> pullInitial() {
-    return pullUninterruptedly(List.of(PatchType.values()))
-        .thenRunAsync(this::onPull)
+    return pullUninterruptedly(Arrays.asList(PatchType.values()))
+        .thenAcceptAsync(success -> onPull(true, success))
         .exceptionallyAsync(exception -> onPullError(true, exception));
   }
 
-  private void onPull() {
-    socketHandler.store().initialSync(true);
+  private void onPull(boolean initial, boolean success) {
+    if(!socketHandler.store().initialSync()) {
+      socketHandler.store().initialSync((initial && success) || isSyncComplete());
+    }
+
     getOrCreateLatch().countDown();
     attempts.clear();
+  }
+
+  private boolean isSyncComplete() {
+    return Arrays.stream(PatchType.values())
+        .allMatch(this::isSyncComplete);
+  }
+
+  private boolean isSyncComplete(PatchType entry) {
+    return socketHandler.keys()
+        .findHashStateByName(entry)
+        .filter(type -> type.version() > 0)
+        .isPresent();
   }
 
   private Void onPullError(boolean initial, Throwable exception) {
@@ -219,19 +235,36 @@ class AppStateHandler extends Handler
         .handleFailure(PULL_APP_STATE, exception);
   }
 
-  private CompletableFuture<Void> pullUninterruptedly(List<PatchType> patchTypes) {
+  private CompletableFuture<Boolean> pullUninterruptedly(List<PatchType> patchTypes) {
     var tempStates = new HashMap<PatchType, LTHashState>();
     var nodes = getPullNodes(patchTypes, tempStates);
     return socketHandler.sendQuery("set", "w:sync:app:state", Node.ofChildren("sync", nodes))
         .thenApplyAsync(this::parseSyncRequest)
-        .thenApplyAsync(records -> decodeSyncs(tempStates, records))
-        .thenComposeAsync(remaining -> remaining.isEmpty() ? completedFuture(null)
-            : pullUninterruptedly(remaining))
+        .thenApplyAsync(records -> isPullSuccessful(records) ? records : null)
+        .thenApplyAsync(records -> records == null ? null : decodeSyncs(tempStates, records))
+        .thenComposeAsync(this::handlePullResult)
         .orTimeout(TIMEOUT, TimeUnit.SECONDS);
   }
 
-  private List<Node> getPullNodes(List<PatchType> patchTypes,
-      HashMap<PatchType, LTHashState> tempStates) {
+  private CompletableFuture<Boolean> handlePullResult(List<PatchType> remaining) {
+    if (remaining == null) {
+      return completedFuture(false);
+    }
+    if (remaining.isEmpty()) {
+      return completedFuture(true);
+    }
+    return pullUninterruptedly(remaining);
+  }
+
+  private boolean isPullSuccessful(List<SnapshotSyncRecord> records) {
+    var count = records.stream()
+        .map(SnapshotSyncRecord::patches)
+        .mapToLong(Collection::size)
+        .sum();
+    return count != 0;
+  }
+
+  private List<Node> getPullNodes(List<PatchType> patchTypes, Map<PatchType, LTHashState> tempStates) {
     return patchTypes.stream()
         .map(this::createStateWithVersion)
         .peek(state -> tempStates.put(state.name(), state))
@@ -245,8 +278,7 @@ class AppStateHandler extends Handler
         .orElseGet(() -> new LTHashState(name));
   }
 
-  private List<PatchType> decodeSyncs(Map<PatchType, LTHashState> tempStates,
-      List<SnapshotSyncRecord> records) {
+  private List<PatchType> decodeSyncs(Map<PatchType, LTHashState> tempStates, List<SnapshotSyncRecord> records) {
     return records.stream()
         .map(record -> decodeSync(record, tempStates))
         .peek(chunk -> chunk.records()

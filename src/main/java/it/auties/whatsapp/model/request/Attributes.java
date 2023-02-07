@@ -143,8 +143,19 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
    * @return the non-null value
    */
   public int getInt(@NonNull String key) {
-    return get(key, Object.class).map(this::parseInt)
+    return getOptionalInt(key)
         .orElse(0);
+  }
+
+  /**
+   * Gets a value as an int by key in the wrapped toMap
+   *
+   * @param key the non-null key
+   * @return the non-null value
+   */
+  public Optional<Integer> getOptionalInt(String key) {
+    return get(key, Object.class)
+        .map(this::parseInt);
   }
 
   private int parseInt(Object value) {
@@ -162,8 +173,19 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
    * @return the non-null value
    */
   public long getLong(@NonNull String key) {
-    return get(key, Object.class).map(this::parseLong)
+    return getOptionalLong(key)
         .orElse(0L);
+  }
+
+  /**
+   * Gets a value as a long by key in the wrapped toMap
+   *
+   * @param key the non-null key
+   * @return the non-null value
+   */
+  public Optional<Long> getOptionalLong(@NonNull String key) {
+    return get(key, Object.class)
+        .map(this::parseLong);
   }
 
   private long parseLong(Object value) {

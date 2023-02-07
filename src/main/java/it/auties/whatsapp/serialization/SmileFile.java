@@ -54,7 +54,7 @@ final class SmileFile
     var oldFuture = futures.get(file);
     if (!async) {
       if(oldFuture != null){
-        oldFuture.join();
+        oldFuture.cancel(true);
       }
 
       writeSync(input);
