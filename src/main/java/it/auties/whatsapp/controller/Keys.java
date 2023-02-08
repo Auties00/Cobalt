@@ -5,6 +5,8 @@ import static java.util.Objects.requireNonNullElseGet;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import it.auties.bytes.Bytes;
+import it.auties.whatsapp.api.ClientType;
+import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
 import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
@@ -19,10 +21,12 @@ import it.auties.whatsapp.model.sync.AppStateSyncKey;
 import it.auties.whatsapp.model.sync.LTHashState;
 import it.auties.whatsapp.serialization.ControllerProviderLoader;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
@@ -52,6 +56,28 @@ public final class Keys
    */
   @Getter
   private int id;
+
+  @Getter
+  @Default
+  @NonNull
+  private String phoneId = UUID.randomUUID().toString();
+
+  @Getter
+  @Default
+  @NonNull
+  private String deviceId = Base64.getUrlEncoder().encodeToString(Bytes.ofRandom(16).toByteArray());
+
+  @Getter
+  @Default
+  @NonNull
+  private String identityId = Bytes.ofRandom(20).toString();
+
+  /**
+   * The client type
+   */
+  @Getter
+  @NonNull
+  private ClientType clientType;
 
   @Getter
   private byte @NonNull [] prologue;
@@ -168,16 +194,14 @@ public final class Keys
   /**
    * Returns a new instance of random keys
    *
-   * @param id                   the unsigned id of these keys
-   * @param prologue             the prologue to use
-   * @param useDefaultSerializer whether the default serializer should be used
-   * @return a non-null instance of WhatsappKeys
+   * @param options the non-null options
+   * @return a non-null instance
    */
-  public static Keys random(int id, byte[] prologue, boolean useDefaultSerializer) {
+  public static Keys random(@NonNull WhatsappOptions options) {
     var result = Keys.builder()
-        .id(id)
-        .useDefaultSerializer(useDefaultSerializer)
-        .prologue(prologue)
+        .id(options.id())
+        .clientType(options.clientType())
+        .useDefaultSerializer(options.defaultSerialization())
         .build();
     result.signedKeyPair(SignalSignedKeyPair.of(result.id(), result.identityKeyPair()));
     result.serialize(true);
@@ -187,16 +211,14 @@ public final class Keys
   /**
    * Returns the keys saved in memory or constructs a new clean instance
    *
-   * @param id                   the id of this session
-   * @param prologue             the prologue to use
-   * @param useDefaultSerializer whether the default serializer should be used
-   * @return a non-null instance of WhatsappKeys
+   * @param options the non-null options
+   * @return a non-null instance
    */
-  public static Keys of(int id, byte[] prologue, boolean useDefaultSerializer) {
-    var deserializer = ControllerProviderLoader.findOnlyDeserializer(useDefaultSerializer);
-    return deserializer.deserializeKeys(id)
-        .map(store -> store.useDefaultSerializer(useDefaultSerializer))
-        .orElseGet(() -> random(id, prologue, useDefaultSerializer));
+  public static Keys of(@NonNull WhatsappOptions options) {
+    var deserializer = ControllerProviderLoader.findOnlyDeserializer(options.defaultSerialization());
+    return deserializer.deserializeKeys(options.id())
+        .map(store -> store.useDefaultSerializer(options.defaultSerialization()))
+        .orElseGet(() -> random(options));
   }
 
   /**

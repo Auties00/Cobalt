@@ -1,7 +1,7 @@
 package it.auties.whatsapp.api;
 
 import static it.auties.bytes.Bytes.ofRandom;
-import static it.auties.whatsapp.api.Whatsapp.Options.defaultOptions;
+import static it.auties.whatsapp.api.WhatsappOptions.WebOptions.defaultOptions;
 import static it.auties.whatsapp.binary.PatchType.REGULAR_HIGH;
 import static it.auties.whatsapp.binary.PatchType.REGULAR_LOW;
 import static it.auties.whatsapp.model.contact.ContactJid.Server.GROUP;
@@ -16,6 +16,7 @@ import it.auties.bytes.Bytes;
 import it.auties.linkpreview.LinkPreview;
 import it.auties.linkpreview.LinkPreviewMedia;
 import it.auties.linkpreview.LinkPreviewResult;
+import it.auties.whatsapp.api.WhatsappOptions.WebOptions;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGmc;
@@ -127,7 +128,6 @@ import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.ReplyHandler;
 import it.auties.whatsapp.model.response.ContactStatusResponse;
 import it.auties.whatsapp.model.response.HasWhatsappResponse;
-import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.model.sync.ActionMessageRangeSync;
 import it.auties.whatsapp.model.sync.ActionValueSync;
 import it.auties.whatsapp.model.sync.MediaRetryNotification;
@@ -140,7 +140,6 @@ import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.ListenerScanner;
 import it.auties.whatsapp.util.LocalFileSystem;
 import it.auties.whatsapp.util.Medias;
-import it.auties.whatsapp.util.Specification;
 import it.auties.whatsapp.util.Validate;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -158,19 +157,10 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.Data;
 import lombok.NonNull;
-import lombok.With;
-import lombok.experimental.Accessors;
 
 /**
- * A class used to interface a user to WhatsappWeb's WebSocket. It provides various functionalities,
- * including the possibility to query, set and modify data associated with the loaded session of
- * whatsapp. It can be configured using a default configuration or a custom one. Multiple instances
- * of this class can be initialized, though it is not advisable as; is a singleton and cannot
- * distinguish between the data associated with each session.
+ * A class used to interface a user to WhatsappWeb's WebSocket
  */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public class Whatsapp {
@@ -180,27 +170,15 @@ public class Whatsapp {
    */
   private final SocketHandler socketHandler;
 
-  private Whatsapp(Options options) {
-    this(options, Store.of(options.id(), options.defaultSerialization()),
-        Keys.of(options.id(), getPrologue(options.clientType()), options.defaultSerialization()));
+  /**
+   * Constructs a new instance of the API
+   *
+   * @return a non-null Whatsapp instance
+   */
+  public static Whatsapp newConnection() {
+    return newConnection(defaultOptions());
   }
-
-  private static byte[] getPrologue(ClientType type){
-    return switch (type){
-      case WEB_CLIENT -> Specification.Whatsapp.WEB_PROLOGUE;
-      case APP_CLIENT -> Specification.Whatsapp.APP_PROLOGUE;
-    };
-  }
-
-  private Whatsapp(Options options, Store store, Keys keys) {
-    this.socketHandler = new SocketHandler(this, options, store, keys);
-    if (!options.autodetectListeners()) {
-      return;
-    }
-    ListenerScanner.scan(this)
-        .forEach(this::addListener);
-  }
-
+  
   /**
    * Constructs a new instance of the API. If the id is not associated with any session, a new one
    * will be created.
@@ -209,17 +187,7 @@ public class Whatsapp {
    * @return a non-null Whatsapp instance
    */
   public static Whatsapp newConnection(int id) {
-    return newConnection(Options.defaultOptions()
-        .withId(id));
-  }
-
-  /**
-   * Constructs a new instance of the API
-   *
-   * @return a non-null Whatsapp instance
-   */
-  public static Whatsapp newConnection() {
-    return newConnection(defaultOptions());
+    return newConnection(WebOptions.defaultOptions().id(id));
   }
 
   /**
@@ -229,7 +197,7 @@ public class Whatsapp {
    * @param options the non-null options used to create this session
    * @return a non-null Whatsapp instance
    */
-  public static Whatsapp newConnection(@NonNull Options options) {
+  public static Whatsapp newConnection(@NonNull WhatsappOptions options) {
     return new Whatsapp(options);
   }
 
@@ -241,8 +209,7 @@ public class Whatsapp {
    * @param keys    the non-null keys used to create this session
    * @return a non-null Whatsapp instance
    */
-  public static Whatsapp newConnection(@NonNull Options options, @NonNull Store store,
-      @NonNull Keys keys) {
+  public static Whatsapp newConnection(@NonNull WhatsappOptions options, @NonNull Store store, @NonNull Keys keys) {
     return new Whatsapp(options, store, keys);
   }
 
@@ -263,10 +230,12 @@ public class Whatsapp {
    * @param options the non-null options
    * @return a non-null Whatsapp instance
    */
-  public static Whatsapp firstConnection(@NonNull Options options) {
-    return newConnection(options.withId(requireNonNullElseGet(
-        ControllerProviderLoader.findAllIds(options.defaultSerialization())
-            .peekFirst(), KeyHelper::registrationId)));
+  public static Whatsapp firstConnection(@NonNull WhatsappOptions options) {
+    var lastIds = ControllerProviderLoader.findAllIds(options.defaultSerialization());
+    if(!lastIds.isEmpty()){
+      options.id(lastIds.peekFirst());
+    }
+    return newConnection(options);
   }
 
   /**
@@ -286,10 +255,12 @@ public class Whatsapp {
    * @param options the non-null options
    * @return a non-null Whatsapp instance
    */
-  public static Whatsapp lastConnection(@NonNull Options options) {
-    return newConnection(options.withId(requireNonNullElseGet(
-        ControllerProviderLoader.findAllIds(options.defaultSerialization())
-            .peekLast(), KeyHelper::registrationId)));
+  public static Whatsapp lastConnection(@NonNull WhatsappOptions options) {
+    var lastIds = ControllerProviderLoader.findAllIds(options.defaultSerialization());
+    if(!lastIds.isEmpty()){
+      options.id(lastIds.peekLast());
+    }
+    return newConnection(options.id());
   }
 
   /**
@@ -307,7 +278,7 @@ public class Whatsapp {
    * @param options the non-null options
    * @return a non-null List
    */
-  public static List<Whatsapp> listConnections(@NonNull Options options) {
+  public static List<Whatsapp> listConnections(@NonNull WhatsappOptions options) {
     return streamConnections(options).toList();
   }
 
@@ -326,10 +297,10 @@ public class Whatsapp {
    * @param options the non-null options
    * @return a non-null Stream
    */
-  public static Stream<Whatsapp> streamConnections(@NonNull Options options) {
+  public static Stream<Whatsapp> streamConnections(@NonNull WhatsappOptions options) {
     return ControllerProviderLoader.findAllIds(options.defaultSerialization())
         .stream()
-        .map(id -> Whatsapp.newConnection(options.withId(id)));
+        .map(id -> Whatsapp.newConnection(options.id(id)));
   }
 
   /**
@@ -340,11 +311,18 @@ public class Whatsapp {
         .forEach(entry -> LocalFileSystem.delete(entry.keys().id()));
   }
 
-  private static LinkPreviewMedia compareDimensions(LinkPreviewMedia first,
-      LinkPreviewMedia second) {
-    return first.width() * first.height() > second.width() * second.height() ?
-        first :
-        second;
+  private Whatsapp(@NonNull WhatsappOptions options) {
+    this(options, Store.of(options), Keys.of(options));
+  }
+
+  private Whatsapp(WhatsappOptions options, Store store, Keys keys) {
+    this.socketHandler = new SocketHandler(this, options, store, keys);
+    if(!options.autodetectListeners()){
+      return;
+    }
+
+    ListenerScanner.scan(this)
+        .forEach(this::addListener);
   }
 
   private static List<BusinessCategory> parseBusinessCategories(Node result) {
@@ -359,9 +337,9 @@ public class Whatsapp {
 
   private static String parseInviteCode(Node result) {
     return result.findNode("invite")
-        .orElseThrow(() -> new NoSuchElementException("Missing invite code in invite response"))
+        .orElseThrow(() -> new NoSuchElementException("Missing invite countryCode in invite response"))
         .attributes()
-        .getRequiredString("code");
+        .getRequiredString("countryCode");
   }
 
   private static List<Node> createWebsites(List<URI> websites) {
@@ -409,19 +387,15 @@ public class Whatsapp {
    * @return the same instance
    */
   public Whatsapp addListener(@NonNull Listener listener) {
-    Validate.isTrue(socketHandler.options()
-            .listenersLimit() < 0 || store().listeners()
-            .size() + 1 <= socketHandler.options()
-            .listenersLimit(), "The number of listeners is too high: expected %s, got %s",
-        socketHandler.options()
-            .listenersLimit(), socketHandler.store()
-            .listeners()
-            .size());
-    Validate.isTrue(socketHandler.store()
-        .listeners()
-        .add(listener), "WhatsappAPI: Cannot add listener %s", listener.getClass()
-        .getName());
+    Validate.isTrue(hasRegisterSlotAvailable(), "The number of listeners is too high: expected %s, got %s",
+        socketHandler.options().listenersLimit(), socketHandler.store().listeners().size());
+    socketHandler.store().listeners().add(listener);
     return this;
+  }
+
+  private boolean hasRegisterSlotAvailable() {
+    return socketHandler.options().listenersLimit() < 0
+        || store().listeners().size() + 1 <= socketHandler.options().listenersLimit();
   }
 
   /**
@@ -1033,10 +1007,7 @@ public class Whatsapp {
    * @return the same instance
    */
   public Whatsapp removeListener(@NonNull Listener listener) {
-    Validate.isTrue(socketHandler.store()
-        .listeners()
-        .remove(listener), "WhatsappAPI: Cannot remove listener %s", listener.getClass()
-        .getName());
+    socketHandler.store().listeners().remove(listener);
     return this;
   }
 
@@ -1069,7 +1040,7 @@ public class Whatsapp {
 
   /**
    * Disconnects from Whatsapp Web's WebSocket and logs out of WhatsappWeb invalidating the previous
-   * saved credentials. The next time the API is used, the QR code will need to be scanned again.
+   * saved credentials. The next time the API is used, the QR countryCode will need to be scanned again.
    *
    * @return a future
    */
@@ -1387,7 +1358,7 @@ public class Whatsapp {
 
   private void attributeGroupInviteMessage(MessageInfo info,
       GroupInviteMessage groupInviteMessage) {
-    Validate.isTrue(groupInviteMessage.code() != null, "Invalid message code");
+    Validate.isTrue(groupInviteMessage.code() != null, "Invalid message countryCode");
     var url = "https://chat.whatsapp.com/%s".formatted(groupInviteMessage.code());
     var preview = LinkPreview.createPreview(URI.create(url))
         .stream()
@@ -1452,8 +1423,7 @@ public class Whatsapp {
   }
 
   private void attributeTextMessage(TextMessage textMessage) {
-    if (socketHandler.options()
-        .textPreviewSetting() == TextPreviewSetting.DISABLED) {
+    if (socketHandler.options().textPreviewSetting() == TextPreviewSetting.DISABLED) {
       return;
     }
     var match = LinkPreview.createPreview(textMessage.text())
@@ -1468,13 +1438,13 @@ public class Whatsapp {
     var imageUri = match.result()
         .images()
         .stream()
-        .reduce(Whatsapp::compareDimensions)
+        .reduce(this::compareDimensions)
         .map(LinkPreviewMedia::uri)
         .orElse(null);
     var videoUri = match.result()
         .videos()
         .stream()
-        .reduce(Whatsapp::compareDimensions)
+        .reduce(this::compareDimensions)
         .map(LinkPreviewMedia::uri)
         .orElse(null);
     textMessage.matchedText(uri);
@@ -1485,6 +1455,10 @@ public class Whatsapp {
     textMessage.previewType(videoUri != null ? VIDEO : NONE);
   }
 
+  private LinkPreviewMedia compareDimensions(LinkPreviewMedia first, LinkPreviewMedia second) {
+    return first.width() * first.height() > second.width() * second.height() ? first : second;
+  }
+  
   /**
    * Awaits for a single response to a message
    *
@@ -1641,7 +1615,7 @@ public class Whatsapp {
   }
 
   /**
-   * Queries the invite code of a group
+   * Queries the invite countryCode of a group
    *
    * @param chat the target group
    * @return a CompletableFuture
@@ -1652,7 +1626,7 @@ public class Whatsapp {
   }
 
   /**
-   * Revokes the invite code of a group
+   * Revokes the invite countryCode of a group
    *
    * @param chat the target group
    * @return a CompletableFuture
@@ -1665,12 +1639,12 @@ public class Whatsapp {
   /**
    * Accepts the invite for a group
    *
-   * @param inviteCode the invite code
+   * @param inviteCode the invite countryCode
    * @return a CompletableFuture
    */
   public CompletableFuture<Optional<Chat>> acceptGroupInvite(@NonNull String inviteCode) {
     return socketHandler.sendQuery(Server.GROUP.toJid(), "set", "w:g2",
-            Node.ofAttributes("invite", Map.of("code", inviteCode)))
+            Node.ofAttributes("invite", Map.of("countryCode", inviteCode)))
         .thenApplyAsync(this::parseAcceptInvite);
   }
 
@@ -2613,7 +2587,7 @@ public class Whatsapp {
   private MessageInfo parseMediaReupload(MessageInfo info, MediaMessage mediaMessage,
       byte[] retryKey, byte[] retryIdData, Node node) {
     Validate.isTrue(!node.hasNode("error"), "Erroneous response from media reupload: %s",
-        node.attributes().getInt("code"));
+        node.attributes().getInt("countryCode"));
     var encryptNode = node.findNode("encrypt")
         .orElseThrow(() -> new NoSuchElementException("Missing encrypt node in media reupload"));
     var mediaPayload = encryptNode.findNode("enc_p")
@@ -2663,116 +2637,5 @@ public class Whatsapp {
     return keepStarredMessages ?
         "1" :
         "0";
-  }
-
-  /**
-   * A configuration class used to specify the behaviour of {@link Whatsapp}
-   */
-  @Builder
-  @With
-  @Data
-  @Accessors(fluent = true)
-  public static class Options {
-
-    /**
-     * Constant for unlimited listeners size
-     */
-    private static final int UNLIMITED_LISTENERS = -1;
-
-    /**
-     * The id of the session. This id needs to be unique. By default, a random integer.
-     */
-    @Default
-    private final int id = KeyHelper.registrationId();
-
-    /**
-     * Whether listeners marked with @RegisteredListener should be registered automatically. By
-     * default, this option is enabled.
-     */
-    @Default
-    private final boolean autodetectListeners = true;
-
-    /**
-     * Whether the default serialization mechanism should be used or not. Set this to false if you
-     * want to implement a custom serializer.
-     */
-    @Default
-    private final boolean defaultSerialization = true;
-
-    /**
-     * Whether the api should automatically subscribe to all contacts' presences to have them always
-     * up to date. Alternatively, you can subscribe manually to the ones you need using
-     * {@link Whatsapp#subscribeToPresence(ContactJidProvider)}
-     */
-    @Default
-    private final boolean automaticallySubscribeToPresences = true;
-
-    /**
-     * Whether a preview should be automatically generated and attached to text messages that
-     * contain links. By default, it's enabled with inference.
-     */
-    @Default
-    private final TextPreviewSetting textPreviewSetting = TextPreviewSetting.ENABLED_WITH_INFERENCE;
-
-    /**
-     * The version of WhatsappWeb to use. If the version is too outdated, the server will refuse to
-     * connect.
-     */
-    @Default
-    private final Version version = Version.latest();
-
-    /**
-     * The description provided to Whatsapp during the authentication process. This should be, for
-     * example, the name of your service. By default, it's WhatsappWeb4j.
-     */
-    @Default
-    @NonNull
-    private final String description = "WhatsappWeb4j";
-
-    /**
-     * Describes how much chat history Whatsapp should send when the QR is first scanned. By
-     * default, one year.
-     */
-    @Default
-    private HistoryLength historyLength = HistoryLength.ONE_YEAR;
-
-    /**
-     * Handles the qr code when a connection is first established with Whatsapp. By default, the qr
-     * code is printed on the terminal.
-     */
-    @Default
-    private QrHandler qrHandler = QrHandler.toTerminal();
-
-    /**
-     * Handles failures in the WebSocket. By default, uses the simple handler and prints to the
-     * terminal.
-     */
-    @Default
-    private ErrorHandler errorHandler = ErrorHandler.toTerminal();
-
-    /**
-     * The number of maximum listeners that the linked Whatsapp instance supports. By default,
-     * unlimited.
-     */
-    @Default
-    private int listenersLimit = UNLIMITED_LISTENERS;
-
-    /**
-     * Determines the type of API to use, by default the web multi device one is used. Select the
-     * {@link ClientType#APP_CLIENT} if you need to develop a solution that doesn't depend on a
-     * companion.
-     */
-    @Default
-    private ClientType clientType = ClientType.WEB_CLIENT;
-
-    /**
-     * Constructs a new instance of WhatsappConfiguration with default options
-     *
-     * @return a non-null options configuration
-     */
-    public static Options defaultOptions() {
-      return Options.builder()
-          .build();
-    }
   }
 }

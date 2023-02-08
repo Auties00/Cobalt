@@ -16,6 +16,7 @@ import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.ErrorHandler.Location;
 import it.auties.whatsapp.api.SocketEvent;
+import it.auties.whatsapp.api.WhatsappOptions.WebOptions;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.crypto.Hmac;
 import it.auties.whatsapp.listener.OnNodeReceived;
@@ -449,7 +450,7 @@ class StreamHandler extends Handler
       return;
     }
     var statusCode = node.attributes()
-        .getInt("code");
+        .getInt("countryCode");
     switch (statusCode) {
       case 515, 503 -> socketHandler.disconnect(DisconnectReason.RECONNECTING);
       case 401 -> handleStreamError(node);
@@ -497,7 +498,7 @@ class StreamHandler extends Handler
         .thenRun(socketHandler::onChats)
         .exceptionallyAsync(exception -> socketHandler.errorHandler().handleFailure(MESSAGE, exception));
     socketHandler.onContacts();
-    if (!socketHandler.options().automaticallySubscribeToPresences()) {
+    if (!socketHandler.options().autoSubscribeToPresences()) {
       return;
     }
     var delayedExecutor = CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS);
@@ -711,9 +712,8 @@ class StreamHandler extends Handler
         .toBase64(), Bytes.of(socketHandler.keys()
             .companionKey())
         .toBase64());
-    socketHandler.options()
-        .qrHandler()
-        .accept(qr);
+    var handler = (WebOptions) socketHandler.options();
+    handler.qrHandler().accept(qr);
   }
 
   @SneakyThrows

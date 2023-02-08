@@ -23,6 +23,8 @@ public class Specification {
     public static final byte[] APP_PROLOGUE = Bytes.of(WHATSAPP_HEADER)
         .append(MOBILE_VERSION)
         .toByteArray();
+    public static final String MOBILE_REGISTRATION_ENDPOINT = "https://v.whatsapp.net/v2";
+    public static final String MOBILE_USER_AGENT = "WhatsApp/2.22.16.77 iOS/15.3.1 Device/Apple-iPhone_7";
   }
 
   public final static class Signal {

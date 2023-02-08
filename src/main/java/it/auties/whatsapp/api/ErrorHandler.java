@@ -10,7 +10,6 @@ import static java.lang.System.Logger.Level.INFO;
 import it.auties.whatsapp.api.ErrorHandler.Location;
 import it.auties.whatsapp.util.Exceptions;
 import it.auties.whatsapp.util.HmacValidationException;
-import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -22,11 +21,6 @@ import java.util.function.Consumer;
 @SuppressWarnings("unused")
 public interface ErrorHandler
     extends BiFunction<Location, Throwable, ErrorHandler.Result> {
-
-  /**
-   * System logger. A nice feature from Java 9.
-   */
-  Logger logger = System.getLogger("ErrorHandler");
 
   /**
    * Default error handler. Prints the exception on the terminal.
@@ -58,7 +52,6 @@ public interface ErrorHandler
     return toFile(null, null);
   }
 
-
   /**
    * Default error handler. Saves the exception locally.
    *
@@ -66,11 +59,9 @@ public interface ErrorHandler
    * @param onIgnored action to execute if the session is not restored, can be null
    * @return a non-null error handler
    */
-  static ErrorHandler toFile(BiConsumer<Location, Throwable> onRestore,
-      BiConsumer<Location, Throwable> onIgnored) {
-    return defaultErrorHandler(
-        throwable -> logger.log(INFO,
-            "Saved stacktrace at: %s".formatted(Exceptions.save(throwable))),
+  static ErrorHandler toFile(BiConsumer<Location, Throwable> onRestore, BiConsumer<Location, Throwable> onIgnored) {
+    var logger = System.getLogger("ErrorHandler");
+    return defaultErrorHandler(throwable -> logger.log(INFO, "Saved stacktrace at: %s".formatted(Exceptions.save(throwable))),
         onRestore, onIgnored, ERROR);
   }
 
@@ -110,6 +101,7 @@ public interface ErrorHandler
       BiConsumer<Location, Throwable> onRestore, BiConsumer<Location, Throwable> onIgnored,
       Level loggingLevel) {
     return (location, throwable) -> {
+      var logger = System.getLogger("ErrorHandler");
       if (location == SOCKET) {
         return Result.RECONNECT;
       }

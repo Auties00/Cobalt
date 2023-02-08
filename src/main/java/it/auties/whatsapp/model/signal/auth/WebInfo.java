@@ -12,7 +12,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
@@ -34,8 +33,7 @@ public class WebInfo implements ProtobufMessage {
   @ProtobufProperty(index = 4, type = MESSAGE, implementation = WebInfo.WebInfoWebSubPlatform.class)
   private WebInfoWebSubPlatform platform;
 
-  public WebInfo(@NonNull
-  WebInfoWebSubPlatform platform) {
+  public WebInfo(WebInfoWebSubPlatform platform) {
     this.platform = platform;
   }
 

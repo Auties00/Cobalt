@@ -21,7 +21,7 @@ import java.util.function.Consumer;
 import lombok.NonNull;
 
 /**
- * This interface allows to consume a qr code and provides default common implementations to do so
+ * This interface allows to consume a qr countryCode and provides default common implementations to do so
  */
 @FunctionalInterface
 @SuppressWarnings("unused")
@@ -29,7 +29,7 @@ public interface QrHandler
     extends Consumer<String> {
 
   /**
-   * Prints the QR code to the terminal. If your terminal doesn't support utf, you may see random
+   * Prints the QR countryCode to the terminal. If your terminal doesn't support utf, you may see random
    * characters.
    */
   static QrHandler toTerminal() {
@@ -37,7 +37,7 @@ public interface QrHandler
   }
 
   /**
-   * Transforms the qr code in a UTF-8 string and accepts a consumer for the latter
+   * Transforms the qr countryCode in a UTF-8 string and accepts a consumer for the latter
    *
    * @param smallQrConsumer the non-null consumer
    */
@@ -49,7 +49,7 @@ public interface QrHandler
   }
 
   /**
-   * Saves the QR code to a temp file
+   * Saves the QR countryCode to a temp file
    *
    * @param fileConsumer the consumer to digest the created file
    */
@@ -64,7 +64,7 @@ public interface QrHandler
   }
 
   /**
-   * Saves the QR code to a specified file
+   * Saves the QR countryCode to a specified file
    *
    * @param path         the location where the qr will be written
    * @param fileConsumer the consumer to digest the created file
@@ -82,11 +82,11 @@ public interface QrHandler
   }
 
   /**
-   * Utility method to create a matrix from a qr code
+   * Utility method to create a matrix from a qr countryCode
    *
    * @param qr     the non-null source
-   * @param size   the size of the qr code
-   * @param margin the margin for the qr code
+   * @param size   the size of the qr countryCode
+   * @param margin the margin for the qr countryCode
    * @return a non-null matrix
    */
   static BitMatrix createMatrix(@NonNull String qr, int size, int margin) {
@@ -96,7 +96,7 @@ public interface QrHandler
           Map.of(EncodeHintType.MARGIN, margin, EncodeHintType.ERROR_CORRECTION,
               ErrorCorrectionLevel.L));
     } catch (WriterException exception) {
-      throw new UnsupportedOperationException("Cannot create qr code", exception);
+      throw new UnsupportedOperationException("Cannot create qr countryCode", exception);
     }
   }
 
@@ -120,7 +120,7 @@ public interface QrHandler
      */
     static ToFileConsumer toTerminal() {
       return path -> System.getLogger(QrHandler.class.getName())
-          .log(INFO, "Saved qr code at %s".formatted(path));
+          .log(INFO, "Saved qr countryCode at %s".formatted(path));
     }
 
     /**

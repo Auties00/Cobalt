@@ -46,7 +46,7 @@ public final class GroupInviteMessage extends ContextualMessage {
   private ContactJid group;
 
   /**
-   * The invite code of this message
+   * The invite countryCode of this message
    */
   @ProtobufProperty(index = 2, type = STRING)
   private String code;

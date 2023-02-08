@@ -850,7 +850,7 @@ class MessageHandler extends Handler
 
   private void subscribeToAllPresences() {
     if (!socketHandler.options()
-        .automaticallySubscribeToPresences()) {
+        .autoSubscribeToPresences()) {
       return;
     }
     socketHandler.store()

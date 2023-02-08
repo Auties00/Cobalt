@@ -11,9 +11,9 @@ import static java.util.Map.of;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
 import it.auties.whatsapp.api.DisconnectReason;
+import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.api.SocketEvent;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.api.Whatsapp.Options;
 import it.auties.whatsapp.binary.MessageWrapper;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.controller.Keys;
@@ -90,7 +90,7 @@ public class SocketHandler extends Handler
 
   @NonNull
   @Getter
-  private final Options options;
+  private final WhatsappOptions options;
 
   @NonNull
   @Getter(AccessLevel.PROTECTED)
@@ -113,7 +113,7 @@ public class SocketHandler extends Handler
 
   private CompletableFuture<Void> authFuture;
 
-  public SocketHandler(@NonNull Whatsapp whatsapp, @NonNull Options options, @NonNull Store store,
+  public SocketHandler(@NonNull Whatsapp whatsapp, @NonNull WhatsappOptions options, @NonNull Store store,
       @NonNull Keys keys) {
     this.whatsapp = whatsapp;
     this.options = options;
@@ -219,9 +219,9 @@ public class SocketHandler extends Handler
         var oldListeners = new ArrayList<>(store.listeners());
         session.close();
         LocalFileSystem.delete(keys().id());
-        var newId = KeyHelper.registrationId();
-        this.keys = Keys.random(newId, keys.prologue(), options.defaultSerialization());
-        this.store = Store.random(newId, options.defaultSerialization());
+        options.id(KeyHelper.registrationId());
+        this.keys = Keys.random(options);
+        this.store = Store.random(options);
         store.listeners().addAll(oldListeners);
         yield connect();
       }

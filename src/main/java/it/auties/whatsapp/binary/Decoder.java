@@ -104,10 +104,10 @@ public class Decoder {
 
   private String readStringFromToken(int token) {
     if (token < DICTIONARY_0.data() || token > DICTIONARY_3.data()) {
-      return Tokens.SINGLE_BYTE.get(token - 1);
+      return Tokens.WEB_SINGLE_BYTE.get(token - 1);
     }
-    var delta = (Tokens.DOUBLE_BYTE.size() / 4) * (token - DICTIONARY_0.data());
-    return Tokens.DOUBLE_BYTE.get(buffer.readUnsignedByte() + delta);
+    var delta = (Tokens.WEB_DOUBLE_BYTE.size() / 4) * (token - DICTIONARY_0.data());
+    return Tokens.WEB_DOUBLE_BYTE.get(buffer.readUnsignedByte() + delta);
   }
 
   private String readNibble() {

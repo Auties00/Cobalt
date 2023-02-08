@@ -4,6 +4,7 @@ import it.auties.bytes.Bytes;
 import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.Emojy;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.api.WhatsappOptions.WebOptions;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.github.GithubActions;
@@ -119,7 +120,7 @@ public class RunCITest implements Listener, JacksonProvider {
     }
     log("Detected github actions environment");
     api = Whatsapp.newConnection(
-        Whatsapp.Options.defaultOptions(),
+        WebOptions.defaultOptions(),
         loadGithubParameter(GithubActions.STORE_NAME, Store.class),
         loadGithubParameter(GithubActions.CREDENTIALS_NAME, Keys.class)
     );
@@ -755,7 +756,7 @@ public class RunCITest implements Listener, JacksonProvider {
     if (group == null) {
       testGroupCreation();
     }
-    log("Querying group invite code");
+    log("Querying group invite countryCode");
     var code = api.queryGroupInviteCode(group)
         .join();
     log("Queried %s", code);

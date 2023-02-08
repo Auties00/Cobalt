@@ -106,7 +106,7 @@ public class Encoder {
       this.buffer = buffer.append(LIST_EMPTY.data());
       return;
     }
-    var tokenIndex = Tokens.SINGLE_BYTE.indexOf(input);
+    var tokenIndex = Tokens.WEB_SINGLE_BYTE.indexOf(input);
     if (tokenIndex != -1) {
       this.buffer = buffer.append(tokenIndex + 1);
       return;
@@ -128,17 +128,17 @@ public class Encoder {
   }
 
   private boolean writeDoubleByteString(String input) {
-    if (!Tokens.DOUBLE_BYTE.contains(input)) {
+    if (!Tokens.WEB_DOUBLE_BYTE.contains(input)) {
       return false;
     }
-    var index = Tokens.DOUBLE_BYTE.indexOf(input);
+    var index = Tokens.WEB_DOUBLE_BYTE.indexOf(input);
     this.buffer = buffer.append(doubleByteStringTag(index).data());
-    this.buffer = buffer.append(index % (Tokens.DOUBLE_BYTE.size() / 4));
+    this.buffer = buffer.append(index % (Tokens.WEB_DOUBLE_BYTE.size() / 4));
     return true;
   }
 
   private Tag doubleByteStringTag(int index) {
-    return switch (index / (Tokens.DOUBLE_BYTE.size() / 4)) {
+    return switch (index / (Tokens.WEB_DOUBLE_BYTE.size() / 4)) {
       case 0 -> DICTIONARY_0;
       case 1 -> DICTIONARY_1;
       case 2 -> DICTIONARY_2;

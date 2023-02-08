@@ -23,6 +23,8 @@ open module it.auties.whatsappweb4j {
   requires com.github.benmanes.caffeine;
   requires it.auties.linkpreview;
   requires ez.vcard;
+  requires libphonenumber;
+
   exports it.auties.whatsapp.api;
   exports it.auties.whatsapp.controller;
   exports it.auties.whatsapp.model.action;
@@ -48,5 +50,6 @@ open module it.auties.whatsappweb4j {
   exports it.auties.whatsapp.model.privacy;
   exports it.auties.whatsapp.model.location;
   exports it.auties.whatsapp.model.poll;
+
   uses ControllerProvider;
 }

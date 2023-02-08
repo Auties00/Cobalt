@@ -3,6 +3,7 @@ package it.auties.whatsapp.listener;
 import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.SocketEvent;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.api.WhatsappOptions.WebOptions;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.chat.Chat;
@@ -26,7 +27,7 @@ import java.util.Map;
  * WhatsappWeb's socket. A listener can be registered manually using
  * {@link Whatsapp#addListener(Listener)}. Otherwise, it can be registered by annotating it with the
  * {@link RegisterListener} annotation. To disable the latter, check out
- * {@link it.auties.whatsapp.api.Whatsapp.Options#autodetectListeners()}.
+ * {@link WebOptions#autodetectListeners()}.
  */
 @SuppressWarnings("unused")
 public interface Listener {

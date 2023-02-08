@@ -2,6 +2,7 @@ package it.auties.whatsapp.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.auties.bytes.Bytes;
+import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.listener.Listener;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
@@ -250,14 +251,13 @@ public final class Store
   /**
    * Constructs a new default instance of WhatsappStore
    *
-   * @param id                   the unsigned jid of this store
-   * @param useDefaultSerializer whether the default serializer should be used
+   * @param options the non-null options
    * @return a non-null store
    */
-  public static Store random(int id, boolean useDefaultSerializer) {
+  public static Store random(@NonNull WhatsappOptions options) {
     var result = Store.builder()
-        .id(id)
-        .useDefaultSerializer(useDefaultSerializer)
+        .id(options.id())
+        .useDefaultSerializer(options.defaultSerialization())
         .build();
     stores.put(result.id(), result);
     return result;
@@ -266,15 +266,14 @@ public final class Store
   /**
    * Returns the store saved in memory or constructs a new clean instance
    *
-   * @param id                   the jid of this session
-   * @param useDefaultSerializer whether the default serializer should be used
+   * @param options the non-null options
    * @return a non-null store
    */
-  public static Store of(int id, boolean useDefaultSerializer) {
-    var deserializer = ControllerProviderLoader.findOnlyDeserializer(useDefaultSerializer);
-    var result = deserializer.deserializeStore(id)
-        .map(store -> store.useDefaultSerializer(useDefaultSerializer))
-        .orElseGet(() -> random(id, useDefaultSerializer));
+  public static Store of(@NonNull WhatsappOptions options) {
+    var deserializer = ControllerProviderLoader.findOnlyDeserializer(options.defaultSerialization());
+    var result = deserializer.deserializeStore(options.id())
+        .map(store -> store.useDefaultSerializer(options.defaultSerialization()))
+        .orElseGet(() -> random(options));
     deserializer.attributeStore(result); // Run async
     return result;
   }

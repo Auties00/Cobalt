@@ -286,4 +286,13 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
       default -> throw new IllegalStateException("Unexpected value: " + value);
     };
   }
+
+  /**
+   * Copies this object
+   *
+   * @return a non-null instance
+   */
+  public Attributes copy() {
+    return new Attributes(toMap);
+  }
 }

@@ -23,7 +23,7 @@ public class BusinessCurrency
     implements ProtobufMessage {
 
   /**
-   * The currency code
+   * The currency countryCode
    */
   @ProtobufProperty(index = 1, type = STRING)
   private String currencyCode;

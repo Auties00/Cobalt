@@ -30,7 +30,7 @@ public record BusinessHoursEntry(@NonNull String day, @NonNull String mode, long
   /**
    * Returns whether the business is always open.
    *
-   * @return <code>true</code> if the business is always open; <code>false</code> otherwise.
+   * @return <countryCode>true</countryCode> if the business is always open; <countryCode>false</countryCode> otherwise.
    */
   public boolean isAlwaysOpen() {
     return openTime == 0 && closeTime == 0;

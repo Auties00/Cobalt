@@ -119,7 +119,7 @@ public class Medias
           .header("Origin", Whatsapp.WEB_ORIGIN)
           .build();
       var response = client.send(request, ofString());
-      Validate.isTrue(response.statusCode() == 200, "Invalid status code: %s",
+      Validate.isTrue(response.statusCode() == 200, "Invalid status countryCode: %s",
           response.statusCode());
       var upload = JSON.readValue(response.body(), MediaUpload.class);
       return of(new MediaFile(fileSha256, fileEncSha256, keys.mediaKey(), file.length,
