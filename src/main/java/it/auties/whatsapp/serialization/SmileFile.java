@@ -2,24 +2,19 @@ package it.auties.whatsapp.serialization;
 
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.LocalFileSystem;
-import lombok.NonNull;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+import lombok.NonNull;
 
 final class SmileFile
     implements JacksonProvider {
-  private static final Map<Path, CompletableFuture<?>> futures = new ConcurrentHashMap<>();
-
   @NonNull
   private final Path file;
 
@@ -51,19 +46,13 @@ final class SmileFile
   }
 
   public void write(Object input, boolean async) {
-    var oldFuture = futures.get(file);
     if (!async) {
-      if(oldFuture != null){
-        oldFuture.cancel(true);
-      }
-
       writeSync(input);
       return;
     }
 
-    Runnable worker = () -> writeSync(input);
-    var future = oldFuture != null ? oldFuture.thenRunAsync(worker) : CompletableFuture.runAsync(worker);
-    futures.put(file, future.exceptionallyAsync(this::onError));
+    CompletableFuture.runAsync(() -> writeSync(input))
+        .exceptionallyAsync(this::onError);
   }
 
   private Void onError(Throwable exception) {

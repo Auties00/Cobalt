@@ -1,6 +1,7 @@
 package it.auties.whatsapp.binary;
 
 import it.auties.bytes.Bytes;
+import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.model.request.Node;
@@ -13,14 +14,13 @@ import lombok.experimental.Accessors;
 @Value
 @Accessors(fluent = true)
 public class MessageWrapper {
-
-  private static final Decoder DECODER = new Decoder();
-
   @NonNull Bytes raw;
 
   @NonNull LinkedList<Bytes> decoded;
 
-  public MessageWrapper(@NonNull Bytes raw) {
+  @NonNull ClientType type;
+
+  public MessageWrapper(@NonNull Bytes raw, @NonNull ClientType type) {
     this.raw = raw;
     var decoded = new LinkedList<Bytes>();
     while (raw.readableBytes() >= 3) {
@@ -31,10 +31,11 @@ public class MessageWrapper {
       decoded.add(raw.readBuffer(length));
     }
     this.decoded = decoded;
+    this.type = type;
   }
 
-  public MessageWrapper(byte @NonNull [] array) {
-    this(Bytes.of(array));
+  public MessageWrapper(byte @NonNull [] array, @NonNull ClientType type) {
+    this(Bytes.of(array), type);
   }
 
   private int decodeLength(Bytes buffer) {
@@ -48,8 +49,8 @@ public class MessageWrapper {
   }
 
   private Node toNode(Bytes encoded, Keys keys) {
-    var plainText = AesGmc.decrypt(keys.readCounter(true), encoded.toByteArray(),
-        keys.readKey().toByteArray());
-    return DECODER.decode(plainText);
+    var plainText = AesGmc.decrypt(keys.readCounter(true), encoded.toByteArray(), keys.readKey().toByteArray());
+    var decoder = new Decoder(plainText, type);
+    return decoder.readNode();
   }
 }

@@ -19,7 +19,6 @@ import it.auties.whatsapp.api.SocketEvent;
 import it.auties.whatsapp.api.WhatsappOptions.WebOptions;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.crypto.Hmac;
-import it.auties.whatsapp.listener.OnNodeReceived;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.contact.Contact;
@@ -61,7 +60,6 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -450,7 +448,7 @@ class StreamHandler extends Handler
       return;
     }
     var statusCode = node.attributes()
-        .getInt("countryCode");
+        .getInt("code");
     switch (statusCode) {
       case 515, 503 -> socketHandler.disconnect(DisconnectReason.RECONNECTING);
       case 401 -> handleStreamError(node);
@@ -496,31 +494,9 @@ class StreamHandler extends Handler
     ControllerProviderLoader.findOnlyDeserializer(socketHandler.options().defaultSerialization())
         .attributeStore(socketHandler.store())
         .thenRun(socketHandler::onChats)
-        .exceptionallyAsync(exception -> socketHandler.errorHandler().handleFailure(MESSAGE, exception));
+        .exceptionallyAsync(
+            exception -> socketHandler.errorHandler().handleFailure(MESSAGE, exception));
     socketHandler.onContacts();
-    if (!socketHandler.options().autoSubscribeToPresences()) {
-      return;
-    }
-    var delayedExecutor = CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS);
-    subscribeToAllPresences(delayedExecutor);
-  }
-
-  private void subscribeToAllPresences(Executor delayedExecutor) {
-    var future = CompletableFuture.runAsync(
-        () -> socketHandler.store().contacts().forEach(socketHandler::subscribeToPresence),
-        delayedExecutor);
-    OnNodeReceived listener = node -> {
-      if (!node.hasDescription("message") || !node.attributes().hasKey("offline")) {
-        return;
-      }
-      if (future.isDone()) {
-        return;
-      }
-      future.cancel(true);
-      subscribeToAllPresences(delayedExecutor);
-    };
-    socketHandler.store().listeners().add(listener);
-    future.thenRunAsync(() -> socketHandler.store().listeners().remove(listener));
   }
 
   private void sendStatusUpdate() {

@@ -7,6 +7,7 @@ import static it.auties.whatsapp.model.request.Node.of;
 import static it.auties.whatsapp.model.request.Node.ofAttributes;
 
 import it.auties.bytes.Bytes;
+import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJid.Server;
 import it.auties.whatsapp.model.request.Node;
@@ -20,21 +21,26 @@ import java.util.stream.IntStream;
 import lombok.NonNull;
 
 public class Decoder {
+  private final Bytes buffer;
+  private final List<String> singleByteTokens;
+  private final List<String> doubleByteTokens;
 
-  private Bytes buffer;
-
-  public synchronized Node decode(byte @NonNull [] input) {
+  public Decoder(byte[] input, @NonNull ClientType type) {
     var buffer = Bytes.of(input);
     var token = buffer.readByte() & 2;
-    var data = buffer.remaining()
-        .toByteArray();
-    this.buffer = Bytes.of(token == 0 ?
-        data :
-        BytesHelper.deflate(data));
-    return readNode();
+    var data = buffer.remaining().toByteArray();
+    this.buffer = Bytes.of(token == 0 ? data : BytesHelper.deflate(data));
+    this.singleByteTokens = switch (type){
+      case WEB_CLIENT -> Tokens.WEB_SINGLE_BYTE;
+      case APP_CLIENT -> Tokens.APP_SINGLE_BYTE;
+    };
+    this.doubleByteTokens = switch (type){
+      case WEB_CLIENT -> Tokens.WEB_DOUBLE_BYTE;
+      case APP_CLIENT -> Tokens.APP_DOUBLE_BYTE;
+    };
   }
 
-  private Node readNode() {
+  public Node readNode() {
     var token = buffer.readUnsignedByte();
     var size = readSize(token);
     Validate.isTrue(size != 0, "Cannot decode node with empty body");
@@ -104,10 +110,10 @@ public class Decoder {
 
   private String readStringFromToken(int token) {
     if (token < DICTIONARY_0.data() || token > DICTIONARY_3.data()) {
-      return Tokens.WEB_SINGLE_BYTE.get(token - 1);
+      return singleByteTokens.get(token - 1);
     }
-    var delta = (Tokens.WEB_DOUBLE_BYTE.size() / 4) * (token - DICTIONARY_0.data());
-    return Tokens.WEB_DOUBLE_BYTE.get(buffer.readUnsignedByte() + delta);
+    var delta = (doubleByteTokens.size() / 4) * (token - DICTIONARY_0.data());
+    return doubleByteTokens.get(buffer.readUnsignedByte() + delta);
   }
 
   private String readNibble() {

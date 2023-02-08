@@ -771,7 +771,6 @@ class MessageHandler extends Handler
         }
 
         socketHandler.pullInitialPatches()
-            .thenRunAsync(this::subscribeToAllPresences)
             .exceptionallyAsync(throwable -> socketHandler.errorHandler().handleFailure(UNKNOWN, throwable));
       }
       case REVOKE -> socketHandler.store()
@@ -846,16 +845,6 @@ class MessageHandler extends Handler
               .ifPresentOrElse(chat -> chat.pastParticipants().addAll(pastParticipants.pastParticipants()),
                   () -> pastParticipantsQueue.put(pastParticipants.groupJid(), pastParticipants.pastParticipants())));
     }
-  }
-
-  private void subscribeToAllPresences() {
-    if (!socketHandler.options()
-        .autoSubscribeToPresences()) {
-      return;
-    }
-    socketHandler.store()
-        .contacts()
-        .forEach(socketHandler::subscribeToPresence);
   }
 
   private void handleRecentMessagesListener(HistorySync history) {

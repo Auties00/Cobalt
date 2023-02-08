@@ -2,7 +2,6 @@ package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.api.WhatsappOptions.MobileOptions;
 import it.auties.whatsapp.api.WhatsappOptions.WebOptions;
-import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.message.model.TextPreviewSetting;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.util.KeyHelper;
@@ -38,14 +37,6 @@ public abstract sealed class WhatsappOptions permits WebOptions, MobileOptions {
    */
   @Default
   private boolean autodetectListeners = true;
-
-  /**
-   * Whether the api should automatically subscribe to all contacts' presences to have them always
-   * up to date. Alternatively, you can subscribe manually to the ones you need using
-   * {@link Whatsapp#subscribeToPresence(ContactJidProvider)}
-   */
-  @Default
-  private boolean autoSubscribeToPresences = true;
 
   /**
    * Whether the default serialization mechanism should be used or not. Set this to false if you

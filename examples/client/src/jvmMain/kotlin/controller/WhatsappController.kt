@@ -79,7 +79,6 @@ object WhatsappController {
 
     private fun createOptions(state: MutableState<State>): Options =
             Options.builder()
-                    .automaticallySubscribeToPresences(false)
                     .qrHandler { qr -> onQrCode(qr, state) }
                     .build()
 

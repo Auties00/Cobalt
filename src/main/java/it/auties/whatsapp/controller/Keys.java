@@ -20,6 +20,7 @@ import it.auties.whatsapp.model.signal.session.SessionAddress;
 import it.auties.whatsapp.model.sync.AppStateSyncKey;
 import it.auties.whatsapp.model.sync.LTHashState;
 import it.auties.whatsapp.serialization.ControllerProviderLoader;
+import it.auties.whatsapp.util.Specification.Whatsapp;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
@@ -201,6 +202,7 @@ public final class Keys
     var result = Keys.builder()
         .id(options.id())
         .clientType(options.clientType())
+        .prologue(options.clientType() == ClientType.WEB_CLIENT ? Whatsapp.WEB_PROLOGUE : Whatsapp.APP_PROLOGUE)
         .useDefaultSerializer(options.defaultSerialization())
         .build();
     result.signedKeyPair(SignalSignedKeyPair.of(result.id(), result.identityKeyPair()));

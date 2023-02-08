@@ -26,11 +26,6 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     implements JacksonProvider {
 
   /**
-   * The binary encoder, used to encode requests that take as a parameter a node
-   */
-  private static final Encoder ENCODER = new Encoder();
-
-  /**
    * The timeout in seconds before a Request wrapping a Node fails
    */
   private static final int TIMEOUT = 60;
@@ -169,7 +164,10 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
     var encodedBody = body();
     var body = switch (encodedBody) {
       case byte[] bytes -> bytes;
-      case Node node -> ENCODER.encode(node);
+      case Node node -> {
+        var encoder = new Encoder(keys.clientType());
+        yield encoder.encode(node);
+      }
       default -> throw new IllegalArgumentException(
           "Cannot create request, illegal body: %s".formatted(encodedBody));
     };

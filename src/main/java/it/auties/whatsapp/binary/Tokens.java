@@ -31,7 +31,7 @@ public class Tokens {
       "relay_id", "last_id", "day_of_week", "w", "host", "seen", "bits",
       "list", "atn", "upload", "is_new", "w:stats", "key", "paused",
       "specific_hours", "multicast", "stream:error", "mmg.whatsapp.net",
-      "countryCode", "deny", "played", "profile", "fna", "device-list",
+      "code", "deny", "played", "profile", "fna", "device-list",
       "close_time", "latency", "gcm", "pop", "audio", "26", "w:web",
       "open_time", "error", "auth", "ip4", "update", "profile_options",
       "config_value", "category", "catalog_not_created", "00",

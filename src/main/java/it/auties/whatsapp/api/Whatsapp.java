@@ -339,7 +339,7 @@ public class Whatsapp {
     return result.findNode("invite")
         .orElseThrow(() -> new NoSuchElementException("Missing invite countryCode in invite response"))
         .attributes()
-        .getRequiredString("countryCode");
+        .getRequiredString("code");
   }
 
   private static List<Node> createWebsites(List<URI> websites) {
@@ -1644,7 +1644,7 @@ public class Whatsapp {
    */
   public CompletableFuture<Optional<Chat>> acceptGroupInvite(@NonNull String inviteCode) {
     return socketHandler.sendQuery(Server.GROUP.toJid(), "set", "w:g2",
-            Node.ofAttributes("invite", Map.of("countryCode", inviteCode)))
+            Node.ofAttributes("invite", Map.of("code", inviteCode)))
         .thenApplyAsync(this::parseAcceptInvite);
   }
 
@@ -2587,7 +2587,7 @@ public class Whatsapp {
   private MessageInfo parseMediaReupload(MessageInfo info, MediaMessage mediaMessage,
       byte[] retryKey, byte[] retryIdData, Node node) {
     Validate.isTrue(!node.hasNode("error"), "Erroneous response from media reupload: %s",
-        node.attributes().getInt("countryCode"));
+        node.attributes().getInt("code"));
     var encryptNode = node.findNode("encrypt")
         .orElseThrow(() -> new NoSuchElementException("Missing encrypt node in media reupload"));
     var mediaPayload = encryptNode.findNode("enc_p")

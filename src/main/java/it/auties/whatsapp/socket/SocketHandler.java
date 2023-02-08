@@ -156,7 +156,7 @@ public class SocketHandler extends Handler
 
   @Override
   public void onMessage(byte[] raw) {
-    var message = new MessageWrapper(raw);
+    var message = new MessageWrapper(raw, keys.clientType());
     if (message.decoded()
         .isEmpty()) {
       return;
