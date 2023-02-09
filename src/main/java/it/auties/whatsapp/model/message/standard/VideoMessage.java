@@ -73,7 +73,7 @@ public final class VideoMessage extends MediaMessage {
   private long mediaSize;
 
   /**
-   * The length in seconds of the video that this message wraps
+   * The codeLength in seconds of the video that this message wraps
    */
   @ProtobufProperty(index = 5, type = UINT32)
   private Integer duration;
@@ -202,7 +202,7 @@ public final class VideoMessage extends MediaMessage {
    * @param mimeType       the mime type of the new message, by default
    *                       {@link MediaMessageType#defaultMimeType()}
    * @param caption        the caption of the new message
-   * @param gifAttribution the length in seconds of the video that the new message wraps
+   * @param gifAttribution the codeLength in seconds of the video that the new message wraps
    * @param thumbnail      the thumbnail of the sticker that the new message wraps as a jpg
    * @param contextInfo    the context info that the new message wraps
    * @return a non-null new message

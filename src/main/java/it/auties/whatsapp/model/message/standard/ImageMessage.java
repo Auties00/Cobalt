@@ -129,7 +129,7 @@ public final class ImageMessage extends MediaMessage {
   private byte[] firstScanSidecar;
 
   /**
-   * The length of the first scan
+   * The codeLength of the first scan
    */
   @ProtobufProperty(index = 19, type = UINT32)
   private Integer firstScanLength;
@@ -147,7 +147,7 @@ public final class ImageMessage extends MediaMessage {
   private byte[] scansSidecar;
 
   /**
-   * The length of each scan of the decoded image
+   * The codeLength of each scan of the decoded image
    */
   @ProtobufProperty(index = 22, type = UINT32, repeated = true)
   private List<Integer> scanLengths;

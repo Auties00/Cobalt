@@ -197,8 +197,7 @@ class MessageHandler extends Handler
         body.add(descriptor);
       }
       if (hasPreKeyMessage(preKeys)) {
-        var identity = PROTOBUF.writeValueAsBytes(socketHandler.keys()
-            .companionIdentity());
+        var identity = PROTOBUF.writeValueAsBytes(socketHandler.keys().companionIdentity());
         body.add(Node.of("device-identity", identity));
       }
       var attributes = Attributes.ofNullable(metadata)
@@ -263,7 +262,7 @@ class MessageHandler extends Handler
   protected CompletableFuture<Void> querySessions(List<ContactJid> contacts, boolean force) {
     var missingSessions = contacts.stream()
         .filter(contact -> force || !socketHandler.keys().hasSession(contact.toSignalAddress()))
-        .map(contact -> ofAttributes("user", of("jid", contact, "reason", "identity")))
+        .map(contact -> ofAttributes("user", of("jid", contact, "errorReason", "identity")))
         .toList();
     if (missingSessions.isEmpty()) {
       return completedFuture(null);
@@ -642,8 +641,7 @@ class MessageHandler extends Handler
     try {
       var preKey = SignalPreKeyPair.random(socketHandler.keys()
           .lastPreKeyId() + 1);
-      var identity = PROTOBUF.writeValueAsBytes(socketHandler.keys()
-          .companionIdentity());
+      var identity = PROTOBUF.writeValueAsBytes(socketHandler.keys().companionIdentity());
       return Node.ofChildren("keys", Node.of("type", Specification.Signal.KEY_BUNDLE_TYPE),
           Node.of("identity",
               socketHandler.keys()

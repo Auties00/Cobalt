@@ -109,7 +109,7 @@ class StreamHandler extends Handler
   }
 
   private void digestFailure(Node node) {
-    var reason = node.attributes().getInt("reason");
+    var reason = node.attributes().getInt("errorReason");
     if (reason == 401) {
       socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
       return;
@@ -464,14 +464,14 @@ class StreamHandler extends Handler
     var type = child.attributes()
         .getString("type");
     var reason = child.attributes()
-        .getString("reason", type);
+        .getString("errorReason", type);
     if (!Objects.equals(reason, "device_removed")) {
       socketHandler.errorHandler()
           .handleFailure(STREAM, new RuntimeException(reason));
       return;
     }
 
-    socketHandler.onDisconnected(DisconnectReason.LOGGED_OUT);
+    socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
   }
 
   private void digestSuccess(Node node) {
@@ -679,15 +679,13 @@ class StreamHandler extends Handler
     var ref = container.findNode("ref")
         .flatMap(Node::contentAsString)
         .orElseThrow(() -> new NoSuchElementException("Missing ref"));
-    var qr = "%s,%s,%s,%s".formatted(ref, Bytes.of(socketHandler.keys()
-            .noiseKeyPair()
-            .publicKey())
-        .toBase64(), Bytes.of(socketHandler.keys()
-            .identityKeyPair()
-            .publicKey())
-        .toBase64(), Bytes.of(socketHandler.keys()
-            .companionKey())
-        .toBase64());
+    var qr = String.join(
+        ",",
+        ref,
+        Bytes.of(socketHandler.keys().noiseKeyPair().publicKey()).toBase64(),
+        Bytes.of(socketHandler.keys().identityKeyPair().publicKey()).toBase64(),
+        Bytes.of(socketHandler.keys().companionKey()).toBase64()
+    );
     var handler = (WebOptions) socketHandler.options();
     handler.qrHandler().accept(qr);
   }

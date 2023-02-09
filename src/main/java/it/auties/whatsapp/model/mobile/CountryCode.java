@@ -1,4 +1,4 @@
-package it.auties.whatsapp.model.phone;
+package it.auties.whatsapp.model.mobile;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -44,7 +44,6 @@ public enum CountryCode {
   BURUNDI("257", 642),
   CAMBODIA("855", 456),
   CAMEROON("237", 624),
-  CANADA("1", 302),
   CAPE_VERDE("238", 625),
   CAYMAN_ISLANDS("1-345", 346),
   CENTRAL_AFRICAN_REPUBLIC("236", 623),
@@ -244,6 +243,6 @@ public enum CountryCode {
   }
 
   public String mnc(){
-    return "01";
+    return "001";
   }
 }

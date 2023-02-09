@@ -3,6 +3,8 @@ package it.auties.whatsapp.api;
 import it.auties.whatsapp.api.WhatsappOptions.MobileOptions;
 import it.auties.whatsapp.api.WhatsappOptions.WebOptions;
 import it.auties.whatsapp.model.message.model.TextPreviewSetting;
+import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
+import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
 import it.auties.whatsapp.model.signal.auth.Version;
 import it.auties.whatsapp.util.KeyHelper;
 import java.util.function.Function;
@@ -158,7 +160,7 @@ public abstract sealed class WhatsappOptions permits WebOptions, MobileOptions {
      * A function to retrieve the OTP sent to the registered phone number
      */
     @NonNull
-    private Function<VerificationCodeMethod, String> verificationCodeHandler;
+    private Function<VerificationCodeResponse, String> verificationCodeHandler;
 
     /**
      * Returns the type of client

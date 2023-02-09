@@ -35,7 +35,7 @@ public class PastParticipant implements ProtobufMessage {
   private ContactJid userJid;
 
   /**
-   * The reason for the past participant leaving the chat.
+   * The errorReason for the past participant leaving the chat.
    */
   @ProtobufProperty(index = 2, name = "leaveReason", type = MESSAGE)
   private LeaveReason leaveReason;
@@ -47,7 +47,7 @@ public class PastParticipant implements ProtobufMessage {
   private long leaveTimestamp;
 
   /**
-   * Enum representing the reason for a past participant leaving the chat.
+   * Enum representing the errorReason for a past participant leaving the chat.
    */
   @AllArgsConstructor
   public enum LeaveReason implements ProtobufMessage {
@@ -61,7 +61,7 @@ public class PastParticipant implements ProtobufMessage {
     REMOVED(1);
 
     /**
-     * Getter for the index of the leave reason.
+     * Getter for the index of the leave errorReason.
      */
     @Getter
     private final int index;

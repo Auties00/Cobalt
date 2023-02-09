@@ -20,14 +20,14 @@ import it.auties.whatsapp.model.signal.session.SessionAddress;
 import it.auties.whatsapp.model.sync.AppStateSyncKey;
 import it.auties.whatsapp.model.sync.LTHashState;
 import it.auties.whatsapp.serialization.ControllerProviderLoader;
+import it.auties.whatsapp.util.BytesHelper;
+import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.Specification.Whatsapp;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
@@ -57,31 +57,6 @@ public final class Keys
    */
   @Getter
   private int id;
-
-  @Getter
-  @Default
-  @NonNull
-  private String phoneId = UUID.randomUUID().toString();
-
-  @Getter
-  @Default
-  @NonNull
-  private String deviceId = Base64.getUrlEncoder().encodeToString(Bytes.ofRandom(16).toByteArray());
-
-  @Getter
-  @Default
-  @NonNull
-  private String identityId = Bytes.ofRandom(20).toString();
-
-  /**
-   * The client type
-   */
-  @Getter
-  @NonNull
-  private ClientType clientType;
-
-  @Getter
-  private byte @NonNull [] prologue;
 
   /**
    * The secret key pair used for buffer messages
@@ -128,6 +103,40 @@ public final class Keys
   @Getter
   private byte[] companionKey = SignalKeyPair.random()
       .publicKey();
+
+  /**
+   * The client type
+   */
+  @Getter
+  @NonNull
+  private ClientType clientType;
+
+  /**
+   * The prologue to send in a message
+   */
+  @Getter
+  private byte @NonNull [] prologue;
+
+  /**
+   * The phone id for the mobile api
+   */
+  @Getter
+  @Default
+  private String phoneId = KeyHelper.phoneId();
+
+  /**
+   * The device id for the mobile api
+   */
+  @Getter
+  @Default
+  private String deviceId = KeyHelper.deviceId();
+
+  /**
+   * The identity id for the mobile api
+   */
+  @Getter
+  @Default
+  private String identityId = KeyHelper.identityId();
 
   /**
    * The bytes of the encoded {@link SignedDeviceIdentityHMAC} received during the auth process
@@ -221,6 +230,15 @@ public final class Keys
     return deserializer.deserializeKeys(options.id())
         .map(store -> store.useDefaultSerializer(options.defaultSerialization()))
         .orElseGet(() -> random(options));
+  }
+
+  /**
+   * Returns the encoded id
+   *
+   * @return a non-null byte array
+   */
+  public byte[] encodedId() {
+    return BytesHelper.intToBytes(id(), 4);
   }
 
   /**

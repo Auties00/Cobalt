@@ -11,9 +11,9 @@ import static java.util.Map.of;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
 import it.auties.whatsapp.api.DisconnectReason;
-import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.api.SocketEvent;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.binary.MessageWrapper;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.controller.Keys;

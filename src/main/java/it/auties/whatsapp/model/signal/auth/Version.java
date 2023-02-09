@@ -8,14 +8,13 @@ import static java.net.http.HttpResponse.BodyHandlers.ofString;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.whatsapp.crypto.MD5;
 import it.auties.whatsapp.model.response.AppVersionResponse;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.Validate;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -23,7 +22,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
-import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
@@ -97,11 +95,8 @@ public class Version implements ProtobufMessage, JacksonProvider {
     }
   }
 
-  @SneakyThrows
   public byte[] toHash() {
-    var digest = MessageDigest.getInstance("MD5");
-    digest.update(toString().getBytes(StandardCharsets.UTF_8));
-    return digest.digest();
+    return MD5.calculate(toString());
   }
 
   @Override

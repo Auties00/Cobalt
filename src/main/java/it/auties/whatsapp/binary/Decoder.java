@@ -30,14 +30,8 @@ public class Decoder {
     var token = buffer.readByte() & 2;
     var data = buffer.remaining().toByteArray();
     this.buffer = Bytes.of(token == 0 ? data : BytesHelper.deflate(data));
-    this.singleByteTokens = switch (type){
-      case WEB_CLIENT -> Tokens.WEB_SINGLE_BYTE;
-      case APP_CLIENT -> Tokens.APP_SINGLE_BYTE;
-    };
-    this.doubleByteTokens = switch (type){
-      case WEB_CLIENT -> Tokens.WEB_DOUBLE_BYTE;
-      case APP_CLIENT -> Tokens.APP_DOUBLE_BYTE;
-    };
+    this.singleByteTokens =Tokens.WEB_SINGLE_BYTE;
+    this.doubleByteTokens = Tokens.WEB_DOUBLE_BYTE;
   }
 
   public Node readNode() {

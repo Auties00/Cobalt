@@ -50,6 +50,6 @@ open module it.auties.whatsappweb4j {
   exports it.auties.whatsapp.model.privacy;
   exports it.auties.whatsapp.model.location;
   exports it.auties.whatsapp.model.poll;
-
+  exports it.auties.whatsapp.model.mobile;
   uses ControllerProvider;
 }

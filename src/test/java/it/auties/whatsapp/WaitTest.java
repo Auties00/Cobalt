@@ -1,8 +1,9 @@
 package it.auties.whatsapp;
 
-import it.auties.whatsapp.api.VerificationCodeMethod;
+import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappOptions.MobileOptions;
+import it.auties.whatsapp.api.WhatsappOptions.WebOptions;
 import it.auties.whatsapp.util.JacksonProvider;
 
 // Just used for testing locally
@@ -14,7 +15,7 @@ public class WaitTest implements JacksonProvider {
         .verificationCodeHandler(type -> "1234")
         .verificationCodeMethod(VerificationCodeMethod.SMS)
         .build();
-    var whatsapp = Whatsapp.lastConnection(options)
+    var whatsapp = Whatsapp.newConnection(WebOptions.defaultOptions())
         .addLoggedInListener(() -> System.out.println("Connected"))
         .addNewMessageListener(message -> System.out.println(message.toJson()))
         .addContactsListener(
@@ -33,6 +34,5 @@ public class WaitTest implements JacksonProvider {
             contact == null ? null : contact.name()))
         .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason));
     whatsapp.connect().join();
-    System.out.println("Done");
   }
 }

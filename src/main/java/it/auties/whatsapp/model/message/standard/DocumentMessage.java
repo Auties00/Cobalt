@@ -70,7 +70,7 @@ public final class DocumentMessage extends MediaMessage {
   private long mediaSize;
 
   /**
-   * The unsigned length in pages of the document that this object wraps
+   * The unsigned codeLength in pages of the document that this object wraps
    */
   @ProtobufProperty(index = 6, type = UINT32)
   private Integer pageCount;

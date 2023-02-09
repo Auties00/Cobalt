@@ -102,7 +102,7 @@ public final class StickerMessage extends MediaMessage {
   private long mediaKeyTimestamp;
 
   /**
-   * The length of the first frame
+   * The codeLength of the first frame
    */
   @ProtobufProperty(index = 11, type = UINT32)
   private Integer firstFrameLength;

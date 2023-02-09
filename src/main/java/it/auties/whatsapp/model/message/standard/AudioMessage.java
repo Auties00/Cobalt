@@ -64,7 +64,7 @@ public final class AudioMessage extends MediaMessage {
   private long mediaSize;
 
   /**
-   * The unsigned length of the decoded audio in endTimeStamp
+   * The unsigned codeLength of the decoded audio in endTimeStamp
    */
   @ProtobufProperty(index = 5, type = UINT32)
   private int duration;

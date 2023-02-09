@@ -10,7 +10,7 @@ public interface OnWhatsappDisconnected
    * Called when the socket successfully disconnects from WhatsappWeb's WebSocket
    *
    * @param whatsapp an instance to the calling api
-   * @param reason   the reason why the session was disconnected
+   * @param reason   the errorReason why the session was disconnected
    */
   @Override
   void onDisconnected(Whatsapp whatsapp, DisconnectReason reason);

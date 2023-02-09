@@ -29,7 +29,7 @@ import lombok.experimental.SuperBuilder;
  * A model class that represents a message holding media inside This class is only a model, this
  * means that changing its values will have no real effect on WhatsappWeb's servers. Even though the
  * same instance is in the wrapping message info(MessageInfo -> MessageContainer -> MediaMessage),
- * there is currently no way to navigate the tree upwards or any reason to do so considering that
+ * there is currently no way to navigate the tree upwards or any errorReason to do so considering that
  * this is a special use case. Considering that passing the same instance to
  * {@link MediaMessage#decodedMedia()} is verbose and unnecessary, there is a copy here.
  */

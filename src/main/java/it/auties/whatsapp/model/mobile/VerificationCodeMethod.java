@@ -1,5 +1,8 @@
-package it.auties.whatsapp.api;
+package it.auties.whatsapp.model.mobile;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.whatsapp.api.ClientType;
+import java.util.Arrays;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -21,4 +24,12 @@ public enum VerificationCodeMethod {
 
   @Getter
   private final String type;
+
+  @JsonCreator
+  public static VerificationCodeMethod of(String name) {
+    return Arrays.stream(values())
+        .filter(entry -> entry.type().equalsIgnoreCase(name))
+        .findFirst()
+        .orElse(null);
+  }
 }

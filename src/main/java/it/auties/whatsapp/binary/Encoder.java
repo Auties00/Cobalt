@@ -36,14 +36,8 @@ public class Encoder {
   private final List<String> doubleByteTokens;
   private Bytes buffer;
   public Encoder(@NonNull ClientType type){
-    this.singleByteTokens = switch (type){
-      case WEB_CLIENT -> Tokens.WEB_SINGLE_BYTE;
-      case APP_CLIENT -> Tokens.APP_SINGLE_BYTE;
-    };
-    this.doubleByteTokens = switch (type){
-      case WEB_CLIENT -> Tokens.WEB_DOUBLE_BYTE;
-      case APP_CLIENT -> Tokens.APP_DOUBLE_BYTE;
-    };
+    this.singleByteTokens = Tokens.WEB_SINGLE_BYTE;
+    this.doubleByteTokens = Tokens.WEB_DOUBLE_BYTE;
   }
   
   public byte[] encode(Node node) {

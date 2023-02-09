@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
@@ -30,24 +31,30 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public abstract sealed class SocketSession permits WebSocketSession, AppSocketSession {
   protected SocketListener listener;
+  protected boolean closed;
 
-  CompletableFuture<Void> connect(SocketListener listener){
+  public CompletableFuture<Void> connect(SocketListener listener){
     this.listener = listener;
+    this.closed = false;
     return null;
   }
-  abstract CompletableFuture<Void> close();
+
+  public CompletableFuture<Void> close() {
+    this.closed = true;
+    return null;
+  }
+
   abstract boolean isOpen();
+
   public abstract CompletableFuture<Void> sendBinary(byte[] bytes);
 
   static SocketSession of(ClientType type){
-    return switch (type){
-      case WEB_CLIENT -> new WebSocketSession();
-      case APP_CLIENT -> new AppSocketSession();
-    };
+    return new AppSocketSession();
   }
 
   @ClientEndpoint(configurator = OriginPatcher.class)
@@ -73,7 +80,12 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
     public CompletableFuture<Void> close() {
       return CompletableFuture.runAsync(() -> {
         try {
+          if(closed){
+            return;
+          }
+
           session.close();
+          super.close();
         } catch (IOException exception) {
           throw new UncheckedIOException("Cannot close connection to host", exception);
         }
@@ -155,17 +167,13 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
       });
     }
 
+    @SneakyThrows
     @Override
     public CompletableFuture<Void> close() {
-      return CompletableFuture.runAsync(() -> {
-        try {
-          socket.close();
-          service.shutdownNow();
-          listener.onClose();
-        }catch (IOException exception){
-          throw new UncheckedIOException("Cannot close connection to host", exception);
-        }
-      });
+      super.close();
+      socket.close();
+      closeResources();
+      return CompletableFuture.completedFuture(null);
     }
 
     @Override
@@ -193,11 +201,18 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
           var stream = socket.getInputStream();
           var size = stream.read(bytes);
           listener.onMessage(Arrays.copyOf(bytes, size));
+        }catch (SocketException exception){
+          closeResources();
         }catch (IOException exception){
           listener.onError(exception);
         }
       }
+      closeResources();
+    }
 
+    private void closeResources() {
+      this.socket = null;
+      service.shutdownNow();
       listener.onClose();
     }
   }

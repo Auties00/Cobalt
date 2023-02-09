@@ -6,7 +6,7 @@ package it.auties.whatsapp.api;
  */
 public enum DisconnectReason {
   /**
-   * Default reason
+   * Default errorReason
    */
   DISCONNECTED,
   /**

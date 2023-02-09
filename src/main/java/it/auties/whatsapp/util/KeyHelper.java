@@ -2,6 +2,8 @@ package it.auties.whatsapp.util;
 
 import it.auties.bytes.Bytes;
 import java.security.SecureRandom;
+import java.util.Base64;
+import java.util.UUID;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
@@ -54,6 +56,18 @@ public class KeyHelper {
   public int registrationId() {
     var secureRandom = SecureRandom.getInstance(SHA_PRNG);
     return secureRandom.nextInt(16380) + 1;
+  }
+
+  public String identityId(){
+    return Bytes.ofRandom(20).toHex();
+  }
+
+  public String deviceId(){
+    return Base64.getUrlEncoder().encodeToString(Bytes.ofRandom(16).toByteArray());
+  }
+
+  public String phoneId(){
+    return UUID.randomUUID().toString();
   }
 
   @SneakyThrows

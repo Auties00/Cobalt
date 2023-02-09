@@ -1048,7 +1048,7 @@ public class Whatsapp {
     if (store().userCompanionJid() == null) {
       return socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
     }
-    var metadata = Map.of("jid", store().userCompanionJid(), "reason", "user_initiated");
+    var metadata = Map.of("jid", store().userCompanionJid(), "errorReason", "user_initiated");
     var device = Node.ofAttributes("remove-companion-device", metadata);
     return socketHandler.sendQuery("set", "md", device)
         .thenRunAsync(() -> {});
