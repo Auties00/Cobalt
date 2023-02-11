@@ -84,8 +84,10 @@ public class Version implements ProtobufMessage, JacksonProvider {
   public static Version latest() {
     try {
       var client = HttpClient.newHttpClient();
-      var request = HttpRequest.newBuilder().GET()
-          .uri(URI.create(WEB_UPDATE_URL.formatted(DEFAULT_VERSION))).build();
+      var request = HttpRequest.newBuilder()
+          .GET()
+          .uri(URI.create(WEB_UPDATE_URL.formatted(DEFAULT_VERSION)))
+          .build();
       var response = client.send(request, ofString());
       var model = JSON.readValue(response.body(), AppVersionResponse.class);
       return model.currentVersion() == null ? DEFAULT_VERSION

@@ -123,20 +123,23 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
         .appendShort(65535 & ciphered.length)
         .append(ciphered)
         .toByteArray();
+    store.addRequest(this);
     session.sendBinary(buffer)
-        .thenRunAsync(() -> {
-          if (!response) {
-            future.complete(null);
-            return;
-          }
-
-          store.addRequest(this);
-        })
-        .exceptionallyAsync(throwable -> {
-          future.completeExceptionally(new IOException("Cannot send %s, an unknown exception occurred".formatted(this), throwable));
-          return null;
-        });
+        .thenRunAsync(() -> onSendSuccess(response))
+        .exceptionallyAsync(this::onSendError);
     return future;
+  }
+
+  private void onSendSuccess(boolean response) {
+    if (response) {
+      return;
+    }
+    future.complete(null);
+  }
+
+  private Void onSendError(Throwable throwable) {
+    future.completeExceptionally(new IOException("Cannot send %s, an unknown exception occurred".formatted(this), throwable));
+    return null;
   }
 
   /**

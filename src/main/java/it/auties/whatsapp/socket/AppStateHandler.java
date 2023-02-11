@@ -198,7 +198,9 @@ class AppStateHandler extends Handler
   }
 
   protected CompletableFuture<Void> pullInitial() {
-    return pullUninterruptedly(Arrays.asList(PatchType.values()))
+    return pullUninterruptedly(List.of(PatchType.CRITICAL_BLOCK, PatchType.CRITICAL_UNBLOCK_LOW))
+        .thenComposeAsync(ignored -> pullUninterruptedly(List.of(PatchType.REGULAR, PatchType.REGULAR_LOW, PatchType.REGULAR_HIGH)))
+        .thenComposeAsync(ignored -> pullUninterruptedly(List.of(PatchType.CRITICAL_BLOCK, PatchType.CRITICAL_UNBLOCK_LOW)))
         .thenAcceptAsync(success -> onPull(true, success))
         .exceptionallyAsync(exception -> onPullError(true, exception));
   }

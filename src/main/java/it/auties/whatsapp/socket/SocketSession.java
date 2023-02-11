@@ -31,7 +31,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import lombok.NonNull;
-import lombok.SneakyThrows;
 
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public abstract sealed class SocketSession permits WebSocketSession, AppSocketSession {
@@ -54,7 +53,10 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
   public abstract CompletableFuture<Void> sendBinary(byte[] bytes);
 
   static SocketSession of(ClientType type){
-    return new AppSocketSession();
+    return switch (type){
+      case WEB_CLIENT -> new WebSocketSession();
+      case APP_CLIENT -> new AppSocketSession();
+    };
   }
 
   @ClientEndpoint(configurator = OriginPatcher.class)
@@ -167,19 +169,24 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
       });
     }
 
-    @SneakyThrows
     @Override
     public CompletableFuture<Void> close() {
-      super.close();
-      socket.close();
-      closeResources();
-      return CompletableFuture.completedFuture(null);
+      return CompletableFuture.runAsync(() -> {
+        try {
+          super.close();
+          socket.close();
+          closeResources();
+        }catch (IOException exception){
+          throw new UncheckedIOException("Cannot close connection to host", exception);
+        }
+      });
     }
 
     @Override
     public CompletableFuture<Void> sendBinary(byte[] bytes) {
       return CompletableFuture.runAsync(() -> {
         try {
+          System.out.println("Sending: " + Arrays.toString(bytes));
           var stream = socket.getOutputStream();
           stream.write(bytes);
           stream.flush();
@@ -200,6 +207,7 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
         try {
           var stream = socket.getInputStream();
           var size = stream.read(bytes);
+          System.out.println("Received: " + Arrays.toString(Arrays.copyOf(bytes, size)));
           listener.onMessage(Arrays.copyOf(bytes, size));
         }catch (SocketException exception){
           closeResources();

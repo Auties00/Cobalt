@@ -91,10 +91,11 @@ class DefaultControllerProvider
 
   private boolean updateHash(Chat entry) {
     var lastHashCode = hashCodesMap.get(entry.jid());
+    var newHashCode = entry.hashCode();
     if (lastHashCode == null) {
+      hashCodesMap.put(entry.jid(), newHashCode);
       return true;
     }
-    var newHashCode = entry.hashCode();
     if (newHashCode == lastHashCode) {
       return false;
     }
@@ -143,7 +144,8 @@ class DefaultControllerProvider
               .startsWith(CHAT_PREFIX))
           .map(entry -> deserializeChat(store, entry))
           .toArray(CompletableFuture[]::new);
-      var result = CompletableFuture.allOf(futures);
+      var result = CompletableFuture.allOf(futures)
+          .thenRunAsync(() -> store.chats().forEach(chat -> hashCodesMap.put(chat.jid(), chat.hashCode())));
       deserializer.set(result);
       return result;
     } catch (IOException exception) {
@@ -157,7 +159,6 @@ class DefaultControllerProvider
         var chatPreferences = SmileFile.of(entry);
         var chat = chatPreferences.read(Chat.class)
             .orElseThrow(() -> new NoSuchElementException("Corrupted chat at %s".formatted(entry)));
-        hashCodesMap.put(chat.jid(), chat.hashCode());
         baseStore.addChatDirect(chat);
       } catch (IOException exception) {
         var chatName = entry.getFileName()
@@ -171,7 +172,9 @@ class DefaultControllerProvider
         } catch (IOException deleteException) {
           logger.log(WARNING, "Cannot delete chat file");
         }
-        baseStore.addChatDirect(Chat.ofJid(ContactJid.of(chatName)));
+        var result = Chat.ofJid(ContactJid.of(chatName));
+        hashCodesMap.put(result.jid(), result.hashCode());
+        baseStore.addChatDirect(result);
       }
     });
   }

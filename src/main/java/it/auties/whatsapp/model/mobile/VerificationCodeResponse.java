@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record VerificationCodeResponse(
     @JsonProperty("login") PhoneNumber number,
+    @JsonProperty("lid") long lid,
     @JsonProperty("status") VerificationCodeStatus status,
     @JsonProperty("reason") VerificationCodeError errorReason,
     @JsonProperty("method") VerificationCodeMethod method,
@@ -14,6 +15,7 @@ public record VerificationCodeResponse(
     @JsonProperty("voice_wait") long voiceWait,
     @JsonProperty("sms_wait") long smsWait,
     @JsonProperty("flash_type") long flashType,
-    @JsonProperty("wa_old_wait") long oldWait) {
+    @JsonProperty("wa_old_wait") long oldWait,
+    @JsonProperty("security_code_set") boolean securityCodeSet) {
 
 }

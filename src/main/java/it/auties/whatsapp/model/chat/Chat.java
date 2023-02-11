@@ -9,7 +9,7 @@ import static it.auties.protobuf.base.ProtobufType.UINT32;
 import static it.auties.protobuf.base.ProtobufType.UINT64;
 import static java.util.Objects.requireNonNullElse;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
@@ -25,6 +25,7 @@ import it.auties.whatsapp.model.sync.HistorySyncMessage;
 import it.auties.whatsapp.util.Clock;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -94,7 +95,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
   @ProtobufProperty(index = 2, type = MESSAGE, implementation = HistorySyncMessage.class, repeated = true)
   @NonNull
   @Default
-  @JsonManagedReference
+  @JsonIgnore
   private ConcurrentLinkedDeque<MessageInfo> messages = new ConcurrentLinkedDeque<>();
 
   /**
@@ -277,7 +278,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
   private boolean parentGroup;
 
   /**
-   * Whether this chat is a default sub group
+   * Whether this chat is a default subgroup
    */
   @ProtobufProperty(index = 36, name = "isDefaultSubgroup", type = BOOL)
   private boolean defaultSubGroup;
@@ -796,7 +797,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
 
   @Override
   public int hashCode() {
-    return Objects.hash(jid(), messages());
+    return Objects.hash(jid(), Arrays.hashCode(messages().stream().map(MessageInfo::id).toArray()));
   }
 
   /**

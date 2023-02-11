@@ -1,8 +1,6 @@
 package it.auties.whatsapp;
 
-import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.api.WhatsappOptions.MobileOptions;
 import it.auties.whatsapp.api.WhatsappOptions.WebOptions;
 import it.auties.whatsapp.util.JacksonProvider;
 
@@ -10,12 +8,7 @@ import it.auties.whatsapp.util.JacksonProvider;
 public class WaitTest implements JacksonProvider {
   public static void main(String[] args) {
     Thread.setDefaultUncaughtExceptionHandler((t, e) -> e.printStackTrace());
-    var options = MobileOptions.builder()
-        .phoneNumber("+393495089819")
-        .verificationCodeHandler(type -> "1234")
-        .verificationCodeMethod(VerificationCodeMethod.SMS)
-        .build();
-    var whatsapp = Whatsapp.newConnection(WebOptions.defaultOptions())
+    var whatsapp = Whatsapp.lastConnection(WebOptions.defaultOptions())
         .addLoggedInListener(() -> System.out.println("Connected"))
         .addNewMessageListener(message -> System.out.println(message.toJson()))
         .addContactsListener(

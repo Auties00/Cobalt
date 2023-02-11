@@ -67,14 +67,6 @@ public final class Store
   private static ConcurrentHashMap<Integer, Store> stores = new ConcurrentHashMap<>();
 
   /**
-   * The media connection latch associated with this store
-   */
-  @JsonIgnore
-  @Default
-  private CountDownLatch mediaConnectionLatch = new CountDownLatch(1);
-
-
-  /**
    * The session id of this store
    */
   @Getter
@@ -184,7 +176,7 @@ public final class Store
   @NonNull
   @JsonIgnore
   @Default
-  private ConcurrentLinkedDeque<Request> requests = new ConcurrentLinkedDeque<>();
+  private ConcurrentHashMap<String, Request> requests = new ConcurrentHashMap<>();
 
   /**
    * The non-null list of replies waiting to be fulfilled
@@ -233,6 +225,13 @@ public final class Store
    */
   @JsonIgnore
   private MediaConnection mediaConnection;
+
+  /**
+   * The media connection latch associated with this store
+   */
+  @JsonIgnore
+  @Default
+  private CountDownLatch mediaConnectionLatch = new CountDownLatch(1);
 
   @JsonIgnore
   @Getter
@@ -445,11 +444,7 @@ public final class Store
    * @return a non-null optional
    */
   public Optional<Request> findPendingRequest(String id) {
-    return id == null ?
-        Optional.empty() :
-        requests.parallelStream()
-            .filter(request -> Objects.equals(request.id(), id))
-            .findAny();
+    return id == null ? Optional.empty() : Optional.ofNullable(requests.get(id));
   }
 
   /**
@@ -468,8 +463,9 @@ public final class Store
 
   private Request deleteAndComplete(Request request, Node response, boolean exceptionally) {
     if (request.complete(response, exceptionally)) {
-      requests.remove(request);
+      requests.remove(request.id());
     }
+
     return request;
   }
 
@@ -477,7 +473,7 @@ public final class Store
    * Clears all the data that this object holds and closes the pending requests
    */
   public void resolveAllPendingRequests() {
-    requests.forEach(request -> request.complete(null, false));
+    requests.values().forEach(request -> request.complete(null, false));
   }
 
   /**
@@ -755,7 +751,11 @@ public final class Store
    * @return the non-null completable result of the request
    */
   public CompletableFuture<Node> addRequest(@NonNull Request request) {
-    requests.add(request);
+    if(request.id() == null){
+      return CompletableFuture.completedFuture(null);
+    }
+
+    requests.put(request.id(), request);
     return request.future();
   }
 

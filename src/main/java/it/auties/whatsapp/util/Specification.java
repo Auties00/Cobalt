@@ -18,7 +18,7 @@ public class Specification {
     public static final byte[] WEB_PROLOGUE = Bytes.of(WHATSAPP_HEADER)
         .append(WEB_VERSION)
         .toByteArray();
-    private static final byte[] MOBILE_VERSION = new byte[]{4, 0};
+    private static final byte[] MOBILE_VERSION = new byte[]{5, 2};
     public static final byte[] APP_PROLOGUE = Bytes.of(WHATSAPP_HEADER)
         .append(MOBILE_VERSION)
         .toByteArray();

@@ -1,5 +1,6 @@
 package it.auties.whatsapp.serialization;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.LocalFileSystem;
 import java.io.IOException;
@@ -38,20 +39,30 @@ final class SmileFile
 
   public <T> Optional<T> read(Class<T> clazz)
       throws IOException {
+    return read(new TypeReference<>(){
+      @Override
+      public Class<T> getType() {
+        return clazz;
+      }
+    });
+  }
+
+  public <T> Optional<T> read(TypeReference<T> reference)
+      throws IOException {
     if (Files.notExists(file)) {
       return Optional.empty();
     }
     var stream = Files.newInputStream(file);
-    return Optional.of(SMILE.readValue(new GZIPInputStream(stream, 65536), clazz));
+    return Optional.of(SMILE.readValue(new GZIPInputStream(stream, 65536), reference));
   }
 
-  public void write(Object input, boolean async) {
+  public CompletableFuture<Void> write(Object input, boolean async) {
     if (!async) {
       writeSync(input);
-      return;
+      return CompletableFuture.completedFuture(null);
     }
 
-    CompletableFuture.runAsync(() -> writeSync(input))
+    return CompletableFuture.runAsync(() -> writeSync(input))
         .exceptionallyAsync(this::onError);
   }
 
