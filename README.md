@@ -5,12 +5,15 @@
 Whatsapp4j is a library built to interact with Whatsapp.
 It can be used to work with:
 1. WhatsappWeb (MultiDevice)
+
    This functionality is fully documented and ready.
    No browser, application or any additional software is necessary.
    Everything as of now has been successfully reverse engineered.
    A companion device with the Whatsapp app installed is needed to scan the QR code the first time.
    As the multi device api is supported, the companion doesn't need to remain online for the client to work.
+
 2. Whatsapp Mobile App
+
    This functionality is still being developed.
    It will allow the client to act as the mobile app.
    This means that no companion will be required to run the client.
