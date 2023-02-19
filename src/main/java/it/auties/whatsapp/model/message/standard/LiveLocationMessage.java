@@ -1,12 +1,5 @@
 package it.auties.whatsapp.model.message.standard;
 
-import static it.auties.protobuf.base.ProtobufType.BYTES;
-import static it.auties.protobuf.base.ProtobufType.DOUBLE;
-import static it.auties.protobuf.base.ProtobufType.FLOAT;
-import static it.auties.protobuf.base.ProtobufType.STRING;
-import static it.auties.protobuf.base.ProtobufType.UINT32;
-import static it.auties.protobuf.base.ProtobufType.UINT64;
-
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
@@ -19,6 +12,8 @@ import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
+import static it.auties.protobuf.base.ProtobufType.*;
+
 /**
  * A model class that represents a message holding a live location inside
  */
@@ -30,68 +25,68 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Accessors(fluent = true)
 public final class LiveLocationMessage extends ContextualMessage {
-  /**
-   * The latitude of the location that this message wraps
-   */
-  @ProtobufProperty(index = 1, type = DOUBLE)
-  private double latitude;
+    /**
+     * The latitude of the location that this message wraps
+     */
+    @ProtobufProperty(index = 1, type = DOUBLE)
+    private double latitude;
 
-  /**
-   * The longitude of the location that this message wraps
-   */
-  @ProtobufProperty(index = 2, type = DOUBLE)
-  private double longitude;
+    /**
+     * The longitude of the location that this message wraps
+     */
+    @ProtobufProperty(index = 2, type = DOUBLE)
+    private double longitude;
 
-  /**
-   * The accuracy in meters of the location that this message wraps
-   */
-  @ProtobufProperty(index = 3, type = UINT32)
-  private int accuracy;
+    /**
+     * The accuracy in meters of the location that this message wraps
+     */
+    @ProtobufProperty(index = 3, type = UINT32)
+    private int accuracy;
 
-  /**
-   * The speed in meters per second of the device that sent this live location message
-   */
-  @ProtobufProperty(index = 4, type = FLOAT)
-  private float speed;
+    /**
+     * The speed in meters per second of the device that sent this live location message
+     */
+    @ProtobufProperty(index = 4, type = FLOAT)
+    private float speed;
 
-  /**
-   * Degrees Clockwise from Magnetic North
-   */
-  @ProtobufProperty(index = 5, type = UINT32)
-  private int magneticNorthOffset;
+    /**
+     * Degrees Clockwise from Magnetic North
+     */
+    @ProtobufProperty(index = 5, type = UINT32)
+    private int magneticNorthOffset;
 
-  /**
-   * The caption of this message
-   */
-  @ProtobufProperty(index = 6, type = STRING)
-  private String caption;
+    /**
+     * The caption of this message
+     */
+    @ProtobufProperty(index = 6, type = STRING)
+    private String caption;
 
-  /**
-   * This property probably refers to the number of updates that this live location message.
-   */
-  @ProtobufProperty(index = 7, type = UINT64)
-  private long sequenceNumber;
+    /**
+     * This property probably refers to the number of updates that this live location message.
+     */
+    @ProtobufProperty(index = 7, type = UINT64)
+    private long sequenceNumber;
 
-  /**
-   * This offset probably refers to the seconds since the last update to this live location message.
-   * In addition, it is measured in seconds since {@link java.time.Instant#EPOCH}.
-   */
-  @ProtobufProperty(index = 8, type = UINT32)
-  private int timeOffset;
+    /**
+     * This offset probably refers to the seconds since the last update to this live location message.
+     * In addition, it is measured in seconds since {@link java.time.Instant#EPOCH}.
+     */
+    @ProtobufProperty(index = 8, type = UINT32)
+    private int timeOffset;
 
-  /**
-   * The thumbnail for this live location message encoded as jpeg in an array of bytes
-   */
-  @ProtobufProperty(index = 16, type = BYTES)
-  private byte[] thumbnail;
+    /**
+     * The thumbnail for this live location message encoded as jpeg in an array of bytes
+     */
+    @ProtobufProperty(index = 16, type = BYTES)
+    private byte[] thumbnail;
 
-  @Override
-  public MessageType type() {
-    return MessageType.LIVE_LOCATION;
-  }
+    @Override
+    public MessageType type() {
+        return MessageType.LIVE_LOCATION;
+    }
 
-  @Override
-  public MessageCategory category() {
-    return MessageCategory.STANDARD;
-  }
+    @Override
+    public MessageCategory category() {
+        return MessageCategory.STANDARD;
+    }
 }

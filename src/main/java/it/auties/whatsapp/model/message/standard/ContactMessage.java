@@ -1,7 +1,5 @@
 package it.auties.whatsapp.model.message.standard;
 
-import static it.auties.protobuf.base.ProtobufType.STRING;
-
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.contact.ContactCard;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
@@ -15,6 +13,8 @@ import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
+import static it.auties.protobuf.base.ProtobufType.STRING;
+
 /**
  * A model class that represents a message holding a contact inside
  */
@@ -26,25 +26,25 @@ import lombok.extern.jackson.Jacksonized;
 @EqualsAndHashCode(callSuper = true)
 @Accessors(fluent = true)
 public final class ContactMessage extends ContextualMessage {
-  /**
-   * The name of the contact that this message wraps
-   */
-  @ProtobufProperty(index = 1, type = STRING)
-  private String name;
+    /**
+     * The name of the contact that this message wraps
+     */
+    @ProtobufProperty(index = 1, type = STRING)
+    private String name;
 
-  /**
-   * The info about the contact that this message wraps encoded as a vcard
-   */
-  @ProtobufProperty(index = 16, type = STRING, implementation = ContactCard.class)
-  private ContactCard vcard;
+    /**
+     * The info about the contact that this message wraps encoded as a vcard
+     */
+    @ProtobufProperty(index = 16, type = STRING, implementation = ContactCard.class)
+    private ContactCard vcard;
 
-  @Override
-  public MessageType type() {
-    return MessageType.CONTACT;
-  }
+    @Override
+    public MessageType type() {
+        return MessageType.CONTACT;
+    }
 
-  @Override
-  public MessageCategory category() {
-    return MessageCategory.STANDARD;
-  }
+    @Override
+    public MessageCategory category() {
+        return MessageCategory.STANDARD;
+    }
 }

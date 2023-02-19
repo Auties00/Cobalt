@@ -8,26 +8,23 @@ import it.auties.whatsapp.api.Whatsapp;
  * {@link GroupSetting} in a {@link Chat}. Said chat should be a group: {@link Chat#isGroup()}. Said
  * actions can be executed using various methods in {@link Whatsapp}.
  */
-public enum GroupPolicy
-    implements ProtobufMessage {
-  /**
-   * Allows both admins and users
-   */
-  ANYONE,
-  /**
-   * Allows only admins
-   */
-  ADMINS;
+public enum GroupPolicy implements ProtobufMessage {
+    /**
+     * Allows both admins and users
+     */
+    ANYONE,
+    /**
+     * Allows only admins
+     */
+    ADMINS;
 
-  /**
-   * Returns a GroupPolicy based on a boolean value obtained from Whatsapp
-   *
-   * @param input the boolean value obtained from Whatsapp
-   * @return a non-null GroupPolicy
-   */
-  public static GroupPolicy of(boolean input) {
-    return input ?
-        ADMINS :
-        ANYONE;
-  }
+    /**
+     * Returns a GroupPolicy based on a boolean value obtained from Whatsapp
+     *
+     * @param input the boolean value obtained from Whatsapp
+     * @return a non-null GroupPolicy
+     */
+    public static GroupPolicy of(boolean input) {
+        return input ? ADMINS : ANYONE;
+    }
 }

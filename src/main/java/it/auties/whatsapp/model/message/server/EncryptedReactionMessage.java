@@ -1,8 +1,5 @@
 package it.auties.whatsapp.model.message.server;
 
-import static it.auties.protobuf.base.ProtobufType.BYTES;
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
-
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.MessageKey;
@@ -14,32 +11,33 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import static it.auties.protobuf.base.ProtobufType.BYTES;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
+
 @AllArgsConstructor
 @Data
 @Accessors(fluent = true)
 @Jacksonized
 @Builder
 @ProtobufName("EncReactionMessage")
-public final class EncryptedReactionMessage
-    implements ServerMessage {
+public final class EncryptedReactionMessage implements ServerMessage {
+    private static final String ENC_REACTION = "Enc Reaction";
 
-  private static final String ENC_REACTION = "Enc Reaction";
+    @ProtobufProperty(index = 1, name = "targetMessageKey", type = MESSAGE)
+    private MessageKey targetMessageKey;
 
-  @ProtobufProperty(index = 1, name = "targetMessageKey", type = MESSAGE)
-  private MessageKey targetMessageKey;
+    @ProtobufProperty(index = 2, name = "encPayload", type = BYTES)
+    private byte[] encPayload;
 
-  @ProtobufProperty(index = 2, name = "encPayload", type = BYTES)
-  private byte[] encPayload;
+    @ProtobufProperty(index = 3, name = "encIv", type = BYTES)
+    private byte[] encIv;
 
-  @ProtobufProperty(index = 3, name = "encIv", type = BYTES)
-  private byte[] encIv;
+    public String secretName() {
+        return ENC_REACTION;
+    }
 
-  public String secretName() {
-    return ENC_REACTION;
-  }
-
-  @Override
-  public MessageType type() {
-    return MessageType.ENCRYPTED_REACTION;
-  }
+    @Override
+    public MessageType type() {
+        return MessageType.ENCRYPTED_REACTION;
+    }
 }

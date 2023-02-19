@@ -5,12 +5,12 @@ package it.auties.whatsapp.api;
  * can send on the first login attempt
  */
 public enum HistoryLength {
-  /**
-   * One year worth of chats
-   */
-  ONE_YEAR,
-  /**
-   * Three months worth of chat
-   */
-  THREE_MONTHS
+    /**
+     * One year worth of chats
+     */
+    ONE_YEAR,
+    /**
+     * Three months worth of chat
+     */
+    THREE_MONTHS
 }

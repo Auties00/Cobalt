@@ -18,7 +18,6 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @ProtobufName("PollUpdateMessageMetadata")
-public class PollUpdateMessageMetadata
-    implements ProtobufMessage {
+public class PollUpdateMessageMetadata implements ProtobufMessage {
 
 }

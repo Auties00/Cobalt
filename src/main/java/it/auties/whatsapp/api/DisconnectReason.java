@@ -5,20 +5,20 @@ package it.auties.whatsapp.api;
  * terminated
  */
 public enum DisconnectReason {
-  /**
-   * Default errorReason
-   */
-  DISCONNECTED,
-  /**
-   * Reconnect
-   */
-  RECONNECTING,
-  /**
-   * Logged out
-   */
-  LOGGED_OUT,
-  /**
-   * Session restore
-   */
-  RESTORE
+    /**
+     * Default errorReason
+     */
+    DISCONNECTED,
+    /**
+     * Reconnect
+     */
+    RECONNECTING,
+    /**
+     * Logged out
+     */
+    LOGGED_OUT,
+    /**
+     * Session restore
+     */
+    RESTORE
 }

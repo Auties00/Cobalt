@@ -1,7 +1,5 @@
 package it.auties.whatsapp.model.poll;
 
-import static it.auties.protobuf.base.ProtobufType.BYTES;
-
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
@@ -10,6 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
+
+import static it.auties.protobuf.base.ProtobufType.BYTES;
 
 
 /**
@@ -22,18 +22,16 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @ProtobufName("PollEncValue")
-public class PollUpdateEncryptedMetadata
-    implements ProtobufMessage {
+public class PollUpdateEncryptedMetadata implements ProtobufMessage {
+    /**
+     * The bytes of the payload, decoded internally by the message handler
+     */
+    @ProtobufProperty(index = 1, name = "encPayload", type = BYTES)
+    private byte[] payload;
 
-  /**
-   * The bytes of the payload, decoded internally by the message handler
-   */
-  @ProtobufProperty(index = 1, name = "encPayload", type = BYTES)
-  private byte[] payload;
-
-  /**
-   * The bytes of the iv, used to decode the payload internally in the message handler
-   */
-  @ProtobufProperty(index = 2, name = "encIv", type = BYTES)
-  private byte[] iv;
+    /**
+     * The bytes of the iv, used to decode the payload internally in the message handler
+     */
+    @ProtobufProperty(index = 2, name = "encIv", type = BYTES)
+    private byte[] iv;
 }

@@ -4,26 +4,24 @@ import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.KeyHelper;
 
-public sealed interface ISignalKeyPair
-    permits SignalKeyPair, SignalPreKeyPair, SignalSignedKeyPair {
+public sealed interface ISignalKeyPair permits SignalKeyPair, SignalPreKeyPair, SignalSignedKeyPair {
+    byte[] privateKey();
 
-  default int id() {
-    throw new UnsupportedOperationException(getClass().getName() + " doesn't provide an id");
-  }
+    Node toNode();
 
-  byte[] publicKey();
+    SignalKeyPair toGenericKeyPair();
 
-  byte[] privateKey();
+    default byte[] encodedPublicKey() {
+        return KeyHelper.withHeader(publicKey());
+    }
 
-  Node toNode();
+    byte[] publicKey();
 
-  SignalKeyPair toGenericKeyPair();
+    default byte[] encodedId() {
+        return BytesHelper.intToBytes(id(), 3);
+    }
 
-  default byte[] encodedPublicKey() {
-    return KeyHelper.withHeader(publicKey());
-  }
-
-  default byte[] encodedId() {
-    return BytesHelper.intToBytes(id(), 3);
-  }
+    default int id() {
+        throw new UnsupportedOperationException(getClass().getName() + " doesn't provide an id");
+    }
 }

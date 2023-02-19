@@ -1,8 +1,5 @@
 package it.auties.whatsapp.model.business;
 
-import static it.auties.protobuf.base.ProtobufType.INT64;
-import static it.auties.protobuf.base.ProtobufType.STRING;
-
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
@@ -10,6 +7,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
+
+import static it.auties.protobuf.base.ProtobufType.INT64;
+import static it.auties.protobuf.base.ProtobufType.STRING;
 
 /**
  * A model class that represents a currency
@@ -19,18 +19,16 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class BusinessCurrency
-    implements ProtobufMessage {
+public class BusinessCurrency implements ProtobufMessage {
+    /**
+     * The currency countryCode
+     */
+    @ProtobufProperty(index = 1, type = STRING)
+    private String currencyCode;
 
-  /**
-   * The currency countryCode
-   */
-  @ProtobufProperty(index = 1, type = STRING)
-  private String currencyCode;
-
-  /**
-   * The amount
-   */
-  @ProtobufProperty(index = 2, type = INT64)
-  private long amount1000;
+    /**
+     * The amount
+     */
+    @ProtobufProperty(index = 2, type = INT64)
+    private long amount1000;
 }

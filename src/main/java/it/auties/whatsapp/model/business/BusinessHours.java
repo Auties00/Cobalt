@@ -1,7 +1,8 @@
 package it.auties.whatsapp.model.business;
 
-import java.util.List;
 import lombok.NonNull;
+
+import java.util.List;
 
 /**
  * A business hours representation that contains the business' time zone and a list of business hour

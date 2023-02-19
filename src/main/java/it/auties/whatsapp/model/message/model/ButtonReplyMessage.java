@@ -11,9 +11,6 @@ import lombok.experimental.SuperBuilder;
  */
 @NoArgsConstructor
 @SuperBuilder
-public abstract sealed class ButtonReplyMessage
-    extends ContextualMessage
-    implements ButtonMessage
-    permits ListResponseMessage, TemplateReplyMessage, ButtonsResponseMessage {
+public abstract sealed class ButtonReplyMessage extends ContextualMessage implements ButtonMessage permits ListResponseMessage, TemplateReplyMessage, ButtonsResponseMessage {
 
 }

@@ -1,42 +1,40 @@
 package it.auties.whatsapp.util;
 
+import lombok.experimental.UtilityClass;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Objects;
-import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class Exceptions {
-
-  public Throwable current(String message) {
-    var result = new RuntimeException(message);
-    result.setStackTrace(currentStackTrace());
-    return result;
-  }
-
-  private StackTraceElement[] currentStackTrace() {
-    var stackTrace = Thread.currentThread()
-        .getStackTrace();
-    return Arrays.copyOfRange(stackTrace, 3, stackTrace.length);
-  }
-
-  public Path save(Throwable throwable) {
-    var actual = Objects.requireNonNullElseGet(throwable, RuntimeException::new);
-    try {
-      var path = LocalFileSystem.of("exceptions");
-      Files.createDirectories(path);
-      var file = path.resolve("%s.txt".formatted(System.currentTimeMillis()));
-      var stackTraceWriter = new StringWriter();
-      var stackTracePrinter = new PrintWriter(stackTraceWriter);
-      actual.printStackTrace(stackTracePrinter);
-      Files.writeString(file, stackTraceWriter.toString());
-      return file;
-    } catch (Throwable ignored) {
-      throw new RuntimeException(
-          "Cannot serialize exception. Here is the non-serialized stack trace", actual);
+    public Throwable current(String message) {
+        var result = new RuntimeException(message);
+        result.setStackTrace(currentStackTrace());
+        return result;
     }
-  }
+
+    private StackTraceElement[] currentStackTrace() {
+        var stackTrace = Thread.currentThread().getStackTrace();
+        return Arrays.copyOfRange(stackTrace, 3, stackTrace.length);
+    }
+
+    public Path save(Throwable throwable) {
+        var actual = Objects.requireNonNullElseGet(throwable, RuntimeException::new);
+        try {
+            var path = LocalFileSystem.of("exceptions");
+            Files.createDirectories(path);
+            var file = path.resolve("%s.txt".formatted(System.currentTimeMillis()));
+            var stackTraceWriter = new StringWriter();
+            var stackTracePrinter = new PrintWriter(stackTraceWriter);
+            actual.printStackTrace(stackTracePrinter);
+            Files.writeString(file, stackTraceWriter.toString());
+            return file;
+        } catch (Throwable ignored) {
+            throw new RuntimeException("Cannot serialize exception. Here is the non-serialized stack trace", actual);
+        }
+    }
 }

@@ -11,28 +11,24 @@ import lombok.NonNull;
  * @param openTime  The time in seconds since midnight that the business opens.
  * @param closeTime The time in seconds since midnight that the business closes.
  */
-public record BusinessHoursEntry(@NonNull String day, @NonNull String mode, long openTime,
-                                 long closeTime) {
-  /**
-   * Creates a {@link BusinessHoursEntry} from a {@link Node}.
-   *
-   * @param node The node to extract the business hours entry information from.
-   * @return A {@link BusinessHoursEntry} extracted from the provided node.
-   */
-  public static BusinessHoursEntry of(@NonNull Node node) {
-    return new BusinessHoursEntry(node.attributes()
-        .getString("day_of_week"), node.attributes()
-        .getString("mode"), node.attributes()
-        .getLong("open_time"), node.attributes()
-        .getLong("close_time"));
-  }
+public record BusinessHoursEntry(@NonNull String day, @NonNull String mode, long openTime, long closeTime) {
+    /**
+     * Creates a {@link BusinessHoursEntry} from a {@link Node}.
+     *
+     * @param node The node to extract the business hours entry information from.
+     * @return A {@link BusinessHoursEntry} extracted from the provided node.
+     */
+    public static BusinessHoursEntry of(@NonNull Node node) {
+        return new BusinessHoursEntry(node.attributes().getString("day_of_week"), node.attributes()
+                .getString("mode"), node.attributes().getLong("open_time"), node.attributes().getLong("close_time"));
+    }
 
-  /**
-   * Returns whether the business is always open.
-   *
-   * @return <countryCode>true</countryCode> if the business is always open; <countryCode>false</countryCode> otherwise.
-   */
-  public boolean isAlwaysOpen() {
-    return openTime == 0 && closeTime == 0;
-  }
+    /**
+     * Returns whether the business is always open.
+     *
+     * @return <countryCode>true</countryCode> if the business is always open; <countryCode>false</countryCode> otherwise.
+     */
+    public boolean isAlwaysOpen() {
+        return openTime == 0 && closeTime == 0;
+    }
 }

@@ -1,8 +1,5 @@
 package it.auties.whatsapp.model.poll;
 
-import static it.auties.protobuf.base.ProtobufType.INT64;
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
-
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
@@ -12,6 +9,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
+
+import static it.auties.protobuf.base.ProtobufType.INT64;
+import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
 /**
  * A model class that represents metadata about a
@@ -24,24 +24,22 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @Builder
 @ProtobufName("PollUpdate")
-public class PollUpdate
-    implements ProtobufMessage {
+public class PollUpdate implements ProtobufMessage {
+    /**
+     * The message key
+     */
+    @ProtobufProperty(index = 1, name = "pollUpdateMessageKey", type = MESSAGE)
+    private MessageKey pollUpdateMessageKey;
 
-  /**
-   * The message key
-   */
-  @ProtobufProperty(index = 1, name = "pollUpdateMessageKey", type = MESSAGE)
-  private MessageKey pollUpdateMessageKey;
+    /**
+     * The vote
+     */
+    @ProtobufProperty(index = 2, name = "vote", type = MESSAGE)
+    private PollUpdateEncryptedOptions vote;
 
-  /**
-   * The vote
-   */
-  @ProtobufProperty(index = 2, name = "vote", type = MESSAGE)
-  private PollUpdateEncryptedOptions vote;
-
-  /**
-   * The timestamp
-   */
-  @ProtobufProperty(index = 3, name = "senderTimestampMs", type = INT64)
-  private long senderTimestampMilliseconds;
+    /**
+     * The timestamp
+     */
+    @ProtobufProperty(index = 3, name = "senderTimestampMs", type = INT64)
+    private long senderTimestampMilliseconds;
 }

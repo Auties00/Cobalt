@@ -1,9 +1,5 @@
 package it.auties.whatsapp.model.info;
 
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
-import static it.auties.protobuf.base.ProtobufType.STRING;
-import static it.auties.protobuf.base.ProtobufType.UINT64;
-
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.business.BusinessAccountType;
 import it.auties.whatsapp.model.business.BusinessStorageType;
@@ -13,6 +9,8 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import static it.auties.protobuf.base.ProtobufType.*;
+
 /**
  * A model class that holds the information related to a business account.
  */
@@ -21,36 +19,34 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class BusinessAccountInfo
-    implements Info {
+public final class BusinessAccountInfo implements Info {
+    /**
+     * The facebook jid
+     */
+    @ProtobufProperty(index = 1, type = UINT64)
+    private long facebookId;
 
-  /**
-   * The facebook jid
-   */
-  @ProtobufProperty(index = 1, type = UINT64)
-  private long facebookId;
+    /**
+     * The account phone number
+     */
+    @ProtobufProperty(index = 2, type = STRING)
+    private String accountNumber;
 
-  /**
-   * The account phone number
-   */
-  @ProtobufProperty(index = 2, type = STRING)
-  private String accountNumber;
+    /**
+     * The timestamp of the account
+     */
+    @ProtobufProperty(index = 3, type = UINT64)
+    private long timestamp;
 
-  /**
-   * The timestamp of the account
-   */
-  @ProtobufProperty(index = 3, type = UINT64)
-  private long timestamp;
+    /**
+     * Indicates here this account is hosted
+     */
+    @ProtobufProperty(index = 4, type = MESSAGE, implementation = BusinessStorageType.class)
+    private BusinessStorageType hostStorage;
 
-  /**
-   * Indicates here this account is hosted
-   */
-  @ProtobufProperty(index = 4, type = MESSAGE, implementation = BusinessStorageType.class)
-  private BusinessStorageType hostStorage;
-
-  /**
-   * The type of this account
-   */
-  @ProtobufProperty(index = 5, type = MESSAGE, implementation = BusinessAccountType.class)
-  private BusinessAccountType accountType;
+    /**
+     * The type of this account
+     */
+    @ProtobufProperty(index = 5, type = MESSAGE, implementation = BusinessAccountType.class)
+    private BusinessAccountType accountType;
 }

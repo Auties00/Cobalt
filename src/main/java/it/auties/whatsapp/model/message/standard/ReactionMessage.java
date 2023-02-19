@@ -1,9 +1,5 @@
 package it.auties.whatsapp.model.message.standard;
 
-import static it.auties.protobuf.base.ProtobufType.INT64;
-import static it.auties.protobuf.base.ProtobufType.MESSAGE;
-import static it.auties.protobuf.base.ProtobufType.STRING;
-
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.message.model.MessageCategory;
@@ -15,6 +11,8 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
+import static it.auties.protobuf.base.ProtobufType.*;
+
 /**
  * A model class that represents a message holding an emoji reaction inside
  */
@@ -23,40 +21,38 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class ReactionMessage
-    implements Message {
+public final class ReactionMessage implements Message {
+    /**
+     * The key of the quoted message
+     */
+    @ProtobufProperty(index = 1, type = MESSAGE, implementation = MessageKey.class)
+    private MessageKey key;
 
-  /**
-   * The key of the quoted message
-   */
-  @ProtobufProperty(index = 1, type = MESSAGE, implementation = MessageKey.class)
-  private MessageKey key;
+    /**
+     * The operation as text
+     */
+    @ProtobufProperty(index = 2, type = STRING)
+    private String content;
 
-  /**
-   * The operation as text
-   */
-  @ProtobufProperty(index = 2, type = STRING)
-  private String content;
+    /**
+     * The grouping key
+     */
+    @ProtobufProperty(index = 3, type = STRING)
+    private String groupingKey;
 
-  /**
-   * The grouping key
-   */
-  @ProtobufProperty(index = 3, type = STRING)
-  private String groupingKey;
+    /**
+     * The timestamp of this message in milliseconds
+     */
+    @ProtobufProperty(index = 4, type = INT64)
+    private Long timestamp;
 
-  /**
-   * The timestamp of this message in milliseconds
-   */
-  @ProtobufProperty(index = 4, type = INT64)
-  private Long timestamp;
+    @Override
+    public MessageType type() {
+        return MessageType.REACTION;
+    }
 
-  @Override
-  public MessageType type() {
-    return MessageType.REACTION;
-  }
-
-  @Override
-  public MessageCategory category() {
-    return MessageCategory.STANDARD;
-  }
+    @Override
+    public MessageCategory category() {
+        return MessageCategory.STANDARD;
+    }
 }

@@ -5,32 +5,32 @@ package it.auties.whatsapp.model.message.model;
  * {@link MessageContainer} can wrap
  */
 public enum MessageCategory {
-  /**
-   * Server message
-   */
-  EMPTY,
-  /**
-   * Device message
-   */
-  BUTTON,
-  /**
-   * Payment message
-   */
-  PAYMENT,
-  /**
-   * Payment message
-   */
-  MEDIA,
-  /**
-   * Server message
-   */
-  SERVER,
-  /**
-   * Device message
-   */
-  DEVICE,
-  /**
-   * Standard message
-   */
-  STANDARD
+    /**
+     * Server message
+     */
+    EMPTY,
+    /**
+     * Device message
+     */
+    BUTTON,
+    /**
+     * Payment message
+     */
+    PAYMENT,
+    /**
+     * Payment message
+     */
+    MEDIA,
+    /**
+     * Server message
+     */
+    SERVER,
+    /**
+     * Device message
+     */
+    DEVICE,
+    /**
+     * Standard message
+     */
+    STANDARD
 }
