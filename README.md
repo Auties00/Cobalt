@@ -1,18 +1,25 @@
-# WhatsappWeb4j
+# Whatsapp4j
 
-### What is WhatsappWeb4j
+### What is Whatsapp4j
 
-WhatsappWeb4j is a standalone library built to interact with [WhatsappWeb](https://web.whatsapp.com/).
-This means that no browser, application or any additional software is necessary to use this library.
-This library was built for [Java 17](https://openjdk.java.net/projects/jdk/17/), the latest LTS, with preview features
-enabled.
+Whatsapp4j is a library built to interact with Whatsapp.
+It can be used to work with:
+1. WhatsappWeb (MultiDevice)
+   This functionality is fully documented and ready.
+   No browser, application or any additional software is necessary.
+   Everything as of now has been successfully reverse engineered.
+   A companion device with the Whatsapp app installed is needed to scan the QR code the first time.
+   As the multi device api is supported, the companion doesn't need to remain online for the client to work.
+2. Whatsapp Mobile App
+   This functionality is still being developed.
+   It will allow the client to act as the mobile app.
+   This means that no companion will be required to run the client.
 
-### Does this library support multi device?
-
-Yes, the master branch now fully supports the multi device feature.
-Considering that support for legacy WhatsappWeb has been dropped by Whatsapp, this library has also dropped support for
-the latter.
-If, for whatever reason, you'd like to use a version that supports the legacy version, use any release before 3.0.
+### Java version
+This library was built for [Java 17](https://openjdk.java.net/projects/jdk/17/), the latest LTS.
+Remember to enable preview features as they are required.
+If you don't know how, there are many tutorials available online.
+Please don't open any issue because of this. 
 
 ### Can this library get my device banned?
 
@@ -48,13 +55,13 @@ In short, if you use this library without a malicious intent, you will never get
 ### Examples
 
 If you need some examples to get started, check
-the [examples' directory](https://github.com/Auties00/WhatsappWeb4j/tree/master/examples) in this project.
+the [examples' directory](https://github.com/Auties00/Whatsapp4j/tree/master/examples) in this project.
 There are several easy and documented projects and more will come.
 Any contribution is welcomed!
 
 ### Javadocs & Documentation
 
-Javadocs for WhatsappWeb4j are available [here](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/index.html).
+Javadocs for Whatsapp4j are available [here](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/index.html).
 The documentation for this project reaches most of the publicly available APIs(i.e. public members in exported packages), but sometimes the Javadoc may be incomplete 
 or some methods could be absent from the project's README. If you find any of the latter, know that even small contributions are welcomed!
 
