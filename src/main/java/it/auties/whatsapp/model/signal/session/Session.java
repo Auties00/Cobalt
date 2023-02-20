@@ -5,13 +5,14 @@ import lombok.NonNull;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Optional;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Builder
 @Jacksonized
-public record Session(ConcurrentLinkedDeque<@NonNull SessionState> states) {
+public record Session(Set<@NonNull SessionState> states) {
     public Session() {
-        this(new ConcurrentLinkedDeque<>());
+        this(ConcurrentHashMap.newKeySet());
     }
 
     public Session closeCurrentState() {

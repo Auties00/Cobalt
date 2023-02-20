@@ -28,7 +28,6 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.Objects.requireNonNullElseGet;
@@ -84,7 +83,7 @@ public final class Keys implements Controller<Keys> {
      */
     @Default
     @NonNull
-    private ConcurrentLinkedDeque<SignalPreKeyPair> preKeys = new ConcurrentLinkedDeque<>();
+    private ArrayList<SignalPreKeyPair> preKeys = new ArrayList<>();
 
     /**
      * The companion secret key
@@ -145,7 +144,7 @@ public final class Keys implements Controller<Keys> {
      */
     @NonNull
     @Default
-    private ConcurrentLinkedDeque<AppStateSyncKey> appStateKeys = new ConcurrentLinkedDeque<>();
+    private ArrayList<AppStateSyncKey> appStateKeys = new ArrayList<>();
 
     /**
      * Sessions toMap
@@ -413,7 +412,7 @@ public final class Keys implements Controller<Keys> {
      * @return an integer
      */
     public int lastPreKeyId() {
-        return preKeys.isEmpty() ? 0 : preKeys.getLast().id();
+        return preKeys.isEmpty() ? 0 : preKeys.get(preKeys.size() - 1).id();
     }
 
     /**
@@ -422,7 +421,11 @@ public final class Keys implements Controller<Keys> {
      * @return a non-null app key
      */
     public AppStateSyncKey appKey() {
-        return Objects.requireNonNull(appStateKeys.peekLast(), "No keys available");
+        if(appStateKeys.isEmpty()){
+            throw new NoSuchElementException("No keys available");
+        }
+
+        return appStateKeys.get(appStateKeys.size() - 1);
     }
 
     /**

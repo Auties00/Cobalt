@@ -80,7 +80,7 @@ class DefaultControllerProvider implements ControllerSerializerProvider, Control
 
     private boolean updateHash(Chat entry) {
         var lastHashCode = hashCodesMap.get(entry.jid());
-        var newHashCode = entry.hashCode();
+        var newHashCode = entry.fullHashCode();
         if (lastHashCode == null) {
             hashCodesMap.put(entry.jid(), newHashCode);
             return true;
@@ -132,7 +132,7 @@ class DefaultControllerProvider implements ControllerSerializerProvider, Control
                     .map(entry -> deserializeChat(store, entry))
                     .toArray(CompletableFuture[]::new);
             var result = CompletableFuture.allOf(futures)
-                    .thenRunAsync(() -> store.chats().forEach(chat -> hashCodesMap.put(chat.jid(), chat.hashCode())));
+                    .thenRunAsync(() -> store.chats().forEach(chat -> hashCodesMap.put(chat.jid(), chat.fullHashCode())));
             deserializer.set(result);
             return result;
         } catch (IOException exception) {
@@ -157,7 +157,7 @@ class DefaultControllerProvider implements ControllerSerializerProvider, Control
                     logger.log(WARNING, "Cannot delete chat file");
                 }
                 var result = Chat.ofJid(ContactJid.of(chatName));
-                hashCodesMap.put(result.jid(), result.hashCode());
+                hashCodesMap.put(result.jid(), result.fullHashCode());
                 baseStore.addChatDirect(result);
             }
         });

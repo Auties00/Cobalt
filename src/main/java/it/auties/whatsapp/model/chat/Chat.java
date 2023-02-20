@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.chat;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
@@ -76,7 +75,6 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     @ProtobufProperty(index = 2, type = MESSAGE, implementation = HistorySyncMessage.class, repeated = true)
     @NonNull
     @Default
-    @JsonIgnore
     private ConcurrentLinkedDeque<MessageInfo> messages = new ConcurrentLinkedDeque<>();
 
     /**
@@ -746,11 +744,6 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
         messages.clear();
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(jid(), Arrays.hashCode(messages().stream().map(MessageInfo::id).toArray()));
-    }
-
     /**
      * Returns an immodifiable list of all the messages in this chat
      *
@@ -779,6 +772,19 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     @NonNull
     public ContactJid toJid() {
         return jid();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(jid());
+    }
+
+    public int fullHashCode() {
+        int result = Objects.hash(jid, newJid, oldJid, timestampInSeconds, messages, unreadMessagesCount, readOnly, endOfHistoryTransfer, ephemeralMessageDuration, ephemeralMessagesToggleTime, endOfHistoryTransferType, name, notSpam, archived, disappearInitiator, markedAsUnread, participants, pastParticipants, tokenTimestamp, pinnedTimestampInSeconds, mute, wallpaper, mediaVisibility, tokenSenderTimestamp, suspended, terminated, createdAt, createdBy, description, support, parentGroup, defaultSubGroup, parentGroupJid, displayName, pnJid, shareOwnPn, pnhDuplicateLidThread, lidJid, presences, participantsPreKeys);
+        result = 31 * result + Arrays.hashCode(token);
+        result = 31 * result + Arrays.hashCode(identityKey);
+        result = 31 * result + messages.size();
+        return result;
     }
 
     /**
@@ -814,6 +820,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
             // Though if the message was stored locally it's actually a MessageInfo(unwrapped HistorySyncMessage)
             // If the type of the messages parameter were to be Object though, Jackson wouldn't be able to deserialize it correctly(would be assumed as a toMap)
             // So we need to specify the MessageInfo type so that jackson can use a base type if it's not sure of the content of the list
+            // And loop through the messages as if they were Objects because accessing it in any other way would yield a ClassCastException
             // And loop through the messages as if they were Objects because accessing it in any other way would yield a ClassCastException
             // I could switch to using a HistorySyncMessage List instead and return a List of MessageInfo through an accessor, but this is very costly as this list might be huge
             // This looks to be the best approach

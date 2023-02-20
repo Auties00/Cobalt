@@ -30,6 +30,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap.KeySetView;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -167,7 +168,7 @@ public final class Store implements Controller<Store> {
     @NonNull
     @JsonIgnore
     @Default
-    private ConcurrentLinkedDeque<ReplyHandler> replyHandlers = new ConcurrentLinkedDeque<>();
+    private KeySetView<ReplyHandler, Boolean> replyHandlers = ConcurrentHashMap.newKeySet();
 
     /**
      * The non-null list of listeners
@@ -176,7 +177,7 @@ public final class Store implements Controller<Store> {
     @JsonIgnore
     @Default
     @Getter
-    private ConcurrentLinkedDeque<Listener> listeners = new ConcurrentLinkedDeque<>();
+    private KeySetView<Listener, Boolean> listeners = ConcurrentHashMap.newKeySet();
 
     /**
      * Request counter
