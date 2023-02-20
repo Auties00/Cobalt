@@ -24,6 +24,12 @@ Remember to enable preview features as they are required.
 If you don't know how, there are many tutorials available online.
 Please don't open any issue because of this. 
 
+### Optimizing memory usage
+
+If the machine you are hosting this library on has memory constraints, please look into how to tune a JVM.
+The easiest thing you can do is use the -Xmx argument to specify the maximum size, in bytes, of the memory allocation pool.
+I have written this disclaimer because many new devs tend to get confused by Java's opportunistic memory allocation.
+
 ### Can this library get my device banned?
 
 While there is no risk in using this library with your main account, keep in mind that Whatsapp has anti-spam measures for their web client.

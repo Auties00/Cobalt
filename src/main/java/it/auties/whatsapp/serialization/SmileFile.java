@@ -50,23 +50,26 @@ final class SmileFile implements JacksonProvider {
             return Optional.empty();
         }
         var stream = Files.newInputStream(file);
-        return Optional.of(SMILE.readValue(new GZIPInputStream(stream, 65536), reference));
+        return Optional.of(SMILE.readValue(new GZIPInputStream(stream), reference));
     }
 
-    public CompletableFuture<Void> write(Object input, boolean async) {
+    public void write(Object input, boolean async) {
         if (!async) {
             writeSync(input);
-            return CompletableFuture.completedFuture(null);
+            CompletableFuture.completedFuture(null);
+            return;
         }
 
-        return CompletableFuture.runAsync(() -> writeSync(input)).exceptionallyAsync(this::onError);
+        CompletableFuture.runAsync(() -> writeSync(input)).exceptionallyAsync(this::onError);
     }
 
     private void writeSync(Object input) {
         try {
             var gzipOutputStream = new GZIPOutputStream(Files.newOutputStream(file, StandardOpenOption.CREATE, StandardOpenOption.DSYNC));
             gzipOutputStream.write(SMILE.writeValueAsBytes(input));
+            gzipOutputStream.flush();
             gzipOutputStream.finish();
+            gzipOutputStream.close();
         } catch (Throwable exception) {
             throw new RuntimeException("Cannot write to file", exception);
         }
