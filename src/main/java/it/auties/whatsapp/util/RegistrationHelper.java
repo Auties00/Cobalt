@@ -51,7 +51,7 @@ public class RegistrationHelper implements JacksonProvider {
         try {
             var codeOptions = getRegistrationOptions(keys, phoneNumber, entry("mcc", phoneNumber.countryCode()
                     .mcc()), entry("mnc", phoneNumber.countryCode()
-                    .mnc()), entry("sim_mcc", "000"), entry("sim_mnc", "000"), entry("method", method.type()), entry("errorReason", ""), entry("hasav", "1"));
+                    .mnc()), entry("sim_mcc", "000"), entry("sim_mnc", "000"), entry("method", method.type()), entry("reason", ""), entry("hasav", "1"));
             var codeResponse = sendRegistrationRequest("/code", codeOptions);
             var phoneNumberResponse = JSON.readValue(codeResponse.body(), VerificationCodeResponse.class);
             Validate.isTrue(phoneNumberResponse.status()

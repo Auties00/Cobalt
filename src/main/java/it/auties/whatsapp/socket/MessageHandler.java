@@ -210,7 +210,7 @@ class MessageHandler extends Handler implements JacksonProvider {
     protected CompletableFuture<Void> querySessions(List<ContactJid> contacts, boolean force) {
         var missingSessions = contacts.stream()
                 .filter(contact -> force || !socketHandler.keys().hasSession(contact.toSignalAddress()))
-                .map(contact -> ofAttributes("user", of("jid", contact, "errorReason", "identity")))
+                .map(contact -> ofAttributes("user", of("jid", contact, "reason", "identity")))
                 .toList();
         if (missingSessions.isEmpty()) {
             return completedFuture(null);

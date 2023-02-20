@@ -494,7 +494,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an optional
      */
     public Optional<MessageInfo> newestMessage() {
-        return Optional.ofNullable(messages.getLast());
+        return Optional.ofNullable(messages.peekLast());
     }
 
     /**
@@ -540,7 +540,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an optional
      */
     public Optional<MessageInfo> oldestMessage() {
-        return Optional.ofNullable(messages.getFirst());
+        return Optional.ofNullable(messages.peekFirst());
     }
 
     /**

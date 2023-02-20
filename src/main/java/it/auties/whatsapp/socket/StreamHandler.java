@@ -88,7 +88,7 @@ class StreamHandler extends Handler implements JacksonProvider {
     }
 
     private void digestFailure(Node node) {
-        var reason = node.attributes().getInt("errorReason");
+        var reason = node.attributes().getInt("reason");
         if (reason == 401) {
             socketHandler.disconnect(DisconnectReason.LOGGED_OUT);
             return;
@@ -389,7 +389,7 @@ class StreamHandler extends Handler implements JacksonProvider {
     private void handleStreamError(Node node) {
         var child = node.children().getFirst();
         var type = child.attributes().getString("type");
-        var reason = child.attributes().getString("errorReason", type);
+        var reason = child.attributes().getString("reason", type);
         if (!Objects.equals(reason, "device_removed")) {
             socketHandler.errorHandler().handleFailure(STREAM, new RuntimeException(reason));
             return;
