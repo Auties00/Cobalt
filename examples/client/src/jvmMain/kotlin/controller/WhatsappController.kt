@@ -5,7 +5,8 @@ import com.google.zxing.client.j2se.MatrixToImageWriter
 import it.auties.whatsapp.api.DisconnectReason
 import it.auties.whatsapp.api.QrHandler
 import it.auties.whatsapp.api.Whatsapp
-import it.auties.whatsapp.api.Whatsapp.Options
+import it.auties.whatsapp.api.WhatsappOptions
+import it.auties.whatsapp.api.WhatsappOptions.WebOptions
 import it.auties.whatsapp.listener.OnLoggedIn
 import it.auties.whatsapp.model.info.MessageInfo
 import java.io.ByteArrayOutputStream
@@ -77,8 +78,8 @@ object WhatsappController {
     private fun parsePercentage(input: Int?): Int? =
             if (input == null || input >= 100) null else input
 
-    private fun createOptions(state: MutableState<State>): Options =
-            Options.builder()
+    private fun createOptions(state: MutableState<State>): WhatsappOptions =
+        WebOptions.builder()
                     .qrHandler { qr -> onQrCode(qr, state) }
                     .build()
 
