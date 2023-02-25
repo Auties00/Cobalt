@@ -39,6 +39,7 @@ kotlin {
 compose.desktop {
     application {
         mainClass = "MainKt"
+        jvmArgs.add("--enable-preview")
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "client"
