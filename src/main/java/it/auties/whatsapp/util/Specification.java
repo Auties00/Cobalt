@@ -14,11 +14,10 @@ public class Specification {
         public static final String APP_ENDPOINT_HOST = "g.whatsapp.net";
         public static final int APP_ENDPOINT_PORT = 443;
         public static final String WEB_UPDATE_URL = "https://web.whatsapp.com/check-update?version=%s&platform=web";
+        public static final String MOBILE_DOWNLOAD_URL = "https://www.whatsapp.com/download";
         public static final String MOBILE_REGISTRATION_ENDPOINT = "https://v.whatsapp.net/v2";
-        // TODO: Set version dynamically in user agent
-        public static final String MOBILE_USER_AGENT = "WhatsApp/2.22.16.77 iOS/15.3.1 Device/Apple-iPhone_7";
         // TODO: Fetch this dynamically if possible
-        public static final String MOBILE_TOKEN = "0a1mLfGUIBVrMKF1RdvLI5lkRBvof6vn0fD2QRSM785a343e772d0c64ec999e7505ffdeaf";
+        public static final String MOBILE_TOKEN = "0a1mLfGUIBVrMKF1RdvLI5lkRBvof6vn0fD2QRSM4174c0243f5277a5d7720ce842cc4ae6";
         private static final String WHATSAPP_HEADER = "WA";
         private static final byte[] WEB_VERSION = new byte[]{6, 2};
         public static final byte[] WEB_PROLOGUE = Bytes.of(WHATSAPP_HEADER).append(WEB_VERSION).toByteArray();

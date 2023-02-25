@@ -15,6 +15,10 @@ import java.util.Arrays;
 @Accessors(fluent = true)
 public enum VerificationCodeMethod {
     /**
+     * Do not ask for a new verification code as you already have one
+     */
+    NONE(null),
+    /**
      * An SMS containing the countryCode will be sent to the associated phone number
      */
     SMS("sms"),

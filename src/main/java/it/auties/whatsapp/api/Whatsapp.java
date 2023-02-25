@@ -2270,6 +2270,16 @@ public class Whatsapp {
                 .thenApplyAsync(result -> parseMediaReupload(info, mediaMessage, retryKey, retryIdData, result));
     }
 
+    /**
+     * Sends a custom node to Whatsapp
+     *
+     * @param node the non-null node to send
+     * @return the response from Whatsapp
+     */
+    public CompletableFuture<Node> sendNode(@NonNull Node node){
+        return socketHandler.send(node);
+    }
+
     private byte[] createReceipt(MessageInfo info) {
         try {
             return PROTOBUF.writeValueAsBytes(ServerErrorReceipt.of(info.id()));

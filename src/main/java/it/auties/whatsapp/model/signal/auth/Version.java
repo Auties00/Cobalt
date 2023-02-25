@@ -3,6 +3,7 @@ package it.auties.whatsapp.model.signal.auth;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.crypto.MD5;
 import it.auties.whatsapp.model.response.AppVersionResponse;
 import it.auties.whatsapp.util.JacksonProvider;
@@ -18,6 +19,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.util.Objects;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -33,7 +35,8 @@ import static java.net.http.HttpResponse.BodyHandlers.ofString;
 @Accessors(fluent = true)
 @ProtobufName("AppVersion")
 public class Version implements ProtobufMessage, JacksonProvider {
-    private static final Version DEFAULT_VERSION = new Version(2, 2245, 9);
+    private static final Version DEFAULT_WEB_VERSION = new Version(2, 2245, 9);
+    private static final Pattern MOBILE_VERSION_PATTERN = Pattern.compile("(?<=Minimum Requirements \\(Version )(.*)(?=\\) Requires IOS)");
 
     @ProtobufProperty(index = 1, type = UINT32)
     private Integer primary;
@@ -80,19 +83,50 @@ public class Version implements ProtobufMessage, JacksonProvider {
         this.tertiary = tertiary;
     }
 
-    public static Version latest() {
+    public static Version latest(ClientType type) {
+        return switch (type){
+            case WEB_CLIENT -> getLatestWebVersion();
+            case APP_CLIENT -> getLatestMobileVersion();
+        };
+    }
+
+    private static Version getLatestWebVersion() {
         try {
             var client = HttpClient.newHttpClient();
             var request = HttpRequest.newBuilder()
                     .GET()
-                    .uri(URI.create(WEB_UPDATE_URL.formatted(DEFAULT_VERSION)))
+                    .uri(URI.create(WEB_UPDATE_URL.formatted(DEFAULT_WEB_VERSION)))
                     .build();
             var response = client.send(request, ofString());
             var model = JSON.readValue(response.body(), AppVersionResponse.class);
-            return model.currentVersion() == null ? DEFAULT_VERSION : new Version(model.currentVersion());
+            return model.currentVersion() == null ? DEFAULT_WEB_VERSION : new Version(model.currentVersion());
         } catch (Throwable throwable) {
-            return DEFAULT_VERSION;
+            return DEFAULT_WEB_VERSION;
         }
+    }
+
+    private static Version getLatestMobileVersion() {
+        // TODO: Find a way to make this dynamic
+        //
+        //        try {
+        //            var client = HttpClient.newHttpClient();
+        //            var request = HttpRequest.newBuilder()
+        //                    .GET()
+        //                    .header("Accept-Language", "en;q=0.8")
+        //                    .uri(URI.create(MOBILE_DOWNLOAD_URL))
+        //                    .build();
+        //            var response = client.send(request, ofString());
+        //            return MOBILE_VERSION_PATTERN.matcher(response.body())
+        //                    .results()
+        //                    .findFirst()
+        //                    .map(MatchResult::group)
+        //                    .map("2.%s"::formatted)
+        //                    .map(Version::new)
+        //                    .orElse(DEFAULT_MOBILE_VERSION);
+        //        } catch (Throwable throwable) {
+        //            return DEFAULT_MOBILE_VERSION;
+        //        }
+        return new Version("2.22.24.81");
     }
 
     public byte[] toHash() {

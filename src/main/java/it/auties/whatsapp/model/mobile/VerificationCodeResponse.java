@@ -16,4 +16,5 @@ public record VerificationCodeResponse(@JsonProperty("login") PhoneNumber number
                                        @JsonProperty("wa_old_wait") long oldWait,
                                        @JsonProperty("security_code_set") boolean securityCodeSet) {
 
+
 }

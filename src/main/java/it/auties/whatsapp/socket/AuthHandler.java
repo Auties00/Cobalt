@@ -3,11 +3,16 @@ package it.auties.whatsapp.socket;
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.HistoryLength;
+import it.auties.whatsapp.api.WhatsappOptions.MobileOptions;
 import it.auties.whatsapp.api.WhatsappOptions.WebOptions;
 import it.auties.whatsapp.crypto.Handshake;
+import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.model.signal.auth.*;
+import it.auties.whatsapp.model.signal.auth.ClientPayload.ClientPayloadBuilder;
 import it.auties.whatsapp.model.signal.auth.Companion.CompanionPropsPlatformType;
+import it.auties.whatsapp.model.signal.auth.DNSSource.DNSSourceDNSResolutionMethod;
+import it.auties.whatsapp.model.signal.auth.UserAgent.UserAgentPlatform;
 import it.auties.whatsapp.model.signal.auth.WebInfo.WebInfoWebSubPlatform;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.JacksonProvider;
@@ -63,24 +68,28 @@ class AuthHandler extends Handler implements JacksonProvider {
             var builder = ClientPayload.builder()
                     .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
                     .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
-                    .userAgent(createUserAgent())
-                    .webInfo(new WebInfo(getWebPlatform()));
-            return PROTOBUF.writeValueAsBytes(finishUserPayload(builder));
+                    .userAgent(createUserAgent());
+            if(socketHandler.options().clientType() == ClientType.WEB_CLIENT){
+                  builder.webInfo(new WebInfo(getWebPlatform()));
+            }
+
+            var result = finishUserPayload(builder);
+            return PROTOBUF.writeValueAsBytes(result);
         } catch (IOException exception) {
             throw new RuntimeException("Cannot create user payload", exception);
         }
     }
 
     private UserAgent createUserAgent() {
-        if (socketHandler.options().clientType() != ClientType.WEB_CLIENT) {
-            return null;
-        }
-
-        var options = (WebOptions) socketHandler.options();
+        var mobile = socketHandler.options().clientType() == ClientType.APP_CLIENT;
         return UserAgent.builder()
-                .appVersion(options.version())
-                .platform(UserAgent.UserAgentPlatform.WEB)
+                .appVersion(socketHandler.options().version())
+                .osVersion(socketHandler.options().osVersion())
+                .device(socketHandler.options().deviceName())
+                .manufacturer(socketHandler.options().deviceManufacturer())
+                .platform(mobile ? UserAgentPlatform.ANDROID : UserAgent.UserAgentPlatform.WEB)
                 .releaseChannel(UserAgent.UserAgentReleaseChannel.RELEASE)
+                .phoneId(mobile ? socketHandler.keys().phoneId() : null)
                 .build();
     }
 
@@ -93,14 +102,30 @@ class AuthHandler extends Handler implements JacksonProvider {
         return options.historyLength() == HistoryLength.ONE_YEAR ? WebInfoWebSubPlatform.WIN_STORE : WebInfoWebSubPlatform.WEB_BROWSER;
     }
 
-    private ClientPayload finishUserPayload(ClientPayload.ClientPayloadBuilder builder) {
+    private ClientPayload finishUserPayload(ClientPayloadBuilder builder) {
+        if(socketHandler.options() instanceof MobileOptions options){
+            var phoneNumber = PhoneNumber.of(options.phoneNumber());
+            return builder.sessionId(socketHandler.store().id())
+                    .shortConnect(true)
+                    .connectAttemptCount(0)
+                    .device(0)
+                    .dnsSource(DNSSource.builder().appCached(false).dnsMethod(DNSSourceDNSResolutionMethod.SYSTEM).build())
+                    .passive(false)
+                    .pushName("test")
+                    .username(phoneNumber.number())
+                    .build();
+        }
+
         if (socketHandler.store().userCompanionJid() != null) {
             return builder.username(parseLong(socketHandler.store().userCompanionJid().user()))
                     .passive(true)
                     .device(socketHandler.store().userCompanionJid().device())
                     .build();
         }
-        return builder.regData(createRegisterData()).passive(false).build();
+
+        return builder.regData(createRegisterData())
+                .passive(false)
+                .build();
     }
 
     @SneakyThrows

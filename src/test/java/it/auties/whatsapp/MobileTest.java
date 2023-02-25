@@ -1,29 +1,37 @@
 package it.auties.whatsapp;
 
+import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappOptions.MobileOptions;
-import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
 import it.auties.whatsapp.util.JacksonProvider;
-import it.auties.whatsapp.util.RegistrationHelper;
-import it.auties.whatsapp.util.Validate;
 
 import java.util.Scanner;
 
 public class MobileTest implements JacksonProvider {
     public static void main(String[] args) {
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> e.printStackTrace());
         var options = MobileOptions.builder()
                 .phoneNumber("+393495089819")
                 .verificationCodeHandler(MobileTest::onScanCode)
                 .build();
-        var keys = Keys.random(options);
-        RegistrationHelper.register(keys, options);
+        var whatsapp = Whatsapp.newConnection(options)
+                .addLoggedInListener(() -> System.out.println("Connected"))
+                .addNewMessageListener(message -> System.out.println(message.toJson()))
+                .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
+                .addChatsListener(chats -> System.out.printf("Chats: %s%n", chats.size()))
+                .addNodeReceivedListener(incoming -> System.out.printf("Received node %s%n", incoming))
+                .addNodeSentListener(outgoing -> System.out.printf("Sent node %s%n", outgoing))
+                .addActionListener((action, info) -> System.out.printf("New action: %s, info: %s%n", action, info))
+                .addSettingListener(setting -> System.out.printf("New setting: %s%n", setting))
+                .addContactPresenceListener((chat, contact, status) -> System.out.printf("Status of %s changed in %s to %s%n", contact.name(), chat.name(), status.name()))
+                .addAnyMessageStatusListener((chat, contact, info, status) -> System.out.printf("Message %s in chat %s now has status %s for %s %n", info.id(), info.chatName(), status, contact == null ? null : contact.name()))
+                .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason));
+        whatsapp.connect().join();
     }
 
     private static String onScanCode(VerificationCodeResponse type) {
+        System.out.println("Enter OTP: ");
         var scanner = new Scanner(System.in);
-        System.out.println("Enter OTP: " + type);
-        var result = scanner.nextLine().trim();
-        Validate.isTrue(result.length() == type.codeLength(), "Invalid code length: %s != %s", result.length(), type.codeLength());
-        return result;
+        return scanner.nextLine().trim();
     }
 }

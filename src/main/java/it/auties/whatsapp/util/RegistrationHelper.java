@@ -30,15 +30,27 @@ import static java.util.Map.entry;
 public class RegistrationHelper implements JacksonProvider {
     public void register(@NonNull Keys keys, @NonNull MobileOptions options) {
         var phoneNumber = PhoneNumber.of(options.phoneNumber());
-        var response = askForVerificationCode(keys, phoneNumber, options.verificationCodeMethod());
+        var userAgent = createUserAgent(options);
+        var response = askForVerificationCode(keys, phoneNumber, userAgent, options.verificationCodeMethod());
         var code = options.verificationCodeHandler().apply(response);
-        sendVerificationCode(keys, phoneNumber, code);
+        verify(keys, options, code);
     }
 
-    private void sendVerificationCode(Keys keys, PhoneNumber phoneNumber, String code) {
+    public void verify(@NonNull Keys keys, @NonNull MobileOptions options, @NonNull String code) {
+        var phoneNumber = PhoneNumber.of(options.phoneNumber());
+        var userAgent = createUserAgent(options);
+        sendVerificationCode(keys, phoneNumber, userAgent, code);
+        keys.registered(true);
+    }
+
+    private String createUserAgent(MobileOptions options) {
+        return "WhatsApp/%s %s/%s Device/%s-%s".formatted(options.version(), options.osName(), options.osVersion(), options.deviceManufacturer(), options.deviceName());
+    }
+
+    private void sendVerificationCode(Keys keys, PhoneNumber phoneNumber, String userAgent, String code) {
         try {
             var registerOptions = getRegistrationOptions(keys, phoneNumber, entry("code", code.replaceAll("-", "")));
-            var codeResponse = sendRegistrationRequest("/register", registerOptions);
+            var codeResponse = sendRegistrationRequest(userAgent,"/register", registerOptions);
             var phoneNumberResponse = JSON.readValue(codeResponse.body(), VerificationCodeResponse.class);
             Validate.isTrue(phoneNumberResponse.status()
                     .isSuccessful(), "Unexpected response: %s", phoneNumberResponse);
@@ -47,12 +59,12 @@ public class RegistrationHelper implements JacksonProvider {
         }
     }
 
-    private VerificationCodeResponse askForVerificationCode(Keys keys, PhoneNumber phoneNumber, VerificationCodeMethod method) {
+    private VerificationCodeResponse askForVerificationCode(Keys keys, PhoneNumber phoneNumber, String userAgent, VerificationCodeMethod method) {
         try {
             var codeOptions = getRegistrationOptions(keys, phoneNumber, entry("mcc", phoneNumber.countryCode()
                     .mcc()), entry("mnc", phoneNumber.countryCode()
                     .mnc()), entry("sim_mcc", "000"), entry("sim_mnc", "000"), entry("method", method.type()), entry("reason", ""), entry("hasav", "1"));
-            var codeResponse = sendRegistrationRequest("/code", codeOptions);
+            var codeResponse = sendRegistrationRequest(userAgent, "/code", codeOptions);
             var phoneNumberResponse = JSON.readValue(codeResponse.body(), VerificationCodeResponse.class);
             Validate.isTrue(phoneNumberResponse.status()
                     .isSuccessful(), "Unexpected response: %s", phoneNumberResponse);
@@ -62,14 +74,14 @@ public class RegistrationHelper implements JacksonProvider {
         }
     }
 
-    private HttpResponse<String> sendRegistrationRequest(String path, Map<String, Object> params) {
+    private HttpResponse<String> sendRegistrationRequest(String userAgent, String path, Map<String, Object> params) {
         try {
             var client = HttpClient.newHttpClient();
             var request = HttpRequest.newBuilder()
                     .uri(URI.create("%s%s?%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, toFormParams(params))))
                     .GET()
                     .header("Content-Type", "application/x-www-form-urlencoded")
-                    .header("User-Agent", Whatsapp.MOBILE_USER_AGENT)
+                    .header("User-Agent", userAgent)
                     .build();
             System.out.println("Sending request to: " + request.uri());
             var result = client.send(request, BodyHandlers.ofString());

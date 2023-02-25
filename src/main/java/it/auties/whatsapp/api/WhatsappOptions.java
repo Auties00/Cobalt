@@ -28,12 +28,6 @@ public abstract sealed class WhatsappOptions permits WebOptions, MobileOptions {
      */
     private static final int UNLIMITED_LISTENERS = -1;
     /**
-     * The version of WhatsappWeb to use. If the version is too outdated, the server will refuse to
-     * connect.
-     */
-    @Default
-    private final Version version = Version.latest();
-    /**
      * The id of the session. This id needs to be unique. By default, a random integer.
      */
     @Default
@@ -78,6 +72,32 @@ public abstract sealed class WhatsappOptions permits WebOptions, MobileOptions {
     public abstract ClientType clientType();
 
     /**
+     * The version of WhatsappWeb to use. If the version is too outdated, the server will refuse to connect.
+     */
+    @NonNull
+    public abstract Version version();
+
+    /**
+     * The name of the os running the client, can be fake
+     */
+    public abstract String osName();
+
+    /**
+     * The version of the os running the client, can be fake
+     */
+    public abstract String osVersion();
+
+    /**
+     * The name of the device running the client, can be fake
+     */
+    public abstract String deviceName();
+
+    /**
+     * The manufacturer of the device running the client, can be fake
+     */
+    public abstract String deviceManufacturer();
+
+    /**
      * Options for the web client
      */
     @EqualsAndHashCode(callSuper = true)
@@ -85,6 +105,12 @@ public abstract sealed class WhatsappOptions permits WebOptions, MobileOptions {
     @Data
     @Accessors(fluent = true)
     public final static class WebOptions extends WhatsappOptions {
+        /**
+         * The version of WhatsappWeb to use. If the version is too outdated, the server will refuse to
+         * connect.
+         */
+        @Default
+        private final Version version = Version.latest(ClientType.WEB_CLIENT);
         /**
          * The description provided to Whatsapp during the authentication process. This should be, for
          * example, the name of your service. By default, it's WhatsappWeb4j.
@@ -127,6 +153,26 @@ public abstract sealed class WhatsappOptions permits WebOptions, MobileOptions {
         public ClientType clientType() {
             return ClientType.WEB_CLIENT;
         }
+
+        @Override
+        public String osName() {
+            return "Windows";
+        }
+
+        @Override
+        public String osVersion() {
+            return "11";
+        }
+
+        @Override
+        public String deviceName() {
+            return "Laptop";
+        }
+
+        @Override
+        public String deviceManufacturer() {
+            return "Microsoft";
+        }
     }
 
     /**
@@ -137,6 +183,12 @@ public abstract sealed class WhatsappOptions permits WebOptions, MobileOptions {
     @Data
     @Accessors(fluent = true)
     public final static class MobileOptions extends WhatsappOptions {
+        /**
+         * The version of WhatsappWeb to use. If the version is too outdated, the server will refuse to
+         * connect.
+         */
+        @Default
+        private final Version version = Version.latest(ClientType.APP_CLIENT);
         /**
          * The phone number to register, including the prefix
          */
@@ -152,6 +204,7 @@ public abstract sealed class WhatsappOptions permits WebOptions, MobileOptions {
 
         /**
          * A function to retrieve the OTP sent to the registered phone number
+         * The first parameter can be null if the {@link MobileOptions#verificationCodeMethod} was set to {@link VerificationCodeMethod#NONE}
          */
         @NonNull
         private Function<VerificationCodeResponse, String> verificationCodeHandler;
@@ -164,6 +217,27 @@ public abstract sealed class WhatsappOptions permits WebOptions, MobileOptions {
         @NonNull
         public ClientType clientType() {
             return ClientType.APP_CLIENT;
+        }
+
+
+        @Override
+        public String osName() {
+            return "iOS";
+        }
+
+        @Override
+        public String osVersion() {
+            return "15.3.1";
+        }
+
+        @Override
+        public String deviceName() {
+            return "iPhone_7";
+        }
+
+        @Override
+        public String deviceManufacturer() {
+            return "Apple";
         }
     }
 }

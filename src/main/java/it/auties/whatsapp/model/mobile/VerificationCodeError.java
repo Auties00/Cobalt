@@ -26,7 +26,8 @@ public enum VerificationCodeError {
     NO_ROUTES("no_routes"),
     TOO_MANY("too_many"),
     NEXT_METHOD("next_method"),
-    WRONG_CODE("mismatch");
+    WRONG_CODE("mismatch"),
+    OLD_VERSION("old_version");
 
     private final String data;
 

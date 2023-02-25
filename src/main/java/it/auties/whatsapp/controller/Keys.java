@@ -160,6 +160,14 @@ public final class Keys implements Controller<Keys> {
     @Default
     private Map<PatchType, LTHashState> hashStates = new ConcurrentHashMap<>();
 
+
+    /**
+     * Whether the client was registered, if mobile app
+     */
+    @Getter
+    @Setter
+    private boolean registered;
+
     /**
      * Write counter for IV
      */

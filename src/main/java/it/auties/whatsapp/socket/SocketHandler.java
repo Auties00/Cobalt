@@ -1,9 +1,7 @@
 package it.auties.whatsapp.socket;
 
-import it.auties.whatsapp.api.DisconnectReason;
-import it.auties.whatsapp.api.SocketEvent;
-import it.auties.whatsapp.api.Whatsapp;
-import it.auties.whatsapp.api.WhatsappOptions;
+import it.auties.whatsapp.api.*;
+import it.auties.whatsapp.api.WhatsappOptions.MobileOptions;
 import it.auties.whatsapp.binary.MessageWrapper;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.controller.Keys;
@@ -20,6 +18,8 @@ import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MessageStatus;
+import it.auties.whatsapp.model.mobile.PhoneNumber;
+import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.request.Attributes;
 import it.auties.whatsapp.model.request.MessageSendRequest;
 import it.auties.whatsapp.model.request.Node;
@@ -30,10 +30,7 @@ import it.auties.whatsapp.model.signal.auth.ClientHello;
 import it.auties.whatsapp.model.signal.auth.HandshakeMessage;
 import it.auties.whatsapp.model.sync.ActionValueSync;
 import it.auties.whatsapp.model.sync.PatchRequest;
-import it.auties.whatsapp.util.Clock;
-import it.auties.whatsapp.util.JacksonProvider;
-import it.auties.whatsapp.util.KeyHelper;
-import it.auties.whatsapp.util.LocalFileSystem;
+import it.auties.whatsapp.util.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -230,6 +227,15 @@ public class SocketHandler extends Handler implements SocketListener, JacksonPro
     public CompletableFuture<Void> connect() {
         if (authFuture == null || authFuture.isDone()) {
             this.authFuture = new CompletableFuture<>();
+        }
+
+        if(options instanceof MobileOptions mobileOptions && !keys.registered()){
+            if(mobileOptions.verificationCodeMethod() == VerificationCodeMethod.NONE){
+                var phoneNumber = PhoneNumber.of(mobileOptions.phoneNumber());
+                RegistrationHelper.verify(keys, mobileOptions, mobileOptions.verificationCodeHandler().apply(null));
+            }else {
+                RegistrationHelper.register(keys, mobileOptions);
+            }
         }
 
         this.session = SocketSession.of(options.clientType());
