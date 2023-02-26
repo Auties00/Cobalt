@@ -4,7 +4,6 @@ import it.auties.bytes.Bytes;
 import it.auties.linkpreview.LinkPreview;
 import it.auties.linkpreview.LinkPreviewMedia;
 import it.auties.linkpreview.LinkPreviewResult;
-import it.auties.whatsapp.api.WhatsappOptions.WebOptions;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGmc;
@@ -103,8 +102,8 @@ public class Whatsapp {
     }
 
     private boolean hasRegisterSlotAvailable() {
-        return socketHandler.options().listenersLimit() < 0 || store().listeners().size() + 1 <= socketHandler.options()
-                .listenersLimit();
+        return socketHandler.options().listenersLimit() < 0
+                || store().listeners().size() + 1 <= socketHandler.options().listenersLimit();
     }
 
     /**
@@ -195,18 +194,7 @@ public class Whatsapp {
         if (!lastIds.isEmpty()) {
             options.id(lastIds.peekLast());
         }
-        return newConnection(options.id());
-    }
-
-    /**
-     * Constructs a new instance of the API. If the id is not associated with any session, a new one
-     * will be created.
-     *
-     * @param id the id of the session
-     * @return a non-null Whatsapp instance
-     */
-    public static Whatsapp newConnection(int id) {
-        return newConnection(WebOptions.defaultOptions().id(id));
+        return newConnection(options);
     }
 
     /**

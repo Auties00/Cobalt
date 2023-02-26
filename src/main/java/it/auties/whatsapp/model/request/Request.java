@@ -104,7 +104,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
         var body = switch (encodedBody) {
             case byte[] bytes -> bytes;
             case Node node -> {
-                var encoder = new Encoder(keys.clientType());
+                var encoder = new Encoder();
                 yield encoder.encode(node);
             }
             default ->

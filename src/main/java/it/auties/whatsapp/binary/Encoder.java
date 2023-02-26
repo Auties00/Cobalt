@@ -1,14 +1,11 @@
 package it.auties.whatsapp.binary;
 
 import it.auties.bytes.Bytes;
-import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.request.Node;
-import lombok.NonNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
 
 import static it.auties.whatsapp.binary.Tag.*;
@@ -19,20 +16,7 @@ public class Encoder {
     private static final int UNSIGNED_SHORT_MAX_VALUE = 65536;
     private static final int INT_20_MAX_VALUE = 1048576;
 
-    private final List<String> singleByteTokens;
-    private final List<String> doubleByteTokens;
     private Bytes buffer;
-
-    public Encoder(@NonNull ClientType type) {
-        this.singleByteTokens = switch (type) {
-            case WEB_CLIENT -> Tokens.WEB_SINGLE_BYTE;
-            case APP_CLIENT -> Tokens.APP_SINGLE_BYTE;
-        };
-        this.doubleByteTokens = switch (type) {
-            case WEB_CLIENT -> Tokens.WEB_DOUBLE_BYTE;
-            case APP_CLIENT -> Tokens.APP_DOUBLE_BYTE;
-        };
-    }
 
     public byte[] encode(Node node) {
         this.buffer = Bytes.newBuffer();
@@ -109,7 +93,7 @@ public class Encoder {
             this.buffer = buffer.append(LIST_EMPTY.data());
             return;
         }
-        var tokenIndex = singleByteTokens.indexOf(input);
+        var tokenIndex = Tokens.SINGLE_BYTE.indexOf(input);
         if (tokenIndex != -1) {
             this.buffer = buffer.append(tokenIndex + 1);
             return;
@@ -131,17 +115,17 @@ public class Encoder {
     }
 
     private boolean writeDoubleByteString(String input) {
-        if (!doubleByteTokens.contains(input)) {
+        if (!Tokens.DOUBLE_BYTE.contains(input)) {
             return false;
         }
-        var index = doubleByteTokens.indexOf(input);
+        var index = Tokens.DOUBLE_BYTE.indexOf(input);
         this.buffer = buffer.append(doubleByteStringTag(index).data());
-        this.buffer = buffer.append(index % (doubleByteTokens.size() / 4));
+        this.buffer = buffer.append(index % (Tokens.DOUBLE_BYTE.size() / 4));
         return true;
     }
 
     private Tag doubleByteStringTag(int index) {
-        return switch (index / (doubleByteTokens.size() / 4)) {
+        return switch (index / (Tokens.DOUBLE_BYTE.size() / 4)) {
             case 0 -> DICTIONARY_0;
             case 1 -> DICTIONARY_1;
             case 2 -> DICTIONARY_2;

@@ -2,6 +2,7 @@ package it.auties.whatsapp.socket;
 
 import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
+import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.ErrorHandler.Location;
 import it.auties.whatsapp.api.SocketEvent;
@@ -421,10 +422,17 @@ class StreamHandler extends Handler implements JacksonProvider {
 
     private void sendStatusUpdate() {
         updateSelfPresence();
-        socketHandler.queryBlockList().thenAcceptAsync(entry -> entry.forEach(this::markBlocked));
-        socketHandler.sendQuery("get", "privacy", Node.of("privacy")).thenAcceptAsync(this::parsePrivacySettings);
+        socketHandler.queryBlockList()
+                .thenAcceptAsync(entry -> entry.forEach(this::markBlocked));
+        socketHandler.sendQuery("get", "privacy", Node.of("privacy"))
+                .thenAcceptAsync(this::parsePrivacySettings);
         socketHandler.sendQuery("get", "abt", ofAttributes("props", of("protocol", "1"))); // Ignore this response
-        socketHandler.sendQuery("get", "w", Node.of("props")).thenAcceptAsync(this::parseProps);
+        socketHandler.sendQuery("get", "w", Node.of("props"))
+                .thenAcceptAsync(this::parseProps);
+        if(socketHandler.options().clientType() != ClientType.WEB_CLIENT){
+            return;
+        }
+
         updateUserStatus(false);
         updateUserPicture(false);
     }

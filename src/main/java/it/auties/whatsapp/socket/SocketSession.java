@@ -145,6 +145,10 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
 
         @Override
         public CompletableFuture<Void> connect(SocketListener listener) {
+            if(socket != null && isOpen()){
+                return CompletableFuture.completedFuture(null);
+            }
+
             return CompletableFuture.runAsync(() -> {
                 try {
                     super.connect(listener);
@@ -162,6 +166,10 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
 
         @Override
         public CompletableFuture<Void> close() {
+            if(socket == null || !isOpen()){
+                return CompletableFuture.completedFuture(null);
+            }
+
             return CompletableFuture.runAsync(() -> {
                 try {
                     super.close();
@@ -175,14 +183,13 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
 
         @Override
         public boolean isOpen() {
-            return !socket.isClosed();
+            return socket.isConnected();
         }
 
         @Override
         public CompletableFuture<Void> sendBinary(byte[] bytes) {
             return CompletableFuture.runAsync(() -> {
                 try {
-                    System.out.println("Sending: " + Arrays.toString(bytes));
                     var stream = socket.getOutputStream();
                     stream.write(bytes);
                     stream.flush();
@@ -198,7 +205,6 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
                 try {
                     var stream = socket.getInputStream();
                     var size = stream.read(bytes);
-                    System.out.println("Received: " + Arrays.toString(Arrays.copyOf(bytes, size)));
                     listener.onMessage(Arrays.copyOf(bytes, size));
                 } catch (SocketException exception) {
                     closeResources();
@@ -212,6 +218,7 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
         private void closeResources() {
             this.socket = null;
             service.shutdownNow();
+            this.service = null;
             listener.onClose();
         }
     }

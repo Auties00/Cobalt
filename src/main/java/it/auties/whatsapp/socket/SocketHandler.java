@@ -1,6 +1,9 @@
 package it.auties.whatsapp.socket;
 
-import it.auties.whatsapp.api.*;
+import it.auties.whatsapp.api.DisconnectReason;
+import it.auties.whatsapp.api.SocketEvent;
+import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.api.WhatsappOptions;
 import it.auties.whatsapp.api.WhatsappOptions.MobileOptions;
 import it.auties.whatsapp.binary.MessageWrapper;
 import it.auties.whatsapp.binary.PatchType;
@@ -18,8 +21,6 @@ import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MessageStatus;
-import it.auties.whatsapp.model.mobile.PhoneNumber;
-import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.request.Attributes;
 import it.auties.whatsapp.model.request.MessageSendRequest;
 import it.auties.whatsapp.model.request.Node;
@@ -30,7 +31,10 @@ import it.auties.whatsapp.model.signal.auth.ClientHello;
 import it.auties.whatsapp.model.signal.auth.HandshakeMessage;
 import it.auties.whatsapp.model.sync.ActionValueSync;
 import it.auties.whatsapp.model.sync.PatchRequest;
-import it.auties.whatsapp.util.*;
+import it.auties.whatsapp.util.Clock;
+import it.auties.whatsapp.util.JacksonProvider;
+import it.auties.whatsapp.util.KeyHelper;
+import it.auties.whatsapp.util.LocalFileSystem;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -181,7 +185,7 @@ public class SocketHandler extends Handler implements SocketListener, JacksonPro
         }
         if (state != SocketState.CONNECTED && state != SocketState.RESTORE) {
             var header = message.decoded().getFirst().toByteArray();
-            authHandler.login(session, header).thenRunAsync(() -> state(SocketState.CONNECTED));
+            authHandler.loginSocket(session, header).thenRunAsync(() -> state(SocketState.CONNECTED));
             return;
         }
         message.toNodes(keys).forEach(this::handleNode);
@@ -230,12 +234,7 @@ public class SocketHandler extends Handler implements SocketListener, JacksonPro
         }
 
         if(options instanceof MobileOptions mobileOptions && !keys.registered()){
-            if(mobileOptions.verificationCodeMethod() == VerificationCodeMethod.NONE){
-                var phoneNumber = PhoneNumber.of(mobileOptions.phoneNumber());
-                RegistrationHelper.verify(keys, mobileOptions, mobileOptions.verificationCodeHandler().apply(null));
-            }else {
-                RegistrationHelper.register(keys, mobileOptions);
-            }
+            authHandler.checkRegistrationStatus();
         }
 
         this.session = SocketSession.of(options.clientType());
@@ -311,10 +310,14 @@ public class SocketHandler extends Handler implements SocketListener, JacksonPro
     }
 
     public CompletableFuture<Void> sendWithNoResponse(Node node) {
-        onNodeSent(node);
-        return state() == SocketState.RESTORE ? CompletableFuture.failedFuture(new IllegalStateException("Socket is in fail safe state")) : node.toRequest(node.id() == null ? store.nextTag() : null, null)
-                .sendWithNoResponse(session, keys, store)
-                .exceptionallyAsync(throwable -> errorHandler.handleFailure(SOCKET, throwable));
+        if (state() == SocketState.RESTORE) {
+            return CompletableFuture.failedFuture(new IllegalStateException("Socket is in fail safe state"));
+        }
+
+        var request = node.toRequest(node.id() == null ? store.nextTag() : null, null);
+        return request.sendWithNoResponse(session, keys, store)
+                .exceptionallyAsync(throwable -> errorHandler.handleFailure(SOCKET, throwable))
+                .thenRunAsync(() -> onNodeSent(node));
     }
 
     private void onNodeSent(Node node) {

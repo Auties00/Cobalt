@@ -49,7 +49,7 @@ public class MessageWrapper {
 
     private Node toNode(Bytes encoded, Keys keys) {
         var plainText = AesGmc.decrypt(keys.readCounter(true), encoded.toByteArray(), keys.readKey().toByteArray());
-        var decoder = new Decoder(plainText, type);
+        var decoder = new Decoder(plainText);
         return decoder.readNode();
     }
 }

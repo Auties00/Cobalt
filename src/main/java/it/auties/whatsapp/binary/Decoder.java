@@ -1,13 +1,11 @@
 package it.auties.whatsapp.binary;
 
 import it.auties.bytes.Bytes;
-import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJid.Server;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Validate;
-import lombok.NonNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -21,22 +19,12 @@ import static it.auties.whatsapp.model.request.Node.ofAttributes;
 
 public class Decoder {
     private final Bytes buffer;
-    private final List<String> singleByteTokens;
-    private final List<String> doubleByteTokens;
 
-    public Decoder(byte[] input, @NonNull ClientType type) {
+    public Decoder(byte[] input) {
         var buffer = Bytes.of(input);
         var token = buffer.readByte() & 2;
         var data = buffer.remaining().toByteArray();
         this.buffer = Bytes.of(token == 0 ? data : BytesHelper.deflate(data));
-        this.singleByteTokens = switch (type) {
-            case WEB_CLIENT -> Tokens.WEB_SINGLE_BYTE;
-            case APP_CLIENT -> Tokens.APP_SINGLE_BYTE;
-        };
-        this.doubleByteTokens = switch (type) {
-            case WEB_CLIENT -> Tokens.WEB_DOUBLE_BYTE;
-            case APP_CLIENT -> Tokens.APP_DOUBLE_BYTE;
-        };
     }
 
     public Node readNode() {
@@ -100,10 +88,10 @@ public class Decoder {
 
     private String readStringFromToken(int token) {
         if (token < DICTIONARY_0.data() || token > DICTIONARY_3.data()) {
-            return singleByteTokens.get(token - 1);
+            return Tokens.SINGLE_BYTE.get(token - 1);
         }
-        var delta = (doubleByteTokens.size() / 4) * (token - DICTIONARY_0.data());
-        return doubleByteTokens.get(buffer.readUnsignedByte() + delta);
+        var delta = (Tokens.DOUBLE_BYTE.size() / 4) * (token - DICTIONARY_0.data());
+        return Tokens.DOUBLE_BYTE.get(buffer.readUnsignedByte() + delta);
     }
 
     private String readNibble() {

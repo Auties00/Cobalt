@@ -6,7 +6,12 @@ import it.auties.whatsapp.api.HistoryLength;
 import it.auties.whatsapp.api.WhatsappOptions.MobileOptions;
 import it.auties.whatsapp.api.WhatsappOptions.WebOptions;
 import it.auties.whatsapp.crypto.Handshake;
+import it.auties.whatsapp.crypto.MD5;
+import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
+import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
+import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
+import it.auties.whatsapp.model.request.Attributes;
 import it.auties.whatsapp.model.request.Request;
 import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.signal.auth.ClientPayload.ClientPayloadBuilder;
@@ -17,13 +22,28 @@ import it.auties.whatsapp.model.signal.auth.WebInfo.WebInfoWebSubPlatform;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.Specification;
+import it.auties.whatsapp.util.Specification.Whatsapp;
+import it.auties.whatsapp.util.Validate;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.util.HexFormat;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 import static java.lang.Long.parseLong;
+import static java.util.Base64.getUrlEncoder;
+import static java.util.Map.entry;
 
 @RequiredArgsConstructor
 class AuthHandler extends Handler implements JacksonProvider {
@@ -36,7 +56,7 @@ class AuthHandler extends Handler implements JacksonProvider {
     }
 
     @SneakyThrows
-    protected CompletableFuture<Void> login(SocketSession session, byte[] message) {
+    protected CompletableFuture<Void> loginSocket(SocketSession session, byte[] message) {
         var serverHello = PROTOBUF.readMessage(message, HandshakeMessage.class).serverHello();
         handshake.updateHash(serverHello.ephemeral());
         var sharedEphemeral = Curve25519.sharedKey(serverHello.ephemeral(), socketHandler.keys()
@@ -109,10 +129,10 @@ class AuthHandler extends Handler implements JacksonProvider {
                     .shortConnect(true)
                     .connectAttemptCount(0)
                     .device(0)
-                    .dnsSource(DNSSource.builder().appCached(false).dnsMethod(DNSSourceDNSResolutionMethod.SYSTEM).build())
+                    .dnsSource(getDnsSource())
                     .passive(false)
                     .pushName("test")
-                    .username(phoneNumber.number())
+                    .username(parseLong(phoneNumber.toJid().user()))
                     .build();
         }
 
@@ -125,6 +145,13 @@ class AuthHandler extends Handler implements JacksonProvider {
 
         return builder.regData(createRegisterData())
                 .passive(false)
+                .build();
+    }
+
+    private DNSSource getDnsSource() {
+        return DNSSource.builder()
+                .appCached(false)
+                .dnsMethod(DNSSourceDNSResolutionMethod.SYSTEM)
                 .build();
     }
 
@@ -161,6 +188,118 @@ class AuthHandler extends Handler implements JacksonProvider {
 
     private CompanionPropsPlatformType getWebBrowser(WebOptions webOptions) {
         return webOptions.historyLength() == HistoryLength.ONE_YEAR ? CompanionPropsPlatformType.DESKTOP : CompanionPropsPlatformType.CHROME;
+    }
+
+    protected void checkRegistrationStatus(){
+        var options = (MobileOptions) socketHandler.options();
+        if (options.verificationCodeMethod() != VerificationCodeMethod.NONE) {
+            registerPhoneNumber();
+            return;
+        }
+
+        verifyPhoneNumber(options.verificationCodeHandler().apply(null));
+    }
+
+    private void registerPhoneNumber() {
+        var options = (MobileOptions) socketHandler.options();
+        var phoneNumber = PhoneNumber.of(options.phoneNumber());
+        var userAgent = createUserAgent(options);
+        var response = askForVerificationCode(phoneNumber, userAgent, options.verificationCodeMethod());
+        var code = options.verificationCodeHandler().apply(response);
+        verifyPhoneNumber(code);
+    }
+
+    private void verifyPhoneNumber(@NonNull String code) {
+        var options = (MobileOptions) socketHandler.options();
+        var phoneNumber = PhoneNumber.of(options.phoneNumber());
+        var userAgent = createUserAgent(options);
+        sendVerificationCode(phoneNumber, userAgent, code);
+        socketHandler.store().userCompanionJid(ContactJid.ofCompanion(String.valueOf(phoneNumber.number()), 0, 0));
+        socketHandler.keys().registered(true);
+    }
+
+    private String createUserAgent(MobileOptions options) {
+        return "WhatsApp/%s %s/%s Device/%s-%s".formatted(options.version(), options.osName(), options.osVersion(), options.deviceManufacturer(), options.deviceName());
+    }
+
+    private void sendVerificationCode(PhoneNumber phoneNumber, String userAgent, String code) {
+        try {
+            var registerOptions = getRegistrationOptions(phoneNumber, entry("code", code.replaceAll("-", "")));
+            var codeResponse = sendRegistrationRequest(userAgent,"/register", registerOptions);
+            var phoneNumberResponse = JSON.readValue(codeResponse.body(), VerificationCodeResponse.class);
+            Validate.isTrue(phoneNumberResponse.status()
+                    .isSuccessful(), "Unexpected response: %s", phoneNumberResponse);
+        } catch (IOException exception) {
+            throw new RuntimeException("Cannot send verification code", exception);
+        }
+    }
+
+    private VerificationCodeResponse askForVerificationCode(PhoneNumber phoneNumber, String userAgent, VerificationCodeMethod method) {
+        try {
+            var codeOptions = getRegistrationOptions(phoneNumber, entry("mcc", phoneNumber.countryCode()
+                    .mcc()), entry("mnc", phoneNumber.countryCode()
+                    .mnc()), entry("sim_mcc", "000"), entry("sim_mnc", "000"), entry("method", method.type()), entry("reason", ""), entry("hasav", "1"));
+            var codeResponse = sendRegistrationRequest(userAgent, "/code", codeOptions);
+            var phoneNumberResponse = JSON.readValue(codeResponse.body(), VerificationCodeResponse.class);
+            Validate.isTrue(phoneNumberResponse.status()
+                    .isSuccessful(), "Unexpected response: %s", phoneNumberResponse);
+            return phoneNumberResponse;
+        } catch (IOException exception) {
+            throw new RuntimeException("Cannot get verification code", exception);
+        }
+    }
+
+    private HttpResponse<String> sendRegistrationRequest(String userAgent, String path, Map<String, Object> params) {
+        try {
+            var client = HttpClient.newHttpClient();
+            var request = HttpRequest.newBuilder()
+                    .uri(URI.create("%s%s?%s".formatted(Whatsapp.MOBILE_REGISTRATION_ENDPOINT, path, toFormParams(params))))
+                    .GET()
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .header("User-Agent", userAgent)
+                    .build();
+            System.out.println("Sending request to: " + request.uri());
+            var result = client.send(request, BodyHandlers.ofString());
+            System.out.println("Received: " + result.body());
+            return result;
+        } catch (IOException | InterruptedException exception) {
+            throw new RuntimeException("Cannot get verification code", exception);
+        }
+    }
+
+    @SafeVarargs
+    private Map<String, Object> getRegistrationOptions(PhoneNumber phoneNumber, Entry<String, Object>... attributes) {
+        var keys = socketHandler.keys();
+        return Attributes.of(attributes)
+                .put("cc", phoneNumber.countryCode().prefix())
+                .put("in", phoneNumber.number())
+                .put("lg", "en")
+                .put("lc", "GB")
+                .put("mistyped", "6")
+                .put("authkey", getUrlEncoder().encodeToString(keys.noiseKeyPair().publicKey()))
+                .put("e_regid", getUrlEncoder().encodeToString(keys.encodedId()))
+                .put("e_keytype", "BQ")
+                .put("e_ident", getUrlEncoder().encodeToString(keys.identityKeyPair().publicKey()))
+                .put("e_skey_id", getUrlEncoder().encodeToString(keys.signedKeyPair().encodedId()))
+                .put("e_skey_val", getUrlEncoder().encodeToString(keys.signedKeyPair().publicKey()))
+                .put("e_skey_sig", getUrlEncoder().encodeToString(keys.signedKeyPair().signature()))
+                .put("fdid", keys.phoneId())
+                .put("expid", keys.deviceId())
+                .put("network_radio_type", "1")
+                .put("simnum", "1")
+                .put("hasinrc", "1")
+                .put("pid", ThreadLocalRandom.current().nextInt(1000))
+                .put("rc", "0")
+                .put("id", keys.identityId())
+                .put("token", HexFormat.of().formatHex(MD5.calculate(Whatsapp.MOBILE_TOKEN + phoneNumber.number())))
+                .toMap();
+    }
+
+    private String toFormParams(Map<String, Object> values) {
+        return values.entrySet()
+                .stream()
+                .map(entry -> "%s=%s".formatted(entry.getKey(), entry.getValue()))
+                .collect(Collectors.joining("&"));
     }
 
     @Override

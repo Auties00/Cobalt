@@ -2,6 +2,7 @@ package it.auties.whatsapp;
 
 import it.auties.whatsapp.api.Whatsapp;
 import it.auties.whatsapp.api.WhatsappOptions.MobileOptions;
+import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
 import it.auties.whatsapp.util.JacksonProvider;
 
@@ -12,9 +13,10 @@ public class MobileTest implements JacksonProvider {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> e.printStackTrace());
         var options = MobileOptions.builder()
                 .phoneNumber("+393495089819")
+                .verificationCodeMethod(VerificationCodeMethod.CALL)
                 .verificationCodeHandler(MobileTest::onScanCode)
                 .build();
-        var whatsapp = Whatsapp.newConnection(options)
+        var whatsapp = Whatsapp.lastConnection(options)
                 .addLoggedInListener(() -> System.out.println("Connected"))
                 .addNewMessageListener(message -> System.out.println(message.toJson()))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))

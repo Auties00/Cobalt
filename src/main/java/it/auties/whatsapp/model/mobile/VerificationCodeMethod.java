@@ -17,7 +17,7 @@ public enum VerificationCodeMethod {
     /**
      * Do not ask for a new verification code as you already have one
      */
-    NONE(null),
+    NONE("none"),
     /**
      * An SMS containing the countryCode will be sent to the associated phone number
      */
@@ -32,6 +32,9 @@ public enum VerificationCodeMethod {
 
     @JsonCreator
     public static VerificationCodeMethod of(String name) {
-        return Arrays.stream(values()).filter(entry -> entry.type().equalsIgnoreCase(name)).findFirst().orElse(null);
+        return Arrays.stream(values())
+                .filter(entry -> entry.type().equalsIgnoreCase(name))
+                .findFirst()
+                .orElse(null);
     }
 }
