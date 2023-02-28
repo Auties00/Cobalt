@@ -19,7 +19,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
  */
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Data
-@Builder(access = AccessLevel.PROTECTED)
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 public final class RecentEmojiWeightsAction implements Action {
@@ -37,15 +37,5 @@ public final class RecentEmojiWeightsAction implements Action {
     @Override
     public String indexName() {
         throw new UnsupportedOperationException("Cannot send action: no index name");
-    }
-
-    public static class RecentEmojiWeightsActionBuilder {
-        public RecentEmojiWeightsActionBuilder weights(List<RecentEmojiWeight> weights) {
-            if (this.weights == null) {
-                this.weights = new ArrayList<>();
-            }
-            this.weights.addAll(weights);
-            return this;
-        }
     }
 }

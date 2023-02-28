@@ -8,7 +8,6 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
@@ -21,14 +20,4 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 public class AppStateSyncKeyShare implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = AppStateSyncKey.class, repeated = true)
     private List<AppStateSyncKey> keys;
-
-    public static class AppStateSyncKeyShareBuilder {
-        public AppStateSyncKeyShareBuilder keys(List<AppStateSyncKey> keys) {
-            if (this.keys == null) {
-                this.keys = new ArrayList<>();
-            }
-            this.keys.addAll(keys);
-            return this;
-        }
-    }
 }

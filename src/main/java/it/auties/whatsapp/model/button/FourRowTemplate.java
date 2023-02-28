@@ -236,14 +236,4 @@ public final class FourRowTemplate implements TemplateFormatter {
             return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(TitleType.NONE);
         }
     }
-
-    public static class FourRowTemplateBuilder {
-        public FourRowTemplateBuilder buttons(List<ButtonTemplate> buttons) {
-            if (this.buttons == null) {
-                this.buttons = new ArrayList<>();
-            }
-            this.buttons.addAll(buttons);
-            return this;
-        }
-    }
 }

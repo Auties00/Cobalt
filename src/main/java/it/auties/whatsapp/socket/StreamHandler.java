@@ -2,6 +2,7 @@ package it.auties.whatsapp.socket;
 
 import it.auties.bytes.Bytes;
 import it.auties.curve25519.Curve25519;
+import it.auties.protobuf.serialization.performance.Protobuf;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.DisconnectReason;
 import it.auties.whatsapp.api.ErrorHandler.Location;
@@ -34,7 +35,6 @@ import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.serialization.ControllerProviderLoader;
 import it.auties.whatsapp.util.*;
 import lombok.NonNull;
-import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 
 import java.net.URI;
@@ -410,14 +410,18 @@ class StreamHandler extends Handler implements JacksonProvider {
         createMediaConnection(0, null);
         sendStatusUpdate();
         socketHandler.onLoggedIn();
-        if (!socketHandler.store().initialSync()) {
-            return;
+        if(socketHandler.options().clientType() == ClientType.APP_CLIENT){
+            socketHandler.store().initialSync(true);
+            socketHandler.disableAppStateSync();
         }
-        ControllerProviderLoader.findOnlyDeserializer(socketHandler.options().defaultSerialization())
-                .attributeStore(socketHandler.store())
-                .thenRun(socketHandler::onChats)
-                .exceptionallyAsync(exception -> socketHandler.errorHandler().handleFailure(MESSAGE, exception));
-        socketHandler.onContacts();
+
+        if (socketHandler.store().initialSync()) {
+            ControllerProviderLoader.findOnlyDeserializer(socketHandler.options().defaultSerialization())
+                    .attributeStore(socketHandler.store())
+                    .thenRun(socketHandler::onChats)
+                    .exceptionallyAsync(exception -> socketHandler.errorHandler().handleFailure(MESSAGE, exception));
+            socketHandler.onContacts();
+        }
     }
 
     private void sendStatusUpdate() {
@@ -581,19 +585,18 @@ class StreamHandler extends Handler implements JacksonProvider {
         handler.qrHandler().accept(qr);
     }
 
-    @SneakyThrows
     private void confirmQrCode(Node node, Node container) {
         saveCompanion(container);
         var deviceIdentity = container.findNode("device-identity")
                 .orElseThrow(() -> new NoSuchElementException("Missing device identity"));
-        var advIdentity = PROTOBUF.readMessage(deviceIdentity.contentAsBytes()
+        var advIdentity = Protobuf.readMessage(deviceIdentity.contentAsBytes()
                 .orElseThrow(), SignedDeviceIdentityHMAC.class);
         var advSign = Hmac.calculateSha256(advIdentity.details(), socketHandler.keys().companionKey());
         if (!Arrays.equals(advIdentity.hmac(), advSign)) {
             socketHandler.errorHandler().handleFailure(LOGIN, new HmacValidationException("adv_sign"));
             return;
         }
-        var account = PROTOBUF.readMessage(advIdentity.details(), SignedDeviceIdentity.class);
+        var account = Protobuf.readMessage(advIdentity.details(), SignedDeviceIdentity.class);
         var message = Bytes.of(MESSAGE_HEADER)
                 .append(account.details())
                 .append(socketHandler.keys().identityKeyPair().publicKey())
@@ -610,8 +613,8 @@ class StreamHandler extends Handler implements JacksonProvider {
         account.deviceSignature(Curve25519.sign(socketHandler.keys()
                 .identityKeyPair()
                 .privateKey(), deviceSignatureMessage, true));
-        var keyIndex = PROTOBUF.readMessage(account.details(), DeviceIdentity.class).keyIndex();
-        var devicePairNode = ofChildren("pair-device-sign", Node.of("device-identity", of("key-index", keyIndex), PROTOBUF.writeValueAsBytes(account.withoutKey())));
+        var keyIndex = Protobuf.readMessage(account.details(), DeviceIdentity.class).keyIndex();
+        var devicePairNode = ofChildren("pair-device-sign", Node.of("device-identity", of("key-index", keyIndex), Protobuf.writeMessage(account.withoutKey())));
         socketHandler.keys().companionIdentity(account);
         sendConfirmNode(node, devicePairNode);
     }

@@ -9,7 +9,6 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static it.auties.protobuf.base.ProtobufType.INT64;
@@ -33,15 +32,5 @@ public final class StickerSyncRMRMessage implements ServerMessage {
     @Override
     public MessageType type() {
         return MessageType.STICKER_SYNC;
-    }
-
-    public static class StickerSyncRMRMessageBuilder {
-        public StickerSyncRMRMessageBuilder hash(List<String> hash) {
-            if (this.hash == null) {
-                this.hash = new ArrayList<>();
-            }
-            this.hash.addAll(hash);
-            return this;
-        }
     }
 }

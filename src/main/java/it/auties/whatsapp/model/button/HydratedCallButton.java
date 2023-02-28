@@ -2,7 +2,6 @@ package it.auties.whatsapp.model.button;
 
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,7 +15,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
  */
 @AllArgsConstructor(staticName = "of")
 @Data
-@Builder(access = AccessLevel.PROTECTED)
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 public class HydratedCallButton implements ProtobufMessage {

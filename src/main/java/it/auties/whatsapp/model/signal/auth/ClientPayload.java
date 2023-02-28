@@ -211,22 +211,4 @@ public class ClientPayload implements ProtobufMessage {
         @Getter
         private final int index;
     }
-
-    public static class ClientPayloadBuilder {
-        public ClientPayloadBuilder clientFeatures(List<ClientPayloadClientFeature> clientFeatures) {
-            if (this.clientFeatures == null) {
-                this.clientFeatures = new ArrayList<>();
-            }
-            this.clientFeatures.addAll(clientFeatures);
-            return this;
-        }
-
-        public ClientPayloadBuilder shards(List<Integer> shards) {
-            if (this.shards == null) {
-                this.shards = new ArrayList<>();
-            }
-            this.shards.addAll(shards);
-            return this;
-        }
-    }
 }

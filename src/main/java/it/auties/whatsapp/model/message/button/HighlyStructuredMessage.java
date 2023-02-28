@@ -86,22 +86,4 @@ public final class HighlyStructuredMessage implements ButtonMessage {
     public MessageType type() {
         return MessageType.HIGHLY_STRUCTURED;
     }
-
-    public static class HighlyStructuredMessageBuilder {
-        public HighlyStructuredMessageBuilder params(List<String> params) {
-            if (this.params == null) {
-                this.params = new ArrayList<>();
-            }
-            this.params.addAll(params);
-            return this;
-        }
-
-        public HighlyStructuredMessageBuilder localizableParameters(List<BusinessLocalizableParameter> localizableParams) {
-            if (this.localizableParameters == null) {
-                this.localizableParameters = new ArrayList<>();
-            }
-            this.localizableParameters.addAll(localizableParams);
-            return this;
-        }
-    }
 }

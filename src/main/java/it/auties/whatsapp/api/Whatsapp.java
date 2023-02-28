@@ -4,6 +4,7 @@ import it.auties.bytes.Bytes;
 import it.auties.linkpreview.LinkPreview;
 import it.auties.linkpreview.LinkPreviewMedia;
 import it.auties.linkpreview.LinkPreviewResult;
+import it.auties.protobuf.serialization.performance.Protobuf;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.AesGmc;
@@ -42,8 +43,6 @@ import it.auties.whatsapp.socket.SocketHandler;
 import it.auties.whatsapp.util.*;
 import lombok.NonNull;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -61,7 +60,6 @@ import static it.auties.whatsapp.model.contact.ContactJid.Server.GROUP;
 import static it.auties.whatsapp.model.message.standard.TextMessage.TextMessagePreviewType.NONE;
 import static it.auties.whatsapp.model.message.standard.TextMessage.TextMessagePreviewType.VIDEO;
 import static it.auties.whatsapp.model.sync.RecordSync.Operation.SET;
-import static it.auties.whatsapp.util.JacksonProvider.PROTOBUF;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.Objects.requireNonNullElseGet;
 
@@ -1174,23 +1172,19 @@ public class Whatsapp {
         if (pollUpdateMessage.encryptedMetadata() != null) {
             return;
         }
-        try {
-            var iv = ofRandom(12).toByteArray();
-            var additionalData = "%s\0%s".formatted(pollUpdateMessage.pollCreationMessageKey()
-                    .id(), store().userCompanionJid().toUserJid()).getBytes(StandardCharsets.UTF_8);
-            var encryptedOptions = pollUpdateMessage.votes()
-                    .stream()
-                    .map(PollOption::name)
-                    .map(Sha256::calculate)
-                    .map(input -> AesGmc.encrypt(iv, input, pollUpdateMessage.pollCreationMessage()
-                            .encryptionKey(), additionalData))
-                    .toList();
-            var pollUpdateEncryptedOptions = PollUpdateEncryptedOptions.of(encryptedOptions);
-            pollUpdateMessage.encryptedMetadata().iv(iv);
-            pollUpdateMessage.encryptedMetadata().iv(PROTOBUF.writeValueAsBytes(pollUpdateEncryptedOptions));
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Cannot encode vote", exception);
-        }
+        var iv = ofRandom(12).toByteArray();
+        var additionalData = "%s\0%s".formatted(pollUpdateMessage.pollCreationMessageKey()
+                .id(), store().userCompanionJid().toUserJid()).getBytes(StandardCharsets.UTF_8);
+        var encryptedOptions = pollUpdateMessage.votes()
+                .stream()
+                .map(PollOption::name)
+                .map(Sha256::calculate)
+                .map(input -> AesGmc.encrypt(iv, input, pollUpdateMessage.pollCreationMessage()
+                        .encryptionKey(), additionalData))
+                .toList();
+        var pollUpdateEncryptedOptions = PollUpdateEncryptedOptions.of(encryptedOptions);
+        pollUpdateMessage.encryptedMetadata().iv(iv);
+        pollUpdateMessage.encryptedMetadata().iv(Protobuf.writeMessage(pollUpdateEncryptedOptions));
     }
 
     private void attributeGroupInviteMessage(MessageInfo info, GroupInviteMessage groupInviteMessage) {
@@ -2244,7 +2238,7 @@ public class Whatsapp {
         var retryKey = Hkdf.extractAndExpand(mediaMessage.mediaKey(), "WhatsApp Media Retry Notification".getBytes(StandardCharsets.UTF_8), 32);
         var retryIv = Bytes.ofRandom(12).toByteArray();
         var retryIdData = info.key().id().getBytes(StandardCharsets.UTF_8);
-        var receipt = createReceipt(info);
+        var receipt = Protobuf.writeMessage(ServerErrorReceipt.of(info.id()));
         var ciphertext = AesGmc.encrypt(retryIv, receipt, retryKey, retryIdData);
         var rmrAttributes = Attributes.of()
                 .put("jid", info.chatJid())
@@ -2268,14 +2262,6 @@ public class Whatsapp {
         return socketHandler.send(node);
     }
 
-    private byte[] createReceipt(MessageInfo info) {
-        try {
-            return PROTOBUF.writeValueAsBytes(ServerErrorReceipt.of(info.id()));
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Cannot create receipt", exception);
-        }
-    }
-
     private MessageInfo parseMediaReupload(MessageInfo info, MediaMessage mediaMessage, byte[] retryKey, byte[] retryIdData, Node node) {
         Validate.isTrue(!node.hasNode("error"), "Erroneous response from media reupload: %s", node.attributes()
                 .getInt("code"));
@@ -2288,18 +2274,10 @@ public class Whatsapp {
                 .flatMap(Node::contentAsBytes)
                 .orElseThrow(() -> new NoSuchElementException("Missing encrypted iv node in media reupload"));
         var mediaRetryNotificationData = AesGmc.decrypt(mediaIv, mediaPayload, retryKey, retryIdData);
-        var mediaRetryNotification = readRetryNotification(mediaRetryNotificationData);
+        var mediaRetryNotification = Protobuf.readMessage(mediaRetryNotificationData, MediaRetryNotification.class);
         Validate.isTrue(mediaRetryNotification.directPath() != null, "Media retry upload failed: %s", mediaRetryNotification);
         mediaMessage.mediaUrl(Medias.createMediaUrl(mediaRetryNotification.directPath()));
         mediaMessage.mediaDirectPath(mediaRetryNotification.directPath());
         return info;
-    }
-
-    private MediaRetryNotification readRetryNotification(byte[] mediaRetryNotificationData) {
-        try {
-            return PROTOBUF.readMessage(mediaRetryNotificationData, MediaRetryNotification.class);
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Cannot read retry notification", exception);
-        }
     }
 }

@@ -130,14 +130,4 @@ public class ButtonOpaqueData implements ProtobufMessage {
 
     @ProtobufProperty(index = 27, name = "encReactionEncIv", type = BYTES)
     private byte[] encReactionEncIv;
-
-    public static class ButtonOpaqueDataBuilder {
-        public ButtonOpaqueData.ButtonOpaqueDataBuilder pollOptions(List<PollOption> pollOptions) {
-            if (this.pollOptions == null) {
-                this.pollOptions = new ArrayList<>();
-            }
-            this.pollOptions.addAll(pollOptions);
-            return this;
-        }
-    }
 }

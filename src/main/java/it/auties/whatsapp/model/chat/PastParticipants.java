@@ -39,16 +39,4 @@ public class PastParticipants implements ProtobufMessage {
     @ProtobufProperty(implementation = PastParticipant.class, index = 2, name = "pastParticipants", repeated = true, type = MESSAGE)
     @Default
     private List<PastParticipant> pastParticipants = new ArrayList<>();
-
-    public static class PastParticipantsBuilder {
-        public PastParticipantsBuilder pastParticipants(List<PastParticipant> pastParticipants) {
-            if (!this.pastParticipants$set) {
-                this.pastParticipants$set = true;
-                this.pastParticipants$value = new ArrayList<>();
-            }
-
-            this.pastParticipants$value.addAll(pastParticipants);
-            return this;
-        }
-    }
 }

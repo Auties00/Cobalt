@@ -19,7 +19,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
  */
 @AllArgsConstructor(staticName = "of")
 @Data
-@Builder(access = AccessLevel.PROTECTED)
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 public final class ContactAction implements Action {

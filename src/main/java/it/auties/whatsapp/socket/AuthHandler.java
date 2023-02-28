@@ -1,6 +1,7 @@
 package it.auties.whatsapp.socket;
 
 import it.auties.curve25519.Curve25519;
+import it.auties.protobuf.serialization.performance.Protobuf;
 import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.HistoryLength;
 import it.auties.whatsapp.api.WhatsappOptions.MobileOptions;
@@ -26,7 +27,6 @@ import it.auties.whatsapp.util.Specification.Whatsapp;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 
 import java.io.IOException;
 import java.net.URI;
@@ -55,9 +55,8 @@ class AuthHandler extends Handler implements JacksonProvider {
         handshake.updateHash(socketHandler.keys().ephemeralKeyPair().publicKey());
     }
 
-    @SneakyThrows
     protected CompletableFuture<Void> loginSocket(SocketSession session, byte[] message) {
-        var serverHello = PROTOBUF.readMessage(message, HandshakeMessage.class).serverHello();
+        var serverHello = Protobuf.readMessage(message, HandshakeMessage.class).serverHello();
         handshake.updateHash(serverHello.ephemeral());
         var sharedEphemeral = Curve25519.sharedKey(serverHello.ephemeral(), socketHandler.keys()
                 .ephemeralKeyPair()
@@ -84,20 +83,16 @@ class AuthHandler extends Handler implements JacksonProvider {
     }
 
     private byte[] createUserPayload() {
-        try {
-            var builder = ClientPayload.builder()
-                    .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
-                    .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
-                    .userAgent(createUserAgent());
-            if(socketHandler.options().clientType() == ClientType.WEB_CLIENT){
-                  builder.webInfo(new WebInfo(getWebPlatform()));
-            }
-
-            var result = finishUserPayload(builder);
-            return PROTOBUF.writeValueAsBytes(result);
-        } catch (IOException exception) {
-            throw new RuntimeException("Cannot create user payload", exception);
+        var builder = ClientPayload.builder()
+                .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
+                .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
+                .userAgent(createUserAgent());
+        if(socketHandler.options().clientType() == ClientType.WEB_CLIENT){
+            builder.webInfo(new WebInfo(getWebPlatform()));
         }
+
+        var result = finishUserPayload(builder);
+        return Protobuf.writeMessage(result);
     }
 
     private UserAgent createUserAgent() {
@@ -155,7 +150,6 @@ class AuthHandler extends Handler implements JacksonProvider {
                 .build();
     }
 
-    @SneakyThrows
     private CompanionData createRegisterData() {
         var companion = CompanionData.builder()
                 .buildHash(socketHandler.options().version().toHash())
@@ -166,7 +160,7 @@ class AuthHandler extends Handler implements JacksonProvider {
                 .signaturePublicKey(socketHandler.keys().signedKeyPair().keyPair().publicKey())
                 .signature(socketHandler.keys().signedKeyPair().signature());
         if (socketHandler.options().clientType() == ClientType.WEB_CLIENT) {
-            var props = PROTOBUF.writeValueAsBytes(createCompanionProps());
+            var props = Protobuf.writeMessage(createCompanionProps());
             companion.companion(props);
         }
 

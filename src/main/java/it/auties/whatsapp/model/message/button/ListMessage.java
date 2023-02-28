@@ -14,7 +14,6 @@ import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -54,7 +53,7 @@ public final class ListMessage extends ContextualMessage implements ButtonMessag
      * The type of this message
      */
     @ProtobufProperty(index = 4, type = MESSAGE, implementation = ListMessage.Type.class)
-    private Type type;
+    private Type listType;
 
     /**
      * The button sections of this message
@@ -112,16 +111,6 @@ public final class ListMessage extends ContextualMessage implements ButtonMessag
         @JsonCreator
         public static Type of(int index) {
             return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
-        }
-    }
-
-    public static class ListMessageBuilder {
-        public ListMessageBuilder sections(List<ButtonSection> sections) {
-            if (this.sections == null) {
-                this.sections = new ArrayList<>();
-            }
-            this.sections.addAll(sections);
-            return this;
         }
     }
 }

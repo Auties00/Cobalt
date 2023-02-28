@@ -17,7 +17,7 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
  */
 @AllArgsConstructor(staticName = "of")
 @Data
-@Builder(access = AccessLevel.PROTECTED)
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 public class CallButton implements ProtobufMessage {

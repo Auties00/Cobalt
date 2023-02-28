@@ -20,7 +20,7 @@ import static it.auties.protobuf.base.ProtobufType.INT64;
  */
 @AllArgsConstructor(staticName = "of")
 @Data
-@Builder(access = AccessLevel.PROTECTED)
+@Builder
 @Jacksonized
 @Accessors(fluent = true)
 public final class MuteAction implements Action {

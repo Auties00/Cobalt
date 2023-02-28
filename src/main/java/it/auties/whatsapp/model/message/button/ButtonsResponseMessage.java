@@ -49,7 +49,7 @@ public final class ButtonsResponseMessage extends ButtonReplyMessage {
     private ContextInfo contextInfo = new ContextInfo();
 
     @ProtobufProperty(index = 4, name = "type", type = MESSAGE)
-    private ResponseType type;
+    private ResponseType responseType;
 
     /**
      * Constructs a response message from a buttons message and a selected button

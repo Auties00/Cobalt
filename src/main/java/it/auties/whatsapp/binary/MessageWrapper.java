@@ -1,7 +1,6 @@
 package it.auties.whatsapp.binary;
 
 import it.auties.bytes.Bytes;
-import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.crypto.AesGmc;
 import it.auties.whatsapp.model.request.Node;
@@ -19,13 +18,11 @@ public class MessageWrapper {
 
     @NonNull LinkedList<Bytes> decoded;
 
-    @NonNull ClientType type;
-
-    public MessageWrapper(byte @NonNull [] array, @NonNull ClientType type) {
-        this(Bytes.of(array), type);
+    public MessageWrapper(byte @NonNull [] array) {
+        this(Bytes.of(array));
     }
 
-    public MessageWrapper(@NonNull Bytes raw, @NonNull ClientType type) {
+    public MessageWrapper(@NonNull Bytes raw) {
         this.raw = raw;
         var decoded = new LinkedList<Bytes>();
         while (raw.readableBytes() >= 3) {
@@ -36,7 +33,6 @@ public class MessageWrapper {
             decoded.add(raw.readBuffer(length));
         }
         this.decoded = decoded;
-        this.type = type;
     }
 
     private int decodeLength(Bytes buffer) {

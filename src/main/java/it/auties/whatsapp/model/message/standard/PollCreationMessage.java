@@ -53,8 +53,6 @@ public final class PollCreationMessage extends ContextualMessage {
      * Internal field required by the protobuf to count the number of selectable options
      */
     @ProtobufProperty(index = 4, name = "selectableOptionsCount", type = UINT32)
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     private int selectableOptionsCount;
 
     /**

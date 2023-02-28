@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.chat;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.base.ProtobufConverter;
 import it.auties.protobuf.base.ProtobufMessage;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -56,12 +57,8 @@ public enum ChatEphemeralTimer implements ProtobufMessage {
                 .orElse(OFF);
     }
 
-    @Override
-    public boolean isValueBased() {
-        return true;
-    }
-
-    @Override
+    @ProtobufConverter
+    @SuppressWarnings("unused")
     public Object toValue() {
         return period.toSeconds();
     }

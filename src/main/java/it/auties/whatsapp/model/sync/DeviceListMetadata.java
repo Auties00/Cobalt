@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static it.auties.protobuf.base.ProtobufType.*;
@@ -38,22 +37,4 @@ public class DeviceListMetadata implements ProtobufMessage {
 
     @ProtobufProperty(index = 10, type = UINT32, repeated = true, packed = true)
     private List<Integer> recipientKeyIndexes;
-
-    public static class DeviceListMetadataBuilder {
-        public DeviceListMetadataBuilder senderKeyIndexes(List<Integer> senderKeyIndexes) {
-            if (this.senderKeyIndexes == null) {
-                this.senderKeyIndexes = new ArrayList<>();
-            }
-            this.senderKeyIndexes.addAll(senderKeyIndexes);
-            return this;
-        }
-
-        public DeviceListMetadataBuilder recipientKeyIndexes(List<Integer> recipientKeyIndexes) {
-            if (this.recipientKeyIndexes == null) {
-                this.recipientKeyIndexes = new ArrayList<>();
-            }
-            this.recipientKeyIndexes.addAll(recipientKeyIndexes);
-            return this;
-        }
-    }
 }

@@ -6,7 +6,7 @@ import ezvcard.VCardVersion;
 import ezvcard.property.Telephone;
 import it.auties.protobuf.base.ProtobufConverter;
 import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.serializer.exception.ProtobufSerializationException;
+import it.auties.protobuf.serialization.exception.ProtobufSerializationException;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NonNull;
@@ -105,17 +105,13 @@ public class ContactCard implements ProtobufMessage {
         return Optional.ofNullable(businessName);
     }
 
-    @Override
-    public boolean isValueBased() {
-        return true;
-    }
-
     /**
      * Converts this object in a valid vcard
      *
      * @return a non-null String
      */
-    @Override
+    @ProtobufConverter
+    @SuppressWarnings("unused")
     public Object toValue() {
         return toString();
     }
@@ -165,10 +161,15 @@ public class ContactCard implements ProtobufMessage {
     public static class ContactCardBuilder {
         @SuppressWarnings("ConstantConditions")
         public ContactCardBuilder phoneNumber(@NonNull ContactJid contact) {
+            return phoneNumber(DEFAULT_NUMBER_TYPE, contact);
+        }
+
+        @SuppressWarnings("ConstantConditions")
+        public ContactCardBuilder phoneNumber(@NonNull String category, @NonNull ContactJid contact) {
             if (phoneNumbers == null) {
                 this.phoneNumbers = new HashMap<>();
             }
-            phoneNumbers.put(DEFAULT_NUMBER_TYPE, contact);
+            phoneNumbers.put(category, contact);
             return this;
         }
     }

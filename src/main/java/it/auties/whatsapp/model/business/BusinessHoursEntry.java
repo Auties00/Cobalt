@@ -19,14 +19,18 @@ public record BusinessHoursEntry(@NonNull String day, @NonNull String mode, long
      * @return A {@link BusinessHoursEntry} extracted from the provided node.
      */
     public static BusinessHoursEntry of(@NonNull Node node) {
-        return new BusinessHoursEntry(node.attributes().getString("day_of_week"), node.attributes()
-                .getString("mode"), node.attributes().getLong("open_time"), node.attributes().getLong("close_time"));
+        return new BusinessHoursEntry(
+                node.attributes().getString("day_of_week"),
+                node.attributes().getString("mode"),
+                node.attributes().getLong("open_time"),
+                node.attributes().getLong("close_time")
+        );
     }
 
     /**
      * Returns whether the business is always open.
      *
-     * @return <countryCode>true</countryCode> if the business is always open; <countryCode>false</countryCode> otherwise.
+     * @return whether the business is always open
      */
     public boolean isAlwaysOpen() {
         return openTime == 0 && closeTime == 0;

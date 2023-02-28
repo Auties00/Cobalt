@@ -12,8 +12,8 @@ public class MobileTest implements JacksonProvider {
     public static void main(String[] args) {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> e.printStackTrace());
         var options = MobileOptions.builder()
-                .phoneNumber("+393495089819")
-                .verificationCodeMethod(VerificationCodeMethod.CALL)
+                .phoneNumber("+16137770646")
+                .verificationCodeMethod(VerificationCodeMethod.SMS)
                 .verificationCodeHandler(MobileTest::onScanCode)
                 .build();
         var whatsapp = Whatsapp.lastConnection(options)

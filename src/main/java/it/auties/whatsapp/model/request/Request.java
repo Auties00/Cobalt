@@ -1,6 +1,7 @@
 package it.auties.whatsapp.model.request;
 
 import it.auties.bytes.Bytes;
+import it.auties.protobuf.serialization.performance.Protobuf;
 import it.auties.whatsapp.binary.Encoder;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
@@ -61,11 +62,7 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
      * Constructs a new request with the provided body expecting a response
      */
     public static Request of(@NonNull Object body) {
-        try {
-            return new Request(null, null, PROTOBUF.writeValueAsBytes(body));
-        } catch (IOException exception) {
-            throw new IllegalArgumentException("Cannot encode %s".formatted(body), exception);
-        }
+        return new Request(null, null, Protobuf.writeMessage(body));
     }
 
     /**

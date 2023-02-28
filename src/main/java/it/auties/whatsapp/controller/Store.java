@@ -40,7 +40,7 @@ import java.util.stream.Stream;
  */
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 @Jacksonized
-@Builder(access = AccessLevel.PROTECTED)
+@Builder
 @Accessors(fluent = true, chain = true)
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public final class Store implements Controller<Store> {

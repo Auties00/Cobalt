@@ -51,14 +51,4 @@ public class BusinessVerifiedNameDetails implements ProtobufMessage {
      */
     @ProtobufProperty(index = 10, type = UINT64)
     private long issueTime;
-
-    public static class BusinessVerifiedNameDetailsBuilder {
-        public BusinessVerifiedNameDetailsBuilder localizedNames(List<BusinessLocalizedName> localizedNames) {
-            if (this.localizedNames == null) {
-                this.localizedNames = new ArrayList<>();
-            }
-            this.localizedNames.addAll(localizedNames);
-            return this;
-        }
-    }
 }

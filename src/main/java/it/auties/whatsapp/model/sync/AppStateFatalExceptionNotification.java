@@ -8,7 +8,6 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static it.auties.protobuf.base.ProtobufType.INT64;
@@ -25,14 +24,4 @@ public class AppStateFatalExceptionNotification implements ProtobufMessage {
 
     @ProtobufProperty(index = 2, type = INT64)
     private Long timestamp;
-
-    public static class AppStateFatalExceptionNotificationBuilder {
-        public AppStateFatalExceptionNotificationBuilder collectionNames(List<String> collectionNames) {
-            if (this.collectionNames == null) {
-                this.collectionNames = new ArrayList<>();
-            }
-            this.collectionNames.addAll(collectionNames);
-            return this;
-        }
-    }
 }

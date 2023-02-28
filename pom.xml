@@ -85,7 +85,7 @@
         <maven.nexus.plugin.version>1.6.13</maven.nexus.plugin.version>
         <bouncy.castle.version>1.70</bouncy.castle.version>
         <zxing.version>3.5.1</zxing.version>
-        <protoc.version>1.18</protoc.version>
+        <protoc.version>1.19</protoc.version>
         <tyrus.version>2.1.0</tyrus.version>
         <lombok.version>1.18.24</lombok.version>
         <junit.version>5.9.0</junit.version>
@@ -121,11 +121,16 @@
                     <target>${java.version}</target>
                     <release>${java.version}</release>
                     <annotationProcessorPaths>
-                        <path>
+                        <annotationProcessorPath>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                             <version>${lombok.version}</version>
-                        </path>
+                        </annotationProcessorPath>
+                        <annotationProcessorPath>
+                            <groupId>com.github.auties00</groupId>
+                            <artifactId>protobuf-serializer-performance</artifactId>
+                            <version>${protoc.version}</version>
+                        </annotationProcessorPath>
                     </annotationProcessorPaths>
                     <compilerArgs>
                         <compilerArg>--enable-preview</compilerArg>
@@ -258,12 +263,7 @@
         </dependency>
         <dependency>
             <groupId>com.github.auties00</groupId>
-            <artifactId>protobuf-base</artifactId>
-            <version>${protoc.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.auties00</groupId>
-            <artifactId>protobuf-serializer</artifactId>
+            <artifactId>protobuf-serializer-performance</artifactId>
             <version>${protoc.version}</version>
         </dependency>
         <dependency>

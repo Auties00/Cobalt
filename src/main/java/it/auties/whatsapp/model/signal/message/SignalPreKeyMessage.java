@@ -2,12 +2,12 @@ package it.auties.whatsapp.model.signal.message;
 
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.serialization.performance.Protobuf;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Specification;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
@@ -42,7 +42,6 @@ public final class SignalPreKeyMessage implements SignalProtocolMessage {
 
     private byte[] serialized;
 
-    @SneakyThrows
     public SignalPreKeyMessage(int preKeyId, byte[] baseKey, byte[] identityKey, byte[] serializedSignalMessage, int registrationId, int signedPreKeyId) {
         this.version = Specification.Signal.CURRENT_VERSION;
         this.preKeyId = preKeyId;
@@ -51,12 +50,11 @@ public final class SignalPreKeyMessage implements SignalProtocolMessage {
         this.serializedSignalMessage = serializedSignalMessage;
         this.registrationId = registrationId;
         this.signedPreKeyId = signedPreKeyId;
-        this.serialized = Bytes.of(serializedVersion()).append(PROTOBUF.writeValueAsBytes(this)).toByteArray();
+        this.serialized = Bytes.of(serializedVersion()).append(Protobuf.writeMessage(this)).toByteArray();
     }
 
-    @SneakyThrows
     public static SignalPreKeyMessage ofSerialized(byte[] serialized) {
-        return PROTOBUF.readMessage(Bytes.of(serialized).slice(1).toByteArray(), SignalPreKeyMessage.class)
+        return Protobuf.readMessage(Bytes.of(serialized).slice(1).toByteArray(), SignalPreKeyMessage.class)
                 .version(BytesHelper.bytesToVersion(serialized[0]))
                 .serialized(serialized);
     }

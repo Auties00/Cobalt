@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.chat;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
@@ -272,8 +273,6 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * Experimental
      */
     @ProtobufProperty(index = 38, name = "displayName", type = STRING)
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     private String displayName;
 
     /**
@@ -745,7 +744,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     }
 
     /**
-     * Returns an immodifiable list of all the messages in this chat
+     * Returns an immutable list of all the messages in this chat
      *
      * @return a non-null collection
      */
@@ -810,11 +809,26 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
 
     @SuppressWarnings({"ConstantValue", "unused"})
     public static class ChatBuilder {
+        public ChatBuilder messages(ConcurrentLinkedDeque<MessageInfo> messages) {
+            if (this.messages$value == null) {
+                this.messages$value = new ConcurrentLinkedDeque<>();
+                this.messages$set = true;
+            }
+
+            return parseMessages(messages);
+        }
+
+        @JsonSetter
         public ChatBuilder messages(List<MessageInfo> messages) {
             if (this.messages$value == null) {
                 this.messages$value = new ConcurrentLinkedDeque<>();
                 this.messages$set = true;
             }
+
+            return parseMessages(messages);
+        }
+
+        private ChatBuilder parseMessages(Collection<MessageInfo> messages) {
             // Kind of abusing the type system of java
             // If the chat was received from Whatsapp, the actual type of the list is HistorySyncMessage, and it needs to be unwrapped
             // Though if the message was stored locally it's actually a MessageInfo(unwrapped HistorySyncMessage)
@@ -835,15 +849,6 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
                 }
                 throw new IllegalArgumentException("Unexpected value: " + entry.getClass().getName());
             });
-            return this;
-        }
-
-        public ChatBuilder participants(List<GroupParticipant> participants) {
-            if (this.participants$value == null) {
-                this.participants$value = new ArrayList<>();
-                this.participants$set = true;
-            }
-            participants$value.addAll(participants);
             return this;
         }
     }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.util.JacksonProvider;
+import lombok.Builder;
 import lombok.NonNull;
 
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.Optional;
  * @param messageId the nullable id of the message regarding the chane
  * @param fromMe    whether the change regards yourself
  */
+@Builder
 public record MessageIndexInfo(@NonNull String type, @NonNull Optional<ContactJid> chatJid,
                                @NonNull Optional<String> messageId, boolean fromMe) implements Info, JacksonProvider {
     /**

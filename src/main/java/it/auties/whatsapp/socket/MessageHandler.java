@@ -3,6 +3,7 @@ package it.auties.whatsapp.socket;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import it.auties.bytes.Bytes;
+import it.auties.protobuf.serialization.performance.Protobuf;
 import it.auties.whatsapp.api.ErrorHandler.Location;
 import it.auties.whatsapp.crypto.*;
 import it.auties.whatsapp.model.action.ContactAction;
@@ -40,8 +41,6 @@ import it.auties.whatsapp.model.sync.HistorySync;
 import it.auties.whatsapp.model.sync.PushName;
 import it.auties.whatsapp.util.*;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.ZonedDateTime;
@@ -145,28 +144,24 @@ class MessageHandler extends Handler implements JacksonProvider {
     }
 
     private Node createEncodedMessageNode(MessageInfo info, List<Node> preKeys, Node descriptor, Map<String, Object> metadata) {
-        try {
-            var body = new ArrayList<Node>();
-            if (!preKeys.isEmpty()) {
-                body.add(ofChildren("participants", preKeys));
-            }
-            if (descriptor != null) {
-                body.add(descriptor);
-            }
-            if (hasPreKeyMessage(preKeys)) {
-                var identity = PROTOBUF.writeValueAsBytes(socketHandler.keys().companionIdentity());
-                body.add(Node.of("device-identity", identity));
-            }
-            var attributes = Attributes.ofNullable(metadata)
-                    .put("id", info.id())
-                    .put("to", info.chatJid())
-                    .put("type", "text")
-                    .put("duration", "900", () -> info.message().type() == MessageType.LIVE_LOCATION)
-                    .toMap();
-            return ofChildren("message", attributes, body);
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Cannot create encoded message node", exception);
+        var body = new ArrayList<Node>();
+        if (!preKeys.isEmpty()) {
+            body.add(ofChildren("participants", preKeys));
         }
+        if (descriptor != null) {
+            body.add(descriptor);
+        }
+        if (hasPreKeyMessage(preKeys)) {
+            var identity = Protobuf.writeMessage(socketHandler.keys().companionIdentity());
+            body.add(Node.of("device-identity", identity));
+        }
+        var attributes = Attributes.ofNullable(metadata)
+                .put("id", info.id())
+                .put("to", info.chatJid())
+                .put("type", "text")
+                .put("duration", "900", () -> info.message().type() == MessageType.LIVE_LOCATION)
+                .toMap();
+        return ofChildren("message", attributes, body);
     }
 
     private boolean hasPreKeyMessage(List<Node> participants) {
@@ -350,19 +345,12 @@ class MessageHandler extends Handler implements JacksonProvider {
     }
 
     private String getBusinessName(Node node) {
-        return node.findNode("verified_name").flatMap(Node::contentAsBytes).map(bytes -> {
-            try {
-                return PROTOBUF.readMessage(bytes, BusinessVerifiedNameCertificate.class);
-            } catch (IOException exception) {
-                throw new UncheckedIOException("Cannot read business name certificate", exception);
-            }
-        }).map(certificate -> {
-            try {
-                return PROTOBUF.readMessage(certificate.details(), BusinessVerifiedNameDetails.class);
-            } catch (IOException exception) {
-                throw new UncheckedIOException("Cannot read business name details", exception);
-            }
-        }).map(BusinessVerifiedNameDetails::name).orElse(null);
+        return node.findNode("verified_name")
+                .flatMap(Node::contentAsBytes)
+                .map(bytes -> Protobuf.readMessage(bytes, BusinessVerifiedNameCertificate.class))
+                .map(certificate -> Protobuf.readMessage(certificate.details(), BusinessVerifiedNameDetails.class))
+                .map(BusinessVerifiedNameDetails::name)
+                .orElse(null);
     }
 
     private void decode(Node infoNode, Node messageNode, String businessName) {
@@ -517,17 +505,13 @@ class MessageHandler extends Handler implements JacksonProvider {
     }
 
     private Node createPreKeyNode() {
-        try {
-            var preKey = SignalPreKeyPair.random(socketHandler.keys().lastPreKeyId() + 1);
-            var identity = PROTOBUF.writeValueAsBytes(socketHandler.keys().companionIdentity());
-            return Node.ofChildren("keys", Node.of("type", Specification.Signal.KEY_BUNDLE_TYPE), Node.of("identity", socketHandler.keys()
-                    .identityKeyPair()
-                    .publicKey()), preKey.toNode(), socketHandler.keys()
-                    .signedKeyPair()
-                    .toNode(), Node.of("device-identity", identity));
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Cannot create pre key for message retry", exception);
-        }
+        var preKey = SignalPreKeyPair.random(socketHandler.keys().lastPreKeyId() + 1);
+        var identity = Protobuf.writeMessage(socketHandler.keys().companionIdentity());
+        return Node.ofChildren("keys", Node.of("type", Specification.Signal.KEY_BUNDLE_TYPE), Node.of("identity", socketHandler.keys()
+                .identityKeyPair()
+                .publicKey()), preKey.toNode(), socketHandler.keys()
+                .signedKeyPair()
+                .toNode(), Node.of("device-identity", identity));
     }
 
     private void processMessage(MessageInfo info) {
@@ -620,7 +604,7 @@ class MessageHandler extends Handler implements JacksonProvider {
                     .getBytes(StandardCharsets.UTF_8);
             var decrypted = AesGmc.decrypt(pollUpdateMessage.encryptedMetadata()
                     .iv(), pollUpdateMessage.encryptedMetadata().payload(), useCaseSecret, additionalData);
-            var pollVoteMessage = PROTOBUF.readMessage(decrypted, PollUpdateEncryptedOptions.class);
+            var pollVoteMessage = Protobuf.readMessage(decrypted, PollUpdateEncryptedOptions.class);
             var selectedOptions = pollVoteMessage.selectedOptions()
                     .stream()
                     .map(hash -> Bytes.of(hash).toHex())
@@ -644,7 +628,7 @@ class MessageHandler extends Handler implements JacksonProvider {
     private CompletableFuture<HistorySync> downloadHistorySync(ProtocolMessage protocolMessage) {
         return Medias.download(protocolMessage.historySyncNotification())
                 .thenApplyAsync(entry -> entry.orElseThrow(() -> new NoSuchElementException("Cannot download history sync")))
-                .thenApplyAsync(this::readHistorySync);
+                .thenApplyAsync(result -> Protobuf.readMessage(BytesHelper.deflate(result), HistorySync.class));
     }
 
     private void onHistoryNotification(MessageInfo info, HistorySync history) {
@@ -658,14 +642,6 @@ class MessageHandler extends Handler implements JacksonProvider {
     private void onMessageDeleted(MessageInfo info, MessageInfo message) {
         info.chat().removeMessage(message);
         socketHandler.onMessageDeleted(message, true);
-    }
-
-    private HistorySync readHistorySync(byte[] entry) {
-        try {
-            return PROTOBUF.readMessage(BytesHelper.deflate(entry), HistorySync.class);
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Cannot read history sync", exception);
-        }
     }
 
     private void handleHistorySync(HistorySync history) {

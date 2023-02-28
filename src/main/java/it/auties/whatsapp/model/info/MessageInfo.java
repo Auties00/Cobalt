@@ -99,8 +99,6 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * itself.
      */
     @ProtobufProperty(index = 18, type = BOOL)
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     private boolean broadcast;
 
     /**
@@ -114,8 +112,6 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * itself
      */
     @ProtobufProperty(index = 20, type = BYTES)
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     private byte[] mediaCiphertextSha256;
 
     /**
@@ -123,8 +119,6 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * itself
      */
     @ProtobufProperty(index = 21, type = BOOL)
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     private boolean multicast;
 
     /**
@@ -132,8 +126,6 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * itself
      */
     @ProtobufProperty(index = 22, type = BOOL)
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     private boolean urlText;
 
     /**
@@ -141,8 +133,6 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * itself
      */
     @ProtobufProperty(index = 23, type = BOOL)
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     private boolean urlNumber;
 
     /**
@@ -157,8 +147,6 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * itself
      */
     @ProtobufProperty(index = 25, type = BOOL)
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     private boolean clearMedia;
 
     /**
@@ -173,16 +161,12 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * itself
      */
     @ProtobufProperty(index = 27, type = UINT32)
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     private int duration;
 
     /**
      * Labels This field is suppressed because this information is available from the message itself
      */
     @ProtobufProperty(index = 28, type = STRING, repeated = true)
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     @Default
     private List<String> labels = new ArrayList<>();
 
@@ -197,8 +181,6 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * message itself
      */
     @ProtobufProperty(index = 30, type = MESSAGE, implementation = LiveLocationMessage.class)
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     private LiveLocationMessage finalLiveLocation;
 
     /**
@@ -212,8 +194,6 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * the message itself
      */
     @ProtobufProperty(index = 32, type = UINT64)
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     private long ephemeralStartTimestamp;
 
     /**
@@ -221,8 +201,6 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * message itself
      */
     @ProtobufProperty(index = 33, type = UINT32)
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     private int ephemeralDuration;
 
     /**
@@ -230,8 +208,6 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * message itself
      */
     @ProtobufProperty(index = 34, type = BOOL)
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     private boolean enableEphemeral;
 
     /**
@@ -239,8 +215,6 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * message itself
      */
     @ProtobufProperty(index = 35, type = BOOL)
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     private boolean ephemeralOutOfSync;
 
     /**
@@ -260,8 +234,6 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * itself
      */
     @ProtobufProperty(index = 38, type = MESSAGE, implementation = MediaData.class)
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     private MediaData mediaData;
 
     /**
@@ -269,8 +241,6 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * itself
      */
     @ProtobufProperty(index = 39, type = MESSAGE, implementation = PhotoChange.class)
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     private PhotoChange photoChange;
 
     /**
@@ -292,8 +262,6 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * itself
      */
     @ProtobufProperty(index = 42, type = MESSAGE, implementation = MediaData.class)
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     private MediaData quotedStickerData;
 
     /**
@@ -727,35 +695,6 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
 
         public static Optional<StubType> of(String symbol) {
             return Arrays.stream(values()).filter(entry -> entry.symbols().contains(symbol)).findFirst();
-        }
-    }
-
-    public static class MessageInfoBuilder {
-        public MessageInfoBuilder stubParameters(List<String> stubParameters) {
-            if (!stubParameters$set) {
-                this.stubParameters$value = new ArrayList<>();
-                this.stubParameters$set = true;
-            }
-            this.stubParameters$value.addAll(stubParameters);
-            return this;
-        }
-
-        public MessageInfoBuilder reactions(List<ReactionMessage> reactions) {
-            if (!reactions$set) {
-                this.reactions$value = new ArrayList<>();
-                this.reactions$set = true;
-            }
-            this.reactions$value.addAll(reactions);
-            return this;
-        }
-
-        public MessageInfoBuilder labels(List<String> labels) {
-            if (!labels$set) {
-                this.labels$value = new ArrayList<>();
-                this.labels$set = true;
-            }
-            this.labels$value.addAll(labels);
-            return this;
         }
     }
 }

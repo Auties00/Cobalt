@@ -179,7 +179,7 @@ public class SocketHandler extends Handler implements SocketListener, JacksonPro
 
     @Override
     public void onMessage(byte[] raw) {
-        var message = new MessageWrapper(raw, keys.clientType());
+        var message = new MessageWrapper(raw);
         if (message.decoded().isEmpty()) {
             return;
         }
@@ -699,5 +699,9 @@ public class SocketHandler extends Handler implements SocketListener, JacksonPro
 
     protected void querySessionsForcefully(ContactJid contactJid) {
         messageHandler.querySessions(List.of(contactJid), true);
+    }
+
+    protected void disableAppStateSync() {
+        appStateHandler.completeLatch();
     }
 }

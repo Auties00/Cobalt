@@ -5,7 +5,6 @@ import com.fasterxml.jackson.dataformat.smile.databind.SmileMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import it.auties.map.SimpleMapModule;
-import it.auties.protobuf.serializer.jackson.ProtobufMapper;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
@@ -18,22 +17,8 @@ import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_ENUMS_US
 import static java.lang.System.Logger.Level.ERROR;
 
 public interface JacksonProvider {
-    ProtobufMapper PROTOBUF = createProtobuf();
     ObjectMapper JSON = createJson();
     SmileMapper SMILE = createSmile();
-
-    private static ProtobufMapper createProtobuf() {
-        try {
-            return (ProtobufMapper) new ProtobufMapper().enable(FAIL_ON_EMPTY_BEANS)
-                    .disable(FAIL_ON_UNKNOWN_PROPERTIES)
-                    .registerModule(new Jdk8Module())
-                    .registerModule(new SimpleMapModule());
-        } catch (Throwable throwable) {
-            var logger = System.getLogger("JacksonProvider");
-            logger.log(ERROR, "An exception occurred while initializing protobuf", throwable);
-            throw new RuntimeException("Cannot initialize protobuf", throwable);
-        }
-    }
 
     private static ObjectMapper createJson() {
         try {

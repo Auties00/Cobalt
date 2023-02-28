@@ -787,7 +787,7 @@ public class RunCITest implements Listener, JacksonProvider {
                 .title("A nice title")
                 .description("A nice description")
                 .footer("A nice footer")
-                .type(ListMessage.Type.SINGLE_SELECT)
+                .listType(ListMessage.Type.SINGLE_SELECT)
                 .build();
         api.sendMessage(contact, listMessage).join();
         log("Sent list message");

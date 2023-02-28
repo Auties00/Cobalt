@@ -12,7 +12,6 @@ import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -240,16 +239,6 @@ public final class HydratedFourRowTemplate implements TemplateFormatter {
         @JsonCreator
         public static TitleType of(int index) {
             return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(TitleType.NONE);
-        }
-    }
-
-    public static class HydratedFourRowTemplateBuilder {
-        public HydratedFourRowTemplateBuilder buttons(List<HydratedTemplateButton> hydratedButtons) {
-            if (this.buttons == null) {
-                this.buttons = new ArrayList<>();
-            }
-            this.buttons.addAll(hydratedButtons);
-            return this;
         }
     }
 }

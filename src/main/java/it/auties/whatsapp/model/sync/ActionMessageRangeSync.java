@@ -13,7 +13,6 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -70,15 +69,5 @@ public class ActionMessageRangeSync implements ProtobufMessage {
 
     public List<SyncActionMessage> messages() {
         return Collections.unmodifiableList(messages == null ? List.of() : messages);
-    }
-
-    public static class ActionMessageRangeSyncBuilder {
-        public ActionMessageRangeSyncBuilder messages(List<SyncActionMessage> messages) {
-            if (this.messages == null) {
-                this.messages = new ArrayList<>();
-            }
-            this.messages.addAll(messages);
-            return this;
-        }
     }
 }

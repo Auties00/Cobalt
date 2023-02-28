@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.model;
 
+import it.auties.protobuf.base.ProtobufConverter;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
@@ -840,5 +841,44 @@ public class MessageContainer implements ProtobufMessage {
     @Override
     public String toString() {
         return Objects.toString(content());
+    }
+
+    @ProtobufConverter
+    public ReadOnlyMessageContainer toReadOnlyContainer(){
+        return new ReadOnlyMessageContainer(textWithNoContext, senderKeyDistribution, image, contact, location,
+                text, document, audio, video, call, protocol, contactsArray, highlyStructured, sendPayment,
+                liveLocation, requestPayment, declinePaymentRequest, cancelPaymentRequest, template, sticker,
+                groupInvite, templateReply, product, deviceSent, deviceSync, list, viewOnce, order, listResponse,
+                ephemeral, invoice, buttons, buttonsResponse, paymentInvite, interactive, reaction, stickerSync,
+                interactiveResponse, pollCreation, pollUpdate, keepInChat, documentWithCaption, requestPhoneNumber,
+                viewOnceV2, encryptedReaction, edited, viewOnceV2Extension, deviceInfo);
+    }
+
+    public record ReadOnlyMessageContainer(String textWithNoContext, SenderKeyDistributionMessage senderKeyDistribution,
+                                           ImageMessage image, ContactMessage contact, LocationMessage location,
+                                           TextMessage text, DocumentMessage document, AudioMessage audio,
+                                           VideoMessage video, CallInfo call, ProtocolMessage protocol,
+                                           ContactsArrayMessage contactsArray, HighlyStructuredMessage highlyStructured,
+                                           SendPaymentMessage sendPayment, LiveLocationMessage liveLocation,
+                                           RequestPaymentMessage requestPayment,
+                                           DeclinePaymentRequestMessage declinePaymentRequest,
+                                           CancelPaymentRequestMessage cancelPaymentRequest, TemplateMessage template,
+                                           StickerMessage sticker, GroupInviteMessage groupInvite,
+                                           TemplateReplyMessage templateReply, ProductMessage product,
+                                           DeviceSentMessage deviceSent, DeviceSyncMessage deviceSync, ListMessage list,
+                                           FutureMessageContainer viewOnce, PaymentOrderMessage order,
+                                           ListResponseMessage listResponse, FutureMessageContainer ephemeral,
+                                           PaymentInvoiceMessage invoice, ButtonsMessage buttons,
+                                           ButtonsResponseMessage buttonsResponse, PaymentInviteMessage paymentInvite,
+                                           InteractiveMessage interactive, ReactionMessage reaction,
+                                           StickerSyncRMRMessage stickerSync,
+                                           InteractiveResponseMessage interactiveResponse,
+                                           PollCreationMessage pollCreation, PollUpdateMessage pollUpdate,
+                                           KeepInChatMessage keepInChat, FutureMessageContainer documentWithCaption,
+                                           RequestPhoneNumberMessage requestPhoneNumber,
+                                           FutureMessageContainer viewOnceV2,
+                                           EncryptedReactionMessage encryptedReaction, FutureMessageContainer edited,
+                                           FutureMessageContainer viewOnceV2Extension, DeviceContextInfo deviceInfo) {
+
     }
 }

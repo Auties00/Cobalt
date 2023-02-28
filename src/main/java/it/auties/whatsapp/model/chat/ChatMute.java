@@ -1,6 +1,8 @@
 package it.auties.whatsapp.model.chat;
 
+import it.auties.protobuf.base.ProtobufConverter;
 import it.auties.protobuf.base.ProtobufMessage;
+import it.auties.protobuf.serialization.exception.ProtobufDeserializationException;
 import it.auties.whatsapp.util.Clock;
 
 import java.time.Instant;
@@ -61,6 +63,15 @@ public record ChatMute(long endTimeStamp) implements ProtobufMessage {
         return muted(ZonedDateTime.now().plusHours(8).toEpochSecond());
     }
 
+    @ProtobufConverter
+    public static ChatMute parse(Object object){
+        if(!(object instanceof Long seconds)){
+            throw new ProtobufDeserializationException("Cannot read mute: invalid input");
+        }
+
+        return muted(seconds);
+    }
+
     /**
      * Constructs a new mute for a duration in endTimeStamp
      *
@@ -119,13 +130,8 @@ public record ChatMute(long endTimeStamp) implements ProtobufMessage {
         return Clock.parseSeconds(endTimeStamp);
     }
 
-    @Override
-    public boolean isValueBased() {
-        return true;
-    }
-
-    @Override
-    public Object toValue() {
+    @ProtobufConverter
+    public long endTimeStamp() {
         return endTimeStamp;
     }
 

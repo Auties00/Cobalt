@@ -60,14 +60,4 @@ public final class QuickReplyAction implements Action {
     public String indexName() {
         return "quick_reply";
     }
-
-    public static class QuickReplyActionBuilder {
-        public QuickReplyActionBuilder keywords(List<String> keywords) {
-            if (this.keywords == null) {
-                this.keywords = new ArrayList<>();
-            }
-            this.keywords.addAll(keywords);
-            return this;
-        }
-    }
 }

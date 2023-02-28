@@ -29,16 +29,4 @@ public class PollUpdateEncryptedOptions implements ProtobufMessage {
     @ProtobufProperty(implementation = byte[].class, index = 1, name = "selectedOptions", repeated = true, type = BYTES)
     @Default
     private List<byte[]> selectedOptions = new ArrayList<>();
-
-    public static class PollUpdateEncryptedOptionsBuilder {
-        public PollUpdateEncryptedOptionsBuilder selectedOptions(List<byte[]> selectedOptions) {
-            if (!selectedOptions$set) {
-                this.selectedOptions$value = selectedOptions;
-                this.selectedOptions$set = true;
-                return this;
-            }
-            this.selectedOptions$value.addAll(selectedOptions);
-            return this;
-        }
-    }
 }

@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.signal.message;
 
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.serialization.performance.Protobuf;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.Specification;
 import lombok.*;
@@ -51,19 +52,17 @@ public final class SignalDistributionMessage implements SignalProtocolMessage {
      */
     private byte[] serialized;
 
-    @SneakyThrows
     public SignalDistributionMessage(int id, int iteration, byte @NonNull [] chainKey, byte @NonNull [] signingKey) {
         this.version = Specification.Signal.CURRENT_VERSION;
         this.id = id;
         this.iteration = iteration;
         this.chainKey = chainKey;
         this.signingKey = signingKey;
-        this.serialized = Bytes.of(serializedVersion()).append(PROTOBUF.writeValueAsBytes(this)).toByteArray();
+        this.serialized = Bytes.of(serializedVersion()).append(Protobuf.writeMessage(this)).toByteArray();
     }
 
-    @SneakyThrows
     public static SignalDistributionMessage ofSerialized(byte[] serialized) {
-        return PROTOBUF.readMessage(Bytes.of(serialized).slice(1).toByteArray(), SignalDistributionMessage.class)
+        return Protobuf.readMessage(Bytes.of(serialized).slice(1).toByteArray(), SignalDistributionMessage.class)
                 .version(BytesHelper.bytesToVersion(serialized[0]))
                 .serialized(serialized);
     }

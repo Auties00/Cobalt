@@ -9,7 +9,6 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
@@ -23,14 +22,4 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 public class MutationsSync implements ProtobufMessage {
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = MutationSync.class, repeated = true)
     private List<MutationSync> mutations;
-
-    public static class MutationsSyncBuilder {
-        public MutationsSyncBuilder mutations(List<MutationSync> mutations) {
-            if (this.mutations == null) {
-                this.mutations = new ArrayList<>();
-            }
-            this.mutations.addAll(mutations);
-            return this;
-        }
-    }
 }

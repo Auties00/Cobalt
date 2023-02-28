@@ -1,6 +1,7 @@
 package it.auties.whatsapp.socket;
 
 import it.auties.bytes.Bytes;
+import it.auties.protobuf.serialization.performance.Protobuf;
 import it.auties.whatsapp.binary.PatchType;
 import it.auties.whatsapp.crypto.AesCbc;
 import it.auties.whatsapp.crypto.Hmac;
@@ -19,10 +20,7 @@ import it.auties.whatsapp.model.setting.UnarchiveChatsSetting;
 import it.auties.whatsapp.model.sync.*;
 import it.auties.whatsapp.util.*;
 import lombok.NonNull;
-import lombok.SneakyThrows;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -71,7 +69,7 @@ class AppStateHandler extends Handler implements JacksonProvider {
                     .padding(new byte[0])
                     .version(patch.version())
                     .build();
-            var encoded = PROTOBUF.writeValueAsBytes(actionData);
+            var encoded = Protobuf.writeMessage(actionData);
             var mutationKeys = MutationKeys.of(key.keyData().keyData());
             var encrypted = AesCbc.encryptAndPrefix(encoded, mutationKeys.encKey());
             var valueMac = generateMac(patch.operation(), encrypted, key.keyId().keyId(), mutationKeys.macKey());
@@ -105,17 +103,13 @@ class AppStateHandler extends Handler implements JacksonProvider {
     }
 
     private CompletableFuture<Void> sendPush(PushRequest request) {
-        try {
-            var body = ofChildren("collection", of("name", request.patch().type(), "version", request.newState()
-                    .version() - 1, "return_snapshot", false), Node.of("patch", PROTOBUF.writeValueAsBytes(request.sync())));
-            return socketHandler.sendQuery("set", "w:sync:app:state", Node.ofChildren("sync", body))
-                    .thenAcceptAsync(this::parseSyncRequest)
-                    .thenRunAsync(() -> socketHandler.keys().putState(request.patch().type(), request.newState()))
-                    .thenRunAsync(() -> handleSyncRequest(request.patch()
-                            .type(), request.sync(), request.oldState(), request.newState().version()));
-        } catch (Throwable throwable) {
-            throw new RuntimeException("Cannot push patch", throwable);
-        }
+        var body = ofChildren("collection", of("name", request.patch().type(), "version", request.newState().version() - 1, "return_snapshot", false),
+                Node.of("patch", Protobuf.writeMessage(request.sync())));
+        return socketHandler.sendQuery("set", "w:sync:app:state", Node.ofChildren("sync", body))
+                .thenAcceptAsync(this::parseSyncRequest)
+                .thenRunAsync(() -> socketHandler.keys().putState(request.patch().type(), request.newState()))
+                .thenRunAsync(() -> handleSyncRequest(request.patch()
+                        .type(), request.sync(), request.oldState(), request.newState().version()));
     }
 
     private void handleSyncRequest(PatchType patchType, PatchSync patch, LTHashState oldState, long newVersion) {
@@ -273,39 +267,29 @@ class AppStateHandler extends Handler implements JacksonProvider {
     }
 
     private Optional<SnapshotSync> decodeSnapshot(Node snapshot) {
-        try {
-            if (snapshot == null) {
-                return Optional.empty();
-            }
-            var bytes = snapshot.contentAsBytes();
-            if (bytes.isEmpty()) {
-                return Optional.empty();
-            }
-            var blob = PROTOBUF.readMessage(bytes.get(), ExternalBlobReference.class);
-            var syncedData = Medias.download(blob).join();
-            if (syncedData.isEmpty()) {
-                return Optional.empty();
-            }
-            return Optional.of(PROTOBUF.readMessage(syncedData.get(), SnapshotSync.class));
-        } catch (IOException exception) {
+        if (snapshot == null) {
             return Optional.empty();
         }
+        var bytes = snapshot.contentAsBytes();
+        if (bytes.isEmpty()) {
+            return Optional.empty();
+        }
+        var blob = Protobuf.readMessage(bytes.get(), ExternalBlobReference.class);
+        return Medias.download(blob)
+                .join()
+                .map(value -> Protobuf.readMessage(value, SnapshotSync.class));
     }
 
     private Optional<PatchSync> decodePatch(Node patch, long versionCode) {
-        try {
-            if (!patch.hasContent()) {
-                return Optional.empty();
-            }
-            var patchSync = PROTOBUF.readMessage(patch.contentAsBytes().orElseThrow(), PatchSync.class);
-            if (!patchSync.hasVersion()) {
-                var version = new VersionSync(versionCode + 1);
-                patchSync.version(version);
-            }
-            return Optional.of(patchSync);
-        } catch (IOException exception) {
+        if (!patch.hasContent()) {
             return Optional.empty();
         }
+        var patchSync = Protobuf.readMessage(patch.contentAsBytes().orElseThrow(), PatchSync.class);
+        if (!patchSync.hasVersion()) {
+            var version = new VersionSync(versionCode + 1);
+            patchSync.version(version);
+        }
+        return Optional.of(patchSync);
     }
 
     private void processActions(ActionDataSync mutation) {
@@ -439,12 +423,8 @@ class AppStateHandler extends Handler implements JacksonProvider {
     }
 
     private void handleExternalMutation(PatchSync patch, byte[] blob) {
-        try {
-            var mutationsSync = PROTOBUF.readMessage(blob, MutationsSync.class);
-            patch.mutations().addAll(mutationsSync.mutations());
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Cannot read mutation sync", exception);
-        }
+        var mutationsSync = Protobuf.readMessage(blob, MutationsSync.class);
+        patch.mutations().addAll(mutationsSync.mutations());
     }
 
     private Optional<byte[]> generatePatchMac(PatchType name, LTHashState newState, PatchSync patch) {
@@ -496,7 +476,6 @@ class AppStateHandler extends Handler implements JacksonProvider {
         return new MutationsRecord(generator.finish(), mutations);
     }
 
-    @SneakyThrows
     private Optional<ActionDataSync> decodeMutation(RecordSync.Operation operation, RecordSync sync, LTHash generator) {
         var mutationKeys = getMutationKeys(sync.keyId());
         if (mutationKeys.isEmpty()) {
@@ -508,7 +487,7 @@ class AppStateHandler extends Handler implements JacksonProvider {
         Validate.isTrue(Arrays.equals(encryptedMac, generateMac(operation, encryptedBlob, sync.keyId()
                 .id(), mutationKeys.get().macKey())), "decode_mutation", HmacValidationException.class);
         var result = AesCbc.decrypt(encryptedBlob, mutationKeys.get().encKey());
-        var actionSync = PROTOBUF.readMessage(result, ActionDataSync.class);
+        var actionSync = Protobuf.readMessage(result, ActionDataSync.class);
         Validate.isTrue(Arrays.equals(sync.index().blob(), Hmac.calculateSha256(actionSync.index(), mutationKeys.get()
                 .indexKey())), "decode_mutation", HmacValidationException.class);
         generator.mix(sync.index().blob(), encryptedMac, operation);

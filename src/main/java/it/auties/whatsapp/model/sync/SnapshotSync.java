@@ -9,7 +9,6 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static it.auties.protobuf.base.ProtobufType.BYTES;
@@ -33,14 +32,4 @@ public class SnapshotSync implements ProtobufMessage {
 
     @ProtobufProperty(index = 4, type = MESSAGE, implementation = KeyId.class)
     private KeyId keyId;
-
-    public static class SnapshotSyncBuilder {
-        public SnapshotSyncBuilder records(List<RecordSync> records) {
-            if (this.records == null) {
-                this.records = new ArrayList<>();
-            }
-            this.records.addAll(records);
-            return this;
-        }
-    }
 }

@@ -11,7 +11,6 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -71,16 +70,6 @@ public class InteractiveLocationAnnotation implements ProtobufMessage {
         @JsonCreator
         public static Action of(int index) {
             return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(Action.UNKNOWN);
-        }
-    }
-
-    public static class InteractiveLocationAnnotationBuilder {
-        public InteractiveLocationAnnotationBuilder polygonVertices(List<Point> polygonVertices) {
-            if (this.polygonVertices == null) {
-                this.polygonVertices = new ArrayList<>();
-            }
-            this.polygonVertices.addAll(polygonVertices);
-            return this;
         }
     }
 }

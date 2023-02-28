@@ -5,6 +5,7 @@ import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.Clock;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.Accessors;
@@ -21,6 +22,7 @@ import static it.auties.whatsapp.model.chat.GroupSetting.SEND_MESSAGES;
 @AllArgsConstructor
 @Value
 @Accessors(fluent = true)
+@Builder
 public class GroupMetadata implements ProtobufMessage {
     /**
      * The jid of the group

@@ -40,14 +40,4 @@ public final class BusinessNativeFlow implements ProtobufMessage {
      */
     @ProtobufProperty(index = 3, type = INT32)
     private int version;
-
-    public static class BusinessNativeFlowBuilder {
-        public BusinessNativeFlowBuilder buttons(List<NativeFlowButton> buttons) {
-            if (this.buttons == null) {
-                this.buttons = new ArrayList<>();
-            }
-            this.buttons.addAll(buttons);
-            return this;
-        }
-    }
 }

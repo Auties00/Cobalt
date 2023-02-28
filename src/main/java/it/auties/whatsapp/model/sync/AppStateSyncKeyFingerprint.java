@@ -8,7 +8,6 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static it.auties.protobuf.base.ProtobufType.UINT32;
@@ -27,14 +26,4 @@ public class AppStateSyncKeyFingerprint implements ProtobufMessage {
 
     @ProtobufProperty(index = 3, type = UINT32, repeated = true, packed = true)
     private List<Integer> deviceIndexes;
-
-    public static class AppStateSyncKeyFingerprintBuilder {
-        public AppStateSyncKeyFingerprintBuilder deviceIndexes(List<Integer> deviceIndexes) {
-            if (this.deviceIndexes == null) {
-                this.deviceIndexes = new ArrayList<>();
-            }
-            this.deviceIndexes.addAll(deviceIndexes);
-            return this;
-        }
-    }
 }

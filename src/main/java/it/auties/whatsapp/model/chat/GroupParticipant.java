@@ -4,6 +4,7 @@ import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.request.Node;
+import lombok.Builder;
 import lombok.NonNull;
 
 import java.util.NoSuchElementException;
@@ -18,6 +19,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
  * @param jid  the non-null jid of the participant
  * @param role non-null role of the participant
  */
+@Builder
 public record GroupParticipant(
         @ProtobufProperty(index = 1, type = STRING, name = "userJid", implementation = ContactJid.class) @NonNull ContactJid jid,
         @ProtobufProperty(index = 2, type = MESSAGE, name = "rank") GroupRole role) implements ProtobufMessage {

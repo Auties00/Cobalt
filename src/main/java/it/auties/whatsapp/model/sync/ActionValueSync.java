@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.sync;
 
+import it.auties.protobuf.base.ProtobufConverter;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
@@ -10,7 +11,6 @@ import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static it.auties.protobuf.base.ProtobufType.*;
@@ -299,6 +299,34 @@ public class ActionValueSync implements ProtobufMessage {
     }
     //</editor-fold>
 
+    @ProtobufConverter
+    public ReadOnlyActionValueSync toReadOnlyValue(){
+        return new ReadOnlyActionValueSync(timestamp, starAction, contactAction, muteAction, pinAction, quickReplyAction,
+                recentStickerWeightsAction, recentEmojiWeightsAction, labelEditAction, labelAssociationAction,
+                archiveChatAction, deleteMessageForMeAction, markChatAsReadAction, clearChatAction, deleteChatAction,
+                favoriteStickerAction, androidUnsupportedActions, agentAction, subscriptionAction, userStatusMuteAction,
+                timeFormatAction, nuxAction, primaryVersionAction, stickerAction, removeRecentStickerAction, chatAssignmentAction,
+                chatAssignmentOpenedStatusAction, securityNotificationSetting, pushNameSetting, localeSetting, unarchiveChatsSetting,
+                recentStickerMetadata, keyExpiration, primaryFeature);
+    }
+
+    public record ReadOnlyActionValueSync(long timestamp, StarAction starAction, ContactAction contactAction, MuteAction muteAction, PinAction pinAction, QuickReplyAction quickReplyAction,
+                                          RecentStickerWeightsAction recentStickerWeightsAction,
+                                          RecentEmojiWeightsAction recentEmojiWeightsAction, LabelEditAction labelEditAction,
+                                          LabelAssociationAction labelAssociationAction, ArchiveChatAction archiveChatAction,
+                                          DeleteMessageForMeAction deleteMessageForMeAction, MarkChatAsReadAction markChatAsReadAction, ClearChatAction clearChatAction,
+                                          DeleteChatAction deleteChatAction, FavoriteStickerAction favoriteStickerAction,
+                                          AndroidUnsupportedActions androidUnsupportedActions, AgentAction agentAction,
+                                          SubscriptionAction subscriptionAction, UserStatusMuteAction userStatusMuteAction, TimeFormatAction timeFormatAction,
+                                          NuxAction nuxAction, PrimaryVersionAction primaryVersionAction, StickerAction stickerAction,
+                                          RemoveRecentStickerAction removeRecentStickerAction, ChatAssignmentAction chatAssignmentAction,
+                                          ChatAssignmentOpenedStatusAction chatAssignmentOpenedStatusAction,
+                                          SecurityNotificationSetting securityNotificationSetting, PushNameSetting pushNameSetting, LocaleSetting localeSetting,
+                                          UnarchiveChatsSetting unarchiveChatsSetting, RecentStickerMetadata recentStickerMetadata, KeyExpiration keyExpiration,
+                                          PrimaryFeature primaryFeature) {
+
+    }
+
     //<editor-fold desc="Members">
     @AllArgsConstructor
     @NoArgsConstructor
@@ -309,16 +337,6 @@ public class ActionValueSync implements ProtobufMessage {
     public static class PrimaryFeature implements ProtobufMessage {
         @ProtobufProperty(index = 1, type = STRING, repeated = true)
         private List<String> flags;
-
-        public static class PrimaryFeatureBuilder {
-            public PrimaryFeatureBuilder flags(List<String> flags) {
-                if (this.flags == null) {
-                    this.flags = new ArrayList<>();
-                }
-                this.flags.addAll(flags);
-                return this;
-            }
-        }
     }
     //</editor-fold>
 }

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import it.auties.protobuf.base.ProtobufConverter;
 import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.serializer.exception.ProtobufSerializationException;
+import it.auties.protobuf.serialization.exception.ProtobufSerializationException;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -121,6 +121,12 @@ public record ContactJid(String user, @NonNull Server server, int device,
         throw new ProtobufSerializationException(input.toString());
     }
 
+    @ProtobufConverter
+    @SuppressWarnings("unused")
+    public Object toValue() {
+        return toString();
+    }
+
     /**
      * Constructs a new ContactId for a user from a jid
      *
@@ -199,16 +205,6 @@ public record ContactJid(String user, @NonNull Server server, int device,
      */
     public String toPhoneNumber() {
         return "+%s".formatted(user);
-    }
-
-    @Override
-    public boolean isValueBased() {
-        return true;
-    }
-
-    @Override
-    public Object toValue() {
-        return toString();
     }
 
     /**

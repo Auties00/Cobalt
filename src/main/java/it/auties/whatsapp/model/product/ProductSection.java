@@ -8,7 +8,6 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
@@ -25,14 +24,4 @@ public class ProductSection implements ProtobufMessage {
 
     @ProtobufProperty(index = 2, type = MESSAGE, implementation = Product.class, repeated = true)
     private List<Product> products;
-
-    public static class ProductSectionBuilder {
-        public ProductSectionBuilder products(List<Product> products) {
-            if (this.products == null) {
-                this.products = new ArrayList<>();
-            }
-            this.products.addAll(products);
-            return this;
-        }
-    }
 }

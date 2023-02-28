@@ -18,7 +18,6 @@ import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -268,16 +267,6 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
                     .filter(entry -> entry.index() == index)
                     .findFirst()
                     .orElse(HeaderType.UNKNOWN);
-        }
-    }
-
-    public static class ButtonsMessageBuilder {
-        public ButtonsMessageBuilder buttons(List<Button> buttons) {
-            if (this.buttons == null) {
-                this.buttons = new ArrayList<>();
-            }
-            this.buttons.addAll(buttons);
-            return this;
         }
     }
 }

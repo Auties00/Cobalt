@@ -2,6 +2,7 @@ package it.auties.whatsapp.model.signal.message;
 
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.protobuf.serialization.performance.Protobuf;
 import it.auties.whatsapp.util.BytesHelper;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -38,22 +39,20 @@ public final class SignalMessage implements SignalProtocolMessage {
 
     private byte[] serialized;
 
-    @SneakyThrows
     public SignalMessage(byte @NonNull [] ephemeralPublicKey, int counter, int previousCounter, byte @NonNull [] ciphertext, Function<byte[], byte[]> signer) {
         this.version = CURRENT_VERSION;
         this.ephemeralPublicKey = ephemeralPublicKey;
         this.counter = counter;
         this.previousCounter = previousCounter;
         this.ciphertext = ciphertext;
-        var encodedMessage = Bytes.of(serializedVersion()).append(PROTOBUF.writeValueAsBytes(this));
+        var encodedMessage = Bytes.of(serializedVersion()).append(Protobuf.writeMessage(this));
         this.signature = signer.apply(encodedMessage.toByteArray());
         this.serialized = encodedMessage.append(signature).toByteArray();
     }
 
-    @SneakyThrows
     public static SignalMessage ofSerialized(byte[] serialized) {
         var buffer = Bytes.of(serialized);
-        return PROTOBUF.readMessage(buffer.slice(1, -MAC_LENGTH).toByteArray(), SignalMessage.class)
+        return Protobuf.readMessage(buffer.slice(1, -MAC_LENGTH).toByteArray(), SignalMessage.class)
                 .version(BytesHelper.bytesToVersion(serialized[0]))
                 .signature(buffer.slice(-MAC_LENGTH).toByteArray())
                 .serialized(serialized);

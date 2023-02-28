@@ -1,6 +1,7 @@
 package it.auties.whatsapp.util;
 
 import it.auties.bytes.Bytes;
+import it.auties.protobuf.serialization.performance.Protobuf;
 import it.auties.whatsapp.model.message.model.Message;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import lombok.SneakyThrows;
@@ -42,13 +43,13 @@ public class BytesHelper implements JacksonProvider {
     public byte[] messageToBytes(MessageContainer container) {
         var padRandomByte = KeyHelper.header();
         var padding = Bytes.newBuffer(padRandomByte).fill((byte) padRandomByte).toByteArray();
-        return Bytes.of(PROTOBUF.writeValueAsBytes(container)).append(padding).toByteArray();
+        return Bytes.of(Protobuf.writeMessage(container)).append(padding).toByteArray();
     }
 
     @SneakyThrows
     public MessageContainer bytesToMessage(byte[] bytes) {
         var message = Bytes.of(bytes).cut(-bytes[bytes.length - 1]).toByteArray();
-        return PROTOBUF.readMessage(message, MessageContainer.class);
+        return Protobuf.readMessage(message, MessageContainer.class);
     }
 
     public byte[] longToBytes(long number) {
