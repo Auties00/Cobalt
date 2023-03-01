@@ -17,7 +17,6 @@ import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -264,16 +263,6 @@ public final class VideoMessage extends MediaMessage {
         @JsonCreator
         public static VideoMessageAttribution of(int index) {
             return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(null);
-        }
-    }
-
-    public abstract static class VideoMessageBuilder<C extends VideoMessage, B extends VideoMessageBuilder<C, B>> extends MediaMessageBuilder<C, B> {
-        public B interactiveAnnotations(List<InteractiveLocationAnnotation> interactiveAnnotations) {
-            if (this.interactiveAnnotations == null) {
-                this.interactiveAnnotations = new ArrayList<>();
-            }
-            this.interactiveAnnotations.addAll(interactiveAnnotations);
-            return self();
         }
     }
 }

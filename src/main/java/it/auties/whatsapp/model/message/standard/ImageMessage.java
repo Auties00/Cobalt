@@ -14,7 +14,6 @@ import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -206,23 +205,5 @@ public final class ImageMessage extends MediaMessage {
     @Override
     public MediaMessageType mediaType() {
         return MediaMessageType.IMAGE;
-    }
-
-    public abstract static class ImageMessageBuilder<C extends ImageMessage, B extends ImageMessageBuilder<C, B>> extends MediaMessageBuilder<C, B> {
-        public B interactiveAnnotations(List<InteractiveLocationAnnotation> interactiveAnnotations) {
-            if (this.interactiveAnnotations == null) {
-                this.interactiveAnnotations = new ArrayList<>();
-            }
-            this.interactiveAnnotations.addAll(interactiveAnnotations);
-            return self();
-        }
-
-        public B scanLengths(List<Integer> scanLengths) {
-            if (this.scanLengths == null) {
-                this.scanLengths = new ArrayList<>();
-            }
-            this.scanLengths.addAll(scanLengths);
-            return self();
-        }
     }
 }

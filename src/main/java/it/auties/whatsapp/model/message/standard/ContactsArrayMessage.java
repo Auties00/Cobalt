@@ -12,7 +12,6 @@ import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
@@ -49,15 +48,5 @@ public final class ContactsArrayMessage extends ContextualMessage {
     @Override
     public MessageCategory category() {
         return MessageCategory.STANDARD;
-    }
-
-    public abstract static class ContactsArrayMessageBuilder<C extends ContactsArrayMessage, B extends ContactsArrayMessageBuilder<C, B>> extends ContextualMessageBuilder<C, B> {
-        public B contacts(List<ContactMessage> contacts) {
-            if (this.contacts == null) {
-                this.contacts = new ArrayList<>();
-            }
-            this.contacts.addAll(contacts);
-            return self();
-        }
     }
 }
