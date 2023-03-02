@@ -23,9 +23,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
  * A container for unique identifiers and metadata linked to a {@link Message} and contained in
  * {@link MessageInfo}.
  */
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-@RequiredArgsConstructor
-@NoArgsConstructor
+@AllArgsConstructor
 @Data
 @Accessors(fluent = true)
 @Jacksonized

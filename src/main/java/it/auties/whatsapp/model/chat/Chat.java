@@ -828,7 +828,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
             return this;
         }
 
-        @JsonSetter
+        @JsonSetter("messages")
         public ChatBuilder decodedMessages(@NonNull ConcurrentLinkedDeque<MessageInfo> messages) {
             this.messages$value = messages;
             this.messages$set = true;

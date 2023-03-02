@@ -24,8 +24,7 @@ public class Validate {
         try {
             var result = throwable.getConstructor(String.class).newInstance(formattedMessage);
             var stackTrace = Arrays.stream(result.getStackTrace())
-                    .filter(entry -> !entry.getClassName().equals(Validate.class.getName()) && !entry.getClassName()
-                            .equals(Constructor.class.getName()))
+                    .filter(entry -> !entry.getClassName().equals(Validate.class.getName()) && !entry.getClassName().equals(Constructor.class.getName()))
                     .toArray(StackTraceElement[]::new);
             result.setStackTrace(stackTrace);
             return result;
