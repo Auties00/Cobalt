@@ -32,7 +32,7 @@ public class AesGmc {
             cipher.doFinal(output, outputOffset);
             return output;
         } catch (InvalidCipherTextException exception) {
-            throw new RuntimeException("Cannot %s data using AesGMC".formatted(encrypt ? "encrypt" : "decrypt"), exception);
+            throw new RuntimeException("Cannot %s data using AesGMC: %s".formatted(encrypt ? "encrypt" : "decrypt", Bytes.of(input).toHex()), exception);
         }
     }
 
