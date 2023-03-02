@@ -123,12 +123,15 @@ class MessageHandler extends Handler implements JacksonProvider {
     }
 
     private CompletableFuture<Node> encodeConversation(MessageSendRequest request) {
+        var sender = socketHandler.store().userCompanionJid();
+        if(sender == null){
+            return CompletableFuture.failedFuture(new IllegalStateException("Cannot create message"));
+        }
+
         var encodedMessage = BytesHelper.messageToBytes(request.info().message());
         var deviceMessage = DeviceSentMessage.of(request.info().chatJid().toString(), request.info().message(), null);
         var encodedDeviceMessage = BytesHelper.messageToBytes(deviceMessage);
-        var knownDevices = request.hasSenderOverride() ? List.of(request.overrideSender()) : List.of(socketHandler.store()
-                .userCompanionJid()
-                .toUserJid(), request.info().chatJid());
+        var knownDevices = request.hasSenderOverride() ? List.of(request.overrideSender()) : List.of(sender.toUserJid(), request.info().chatJid());
         return getDevices(knownDevices, true, request.force()).thenComposeAsync(allDevices -> createConversationNodes(allDevices, encodedMessage, encodedDeviceMessage, request.force()))
                 .thenApplyAsync(sessions -> createEncodedMessageNode(request.info(), sessions, null, request.additionalAttributes()))
                 .thenComposeAsync(socketHandler::send);

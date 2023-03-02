@@ -49,7 +49,7 @@ public class PatchSync implements ProtobufMessage {
     @ProtobufProperty(index = 8, type = UINT32)
     private Integer deviceIndex;
 
-    public long version() {
+    public long encodedVersion() {
         return hasVersion() ? version.version() : 0L;
     }
 

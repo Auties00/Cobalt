@@ -411,7 +411,7 @@ class AppStateHandler extends Handler implements JacksonProvider {
             Medias.download(patch.externalMutations()).join().ifPresent(blob -> handleExternalMutation(patch, blob));
         }
 
-        newState.version(patch.version());
+        newState.version(patch.encodedVersion());
         var syncMac = calculateSyncMac(patch, patchType);
         Validate.isTrue(syncMac.isEmpty() || Arrays.equals(syncMac.get(), patch.patchMac()), "sync_mac", HmacValidationException.class);
         var mutations = decodeMutations(patch.mutations(), newState);
@@ -432,7 +432,7 @@ class AppStateHandler extends Handler implements JacksonProvider {
     }
 
     private Optional<byte[]> calculateSyncMac(PatchSync patch, PatchType patchType) {
-        return getMutationKeys(patch.keyId()).map(mutationKeys -> generatePatchMac(patch.snapshotMac(), getSyncMutationMac(patch), patch.version(), patchType, mutationKeys.patchMacKey()));
+        return getMutationKeys(patch.keyId()).map(mutationKeys -> generatePatchMac(patch.snapshotMac(), getSyncMutationMac(patch), patch.encodedVersion(), patchType, mutationKeys.patchMacKey()));
     }
 
     private byte[] getSyncMutationMac(PatchSync patch) {
