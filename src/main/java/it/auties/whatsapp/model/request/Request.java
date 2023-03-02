@@ -91,8 +91,9 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
                 .appendShort(65535 & ciphered.length)
                 .append(ciphered)
                 .toByteArray();
-        store.addRequest(this);
-        session.sendBinary(buffer).thenRunAsync(() -> onSendSuccess(response)).exceptionallyAsync(this::onSendError);
+        session.sendBinary(buffer)
+                .thenRunAsync(() -> onSendSuccess(store, response))
+                .exceptionallyAsync(this::onSendError);
         return future;
     }
 
@@ -113,10 +114,12 @@ public record Request(String id, @NonNull Object body, @NonNull CompletableFutur
         return AesGmc.encrypt(keys.writeCounter(true), body, keys.writeKey().toByteArray());
     }
 
-    private void onSendSuccess(boolean response) {
+    private void onSendSuccess(Store store, boolean response) {
+        store.addRequest(this);
         if (response) {
             return;
         }
+
         future.complete(null);
     }
 

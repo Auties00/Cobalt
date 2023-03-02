@@ -15,9 +15,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -26,6 +24,7 @@ import static it.auties.whatsapp.util.Specification.Whatsapp.*;
 
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public abstract sealed class SocketSession permits WebSocketSession, AppSocketSession {
+    protected UUID uuid;
     protected SocketListener listener;
     protected boolean closed;
 
@@ -37,6 +36,7 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
     }
 
     public CompletableFuture<Void> connect(SocketListener listener) {
+        this.uuid = UUID.randomUUID();
         this.listener = listener;
         this.closed = false;
         return null;
@@ -92,13 +92,20 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
 
         @Override
         public CompletableFuture<Void> sendBinary(byte[] bytes) {
+            var currentUuid = this.uuid;
             var future = new CompletableFuture<Void>();
             try {
                 session.getAsyncRemote().sendBinary(ByteBuffer.wrap(bytes), result -> {
+                    if(!Objects.equals(this.uuid, currentUuid)){
+                        future.completeExceptionally(new IllegalStateException("Cannot send request: session was closed"));
+                        return;
+                    }
+
                     if (result.isOK()) {
                         future.complete(null);
                         return;
                     }
+
                     future.completeExceptionally(result.getException());
                 });
             } catch (Throwable throwable) {

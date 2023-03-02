@@ -24,6 +24,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static it.auties.protobuf.base.ProtobufType.*;
@@ -773,11 +774,22 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
         return jid();
     }
 
+    /**
+     * Returns the hash code for this chat
+     *
+     * @return an int
+     */
     @Override
     public int hashCode() {
         return Objects.hash(jid());
     }
 
+    /**
+     * Returns the hash code for this chat using all fields.
+     * This is useful to check if two chats are exactly the same.
+     *
+     * @return an int
+     */
     public int fullHashCode() {
         int result = Objects.hash(jid, newJid, oldJid, timestampInSeconds, messages, unreadMessagesCount, readOnly, endOfHistoryTransfer, ephemeralMessageDuration, ephemeralMessagesToggleTime, endOfHistoryTransferType, name, notSpam, archived, disappearInitiator, markedAsUnread, participants, pastParticipants, tokenTimestamp, pinnedTimestampInSeconds, mute, wallpaper, mediaVisibility, tokenSenderTimestamp, suspended, terminated, createdAt, createdBy, description, support, parentGroup, defaultSubGroup, parentGroupJid, displayName, pnJid, shareOwnPn, pnhDuplicateLidThread, lidJid, presences, participantsPreKeys);
         result = 31 * result + Arrays.hashCode(token);
@@ -807,48 +819,19 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
         private final int index;
     }
 
-    @SuppressWarnings({"ConstantValue", "unused"})
     public static class ChatBuilder {
-        public ChatBuilder messages(ConcurrentLinkedDeque<MessageInfo> messages) {
-            if (this.messages$value == null) {
-                this.messages$value = new ConcurrentLinkedDeque<>();
-                this.messages$set = true;
-            }
-
-            return parseMessages(messages);
+        public ChatBuilder messages(ConcurrentLinkedDeque<HistorySyncMessage> messages) {
+            this.messages$value = messages.stream()
+                    .map(HistorySyncMessage::message)
+                    .collect(Collectors.toCollection(ConcurrentLinkedDeque::new));
+            this.messages$set = true;
+            return this;
         }
 
         @JsonSetter
-        public ChatBuilder messages(List<MessageInfo> messages) {
-            if (this.messages$value == null) {
-                this.messages$value = new ConcurrentLinkedDeque<>();
-                this.messages$set = true;
-            }
-
-            return parseMessages(messages);
-        }
-
-        private ChatBuilder parseMessages(Collection<MessageInfo> messages) {
-            // Kind of abusing the type system of java
-            // If the chat was received from Whatsapp, the actual type of the list is HistorySyncMessage, and it needs to be unwrapped
-            // Though if the message was stored locally it's actually a MessageInfo(unwrapped HistorySyncMessage)
-            // If the type of the messages parameter were to be Object though, Jackson wouldn't be able to deserialize it correctly(would be assumed as a toMap)
-            // So we need to specify the MessageInfo type so that jackson can use a base type if it's not sure of the content of the list
-            // And loop through the messages as if they were Objects because accessing it in any other way would yield a ClassCastException
-            // And loop through the messages as if they were Objects because accessing it in any other way would yield a ClassCastException
-            // I could switch to using a HistorySyncMessage List instead and return a List of MessageInfo through an accessor, but this is very costly as this list might be huge
-            // This looks to be the best approach
-            messages.forEach((Object entry) -> {
-                if (entry instanceof HistorySyncMessage historySyncMessage) {
-                    messages$value.addFirst(historySyncMessage.message());
-                    return;
-                }
-                if (entry instanceof MessageInfo messageInfo) {
-                    messages$value.addLast(messageInfo);
-                    return;
-                }
-                throw new IllegalArgumentException("Unexpected value: " + entry.getClass().getName());
-            });
+        public ChatBuilder decodedMessages(@NonNull ConcurrentLinkedDeque<MessageInfo> messages) {
+            this.messages$value = messages;
+            this.messages$set = true;
             return this;
         }
     }
