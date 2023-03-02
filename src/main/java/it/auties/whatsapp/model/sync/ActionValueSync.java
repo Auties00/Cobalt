@@ -22,13 +22,10 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Accessors(fluent = true)
 @ProtobufName("SyncActionValue")
 public class ActionValueSync implements ProtobufMessage {
-    // <editor-fold desc="Metadata">
     @ProtobufProperty(index = 1, type = INT64)
     @Getter
     private long timestamp;
-    //</editor-fold>
 
-    // <editor-fold desc="Actions">
     @ProtobufProperty(index = 2, type = MESSAGE, implementation = StarAction.class)
     private StarAction starAction;
 
@@ -106,9 +103,7 @@ public class ActionValueSync implements ProtobufMessage {
 
     @ProtobufProperty(index = 36, name = "chatAssignmentOpenedStatus", type = MESSAGE)
     private ChatAssignmentOpenedStatusAction chatAssignmentOpenedStatusAction;
-    // editor-fold>
 
-    // <editor-fold desc="Settings">
     @ProtobufProperty(index = 6, type = MESSAGE, implementation = SecurityNotificationSetting.class)
     private SecurityNotificationSetting securityNotificationSetting;
 
@@ -120,9 +115,7 @@ public class ActionValueSync implements ProtobufMessage {
 
     @ProtobufProperty(index = 23, type = MESSAGE, implementation = UnarchiveChatsSetting.class)
     private UnarchiveChatsSetting unarchiveChatsSetting;
-    //</editor-fold>
 
-    // <editor-fold desc="Misc">
     @ProtobufProperty(index = 10, type = MESSAGE, implementation = RecentStickerMetadata.class)
     @Getter
     private RecentStickerMetadata recentStickerMetadata;
@@ -134,9 +127,7 @@ public class ActionValueSync implements ProtobufMessage {
     @ProtobufProperty(index = 24, type = MESSAGE, implementation = ActionValueSync.PrimaryFeature.class)
     @Getter
     private PrimaryFeature primaryFeature;
-    //</editor-fold>
 
-    //<editor-fold desc="Constructors">
     @SuppressWarnings("PatternVariableHidesField")
     private ActionValueSync(@NonNull Action action) {
         this.timestamp = Clock.nowInSeconds();
@@ -197,9 +188,7 @@ public class ActionValueSync implements ProtobufMessage {
     public static ActionValueSync of(@NonNull Setting setting) {
         return new ActionValueSync(setting);
     }
-    //</editor-fold>
 
-    //<editor-fold desc="Accessors">
     public Action action() {
         if (starAction != null) {
             return starAction;
@@ -297,7 +286,6 @@ public class ActionValueSync implements ProtobufMessage {
         }
         return null;
     }
-    //</editor-fold>
 
     @ProtobufConverter
     public ReadOnlyActionValueSync toReadOnlyValue(){
@@ -310,24 +298,47 @@ public class ActionValueSync implements ProtobufMessage {
                 recentStickerMetadata, keyExpiration, primaryFeature);
     }
 
-    public record ReadOnlyActionValueSync(long timestamp, StarAction starAction, ContactAction contactAction, MuteAction muteAction, PinAction pinAction, QuickReplyAction quickReplyAction,
-                                          RecentStickerWeightsAction recentStickerWeightsAction,
-                                          RecentEmojiWeightsAction recentEmojiWeightsAction, LabelEditAction labelEditAction,
-                                          LabelAssociationAction labelAssociationAction, ArchiveChatAction archiveChatAction,
-                                          DeleteMessageForMeAction deleteMessageForMeAction, MarkChatAsReadAction markChatAsReadAction, ClearChatAction clearChatAction,
-                                          DeleteChatAction deleteChatAction, FavoriteStickerAction favoriteStickerAction,
-                                          AndroidUnsupportedActions androidUnsupportedActions, AgentAction agentAction,
-                                          SubscriptionAction subscriptionAction, UserStatusMuteAction userStatusMuteAction, TimeFormatAction timeFormatAction,
-                                          NuxAction nuxAction, PrimaryVersionAction primaryVersionAction, StickerAction stickerAction,
-                                          RemoveRecentStickerAction removeRecentStickerAction, ChatAssignmentAction chatAssignmentAction,
-                                          ChatAssignmentOpenedStatusAction chatAssignmentOpenedStatusAction,
-                                          SecurityNotificationSetting securityNotificationSetting, PushNameSetting pushNameSetting, LocaleSetting localeSetting,
-                                          UnarchiveChatsSetting unarchiveChatsSetting, RecentStickerMetadata recentStickerMetadata, KeyExpiration keyExpiration,
-                                          PrimaryFeature primaryFeature) {
+    /**
+     * Read only stub used by ModernProtobuf
+     */
+    @Builder
+    public record ReadOnlyActionValueSync(@ProtobufProperty(index = 1, type = INT64) long timestamp,
+                                          @ProtobufProperty(index = 2, type = MESSAGE) StarAction starAction,
+                                          @ProtobufProperty(index = 3, type = MESSAGE) ContactAction contactAction,
+                                          @ProtobufProperty(index = 4, type = MESSAGE) MuteAction muteAction,
+                                          @ProtobufProperty(index = 5, type = MESSAGE) PinAction pinAction,
+                                          @ProtobufProperty(index = 8, type = MESSAGE) QuickReplyAction quickReplyAction,
+                                          @ProtobufProperty(index = 9, type = MESSAGE) RecentStickerWeightsAction recentStickerWeightsAction,
+                                          @ProtobufProperty(index = 11, type = MESSAGE) RecentEmojiWeightsAction recentEmojiWeightsAction,
+                                          @ProtobufProperty(index = 14, type = MESSAGE) LabelEditAction labelEditAction,
+                                          @ProtobufProperty(index = 15, type = MESSAGE) LabelAssociationAction labelAssociationAction,
+                                          @ProtobufProperty(index = 17, type = MESSAGE) ArchiveChatAction archiveChatAction,
+                                          @ProtobufProperty(index = 18, type = MESSAGE) DeleteMessageForMeAction deleteMessageForMeAction,
+                                          @ProtobufProperty(index = 20, type = MESSAGE) MarkChatAsReadAction markChatAsReadAction,
+                                          @ProtobufProperty(index = 21, type = MESSAGE) ClearChatAction clearChatAction,
+                                          @ProtobufProperty(index = 22, type = MESSAGE) DeleteChatAction deleteChatAction,
+                                          @ProtobufProperty(index = 25, type = MESSAGE) FavoriteStickerAction favoriteStickerAction,
+                                          @ProtobufProperty(index = 26, type = MESSAGE) AndroidUnsupportedActions androidUnsupportedActions,
+                                          @ProtobufProperty(index = 27, type = MESSAGE) AgentAction agentAction,
+                                          @ProtobufProperty(index = 28, type = MESSAGE) SubscriptionAction subscriptionAction,
+                                          @ProtobufProperty(index = 29, type = MESSAGE) UserStatusMuteAction userStatusMuteAction,
+                                          @ProtobufProperty(index = 30, type = MESSAGE) TimeFormatAction timeFormatAction,
+                                          @ProtobufProperty(index = 31, type = MESSAGE) NuxAction nuxAction,
+                                          @ProtobufProperty(index = 32, type = MESSAGE) PrimaryVersionAction primaryVersionAction,
+                                          @ProtobufProperty(index = 33, type = MESSAGE) StickerAction stickerAction,
+                                          @ProtobufProperty(index = 34, type = MESSAGE) RemoveRecentStickerAction removeRecentStickerAction,
+                                          @ProtobufProperty(index = 35, type = MESSAGE) ChatAssignmentAction chatAssignmentAction,
+                                          @ProtobufProperty(index = 36, type = MESSAGE) ChatAssignmentOpenedStatusAction chatAssignmentOpenedStatusAction,
+                                          @ProtobufProperty(index = 6, type = MESSAGE) SecurityNotificationSetting securityNotificationSetting,
+                                          @ProtobufProperty(index = 7, type = MESSAGE) PushNameSetting pushNameSetting,
+                                          @ProtobufProperty(index = 16, type = MESSAGE) LocaleSetting localeSetting,
+                                          @ProtobufProperty(index = 23, type = MESSAGE) UnarchiveChatsSetting unarchiveChatsSetting,
+                                          @ProtobufProperty(index = 10, type = MESSAGE) RecentStickerMetadata recentStickerMetadata,
+                                          @ProtobufProperty(index = 19, type = MESSAGE) KeyExpiration keyExpiration,
+                                          @ProtobufProperty(index = 24, type = MESSAGE) PrimaryFeature primaryFeature) implements ProtobufMessage {
 
     }
 
-    //<editor-fold desc="Members">
     @AllArgsConstructor
     @NoArgsConstructor
     @Data
@@ -338,5 +349,4 @@ public class ActionValueSync implements ProtobufMessage {
         @ProtobufProperty(index = 1, type = STRING, repeated = true)
         private List<String> flags;
     }
-    //</editor-fold>
 }

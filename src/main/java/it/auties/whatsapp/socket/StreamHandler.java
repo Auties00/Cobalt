@@ -101,22 +101,35 @@ class StreamHandler extends Handler implements JacksonProvider {
 
     private void digestChatState(Node node) {
         CompletableFuture.runAsync(() -> {
-            var updateType = node.attributes()
-                    .getOptionalString("type")
-                    .or(() -> node.findNode().map(Node::description))
-                    .orElse("available");
             var chatJid = node.attributes()
                     .getJid("from")
                     .orElseThrow(() -> new NoSuchElementException("Missing from in chat state update"));
-            var participantJid = node.attributes().getJid("participant").orElse(chatJid);
+            var participantJid = node.attributes()
+                    .getJid("participant")
+                    .orElse(chatJid);
             socketHandler.store()
                     .findContactByJid(participantJid)
-                    .ifPresent(contact -> updateContactPresence(chatJid, updateType, contact));
+                    .ifPresent(contact -> updateContactPresence(chatJid, getUpdateType(node), contact));
         });
     }
 
-    private void updateContactPresence(ContactJid chatJid, String updateType, Contact contact) {
-        var status = ContactStatus.of(updateType).orElse(ContactStatus.AVAILABLE);
+    private ContactStatus getUpdateType(Node node) {
+        var metadata = node.findNode();
+        var recording = metadata.map(entry -> entry.attributes().getString("media"))
+                .filter(entry -> entry.equals("audio"))
+                .isPresent();
+        if(recording){
+            return ContactStatus.RECORDING;
+        }
+
+        return node.attributes()
+                .getOptionalString("type")
+                .or(() -> metadata.map(Node::description))
+                .flatMap(ContactStatus::of)
+                .orElse(ContactStatus.AVAILABLE);
+    }
+
+    private void updateContactPresence(ContactJid chatJid, ContactStatus status, Contact contact) {
         if (status == contact.lastKnownPresence()) {
             return;
         }
