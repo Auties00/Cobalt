@@ -16,6 +16,8 @@ import it.auties.whatsapp.model.business.BusinessCatalogEntry;
 import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.business.BusinessCollectionEntry;
 import it.auties.whatsapp.model.business.BusinessProfile;
+import it.auties.whatsapp.model.button.FourRowTemplate;
+import it.auties.whatsapp.model.button.HydratedFourRowTemplate;
 import it.auties.whatsapp.model.chat.*;
 import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.model.contact.ContactJid.Server;
@@ -23,6 +25,9 @@ import it.auties.whatsapp.model.contact.ContactJidProvider;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.message.button.ButtonsMessage;
+import it.auties.whatsapp.model.message.button.InteractiveMessage;
+import it.auties.whatsapp.model.message.button.TemplateMessage;
 import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.standard.*;
@@ -1084,12 +1089,9 @@ public class Whatsapp {
             case MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
             case PollCreationMessage pollCreationMessage -> attributePollCreationMessage(info, pollCreationMessage);
             case PollUpdateMessage pollUpdateMessage -> attributePollUpdateMessage(pollUpdateMessage);
-            case GroupInviteMessage groupInviteMessage ->
-                    attributeGroupInviteMessage(info, groupInviteMessage); // This is not needed probably, but Whatsapp uses a text message by default, so maybe it makes sense
-            case ButtonMessage buttonMessage -> info.message(info.message()
-                    .toViewOnce()); // Credit to Baileys: https://github.com/adiwajshing/Baileys/blob/f0bdb12e56cea8b0bfbb0dff37c01690274e3e31/src/Utils/messages.ts#L781
-            default -> {
-            }
+            case GroupInviteMessage groupInviteMessage -> attributeGroupInviteMessage(info, groupInviteMessage);
+            case ButtonMessage buttonMessage -> attributeButtonMessage(info, buttonMessage);
+            default -> {}
         }
     }
 
@@ -1107,13 +1109,20 @@ public class Whatsapp {
         if (info.message().hasCategory(MessageCategory.SERVER)) {
             return;
         }
-        if (!info.chat().isEphemeral()) {
-            if (info.message().type() == MessageType.EPHEMERAL) {
-                info.message(info.message().unbox());
-            }
+        if (info.chat().isEphemeral()) {
+            info.message()
+                    .contentWithContext()
+                    .map(ContextualMessage::contextInfo)
+                    .ifPresent(contextInfo -> createEphemeralContext(info.chat(), contextInfo));
+            info.message(info.message().toEphemeral());
             return;
         }
-        createEphemeralMessage(info);
+
+        if (info.message().type() != MessageType.EPHEMERAL) {
+            return;
+        }
+
+        info.message(info.message().unbox());
     }
 
     private void attributeTextMessage(TextMessage textMessage) {
@@ -1150,10 +1159,8 @@ public class Whatsapp {
     }
 
     private void attributeMediaMessage(MediaMessage mediaMessage) {
-        Validate.isTrue(mediaMessage.decodedMedia()
-                .isPresent(), "Cannot upload a message whose content isn't available");
-        var upload = Medias.upload(mediaMessage.decodedMedia()
-                .get(), mediaMessage.mediaType(), store().mediaConnection());
+        Validate.isTrue(mediaMessage.decodedMedia().isPresent(), "Cannot upload a message whose content isn't available");
+        var upload = Medias.upload(mediaMessage.decodedMedia().get(), mediaMessage.mediaType(), store().mediaConnection());
         mediaMessage.mediaSha256(upload.fileSha256())
                 .mediaEncryptedSha256(upload.fileEncSha256())
                 .mediaKey(upload.mediaKey())
@@ -1173,8 +1180,8 @@ public class Whatsapp {
             return;
         }
         var iv = ofRandom(12).toByteArray();
-        var additionalData = "%s\0%s".formatted(pollUpdateMessage.pollCreationMessageKey()
-                .id(), store().userCompanionJid().toUserJid()).getBytes(StandardCharsets.UTF_8);
+        var additionalData = "%s\0%s".formatted(pollUpdateMessage.pollCreationMessageKey().id(),
+                store().userCompanionJid().toUserJid()).getBytes(StandardCharsets.UTF_8);
         var encryptedOptions = pollUpdateMessage.votes()
                 .stream()
                 .map(PollOption::name)
@@ -1187,8 +1194,45 @@ public class Whatsapp {
         pollUpdateMessage.encryptedMetadata().iv(Protobuf.writeMessage(pollUpdateEncryptedOptions));
     }
 
+    // Credit to Baileys: https://github.com/adiwajshing/Baileys/blob/f0bdb12e56cea8b0bfbb0dff37c01690274e3e31/src/Utils/messages.ts#L781
+    private void attributeButtonMessage(MessageInfo info, ButtonMessage buttonMessage) {
+        if(buttonMessage instanceof ButtonsMessage buttonsMessage
+                && buttonsMessage.header().isPresent()
+                && buttonsMessage.header().get() instanceof MediaMessage mediaMessage) {
+            attributeMediaMessage(mediaMessage);
+        }
+
+        if(buttonMessage instanceof ButtonsMessage buttonsMessage
+                && buttonsMessage.header().isPresent()
+                && buttonsMessage.header().get() instanceof MediaMessage mediaMessage) {
+            attributeMediaMessage(mediaMessage);
+        }
+
+        if(buttonMessage instanceof TemplateMessage templateMessage
+                && templateMessage.format().isPresent()) {
+            switch (templateMessage.format().get()) {
+                case FourRowTemplate fourRowTemplate
+                        && fourRowTemplate.title().isPresent()
+                        && fourRowTemplate.title().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
+                case HydratedFourRowTemplate hydratedFourRowTemplate
+                        && hydratedFourRowTemplate.title().isPresent()
+                        && hydratedFourRowTemplate.title().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
+                default -> {}
+            }
+        }
+
+        if(buttonMessage instanceof InteractiveMessage interactiveMessage
+                && interactiveMessage.header().attachment().isPresent()
+                && interactiveMessage.header().attachment().get() instanceof MediaMessage mediaMessage){
+            attributeMediaMessage(mediaMessage);
+        }
+
+        info.message(info.message().toViewOnce());
+    }
+
+    // This is not needed probably, but Whatsapp uses a text message by default, so maybe it makes sense
     private void attributeGroupInviteMessage(MessageInfo info, GroupInviteMessage groupInviteMessage) {
-        Validate.isTrue(groupInviteMessage.code() != null, "Invalid message countryCode");
+        Validate.isTrue(groupInviteMessage.code() != null, "Invalid message code");
         var url = "https://chat.whatsapp.com/%s".formatted(groupInviteMessage.code());
         var preview = LinkPreview.createPreview(URI.create(url))
                 .stream()
@@ -1228,14 +1272,6 @@ public class Whatsapp {
                 .map(this::markRead)
                 .toArray(CompletableFuture[]::new);
         return CompletableFuture.allOf(all);
-    }
-
-    private void createEphemeralMessage(MessageInfo info) {
-        info.message()
-                .contentWithContext()
-                .map(ContextualMessage::contextInfo)
-                .ifPresent(contextInfo -> createEphemeralContext(info.chat(), contextInfo));
-        info.message(info.message().toEphemeral());
     }
 
     private LinkPreviewMedia compareDimensions(LinkPreviewMedia first, LinkPreviewMedia second) {

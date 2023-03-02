@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.sync;
 
-import it.auties.protobuf.base.ProtobufConverter;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
@@ -12,6 +11,7 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
+import java.util.Optional;
 
 import static it.auties.protobuf.base.ProtobufType.*;
 
@@ -117,15 +117,12 @@ public class ActionValueSync implements ProtobufMessage {
     private UnarchiveChatsSetting unarchiveChatsSetting;
 
     @ProtobufProperty(index = 10, type = MESSAGE, implementation = RecentStickerMetadata.class)
-    @Getter
     private RecentStickerMetadata recentStickerMetadata;
 
     @ProtobufProperty(index = 19, type = MESSAGE, implementation = KeyExpiration.class)
-    @Getter
     private KeyExpiration keyExpiration;
 
     @ProtobufProperty(index = 24, type = MESSAGE, implementation = ActionValueSync.PrimaryFeature.class)
-    @Getter
     private PrimaryFeature primaryFeature;
 
     @SuppressWarnings("PatternVariableHidesField")
@@ -189,6 +186,7 @@ public class ActionValueSync implements ProtobufMessage {
         return new ActionValueSync(setting);
     }
 
+    @SuppressWarnings({"DuplicatedCode"}) // IntelliJ bug
     public Action action() {
         if (starAction != null) {
             return starAction;
@@ -287,66 +285,145 @@ public class ActionValueSync implements ProtobufMessage {
         return null;
     }
 
-    @ProtobufConverter
-    public ReadOnlyActionValueSync toReadOnlyValue(){
-        return new ReadOnlyActionValueSync(timestamp, starAction, contactAction, muteAction, pinAction, quickReplyAction,
-                recentStickerWeightsAction, recentEmojiWeightsAction, labelEditAction, labelAssociationAction,
-                archiveChatAction, deleteMessageForMeAction, markChatAsReadAction, clearChatAction, deleteChatAction,
-                favoriteStickerAction, androidUnsupportedActions, agentAction, subscriptionAction, userStatusMuteAction,
-                timeFormatAction, nuxAction, primaryVersionAction, stickerAction, removeRecentStickerAction, chatAssignmentAction,
-                chatAssignmentOpenedStatusAction, securityNotificationSetting, pushNameSetting, localeSetting, unarchiveChatsSetting,
-                recentStickerMetadata, keyExpiration, primaryFeature);
+    public Optional<StarAction> starAction() {
+        return Optional.ofNullable(starAction);
     }
 
-    /**
-     * Read only stub used by ModernProtobuf
-     */
-    @Builder
-    public record ReadOnlyActionValueSync(@ProtobufProperty(index = 1, type = INT64) long timestamp,
-                                          @ProtobufProperty(index = 2, type = MESSAGE) StarAction starAction,
-                                          @ProtobufProperty(index = 3, type = MESSAGE) ContactAction contactAction,
-                                          @ProtobufProperty(index = 4, type = MESSAGE) MuteAction muteAction,
-                                          @ProtobufProperty(index = 5, type = MESSAGE) PinAction pinAction,
-                                          @ProtobufProperty(index = 8, type = MESSAGE) QuickReplyAction quickReplyAction,
-                                          @ProtobufProperty(index = 9, type = MESSAGE) RecentStickerWeightsAction recentStickerWeightsAction,
-                                          @ProtobufProperty(index = 11, type = MESSAGE) RecentEmojiWeightsAction recentEmojiWeightsAction,
-                                          @ProtobufProperty(index = 14, type = MESSAGE) LabelEditAction labelEditAction,
-                                          @ProtobufProperty(index = 15, type = MESSAGE) LabelAssociationAction labelAssociationAction,
-                                          @ProtobufProperty(index = 17, type = MESSAGE) ArchiveChatAction archiveChatAction,
-                                          @ProtobufProperty(index = 18, type = MESSAGE) DeleteMessageForMeAction deleteMessageForMeAction,
-                                          @ProtobufProperty(index = 20, type = MESSAGE) MarkChatAsReadAction markChatAsReadAction,
-                                          @ProtobufProperty(index = 21, type = MESSAGE) ClearChatAction clearChatAction,
-                                          @ProtobufProperty(index = 22, type = MESSAGE) DeleteChatAction deleteChatAction,
-                                          @ProtobufProperty(index = 25, type = MESSAGE) FavoriteStickerAction favoriteStickerAction,
-                                          @ProtobufProperty(index = 26, type = MESSAGE) AndroidUnsupportedActions androidUnsupportedActions,
-                                          @ProtobufProperty(index = 27, type = MESSAGE) AgentAction agentAction,
-                                          @ProtobufProperty(index = 28, type = MESSAGE) SubscriptionAction subscriptionAction,
-                                          @ProtobufProperty(index = 29, type = MESSAGE) UserStatusMuteAction userStatusMuteAction,
-                                          @ProtobufProperty(index = 30, type = MESSAGE) TimeFormatAction timeFormatAction,
-                                          @ProtobufProperty(index = 31, type = MESSAGE) NuxAction nuxAction,
-                                          @ProtobufProperty(index = 32, type = MESSAGE) PrimaryVersionAction primaryVersionAction,
-                                          @ProtobufProperty(index = 33, type = MESSAGE) StickerAction stickerAction,
-                                          @ProtobufProperty(index = 34, type = MESSAGE) RemoveRecentStickerAction removeRecentStickerAction,
-                                          @ProtobufProperty(index = 35, type = MESSAGE) ChatAssignmentAction chatAssignmentAction,
-                                          @ProtobufProperty(index = 36, type = MESSAGE) ChatAssignmentOpenedStatusAction chatAssignmentOpenedStatusAction,
-                                          @ProtobufProperty(index = 6, type = MESSAGE) SecurityNotificationSetting securityNotificationSetting,
-                                          @ProtobufProperty(index = 7, type = MESSAGE) PushNameSetting pushNameSetting,
-                                          @ProtobufProperty(index = 16, type = MESSAGE) LocaleSetting localeSetting,
-                                          @ProtobufProperty(index = 23, type = MESSAGE) UnarchiveChatsSetting unarchiveChatsSetting,
-                                          @ProtobufProperty(index = 10, type = MESSAGE) RecentStickerMetadata recentStickerMetadata,
-                                          @ProtobufProperty(index = 19, type = MESSAGE) KeyExpiration keyExpiration,
-                                          @ProtobufProperty(index = 24, type = MESSAGE) PrimaryFeature primaryFeature) implements ProtobufMessage {
+    public Optional<ContactAction> contactAction() {
+        return Optional.ofNullable(contactAction);
+    }
 
+    public Optional<MuteAction> muteAction() {
+        return Optional.ofNullable(muteAction);
+    }
+
+    public Optional<PinAction> pinAction() {
+        return Optional.ofNullable(pinAction);
+    }
+
+    public Optional<QuickReplyAction> quickReplyAction() {
+        return Optional.ofNullable(quickReplyAction);
+    }
+
+    public Optional<RecentStickerWeightsAction> recentStickerWeightsAction() {
+        return Optional.ofNullable(recentStickerWeightsAction);
+    }
+
+    public Optional<RecentEmojiWeightsAction> recentEmojiWeightsAction() {
+        return Optional.ofNullable(recentEmojiWeightsAction);
+    }
+
+    public Optional<LabelEditAction> labelEditAction() {
+        return Optional.ofNullable(labelEditAction);
+    }
+
+    public Optional<LabelAssociationAction> labelAssociationAction() {
+        return Optional.ofNullable(labelAssociationAction);
+    }
+
+    public Optional<ArchiveChatAction> archiveChatAction() {
+        return Optional.ofNullable(archiveChatAction);
+    }
+
+    public Optional<DeleteMessageForMeAction> deleteMessageForMeAction() {
+        return Optional.ofNullable(deleteMessageForMeAction);
+    }
+
+    public Optional<MarkChatAsReadAction> markChatAsReadAction() {
+        return Optional.ofNullable(markChatAsReadAction);
+    }
+
+    public Optional<ClearChatAction> clearChatAction() {
+        return Optional.ofNullable(clearChatAction);
+    }
+
+    public Optional<DeleteChatAction> deleteChatAction() {
+        return Optional.ofNullable(deleteChatAction);
+    }
+
+    public Optional<FavoriteStickerAction> favoriteStickerAction() {
+        return Optional.ofNullable(favoriteStickerAction);
+    }
+
+    public Optional<AndroidUnsupportedActions> androidUnsupportedActions() {
+        return Optional.ofNullable(androidUnsupportedActions);
+    }
+
+    public Optional<AgentAction> agentAction() {
+        return Optional.ofNullable(agentAction);
+    }
+
+    public Optional<SubscriptionAction> subscriptionAction() {
+        return Optional.ofNullable(subscriptionAction);
+    }
+
+    public Optional<UserStatusMuteAction> userStatusMuteAction() {
+        return Optional.ofNullable(userStatusMuteAction);
+    }
+
+    public Optional<TimeFormatAction> timeFormatAction() {
+        return Optional.ofNullable(timeFormatAction);
+    }
+
+    public Optional<NuxAction> nuxAction() {
+        return Optional.ofNullable(nuxAction);
+    }
+
+    public Optional<PrimaryVersionAction> primaryVersionAction() {
+        return Optional.ofNullable(primaryVersionAction);
+    }
+
+    public Optional<StickerAction> stickerAction() {
+        return Optional.ofNullable(stickerAction);
+    }
+
+    public Optional<RemoveRecentStickerAction> removeRecentStickerAction() {
+        return Optional.ofNullable(removeRecentStickerAction);
+    }
+
+    public Optional<ChatAssignmentAction> chatAssignmentAction() {
+        return Optional.ofNullable(chatAssignmentAction);
+    }
+
+    public Optional<ChatAssignmentOpenedStatusAction> chatAssignmentOpenedStatusAction() {
+        return Optional.ofNullable(chatAssignmentOpenedStatusAction);
+    }
+
+    public Optional<SecurityNotificationSetting> securityNotificationSetting() {
+        return Optional.ofNullable(securityNotificationSetting);
+    }
+
+    public Optional<PushNameSetting> pushNameSetting() {
+        return Optional.ofNullable(pushNameSetting);
+    }
+
+    public Optional<LocaleSetting> localeSetting() {
+        return Optional.ofNullable(localeSetting);
+    }
+
+    public Optional<UnarchiveChatsSetting> unarchiveChatsSetting() {
+        return Optional.ofNullable(unarchiveChatsSetting);
+    }
+
+    public Optional<RecentStickerMetadata> recentStickerMetadata() {
+        return Optional.ofNullable(recentStickerMetadata);
+    }
+
+    public Optional<KeyExpiration> keyExpiration() {
+        return Optional.ofNullable(keyExpiration);
+    }
+
+    public Optional<PrimaryFeature> primaryFeature() {
+        return Optional.ofNullable(primaryFeature);
     }
 
     @AllArgsConstructor
-    @NoArgsConstructor
-    @Data
     @Jacksonized
     @Builder
     @Accessors(fluent = true)
     public static class PrimaryFeature implements ProtobufMessage {
         @ProtobufProperty(index = 1, type = STRING, repeated = true)
+        @Getter
         private List<String> flags;
     }
 }

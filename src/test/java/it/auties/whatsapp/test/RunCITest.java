@@ -503,18 +503,15 @@ public class RunCITest implements Listener, JacksonProvider {
         if (skip) {
             return;
         }
-        if (group == null) {
-            testGroupCreation();
-        }
         log("Sending buttons...");
-        var emptyButtons = ButtonsMessage.withoutHeaderBuilder()
+        var emptyButtons = ButtonsMessage.simpleBuilder()
                 .body("A nice body")
                 .footer("A nice footer")
                 .buttons(createButtons())
                 .build();
         api.sendMessage(contact, emptyButtons).join();
-        var textButtons = ButtonsMessage.withTextHeaderBuilder()
-                .header("A nice header")
+        var textButtons = ButtonsMessage.simpleBuilder()
+                .header(TextMessage.of("A nice header"))
                 .body("A nice body")
                 .footer("A nice footer")
                 .buttons(createButtons())
@@ -526,7 +523,7 @@ public class RunCITest implements Listener, JacksonProvider {
                 .fileName("pdf-test.pdf")
                 .pageCount(1)
                 .build();
-        var documentButtons = ButtonsMessage.withDocumentHeaderBuilder()
+        var documentButtons = ButtonsMessage.simpleBuilder()
                 .header(document)
                 .body("A nice body")
                 .footer("A nice footer")
@@ -537,7 +534,7 @@ public class RunCITest implements Listener, JacksonProvider {
                 .media(MediaUtils.readBytes("https://2.bp.blogspot.com/-DqXILvtoZFA/Wmmy7gRahnI/AAAAAAAAB0g/59c8l63QlJcqA0591t8-kWF739DiOQLcACEwYBhgL/s1600/pol-venere-botticelli-01.jpg"))
                 .caption("Image test")
                 .build();
-        var imageButtons = ButtonsMessage.withImageHeaderBuilder()
+        var imageButtons = ButtonsMessage.simpleBuilder()
                 .header(image)
                 .body("A nice body")
                 .footer("A nice footer")
@@ -728,7 +725,7 @@ public class RunCITest implements Listener, JacksonProvider {
                 .id("15086146312")
                 .version(3)
                 .build();
-        var interactiveMessageWithCollection = InteractiveMessage.withCollectionMessageBuilder()
+        var interactiveMessageWithCollection = InteractiveMessage.simpleBuilder()
                 .content(collectionMessage)
                 .build();
         api.sendMessage(contact, interactiveMessageWithCollection).join();
@@ -737,14 +734,14 @@ public class RunCITest implements Listener, JacksonProvider {
                 .version(3)
                 .surfaceType(BusinessShop.SurfaceType.WHATSAPP)
                 .build();
-        var interactiveMessageWithShop = InteractiveMessage.withShopMessageBuilder().content(shopMessage).build();
+        var interactiveMessageWithShop = InteractiveMessage.simpleBuilder().content(shopMessage).build();
         api.sendMessage(contact, interactiveMessageWithShop).join();
         var nativeFlowMessage = BusinessNativeFlow.builder()
                 .buttons(List.of(NativeFlowButton.of("hello :)", "")))
                 .version(3)
                 .parameters("")
                 .build();
-        var interactiveMessageWithFlow = InteractiveMessage.withNativeFlowMessageBuilder()
+        var interactiveMessageWithFlow = InteractiveMessage.simpleBuilder()
                 .content(nativeFlowMessage)
                 .build();
         api.sendMessage(contact, interactiveMessageWithFlow).join();
@@ -761,7 +758,7 @@ public class RunCITest implements Listener, JacksonProvider {
         var quickReplyButton = HydratedTemplateButton.of(HydratedQuickReplyButton.of("Click me"));
         var urlButton = HydratedTemplateButton.of(HydratedURLButton.of("Search it", "https://google.com"));
         var callButton = HydratedTemplateButton.of(HydratedCallButton.of("Call me", contact.toPhoneNumber()));
-        var fourRowTemplate = HydratedFourRowTemplate.withTextTitleBuilder()
+        var fourRowTemplate = HydratedFourRowTemplate.simpleBuilder()
                 .body("A nice body")
                 .footer("A nice footer")
                 .buttons(List.of(quickReplyButton, urlButton, callButton))

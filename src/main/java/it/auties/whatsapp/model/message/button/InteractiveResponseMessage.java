@@ -45,7 +45,7 @@ public final class InteractiveResponseMessage extends ContextualMessage {
         return MessageCategory.BUTTON;
     }
 
-    public InteractiveMessage.ContentType interactiveResponseMessageType() {
-        return InteractiveMessage.ContentType.COLLECTION_MESSAGE;
+    public InteractiveMessageContentType interactiveResponseMessageType() {
+        return InteractiveMessageContentType.COLLECTION;
     }
 }

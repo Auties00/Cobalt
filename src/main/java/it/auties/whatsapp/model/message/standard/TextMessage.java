@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.whatsapp.model.button.HydratedFourRowTemplateTitle;
+import it.auties.whatsapp.model.button.HydratedFourRowTemplateTitleType;
+import it.auties.whatsapp.model.message.button.ButtonsMessageHeader;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
@@ -27,7 +30,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("ExtendedTextMessage")
-public final class TextMessage extends ContextualMessage {
+public final class TextMessage extends ContextualMessage implements ButtonsMessageHeader, HydratedFourRowTemplateTitle {
     /**
      * The text that this message wraps
      */
@@ -161,6 +164,11 @@ public final class TextMessage extends ContextualMessage {
     @Override
     public MessageCategory category() {
         return MessageCategory.STANDARD;
+    }
+
+    @Override
+    public HydratedFourRowTemplateTitleType hydratedTitleType() {
+        return HydratedFourRowTemplateTitleType.TEXT;
     }
 
     /**

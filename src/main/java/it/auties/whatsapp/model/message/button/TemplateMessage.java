@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.message.button;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
@@ -17,7 +16,7 @@ import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.Arrays;
+import java.util.Optional;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.STRING;
@@ -50,21 +49,21 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
 
     /**
      * Four row template. This property is defined only if {@link TemplateMessage#formatType()} ==
-     * {@link Format#FOUR_ROW_TEMPLATE}.
+     * {@link TemplateFormatterType#FOUR_ROW}.
      */
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = FourRowTemplate.class)
     private FourRowTemplate fourRowTemplateFormat;
 
     /**
      * Hydrated four row template. This property is defined only if
-     * {@link TemplateMessage#formatType()} == {@link Format#HYDRATED_FOUR_ROW_TEMPLATE}.
+     * {@link TemplateMessage#formatType()} == {@link TemplateFormatterType#HYDRATED_FOUR_ROW}.
      */
     @ProtobufProperty(index = 2, type = MESSAGE, implementation = HydratedFourRowTemplate.class)
     private HydratedFourRowTemplate hydratedFourRowTemplateFormat;
 
     /**
      * Interactive message. This property is defined only if {@link TemplateMessage#formatType()} ==
-     * {@link Format#INTERACTIVE_MESSAGE}.
+     * {@link TemplateFormatterType#INTERACTIVE}.
      */
     @ProtobufProperty(index = 5, type = MESSAGE, implementation = InteractiveMessage.class)
     private InteractiveMessage interactiveMessageFormat;
@@ -130,56 +129,59 @@ public final class TemplateMessage extends ContextualMessage implements ButtonMe
     /**
      * Returns the type of format of this message
      *
-     * @return a non-null {@link Format}
+     * @return a non-null {@link TemplateFormatterType}
      */
-    public Format formatType() {
+    public TemplateFormatterType formatType() {
+        return format().map(TemplateFormatter::templateType).orElse(TemplateFormatterType.NONE);
+    }
+
+    /**
+     * Returns the formatter of this message
+     *
+     * @return an optional
+     */
+    public Optional<TemplateFormatter> format() {
         if (fourRowTemplateFormat != null) {
-            return Format.FOUR_ROW_TEMPLATE;
+            return Optional.of(fourRowTemplateFormat);
         }
         if (hydratedFourRowTemplateFormat != null) {
-            return Format.HYDRATED_FOUR_ROW_TEMPLATE;
+            return Optional.of(hydratedFourRowTemplateFormat);
         }
         if (interactiveMessageFormat != null) {
-            return Format.INTERACTIVE_MESSAGE;
+            return Optional.of(interactiveMessageFormat);
         }
-        return Format.NONE;
+        return Optional.empty();
+    }
+
+    /**
+     * Returns the four rows formatter of this message if present
+     *
+     * @return an optional
+     */
+    public Optional<FourRowTemplate> fourRowTemplateFormat() {
+        return Optional.ofNullable(fourRowTemplateFormat);
+    }
+
+    /**
+     * Returns the hydrated four rows formatter of this message if present
+     *
+     * @return an optional
+     */
+    public Optional<HydratedFourRowTemplate> hydratedFourRowTemplateFormat() {
+        return Optional.ofNullable(hydratedFourRowTemplateFormat);
+    }
+
+    /**
+     * Returns the interactive formatter of this message if present
+     *
+     * @return an optional
+     */
+    public Optional<InteractiveMessage> interactiveMessageFormat() {
+        return Optional.ofNullable(interactiveMessageFormat);
     }
 
     @Override
     public MessageType type() {
         return MessageType.TEMPLATE;
-    }
-
-    /**
-     * The constant of this enumerated type define the various of types of visual formats for a
-     * {@link TemplateMessage}
-     */
-    @AllArgsConstructor
-    @Accessors(fluent = true)
-    public enum Format {
-        /**
-         * No format
-         */
-        NONE(0),
-        /**
-         * Four row template
-         */
-        FOUR_ROW_TEMPLATE(1),
-        /**
-         * Hydrated four row template
-         */
-        HYDRATED_FOUR_ROW_TEMPLATE(2),
-        /**
-         * Interactive message
-         */
-        INTERACTIVE_MESSAGE(3);
-
-        @Getter
-        private final int index;
-
-        @JsonCreator
-        public static Format of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(Format.NONE);
-        }
     }
 }

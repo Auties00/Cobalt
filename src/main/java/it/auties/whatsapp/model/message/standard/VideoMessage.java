@@ -4,11 +4,17 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.model.button.FourRowTemplateTitle;
+import it.auties.whatsapp.model.button.FourRowTemplateTitleType;
+import it.auties.whatsapp.model.button.HydratedFourRowTemplateTitle;
+import it.auties.whatsapp.model.button.HydratedFourRowTemplateTitleType;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.location.InteractiveLocationAnnotation;
+import it.auties.whatsapp.model.message.button.ButtonsMessageHeader;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
+import it.auties.whatsapp.model.product.ProductHeaderAttachment;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
 import it.auties.whatsapp.util.Validate;
@@ -35,7 +41,7 @@ import static java.util.Objects.requireNonNullElse;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class VideoMessage extends MediaMessage {
+public final class VideoMessage extends MediaMessage implements ProductHeaderAttachment, ButtonsMessageHeader, FourRowTemplateTitle, HydratedFourRowTemplateTitle {
     /**
      * The upload url of the encoded video that this object wraps
      */
@@ -234,6 +240,16 @@ public final class VideoMessage extends MediaMessage {
     @Override
     public MediaMessageType mediaType() {
         return MediaMessageType.VIDEO;
+    }
+
+    @Override
+    public FourRowTemplateTitleType titleType() {
+        return FourRowTemplateTitleType.VIDEO;
+    }
+
+    @Override
+    public HydratedFourRowTemplateTitleType hydratedTitleType() {
+        return HydratedFourRowTemplateTitleType.VIDEO;
     }
 
     /**

@@ -2,10 +2,16 @@ package it.auties.whatsapp.model.message.standard;
 
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.api.Whatsapp;
+import it.auties.whatsapp.model.button.FourRowTemplateTitle;
+import it.auties.whatsapp.model.button.FourRowTemplateTitleType;
+import it.auties.whatsapp.model.button.HydratedFourRowTemplateTitle;
+import it.auties.whatsapp.model.button.HydratedFourRowTemplateTitleType;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
+import it.auties.whatsapp.model.message.button.ButtonsMessageHeader;
 import it.auties.whatsapp.model.message.model.MediaMessage;
 import it.auties.whatsapp.model.message.model.MediaMessageType;
+import it.auties.whatsapp.model.product.ProductHeaderAttachment;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
 import lombok.*;
@@ -30,7 +36,7 @@ import static it.auties.whatsapp.util.Medias.Format.FILE;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class DocumentMessage extends MediaMessage {
+public final class DocumentMessage extends MediaMessage implements ProductHeaderAttachment, ButtonsMessageHeader, FourRowTemplateTitle, HydratedFourRowTemplateTitle {
     /**
      * The upload url of the encoded document that this object wraps
      */
@@ -165,5 +171,15 @@ public final class DocumentMessage extends MediaMessage {
     @Override
     public MediaMessageType mediaType() {
         return MediaMessageType.DOCUMENT;
+    }
+
+    @Override
+    public FourRowTemplateTitleType titleType() {
+        return FourRowTemplateTitleType.DOCUMENT;
+    }
+
+    @Override
+    public HydratedFourRowTemplateTitleType hydratedTitleType() {
+        return HydratedFourRowTemplateTitleType.DOCUMENT;
     }
 }

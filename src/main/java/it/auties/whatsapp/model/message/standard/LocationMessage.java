@@ -1,6 +1,11 @@
 package it.auties.whatsapp.model.message.standard;
 
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.whatsapp.model.button.FourRowTemplateTitle;
+import it.auties.whatsapp.model.button.FourRowTemplateTitleType;
+import it.auties.whatsapp.model.button.HydratedFourRowTemplateTitle;
+import it.auties.whatsapp.model.button.HydratedFourRowTemplateTitleType;
+import it.auties.whatsapp.model.message.button.ButtonsMessageHeader;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.model.MessageType;
@@ -24,7 +29,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @SuperBuilder
 @Jacksonized
 @Accessors(fluent = true)
-public final class LocationMessage extends ContextualMessage {
+public final class LocationMessage extends ContextualMessage implements ButtonsMessageHeader, FourRowTemplateTitle, HydratedFourRowTemplateTitle {
     /**
      * The latitude of the location that this message wraps
      */
@@ -99,5 +104,15 @@ public final class LocationMessage extends ContextualMessage {
     @Override
     public MessageCategory category() {
         return MessageCategory.STANDARD;
+    }
+
+    @Override
+    public FourRowTemplateTitleType titleType() {
+        return FourRowTemplateTitleType.LOCATION;
+    }
+
+    @Override
+    public HydratedFourRowTemplateTitleType hydratedTitleType() {
+        return HydratedFourRowTemplateTitleType.LOCATION;
     }
 }

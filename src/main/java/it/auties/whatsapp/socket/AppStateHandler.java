@@ -344,8 +344,8 @@ class AppStateHandler extends Handler implements JacksonProvider {
             socketHandler.onSetting(setting);
         }
         var features = mutation.value().primaryFeature();
-        if (features != null && !features.flags().isEmpty()) {
-            socketHandler.onFeatures(features);
+        if (features.isPresent() && !features.get().flags().isEmpty()) {
+            socketHandler.onFeatures(features.get());
         }
     }
 

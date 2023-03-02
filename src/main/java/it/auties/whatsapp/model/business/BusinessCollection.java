@@ -1,8 +1,9 @@
 package it.auties.whatsapp.model.business;
 
-import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.message.button.InteractiveMessageContent;
+import it.auties.whatsapp.model.message.button.InteractiveMessageContentType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,7 +21,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class BusinessCollection implements ProtobufMessage {
+public final class BusinessCollection implements InteractiveMessageContent {
     /**
      * The business jid of the message
      */
@@ -38,4 +39,9 @@ public final class BusinessCollection implements ProtobufMessage {
      */
     @ProtobufProperty(index = 3, type = INT32)
     private int version;
+
+    @Override
+    public InteractiveMessageContentType contentType() {
+        return InteractiveMessageContentType.COLLECTION;
+    }
 }

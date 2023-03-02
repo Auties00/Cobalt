@@ -15,6 +15,7 @@ import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 import static it.auties.protobuf.base.ProtobufType.*;
 
@@ -44,102 +45,56 @@ public class ProductHeader implements ProtobufMessage {
      * Whether this message had a media attachment
      */
     @ProtobufProperty(index = 5, type = BOOL)
-    private boolean hasMediaAttachment;
+    private boolean mediaAttachment;
 
     /**
      * The document attachment
      */
     @ProtobufProperty(index = 3, type = MESSAGE, implementation = DocumentMessage.class)
-    private DocumentMessage documentAttachment;
+    private DocumentMessage attachmentDocument;
 
     /**
      * The image attachment
      */
     @ProtobufProperty(index = 4, type = MESSAGE, implementation = ImageMessage.class)
-    private ImageMessage imageAttachment;
+    private ImageMessage attachmentImage;
 
     /**
      * The jpeg attachment
      */
     @ProtobufProperty(index = 6, type = BYTES)
-    private byte[] thumbnailAttachment;
+    private byte[] attachmentThumbnail;
 
     /**
      * The video attachment
      */
     @ProtobufProperty(index = 7, type = MESSAGE, implementation = VideoMessage.class)
-    private VideoMessage videoAttachment;
+    private VideoMessage attachmentVideo;
 
     /**
-     * Constructs a new builder to create a header with a document
+     * Constructs a new builder to create a Product header
      *
      * @param title      the title of this header
      * @param subtitle   the subtitle of this header
      * @param attachment the attachment of this header
      * @return a non-null new header
      */
-    @Builder(builderClassName = "DocumentProductHeaderBuilder", builderMethodName = "withDocumentMessageBuilder")
-    private static ProductHeader documentBuilder(String title, String subtitle, DocumentMessage attachment) {
-        return ProductHeader.builder()
+    @Builder(builderClassName = "ProductHeaderSimpleBuilder", builderMethodName = "simpleBuilder")
+    private static ProductHeader documentBuilder(String title, String subtitle, ProductHeaderAttachment attachment) {
+        var builder = ProductHeader.builder()
                 .title(title)
-                .subtitle(subtitle)
-                .documentAttachment(attachment)
-                .hasMediaAttachment(true)
-                .build();
-    }
-
-    /**
-     * Constructs a new builder to create a header with an image
-     *
-     * @param title      the title of this header
-     * @param subtitle   the subtitle of this header
-     * @param attachment the attachment of this header
-     * @return a non-null new header
-     */
-    @Builder(builderClassName = "ImageProductHeaderBuilder", builderMethodName = "withImageMessageBuilder")
-    private static ProductHeader imageBuilder(String title, String subtitle, ImageMessage attachment) {
-        return ProductHeader.builder()
-                .title(title)
-                .subtitle(subtitle)
-                .imageAttachment(attachment)
-                .hasMediaAttachment(true)
-                .build();
-    }
-
-    /**
-     * Constructs a new builder to create a header with a thumbnail
-     *
-     * @param title      the title of this header
-     * @param subtitle   the subtitle of this header
-     * @param attachment the attachment of this header
-     * @return a non-null new header
-     */
-    @Builder(builderClassName = "ThumbnailProductHeaderBuilder", builderMethodName = "withThumbnailMessageBuilder")
-    private static ProductHeader thumbnailBuilder(String title, String subtitle, byte[] attachment) {
-        return ProductHeader.builder()
-                .title(title)
-                .subtitle(subtitle)
-                .thumbnailAttachment(attachment)
-                .hasMediaAttachment(true)
-                .build();
-    }
-
-    /**
-     * Constructs a new builder to create a header with a video
-     *
-     * @param title      the title of this header
-     * @param subtitle   the subtitle of this header
-     * @param attachment the attachment of this header
-     * @return a non-null new header
-     */
-    @Builder(builderClassName = "VideoProductHeaderBuilder", builderMethodName = "withVideoMessageBuilder")
-    private static ProductHeader videoBuilder(String title, String subtitle, VideoMessage attachment) {
-        return ProductHeader.builder()
-                .title(title)
-                .subtitle(subtitle)
-                .videoAttachment(attachment)
-                .hasMediaAttachment(true)
-                .build();
+                .subtitle(subtitle);
+        switch (attachment){
+            case DocumentMessage documentMessage -> builder.attachmentDocument(documentMessage)
+                    .mediaAttachment(true);
+            case ImageMessage imageMessage -> builder.attachmentImage(imageMessage)
+                    .mediaAttachment(true);
+            case ProductHeaderThumbnail productHeaderThumbnail -> builder.attachmentThumbnail(productHeaderThumbnail.thumbnail())
+                    .mediaAttachment(true);
+            case VideoMessage videoMessage -> builder.attachmentVideo(videoMessage)
+                    .mediaAttachment(true);
+        }
+        return builder.build();
     }
 
     /**
@@ -148,19 +103,76 @@ public class ProductHeader implements ProtobufMessage {
      * @return a non-null attachment type
      */
     public AttachmentType attachmentType() {
-        if (documentAttachment != null) {
-            return AttachmentType.DOCUMENT_MESSAGE;
+        if (attachmentDocument != null) {
+            return AttachmentType.DOCUMENT;
         }
-        if (imageAttachment != null) {
-            return AttachmentType.IMAGE_MESSAGE;
+        if (attachmentImage != null) {
+            return AttachmentType.IMAGE;
         }
-        if (thumbnailAttachment != null) {
+        if (attachmentThumbnail != null) {
             return AttachmentType.THUMBNAIL;
         }
-        if (videoAttachment != null) {
-            return AttachmentType.VIDEO_MESSAGE;
+        if (attachmentVideo != null) {
+            return AttachmentType.VIDEO;
         }
         return AttachmentType.NONE;
+    }
+
+    /**
+     * Returns the attachment of this message if present
+     *
+     * @return a non-null attachment type
+     */
+    public Optional<ProductHeaderAttachment> attachment() {
+        if (attachmentDocument != null) {
+            return Optional.of(attachmentDocument);
+        }
+        if (attachmentImage != null) {
+            return Optional.of(attachmentImage);
+        }
+        if (attachmentThumbnail != null) {
+            return Optional.of(ProductHeaderThumbnail.of(attachmentThumbnail));
+        }
+        if (attachmentVideo != null) {
+            return Optional.of(attachmentVideo);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Returns the document attachment of this message if present
+     *
+     * @return an optional
+     */
+    public Optional<DocumentMessage> attachmentDocument() {
+        return Optional.ofNullable(attachmentDocument);
+    }
+
+    /**
+     * Returns the image attachment of this message if present
+     *
+     * @return an optional
+     */
+    public Optional<ImageMessage> attachmentImage() {
+        return Optional.ofNullable(attachmentImage);
+    }
+
+    /**
+     * Returns the thumbnail attachment of this message if present
+     *
+     * @return an optional
+     */
+    public Optional<byte[]> attachmentThumbnail() {
+        return Optional.ofNullable(attachmentThumbnail);
+    }
+
+    /**
+     * Returns the video attachment of this message if present
+     *
+     * @return an optional
+     */
+    public Optional<VideoMessage> attachmentVideo() {
+        return Optional.ofNullable(attachmentVideo);
     }
 
     /**
@@ -177,11 +189,11 @@ public class ProductHeader implements ProtobufMessage {
         /**
          * Document message
          */
-        DOCUMENT_MESSAGE(3),
+        DOCUMENT(3),
         /**
          * Image attachment
          */
-        IMAGE_MESSAGE(4),
+        IMAGE(4),
         /**
          * Jpeg attachment
          */
@@ -189,7 +201,7 @@ public class ProductHeader implements ProtobufMessage {
         /**
          * Video attachment
          */
-        VIDEO_MESSAGE(7);
+        VIDEO(7);
         
         @Getter
         private final int index;

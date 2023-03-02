@@ -1,18 +1,12 @@
 package it.auties.whatsapp.model.message.button;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.business.BusinessCollection;
 import it.auties.whatsapp.model.business.BusinessNativeFlow;
 import it.auties.whatsapp.model.business.BusinessShop;
 import it.auties.whatsapp.model.button.TemplateFormatter;
 import it.auties.whatsapp.model.info.ContextInfo;
-import it.auties.whatsapp.model.message.model.ButtonMessage;
-import it.auties.whatsapp.model.message.model.ContextualMessage;
-import it.auties.whatsapp.model.message.model.MessageCategory;
-import it.auties.whatsapp.model.message.model.MessageType;
+import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.product.ProductBody;
 import it.auties.whatsapp.model.product.ProductFooter;
 import it.auties.whatsapp.model.product.ProductHeader;
@@ -21,7 +15,7 @@ import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.Arrays;
+import java.util.Optional;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static java.util.Objects.requireNonNullElseGet;
@@ -60,19 +54,19 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
      * Shop store message
      */
     @ProtobufProperty(index = 4, type = MESSAGE, implementation = BusinessShop.class)
-    private BusinessShop shopContent;
+    private BusinessShop contentShop;
 
     /**
      * Collection message
      */
     @ProtobufProperty(index = 5, type = MESSAGE, implementation = BusinessCollection.class)
-    private BusinessCollection collectionContent;
+    private BusinessCollection contentCollection;
 
     /**
      * Native flow message
      */
     @ProtobufProperty(index = 6, type = MESSAGE, implementation = BusinessNativeFlow.class)
-    private BusinessNativeFlow nativeFlowContent;
+    private BusinessNativeFlow contentNativeFlow;
 
     /**
      * The context info of this message
@@ -82,7 +76,7 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
     private ContextInfo contextInfo = new ContextInfo();
 
     /**
-     * Constructs a new builder to create an interactive message with a shop
+     * Constructs a new builder to create an interactive message
      *
      * @param header      the header of this message
      * @param body        the body of this message
@@ -91,57 +85,20 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
      * @param contextInfo the context info of this message
      * @return a non-null new message
      */
-    @Builder(builderClassName = "ShopInteractiveMessageBuilder", builderMethodName = "withShopMessageBuilder")
-    private static InteractiveMessage shopBuilder(ProductHeader header, String body, String footer, BusinessShop content, ContextInfo contextInfo) {
-        return InteractiveMessage.builder()
+    @Builder(builderClassName = "InteractiveMessageSimpleBuilder", builderMethodName = "simpleBuilder")
+    private static InteractiveMessage customBuilder(ProductHeader header, String body, String footer, InteractiveMessageContent content, ContextInfo contextInfo) {
+        var builder = InteractiveMessage.builder()
                 .header(header)
                 .body(ProductBody.of(body))
                 .footer(ProductFooter.of(footer))
-                .shopContent(content)
-                .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new))
-                .build();
-    }
-
-    /**
-     * Constructs a new builder to create an interactive message with a collection
-     *
-     * @param header      the header of this message
-     * @param body        the body of this message
-     * @param footer      the footer of this message
-     * @param content     the content of this message
-     * @param contextInfo the context info of this message
-     * @return a non-null new message
-     */
-    @Builder(builderClassName = "CollectionInteractiveMessageBuilder", builderMethodName = "withCollectionMessageBuilder")
-    private static InteractiveMessage collectionBuilder(ProductHeader header, String body, String footer, BusinessCollection content, ContextInfo contextInfo) {
-        return InteractiveMessage.builder()
-                .header(header)
-                .body(ProductBody.of(body))
-                .footer(ProductFooter.of(footer))
-                .collectionContent(content)
-                .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new))
-                .build();
-    }
-
-    /**
-     * Constructs a new builder to create an interactive message with a native flow
-     *
-     * @param header      the header of this message
-     * @param body        the body of this message
-     * @param footer      the footer of this message
-     * @param content     the content of this message
-     * @param contextInfo the context info of this message
-     * @return a non-null new message
-     */
-    @Builder(builderClassName = "NativeFlowInteractiveMessageBuilder", builderMethodName = "withNativeFlowMessageBuilder")
-    private static InteractiveMessage nativeFlowBuilder(ProductHeader header, String body, String footer, BusinessNativeFlow content, ContextInfo contextInfo) {
-        return InteractiveMessage.builder()
-                .header(header)
-                .body(ProductBody.of(body))
-                .footer(ProductFooter.of(footer))
-                .nativeFlowContent(content)
-                .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new))
-                .build();
+                .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new));
+        switch (content){
+            case BusinessShop businessShop -> builder.contentShop(businessShop);
+            case BusinessCollection businessCollection -> builder.contentCollection(businessCollection);
+            case BusinessNativeFlow businessNativeFlow -> builder.contentNativeFlow(businessNativeFlow);
+            case null -> {}
+        }
+        return builder.build();
     }
 
     /**
@@ -149,17 +106,60 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
      *
      * @return a non-null content type
      */
-    public ContentType contentType() {
-        if (shopContent != null) {
-            return ContentType.SHOP_MESSAGE;
+    public InteractiveMessageContentType contentType() {
+        return content()
+                .map(InteractiveMessageContent::contentType)
+                .orElse(InteractiveMessageContentType.NONE);
+    }
+
+    /**
+     * Returns the content of this message if it's there
+     *
+     * @return a non-null content type
+     */
+    public Optional<InteractiveMessageContent> content() {
+        if (contentShop != null) {
+            return Optional.of(contentShop);
         }
-        if (collectionContent != null) {
-            return ContentType.COLLECTION_MESSAGE;
+        if (contentCollection != null) {
+            return Optional.of(contentCollection);
         }
-        if (nativeFlowContent != null) {
-            return ContentType.NATIVE_FLOW_MESSAGE;
+        if (contentNativeFlow != null) {
+            return Optional.of(contentNativeFlow);
         }
-        return ContentType.NONE;
+        return Optional.empty();
+    }
+
+    /**
+     * Returns the shop content of this message if present
+     *
+     * @return an optional
+     */
+    public Optional<BusinessShop> contentShop() {
+        return Optional.ofNullable(contentShop);
+    }
+
+    /**
+     * Returns the collection content of this message if present
+     *
+     * @return an optional
+     */
+    public Optional<BusinessCollection> contentCollection() {
+        return Optional.ofNullable(contentCollection);
+    }
+
+    /**
+     * Returns the native flow content of this message if present
+     *
+     * @return an optional
+     */
+    public Optional<BusinessNativeFlow> contentNativeFlow() {
+        return Optional.ofNullable(contentNativeFlow);
+    }
+
+    @Override
+    public TemplateFormatterType templateType() {
+        return TemplateFormatterType.INTERACTIVE;
     }
 
     @Override
@@ -170,39 +170,5 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
     @Override
     public MessageCategory category() {
         return MessageCategory.STANDARD;
-    }
-
-    /**
-     * The constants of this enumerated type describe the various types of content that an interactive
-     * message can wrap
-     */
-    @AllArgsConstructor
-    @Accessors(fluent = true)
-    @ProtobufName("InteractiveMessageType")
-    public enum ContentType implements ProtobufMessage {
-        /**
-         * No content
-         */
-        NONE(0),
-        /**
-         * Shop
-         */
-        SHOP_MESSAGE(1),
-        /**
-         * Collection
-         */
-        COLLECTION_MESSAGE(2),
-        /**
-         * Native flow
-         */
-        NATIVE_FLOW_MESSAGE(3);
-        
-        @Getter
-        private final int index;
-
-        @JsonCreator
-        public static ContentType of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(NONE);
-        }
     }
 }

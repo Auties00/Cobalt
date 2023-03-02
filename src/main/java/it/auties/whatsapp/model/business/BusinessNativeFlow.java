@@ -1,15 +1,15 @@
 package it.auties.whatsapp.model.business;
 
-import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.model.button.NativeFlowButton;
+import it.auties.whatsapp.model.message.button.InteractiveMessageContent;
+import it.auties.whatsapp.model.message.button.InteractiveMessageContentType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static it.auties.protobuf.base.ProtobufType.*;
@@ -22,7 +22,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public final class BusinessNativeFlow implements ProtobufMessage {
+public final class BusinessNativeFlow implements InteractiveMessageContent {
     /**
      * The buttons of this flow
      */
@@ -40,4 +40,9 @@ public final class BusinessNativeFlow implements ProtobufMessage {
      */
     @ProtobufProperty(index = 3, type = INT32)
     private int version;
+
+    @Override
+    public InteractiveMessageContentType contentType() {
+        return InteractiveMessageContentType.NATIVE_FLOW;
+    }
 }

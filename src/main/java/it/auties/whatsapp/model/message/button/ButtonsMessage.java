@@ -10,16 +10,15 @@ import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageType;
-import it.auties.whatsapp.model.message.standard.DocumentMessage;
-import it.auties.whatsapp.model.message.standard.ImageMessage;
-import it.auties.whatsapp.model.message.standard.LocationMessage;
-import it.auties.whatsapp.model.message.standard.VideoMessage;
+import it.auties.whatsapp.model.message.standard.*;
 import lombok.*;
+import lombok.Builder.Default;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.STRING;
@@ -28,11 +27,10 @@ import static java.util.Objects.requireNonNullElseGet;
 /**
  * A model class that represents a message that contains buttons inside
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
 @EqualsAndHashCode(callSuper = true)
+@AllArgsConstructor
 @Jacksonized
+@Data
 @Builder
 @Accessors(fluent = true)
 public final class ButtonsMessage extends ContextualMessage implements ButtonMessage {
@@ -82,7 +80,7 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
      * The context info of this message
      */
     @ProtobufProperty(index = 8, type = MESSAGE, implementation = ContextInfo.class)
-    @Builder.Default
+    @Default
     private ContextInfo contextInfo = new ContextInfo();
 
     /**
@@ -98,128 +96,134 @@ public final class ButtonsMessage extends ContextualMessage implements ButtonMes
     private HeaderType headerType;
 
     /**
-     * Constructs a new builder to create a buttons message without a header. The result can be later
-     * sent using {@link Whatsapp#sendMessage(MessageInfo)}
+     * Constructs a new builder to create a buttons message.
+     * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
      *
      * @param body        the text body of this message
-     * @param footer      the text footer of this message
+     * @param footer      the footer of this message
      * @param contextInfo the context info that the new message wraps
      * @param buttons     the buttons of this message
      * @return a non-null new message
      */
-    @Builder(builderClassName = "EmptyButtonsMessageBuilder", builderMethodName = "withoutHeaderBuilder")
-    private static ButtonsMessage emptyBuilder(String body, String footer, ContextInfo contextInfo, List<Button> buttons) {
-        return createBuilder(HeaderType.EMPTY, body, footer, contextInfo, buttons).build();
-    }
-
-    private static ButtonsMessageBuilder createBuilder(HeaderType image, String body, String footer, ContextInfo contextInfo, List<Button> buttons) {
-        return ButtonsMessage.builder()
-                .headerType(image)
+    @Builder(builderClassName = "ButtonsMessageSimpleBuilder", builderMethodName = "simpleBuilder")
+    private static ButtonsMessage customBuilder(ButtonsMessageHeader header, String body, String footer, ContextInfo contextInfo, List<Button> buttons) {
+        var builder = ButtonsMessage.builder()
                 .body(body)
                 .footer(footer)
                 .contextInfo(requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .buttons(requireNonNullElseGet(buttons, List::of));
+        switch (header){
+            case DocumentMessage documentMessage -> builder.headerDocument(documentMessage).headerType(HeaderType.DOCUMENT);
+            case ImageMessage imageMessage -> builder.headerImage(imageMessage).headerType(HeaderType.IMAGE);
+            case LocationMessage locationMessage -> builder.headerLocation(locationMessage).headerType(HeaderType.LOCATION);
+            case TextMessage textMessage -> builder.headerText(textMessage.text()).headerType(HeaderType.TEXT);
+            case VideoMessage videoMessage -> builder.headerVideo(videoMessage).headerType(HeaderType.VIDEO);
+            case null -> builder.headerType(HeaderType.EMPTY);
+        }
+        return builder.build();
     }
 
     /**
-     * Constructs a new builder to create a buttons message with a text header. The result can be
-     * later sent using {@link Whatsapp#sendMessage(MessageInfo)}
+     * Returns the type of this message
      *
-     * @param header      the text header
-     * @param body        the text body of this message
-     * @param footer      the text footer of this message
-     * @param contextInfo the context info that the new message wraps
-     * @param buttons     the buttons of this message
-     * @return a non-null new message
+     * @return a non-null type
      */
-    @Builder(builderClassName = "TextButtonsMessageBuilder", builderMethodName = "withTextHeaderBuilder")
-    private static ButtonsMessage textBuilder(String header, String body, String footer, ContextInfo contextInfo, List<Button> buttons) {
-        return createBuilder(HeaderType.TEXT, body, footer, contextInfo, buttons).headerText(header).build();
-    }
-
-    /**
-     * Constructs a new builder to create a buttons message with a document header. The result can be
-     * later sent using {@link Whatsapp#sendMessage(MessageInfo)}
-     *
-     * @param header      the document header
-     * @param body        the text body of this message
-     * @param footer      the text footer of this message
-     * @param contextInfo the context info that the new message wraps
-     * @param buttons     the buttons of this message
-     * @return a non-null new message
-     */
-    @Builder(builderClassName = "DocumentButtonsMessageBuilder", builderMethodName = "withDocumentHeaderBuilder")
-    private static ButtonsMessage documentBuilder(DocumentMessage header, String body, String footer, ContextInfo contextInfo, List<Button> buttons) {
-        return createBuilder(HeaderType.DOCUMENT, body, footer, contextInfo, buttons).headerDocument(header).build();
-    }
-
-    /**
-     * Constructs a new builder to create a buttons message with an image header. The result can be
-     * later sent using {@link Whatsapp#sendMessage(MessageInfo)}
-     *
-     * @param header      the document header
-     * @param body        the text body of this message
-     * @param footer      the text footer of this message
-     * @param contextInfo the context info that the new message wraps
-     * @param buttons     the buttons of this message
-     * @return a non-null new message
-     */
-    @Builder(builderClassName = "ImageButtonsMessageBuilder", builderMethodName = "withImageHeaderBuilder")
-    private static ButtonsMessage imageBuilder(ImageMessage header, String body, String footer, ContextInfo contextInfo, List<Button> buttons) {
-        return createBuilder(HeaderType.IMAGE, body, footer, contextInfo, buttons).headerImage(header).build();
-    }
-
-    /**
-     * Constructs a new builder to create a buttons message with a video header. The result can be
-     * later sent using {@link Whatsapp#sendMessage(MessageInfo)}
-     *
-     * @param header      the document header
-     * @param body        the text body of this message
-     * @param footer      the text footer of this message
-     * @param contextInfo the context info that the new message wraps
-     * @param buttons     the buttons of this message
-     * @return a non-null new message
-     */
-    @Builder(builderClassName = "VideoButtonsMessageBuilder", builderMethodName = "withVideoHeaderBuilder")
-    private static ButtonsMessage videoBuilder(VideoMessage header, String body, String footer, ContextInfo contextInfo, List<Button> buttons) {
-        return createBuilder(HeaderType.VIDEO, body, footer, contextInfo, buttons).headerVideo(header).build();
-    }
-
-    /**
-     * Constructs a new builder to create a buttons message with a location header. The result can be
-     * later sent using {@link Whatsapp#sendMessage(MessageInfo)}
-     *
-     * @param header      the document header
-     * @param body        the text body of this message
-     * @param footer      the text footer of this message
-     * @param contextInfo the context info that the new message wraps
-     * @param buttons     the buttons of this message
-     * @return a non-null new message
-     */
-    @Builder(builderClassName = "LocationHeaderButtonsMessageBuilder", builderMethodName = "withLocationHeaderBuilder")
-    private static ButtonsMessage locationBuilder(LocationMessage header, String body, String footer, ContextInfo contextInfo, List<Button> buttons) {
-        return createBuilder(HeaderType.LOCATION, body, footer, contextInfo, buttons).headerLocation(header).build();
-    }
-
     @Override
     public MessageType type() {
         return MessageType.BUTTONS;
     }
 
-    public ButtonsMessage.HeaderType headerType() {
+    /**
+     * Returns the type of header of this message
+     *
+     * @return a non-null type
+     */
+    public HeaderType headerType() {
         if (headerText != null) {
-            return ButtonsMessage.HeaderType.EMPTY;
+            return HeaderType.TEXT;
         }
         if (headerDocument != null) {
-            return ButtonsMessage.HeaderType.TEXT;
+            return HeaderType.DOCUMENT;
         }
         if (headerImage != null) {
-            return ButtonsMessage.HeaderType.DOCUMENT;
+            return HeaderType.IMAGE;
         }
         if (headerVideo != null) {
-            return ButtonsMessage.HeaderType.IMAGE;
+            return HeaderType.VIDEO;
         }
-        return ButtonsMessage.HeaderType.VIDEO;
+        if(headerLocation != null){
+            return HeaderType.LOCATION;
+        }
+        return HeaderType.EMPTY;
+    }
+
+    /**
+     * Returns the header of this message
+     *
+     * @return an optional
+     */
+    public Optional<ButtonsMessageHeader> header(){
+        if (headerText != null) {
+            return Optional.of(TextMessage.of(headerText));
+        }
+        if (headerDocument != null) {
+            return Optional.of(headerDocument);
+        }
+        if (headerImage != null) {
+            return Optional.of(headerImage);
+        }
+        if (headerVideo != null) {
+            return Optional.of(headerVideo);
+        }
+        if(headerLocation != null){
+            return Optional.of(headerLocation);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Returns the text header of this message if present
+     *
+     * @return an optional
+     */
+    public Optional<String> headerText(){
+        return Optional.ofNullable(headerText);
+    }
+
+    /**
+     * Returns the document header of this message if present
+     *
+     * @return an optional
+     */
+    public Optional<DocumentMessage> headerDocument(){
+        return Optional.ofNullable(headerDocument);
+    }
+
+    /**
+     * Returns the image header of this message if present
+     *
+     * @return an optional
+     */
+    public Optional<ImageMessage> headerImage(){
+        return Optional.ofNullable(headerImage);
+    }
+
+    /**
+     * Returns the video header of this message if present
+     *
+     * @return an optional
+     */
+    public Optional<VideoMessage> headerVideo(){
+        return Optional.ofNullable(headerVideo);
+    }
+
+    /**
+     * Returns the location header of this message if present
+     *
+     * @return an optional
+     */
+    public Optional<LocationMessage> headerLocation(){
+        return Optional.ofNullable(headerLocation);
     }
 
     /**

@@ -1,8 +1,9 @@
 package it.auties.whatsapp.model.business;
 
-import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
+import it.auties.whatsapp.model.message.button.InteractiveMessageContent;
+import it.auties.whatsapp.model.message.button.InteractiveMessageContentType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,7 +24,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("InteractiveMessage.ShopMessage")
-public final class BusinessShop implements ProtobufMessage {
+public final class BusinessShop implements InteractiveMessageContent {
     /**
      * The id of the shop
      */
@@ -41,6 +42,11 @@ public final class BusinessShop implements ProtobufMessage {
      */
     @ProtobufProperty(index = 3, type = INT32)
     private int version;
+
+    @Override
+    public InteractiveMessageContentType contentType() {
+        return InteractiveMessageContentType.SHOP;
+    }
 
     /**
      * The constants of this enumerated type describe the various types of surfaces that a
