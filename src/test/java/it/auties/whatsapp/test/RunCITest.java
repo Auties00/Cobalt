@@ -28,6 +28,7 @@ import it.auties.whatsapp.model.message.button.ListMessage;
 import it.auties.whatsapp.model.message.button.TemplateMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.standard.*;
+import it.auties.whatsapp.model.poll.PollOption;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.utils.ConfigUtils;
@@ -788,6 +789,26 @@ public class RunCITest implements Listener, JacksonProvider {
                 .build();
         api.sendMessage(contact, listMessage).join();
         log("Sent list message");
+    }
+
+    @Test
+    @Order(43)
+    public void testPollMessage() {
+        if (skip) {
+            return;
+        }
+
+        var pollOptionFirst = PollOption.of("First");
+        var pollOptionSecond = PollOption.of("Second");
+        var pollMessage = PollCreationMessage.of("Example poll", List.of(pollOptionFirst, pollOptionSecond));
+        var pollInfo = api.sendMessage(contact, pollMessage).join();
+        var firstUpdate = PollUpdateMessage.of(pollInfo, List.of(pollOptionFirst));
+        api.sendMessage(contact, firstUpdate).join();
+        var secondUpdate = PollUpdateMessage.of(pollInfo, List.of(pollOptionFirst, pollOptionSecond));
+        api.sendMessage(contact, secondUpdate).join();
+        var finalUpdate = PollUpdateMessage.of(pollInfo, List.of());
+        api.sendMessage(contact, finalUpdate).join();
+        log("Sent poll message");
     }
 
     @Test
