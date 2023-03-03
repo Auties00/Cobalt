@@ -95,7 +95,7 @@ class MessageHandler extends Handler implements JacksonProvider {
     }
 
     private void attributeOutgoingMessage(MessageSendRequest request) {
-        saveMessage(request.info(), "unknown");
+        saveMessage(request.info(), "unknown", false);
         attributeMessageReceipt(request.info());
     }
 
@@ -358,6 +358,7 @@ class MessageHandler extends Handler implements JacksonProvider {
 
     private void decode(Node infoNode, Node messageNode, String businessName) {
         try {
+            var offline = infoNode.attributes().hasKey("offline");
             var pushName = infoNode.attributes().getNullableString("notify");
             var timestamp = infoNode.attributes().getLong("t");
             var id = infoNode.attributes().getRequiredString("id");
@@ -404,7 +405,7 @@ class MessageHandler extends Handler implements JacksonProvider {
             attributeMessageReceipt(info);
             socketHandler.store().attribute(info);
             var category = infoNode.attributes().getString("category");
-            saveMessage(info, category);
+            saveMessage(info, category, offline);
             socketHandler.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.key().id()), null);
             socketHandler.sendMessageAck(infoNode, infoNode.attributes().toMap());
             socketHandler.onReply(info);
@@ -479,7 +480,7 @@ class MessageHandler extends Handler implements JacksonProvider {
         info.status(MessageStatus.READ);
     }
 
-    private void saveMessage(MessageInfo info, String category) {
+    private void saveMessage(MessageInfo info, String category, boolean offline) {
         processMessage(info);
         if (info.chatJid().type() == Type.STATUS) {
             socketHandler.store().addStatus(info);
@@ -504,7 +505,7 @@ class MessageHandler extends Handler implements JacksonProvider {
         if (!info.ignore()) {
             info.chat().unreadMessagesCount(info.chat().unreadMessagesCount() + 1);
         }
-        socketHandler.onNewMessage(info);
+        socketHandler.onNewMessage(info, offline);
     }
 
     private Node createPreKeyNode() {

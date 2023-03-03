@@ -397,6 +397,16 @@ public class Whatsapp {
     }
 
     /**
+     * Registers a new message listener
+     *
+     * @param onNewMessage the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addNewMessageListener(OnNewMarkedMessage onNewMessage) {
+        return addListener(onNewMessage);
+    }
+
+    /**
      * Registers a new status listener
      *
      * @param onNewMediaStatus the listener to register
@@ -593,6 +603,16 @@ public class Whatsapp {
      * @return the same instance
      */
     public Whatsapp addNewMessageListener(OnWhatsappNewMessage onNewMessage) {
+        return addListener(onNewMessage);
+    }
+
+    /**
+     * Registers a new message listener
+     *
+     * @param onNewMessage the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addNewMessageListener(OnWhatsappNewMarkedMessage onNewMessage) {
         return addListener(onNewMessage);
     }
 

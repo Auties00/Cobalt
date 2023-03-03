@@ -506,10 +506,12 @@ public class SocketHandler extends Handler implements SocketListener, JacksonPro
         });
     }
 
-    protected void onNewMessage(MessageInfo info) {
+    protected void onNewMessage(MessageInfo info, boolean offline) {
         callListenersAsync(listener -> {
             listener.onNewMessage(whatsapp, info);
             listener.onNewMessage(info);
+            listener.onNewMessage(whatsapp, info, offline);
+            listener.onNewMessage(info, offline);
         });
     }
 
