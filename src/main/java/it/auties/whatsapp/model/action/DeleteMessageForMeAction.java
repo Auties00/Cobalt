@@ -2,7 +2,6 @@ package it.auties.whatsapp.model.action;
 
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.util.Clock;
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

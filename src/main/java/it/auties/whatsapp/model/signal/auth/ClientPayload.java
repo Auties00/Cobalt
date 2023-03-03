@@ -11,7 +11,6 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 

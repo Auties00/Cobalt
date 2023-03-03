@@ -127,7 +127,6 @@ public final class StickerMessage extends MediaMessage {
      * Constructs a new builder to create a StickerMessage. The result can be later sent using
      * {@link Whatsapp#sendMessage(MessageInfo)}
      *
-     * @param mediaConnection the media connection to use to upload this message
      * @param media           the non-null sticker that the new message wraps
      * @param mimeType        the mime type of the new message, by default
      *                        {@link MediaMessageType#defaultMimeType()}

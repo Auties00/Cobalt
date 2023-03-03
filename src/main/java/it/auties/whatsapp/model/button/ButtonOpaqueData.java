@@ -11,7 +11,6 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static it.auties.protobuf.base.ProtobufType.*;
