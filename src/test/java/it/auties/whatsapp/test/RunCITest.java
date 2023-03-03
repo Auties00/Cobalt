@@ -136,7 +136,7 @@ public class RunCITest implements Listener, JacksonProvider {
             return;
         }
 
-        var response = api.hasWhatsapp(contact).join();
+        var response = api.hasWhatsapp(contact, ContactJid.of("123456789")).join();
         log("Has whatsapp? %s", response);
     }
 

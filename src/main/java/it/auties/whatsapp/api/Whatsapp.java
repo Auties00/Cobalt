@@ -1467,9 +1467,9 @@ public class Whatsapp {
      */
     public CompletableFuture<Map<ContactJid, HasWhatsappResponse>> hasWhatsapp(@NonNull ContactJidProvider... contacts) {
         var contactNodes = Arrays.stream(contacts)
-                .map(jid -> Node.of("contact", jid.toJid().toPhoneNumber()))
+                .map(jid -> Node.ofChildren("user", Node.of("contact", jid.toJid().toPhoneNumber())))
                 .toArray(Node[]::new);
-        return socketHandler.sendInteractiveQuery(Node.of("contact"), Node.ofChildren("user", contactNodes))
+        return socketHandler.sendInteractiveQuery(Node.of("contact"), contactNodes)
                 .thenApplyAsync(this::parseHasWhatsappResponse);
     }
 
