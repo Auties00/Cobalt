@@ -7,7 +7,6 @@ import it.auties.whatsapp.model.message.payment.PaymentInvoiceMessage;
 import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.util.LocalFileSystem;
 import it.auties.whatsapp.util.Medias;
-import it.auties.whatsapp.util.Validate;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -20,6 +19,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 /**
@@ -36,6 +36,11 @@ import java.util.Optional;
 @Accessors(fluent = true)
 @EqualsAndHashCode(callSuper = true)
 public abstract sealed class MediaMessage extends ContextualMessage implements AttachmentProvider permits PaymentInvoiceMessage, AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoMessage {
+    /**
+     * The folder where medias are saved
+     */
+    private static final Path MEDIA_FOLDER = LocalFileSystem.of("medias");
+
     /**
      * The cached decoded media, by default null
      */
@@ -65,8 +70,10 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
      * @return the non-null path where the file was downloaded
      */
     public Path save() {
-        return LocalFileSystem.of("medias")
-                .resolve("%s.%s".formatted(Bytes.ofRandom(5).toHex(), mediaType().fileExtension()));
+        var randomId = Bytes.ofRandom(5).toHex();
+        var extension = mediaType().fileExtension();
+        var fileName = "%s.%s".formatted(randomId, extension);
+        return save(MEDIA_FOLDER.resolve(fileName));
     }
 
     /**
@@ -77,15 +84,14 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
      * @return the non-null path where the file was downloaded
      */
     public Path save(@NonNull Path path) {
-        var result = decodedMedia();
-        Validate.isTrue(result.isEmpty(), "Cannot save media");
         try {
+            var data = decodedMedia().orElseThrow(() -> new NoSuchElementException("Cannot save a media that wasn't decoded correctly"));
             Files.createDirectories(path.getParent());
-            Files.write(path, result.get(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            Files.write(path, data, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            return path;
         } catch (IOException exception) {
             throw new UncheckedIOException("Cannot write media to file", exception);
         }
-        return path;
     }
 
     /**
@@ -98,7 +104,9 @@ public abstract sealed class MediaMessage extends ContextualMessage implements A
      */
     public Optional<byte[]> decodedMedia() {
         if (decodedMedia == null) {
-            this.decodedMedia = Medias.download(this).join().orElse(null);
+            this.decodedMedia = Medias.download(this)
+                    .join()
+                    .orElse(null);
         }
         return Optional.ofNullable(decodedMedia);
     }
