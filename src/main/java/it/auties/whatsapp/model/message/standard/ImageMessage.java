@@ -193,7 +193,7 @@ public final class ImageMessage extends MediaMessage implements ProductHeaderAtt
         var dimensions = Medias.getDimensions(media, false);
         return ImageMessage.builder()
                 .decodedMedia(media)
-                .mediaKeyTimestamp(Clock.nowInSeconds())
+                .mediaKeyTimestamp(Clock.nowSeconds())
                 .mimetype(requireNonNullElse(mimeType, IMAGE.defaultMimeType()))
                 .caption(caption)
                 .width(dimensions.width())

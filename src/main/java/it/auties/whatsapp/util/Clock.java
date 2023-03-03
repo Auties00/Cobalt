@@ -13,7 +13,7 @@ import static java.time.ZonedDateTime.ofInstant;
 
 @UtilityClass
 public class Clock {
-    public long nowInSeconds() {
+    public long nowSeconds() {
         return Instant.now().getEpochSecond();
     }
 

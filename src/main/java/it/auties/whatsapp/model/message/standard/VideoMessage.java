@@ -180,7 +180,7 @@ public final class VideoMessage extends MediaMessage implements ProductHeaderAtt
         var duration = Medias.getDuration(media, true);
         return VideoMessage.builder()
                 .decodedMedia(media)
-                .mediaKeyTimestamp(Clock.nowInSeconds())
+                .mediaKeyTimestamp(Clock.nowSeconds())
                 .mimetype(requireNonNullElse(mimeType, VIDEO.defaultMimeType()))
                 .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, Medias.Format.VIDEO).orElse(null))
                 .caption(caption)
@@ -213,7 +213,7 @@ public final class VideoMessage extends MediaMessage implements ProductHeaderAtt
         var duration = Medias.getDuration(media, true);
         return VideoMessage.builder()
                 .decodedMedia(media)
-                .mediaKeyTimestamp(Clock.nowInSeconds())
+                .mediaKeyTimestamp(Clock.nowSeconds())
                 .mimetype(requireNonNullElse(mimeType, VIDEO.defaultMimeType()))
                 .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, Medias.Format.VIDEO).orElse(null))
                 .caption(caption)

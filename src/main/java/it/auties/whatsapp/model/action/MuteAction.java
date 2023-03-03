@@ -34,7 +34,7 @@ public final class MuteAction implements Action {
      * The timestamp of the of this mute
      */
     @ProtobufProperty(index = 2, type = INT64)
-    private Long muteEndTimestampInSeconds;
+    private Long muteEndTimestampSeconds;
 
     /**
      * Auto mute
@@ -48,7 +48,7 @@ public final class MuteAction implements Action {
      * @return an optional
      */
     public Optional<ZonedDateTime> muteEnd() {
-        return Clock.parseSeconds(muteEndTimestampInSeconds);
+        return Clock.parseSeconds(muteEndTimestampSeconds);
     }
 
     /**
@@ -56,8 +56,8 @@ public final class MuteAction implements Action {
      *
      * @return a long
      */
-    public long muteEndTimestampInSeconds() {
-        return muteEndTimestampInSeconds == null ? 0 : muteEndTimestampInSeconds;
+    public long muteEndTimestampSeconds() {
+        return muteEndTimestampSeconds == null ? 0 : muteEndTimestampSeconds;
     }
 
     /**

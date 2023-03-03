@@ -15,6 +15,7 @@ import it.auties.whatsapp.model.chat.GroupMetadata;
 import it.auties.whatsapp.model.chat.PastParticipant;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactJid;
+import it.auties.whatsapp.model.contact.ContactJid.Server;
 import it.auties.whatsapp.model.contact.ContactJid.Type;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
@@ -26,6 +27,7 @@ import it.auties.whatsapp.model.message.server.SenderKeyDistributionMessage;
 import it.auties.whatsapp.model.message.standard.PollCreationMessage;
 import it.auties.whatsapp.model.message.standard.PollUpdateMessage;
 import it.auties.whatsapp.model.message.standard.ReactionMessage;
+import it.auties.whatsapp.model.poll.PollUpdate;
 import it.auties.whatsapp.model.poll.PollUpdateEncryptedOptions;
 import it.auties.whatsapp.model.request.Attributes;
 import it.auties.whatsapp.model.request.MessageSendRequest;
@@ -369,17 +371,19 @@ class MessageHandler extends Handler implements JacksonProvider {
             var participant = infoNode.attributes().getJid("participant").orElse(null);
             var messageBuilder = MessageInfo.builder();
             var keyBuilder = MessageKey.builder();
+            var receiver = socketHandler.store().userCompanionJid();
+            if(receiver == null){
+                return;
+            }
             if (from.hasServer(ContactJid.Server.WHATSAPP) || from.hasServer(ContactJid.Server.USER)) {
                 keyBuilder.chatJid(recipient);
                 keyBuilder.senderJid(from);
-                keyBuilder.fromMe(Objects.equals(from, socketHandler.store().userCompanionJid().toUserJid()));
+                keyBuilder.fromMe(Objects.equals(from, receiver));
                 messageBuilder.senderJid(from);
             } else {
                 keyBuilder.chatJid(from);
                 keyBuilder.senderJid(requireNonNull(participant, "Missing participant in group message"));
-                keyBuilder.fromMe(Objects.equals(participant.toUserJid(), socketHandler.store()
-                        .userCompanionJid()
-                        .toUserJid()));
+                keyBuilder.fromMe(Objects.equals(participant.toUserJid(), receiver));
                 messageBuilder.senderJid(requireNonNull(participant, "Missing participant in group message"));
             }
             if (messageNode == null) {
@@ -396,10 +400,11 @@ class MessageHandler extends Handler implements JacksonProvider {
             var messageContainer = BytesHelper.bytesToMessage(decodedMessage.message()).unbox();
             var key = keyBuilder.id(id).build();
             var info = messageBuilder.key(key)
+                    .broadcast(key.chatJid().hasServer(Server.BROADCAST))
                     .pushName(pushName)
                     .status(MessageStatus.DELIVERED)
                     .businessVerifiedName(businessName)
-                    .timestampInSeconds(timestamp)
+                    .timestampSeconds(timestamp)
                     .message(messageContainer)
                     .build();
             attributeMessageReceipt(info);
@@ -474,7 +479,7 @@ class MessageHandler extends Handler implements JacksonProvider {
         if (!info.fromMe() || !info.chatJid().equals(self)) {
             return;
         }
-        info.receipt().readTimestamp(info.timestampInSeconds());
+        info.receipt().readTimestamp(info.timestampSeconds());
         info.receipt().deliveredJids().add(self);
         info.receipt().readJids().add(self);
         info.status(MessageStatus.READ);
@@ -494,7 +499,7 @@ class MessageHandler extends Handler implements JacksonProvider {
             return;
         }
         var result = info.chat().addNewMessage(info);
-        if (!result || info.timestampInSeconds() <= socketHandler.store().initializationTimeStamp()) {
+        if (!result || info.timestampSeconds() <= socketHandler.store().initializationTimeStamp()) {
             return;
         }
         if (info.chat().archived() && socketHandler.store().unarchiveChats()) {
@@ -520,13 +525,11 @@ class MessageHandler extends Handler implements JacksonProvider {
 
     private void processMessage(MessageInfo info) {
         switch (info.message().content()) {
-            case SenderKeyDistributionMessage distributionMessage ->
-                    handleDistributionMessage(distributionMessage, info.senderJid());
-            case PollCreationMessage pollCreationMessage -> handlePollCreation(info.message(), pollCreationMessage);
+            case SenderKeyDistributionMessage distributionMessage -> handleDistributionMessage(distributionMessage, info.senderJid());
+            case PollCreationMessage pollCreationMessage -> handlePollCreation(info, pollCreationMessage);
             case PollUpdateMessage pollUpdateMessage -> handlePollUpdate(info, pollUpdateMessage);
             case ReactionMessage reactionMessage -> handleReactionMessage(info, reactionMessage);
-            default -> {
-            }
+            default -> {}
         }
     }
 
@@ -551,9 +554,9 @@ class MessageHandler extends Handler implements JacksonProvider {
                     .ifPresent(message -> onMessageDeleted(info, message));
             case EPHEMERAL_SETTING -> {
                 info.chat()
-                        .ephemeralMessagesToggleTime(info.timestampInSeconds())
+                        .ephemeralMessagesToggleTime(info.timestampSeconds())
                         .ephemeralMessageDuration(ChatEphemeralTimer.of(protocolMessage.ephemeralExpiration()));
-                var setting = new EphemeralSetting((int) protocolMessage.ephemeralExpiration(), info.timestampInSeconds());
+                var setting = new EphemeralSetting((int) protocolMessage.ephemeralExpiration(), info.timestampSeconds());
                 socketHandler.onSetting(setting);
             }
         }
@@ -576,8 +579,16 @@ class MessageHandler extends Handler implements JacksonProvider {
         builder.createIncoming(groupName, message);
     }
 
-    private void handlePollCreation(MessageContainer messageContainer, PollCreationMessage pollCreationMessage) {
-        messageContainer.deviceInfo().messageSecret().ifPresent(pollCreationMessage::encryptionKey);
+    private void handlePollCreation(MessageInfo info, PollCreationMessage pollCreationMessage) {
+        if(pollCreationMessage.encryptionKey() != null){
+            return;
+        }
+
+        info.message()
+                .deviceInfo()
+                .messageSecret()
+                .or(info::messageSecret)
+                .ifPresent(pollCreationMessage::encryptionKey);
     }
 
     private void handlePollUpdate(MessageInfo info, PollUpdateMessage pollUpdateMessage) {
@@ -585,9 +596,6 @@ class MessageHandler extends Handler implements JacksonProvider {
             var originalPollInfo = socketHandler.store()
                     .findMessageByKey(pollUpdateMessage.pollCreationMessageKey())
                     .orElseThrow(() -> new NoSuchElementException("Missing original poll message"));
-            Validate.isTrue(originalPollInfo.message()
-                    .type() == MessageType.POLL_CREATION, "Original poll message has wrong type: %s", originalPollInfo.message()
-                    .type());
             var originalPollMessage = (PollCreationMessage) originalPollInfo.message().content();
             pollUpdateMessage.pollCreationMessage(originalPollMessage);
             var originalPollSender = originalPollInfo.senderJid()
@@ -604,21 +612,24 @@ class MessageHandler extends Handler implements JacksonProvider {
                     .append(secretName)
                     .toByteArray();
             var useCaseSecret = Hkdf.extractAndExpand(originalPollMessage.encryptionKey(), useSecretPayload, 32);
-            var additionalData = "%s\0%s".formatted(originalPollInfo.id(), modificationSenderJid)
-                    .getBytes(StandardCharsets.UTF_8);
-            var decrypted = AesGmc.decrypt(pollUpdateMessage.encryptedMetadata()
-                    .iv(), pollUpdateMessage.encryptedMetadata().payload(), useCaseSecret, additionalData);
+            var additionalData = "%s\0%s".formatted(
+                    originalPollInfo.id(),
+                    modificationSenderJid
+            );
+            var metadata = pollUpdateMessage.encryptedMetadata();
+            var decrypted = AesGmc.decrypt(metadata.iv(), metadata.payload(), useCaseSecret, additionalData.getBytes(StandardCharsets.UTF_8));
             var pollVoteMessage = Protobuf.readMessage(decrypted, PollUpdateEncryptedOptions.class);
             var selectedOptions = pollVoteMessage.selectedOptions()
                     .stream()
-                    .map(hash -> Bytes.of(hash).toHex())
-                    .map(originalPollMessage.selectableOptionsHashesMap()::get)
+                    .map(sha256 -> originalPollMessage.selectableOptionsHashesMap().get(Bytes.of(sha256).toHex()))
                     .filter(Objects::nonNull)
                     .toList();
             originalPollMessage.selectedOptionsMap().put(modificationSenderJid, selectedOptions);
             pollUpdateMessage.votes(selectedOptions);
+            var update = new PollUpdate(info.key(), pollVoteMessage, Clock.nowInMilliseconds());
+            info.pollUpdates().add(update);
         } catch (Throwable throwable) {
-            socketHandler.errorHandler().handleFailure(Location.POLL, null);
+            socketHandler.errorHandler().handleFailure(Location.POLL, throwable);
         }
     }
 
@@ -645,6 +656,7 @@ class MessageHandler extends Handler implements JacksonProvider {
 
     private void onMessageDeleted(MessageInfo info, MessageInfo message) {
         info.chat().removeMessage(message);
+        message.revokeTimestampSeconds(Clock.nowSeconds());
         socketHandler.onMessageDeleted(message, true);
     }
 

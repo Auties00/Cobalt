@@ -12,9 +12,7 @@ import lombok.extern.jackson.Jacksonized;
 import static it.auties.protobuf.base.ProtobufType.BOOL;
 
 /**
- * A model class that represents additional metadata about a
- * {@link it.auties.whatsapp.model.message.standard.PollCreationMessage} Not currently used, so it's
- * package private
+ * A model class that represents additional metadata about a {@link it.auties.whatsapp.model.message.standard.PollCreationMessage}
  */
 @AllArgsConstructor
 @Data

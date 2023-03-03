@@ -126,7 +126,7 @@ public final class AudioMessage extends MediaMessage {
         var duration = Medias.getDuration(media, true);
         return AudioMessage.builder()
                 .decodedMedia(media)
-                .mediaKeyTimestamp(Clock.nowInSeconds())
+                .mediaKeyTimestamp(Clock.nowSeconds())
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
                 .duration(duration)
                 .mimetype(mimeType)

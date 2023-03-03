@@ -35,6 +35,7 @@ import static it.auties.protobuf.base.ProtobufType.*;
 @SuperBuilder
 @Accessors(fluent = true)
 @EqualsAndHashCode(callSuper = true)
+@ToString(exclude = "selectableOptionsHashesMap")
 @ProtobufName("PollCreationMessage")
 public final class PollCreationMessage extends ContextualMessage {
     /**
@@ -71,8 +72,7 @@ public final class PollCreationMessage extends ContextualMessage {
      * The encryption key of this poll
      */
     @ProtobufProperty(index = 1, name = "encKey", type = BYTES)
-    @Default
-    private byte[] encryptionKey = KeyHelper.senderKey();
+    private byte[] encryptionKey;
 
     /**
      * The context of this message
@@ -90,9 +90,14 @@ public final class PollCreationMessage extends ContextualMessage {
      * @return a non-null new message
      */
     @Builder(builderClassName = "SimplePollCreationMessageBuilder", builderMethodName = "simpleBuilder")
-    private static PollCreationMessage customBuilder(@NonNull String title, @NonNull List<PollOption> selectableOptions) {
-        Validate.isTrue(!selectableOptions.isEmpty(), "Options cannot be empty");
-        return PollCreationMessage.builder().title(title).selectableOptions(selectableOptions).build();
+    public static PollCreationMessage of(@NonNull String title, @NonNull List<PollOption> selectableOptions) {
+        Validate.isTrue(!title.isBlank(), "Title cannot be empty");
+        Validate.isTrue(selectableOptions.size() > 1, "Options must have at least two entries");
+        return PollCreationMessage.builder()
+                .encryptionKey(KeyHelper.senderKey())
+                .title(title)
+                .selectableOptions(selectableOptions)
+                .build();
     }
 
     /**
@@ -101,7 +106,7 @@ public final class PollCreationMessage extends ContextualMessage {
      * @param contact the non-null contact that voted in this poll
      * @return a non-null unmodifiable toMap
      */
-    public List<PollOption> getSelectedOptions(@NonNull ContactJidProvider contact) {
+    public List<PollOption> selectedOptions(@NonNull ContactJidProvider contact) {
         return Optional.of(selectedOptionsMap.get(contact.toJid()))
                 .map(Collections::unmodifiableList)
                 .orElseGet(List::of);

@@ -200,7 +200,7 @@ public final class Store implements Controller<Store> {
      */
     @Default
     @Getter
-    private long initializationTimeStamp = Clock.nowInSeconds();
+    private long initializationTimeStamp = Clock.nowSeconds();
 
     /**
      * The media connection associated with this store
@@ -571,7 +571,7 @@ public final class Store implements Controller<Store> {
         return chats.values()
                 .parallelStream()
                 .filter(Chat::isPinned)
-                .sorted(Comparator.comparingLong((Chat chat) -> chat.pinnedTimestampInSeconds()).reversed())
+                .sorted(Comparator.comparingLong((Chat chat) -> chat.pinnedTimestampSeconds()).reversed())
                 .toList();
     }
 
@@ -590,7 +590,7 @@ public final class Store implements Controller<Store> {
      * @return an immutable collection
      */
     public Collection<Chat> chats() {
-        return chats.values().stream().sorted(Comparator.comparingLong(Chat::timestampInSeconds).reversed()).toList();
+        return chats.values().stream().sorted(Comparator.comparingLong(Chat::timestampSeconds).reversed()).toList();
     }
 
     /**

@@ -31,7 +31,8 @@ import it.auties.whatsapp.model.message.button.TemplateMessage;
 import it.auties.whatsapp.model.message.model.*;
 import it.auties.whatsapp.model.message.server.ProtocolMessage;
 import it.auties.whatsapp.model.message.standard.*;
-import it.auties.whatsapp.model.poll.PollOption;
+import it.auties.whatsapp.model.poll.PollAdditionalMetadata;
+import it.auties.whatsapp.model.poll.PollUpdateEncryptedMetadata;
 import it.auties.whatsapp.model.poll.PollUpdateEncryptedOptions;
 import it.auties.whatsapp.model.privacy.GdprAccountReport;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
@@ -61,6 +62,7 @@ import static it.auties.bytes.Bytes.ofRandom;
 import static it.auties.whatsapp.api.WhatsappOptions.WebOptions.defaultOptions;
 import static it.auties.whatsapp.binary.PatchType.REGULAR_HIGH;
 import static it.auties.whatsapp.binary.PatchType.REGULAR_LOW;
+import static it.auties.whatsapp.model.contact.ContactJid.Server.BROADCAST;
 import static it.auties.whatsapp.model.contact.ContactJid.Server.GROUP;
 import static it.auties.whatsapp.model.message.standard.TextMessage.TextMessagePreviewType.NONE;
 import static it.auties.whatsapp.model.message.standard.TextMessage.TextMessagePreviewType.VIDEO;
@@ -1075,12 +1077,17 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<MessageInfo> sendMessage(@NonNull ContactJidProvider chat, @NonNull MessageContainer message) {
-        var key = MessageKey.builder().chatJid(chat.toJid()).fromMe(true).senderJid(store().userCompanionJid()).build();
+        var key = MessageKey.builder()
+                .chatJid(chat.toJid())
+                .fromMe(true)
+                .senderJid(store().userCompanionJid())
+                .build();
         var info = MessageInfo.builder()
                 .senderJid(store().userCompanionJid())
                 .key(key)
                 .message(message)
-                .timestampInSeconds(Clock.nowInSeconds())
+                .timestampSeconds(Clock.nowSeconds())
+                .broadcast(chat.toJid().hasServer(BROADCAST))
                 .build();
         return sendMessage(info);
     }
@@ -1094,8 +1101,8 @@ public class Whatsapp {
     public CompletableFuture<MessageInfo> sendMessage(@NonNull MessageInfo info) {
         store().attribute(info);
         attributeMessageMetadata(info);
-        var future = info.chat()
-                .hasUnreadMessages() ? markRead(info.chat()).thenComposeAsync(ignored -> socketHandler.sendMessage(MessageSendRequest.of(info))) : socketHandler.sendMessage(MessageSendRequest.of(info));
+        var future = info.chat().hasUnreadMessages() ? markRead(info.chat()).thenComposeAsync(ignored -> socketHandler.sendMessage(MessageSendRequest.of(info)))
+                : socketHandler.sendMessage(MessageSendRequest.of(info));
         return future.thenApplyAsync(ignored -> info);
     }
 
@@ -1108,7 +1115,7 @@ public class Whatsapp {
             case TextMessage textMessage -> attributeTextMessage(textMessage);
             case MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
             case PollCreationMessage pollCreationMessage -> attributePollCreationMessage(info, pollCreationMessage);
-            case PollUpdateMessage pollUpdateMessage -> attributePollUpdateMessage(pollUpdateMessage);
+            case PollUpdateMessage pollUpdateMessage -> attributePollUpdateMessage(info, pollUpdateMessage);
             case GroupInviteMessage groupInviteMessage -> attributeGroupInviteMessage(info, groupInviteMessage);
             case ButtonMessage buttonMessage -> attributeButtonMessage(info, buttonMessage);
             default -> {}
@@ -1192,26 +1199,47 @@ public class Whatsapp {
     private void attributePollCreationMessage(MessageInfo info, PollCreationMessage pollCreationMessage) {
         var pollEncryptionKey = requireNonNullElseGet(pollCreationMessage.encryptionKey(), KeyHelper::senderKey);
         pollCreationMessage.encryptionKey(pollEncryptionKey);
+        info.messageSecret(pollEncryptionKey);
         info.message().deviceInfo().messageSecret(pollEncryptionKey);
+        var metadata = new PollAdditionalMetadata(false);
+        info.pollAdditionalMetadata(metadata);
     }
 
-    private void attributePollUpdateMessage(PollUpdateMessage pollUpdateMessage) {
+    private void attributePollUpdateMessage(MessageInfo info, PollUpdateMessage pollUpdateMessage) {
         if (pollUpdateMessage.encryptedMetadata() != null) {
             return;
         }
         var iv = ofRandom(12).toByteArray();
-        var additionalData = "%s\0%s".formatted(pollUpdateMessage.pollCreationMessageKey().id(),
-                store().userCompanionJid().toUserJid()).getBytes(StandardCharsets.UTF_8);
+        var additionalData = "%s\0%s".formatted(
+                pollUpdateMessage.pollCreationMessageKey().id(),
+                store().userCompanionJid().toUserJid()
+        );
         var encryptedOptions = pollUpdateMessage.votes()
                 .stream()
-                .map(PollOption::name)
-                .map(Sha256::calculate)
-                .map(input -> AesGmc.encrypt(iv, input, pollUpdateMessage.pollCreationMessage()
-                        .encryptionKey(), additionalData))
+                .map(entry -> Sha256.calculate(entry.name()))
                 .toList();
-        var pollUpdateEncryptedOptions = PollUpdateEncryptedOptions.of(encryptedOptions);
-        pollUpdateMessage.encryptedMetadata().iv(iv);
-        pollUpdateMessage.encryptedMetadata().iv(Protobuf.writeMessage(pollUpdateEncryptedOptions));
+        var pollUpdateEncryptedOptions = Protobuf.writeMessage(PollUpdateEncryptedOptions.of(encryptedOptions));
+        var originalPollInfo = socketHandler.store()
+                .findMessageByKey(pollUpdateMessage.pollCreationMessageKey())
+                .orElseThrow(() -> new NoSuchElementException("Missing original poll message"));
+        var originalPollMessage = (PollCreationMessage) originalPollInfo.message().content();
+        var originalPollSender = originalPollInfo.senderJid()
+                .toUserJid()
+                .toString()
+                .getBytes(StandardCharsets.UTF_8);
+        var modificationSenderJid = info.senderJid().toUserJid();
+        pollUpdateMessage.voter(modificationSenderJid);
+        var modificationSender = modificationSenderJid.toString().getBytes(StandardCharsets.UTF_8);
+        var secretName = pollUpdateMessage.secretName().getBytes(StandardCharsets.UTF_8);
+        var useSecretPayload = Bytes.of(pollUpdateMessage.pollCreationMessageKey().id())
+                .append(originalPollSender)
+                .append(modificationSender)
+                .append(secretName)
+                .toByteArray();
+        var useCaseSecret = Hkdf.extractAndExpand(originalPollMessage.encryptionKey(), useSecretPayload, 32);
+        var pollUpdateEncryptedPayload = AesGmc.encrypt(iv, pollUpdateEncryptedOptions, useCaseSecret, additionalData.getBytes(StandardCharsets.UTF_8));
+        var pollUpdateEncryptedMetadata = new PollUpdateEncryptedMetadata(pollUpdateEncryptedPayload, iv);
+        pollUpdateMessage.encryptedMetadata(pollUpdateEncryptedMetadata);
     }
 
     // Credit to Baileys: https://github.com/adiwajshing/Baileys/blob/f0bdb12e56cea8b0bfbb0dff37c01690274e3e31/src/Utils/messages.ts#L781
@@ -1325,6 +1353,10 @@ public class Whatsapp {
                 .getOrDefault(PrivacySettingType.READ_RECEIPTS, PrivacySettingValue.EVERYONE);
         var type = readReceipts == PrivacySettingValue.EVERYONE ? "read" : "read-self";
         socketHandler.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.id()), type);
+        var count = info.chat().unreadMessagesCount();
+        if(count > 0) {
+            info.chat().unreadMessagesCount(count - 1);
+        }
         return CompletableFuture.completedFuture(info.status(MessageStatus.READ));
     }
 
@@ -2012,7 +2044,7 @@ public class Whatsapp {
                     .senderJid(sender)
                     .key(key)
                     .message(MessageContainer.of(message))
-                    .timestampInSeconds(Clock.nowInSeconds())
+                    .timestampSeconds(Clock.nowSeconds())
                     .build();
             var request = MessageSendRequest.builder()
                     .info(revokeInfo)
@@ -2021,7 +2053,7 @@ public class Whatsapp {
             return socketHandler.sendMessage(request).thenApplyAsync(ignored -> info);
         }
         var range = createRange(info.chatJid(), false);
-        var deleteMessageAction = DeleteMessageForMeAction.of(false, info.timestampInSeconds());
+        var deleteMessageAction = DeleteMessageForMeAction.of(false, info.timestampSeconds());
         var syncAction = ActionValueSync.of(deleteMessageAction);
         var request = PatchRequest.of(REGULAR_HIGH, syncAction, SET, 3, info.chatJid()
                 .toString(), info.id(), fromMeToFlag(info), participantToFlag(info));

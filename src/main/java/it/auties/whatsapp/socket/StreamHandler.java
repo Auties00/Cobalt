@@ -142,36 +142,46 @@ class StreamHandler extends Handler implements JacksonProvider {
     }
 
     private void digestReceipt(Node node) {
-        var type = node.attributes().getOptionalString("type");
-        var status = type.flatMap(MessageStatus::of).orElse(MessageStatus.DELIVERED);
-        var retry = type.filter(entry -> entry.equals("retry")).isPresent();
         var chat = node.attributes()
                 .getJid("from")
                 .filter(jid -> jid.type() != Type.STATUS)
                 .flatMap(socketHandler.store()::findChatByJid)
                 .orElse(null);
+        getReceiptsMessageIds(node)
+                .stream()
+                .map(messageId -> chat == null ? socketHandler.store().findStatusById(messageId) : socketHandler.store().findMessageById(chat, messageId))
+                .flatMap(Optional::stream)
+                .forEach(message -> digestReceipt(node, chat, message));
+        var attributes = Attributes.of()
+                .put("class", "receipt")
+                .put("type", node.attributes().getNullableString("type"), Objects::nonNull)
+                .toMap();
+        socketHandler.sendMessageAck(node, attributes);
+    }
+
+    private void digestReceipt(Node node, Chat chat, MessageInfo message) {
+        var type = node.attributes().getOptionalString("type");
+        var status = type.flatMap(MessageStatus::of)
+                .orElse(MessageStatus.DELIVERED);
         var participant = node.attributes()
                 .getJid("participant")
                 .flatMap(socketHandler.store()::findContactByJid)
                 .orElse(null);
-        getReceiptsMessageIds(node).stream()
-                .map(messageId -> chat == null ? socketHandler.store().findStatusById(messageId) : socketHandler.store()
-                        .findMessageById(chat, messageId))
-                .flatMap(Optional::stream)
-                .forEach(message -> {
-                    message.status(status);
-                    updateReceipt(status, chat, participant, message);
-                    socketHandler.onMessageStatus(status, participant, message, chat);
-                    sendMessageRetry(retry, message);
-                });
-        var attributes = Attributes.of().put("class", "receipt").put("type", type, Objects::nonNull).toMap();
-        socketHandler.sendMessageAck(node, attributes);
-    }
+        if(chat != null && chat.unreadMessagesCount() > 0) {
+            chat.unreadMessagesCount(chat.unreadMessagesCount() - 1);
+        }
 
-    private void sendMessageRetry(boolean retry, MessageInfo message) {
-        if (!retry) {
+        message.status(status);
+        updateReceipt(status, chat, participant, message);
+        socketHandler.onMessageStatus(status, participant, message, chat);
+        if (!Objects.equals(type.orElse(null), "retry")) {
             return;
         }
+
+        sendMessageRetry(message);
+    }
+
+    private void sendMessageRetry(MessageInfo message) {
         if (!message.fromMe()) {
             return;
         }
@@ -199,8 +209,8 @@ class StreamHandler extends Handler implements JacksonProvider {
             return;
         }
         switch (status) {
-            case READ -> message.receipt().readTimestamp(Clock.nowInSeconds());
-            case PLAYED -> message.receipt().playedTimestamp(Clock.nowInSeconds());
+            case READ -> message.receipt().readTimestamp(Clock.nowSeconds());
+            case PLAYED -> message.receipt().playedTimestamp(Clock.nowSeconds());
         }
     }
 
@@ -295,7 +305,7 @@ class StreamHandler extends Handler implements JacksonProvider {
     private void addMessageForGroupStubType(Chat chat, StubType stubType, long timestamp) {
         var key = MessageKey.builder().chatJid(chat.jid()).build();
         var message = MessageInfo.builder()
-                .timestampInSeconds(timestamp)
+                .timestampSeconds(timestamp)
                 .key(key)
                 .ignore(true)
                 .stubType(stubType)

@@ -150,7 +150,7 @@ public final class DocumentMessage extends MediaMessage implements ProductHeader
     private static DocumentMessage customBuilder(byte[] media, String mimeType, String title, int pageCount, String fileName, byte[] thumbnail, ContextInfo contextInfo) {
         return DocumentMessage.builder()
                 .decodedMedia(media)
-                .mediaKeyTimestamp(Clock.nowInSeconds())
+                .mediaKeyTimestamp(Clock.nowSeconds())
                 .mimetype(Optional.ofNullable(mimeType)
                         .or(() -> Medias.getMimeType(fileName))
                         .or(() -> Medias.getMimeType(media))

@@ -34,7 +34,7 @@ public final class DeleteMessageForMeAction implements Action {
      * The timestamp of the message
      */
     @ProtobufProperty(index = 2, type = INT64)
-    private long messageTimestampInSeconds;
+    private long messageTimestampSeconds;
 
     /**
      * Returns when the deleted message was sent
@@ -42,7 +42,7 @@ public final class DeleteMessageForMeAction implements Action {
      * @return an optional
      */
     public Optional<ZonedDateTime> messageTimestamp() {
-        return Clock.parseSeconds(messageTimestampInSeconds);
+        return Clock.parseSeconds(messageTimestampSeconds);
     }
 
     /**

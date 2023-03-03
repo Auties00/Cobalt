@@ -140,7 +140,7 @@ public final class StickerMessage extends MediaMessage {
     private static StickerMessage customBuilder(byte[] media, String mimeType, byte[] thumbnail, boolean animated, ContextInfo contextInfo) {
         return StickerMessage.builder()
                 .decodedMedia(media)
-                .mediaKeyTimestamp(Clock.nowInSeconds())
+                .mediaKeyTimestamp(Clock.nowSeconds())
                 .mimetype(requireNonNullElse(mimeType, STICKER.defaultMimeType()))
                 .thumbnail(thumbnail != null ? thumbnail : Medias.getThumbnail(media, PNG).orElse(null))
                 .animated(animated)

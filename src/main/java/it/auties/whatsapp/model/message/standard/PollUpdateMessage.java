@@ -24,6 +24,7 @@ import lombok.extern.jackson.Jacksonized;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import static it.auties.protobuf.base.ProtobufType.INT64;
@@ -72,43 +73,50 @@ public final class PollUpdateMessage implements Message {
      * Metadata about this message
      */
     @ProtobufProperty(index = 3, name = "metadata", type = MESSAGE)
-    @Default
-    private PollUpdateMessageMetadata metadata = new PollUpdateMessageMetadata();
+    private PollUpdateMessageMetadata metadata;
 
     /**
      * The timestamp of this message
      */
     @ProtobufProperty(index = 4, name = "senderTimestampMs", type = INT64)
     @Default
-    private long senderTimestampMilliseconds = Clock.nowInSeconds();
+    private long senderTimestampMilliseconds = Clock.nowSeconds();
 
     /**
      * Constructs a new builder to create a PollCreationMessage The result can be later sent using
      * {@link Whatsapp#sendMessage(MessageInfo)}
      *
      * @param poll  the non-null poll where the vote should be cast
-     * @param votes the non-null votes to cast: this list will override previous votes, so it can be
-     *              empty if you want to revoke all votes
+     * @param votes the votes to cast: this list will override previous votes, so it can be empty or null if you want to revoke all votes
      * @return a non-null new message
      */
     @Builder(builderClassName = "SimplePollUpdateMessageBuilder", builderMethodName = "simpleBuilder")
-    private static PollUpdateMessage customBuilder(@NonNull MessageInfo poll, @NonNull List<PollOption> votes) {
+    public static PollUpdateMessage of(@NonNull MessageInfo poll, List<PollOption> votes) {
         Validate.isTrue(poll.message()
                 .type() == MessageType.POLL_CREATION, "Expected a poll, got %s".formatted(poll.message().type()));
         return PollUpdateMessage.builder()
                 .pollCreationMessageKey(poll.key())
-                .pollCreationMessage(((PollCreationMessage) (poll.message().content())))
-                .votes(votes)
+                .pollCreationMessage((PollCreationMessage) poll.message().content())
+                .votes(Objects.requireNonNullElseGet(votes, List::of))
                 .build();
     }
 
     /**
      * Returns the time when this message was sent, if available
      *
-     * @return a non-empty optional
+     * @return a non-null optional
      */
     public Optional<ZonedDateTime> senderTimestamp() {
         return Clock.parseSeconds(senderTimestampMilliseconds);
+    }
+
+    /**
+     * Returns the metadata of this message
+     *
+     * @return a non-null optional
+     */
+    public Optional<PollUpdateMessageMetadata> metadata(){
+        return Optional.ofNullable(metadata);
     }
 
     public String secretName() {

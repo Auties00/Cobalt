@@ -60,7 +60,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * sent
      */
     @ProtobufProperty(index = 3, type = UINT64)
-    private long timestampInSeconds;
+    private long timestampSeconds;
 
     /**
      * The global status of this message
@@ -95,8 +95,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
     private boolean starred;
 
     /**
-     * Broadcast. This field is suppressed because this information is available from the message
-     * itself.
+     * Broadcast
      */
     @ProtobufProperty(index = 18, type = BOOL)
     private boolean broadcast;
@@ -108,29 +107,25 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
     private String pushName;
 
     /**
-     * Media cipher This field is suppressed because this information is available from the message
-     * itself
+     * Media cipher
      */
     @ProtobufProperty(index = 20, type = BYTES)
     private byte[] mediaCiphertextSha256;
 
     /**
-     * Multicast This field is suppressed because this information is available from the message
-     * itself
+     * Multicast
      */
     @ProtobufProperty(index = 21, type = BOOL)
     private boolean multicast;
 
     /**
-     * Url text This field is suppressed because this information is available from the message
-     * itself
+     * Url text
      */
     @ProtobufProperty(index = 22, type = BOOL)
     private boolean urlText;
 
     /**
-     * Url number This field is suppressed because this information is available from the message
-     * itself
+     * Url number
      */
     @ProtobufProperty(index = 23, type = BOOL)
     private boolean urlNumber;
@@ -143,8 +138,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
     private StubType stubType;
 
     /**
-     * Clear media This field is suppressed because this information is available from the message
-     * itself
+     * Clear media
      */
     @ProtobufProperty(index = 25, type = BOOL)
     private boolean clearMedia;
@@ -157,14 +151,13 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
     private List<String> stubParameters = new ArrayList<>();
 
     /**
-     * Duration This field is suppressed because this information is available from the message
-     * itself
+     * Duration
      */
     @ProtobufProperty(index = 27, type = UINT32)
     private int duration;
 
     /**
-     * Labels This field is suppressed because this information is available from the message itself
+     * Labels
      */
     @ProtobufProperty(index = 28, type = STRING, repeated = true)
     @Default
@@ -230,15 +223,13 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
     private String businessVerifiedName;
 
     /**
-     * Media data This field is suppressed because this information is available from the message
-     * itself
+     * Media data
      */
     @ProtobufProperty(index = 38, type = MESSAGE, implementation = MediaData.class)
     private MediaData mediaData;
 
     /**
-     * Photo change This field is suppressed because this information is available from the message
-     * itself
+     * Photo change
      */
     @ProtobufProperty(index = 39, type = MESSAGE, implementation = PhotoChange.class)
     private PhotoChange photoChange;
@@ -258,8 +249,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
     private List<ReactionMessage> reactions = new ArrayList<>();
 
     /**
-     * Media data This field is suppressed because this information is available from the message
-     * itself
+     * Media data
      */
     @ProtobufProperty(index = 42, type = MESSAGE, implementation = MediaData.class)
     private MediaData quotedStickerData;
@@ -268,7 +258,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * Upcoming data
      */
     @ProtobufProperty(index = 43, type = BYTES)
-    private String futureProofData;
+    private byte[] futureProofData;
 
     /**
      * Public service announcement status
@@ -276,32 +266,60 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
     @ProtobufProperty(index = 44, type = MESSAGE, implementation = PublicServiceAnnouncementStatus.class)
     private PublicServiceAnnouncementStatus psaStatus;
 
+    /**
+     * Message c2s timestamp
+     */
     @ProtobufProperty(index = 6, name = "messageC2STimestamp", type = UINT64)
     private long messageC2STimestamp;
 
+    /**
+     * Poll updates
+     */
     @ProtobufProperty(implementation = PollUpdate.class, index = 45, name = "pollUpdates", repeated = true, type = MESSAGE)
-    private List<PollUpdate> pollUpdates;
+    @Default
+    private List<PollUpdate> pollUpdates = new ArrayList<>();
 
+    /**
+     * Poll additional metadata
+     */
     @ProtobufProperty(index = 46, name = "pollAdditionalMetadata", type = MESSAGE)
     private PollAdditionalMetadata pollAdditionalMetadata;
 
+    /**
+     * Agent id
+     */
     @ProtobufProperty(index = 47, name = "agentId", type = STRING)
     private String agentId;
 
+    /**
+     * Status already viewed
+     */
     @ProtobufProperty(index = 48, name = "statusAlreadyViewed", type = BOOL)
     private boolean statusAlreadyViewed;
 
+    /**
+     * Message secret
+     */
     @ProtobufProperty(index = 49, name = "messageSecret", type = BYTES)
     private byte[] messageSecret;
 
+    /**
+     * Keep in chat for ephemeral messages
+     */
     @ProtobufProperty(index = 50, name = "keepInChat", type = MESSAGE)
     private KeepInChat keepInChat;
 
+    /**
+     * Original author of the message
+     */
     @ProtobufProperty(index = 51, name = "originalSelfAuthorUserJidString", type = STRING)
-    private String originalSelfAuthorUserJidString;
+    private ContactJid originalSender;
 
+    /**
+     * Timestamp for when the message was revoked
+     */
     @ProtobufProperty(index = 52, name = "revokeMessageTimestamp", type = UINT64)
-    private long revokeMessageTimestamp;
+    private long revokeTimestampSeconds;
 
     /**
      * Constructs a new MessageInfo from a MessageKey and a MessageContainer
@@ -311,7 +329,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      */
     public MessageInfo(@NonNull MessageKey key, @NonNull MessageContainer container) {
         this.key = key;
-        this.timestampInSeconds = Clock.nowInSeconds();
+        this.timestampSeconds = Clock.nowSeconds();
         this.status = MessageStatus.PENDING;
         this.message = container;
     }
@@ -423,7 +441,7 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      *
      * @return an optional value
      */
-    public Optional<String> futureProofData() {
+    public Optional<byte[]> futureProofData() {
         return Optional.ofNullable(futureProofData);
     }
 
@@ -442,7 +460,61 @@ public final class MessageInfo implements Info, MessageMetadataProvider, Jackson
      * @return a non-null optional
      */
     public Optional<ZonedDateTime> timestamp() {
-        return Clock.parseSeconds(timestampInSeconds);
+        return Clock.parseSeconds(timestampSeconds);
+    }
+
+    /**
+     * Returns the timestamp for this message
+     *
+     * @return a non-null optional
+     */
+    public Optional<ZonedDateTime> revokeTimestamp() {
+        return Clock.parseSeconds(revokeTimestampSeconds);
+    }
+
+    /**
+     * Returns the original sender
+     *
+     * @return a non-null optional
+     */
+    public Optional<ContactJid> originalSender() {
+        return Optional.ofNullable(originalSender);
+    }
+
+    /**
+     * Returns the ephemeral kept message
+     *
+     * @return a non-null optional
+     */
+    public Optional<KeepInChat> keepInChat() {
+        return Optional.ofNullable(keepInChat);
+    }
+
+    /**
+     * Returns the message secret
+     *
+     * @return a non-null optional
+     */
+    public Optional<byte[]> messageSecret() {
+        return Optional.ofNullable(messageSecret);
+    }
+
+    /**
+     * Returns the agent id
+     *
+     * @return a non-null optional
+     */
+    public Optional<String> agentId() {
+        return Optional.ofNullable(agentId);
+    }
+
+    /**
+     * Returns the additional metadata of this message if it's a poll
+     *
+     * @return a non-null optional
+     */
+    public Optional<PollAdditionalMetadata> pollAdditionalMetadata() {
+        return Optional.ofNullable(pollAdditionalMetadata);
     }
 
     /**

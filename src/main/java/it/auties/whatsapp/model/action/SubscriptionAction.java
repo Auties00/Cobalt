@@ -32,7 +32,7 @@ public final class SubscriptionAction implements Action {
     private boolean autoRenewing;
 
     @ProtobufProperty(index = 3, name = "expirationDate", type = INT64)
-    private long expirationDateInSeconds;
+    private long expirationDateSeconds;
 
     /**
      * Returns when the subscription ends
@@ -40,7 +40,7 @@ public final class SubscriptionAction implements Action {
      * @return an optional
      */
     public Optional<ZonedDateTime> messageTimestamp() {
-        return Clock.parseSeconds(expirationDateInSeconds);
+        return Clock.parseSeconds(expirationDateSeconds);
     }
 
     /**

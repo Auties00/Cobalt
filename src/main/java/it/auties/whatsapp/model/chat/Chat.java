@@ -69,7 +69,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * The timestamp for the creation of this chat in seconds since {@link java.time.Instant#EPOCH}
      */
     @ProtobufProperty(index = 12, type = UINT64)
-    private final long timestampInSeconds;
+    private final long timestampSeconds;
 
     /**
      * A non-null arrayList of messages in this chat sorted chronologically
@@ -186,7 +186,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * top. If the chat isn't pinned, this field has a value of 0.
      */
     @ProtobufProperty(index = 24, type = UINT32)
-    private long pinnedTimestampInSeconds;
+    private long pinnedTimestampSeconds;
 
     /**
      * The mute status of this chat
@@ -371,7 +371,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return true if this chat is pinned
      */
     public boolean isPinned() {
-        return pinnedTimestampInSeconds != 0;
+        return pinnedTimestampSeconds != 0;
     }
 
     /**
@@ -465,7 +465,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return a non-empty optional if the chat is pinned
      */
     public Optional<ZonedDateTime> pinnedTimestamp() {
-        return Clock.parseSeconds(pinnedTimestampInSeconds);
+        return Clock.parseSeconds(pinnedTimestampSeconds);
     }
 
     /**
@@ -475,7 +475,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return a non-empty optional if this field is populated
      */
     public Optional<ZonedDateTime> timestamp() {
-        return Clock.parseSeconds(timestampInSeconds);
+        return Clock.parseSeconds(timestampSeconds);
     }
 
     /**
@@ -791,7 +791,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
      * @return an int
      */
     public int fullHashCode() {
-        int result = Objects.hash(jid, newJid, oldJid, timestampInSeconds, messages, unreadMessagesCount, readOnly, endOfHistoryTransfer, ephemeralMessageDuration, ephemeralMessagesToggleTime, endOfHistoryTransferType, name, notSpam, archived, disappearInitiator, markedAsUnread, participants, pastParticipants, tokenTimestamp, pinnedTimestampInSeconds, mute, wallpaper, mediaVisibility, tokenSenderTimestamp, suspended, terminated, createdAt, createdBy, description, support, parentGroup, defaultSubGroup, parentGroupJid, displayName, pnJid, shareOwnPn, pnhDuplicateLidThread, lidJid, presences, participantsPreKeys);
+        int result = Objects.hash(jid, newJid, oldJid, timestampSeconds, messages, unreadMessagesCount, readOnly, endOfHistoryTransfer, ephemeralMessageDuration, ephemeralMessagesToggleTime, endOfHistoryTransferType, name, notSpam, archived, disappearInitiator, markedAsUnread, participants, pastParticipants, tokenTimestamp, pinnedTimestampSeconds, mute, wallpaper, mediaVisibility, tokenSenderTimestamp, suspended, terminated, createdAt, createdBy, description, support, parentGroup, defaultSubGroup, parentGroupJid, displayName, pnJid, shareOwnPn, pnhDuplicateLidThread, lidJid, presences, participantsPreKeys);
         result = 31 * result + Arrays.hashCode(token);
         result = 31 * result + Arrays.hashCode(identityKey);
         result = 31 * result + messages.size();

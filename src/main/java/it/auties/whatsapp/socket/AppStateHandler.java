@@ -314,9 +314,9 @@ class AppStateHandler extends Handler implements JacksonProvider {
                 case MarkChatAsReadAction markAction ->
                         targetChat.ifPresent(chat -> chat.unreadMessagesCount(markAction.read() ? 0 : -1));
                 case MuteAction muteAction ->
-                        targetChat.ifPresent(chat -> chat.mute(ChatMute.muted(muteAction.muteEndTimestampInSeconds())));
+                        targetChat.ifPresent(chat -> chat.mute(ChatMute.muted(muteAction.muteEndTimestampSeconds())));
                 case PinAction pinAction ->
-                        targetChat.ifPresent(chat -> chat.pinnedTimestampInSeconds(pinAction.pinned() ? mutation.value()
+                        targetChat.ifPresent(chat -> chat.pinnedTimestampSeconds(pinAction.pinned() ? mutation.value()
                                 .timestamp() : 0));
                 case StarAction starAction -> targetMessage.ifPresent(message -> message.starred(starAction.starred()));
                 case ArchiveChatAction archiveChatAction ->

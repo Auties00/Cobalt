@@ -444,7 +444,7 @@ public class SocketHandler extends Handler implements SocketListener, JacksonPro
         }
         var attributes = Attributes.of()
                 .put("id", messages.get(0))
-                .put("t", Clock.nowInSeconds() / 1000)
+                .put("t", Clock.nowSeconds() / 1000)
                 .put("to", jid)
                 .put("type", type, Objects::nonNull)
                 .put("participant", participant, Objects::nonNull, value -> !Objects.equals(jid, value));

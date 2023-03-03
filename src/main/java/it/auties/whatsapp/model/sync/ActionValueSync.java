@@ -127,7 +127,7 @@ public class ActionValueSync implements ProtobufMessage {
 
     @SuppressWarnings("PatternVariableHidesField")
     private ActionValueSync(@NonNull Action action) {
-        this.timestamp = Clock.nowInSeconds();
+        this.timestamp = Clock.nowSeconds();
         switch (action) {
             case StarAction starAction -> this.starAction = starAction;
             case ContactAction contactAction -> this.contactAction = contactAction;
@@ -166,7 +166,7 @@ public class ActionValueSync implements ProtobufMessage {
 
     @SuppressWarnings("PatternVariableHidesField")
     private ActionValueSync(@NonNull Setting setting) {
-        this.timestamp = Clock.nowInSeconds();
+        this.timestamp = Clock.nowSeconds();
         switch (setting) {
             case SecurityNotificationSetting securityNotificationSetting ->
                     this.securityNotificationSetting = securityNotificationSetting;
