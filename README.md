@@ -18,7 +18,13 @@ It can be used to work with:
    It will allow the client to act as the mobile app.
    This means that no companion will be required to run the client.
 
+### Donations
+
+If you like my work, you can donate through [Paypal](https://www.paypal.com/paypalme/my/profile).
+I can also work on sponsored features and/or projects!
+
 ### Java version
+
 This library was built for [Java 17](https://openjdk.java.net/projects/jdk/17/), the latest LTS.
 Remember to enable preview features as they are required.
 If you don't know how, there are many tutorials available online.
