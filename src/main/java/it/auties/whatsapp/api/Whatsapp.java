@@ -55,7 +55,9 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static it.auties.bytes.Bytes.ofRandom;
@@ -1447,17 +1449,34 @@ public class Whatsapp {
     }
 
     /**
+     * Executes a query to determine whether a user has an account on Whatsapp
+     *
+     * @param contact the contact to check
+     * @return a CompletableFuture that wraps a non-null response
+     */
+    public CompletableFuture<HasWhatsappResponse> hasWhatsapp(@NonNull ContactJidProvider contact) {
+        return hasWhatsapp(new ContactJidProvider[]{contact})
+                .thenApply(result -> result.get(contact.toJid()));
+    }
+
+    /**
      * Executes a query to determine whether any number of users have an account on Whatsapp
      *
-     * @param chats the users to check
-     * @return a CompletableFuture that wraps a non-null list of HasWhatsappResponse
+     * @param contacts the contacts to check
+     * @return a CompletableFuture that wraps a non-null map
      */
-    public CompletableFuture<List<HasWhatsappResponse>> hasWhatsapp(@NonNull ContactJidProvider @NonNull ... chats) {
-        var contactNodes = Arrays.stream(chats)
+    public CompletableFuture<Map<ContactJid, HasWhatsappResponse>> hasWhatsapp(@NonNull ContactJidProvider... contacts) {
+        var contactNodes = Arrays.stream(contacts)
                 .map(jid -> Node.of("contact", jid.toJid().toPhoneNumber()))
                 .toArray(Node[]::new);
         return socketHandler.sendInteractiveQuery(Node.of("contact"), Node.ofChildren("user", contactNodes))
-                .thenApplyAsync(nodes -> nodes.stream().map(HasWhatsappResponse::new).toList());
+                .thenApplyAsync(this::parseHasWhatsappResponse);
+    }
+
+    private Map<ContactJid, HasWhatsappResponse> parseHasWhatsappResponse(List<Node> nodes) {
+        return nodes.stream()
+                .map(HasWhatsappResponse::new)
+                .collect(Collectors.toMap(HasWhatsappResponse::contact, Function.identity()));
     }
 
     /**

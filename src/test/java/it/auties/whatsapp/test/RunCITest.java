@@ -130,6 +130,17 @@ public class RunCITest implements Listener, JacksonProvider {
     }
 
     @Test
+    @Order(1)
+    public void testHasWhatsapp() {
+        if (skip) {
+            return;
+        }
+
+        var response = api.hasWhatsapp(contact).join();
+        log("Has whatsapp? %s", response);
+    }
+
+    @Test
     @Order(2)
     public void testChangeGlobalPresence() {
         if (skip) {
