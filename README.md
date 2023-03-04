@@ -20,7 +20,7 @@ It can be used to work with:
 
 ### Donations
 
-If you like my work, you can donate through [Paypal](https://www.paypal.com/paypalme/my/profile).
+If you like my work, you can become a sponsor here on GitHub or tip me on [Paypal](https://www.paypal.com/paypalme/my/profile).
 I can also work on sponsored features and/or projects!
 
 ### Java version
