@@ -204,7 +204,6 @@ public class Medias implements JacksonProvider {
         }
     }
 
-    @SneakyThrows
     public int getDuration(byte[] file, boolean video) {
         if (!video) {
             try {
@@ -214,7 +213,7 @@ public class Medias implements JacksonProvider {
                 var frameSize = format.getFrameSize();
                 var frameRate = format.getFrameRate();
                 return (int) (audioFileLength / (frameSize * frameRate));
-            } catch (UnsupportedAudioFileException exception) {
+            } catch (UnsupportedAudioFileException | IOException exception) {
                 return getDuration(file, true);
             }
         }
@@ -232,15 +231,13 @@ public class Medias implements JacksonProvider {
         }
     }
 
-    @SneakyThrows
     public MediaDimensions getDimensions(byte[] file, boolean video) {
-        if (!video) {
-            var originalImage = ImageIO.read(new ByteArrayInputStream(file));
-            return new MediaDimensions(originalImage.getWidth(), originalImage.getHeight());
-        }
-        record FfprobeResult(List<MediaDimensions> streams) {
-        }
         try {
+            if(!video){
+                var originalImage = ImageIO.read(new ByteArrayInputStream(file));
+                return new MediaDimensions(originalImage.getWidth(), originalImage.getHeight());
+            }
+
             var input = createTempFile(file, true);
             var process = Runtime.getRuntime()
                     .exec("ffprobe -v error -select_streams v -show_entries stream=width,height -of json %s".formatted(input));
@@ -297,8 +294,7 @@ public class Medias implements JacksonProvider {
         } finally {
             try {
                 Files.delete(output);
-            } catch (IOException ignored) {
-            }
+            } catch (IOException ignored) {}
         }
     }
 
@@ -326,5 +322,9 @@ public class Medias implements JacksonProvider {
         JPG,
         FILE,
         VIDEO
+    }
+
+    private record FfprobeResult(List<MediaDimensions> streams) {
+
     }
 }

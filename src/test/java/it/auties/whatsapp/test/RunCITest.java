@@ -584,9 +584,10 @@ public class RunCITest implements Listener, JacksonProvider {
         log("Sending audio...");
         var audio = AudioMessage.simpleBuilder()
                 .media(MediaUtils.readBytes("https://www.kozco.com/tech/organfinale.mp3"))
+                .voiceMessage(true)
                 .build();
-        var textResponse = api.sendMessage(contact, audio).join();
-        log("Sent audio: %s", textResponse);
+        api.sendMessage(contact, audio).join();
+        log("Sent audio");
     }
 
     @Test
@@ -597,8 +598,8 @@ public class RunCITest implements Listener, JacksonProvider {
         }
         log("Sending video...");
         var video = VideoMessage.simpleVideoBuilder().media(MediaUtils.readBytes(VIDEO_URL)).caption("Video").build();
-        var textResponse = api.sendMessage(contact, video).join();
-        log("Sent video: %s", textResponse);
+        api.sendMessage(contact, video).join();
+        log("Sent video");
     }
 
     @Test
@@ -609,8 +610,8 @@ public class RunCITest implements Listener, JacksonProvider {
         }
         log("Sending gif...");
         var video = VideoMessage.simpleGifBuilder().media(MediaUtils.readBytes(VIDEO_URL)).caption("Gif").build();
-        var textResponse = api.sendMessage(contact, video).join();
-        log("Sent video: %s", textResponse);
+        api.sendMessage(contact, video).join();
+        log("Sent video");
     }
 
     @SuppressWarnings("HttpUrlsUsage")
@@ -627,8 +628,8 @@ public class RunCITest implements Listener, JacksonProvider {
                 .fileName("pdf-test.pdf")
                 .pageCount(1)
                 .build();
-        var textResponse = api.sendMessage(contact, document).join();
-        log("Sent pdf: %s", textResponse);
+        api.sendMessage(contact, document).join();
+        log("Sent pdf");
     }
 
     @Test

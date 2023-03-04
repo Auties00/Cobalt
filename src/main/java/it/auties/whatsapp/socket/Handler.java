@@ -38,16 +38,14 @@ abstract class Handler {
         return Executors.newSingleThreadExecutor();
     }
 
-    protected AutoCloseable getOrCreateSemaphore() throws InterruptedException {
+    protected Semaphore getOrCreateSemaphore() {
         var value = semaphore.get();
         if (value != null) {
-            value.acquire();
-            return value::release;
+            return value;
         }
         var newValue = new Semaphore(1);
         semaphore.set(newValue);
-        newValue.acquire();
-        return newValue::release;
+        return newValue;
     }
 
     protected void completeLatch() {

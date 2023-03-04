@@ -90,10 +90,16 @@ class MessageHandler extends Handler implements JacksonProvider {
     }
 
     protected final CompletableFuture<Void> encode(MessageSendRequest request) {
-        try (var ignored = getOrCreateSemaphore()) {
+        try {
+            var semaphore = getOrCreateSemaphore();
             var future = isConversation(request.info()) ? encodeConversation(request) : encodeGroup(request);
             return future.thenRunAsync(() -> attributeOutgoingMessage(request))
-                    .exceptionallyAsync(throwable -> handleMessageFailure(throwable, request.info()));
+                    .thenRunAsync(semaphore::release)
+                    .exceptionallyAsync(throwable -> {
+                        semaphore.release();
+                        request.info().status(MessageStatus.ERROR);
+                        return socketHandler.errorHandler().handleFailure(MESSAGE, throwable);
+                    });
         } catch (Exception exception) {
             return CompletableFuture.failedFuture(exception);
         }
@@ -140,11 +146,6 @@ class MessageHandler extends Handler implements JacksonProvider {
         return getDevices(knownDevices, true, request.force()).thenComposeAsync(allDevices -> createConversationNodes(allDevices, encodedMessage, encodedDeviceMessage, request.force()))
                 .thenApplyAsync(sessions -> createEncodedMessageNode(request.info(), sessions, null, request.additionalAttributes()))
                 .thenComposeAsync(socketHandler::send);
-    }
-
-    private <T> T handleMessageFailure(Throwable throwable, MessageInfo info) {
-        info.status(MessageStatus.ERROR);
-        return socketHandler.errorHandler().handleFailure(MESSAGE, throwable);
     }
 
     private boolean isConversation(MessageInfo info) {
@@ -717,8 +718,7 @@ class MessageHandler extends Handler implements JacksonProvider {
 
     private void handleRecentMessagesListener(HistorySync history) {
         history.conversations().forEach(this::updateChatMessages);
-        historyCache.forEach(cached -> socketHandler.onChatRecentMessages(cached, !history.conversations()
-                .contains(cached)));
+        historyCache.forEach(cached -> socketHandler.onChatRecentMessages(socketHandler.store().findChatByJid(cached.jid()).orElse(cached), !history.conversations().contains(cached)));
         historyCache.removeIf(entry -> !history.conversations().contains(entry));
     }
 

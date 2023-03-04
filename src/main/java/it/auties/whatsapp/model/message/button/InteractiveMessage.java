@@ -116,6 +116,33 @@ public final class InteractiveMessage extends ContextualMessage implements Butto
     }
 
     /**
+     * Returns the header
+     *
+     * @return a non-null optional
+     */
+    public Optional<ProductHeader> header(){
+        return Optional.ofNullable(header);
+    }
+
+    /**
+     * Returns the body
+     *
+     * @return a non-null optional
+     */
+    public Optional<ProductBody> body(){
+        return Optional.ofNullable(body);
+    }
+
+    /**
+     * Returns the footer
+     *
+     * @return a non-null optional
+     */
+    public Optional<ProductFooter> footer(){
+        return Optional.ofNullable(footer);
+    }
+
+    /**
      * Returns the content of this message if it's there
      *
      * @return a non-null content type

@@ -14,6 +14,7 @@ import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import static it.auties.protobuf.base.ProtobufType.*;
 import static it.auties.whatsapp.model.message.model.MediaMessageType.AUDIO;
@@ -96,16 +97,20 @@ public final class AudioMessage extends MediaMessage {
      * The sidecar is an array of bytes obtained by concatenating every [n*64K, (n+1)*64K+16] chunk of
      * the encoded media signed with the mac key and truncated to ten bytes. This allows to play and
      * seek the audio without the need to fully decode it decrypt as CBC allows to read data from a
-     * random offset (block-size aligned). Source: <a
-     * href="https://github.com/sigalor/whatsapp-web-reveng#encryption">WhatsApp Web reverse
-     * engineered</a>
+     * random offset (block-size aligned). Source: <a href="https://github.com/sigalor/whatsapp-web-reveng#encryption">WhatsApp Web reverse engineered</a>
      */
     @ProtobufProperty(index = 18, type = BYTES)
     private byte[] streamingSidecar;
 
+    /**
+     * The waveform as bytes
+     */
     @ProtobufProperty(index = 19, name = "waveform", type = BYTES)
     private byte[] waveform;
 
+    /**
+     * The background color
+     */
     @ProtobufProperty(index = 20, name = "backgroundArgb", type = FIXED32)
     private Integer backgroundArgb;
 
@@ -123,15 +128,20 @@ public final class AudioMessage extends MediaMessage {
      */
     @Builder(builderClassName = "SimpleAudioMessageBuilder", builderMethodName = "simpleBuilder")
     private static AudioMessage customBuilder(byte[] media, ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
-        var duration = Medias.getDuration(media, true);
         return AudioMessage.builder()
                 .decodedMedia(media)
                 .mediaKeyTimestamp(Clock.nowSeconds())
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::new))
-                .duration(duration)
-                .mimetype(mimeType)
+                .duration(Medias.getDuration(media, false))
+                .mimetype(getMimeType(media, mimeType))
                 .voiceMessage(voiceMessage)
                 .build();
+    }
+
+    private static String getMimeType(byte[] media, String mimeType) {
+        return Optional.ofNullable(mimeType)
+                .or(() -> Medias.getMimeType(media))
+                .orElseGet(AUDIO::defaultMimeType);
     }
 
     /**

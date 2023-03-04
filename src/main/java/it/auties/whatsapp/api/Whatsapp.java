@@ -1244,39 +1244,33 @@ public class Whatsapp {
         pollUpdateMessage.encryptedMetadata(pollUpdateEncryptedMetadata);
     }
 
-    // Credit to Baileys: https://github.com/adiwajshing/Baileys/blob/f0bdb12e56cea8b0bfbb0dff37c01690274e3e31/src/Utils/messages.ts#L781
     private void attributeButtonMessage(MessageInfo info, ButtonMessage buttonMessage) {
-        if(buttonMessage instanceof ButtonsMessage buttonsMessage
-                && buttonsMessage.header().isPresent()
-                && buttonsMessage.header().get() instanceof MediaMessage mediaMessage) {
-            attributeMediaMessage(mediaMessage);
-        }
-
-        if(buttonMessage instanceof ButtonsMessage buttonsMessage
-                && buttonsMessage.header().isPresent()
-                && buttonsMessage.header().get() instanceof MediaMessage mediaMessage) {
-            attributeMediaMessage(mediaMessage);
-        }
-
-        if(buttonMessage instanceof TemplateMessage templateMessage
-                && templateMessage.format().isPresent()) {
-            switch (templateMessage.format().get()) {
-                case FourRowTemplate fourRowTemplate
-                        && fourRowTemplate.title().isPresent()
-                        && fourRowTemplate.title().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
-                case HydratedFourRowTemplate hydratedFourRowTemplate
-                        && hydratedFourRowTemplate.title().isPresent()
-                        && hydratedFourRowTemplate.title().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
-                default -> {}
+        switch (buttonMessage) {
+            case ButtonsMessage buttonsMessage
+                    && buttonsMessage.header().isPresent()
+                    && buttonsMessage.header().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
+            case ButtonsMessage buttonsMessage
+                    && buttonsMessage.header().isPresent()
+                    && buttonsMessage.header().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
+            case TemplateMessage templateMessage && templateMessage.format().isPresent() -> {
+                switch (templateMessage.format().get()) {
+                    case FourRowTemplate fourRowTemplate
+                            && fourRowTemplate.title().isPresent()
+                            && fourRowTemplate.title().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
+                    case HydratedFourRowTemplate hydratedFourRowTemplate
+                            && hydratedFourRowTemplate.title().isPresent()
+                            && hydratedFourRowTemplate.title().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
+                    default -> {}
+                }
             }
+            case InteractiveMessage interactiveMessage
+                    && interactiveMessage.header().isPresent()
+                    && interactiveMessage.header().get().attachment().isPresent()
+                    && interactiveMessage.header().get().attachment().get() instanceof MediaMessage mediaMessage -> attributeMediaMessage(mediaMessage);
+            default -> {}
         }
 
-        if(buttonMessage instanceof InteractiveMessage interactiveMessage
-                && interactiveMessage.header().attachment().isPresent()
-                && interactiveMessage.header().attachment().get() instanceof MediaMessage mediaMessage){
-            attributeMediaMessage(mediaMessage);
-        }
-
+        // Credit to Baileys: https://github.com/adiwajshing/Baileys/blob/f0bdb12e56cea8b0bfbb0dff37c01690274e3e31/src/Utils/messages.ts#L781
         info.message(info.message().toViewOnce());
     }
 
