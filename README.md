@@ -619,6 +619,12 @@ All types of messages supported by Whatsapp are supported by this library:
 
 - Media
 
+    > **_IMPORTANT:_**
+    > 
+    > The thumbnail for videos and gifs is generated automatically only if ffmpeg is installed on the host machine.
+    > 
+    > The length of videos, gifs and audios in seconds is computed automatically only if ffprobe is installed on the host machine.
+
     To send a media, start by reading the content inside a byte array.
     You might want to read it from a file:
 

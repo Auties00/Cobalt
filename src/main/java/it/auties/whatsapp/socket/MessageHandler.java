@@ -718,7 +718,12 @@ class MessageHandler extends Handler implements JacksonProvider {
 
     private void handleRecentMessagesListener(HistorySync history) {
         history.conversations().forEach(this::updateChatMessages);
-        historyCache.forEach(cached -> socketHandler.onChatRecentMessages(socketHandler.store().findChatByJid(cached.jid()).orElse(cached), !history.conversations().contains(cached)));
+        historyCache.forEach(cached -> {
+            var chat = socketHandler.store()
+                    .findChatByJid(cached.jid())
+                    .orElse(cached);
+            socketHandler.onChatRecentMessages(chat, !history.conversations().contains(cached));
+        });
         historyCache.removeIf(entry -> !history.conversations().contains(entry));
     }
 
