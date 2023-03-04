@@ -19,6 +19,8 @@ private val whatsapp by WhatsappController
 fun main() = application {
     ScreenContainer(
             onCloseRequest = {
+                whatsapp.store().serialize(false)
+                whatsapp.keys().serialize(false)
                 exitApplication()
             },
             title = "Whatsapp",
