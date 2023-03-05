@@ -8,9 +8,11 @@ import java.util.regex.Pattern;
 
 @UtilityClass
 public class Tokens {
-    public final List<String> SINGLE_BYTE = List.of( % s);
+    public final List<String> SINGLE_BYTE = List.of(%s);
 
-    public final List<String> DOUBLE_BYTE = List.of( % s);
+    public final List<String> DOUBLE_BYTE = List.of(%s);
+
+    public final int DICTIONARY_VERSION = 3;
 
     public final List<Character> NUMBERS = List.of('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '.', '�', '�', '�', '�');
 

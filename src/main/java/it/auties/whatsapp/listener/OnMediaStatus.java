@@ -10,5 +10,5 @@ public interface OnMediaStatus extends Listener {
      *
      * @param status the status
      */
-    void onMediaStatus(Collection<MessageInfo> status);
+    void onStatus(Collection<MessageInfo> status);
 }

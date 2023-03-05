@@ -14,8 +14,8 @@ import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.message.model.MessageKey;
+import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
-import it.auties.whatsapp.model.privacy.PrivacySettingValue;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.request.ReplyHandler;
 import it.auties.whatsapp.model.request.Request;
@@ -128,8 +128,7 @@ public final class Store implements Controller<Store> {
      */
     @NonNull
     @Default
-    @Getter
-    private ConcurrentHashMap<PrivacySettingType, PrivacySettingValue> privacySettings = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings = new ConcurrentHashMap<>();
 
     /**
      * Whether this store has already received the snapshot from Whatsapp Web containing chats and
@@ -697,6 +696,35 @@ public final class Store implements Controller<Store> {
      */
     public Optional<URI> userProfilePicture() {
         return Optional.ofNullable(userProfilePicture);
+    }
+
+    /**
+     * Queries all the privacy settings
+     *
+     * @return a non-null list
+     */
+    public Collection<PrivacySettingEntry> privacySettings(){
+        return privacySettings.values();
+    }
+
+    /**
+     * Queries the privacy setting entry for the type
+     *
+     * @param type a non-null type
+     * @return a non-null entry
+     */
+    public PrivacySettingEntry findPrivacySetting(@NonNull PrivacySettingType type){
+        return privacySettings.get(type);
+    }
+
+    /**
+     * Sets the privacy setting entry for a type
+     *
+     * @param type a non-null type
+     * @param entry the non-null entry
+     */
+    public void addPrivacySetting(@NonNull PrivacySettingType type, @NonNull PrivacySettingEntry entry){
+        privacySettings.put(type, entry);
     }
 
     public void dispose() {

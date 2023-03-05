@@ -144,12 +144,15 @@ public final class VideoMessage extends MediaMessage implements ProductHeaderAtt
      * The source from where the gif that this message wraps comes from. This property is defined only
      * if {@link VideoMessage#gifPlayback}.
      */
-    @ProtobufProperty(index = 19, type = MESSAGE, implementation = VideoMessage.VideoMessageAttribution.class)
+    @ProtobufProperty(index = 19, type = MESSAGE, implementation = VideoMessageAttribution.class)
     private VideoMessageAttribution gifAttribution;
 
     @ProtobufProperty(index = 20, name = "viewOnce", type = BOOL)
     private boolean viewOnce;
 
+    /**
+     * The direct path to the encrypted thumbnail
+     */
     @ProtobufProperty(index = 21, name = "thumbnailDirectPath", type = STRING)
     private String thumbnailDirectPath;
 
@@ -163,8 +166,10 @@ public final class VideoMessage extends MediaMessage implements ProductHeaderAtt
     private String staticUrl;
 
     /**
-     * Constructs a new builder to create a VideoMessage that wraps a video. The result can be later
-     * sent using {@link Whatsapp#sendMessage(MessageInfo)}
+     * Constructs a new builder to create a VideoMessage that wraps a video
+     * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
+     * {@link VideoMessage#thumbnail} is computed automatically if ffmpeg is installed on the host machine
+     * {@link VideoMessage#duration} is computed automatically if ffprobe is installed on the host machine
      *
      * @param media       the non-null video that the new message wraps
      * @param mimeType    the mime type of the new message, by default
@@ -192,10 +197,12 @@ public final class VideoMessage extends MediaMessage implements ProductHeaderAtt
     }
 
     /**
-     * Constructs a new builder to create a VideoMessage that wraps a video that will be played as a
-     * gif. Wrapping a gif file instead of a video will result in an exception if detected or in an
-     * unplayable message. This is because Whatsapp doesn't support standard gifs. The result can be
-     * later sent using {@link Whatsapp#sendMessage(MessageInfo)}
+     * Constructs a new builder to create a VideoMessage that wraps a video that will be played as a gif
+     * Wrapping a gif file instead of a video will result in an exception if detected or in an unplayable message
+     * This is because Whatsapp doesn't support standard gifs
+     * The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
+     * {@link VideoMessage#thumbnail} is computed automatically if ffmpeg is installed on the host machine
+     * {@link VideoMessage#duration} is computed automatically if ffprobe is installed on the host machine
      *
      * @param media          the non-null video that the new message wraps
      * @param mimeType       the mime type of the new message, by default

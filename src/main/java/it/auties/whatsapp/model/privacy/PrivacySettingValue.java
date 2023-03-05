@@ -26,11 +26,15 @@ public enum PrivacySettingValue {
     /**
      * All the contacts saved on your Whatsapp's user except some
      */
-    CONTACT_EXCEPT("contact_blacklist"),
+    CONTACTS_EXCEPT("contact_blacklist"),
     /**
      * Nobody
      */
-    NOBODY("none");
+    NOBODY("none"),
+    /**
+     * Match last seen
+     */
+    MATCH_LAST_SEEN("match_last_seen");
 
     @Getter
     private final String data;

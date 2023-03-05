@@ -159,7 +159,6 @@ public class ContactCard implements ProtobufMessage {
     }
 
     public static class ContactCardBuilder {
-        @SuppressWarnings("ConstantConditions")
         public ContactCardBuilder phoneNumber(@NonNull ContactJid contact) {
             return phoneNumber(DEFAULT_NUMBER_TYPE, contact);
         }

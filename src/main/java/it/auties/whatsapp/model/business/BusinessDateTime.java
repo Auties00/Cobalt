@@ -1,14 +1,12 @@
 package it.auties.whatsapp.model.business;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.Arrays;
+import java.util.Optional;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 
@@ -21,81 +19,79 @@ import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("HighlyStructuredMessage.HSMLocalizableParameter.HSMDateTime")
-public class BusinessDateTime implements ProtobufMessage {
+public final class BusinessDateTime implements BusinessLocalizableParameterValue {
     /**
      * The date as a component
      */
     @ProtobufProperty(index = 1, type = MESSAGE, implementation = BusinessDateTimeComponent.class)
-    private BusinessDateTimeComponent componentDate;
+    private BusinessDateTimeComponent dateComponent;
 
     /**
      * The date as a unix epoch
      */
     @ProtobufProperty(index = 2, type = MESSAGE, implementation = BusinessDateTimeUnixEpoch.class)
-    private BusinessDateTimeUnixEpoch unixEpochDate;
+    private BusinessDateTimeUnixEpoch dateUnixEpoch;
 
     /**
      * Constructs a new date time using a component
      *
-     * @param componentDate the non-null component
+     * @param dateComponent the non-null component
      * @return a non-null date time
      */
-    public static BusinessDateTime of(@NonNull BusinessDateTimeComponent componentDate) {
-        return BusinessDateTime.builder().componentDate(componentDate).build();
+    public static BusinessDateTime of(@NonNull BusinessDateTimeValue dateComponent) {
+        return switch (dateComponent){
+            case BusinessDateTimeComponent businessDateTimeComponent -> new BusinessDateTime(businessDateTimeComponent, null);
+            case BusinessDateTimeUnixEpoch businessDateTimeUnixEpoch -> new BusinessDateTime(null, businessDateTimeUnixEpoch);
+        };
     }
-
+    
     /**
-     * Constructs a new date time using a unix component
-     *
-     * @param unixEpochDate the non-null unix epoch
-     * @return a non-null date time
-     */
-    public static BusinessDateTime of(@NonNull BusinessDateTimeUnixEpoch unixEpochDate) {
-        return BusinessDateTime.builder().unixEpochDate(unixEpochDate).build();
-    }
-
-    /**
-     * Returns the type of date that this wrapper wraps
+     * Returns the type of date of this component
      *
      * @return a non-null date type
      */
-    public DateType dateType() {
-        if (componentDate != null) {
-            return DateType.COMPONENT;
-        }
-        if (unixEpochDate != null) {
-            return DateType.UNIX_EPOCH;
-        }
-        return DateType.NONE;
+    public BusinessDateTimeType dateType() {
+        return date().map(BusinessDateTimeValue::dateType)
+                .orElse(BusinessDateTimeType.NONE);
     }
 
     /**
-     * The constants of this enumerated type describe the various type of date types that a date time
-     * can wrap
+     * Returns the date of this component
+     *
+     * @return a non-null date type
      */
-    @AllArgsConstructor
-    @Accessors(fluent = true)
-    @ProtobufName("DatetimeOneofType")
-    public enum DateType implements ProtobufMessage {
-        /**
-         * No date
-         */
-        NONE(0),
-        /**
-         * Component date
-         */
-        COMPONENT(1),
-        /**
-         * Unix epoch date
-         */
-        UNIX_EPOCH(2);
-        
-        @Getter
-        private final int index;
-
-        @JsonCreator
-        public static DateType of(int index) {
-            return Arrays.stream(values()).filter(entry -> entry.index() == index).findFirst().orElse(DateType.NONE);
+    public Optional<BusinessDateTimeValue> date() {
+        if(dateComponent != null){
+            return Optional.of(dateComponent);
         }
+
+        if(dateUnixEpoch != null){
+            return Optional.of(dateUnixEpoch);
+        }
+
+        return Optional.empty();
+    }
+
+    /**
+     * Returns the date component of this component
+     *
+     * @return a non-null date type
+     */
+    public Optional<BusinessDateTimeComponent> dateComponent() {
+        return Optional.ofNullable(dateComponent);
+    }
+
+    /**
+     * Returns the unix epoch of this component
+     *
+     * @return a non-null date type
+     */
+    public Optional<BusinessDateTimeUnixEpoch> dateUnixEpoch() {
+        return Optional.ofNullable(dateUnixEpoch);
+    }
+
+    @Override
+    public BusinessLocalizableParameterType parameterType() {
+        return BusinessLocalizableParameterType.DATE_TIME;
     }
 }

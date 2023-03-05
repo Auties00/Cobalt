@@ -29,6 +29,8 @@ import it.auties.whatsapp.model.message.button.TemplateMessage;
 import it.auties.whatsapp.model.message.model.MessageCategory;
 import it.auties.whatsapp.model.message.standard.*;
 import it.auties.whatsapp.model.poll.PollOption;
+import it.auties.whatsapp.model.privacy.PrivacySettingType;
+import it.auties.whatsapp.model.privacy.PrivacySettingValue;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.utils.ConfigUtils;
@@ -171,6 +173,27 @@ public class RunCITest implements Listener, JacksonProvider {
         log("Subscribing to user presence...");
         var userPresenceResponse = api.subscribeToPresence(contact).join();
         log("Subscribed to user presence: %s", userPresenceResponse);
+    }
+
+    @Test
+    @Order(3)
+    public void testPrivacySettings() {
+        if (skip) {
+            return;
+        }
+        log("Changing privacy settings...");
+        for(var settingType : PrivacySettingType.values()){
+            for(var settingValue : PrivacySettingValue.values()){
+                try{
+                    log("Changing privacy setting %s to %s...", settingType, settingValue);
+                    api.changePrivacySetting(settingType, settingValue, contact).join();
+                    log("Changed privacy setting %s to %s", settingType, settingValue);
+                }catch (IllegalArgumentException exception){
+                    log("Value %s is not supported for setting %s: %s", settingValue, settingType, exception.getMessage());
+                }
+            }
+        }
+        log("Changed privacy settings");
     }
 
     @Test

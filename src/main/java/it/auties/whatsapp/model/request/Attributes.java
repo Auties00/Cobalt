@@ -6,6 +6,7 @@ import lombok.NonNull;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BooleanSupplier;
@@ -60,6 +61,17 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
      */
     public boolean hasKey(@NonNull String key) {
         return toMap.containsKey(key);
+    }
+
+    /**
+     * Checks whether a non-null key exists in this map and has the provided value
+     *
+     * @param key the non-null key
+     * @param value the nullable value to check against
+     * @return a boolean
+     */
+    public boolean hasKey(@NonNull String key, String value) {
+        return Objects.equals(toMap.get(key), value);
     }
 
     /**

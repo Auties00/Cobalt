@@ -15,8 +15,8 @@ It can be used to work with:
 2. Whatsapp Mobile App
 
    This functionality is still being developed.
-   It will allow the client to act as the mobile app.
-   This means that no companion will be required to run the client.
+   Right now it's in alpha.
+   Currently only message sending and
 
 ### Donations
 

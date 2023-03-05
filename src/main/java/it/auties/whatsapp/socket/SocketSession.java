@@ -122,7 +122,6 @@ public abstract sealed class SocketSession permits WebSocketSession, AppSocketSe
 
         @OnClose
         public void onClose(Session session, CloseReason closeReason) {
-            System.out.println("CLOSED: " + closeReason.getCloseCode().getCode() + " " + closeReason.getReasonPhrase());
             listener.onClose();
         }
 

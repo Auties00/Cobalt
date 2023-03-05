@@ -23,8 +23,8 @@ public class TokensCollectorTest {
     private static final String SOURCE_NAME = "Tokens.java";
     private static final String TOKEN_REGEX = "<script defer=\"defer\" src=\"/app.([^\"]*).js\">";
     private static final String SINGLE_BYTE_REGEX = "t.SINGLE_BYTE_TOKEN=\\[\"(.*?)\"]";
-    private static final String DICTIONARY_0_REGEX = "const n=\\[\"(.*?)\"]";
-    private static final String DICTIONARY_1_REGEX = "const r=\\[\"(.*?)\"]";
+    private static final String DICTIONARY_0_REGEX = "const r=\\[\"(.*?)\"]";
+    private static final String DICTIONARY_1_REGEX = "const n=\\[\"(.*?)\"]";
     private static final String DICTIONARY_2_REGEX = "const i=\\[\"(.*?)\"]";
     private static final String DICTIONARY_3_REGEX = "const a=\\[\"(.*?)\"]";
 

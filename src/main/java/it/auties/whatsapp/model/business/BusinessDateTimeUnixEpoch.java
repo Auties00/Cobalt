@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.business;
 
-import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import it.auties.whatsapp.util.Clock;
 import lombok.AllArgsConstructor;
@@ -22,19 +21,24 @@ import static it.auties.protobuf.base.ProtobufType.INT64;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class BusinessDateTimeUnixEpoch implements ProtobufMessage {
+public final class BusinessDateTimeUnixEpoch implements BusinessDateTimeValue {
     /**
      * The timestamp of the date
      */
     @ProtobufProperty(index = 1, type = INT64)
-    private long timestamp;
+    private long timestampSeconds;
 
     /**
      * Returns the timestamp as a zoned date time
      *
      * @return an optional
      */
-    public Optional<ZonedDateTime> time() {
-        return Clock.parseSeconds(timestamp);
+    public Optional<ZonedDateTime> timestamp() {
+        return Clock.parseSeconds(timestampSeconds);
+    }
+
+    @Override
+    public BusinessDateTimeType dateType() {
+        return BusinessDateTimeType.UNIX_EPOCH;
     }
 }

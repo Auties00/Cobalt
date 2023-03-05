@@ -8,8 +8,8 @@ import it.auties.whatsapp.util.JacksonProvider;
 public class WaitTest implements JacksonProvider {
     public static void main(String[] args) {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> e.printStackTrace());
-        var whatsapp = Whatsapp.lastConnection(WebOptions.defaultOptions())
-                .addLoggedInListener(() -> System.out.println("Connected"))
+        Whatsapp.lastConnection(WebOptions.defaultOptions())
+                .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
                 .addNewMessageListener(message -> System.out.println(message.toJson()))
                 .addContactsListener((api, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
                 .addChatsListener(chats -> System.out.printf("Chats: %s%n", chats.size()))
@@ -20,7 +20,7 @@ public class WaitTest implements JacksonProvider {
                 .addContactPresenceListener((chat, contact, status) -> System.out.printf("Status of %s changed in %s to %s%n", contact.name(), chat.name(), status.name()))
                 .addAnyMessageStatusListener((chat, contact, info, status) -> System.out.printf("Message %s in chat %s now has status %s for %s %n", info.id(), info.chatName(), status, contact == null ? null : contact.name()))
                 .addChatMessagesSyncListener((chat, last) -> System.out.printf("%s now has %s messages: %s%n", chat.name(), chat.messages().size(), !last ? "waiting for more" : "done"))
-                .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason));
-        whatsapp.connect().join();
+                .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason))
+                .connect().join();
     }
 }

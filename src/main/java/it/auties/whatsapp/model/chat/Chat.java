@@ -93,7 +93,7 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
     private boolean readOnly;
 
     /**
-     * Whether this chat has been trasfered completely
+     * Whether this chat has been transferred completely
      */
     @ProtobufProperty(index = 8, name = "endOfHistoryTransfer", type = BOOL)
     private boolean endOfHistoryTransfer;
@@ -819,6 +819,9 @@ public final class Chat implements ProtobufMessage, ContactJidProvider {
         private final int index;
     }
 
+    /**
+     * Internal implementation to deserialize messages
+     */
     public static class ChatBuilder {
         public ChatBuilder messages(ConcurrentLinkedDeque<HistorySyncMessage> messages) {
             this.messages$value = messages.stream()

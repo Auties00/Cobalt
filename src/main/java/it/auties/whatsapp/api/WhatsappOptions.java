@@ -2,7 +2,6 @@ package it.auties.whatsapp.api;
 
 import it.auties.whatsapp.api.WhatsappOptions.MobileOptions;
 import it.auties.whatsapp.api.WhatsappOptions.WebOptions;
-import it.auties.whatsapp.model.message.model.TextPreviewSetting;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
 import it.auties.whatsapp.model.signal.auth.Version;
@@ -218,7 +217,6 @@ public abstract sealed class WhatsappOptions permits WebOptions, MobileOptions {
         public ClientType clientType() {
             return ClientType.APP_CLIENT;
         }
-
 
         @Override
         public String osName() {

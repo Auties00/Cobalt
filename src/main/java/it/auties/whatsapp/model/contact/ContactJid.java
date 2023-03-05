@@ -19,8 +19,16 @@ import java.util.Objects;
  */
 @Builder
 @With
-public record ContactJid(String user, @NonNull Server server, int device,
-                         int agent) implements ProtobufMessage, ContactJidProvider {
+public record ContactJid(String user, @NonNull Server server, int device, int agent) implements ProtobufMessage, ContactJidProvider {
+    /**
+     * Default constructor
+     */
+    public ContactJid(String user, @NonNull Server server, int device, int agent){
+        this.user = user != null && user.startsWith("+") ? user.substring(1) : user;
+        this.server = server;
+        this.device = device;
+        this.agent = agent;
+    }
     /**
      * Constructs a new ContactId that represents a server
      *

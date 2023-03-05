@@ -208,7 +208,7 @@ class AuthHandler extends Handler implements JacksonProvider {
         var phoneNumber = PhoneNumber.of(options.phoneNumber());
         var userAgent = createUserAgent(options);
         sendVerificationCode(phoneNumber, userAgent, code);
-        socketHandler.store().userCompanionJid(ContactJid.ofCompanion(String.valueOf(phoneNumber.number()), 0, 0));
+        socketHandler.store().userCompanionJid(ContactJid.of(options.phoneNumber()));
         socketHandler.keys().registered(true);
     }
 

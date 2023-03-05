@@ -35,6 +35,7 @@ import it.auties.whatsapp.model.poll.PollAdditionalMetadata;
 import it.auties.whatsapp.model.poll.PollUpdateEncryptedMetadata;
 import it.auties.whatsapp.model.poll.PollUpdateEncryptedOptions;
 import it.auties.whatsapp.model.privacy.GdprAccountReport;
+import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
 import it.auties.whatsapp.model.request.Attributes;
@@ -869,6 +870,27 @@ public class Whatsapp {
     }
 
     /**
+     * Registers a privacy setting changed listener
+     *
+     * @param onPrivacySettingChanged the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addPrivacySettingChangedListener(OnPrivacySettingChanged onPrivacySettingChanged) {
+        return addListener(onPrivacySettingChanged);
+    }
+
+
+    /**
+     * Registers a privacy setting changed listener
+     *
+     * @param onWhatsappPrivacySettingChanged the listener to register
+     * @return the same instance
+     */
+    public Whatsapp addPrivacySettingChangedListener(OnWhatsappPrivacySettingChanged onWhatsappPrivacySettingChanged) {
+        return addListener(onWhatsappPrivacySettingChanged);
+    }
+
+    /**
      * Removes a listener
      *
      * @param listener the listener to remove
@@ -924,32 +946,38 @@ public class Whatsapp {
 
     /**
      * Changes a privacy setting in Whatsapp's settings. If the value is
-     * {@link PrivacySettingValue#CONTACT_EXCEPT}, the excluded parameter should also be filled or an
+     * {@link PrivacySettingValue#CONTACTS_EXCEPT}, the excluded parameter should also be filled or an
      * exception will be thrown, otherwise it will be ignored.
      *
      * @param type     the non-null setting to change
      * @param value    the non-null value to attribute to the setting
-     * @param excluded the non-null excluded contacts if value is
-     *                 {@link PrivacySettingValue#CONTACT_EXCEPT}
+     * @param excluded the non-null excluded contacts if value is {@link PrivacySettingValue#CONTACTS_EXCEPT}
      * @return the same instance wrapped in a completable future
      */
     @SafeVarargs
     public final <T extends ContactJidProvider> CompletableFuture<Whatsapp> changePrivacySetting(@NonNull PrivacySettingType type, @NonNull PrivacySettingValue value, @NonNull T @NonNull ... excluded) {
-        Validate.isTrue(value != PrivacySettingValue.CONTACT_EXCEPT || excluded.length != 0, "Cannot change setting %s toggle to %s: expected at least one excluded contact", value.name(), type.name());
-        Validate.isTrue(type != PrivacySettingType.ADD_ME_TO_GROUPS || value != PrivacySettingValue.NOBODY, "Cannot change setting %s toggle to %s: the nobody toggle cannot be used with this setting because Whatsapp doesn't support it", value.name(), type.name());
-        Validate.isTrue(type != PrivacySettingType.READ_RECEIPTS || (value == PrivacySettingValue.EVERYONE || value == PrivacySettingValue.NOBODY), "Cannot change setting %s toggle to %s: read receipts can either be seen by everyone or nobody", value.name(), type.name());
+        Validate.isTrue(type.isSupported(value), "Cannot change setting %s to %s: this toggle cannot be used because Whatsapp doesn't support it", value.name(), type.name());
         var attributes = Attributes.of()
                 .put("name", type.data())
-                .put("last", value.data())
-                .put("dhash", "none", () -> value == PrivacySettingValue.CONTACT_EXCEPT)
+                .put("value", value.data())
+                .put("dhash", "none", () -> value == PrivacySettingValue.CONTACTS_EXCEPT)
                 .toMap();
-        var children = value != PrivacySettingValue.CONTACT_EXCEPT ? null : Arrays.stream(excluded)
-                .map(entry -> Node.ofAttributes("user", Map.of("jid", entry.toJid(), "action", "add")))
+        var excludedJids = Arrays.stream(excluded)
+                .map(ContactJidProvider::toJid)
                 .toList();
-        var node = Node.ofChildren("privacy", Node.ofChildren("category", attributes, children));
-        return socketHandler.sendQuery("set", "privacy", node)
-                .thenRunAsync(() -> store().privacySettings().put(type, value))
+        var children = value != PrivacySettingValue.CONTACTS_EXCEPT ? null : excludedJids.stream()
+                .map(entry -> Node.ofAttributes("user", Map.of("jid", entry, "action", "add")))
+                .toList();
+        return socketHandler.sendQuery("set", "privacy", Node.ofChildren("privacy", Node.ofChildren("category", attributes, children)))
+                .thenRunAsync(() -> onPrivacyFeatureChanged(type, value, excludedJids))
                 .thenApplyAsync(ignored -> this);
+    }
+
+    private void onPrivacyFeatureChanged(PrivacySettingType type, PrivacySettingValue value, List<ContactJid> excludedJids) {
+        var newEntry = new PrivacySettingEntry(type, value, excludedJids);
+        var oldEntry = store().findPrivacySetting(type);
+        store().addPrivacySetting(type, newEntry);
+        socketHandler.onPrivacySettingChanged(oldEntry, newEntry);
     }
 
     /**
@@ -959,8 +987,7 @@ public class Whatsapp {
      * @return the same instance wrapped in a completable future
      */
     public CompletableFuture<Whatsapp> changeNewChatsEphemeralTimer(@NonNull ChatEphemeralTimer timer) {
-        return socketHandler.sendQuery("set", "disappearing_mode", Node.ofAttributes("disappearing_mode", Map.of("duration", timer.period()
-                        .toSeconds())))
+        return socketHandler.sendQuery("set", "disappearing_mode", Node.ofAttributes("disappearing_mode", Map.of("duration", timer.period().toSeconds())))
                 .thenRunAsync(() -> store().newChatsEphemeralTimer(timer))
                 .thenApplyAsync(ignored -> this);
     }
@@ -1103,8 +1130,7 @@ public class Whatsapp {
     public CompletableFuture<MessageInfo> sendMessage(@NonNull MessageInfo info) {
         store().attribute(info);
         attributeMessageMetadata(info);
-        var future = info.chat().hasUnreadMessages() ? markRead(info.chat()).thenComposeAsync(ignored -> socketHandler.sendMessage(MessageSendRequest.of(info)))
-                : socketHandler.sendMessage(MessageSendRequest.of(info));
+        var future = socketHandler.sendMessage(MessageSendRequest.of(info));
         return future.thenApplyAsync(ignored -> info);
     }
 
@@ -1131,7 +1157,9 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public <T extends ContactJidProvider> CompletableFuture<T> markRead(@NonNull T chat) {
-        return mark(chat, true).thenComposeAsync(ignored -> markAllAsRead(chat)).thenApplyAsync(ignored -> chat);
+        return mark(chat, true)
+                .thenComposeAsync(ignored -> markAllAsRead(chat))
+                .thenApplyAsync(ignored -> chat);
     }
 
     private void fixEphemeralMessage(MessageInfo info) {
@@ -1345,9 +1373,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<MessageInfo> markRead(@NonNull MessageInfo info) {
-        var readReceipts = store().privacySettings()
-                .getOrDefault(PrivacySettingType.READ_RECEIPTS, PrivacySettingValue.EVERYONE);
-        var type = readReceipts == PrivacySettingValue.EVERYONE ? "read" : "read-self";
+        var type = store().findPrivacySetting(PrivacySettingType.READ_RECEIPTS).value() == PrivacySettingValue.EVERYONE ? "read" : "read-self";
         socketHandler.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.id()), type);
         var count = info.chat().unreadMessagesCount();
         if(count > 0) {
@@ -1922,9 +1948,7 @@ public class Whatsapp {
      * @return a CompletableFuture
      */
     public CompletableFuture<MessageInfo> markPlayed(@NonNull MessageInfo info) {
-        var readReceipts = store().privacySettings()
-                .getOrDefault(PrivacySettingType.READ_RECEIPTS, PrivacySettingValue.EVERYONE);
-        if (readReceipts != PrivacySettingValue.EVERYONE) {
+        if (store().findPrivacySetting(PrivacySettingType.READ_RECEIPTS).value() != PrivacySettingValue.EVERYONE) {
             return CompletableFuture.completedFuture(info);
         }
         socketHandler.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.id()), "played");

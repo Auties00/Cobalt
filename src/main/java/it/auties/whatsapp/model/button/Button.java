@@ -98,8 +98,7 @@ public class Button implements ProtobufMessage {
     public enum ButtonType implements ProtobufMessage {
         UNKNOWN(0),
         TEXT(1),
-        NATIVE_FLOW(2),
-        CALL_BUTTON(3);
+        NATIVE_FLOW(2);
         
         @Getter
         private final int index;

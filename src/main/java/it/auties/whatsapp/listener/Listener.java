@@ -13,8 +13,7 @@ import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MessageStatus;
 import it.auties.whatsapp.model.message.model.QuotedMessage;
-import it.auties.whatsapp.model.privacy.PrivacySettingType;
-import it.auties.whatsapp.model.privacy.PrivacySettingValue;
+import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.request.Node;
 import it.auties.whatsapp.model.setting.Setting;
 
@@ -196,23 +195,6 @@ public interface Listener {
      * @param contacts the contacts
      */
     default void onContacts(Collection<Contact> contacts) {
-    }
-
-    /**
-     * Called when the socket receives the privacy settings from Whatsapp
-     *
-     * @param whatsapp        an instance to the calling api
-     * @param privacySettings the settings
-     */
-    default void onPrivacySettings(Whatsapp whatsapp, Map<PrivacySettingType, PrivacySettingValue> privacySettings) {
-    }
-
-    /**
-     * Called when the socket receives the privacy settings from Whatsapp
-     *
-     * @param privacySettings the settings
-     */
-    default void onPrivacySettings(Map<PrivacySettingType, PrivacySettingValue> privacySettings) {
     }
 
     /**
@@ -424,7 +406,7 @@ public interface Listener {
      * @param whatsapp an instance to the calling api
      * @param status   the status
      */
-    default void onMediaStatus(Whatsapp whatsapp, Collection<MessageInfo> status) {
+    default void onStatus(Whatsapp whatsapp, Collection<MessageInfo> status) {
     }
 
     /**
@@ -432,7 +414,7 @@ public interface Listener {
      *
      * @param status the status
      */
-    default void onMediaStatus(Collection<MessageInfo> status) {
+    default void onStatus(Collection<MessageInfo> status) {
     }
 
     /**
@@ -631,5 +613,26 @@ public interface Listener {
      * @param contact the new contact
      */
     default void onNewContact(Contact contact) {
+    }
+
+    /**
+     * Called when a privacy setting is modified
+     *
+     * @param whatsapp an instance to the calling api
+     * @param oldPrivacyEntry the old entry
+     * @param newPrivacyEntry the new entry
+     */
+    default void onPrivacySettingChanged(Whatsapp whatsapp, PrivacySettingEntry oldPrivacyEntry, PrivacySettingEntry newPrivacyEntry){
+
+    }
+
+    /**
+     * Called when a privacy setting is modified
+     *
+     * @param oldPrivacyEntry the old entry
+     * @param newPrivacyEntry the new entry
+     */
+    default void onPrivacySettingChanged(PrivacySettingEntry oldPrivacyEntry, PrivacySettingEntry newPrivacyEntry){
+
     }
 }

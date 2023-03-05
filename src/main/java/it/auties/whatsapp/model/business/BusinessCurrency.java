@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.business;
 
-import it.auties.protobuf.base.ProtobufMessage;
 import it.auties.protobuf.base.ProtobufProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,7 +18,7 @@ import static it.auties.protobuf.base.ProtobufType.STRING;
 @Builder
 @Jacksonized
 @Accessors(fluent = true)
-public class BusinessCurrency implements ProtobufMessage {
+public final class BusinessCurrency implements BusinessLocalizableParameterValue {
     /**
      * The currency countryCode
      */
@@ -31,4 +30,9 @@ public class BusinessCurrency implements ProtobufMessage {
      */
     @ProtobufProperty(index = 2, type = INT64)
     private long amount1000;
+
+    @Override
+    public BusinessLocalizableParameterType parameterType() {
+        return BusinessLocalizableParameterType.CURRENCY;
+    }
 }

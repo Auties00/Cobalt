@@ -4,6 +4,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import it.auties.bytes.Bytes;
 import it.auties.protobuf.serialization.performance.Protobuf;
+import it.auties.whatsapp.api.ClientType;
 import it.auties.whatsapp.api.ErrorHandler.Location;
 import it.auties.whatsapp.crypto.*;
 import it.auties.whatsapp.model.action.ContactAction;
@@ -184,9 +185,7 @@ class MessageHandler extends Handler implements JacksonProvider {
 
     private CompletableFuture<List<Node>> createConversationNodes(List<ContactJid> contacts, byte[] message, byte[] deviceMessage, boolean force) {
         var partitioned = contacts.stream()
-                .collect(partitioningBy(contact -> Objects.equals(contact.user(), socketHandler.store()
-                        .userCompanionJid()
-                        .user())));
+                .collect(partitioningBy(contact -> Objects.equals(contact.user(), socketHandler.store().userCompanionJid().user())));
         var companions = querySessions(partitioned.get(true), force).thenApplyAsync(ignored -> createMessageNodes(partitioned.get(true), deviceMessage));
         var others = querySessions(partitioned.get(false), force).thenApplyAsync(ignored -> createMessageNodes(partitioned.get(false), message));
         return companions.thenCombineAsync(others, (first, second) -> toSingleList(first, second));
@@ -214,12 +213,24 @@ class MessageHandler extends Handler implements JacksonProvider {
     protected CompletableFuture<Void> querySessions(List<ContactJid> contacts, boolean force) {
         var missingSessions = contacts.stream()
                 .filter(contact -> force || !socketHandler.keys().hasSession(contact.toSignalAddress()))
-                .map(contact -> ofAttributes("user", of("jid", contact, "reason", "identity")))
+                .map(contact -> ofAttributes("user", of("jid", contact)))
                 .toList();
         if (missingSessions.isEmpty()) {
             return completedFuture(null);
         }
-        return socketHandler.sendQuery("get", "encrypt", ofChildren("key", missingSessions))
+
+        if (socketHandler.options().clientType() != ClientType.APP_CLIENT) {
+            return querySession(missingSessions);
+        }
+
+        var futures = missingSessions.stream()
+                .map(entry -> querySession(List.of(entry)))
+                .toArray(CompletableFuture[]::new);
+        return CompletableFuture.allOf(futures);
+    }
+
+    private CompletableFuture<Void> querySession(List<Node> children){
+        return socketHandler.sendQuery("get", "encrypt", ofChildren("key", children))
                 .thenAcceptAsync(this::parseSessions);
     }
 
@@ -264,7 +275,9 @@ class MessageHandler extends Handler implements JacksonProvider {
     }
 
     private CompletableFuture<List<ContactJid>> queryDevices(List<ContactJid> contacts, boolean excludeSelf) {
-        var contactNodes = contacts.stream().map(contact -> ofAttributes("user", of("jid", contact))).toList();
+        var contactNodes = contacts.stream()
+                .map(contact -> ofAttributes("user", of("jid", contact)))
+                .toList();
         var body = Node.ofChildren("usync", of("sid", socketHandler.store()
                 .nextTag(), "mode", "query", "last", "true", "index", "0", "context", "message"), ofChildren("query", ofAttributes("devices", of("version", "2"))), ofChildren("list", contactNodes));
         return socketHandler.sendQuery("get", "usync", body)
@@ -668,7 +681,7 @@ class MessageHandler extends Handler implements JacksonProvider {
         switch (history.syncType()) {
             case INITIAL_STATUS_V3 -> {
                 history.statusV3Messages().forEach(socketHandler.store()::addStatus);
-                socketHandler.onMediaStatus();
+                socketHandler.onStatus();
             }
             case INITIAL_BOOTSTRAP -> {
                 historyCache.addAll(history.conversations());

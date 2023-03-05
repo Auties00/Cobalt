@@ -12,5 +12,5 @@ public interface OnWhatsappMediaStatus extends Listener {
      * @param whatsapp an instance to the calling api
      * @param status   the status
      */
-    void onMediaStatus(Whatsapp whatsapp, Collection<MessageInfo> status);
+    void onStatus(Whatsapp whatsapp, Collection<MessageInfo> status);
 }

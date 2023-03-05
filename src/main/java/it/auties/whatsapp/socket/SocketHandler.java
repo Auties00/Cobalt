@@ -21,6 +21,7 @@ import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.MessageIndexInfo;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.model.MessageStatus;
+import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.request.Attributes;
 import it.auties.whatsapp.model.request.MessageSendRequest;
 import it.auties.whatsapp.model.request.Node;
@@ -311,10 +312,10 @@ public class SocketHandler extends Handler implements SocketListener, JacksonPro
 
     public CompletableFuture<Void> sendWithNoResponse(Node node) {
         if (state() == SocketState.RESTORE) {
-            return CompletableFuture.failedFuture(new IllegalStateException("Socket is in fail safe state"));
+            return CompletableFuture.completedFuture(null);
         }
 
-        var request = node.toRequest(node.id() == null ? store.nextTag() : null, null);
+        var request = node.toRequest(store::nextTag, null);
         return request.sendWithNoResponse(session, keys, store)
                 .exceptionallyAsync(throwable -> errorHandler.handleFailure(SOCKET, throwable))
                 .thenRunAsync(() -> onNodeSent(node));
@@ -380,8 +381,10 @@ public class SocketHandler extends Handler implements SocketListener, JacksonPro
         if (state() == SocketState.RESTORE) {
             return CompletableFuture.completedFuture(node);
         }
+        var request = node.toRequest(store::nextTag, filter);
+        var result = request.send(session, keys, store);
         onNodeSent(node);
-        return node.toRequest(node.id() == null ? store.nextTag() : null, filter).send(session, keys, store);
+        return result;
     }
 
     public CompletableFuture<Optional<URI>> queryPicture(@NonNull ContactJidProvider chat) {
@@ -590,10 +593,10 @@ public class SocketHandler extends Handler implements SocketListener, JacksonPro
         });
     }
 
-    protected void onMediaStatus() {
+    protected void onStatus() {
         callListenersAsync(listener -> {
-            listener.onMediaStatus(whatsapp, store().status());
-            listener.onMediaStatus(store().status());
+            listener.onStatus(whatsapp, store().status());
+            listener.onStatus(store().status());
         });
     }
 
@@ -601,13 +604,6 @@ public class SocketHandler extends Handler implements SocketListener, JacksonPro
         callListenersSync(listener -> {
             listener.onContacts(whatsapp, store().contacts());
             listener.onContacts(store().contacts());
-        });
-    }
-
-    protected void onPrivacySettings() {
-        callListenersAsync(listener -> {
-            listener.onPrivacySettings(whatsapp, store().privacySettings());
-            listener.onPrivacySettings(store().privacySettings());
         });
     }
 
@@ -662,14 +658,19 @@ public class SocketHandler extends Handler implements SocketListener, JacksonPro
         if (oldName != null && !Objects.equals(newName, oldName)) {
             sendWithNoResponse(Node.ofAttributes("presence", Map.of("name", oldName, "type", "unavailable")));
             sendWithNoResponse(Node.ofAttributes("presence", Map.of("name", newName, "type", "available")));
-            callListenersAsync(listener -> {
-                listener.onUserNameChange(whatsapp, oldName, newName);
-                listener.onUserStatusChange(oldName, newName);
-            });
+            onUserNameChange(newName, oldName);
         }
         var self = store().userCompanionJid().toUserJid();
         store().findContactByJid(self).orElseGet(() -> store().addContact(self)).chosenName(newName);
         store().userName(newName);
+    }
+
+
+    private void onUserNameChange(String newName, String oldName) {
+        callListenersAsync(listener -> {
+            listener.onUserNameChange(whatsapp, oldName, newName);
+            listener.onUserNameChange(oldName, newName);
+        });
     }
 
     public void updateLocale(String newLocale, String oldLocale) {
@@ -677,12 +678,16 @@ public class SocketHandler extends Handler implements SocketListener, JacksonPro
             return;
         }
         if (oldLocale != null) {
-            callListenersAsync(listener -> {
-                listener.onUserLocaleChange(whatsapp, oldLocale, newLocale);
-                listener.onUserLocaleChange(oldLocale, newLocale);
-            });
+            onUserLocaleChange(newLocale, oldLocale);
         }
         store().userLocale(newLocale);
+    }
+
+    private void onUserLocaleChange(String newLocale, String oldLocale) {
+        callListenersAsync(listener -> {
+            listener.onUserLocaleChange(whatsapp, oldLocale, newLocale);
+            listener.onUserLocaleChange(oldLocale, newLocale);
+        });
     }
 
     protected void onContactBlocked(Contact contact) {
@@ -696,6 +701,13 @@ public class SocketHandler extends Handler implements SocketListener, JacksonPro
         callListenersAsync(listener -> {
             listener.onNewContact(whatsapp, contact);
             listener.onNewContact(contact);
+        });
+    }
+
+    public void onPrivacySettingChanged(PrivacySettingEntry oldEntry, PrivacySettingEntry newEntry) {
+        callListenersAsync(listener -> {
+            listener.onPrivacySettingChanged(whatsapp, oldEntry, newEntry);
+            listener.onPrivacySettingChanged(oldEntry, newEntry);
         });
     }
 

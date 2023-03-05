@@ -1,6 +1,7 @@
 package it.auties.whatsapp.util;
 
 import it.auties.bytes.Bytes;
+import it.auties.whatsapp.binary.Tokens;
 
 import java.net.URI;
 
@@ -19,9 +20,9 @@ public class Specification {
         // TODO: Fetch this dynamically if possible
         public static final String MOBILE_TOKEN = "0a1mLfGUIBVrMKF1RdvLI5lkRBvof6vn0fD2QRSM4174c0243f5277a5d7720ce842cc4ae6";
         private static final String WHATSAPP_HEADER = "WA";
-        private static final byte[] WEB_VERSION = new byte[]{6, 2};
+        private static final byte[] WEB_VERSION = new byte[]{6, Tokens.DICTIONARY_VERSION};
         public static final byte[] WEB_PROLOGUE = Bytes.of(WHATSAPP_HEADER).append(WEB_VERSION).toByteArray();
-        private static final byte[] MOBILE_VERSION = new byte[]{5, 2};
+        private static final byte[] MOBILE_VERSION = new byte[]{5, Tokens.DICTIONARY_VERSION};
         public static final byte[] APP_PROLOGUE = Bytes.of(WHATSAPP_HEADER).append(MOBILE_VERSION).toByteArray();
     }
 

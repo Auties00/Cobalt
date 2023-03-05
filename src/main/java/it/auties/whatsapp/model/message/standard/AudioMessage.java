@@ -115,8 +115,8 @@ public final class AudioMessage extends MediaMessage {
     private Integer backgroundArgb;
 
     /**
-     * Constructs a new builder to create a AudioMessage. The result can be later sent using
-     * {@link Whatsapp#sendMessage(MessageInfo)}
+     * Constructs a new builder to create a AudioMessage. The result can be later sent using {@link Whatsapp#sendMessage(MessageInfo)}
+     * {@link AudioMessage#duration} is computed automatically if ffprobe is installed on the host machine
      *
      * @param media        the non-null image that the new message holds
      * @param mimeType     the mime type of the new message, by default

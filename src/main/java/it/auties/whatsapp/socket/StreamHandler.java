@@ -22,6 +22,7 @@ import it.auties.whatsapp.model.info.MessageInfo.StubType;
 import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.message.model.MessageKey;
 import it.auties.whatsapp.model.message.model.MessageStatus;
+import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
 import it.auties.whatsapp.model.privacy.PrivacySettingValue;
 import it.auties.whatsapp.model.request.Attributes;
@@ -357,21 +358,74 @@ class StreamHandler extends Handler implements JacksonProvider {
     }
 
     private void changeUserPrivacySetting(Node child) {
-        child.findNodes("category").forEach(entry -> addPrivacySetting(entry.attributes()));
+        var category = child.findNodes("category");
+        category.forEach(entry -> addPrivacySetting(entry, true));
     }
 
     private void updateUserDisappearingMode(Node child) {
-        socketHandler.store().newChatsEphemeralTimer(ChatEphemeralTimer.of(child.attributes().getLong("duration")));
+        var timer = ChatEphemeralTimer.of(child.attributes().getLong("duration"));
+        socketHandler.store().newChatsEphemeralTimer(timer);
     }
 
-
-    private void addPrivacySetting(Attributes entry) {
-        var privacyType = PrivacySettingType.of(entry.getString("name"));
-        var privacyValue = PrivacySettingValue.of(entry.getString("value"));
-        if (privacyType.isEmpty() || privacyValue.isEmpty()) {
-            return;
+    private CompletableFuture<Void> addPrivacySetting(Node node, boolean update) {
+        var privacySettingName = node.attributes().getString("name");
+        var privacyType = PrivacySettingType.of(privacySettingName)
+                .orElseThrow(() -> new NoSuchElementException("Unknown privacy option: %s".formatted(privacySettingName)));
+        var privacyValueName = node.attributes().getString("value");
+        var privacyValue = PrivacySettingValue.of(privacyValueName)
+                .orElseThrow(() -> new NoSuchElementException("Unknown privacy value: %s".formatted(privacyValueName)));
+        if (!update) {
+            return queryPrivacyExcludedContacts(privacyType, privacyValue)
+                    .thenAcceptAsync(response -> socketHandler.store().addPrivacySetting(privacyType, new PrivacySettingEntry(privacyType, privacyValue, response)));
         }
-        socketHandler.store().privacySettings().put(privacyType.get(), privacyValue.get());
+
+        var oldEntry = socketHandler.store().findPrivacySetting(privacyType);
+        var newValues = getUpdatedBlockedList(node, oldEntry, privacyValue);
+        var newEntry = new PrivacySettingEntry(privacyType, privacyValue, Collections.unmodifiableList(newValues));
+        socketHandler.store().addPrivacySetting(privacyType, newEntry);
+        socketHandler.onPrivacySettingChanged(oldEntry, newEntry);
+        return CompletableFuture.completedFuture(null);
+    }
+
+    private List<ContactJid> getUpdatedBlockedList(Node node, PrivacySettingEntry privacyEntry, PrivacySettingValue privacyValue) {
+        if(privacyValue != PrivacySettingValue.CONTACTS_EXCEPT){
+            return List.of();
+        }
+
+        var newValues = new ArrayList<>(privacyEntry.excluded());
+        for (var entry : node.findNodes("user")) {
+            var jid = entry.attributes()
+                    .getJid("jid")
+                    .orElseThrow(() -> new NoSuchElementException("Missing jid in response: %s".formatted(entry)));
+            if (entry.attributes().hasKey("action", "add")) {
+                newValues.add(jid);
+                continue;
+            }
+
+            newValues.remove(jid);
+        }
+        return newValues;
+    }
+
+    private CompletableFuture<List<ContactJid>> queryPrivacyExcludedContacts(PrivacySettingType type, PrivacySettingValue value) {
+        if(value != PrivacySettingValue.CONTACTS_EXCEPT){
+            return CompletableFuture.completedFuture(List.of());
+        }
+
+        return socketHandler.sendQuery("get", "privacy", Node.ofChildren("privacy", Node.ofAttributes("list", Map.of("name", type.data(), "value", value.data()))))
+                .thenApplyAsync(this::parsePrivacyExcludedContacts);
+    }
+
+    private List<ContactJid> parsePrivacyExcludedContacts(Node result) {
+        return result.findNode("privacy")
+                .orElseThrow(() -> new NoSuchElementException("Missing privacy in result: %s".formatted(result)))
+                .findNode("list")
+                .orElseThrow(() -> new NoSuchElementException("Missing list in result: %s".formatted(result)))
+                .findNodes("user")
+                .stream()
+                .map(user -> user.attributes().getJid("jid"))
+                .flatMap(Optional::stream)
+                .toList();
     }
 
     private void handleServerSyncNotification(Node node) {
@@ -428,40 +482,58 @@ class StreamHandler extends Handler implements JacksonProvider {
         if (!socketHandler.keys().hasPreKeys()) {
             sendPreKeys();
         }
+
         var executor = (ScheduledExecutorService) getOrCreateService();
         executor.scheduleAtFixedRate(this::sendPing, PING_INTERVAL, PING_INTERVAL, TimeUnit.SECONDS);
         createMediaConnection(0, null);
-        sendStatusUpdate();
-        socketHandler.onLoggedIn();
+        var loggedInFuture = queryInitialInfo()
+                .exceptionallyAsync(throwable -> socketHandler.errorHandler().handleFailure(LOGIN, throwable))
+                .thenRunAsync(this::onInitialInfo);
         if(socketHandler.options().clientType() == ClientType.APP_CLIENT){
             socketHandler.store().initialSync(true);
             socketHandler.disableAppStateSync();
         }
 
-        if (socketHandler.store().initialSync()) {
-            ControllerProviderLoader.findOnlyDeserializer(socketHandler.options().defaultSerialization())
-                    .attributeStore(socketHandler.store())
-                    .thenRun(socketHandler::onChats)
-                    .exceptionallyAsync(exception -> socketHandler.errorHandler().handleFailure(MESSAGE, exception));
-            socketHandler.onContacts();
-        }
-    }
-
-    private void sendStatusUpdate() {
-        updateSelfPresence();
-        socketHandler.queryBlockList()
-                .thenAcceptAsync(entry -> entry.forEach(this::markBlocked));
-        socketHandler.sendQuery("get", "privacy", Node.of("privacy"))
-                .thenAcceptAsync(this::parsePrivacySettings);
-        socketHandler.sendQuery("get", "abt", ofAttributes("props", of("protocol", "1"))); // Ignore this response
-        socketHandler.sendQuery("get", "w", Node.of("props"))
-                .thenAcceptAsync(this::parseProps);
-        if(socketHandler.options().clientType() != ClientType.WEB_CLIENT){
+        if (!socketHandler.store().initialSync()) {
             return;
         }
 
-        updateUserStatus(false);
-        updateUserPicture(false);
+        var chatsFuture = ControllerProviderLoader.findOnlyDeserializer(socketHandler.options().defaultSerialization())
+                .attributeStore(socketHandler.store())
+                .exceptionallyAsync(exception -> socketHandler.errorHandler().handleFailure(MESSAGE, exception));
+        CompletableFuture.allOf(loggedInFuture, chatsFuture)
+                .thenRunAsync(socketHandler::onChats);
+    }
+
+    private void onInitialInfo() {
+        socketHandler.onLoggedIn();
+        if (!socketHandler.store().initialSync()) {
+            return;
+        }
+
+        socketHandler.onContacts();
+    }
+
+    private CompletableFuture<Void> queryInitialInfo() {
+        updateSelfPresence();
+        if(socketHandler.options().clientType() != ClientType.WEB_CLIENT){
+            return CompletableFuture.completedFuture(null);
+        }
+
+        socketHandler.sendQuery("get", "abt", ofAttributes("props", of("protocol", "1"))); // Ignore this response
+        socketHandler.sendQuery("get", "w", Node.of("props"))
+                .thenAcceptAsync(this::parseProps);
+        return CompletableFuture.allOf(queryInitialBlockList(), queryInitialPrivacySettings(), updateUserStatus(false), updateUserPicture(false));
+    }
+
+    private CompletableFuture<Void> queryInitialPrivacySettings() {
+        return socketHandler.sendQuery("get", "privacy", Node.of("privacy"))
+                .thenComposeAsync(this::parsePrivacySettings);
+    }
+
+    private CompletableFuture<Void> queryInitialBlockList() {
+        return socketHandler.queryBlockList()
+                .thenAcceptAsync(entry -> entry.forEach(this::markBlocked));
     }
 
     private void updateSelfPresence() {
@@ -471,8 +543,8 @@ class StreamHandler extends Handler implements JacksonProvider {
                 .ifPresent(entry -> entry.lastKnownPresence(ContactStatus.AVAILABLE).lastSeen(ZonedDateTime.now()));
     }
 
-    private void updateUserStatus(boolean update) {
-        socketHandler.queryStatus(socketHandler.store().userCompanionJid().toUserJid())
+    private CompletableFuture<Void> updateUserStatus(boolean update) {
+        return socketHandler.queryStatus(socketHandler.store().userCompanionJid().toUserJid())
                 .thenAcceptAsync(result -> parseNewStatus(result.orElse(null), update));
     }
 
@@ -488,8 +560,8 @@ class StreamHandler extends Handler implements JacksonProvider {
         socketHandler.onUserStatusChange(result.status(), oldStatus);
     }
 
-    private void updateUserPicture(boolean update) {
-        socketHandler.queryPicture(socketHandler.store().userCompanionJid().toUserJid())
+    private CompletableFuture<Void> updateUserPicture(boolean update) {
+        return socketHandler.queryPicture(socketHandler.store().userCompanionJid().toUserJid())
                 .thenAcceptAsync(result -> handleUserPictureChange(result.orElse(null), update));
     }
 
@@ -510,8 +582,14 @@ class StreamHandler extends Handler implements JacksonProvider {
         }).blocked(true);
     }
 
-    private void parsePrivacySettings(Node result) {
-        result.children().forEach(entry -> addPrivacySetting(entry.attributes()));
+    private CompletableFuture<Void> parsePrivacySettings(Node result) {
+        var privacy = result.findNode("privacy")
+                .orElseThrow(() -> new NoSuchElementException("Missing privacy in response: %s".formatted(result)))
+                .children()
+                .stream()
+                .map(entry -> addPrivacySetting(entry, false))
+                .toArray(CompletableFuture[]::new);
+        return CompletableFuture.allOf(privacy);
     }
 
     private void parseProps(Node result) {

@@ -48,7 +48,8 @@ class AppStateHandler extends Handler implements JacksonProvider {
     protected CompletableFuture<Void> push(@NonNull PatchRequest patch) {
         return CompletableFuture.runAsync(() -> {
                     awaitLatch();
-                    pullUninterruptedly(List.of(patch.type())).thenCompose(ignored -> sendPush(createPushRequest(patch)))
+                    pullUninterruptedly(List.of(patch.type()))
+                            .thenCompose(ignored -> sendPush(createPushRequest(patch)))
                             .join();
                 }, getOrCreateService())
                 .exceptionallyAsync(throwable -> socketHandler.errorHandler().handleFailure(PUSH_APP_STATE, throwable))

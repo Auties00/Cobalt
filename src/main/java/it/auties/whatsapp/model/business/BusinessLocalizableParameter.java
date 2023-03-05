@@ -1,14 +1,15 @@
 package it.auties.whatsapp.model.business;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.base.ProtobufMessage;
-import it.auties.protobuf.base.ProtobufName;
 import it.auties.protobuf.base.ProtobufProperty;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NonNull;
 import lombok.experimental.Accessors;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.Arrays;
+import java.util.Optional;
 
 import static it.auties.protobuf.base.ProtobufType.MESSAGE;
 import static it.auties.protobuf.base.ProtobufType.STRING;
@@ -32,40 +33,29 @@ public class BusinessLocalizableParameter implements ProtobufMessage {
      * The currency parameter
      */
     @ProtobufProperty(index = 2, type = MESSAGE, implementation = BusinessCurrency.class)
-    private BusinessCurrency currencyParameter;
+    private BusinessCurrency parameterCurrency;
 
     /**
      * The time parameter
      */
     @ProtobufProperty(index = 3, type = MESSAGE, implementation = BusinessDateTime.class)
-    private BusinessDateTime dateTimeParameter;
+    private BusinessDateTime parameterDateTime;
 
     /**
-     * Constructs a new localizable parameter with a currency parameter
+     * Constructs a new localizable parameter with a default value and a parameter
      *
-     * @param defaultValue      the default value
-     * @param currencyParameter the non-null currency
+     * @param defaultValue the default value
+     * @param parameter    the parameter
      * @return a non-null localizable parameter
      */
-    public static BusinessLocalizableParameter of(String defaultValue, @NonNull BusinessCurrency currencyParameter) {
-        return BusinessLocalizableParameter.builder()
-                .defaultValue(defaultValue)
-                .currencyParameter(currencyParameter)
-                .build();
-    }
-
-    /**
-     * Constructs a new localizable parameter with a date time parameter
-     *
-     * @param defaultValue      the default value
-     * @param dateTimeParameter the non-null date time
-     * @return a non-null localizable parameter
-     */
-    public static BusinessLocalizableParameter of(String defaultValue, @NonNull BusinessDateTime dateTimeParameter) {
-        return BusinessLocalizableParameter.builder()
-                .defaultValue(defaultValue)
-                .dateTimeParameter(dateTimeParameter)
-                .build();
+    public static BusinessLocalizableParameter of(String defaultValue, @NonNull BusinessLocalizableParameterValue parameter) {
+        var builder = BusinessLocalizableParameter.builder()
+                .defaultValue(defaultValue);
+        switch (parameter){
+            case BusinessCurrency businessCurrency -> builder.parameterCurrency(businessCurrency);
+            case BusinessDateTime businessDateTime -> builder.parameterDateTime(businessDateTime);
+        }
+        return builder.build();
     }
 
     /**
@@ -73,46 +63,44 @@ public class BusinessLocalizableParameter implements ProtobufMessage {
      *
      * @return a non-null parameter type
      */
-    public ParameterType parameterType() {
-        if (currencyParameter != null) {
-            return ParameterType.CURRENCY;
-        }
-        if (dateTimeParameter != null) {
-            return ParameterType.DATE_TIME;
-        }
-        return ParameterType.NONE;
+    public BusinessLocalizableParameterType parameterType() {
+        return parameter()
+                .map(BusinessLocalizableParameterValue::parameterType)
+                .orElse(BusinessLocalizableParameterType.NONE);
     }
 
     /**
-     * The constants of this enumerated type describe the various types of parameters that can be
-     * wrapped
+     * Returns the parameter that this message wraps
+     *
+     * @return a non-null optional
      */
-    @AllArgsConstructor
-    @Accessors(fluent = true)
-    @ProtobufName("ParamOneofType")
-    public enum ParameterType implements ProtobufMessage {
-        /**
-         * No parameter
-         */
-        NONE(0),
-        /**
-         * Currency parameter
-         */
-        CURRENCY(2),
-        /**
-         * Date time parameter
-         */
-        DATE_TIME(3);
-
-        @Getter
-        private final int index;
-
-        @JsonCreator
-        public static ParameterType of(int index) {
-            return Arrays.stream(values())
-                    .filter(entry -> entry.index() == index)
-                    .findFirst()
-                    .orElse(ParameterType.NONE);
+    public Optional<BusinessLocalizableParameterValue> parameter() {
+        if(parameterCurrency != null){
+            return Optional.of(parameterCurrency);
         }
+
+        if(parameterDateTime != null){
+            return Optional.of(parameterDateTime);
+        }
+
+        return Optional.empty();
+    }
+
+    /**
+     * Returns the currency parameter that this message wraps
+     *
+     * @return a non-null optional
+     */
+    public Optional<BusinessCurrency> parameterCurrency(){
+        return Optional.ofNullable(parameterCurrency);
+    }
+
+    /**
+     * Returns the datetime parameter that this message wraps
+     *
+     * @return a non-null optional
+     */
+    public Optional<BusinessDateTime> parameterDateTime(){
+        return Optional.ofNullable(parameterDateTime);
     }
 }

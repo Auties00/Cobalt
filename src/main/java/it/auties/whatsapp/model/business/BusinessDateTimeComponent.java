@@ -25,7 +25,7 @@ import static it.auties.protobuf.base.ProtobufType.UINT32;
 @Jacksonized
 @Accessors(fluent = true)
 @ProtobufName("HighlyStructuredMessage.HSMLocalizableParameter.HSMDateTime.HSMDateTimeComponent")
-public class BusinessDateTimeComponent implements ProtobufMessage {
+public final class BusinessDateTimeComponent implements BusinessDateTimeValue {
     /**
      * The day of the week
      */
@@ -67,6 +67,11 @@ public class BusinessDateTimeComponent implements ProtobufMessage {
      */
     @ProtobufProperty(index = 7, type = MESSAGE, implementation = BusinessDateTimeComponent.CalendarType.class)
     private CalendarType calendar;
+
+    @Override
+    public BusinessDateTimeType dateType() {
+        return BusinessDateTimeType.COMPONENT;
+    }
 
     /**
      * The constants of this enumerated type describe the days of the week

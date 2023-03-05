@@ -145,13 +145,33 @@ public enum MessageType {
      * Reaction
      */
     REACTION,
-
+    /**
+     * Interactive response
+     */
     INTERACTIVE_RESPONSE,
+    /**
+     * Native flow response
+     */
     NATIVE_FLOW_RESPONSE,
+    /**
+     * Keep in chat
+     */
     KEEP_IN_CHAT,
+    /**
+     * Poll creation
+     */
     POLL_CREATION,
+    /**
+     * Poll update
+     */
     POLL_UPDATE,
+    /**
+     * Request phone number
+     */
     REQUEST_PHONE_NUMBER,
+    /**
+     * Encrypted reaction
+     */
     ENCRYPTED_REACTION,
     /**
      * Sticker sync

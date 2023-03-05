@@ -176,6 +176,6 @@ public record SessionCipher(@NonNull SessionAddress address, @NonNull Keys keys)
 
     private Session loadSession(Supplier<Session> defaultSupplier) {
         return keys.findSessionByAddress(address)
-                .orElseGet(() -> requireNonNull(defaultSupplier.get(), "Missing session for %s"));
+                .orElseGet(() -> requireNonNull(defaultSupplier.get(), "Missing session for %s".formatted(address)));
     }
 }
