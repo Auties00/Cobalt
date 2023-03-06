@@ -17,10 +17,16 @@ public enum GroupSetting implements ProtobufMessage {
      * Who can edit the metadata of a group
      */
     EDIT_GROUP_INFO("locked"),
+
     /**
      * Who can send messages in a group
      */
-    SEND_MESSAGES("announcement");
+    SEND_MESSAGES("announcement"),
+
+    /**
+     * Who can add new members to the community
+     */
+    ADD_COMMUNITY_MEMBER("member_add_mode");
 
     /**
      * The name of the setting linked to this enumerated constant

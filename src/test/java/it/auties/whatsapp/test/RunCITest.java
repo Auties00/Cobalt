@@ -17,10 +17,7 @@ import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
 import it.auties.whatsapp.model.chat.ChatMute;
 import it.auties.whatsapp.model.chat.GroupPolicy;
-import it.auties.whatsapp.model.contact.Contact;
-import it.auties.whatsapp.model.contact.ContactCard;
-import it.auties.whatsapp.model.contact.ContactJid;
-import it.auties.whatsapp.model.contact.ContactStatus;
+import it.auties.whatsapp.model.contact.*;
 import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.message.button.ButtonsMessage;
 import it.auties.whatsapp.model.message.button.InteractiveMessage;
@@ -274,6 +271,37 @@ public class RunCITest implements Listener, JacksonProvider {
         group = response.jid();
         log("Created group: %s", response);
     }
+
+    @Test
+    @Order(11)
+    public void testCommunity() {
+        if (skip) {
+            return;
+        }
+        log("Creating community...");
+        var communityCreationResponse = api.createCommunity(Bytes.ofRandom(5).toHex(), "A nice body").join();
+        log("Created community: %s", communityCreationResponse);
+        log("Querying community metadata...");
+        var communityMetadataResponse = api.queryGroupMetadata(communityCreationResponse.jid()).join();
+        Assertions.assertTrue(communityMetadataResponse.community(), "Expected a community");
+        log("Queried community metadata: %s", communityMetadataResponse);
+        log("Creating child group...");
+        var communityChildCreationResponse = api.createGroup(Bytes.ofRandom(5).toHex(),  ChatEphemeralTimer.THREE_MONTHS, communityCreationResponse.jid()).join();
+        log("Created child group: %s", communityChildCreationResponse);
+        log("Querying child group metadata...");
+        var communityChildMetadataResponse = api.queryGroupMetadata(communityChildCreationResponse.jid()).join();
+        Assertions.assertFalse(communityChildMetadataResponse.community(), "Expected a group");
+        log("Queried child group metadata: %s", communityChildMetadataResponse);
+        log("Unlinking child group...");
+        var unlinkChildCommunityResponse = api.unlinkGroupFromCommunity(communityMetadataResponse.jid(), communityChildMetadataResponse.jid()).join();
+        Assertions.assertTrue(unlinkChildCommunityResponse, "Failed unlink");
+        log("Unlinked child group");
+        log("Linking child group...");
+        var linkChildCommunityResponse = api.linkGroupsToCommunity(communityMetadataResponse.jid(), communityChildMetadataResponse.jid()).join();
+        Assertions.assertTrue(linkChildCommunityResponse.get(communityChildMetadataResponse.jid()), "Failed link");
+        log("Linked child group");
+    }
+
 
     @Test
     @Order(12)

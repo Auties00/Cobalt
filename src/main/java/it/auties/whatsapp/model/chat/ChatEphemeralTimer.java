@@ -58,8 +58,7 @@ public enum ChatEphemeralTimer implements ProtobufMessage {
     }
 
     @ProtobufConverter
-    @SuppressWarnings("unused")
-    public Object toValue() {
+    public long periodSeconds() {
         return period.toSeconds();
     }
 }

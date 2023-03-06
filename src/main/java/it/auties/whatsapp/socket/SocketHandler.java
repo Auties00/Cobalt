@@ -388,8 +388,15 @@ public class SocketHandler extends Handler implements SocketListener, JacksonPro
     }
 
     public CompletableFuture<Optional<URI>> queryPicture(@NonNull ContactJidProvider chat) {
-        var body = Node.ofAttributes("picture", Map.of("query", "url"));
-        return sendQuery("get", "w:profile:picture", Map.of("target", chat.toJid()), body).thenApplyAsync(this::parseChatPicture);
+        var body = Node.ofAttributes("picture", Map.of("query", "url", "type", "image"));
+        if (chat.toJid().hasServer(Server.GROUP)) {
+            return queryGroupMetadata(chat.toJid())
+                    .thenComposeAsync(result -> sendQuery("get", "w:profile:picture", Map.of(result.community() ? "parent_group_jid" : "target", chat.toJid()), body))
+                    .thenApplyAsync(this::parseChatPicture);
+        }
+
+        return sendQuery("get", "w:profile:picture", Map.of("target", chat.toJid()), body)
+                .thenApplyAsync(this::parseChatPicture);
     }
 
     public CompletableFuture<Node> sendQuery(String method, String category, Map<String, Object> metadata, Node... body) {

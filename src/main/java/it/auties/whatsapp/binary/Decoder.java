@@ -18,16 +18,27 @@ import static it.auties.whatsapp.model.request.Node.of;
 import static it.auties.whatsapp.model.request.Node.ofAttributes;
 
 public class Decoder {
-    private final Bytes buffer;
+    private Bytes buffer;
+    private final List<String> singleByteTokens;
+    private final List<String> doubleByteTokens;
+    public Decoder(){
+        this(Tokens.SINGLE_BYTE, Tokens.DOUBLE_BYTE);
+    }
 
-    public Decoder(byte[] input) {
+    public Decoder(List<String> singleByteTokens, List<String> doubleByteTokens){
+        this.singleByteTokens = singleByteTokens;
+        this.doubleByteTokens = doubleByteTokens;
+    }
+
+    public Node readNode(byte[] input){
         var buffer = Bytes.of(input);
         var token = buffer.readByte() & 2;
         var data = buffer.remaining().toByteArray();
         this.buffer = Bytes.of(token == 0 ? data : BytesHelper.deflate(data));
+        return readEmbeddedNode();
     }
 
-    public Node readNode() {
+    public Node readEmbeddedNode() {
         var token = buffer.readUnsignedByte();
         var size = readSize(token);
         Validate.isTrue(size != 0, "Cannot decode node with empty body");
@@ -46,7 +57,7 @@ public class Decoder {
     }
 
     private List<Node> readList(int size) {
-        return IntStream.range(0, size).mapToObj(index -> readNode()).toList();
+        return IntStream.range(0, size).mapToObj(index -> readEmbeddedNode()).toList();
     }
 
     private String readString(List<Character> permitted, int start, int end) {
@@ -88,10 +99,10 @@ public class Decoder {
 
     private String readStringFromToken(int token) {
         if (token < DICTIONARY_0.data() || token > DICTIONARY_3.data()) {
-            return Tokens.SINGLE_BYTE.get(token - 1);
+            return singleByteTokens.get(token - 1);
         }
-        var delta = (Tokens.DOUBLE_BYTE.size() / 4) * (token - DICTIONARY_0.data());
-        return Tokens.DOUBLE_BYTE.get(buffer.readUnsignedByte() + delta);
+        var delta = (doubleByteTokens.size() / 4) * (token - DICTIONARY_0.data());
+        return doubleByteTokens.get(buffer.readUnsignedByte() + delta);
     }
 
     private String readNibble() {
