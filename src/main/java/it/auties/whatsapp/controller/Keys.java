@@ -17,13 +17,13 @@ import it.auties.whatsapp.model.signal.session.Session;
 import it.auties.whatsapp.model.signal.session.SessionAddress;
 import it.auties.whatsapp.model.sync.AppStateSyncKey;
 import it.auties.whatsapp.model.sync.LTHashState;
-import it.auties.whatsapp.serialization.ControllerProviderLoader;
 import it.auties.whatsapp.util.BytesHelper;
 import it.auties.whatsapp.util.KeyHelper;
 import it.auties.whatsapp.util.Specification.Whatsapp;
 import lombok.*;
 import lombok.Builder.Default;
 import lombok.experimental.Accessors;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.*;
@@ -35,12 +35,11 @@ import static java.util.Objects.requireNonNullElseGet;
 /**
  * This controller holds the cryptographic-related data regarding a WhatsappWeb session
  */
-@AllArgsConstructor(access = AccessLevel.PROTECTED)
-@Builder
+@SuperBuilder
 @Jacksonized
 @Accessors(fluent = true, chain = true)
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public final class Keys implements Controller<Keys> {
+public final class Keys extends Controller<Keys> {
     /**
      * The client id
      */
@@ -192,11 +191,6 @@ public final class Keys implements Controller<Keys> {
     @Setter
     private Bytes writeKey, readKey;
 
-    @JsonIgnore
-    @Getter
-    @Setter
-    private boolean useDefaultSerializer;
-
     /**
      * Returns the keys saved in memory or constructs a new clean instance
      *
@@ -204,9 +198,9 @@ public final class Keys implements Controller<Keys> {
      * @return a non-null instance
      */
     public static Keys of(@NonNull WhatsappOptions options) {
-        var deserializer = ControllerProviderLoader.findOnlyDeserializer(options.defaultSerialization());
-        return deserializer.deserializeKeys(options.id())
-                .map(store -> store.useDefaultSerializer(options.defaultSerialization()))
+        return options.deserializer()
+                .deserializeKeys(options.id())
+                .map(keys -> keys.serializer(options.serializer()))
                 .orElseGet(() -> random(options));
     }
 
@@ -218,10 +212,10 @@ public final class Keys implements Controller<Keys> {
      */
     public static Keys random(@NonNull WhatsappOptions options) {
         var result = Keys.builder()
+                .serializer(options.serializer())
                 .id(options.id())
                 .clientType(options.clientType())
                 .prologue(options.clientType() == ClientType.WEB_CLIENT ? Whatsapp.WEB_PROLOGUE : Whatsapp.APP_PROLOGUE)
-                .useDefaultSerializer(options.defaultSerialization())
                 .build();
         result.signedKeyPair(SignalSignedKeyPair.of(result.id(), result.identityKeyPair()));
         result.serialize(true);
@@ -470,7 +464,6 @@ public final class Keys implements Controller<Keys> {
 
     @Override
     public void serialize(boolean async) {
-        ControllerProviderLoader.findAllSerializers(useDefaultSerializer())
-                .forEach(serializer -> serializer.serializeKeys(this, async));
+        serializer.serializeKeys(this, async);
     }
 }

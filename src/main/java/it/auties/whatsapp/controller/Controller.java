@@ -1,6 +1,9 @@
 package it.auties.whatsapp.controller;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.auties.whatsapp.util.JacksonProvider;
+import lombok.experimental.Accessors;
+import lombok.experimental.SuperBuilder;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -9,47 +12,53 @@ import java.io.UncheckedIOException;
  * This interface represents is implemented by all WhatsappWeb4J's controllers. It provides an easy
  * way to store IDs and serialize said class.
  */
-public sealed interface Controller<T extends Controller<T>> extends JacksonProvider permits Store, Keys {
+@SuperBuilder
+@Accessors(fluent = true)
+@SuppressWarnings("unused")
+public abstract sealed class Controller<T extends Controller<T>> implements JacksonProvider permits Store, Keys {
+    /**
+     * The serializer instance to use
+     */
+    @JsonIgnore
+    protected ControllerSerializer serializer;
+
     /**
      * Returns the id of this controller
      *
      * @return an id
      */
-    int id();
-
-    /**
-     * Disposes this object
-     */
-    void dispose();
-
-    /**
-     * Whether the default serializer should be used
-     *
-     * @return a boolean
-     */
-    boolean useDefaultSerializer();
+    public abstract int id();
 
     /**
      * Serializes this object
      *
      * @param async whether the operation should be executed asynchronously
      */
-    void serialize(boolean async);
+    public abstract void serialize(boolean async);
 
     /**
-     * Set whether the default serializer should be used
+     * Disposes this object
+     */
+    public abstract void dispose();
+
+    /**
+     * Sets the serializer of this controller
      *
+     * @param serializer a serializer
      * @return the same instance
      */
-    T useDefaultSerializer(boolean useDefaultSerializer);
+    @SuppressWarnings("unchecked")
+    public T serializer(ControllerSerializer serializer) {
+        this.serializer = serializer;
+        return (T) this;
+    }
 
     /**
      * Converts this controller to a json. Useful when debugging.
      *
      * @return a non-null string
      */
-    @SuppressWarnings("unused")
-    default String toJson() {
+    public String toJson() {
         try {
             return JSON.writerWithDefaultPrettyPrinter().writeValueAsString(this);
         } catch (IOException exception) {

@@ -116,8 +116,8 @@ public class ActionValueSync implements ProtobufMessage {
     @ProtobufProperty(index = 23, type = MESSAGE, implementation = UnarchiveChatsSetting.class)
     private UnarchiveChatsSetting unarchiveChatsSetting;
 
-    @ProtobufProperty(index = 10, type = MESSAGE, implementation = RecentStickerMetadata.class)
-    private RecentStickerMetadata recentStickerMetadata;
+    @ProtobufProperty(index = 10, type = MESSAGE, implementation = StickerMetadata.class)
+    private StickerMetadata stickerMetadata;
 
     @ProtobufProperty(index = 19, type = MESSAGE, implementation = KeyExpiration.class)
     private KeyExpiration keyExpiration;
@@ -405,8 +405,8 @@ public class ActionValueSync implements ProtobufMessage {
         return Optional.ofNullable(unarchiveChatsSetting);
     }
 
-    public Optional<RecentStickerMetadata> recentStickerMetadata() {
-        return Optional.ofNullable(recentStickerMetadata);
+    public Optional<StickerMetadata> stickerMetadata() {
+        return Optional.ofNullable(stickerMetadata);
     }
 
     public Optional<KeyExpiration> keyExpiration() {

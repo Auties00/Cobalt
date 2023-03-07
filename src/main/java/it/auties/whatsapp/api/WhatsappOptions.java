@@ -5,6 +5,9 @@ import it.auties.whatsapp.api.WhatsappOptions.WebOptions;
 import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
 import it.auties.whatsapp.model.mobile.VerificationCodeResponse;
 import it.auties.whatsapp.model.signal.auth.Version;
+import it.auties.whatsapp.controller.ControllerDeserializer;
+import it.auties.whatsapp.controller.ControllerSerializer;
+import it.auties.whatsapp.controller.DefaultControllerSerializer;
 import it.auties.whatsapp.util.KeyHelper;
 import lombok.Builder.Default;
 import lombok.Data;
@@ -42,7 +45,13 @@ public abstract sealed class WhatsappOptions permits WebOptions, MobileOptions {
      * want to implement a custom serializer.
      */
     @Default
-    private boolean defaultSerialization = true;
+    private ControllerSerializer serializer = new DefaultControllerSerializer();
+    /**
+     * Whether the default serialization mechanism should be used or not. Set this to false if you
+     * want to implement a custom serializer.
+     */
+    @Default
+    private ControllerDeserializer deserializer = new DefaultControllerSerializer();
     /**
      * Whether a preview should be automatically generated and attached to text messages that
      * contain links. By default, it's enabled with inference.

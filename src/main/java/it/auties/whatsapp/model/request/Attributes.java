@@ -296,4 +296,13 @@ public record Attributes(@NonNull ConcurrentHashMap<String, Object> toMap) {
     public Attributes copy() {
         return new Attributes(toMap);
     }
+
+    /**
+     * Returns whether this object is empty
+     *
+     * @return a boolean
+     */
+    public boolean isEmpty(){
+        return toMap.isEmpty();
+    }
 }

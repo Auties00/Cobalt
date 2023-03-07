@@ -1,17 +1,20 @@
-package it.auties.whatsapp.serialization;
+package it.auties.whatsapp.controller;
 
-import it.auties.whatsapp.controller.Keys;
-import it.auties.whatsapp.controller.Store;
-
+import java.util.LinkedList;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * This interface provides a standardized way to deserialize a session. Implement this interface
- * and
- * <a href="https://www.baeldung.com/java-spi#3-service-provider">register it in your manifest</a>
+ * This interface provides a standardized way to deserialize a session
  */
-public non-sealed interface ControllerDeserializerProvider extends ControllerProvider {
+public interface ControllerDeserializer {
+    /**
+     * Returns all the known IDs
+     *
+     * @return a non-null linked list
+     */
+    LinkedList<Integer> findIds();
+
     /**
      * Serializes the keys
      *
@@ -38,15 +41,5 @@ public non-sealed interface ControllerDeserializerProvider extends ControllerPro
      */
     default CompletableFuture<Void> attributeStore(@SuppressWarnings("unused") Store store) {
         return CompletableFuture.completedFuture(null);
-    }
-
-    /**
-     * Returns whether this serializer should be favoured when compared to other serializers. If more
-     * than one serializer with this flag exists and is loaded, an error will be thrown.
-     *
-     * @return the boolean
-     */
-    default boolean isBest() {
-        return true;
     }
 }

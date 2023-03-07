@@ -89,12 +89,21 @@ public final class ProtocolMessage implements ServerMessage {
     @ProtobufProperty(index = 10, type = MESSAGE, implementation = AppStateFatalExceptionNotification.class)
     private AppStateFatalExceptionNotification appStateFatalExceptionNotification;
 
+    /**
+     * The disappearing mode
+     */
     @ProtobufProperty(index = 11, name = "disappearingMode", type = MESSAGE)
     private ChatDisappear disappearingMode;
 
+    /**
+     * The edited message
+     */
     @ProtobufProperty(index = 14, name = "editedMessage", type = MESSAGE)
     private MessageContainer editedMessage;
 
+    /**
+     * The timestamp
+     */
     @ProtobufProperty(index = 15, name = "timestampMs", type = INT64)
     private long timestampMs;
 
@@ -146,7 +155,15 @@ public final class ProtocolMessage implements ServerMessage {
         /**
          * App state fatal exception notification
          */
-        EXCEPTION_NOTIFICATION(10);
+        EXCEPTION_NOTIFICATION(10),
+        /**
+         * Share phone number
+         */
+        SHARE_PHONE_NUMBER(11),
+        /**
+         * Message edit
+         */
+        MESSAGE_EDIT(14);
         
         @Getter
         private final int index;

@@ -511,7 +511,7 @@ class MessageHandler extends Handler implements JacksonProvider {
         }
         if (info.message().hasCategory(MessageCategory.SERVER)) {
             if (info.message().content() instanceof ProtocolMessage protocolMessage) {
-                handleProtocolMessage(info, protocolMessage, Objects.equals(category, "peer"));
+                onProtocolMessage(info, protocolMessage, Objects.equals(category, "peer"));
             }
             return;
         }
@@ -550,16 +550,24 @@ class MessageHandler extends Handler implements JacksonProvider {
         }
     }
 
-    private void handleProtocolMessage(MessageInfo info, ProtocolMessage protocolMessage, boolean peer) {
+    private void onProtocolMessage(MessageInfo info, ProtocolMessage protocolMessage, boolean peer) {
+        handleProtocolMessage(info, protocolMessage);
+        socketHandler.store().serialize(true);
+        if (!peer) {
+            return;
+        }
+        socketHandler.sendSyncReceipt(info, "peer_msg");
+    }
+
+    private void handleProtocolMessage(MessageInfo info, ProtocolMessage protocolMessage) {
         switch (protocolMessage.protocolType()) {
-            case HISTORY_SYNC_NOTIFICATION ->
-                    downloadHistorySync(protocolMessage).thenAcceptAsync(history -> onHistoryNotification(info, history))
-                            .exceptionallyAsync(throwable -> socketHandler.errorHandler()
-                                    .handleFailure(MESSAGE, throwable));
+            case HISTORY_SYNC_NOTIFICATION -> downloadHistorySync(protocolMessage)
+                    .thenAcceptAsync(history -> onHistoryNotification(info, history))
+                    .exceptionallyAsync(throwable -> socketHandler.errorHandler().handleFailure(MESSAGE, throwable));
             case APP_STATE_SYNC_KEY_SHARE -> {
                 socketHandler.keys().addAppKeys(protocolMessage.appStateSyncKeyShare().keys());
                 if (socketHandler.store().initialSync()) {
-                    return;
+                    break;
                 }
 
                 socketHandler.pullInitialPatches()
@@ -577,12 +585,6 @@ class MessageHandler extends Handler implements JacksonProvider {
                 socketHandler.onSetting(setting);
             }
         }
-        // Save data to prevent session termination from messing up the cypher
-        socketHandler.store().serialize(true);
-        if (!peer) {
-            return;
-        }
-        socketHandler.sendSyncReceipt(info, "peer_msg");
     }
 
     private boolean isTyping(Contact sender) {
