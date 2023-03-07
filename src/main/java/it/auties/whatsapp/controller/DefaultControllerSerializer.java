@@ -11,6 +11,8 @@ import it.auties.whatsapp.model.contact.ContactJid;
 import it.auties.whatsapp.util.Validate;
 import lombok.NonNull;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.System.Logger;
@@ -24,6 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
@@ -48,11 +51,11 @@ import static java.lang.System.Logger.Level.WARNING;
 public class DefaultControllerSerializer implements ControllerSerializer, ControllerDeserializer {
     private static final Path DEFAULT_DIRECTORY = Path.of(System.getProperty("user.home") + "/.whatsapp4j/");
     private static final String CHAT_PREFIX = "chat_";
+    private static final Map<ContactJid, Integer> hashCodesMap = new ConcurrentHashMap<>();
 
     private final Path baseDirectory;
     private final Logger logger;
     private final AtomicReference<CompletableFuture<Void>> deserializer;
-    private final Map<ContactJid, Integer> hashCodesMap;
 
     /**
      * Creates a provider using the default path
@@ -77,7 +80,6 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
 
         Validate.isTrue(Files.isDirectory(baseDirectory), "Expected a directory as base path: %s", baseDirectory);
         this.deserializer = new AtomicReference<>();
-        this.hashCodesMap = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -110,23 +112,28 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
 
     @Override
     public void serializeKeys(Keys keys, boolean async) {
-        if (deserializer.get() == null || !deserializer.get().isDone()) {
+        var task = deserializer.get();
+        if (task != null && !task.isDone()) {
             return;
         }
         var path = baseDirectory.resolve("%s/keys.smile".formatted(keys.id()));
-        var preferences = new SmileFile(path);
+        var preferences = SmileFile.of(path);
         preferences.write(keys, async);
     }
 
     @Override
     public void serializeStore(Store store, boolean async) {
-        if (deserializer.get() == null || !deserializer.get().isDone()) {
+        var task = deserializer.get();
+        if (task != null && !task.isDone()) {
             return;
         }
         var path = baseDirectory.resolve("%s/store.smile".formatted(store.id()));
-        var preferences = new SmileFile(path);
+        var preferences = SmileFile.of(path);
         preferences.write(store, async);
-        store.chats().stream().filter(this::updateHash).forEach(chat -> serializeChat(store, chat, async));
+        store.chats()
+                .stream()
+                .filter(this::updateHash)
+                .forEach(chat -> serializeChat(store, chat, async));
     }
 
     private boolean updateHash(Chat entry) {
@@ -145,7 +152,7 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
 
     private void serializeChat(Store store, Chat chat, boolean async) {
         var path = baseDirectory.resolve("%s/%s%s.smile".formatted(store.id(), CHAT_PREFIX, chat.jid()));
-        var preferences = new SmileFile(path);
+        var preferences = SmileFile.of(path);
         preferences.write(chat, async);
     }
 
@@ -153,7 +160,7 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
     public Optional<Keys> deserializeKeys(int id) {
         try {
             var path = baseDirectory.resolve("%s/keys.smile".formatted(id));
-            var preferences = new SmileFile(path);
+            var preferences = SmileFile.of(path);
             return preferences.read(Keys.class);
         } catch (IOException exception) {
             throw new UncheckedIOException("Corrupted keys", exception);
@@ -164,7 +171,7 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
     public Optional<Store> deserializeStore(int id) {
         try {
             var path = baseDirectory.resolve("%s/store.smile".formatted(id));
-            var preferences = new SmileFile(path);
+            var preferences = SmileFile.of(path);
             return preferences.read(Store.class);
         } catch (IOException exception) {
             throw new UncheckedIOException("Corrupted store", exception);
@@ -183,10 +190,9 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
         }
         try (var walker = Files.walk(directory)) {
             var futures = walker.filter(entry -> entry.getFileName().toString().startsWith(CHAT_PREFIX))
-                    .map(entry -> deserializeChat(store, entry))
+                    .map(entry -> CompletableFuture.runAsync(() -> deserializeChat(store, entry)))
                     .toArray(CompletableFuture[]::new);
-            var result = CompletableFuture.allOf(futures)
-                    .thenRunAsync(() -> store.chats().forEach(chat -> hashCodesMap.put(chat.jid(), chat.fullHashCode())));
+            var result = CompletableFuture.allOf(futures);
             deserializer.set(result);
             return result;
         } catch (IOException exception) {
@@ -194,28 +200,64 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
         }
     }
 
-    private CompletableFuture<Void> deserializeChat(Store baseStore, Path entry) {
-        return CompletableFuture.runAsync(() -> {
-            try {
-                var chatPreferences = new SmileFile(entry);
-                var chat = chatPreferences.read(Chat.class).orElseThrow();
-                baseStore.addChatDirect(chat);
-            } catch (IOException exception) {
-                var chatName = entry.getFileName().toString().replaceFirst(CHAT_PREFIX, "").replace(".smile", "");
-                logger.log(ERROR, "Chat %s is corrupted, resetting it".formatted(chatName), exception);
-                try {
-                    Files.deleteIfExists(entry);
-                } catch (IOException deleteException) {
-                    logger.log(WARNING, "Cannot delete chat file");
-                }
-                var result = Chat.ofJid(ContactJid.of(chatName));
-                hashCodesMap.put(result.jid(), result.fullHashCode());
-                baseStore.addChatDirect(result);
-            }
-        });
+    @Override
+    public void deleteSession(int id) {
+        var folderPath = baseDirectory.resolve(String.valueOf(id));
+        deleteDirectory(folderPath.toFile());
     }
 
-    private record SmileFile(@NonNull Path file) {
+    // Not using Java NIO api because of a bug
+    private void deleteDirectory(File directory){
+        if(directory == null || !directory.exists()) {
+            return;
+        }
+        var files = directory.listFiles();
+        if(files == null) {
+            if (directory.delete()) {
+                return;
+            }
+
+            logger.log(WARNING, "Cannot delete folder %s".formatted(directory));
+            return;
+        }
+        for(var file : files) {
+            if(file.isDirectory()) {
+                deleteDirectory(file);
+                continue;
+            }
+            if (file.delete()) {
+                continue;
+            }
+            logger.log(WARNING, "Cannot delete file %s".formatted(directory));
+        }
+        if (directory.delete()) {
+            return;
+        }
+        logger.log(WARNING, "Cannot delete folder %s".formatted(directory));
+    }
+
+    private void deserializeChat(Store baseStore, Path entry) {
+        try {
+            var chatPreferences = SmileFile.of(entry);
+            var chat = chatPreferences.read(Chat.class).orElseThrow();
+            baseStore.addChatDirect(chat);
+            hashCodesMap.put(chat.jid(), chat.fullHashCode());
+        } catch (IOException exception) {
+            var chatName = entry.getFileName().toString().replaceFirst(CHAT_PREFIX, "").replace(".smile", "");
+            logger.log(ERROR, "Chat %s is corrupted, resetting it".formatted(chatName), exception);
+            try {
+                Files.deleteIfExists(entry);
+            } catch (IOException deleteException) {
+                logger.log(WARNING, "Cannot delete chat file");
+            }
+            var result = Chat.ofJid(ContactJid.of(chatName));
+            baseStore.addChatDirect(result);
+            hashCodesMap.put(result.jid(), result.fullHashCode());
+        }
+    }
+
+    private record SmileFile(Path file, Semaphore semaphore) {
+        private final static ConcurrentHashMap<Path, SmileFile> instances = new ConcurrentHashMap<>();
         private final static ObjectMapper SMILE = new SmileMapper()
                 .registerModule(new Jdk8Module())
                 .registerModule(new SimpleMapModule())
@@ -229,9 +271,19 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
                 .setVisibility(GETTER, NONE)
                 .setVisibility(IS_GETTER, NONE);
 
-        private SmileFile(@NonNull Path file) {
+        private static synchronized SmileFile of(@NonNull Path file){
+            var knownInstance = instances.get(file);
+            if (knownInstance != null) {
+                return knownInstance;
+            }
+
+            var instance = new SmileFile(file, new Semaphore(1));
+            instances.put(file, instance);
+            return instance;
+        }
+
+        private SmileFile {
             try {
-                this.file = file;
                 Files.createDirectories(file.getParent());
             } catch (IOException exception) {
                 throw new UncheckedIOException("Cannot create smile file", exception);
@@ -258,28 +310,34 @@ public class DefaultControllerSerializer implements ControllerSerializer, Contro
         private void write(Object input, boolean async) {
             if (!async) {
                 writeSync(input);
-                CompletableFuture.completedFuture(null);
                 return;
             }
 
-            CompletableFuture.runAsync(() -> writeSync(input)).exceptionallyAsync(this::onError);
+            CompletableFuture.runAsync(() -> writeSync(input))
+                    .exceptionallyAsync(throwable -> {
+                        throwable.printStackTrace();
+                        return null;
+                    });
         }
 
         private void writeSync(Object input) {
             try {
-                var gzipOutputStream = new GZIPOutputStream(Files.newOutputStream(file, StandardOpenOption.CREATE));
-                gzipOutputStream.write(SMILE.writeValueAsBytes(input));
-                gzipOutputStream.flush();
-                gzipOutputStream.finish();
-                gzipOutputStream.close();
-            } catch (Throwable exception) {
-                throw new RuntimeException("Cannot write to file", exception);
+                semaphore.acquire();
+                var serialized = SMILE.writeValueAsBytes(input);
+                var compressedStream = new ByteArrayOutputStream(serialized.length);
+                try (compressedStream) {
+                    try (var zipStream = new GZIPOutputStream(compressedStream, 65536)) {
+                        zipStream.write(serialized);
+                    }
+                }
+                Files.write(file, compressedStream.toByteArray(), StandardOpenOption.CREATE);
+            } catch (IOException exception){
+                throw new UncheckedIOException("Cannot complete file write", exception);
+            }catch (InterruptedException exception){
+                throw new RuntimeException("Cannot acquire lock", exception);
+            }finally {
+                semaphore.release();
             }
-        }
-
-        private Void onError(Throwable exception) {
-            exception.printStackTrace();
-            return null;
         }
     }
 }

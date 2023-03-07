@@ -237,13 +237,6 @@ public class Whatsapp {
     }
 
     /**
-     * Deletes all the known connections from memory
-     */
-    public static void deleteConnections() {
-        streamConnections().forEach(entry -> LocalFileSystem.delete(entry.keys().id()));
-    }
-
-    /**
      * Returns a stream of all known connections
      *
      * @return a non-null Stream

@@ -35,7 +35,6 @@ import it.auties.whatsapp.model.sync.PatchRequest;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.JacksonProvider;
 import it.auties.whatsapp.util.KeyHelper;
-import it.auties.whatsapp.util.LocalFileSystem;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -257,14 +256,14 @@ public class SocketHandler extends Handler implements SocketListener, JacksonPro
             case LOGGED_OUT -> {
                 store.resolveAllPendingRequests();
                 session.close();
-                LocalFileSystem.delete(keys().id());
+                options.serializer().deleteSession(options.id());
                 yield CompletableFuture.completedFuture(null);
             }
             case RESTORE -> {
                 store.resolveAllPendingRequests();
                 var oldListeners = new ArrayList<>(store.listeners());
                 session.close();
-                LocalFileSystem.delete(keys().id());
+                options.serializer().deleteSession(options.id());
                 options.id(KeyHelper.registrationId());
                 this.keys = Keys.random(options);
                 this.store = Store.random(options);

@@ -20,4 +20,9 @@ public interface ControllerSerializer {
      * @param async whether the operation should be executed asynchronously
      */
     void serializeStore(Store store, boolean async);
+
+    /**
+     * Deletes a session
+     */
+    void deleteSession(int id);
 }
